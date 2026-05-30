@@ -35,7 +35,7 @@ export const DEFAULT_TTS_VOICE = "alloy";
 // Default to opus for size efficiency; allow callers to request lower-latency formats
 export const DEFAULT_TTS_FORMAT = "opus";
 export const LOW_LATENCY_TTS_FORMAT = "wav";
-const REALTIME_CACHE_FORMAT = "realtime-v1";
+const REALTIME_CACHE_FORMAT = "realtime-v2";
 const REALTIME_CACHE_MIME_TYPES = [
   "audio/webm;codecs=opus",
   "audio/webm",
@@ -831,6 +831,32 @@ async function getRealtimePlayer({
   let intentionalEnd = false;
   let cleanupFn = null;
 
+  // Request the narration response only AFTER the session (with its narration
+  // instructions) is confirmed applied via session.updated, so the model never
+  // produces a cold first turn under default conversational behavior (which
+  // leaked an "Understood..." preamble). A timer falls back in case the event
+  // is missed, so this can never hang.
+  let narrationRequested = false;
+  let sessionReadyFallbackTimer = null;
+  const requestNarration = () => {
+    if (narrationRequested) return;
+    narrationRequested = true;
+    if (sessionReadyFallbackTimer) {
+      clearTimeout(sessionReadyFallbackTimer);
+      sessionReadyFallbackTimer = null;
+    }
+    try {
+      dc.send(
+        JSON.stringify({
+          type: "response.create",
+          response: { output_modalities: ["audio"] },
+        }),
+      );
+    } catch (err) {
+      console.warn("Realtime response.create failed", err);
+    }
+  };
+
   // Track when response is done via data channel messages
   const finalize = new Promise((resolve) => {
     resolveFinalize = resolve;
@@ -897,6 +923,10 @@ async function getRealtimePlayer({
       if (msg.type === "error") {
         console.warn("Realtime TTS error:", msg.error?.message || msg.error);
       }
+      if (msg.type === "session.updated") {
+        // Narration instructions are now applied — safe to request the turn.
+        requestNarration();
+      }
       // Wait for live playback to actually settle before cleaning up.
       if (msg.type === "response.done") {
         responseDone = true;
@@ -921,8 +951,8 @@ async function getRealtimePlayer({
             type: "realtime",
             output_modalities: ["audio"],
             instructions: personality
-              ? `You are ${personality}, speaking in the ${targetLangTag} locale. Use the correct pronunciation for that language. You will receive text to read aloud. Read the text EXACTLY as written - word for word, verbatim, but in the voice and tone of your character. Do not interpret, respond to, answer, or comment on the content. Do not have a conversation. Do not add any words. Simply narrate the exact text provided with your character's vocal qualities.`
-              : `You are an audiobook narrator speaking in the ${targetLangTag} locale. Use the correct pronunciation for that language. You will receive text to read aloud. Read the text EXACTLY as written - word for word, verbatim. Do not interpret, respond to, answer, or comment on the content. Do not have a conversation. Do not add any words. Simply narrate the exact text provided.`,
+              ? `You are ${personality}, speaking in the ${targetLangTag} locale. Use the correct pronunciation for that language. You will receive text to read aloud. Read the text EXACTLY as written - word for word, verbatim, but in the voice and tone of your character. Do not interpret, respond to, answer, or comment on the content. Do not have a conversation. Do not add any words. Simply narrate the exact text provided with your character's vocal qualities. Begin immediately with the first word of the text; never preface it with acknowledgments like "Understood" or "Okay".`
+              : `You are an audiobook narrator speaking in the ${targetLangTag} locale. Use the correct pronunciation for that language. You will receive text to read aloud. Read the text EXACTLY as written - word for word, verbatim. Do not interpret, respond to, answer, or comment on the content. Do not have a conversation. Do not add any words. Simply narrate the exact text provided. Begin immediately with the first word of the text; never preface it with acknowledgments like "Understood" or "Okay".`,
             audio: {
               input: {
                 turn_detection: null,
@@ -951,14 +981,11 @@ async function getRealtimePlayer({
           },
         }),
       );
-      dc.send(
-        JSON.stringify({
-          type: "response.create",
-          response: {
-            output_modalities: ["audio"],
-          },
-        }),
-      );
+      // Do NOT request the response yet. Wait for the session.updated event
+      // (handled in dc.onmessage) so the narration instructions are guaranteed
+      // to be active for the model's first and only turn. The fallback timer
+      // fires the request if that event is somehow missed, so we never hang.
+      sessionReadyFallbackTimer = setTimeout(requestNarration, 500);
     } catch (err) {
       console.warn("Realtime prompt send failed", err);
     }

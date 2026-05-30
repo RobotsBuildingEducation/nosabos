@@ -1104,351 +1104,340 @@ function normalizeQuest(
   const L = {
     es: {
       defaultSeed:
-        "La campana del pueblo desapareció y nadie sabe quién la tomó.",
+        "Hay algo aquí que quiero entender bien, y creo que tú me puedes ayudar.",
       defaultIntro: (name) =>
-        `Comienza con ${name} y sigue las pistas para resolver el misterio.`,
+        `Empieza con ${name} y conversa con cada persona para repasar lo aprendido.`,
       actLabel: (name, n) => `${name} · acto ${n}`,
-      connectClue: (name, next) =>
-        `${name} conecta la pista anterior con ${next}.`,
-      defaultTopic: "las pistas del caso",
+      connectClue: (name, next) => `${name} enlaza lo anterior con ${next}.`,
+      defaultTopic: "lo que estamos repasando",
       fallbackSpeech: "No alcancé a oírte bien. Inténtalo otra vez.",
       heardPrefix: "Perfecto, escuché",
       // Greeting pools — picked randomly per game instance
       firstGreetings: [
-        (seed) => `¡Qué bueno que llegaste! Necesito tu ayuda urgente. ${seed}`,
         (seed) =>
-          `¡Por fin alguien viene! Escucha, tenemos un problema serio. ${seed}`,
-        (seed) => `No vas a creer lo que pasó. ${seed}`,
-        (seed) => `¡Ven, rápido! Algo terrible acaba de ocurrir. ${seed}`,
+          `¡Qué bueno que llegaste! Justo te quería comentar algo. ${seed}`,
+        (seed) => `¡Llegaste en buen momento! Estaba pensando en esto. ${seed}`,
+        (seed) => `Me alegra verte por aquí. ${seed}`,
+        (seed) => `¡Hola! Ven, quiero mostrarte algo. ${seed}`,
       ],
       midGreetings: [
-        (fromNpc) => `¿${fromNpc} te envió? Entonces la situación es seria.`,
+        (fromNpc) => `Así que ${fromNpc} te mandó. Me imagino de qué se trata.`,
+        (fromNpc) => `Ah, vienes de parte de ${fromNpc}. Entonces hablemos.`,
         (fromNpc) =>
-          `Ah, vienes de parte de ${fromNpc}. Ya me imaginaba que esto iba a pasar.`,
+          `${fromNpc} hizo bien en mandarte. Yo te puedo contar mi parte.`,
         (fromNpc) =>
-          `${fromNpc} hizo bien en mandarte aquí. Tengo información importante.`,
-        (fromNpc) =>
-          `¡Menos mal que llegaste! ${fromNpc} me dijo que eres de confianza.`,
+          `¡Qué bueno que viniste! ${fromNpc} me dijo que andas practicando.`,
       ],
       finalGreetings: [
-        (fromNpc) =>
-          `¡Llegas justo a tiempo! ${fromNpc} me avisó que vendrías.`,
-        (fromNpc) => `Te estaba esperando. ${fromNpc} me contó todo.`,
-        (fromNpc) => `¡Al fin! ${fromNpc} dijo que tú podrías resolver esto.`,
+        (fromNpc) => `¡Llegas justo a tiempo! ${fromNpc} me avisó que venías.`,
+        (fromNpc) => `Te estaba esperando. ${fromNpc} ya me puso al tanto.`,
+        (fromNpc) => `¡Por fin! ${fromNpc} dijo que contigo lo cerramos bien.`,
         (fromNpc) => `Sabía que vendrías. ${fromNpc} confía mucho en ti.`,
       ],
       // Choice pools — each is [text, replyFn] pairs
       choiceSets: [
         [
           [
-            "¿Qué pasó exactamente? Cuéntame todo.",
+            "Cuéntame, ¿de qué se trata?",
             () =>
-              "Todo empezó esta mañana. Necesitamos actuar rápido antes de que sea tarde.",
+              "Mira, te explico. Quiero ver cómo lo dirías tú con tus palabras.",
           ],
           [
-            "Estoy listo para ayudar. ¿Por dónde empiezo?",
-            () => "Gracias por ofrecerte. No puedo hacer esto solo.",
+            "Listo para practicar. ¿Por dónde empiezo?",
+            () => "Me gusta esa actitud. Vamos paso a paso.",
           ],
           [
-            "Mmm... esto suena a que alguien metió la pata.",
-            () => "¡Ja! Tienes razón. Pero ahora tú puedes arreglarlo.",
+            "Mmm, esto se ve interesante.",
+            () => "¿Verdad que sí? Hay más de lo que parece.",
           ],
           [
-            "¿Y por qué debería importarme?",
-            () =>
-              "Oye, sé que suena raro... pero en serio, si no ayudas, esto se pone feo.",
+            "¿Y esto para qué me sirve?",
+            () => "Buena pregunta. Te sirve más de lo que crees, ya verás.",
           ],
           [
-            "¡Ja! ¿Otra vez problemas? Nunca falla.",
-            () => "Así es la vida aquí. Pero esta vez es diferente, créeme.",
+            "¡Ja! A ver si me sale bien esta vez.",
+            () => "Esa energía me gusta. Vamos a probar.",
           ],
         ],
         [
           [
-            "Exacto. ¿Qué sabes tú sobre esto?",
-            () => "Escuché rumores sobre eso. Hay que investigar más a fondo.",
+            "A ver, ¿qué me puedes enseñar de esto?",
+            () => "Con gusto. Pon atención a cómo lo digo yo.",
           ],
           [
-            "Necesito más información para continuar.",
+            "Quiero entenderlo mejor.",
             () =>
-              "Claro, esto es lo que sé. La situación es más compleja de lo que parece.",
+              "Claro. Es más sencillo de lo que parece cuando lo practicas.",
           ],
           [
-            "¿Tú también estás metido en este lío?",
-            () => "¡Oye! Yo soy inocente. Pero sí, sé más de lo que parece.",
+            "¿Tú lo usas así en tu día a día?",
+            () => "Todo el tiempo. Por eso te lo quiero mostrar bien.",
           ],
           [
-            "No tengo todo el día. Habla rápido.",
+            "Explícamelo rápido, porfa.",
             () =>
-              "Tranquilo, tranquilo. Las prisas no ayudan, pero te lo resumo rápido.",
+              "Tranquilo, te lo resumo, pero vale la pena hacerlo con calma.",
           ],
           [
-            "A ver, ¿tú eres el experto o qué?",
+            "¿Entonces tú eres el que sabe de esto?",
             () => "Digamos que sé un par de cosas. Escucha con atención.",
           ],
         ],
         [
           [
-            "Terminemos con esto. ¿Qué falta?",
-            () => "Solo queda una cosa. Estamos a punto de resolverlo.",
+            "Vamos cerrando. ¿Qué falta?",
+            () => "Solo una cosa más y lo tenemos.",
           ],
           [
             "¿Cuál es el último paso?",
-            () => "Casi terminamos. Todo depende de este último paso.",
+            () => "Ya casi. Todo depende de este último detalle.",
           ],
           [
-            "Espero que valga la pena tanto esfuerzo.",
-            () =>
-              "Te prometo que sí. Has llegado muy lejos para rendirte ahora.",
+            "Espero acordarme de todo esto.",
+            () => "Te va a quedar, ya verás. Has avanzado bastante.",
           ],
           [
-            "Ya era hora. Casi me duermo esperando.",
-            () =>
-              "Jaja, no te culpo. Pero el final vale la pena, te lo aseguro.",
+            "Esto ya me está gustando.",
+            () => "¡Así me gusta! Con esa actitud lo dominas rapidísimo.",
           ],
           [
-            "¡Por fin! Esto se va a poner bueno.",
-            () => "¡Así me gusta! Con esa energía lo resolvemos en un segundo.",
+            "¡Por fin! Vamos a rematar bien.",
+            () => "¡Eso! Con esa energía lo cerramos en un momento.",
           ],
         ],
         [
           [
-            "¿Hay algo que pueda hacer ahora mismo?",
-            () => "Sí, de hecho hay algo urgente. Déjame explicarte.",
+            "¿Hay algo que pueda intentar ahora mismo?",
+            () => "Sí, justo hay algo. Déjame mostrarte.",
           ],
           [
-            "¿Quién más sabe sobre esto?",
-            () => "Pocos lo saben. Pero hay alguien que puede ayudarnos.",
-          ],
-          ["¿Cuánto tiempo tenemos?", () => "No mucho. Cada minuto cuenta."],
-          [
-            "Dame los detalles, no te guardes nada.",
-            () => "Está bien, te cuento todo. Presta atención.",
+            "¿Con quién más debería practicar esto?",
+            () => "Hay alguien por aquí que te puede ayudar también.",
           ],
           [
-            "¿Es peligroso?",
-            () => "Un poco, pero nada que no podamos manejar juntos.",
+            "¿Lo repetimos una vez más?",
+            () => "Claro, la práctica hace al maestro.",
+          ],
+          [
+            "Dame el detalle, no te guardes nada.",
+            () => "Está bien, te explico todo. Pon atención.",
+          ],
+          [
+            "¿Es difícil?",
+            () => "Un poquito al principio, pero nada que no podamos juntos.",
           ],
         ],
         [
           [
-            "¿Cómo descubriste todo esto?",
-            () => "Fue por accidente. Estaba caminando y noté algo extraño.",
+            "¿Cómo aprendiste todo esto?",
+            () => "Practicando mucho, igual que tú ahora mismo.",
           ],
           [
-            "¿Alguien más ha intentado resolver esto?",
-            () => "Sí, pero nadie lo ha logrado. Por eso necesitamos ayuda.",
+            "¿A otros también les costó al principio?",
+            () => "A todos. Por eso vale la pena repasarlo bien.",
           ],
           [
-            "¿Qué pasa si no hacemos nada?",
+            "¿Y si todavía me equivoco?",
             () =>
-              "Las cosas se pondrían muy mal. No podemos quedarnos de brazos cruzados.",
+              "No pasa nada. Equivocarse es parte de aprender; lo importante es intentarlo.",
           ],
           [
-            "Cuéntame más sobre el lugar.",
-            () =>
-              "Este lugar tiene muchos secretos. Algunos mejor dejarlos en paz.",
+            "Cuéntame más sobre este lugar.",
+            () => "Este lugar tiene su encanto. Cada rincón te recuerda algo.",
           ],
           [
-            "¿Confías en las personas de aquí?",
-            () => "En algunas sí, en otras no tanto. Hay que tener cuidado.",
+            "¿La gente de aquí habla así siempre?",
+            () => "Cada quien tiene su estilo. Eso es lo bonito.",
           ],
         ],
       ],
       // Speech prompt pools
       speechPrompts: [
-        () => "Interesante... ¿Y tú qué opinas sobre todo esto?",
+        () => "Interesante... ¿y tú cómo lo dirías?",
         () => "Mmm, cuéntame más. ¿Qué piensas tú?",
-        () => "Antes de seguir... ¿cómo ves la situación?",
-        () => "Quiero escuchar tu punto de vista. ¿Qué dirías?",
-        () => "Eso me hace pensar... ¿y tú qué crees que pasó?",
+        () => "Antes de seguir... ¿cómo lo ves tú?",
+        () => "Quiero escuchar tu versión. ¿Qué dirías?",
+        () => "Eso me hace pensar... ¿tú qué opinas?",
       ],
       playerBridge: (fromNpc) =>
-        `${fromNpc} me envió. Dice que tú sabes algo importante.`,
+        `${fromNpc} me mandó. Dice que contigo puedo practicar esto.`,
       npcHandoff: (nextNpc) =>
-        `Ve con ${nextNpc}. Creo que sabe algo más que puede ayudarnos.`,
-      questComplete: "¡Misión cumplida! Has resuelto el misterio.",
+        `Ve con ${nextNpc}. Creo que te puede mostrar algo más.`,
+      questComplete: "¡Lo lograste! Repasaste todo muy bien.",
       gatherIntro: (itemName) =>
-        `Necesito que encuentres ${itemName} en este lugar. Ten cuidado, hay muchas cosas por ahí que no sirven.`,
+        `Ayúdame a encontrar ${itemName} por aquí. Ojo, que hay varias cosas que no son.`,
       gatherHint: (hint) => `Una pista: ${hint}`,
       gatherWrongItem: (wrongName, correctName) =>
-        `Eso es ${wrongName}. No es lo que necesito. Busca ${correctName}.`,
+        `Eso es ${wrongName}. No es lo que busco. Busca ${correctName}.`,
       gatherSuccess: (itemName) =>
-        `Listo. Tienes ${itemName}. Eso me ayuda.`,
+        `¡Eso es! Tienes ${itemName}. Justo lo que necesitaba.`,
       gatherPlayerReport: (itemName) => `Encontré ${itemName}. Aquí está.`,
-      speechContinue: "Entiendo lo que dices. Sigamos adelante.",
+      speechContinue: "Me gusta cómo lo dijiste. Sigamos.",
     },
     en: {
-      defaultSeed: "The town bell disappeared and nobody knows who took it.",
+      defaultSeed:
+        "There's something here I want to get right, and I think you can help.",
       defaultIntro: (name) =>
-        `Start with ${name} and follow the clues to solve the mystery.`,
+        `Start with ${name} and talk with each person to review what you've learned.`,
       actLabel: (name, n) => `${name} · act ${n}`,
-      connectClue: (name, next) =>
-        `${name} connects the previous clue to ${next}.`,
-      defaultTopic: "the case clues",
+      connectClue: (name, next) => `${name} ties what came before to ${next}.`,
+      defaultTopic: "what we're reviewing",
       fallbackSpeech: "I couldn't hear you clearly. Try again.",
       heardPrefix: "Perfect, I heard",
       firstGreetings: [
-        (seed) => `I'm glad you're here! I need your help urgently. ${seed}`,
         (seed) =>
-          `Finally, someone showed up! Listen, we have a serious problem. ${seed}`,
-        (seed) => `You won't believe what happened. ${seed}`,
-        (seed) => `Come, quick! Something terrible just happened. ${seed}`,
+          `I'm glad you're here! I've been meaning to show you this. ${seed}`,
+        (seed) => `Good timing! I was just thinking about this. ${seed}`,
+        (seed) => `Nice to see you around here. ${seed}`,
+        (seed) => `Hey! Come over, I want to show you something. ${seed}`,
       ],
       midGreetings: [
-        (fromNpc) => `${fromNpc} sent you? Then the situation is serious.`,
+        (fromNpc) => `So ${fromNpc} sent you. I can guess what this is about.`,
+        (fromNpc) => `Ah, you come from ${fromNpc}. Then let's talk.`,
+        (fromNpc) => `${fromNpc} did well sending you. I can share my part.`,
         (fromNpc) =>
-          `Ah, you come from ${fromNpc}. I figured this would happen.`,
-        (fromNpc) =>
-          `${fromNpc} did well sending you here. I have important information.`,
-        (fromNpc) =>
-          `Thank goodness you're here! ${fromNpc} said you could be trusted.`,
+          `Glad you came! ${fromNpc} told me you've been practicing.`,
       ],
       finalGreetings: [
         (fromNpc) =>
           `You arrived just in time! ${fromNpc} told me you were coming.`,
-        (fromNpc) => `I was waiting for you. ${fromNpc} told me everything.`,
-        (fromNpc) => `At last! ${fromNpc} said you could solve this.`,
+        (fromNpc) => `I was waiting for you. ${fromNpc} already filled me in.`,
+        (fromNpc) =>
+          `At last! ${fromNpc} said we'd wrap this up nicely together.`,
         (fromNpc) => `I knew you'd come. ${fromNpc} trusts you a lot.`,
       ],
       choiceSets: [
         [
           [
-            "What exactly happened? Tell me everything.",
-            () =>
-              "It all started this morning. We need to act fast before it's too late.",
+            "Tell me, what's this about?",
+            () => "Let me show you. I want to see how you'd say it yourself.",
           ],
           [
-            "I'm ready to help. Where do I start?",
-            () => "Thanks for volunteering. I can't do this alone.",
+            "Ready to practice. Where do I start?",
+            () => "I like that attitude. Let's take it step by step.",
           ],
           [
-            "Hmm... sounds like someone really messed up.",
-            () => "Ha! You're right. But now you can fix it.",
+            "Hmm, this looks interesting.",
+            () => "Right? There's more to it than it seems.",
           ],
           [
-            "Why should I care about this?",
-            () =>
-              "Hey, I know it sounds weird... but seriously, if you don't help, things get ugly.",
+            "What's this good for, anyway?",
+            () => "Good question. It helps more than you'd think, you'll see.",
           ],
           [
-            "Ha! Problems again? Never a dull moment here.",
-            () =>
-              "That's life around here. But this time it's different, trust me.",
+            "Ha! Let's see if I get it right this time.",
+            () => "Love that energy. Let's give it a go.",
           ],
         ],
         [
           [
-            "Exactly. What do you know about this?",
-            () => "I've heard rumors about that. We need to dig deeper.",
+            "So, what can you teach me about this?",
+            () => "Gladly. Pay attention to how I say it.",
           ],
           [
-            "I need more information to continue.",
-            () =>
-              "Sure, here's what I know. The situation is more complex than it seems.",
+            "I want to understand it better.",
+            () => "Sure. It's simpler than it looks once you practice.",
           ],
           [
-            "Are you mixed up in this mess too?",
-            () => "Hey! I'm innocent. But yeah, I know more than it looks.",
+            "Do you use it like this day to day?",
+            () => "All the time. That's why I want to show you properly.",
           ],
           [
-            "I don't have all day. Talk fast.",
-            () =>
-              "Easy, easy. Rushing won't help, but I'll give you the short version.",
+            "Give me the short version, please.",
+            () => "Easy — I'll sum it up, but it's worth doing slowly.",
           ],
           [
-            "So, are you the expert or what?",
+            "So you're the one who knows about this?",
             () => "Let's just say I know a thing or two. Listen carefully.",
           ],
         ],
         [
           [
-            "Let's finish this. What's left?",
-            () => "Just one thing left. We're about to solve this.",
+            "Let's wrap up. What's left?",
+            () => "Just one more thing and we've got it.",
           ],
           [
             "What's the last step?",
-            () => "We're almost done. It all comes down to this last step.",
+            () => "Almost there. It all comes down to this last detail.",
           ],
           [
-            "I hope all this effort was worth it.",
-            () => "I promise it is. You've come too far to give up now.",
+            "I hope I remember all of this.",
+            () => "You will, you'll see. You've come a long way.",
           ],
           [
-            "Finally. I almost fell asleep waiting.",
-            () =>
-              "Haha, can't blame you. But the ending is worth it, trust me.",
+            "I'm starting to like this.",
+            () => "That's the spirit! With that attitude you'll master it fast.",
           ],
           [
-            "Let's go! This is about to get good.",
-            () =>
-              "That's the spirit! With that energy we'll solve this in no time.",
+            "Finally! Let's finish strong.",
+            () => "Yes! With that energy we'll wrap it up in no time.",
           ],
         ],
         [
           [
-            "Is there something I can do right now?",
-            () => "Yes, actually there's something urgent. Let me explain.",
+            "Is there something I can try right now?",
+            () => "Yes, there's something right here. Let me show you.",
           ],
           [
-            "Who else knows about this?",
-            () => "Few people know. But there's someone who can help us.",
+            "Who else should I practice this with?",
+            () => "There's someone around here who can help too.",
           ],
-          ["How much time do we have?", () => "Not much. Every minute counts."],
+          ["Shall we do it once more?", () => "Sure — practice makes perfect."],
           [
             "Give me the details, don't hold back.",
-            () => "Alright, I'll tell you everything. Pay attention.",
+            () => "Alright, I'll walk you through it. Pay attention.",
           ],
           [
-            "Is it dangerous?",
-            () => "A little, but nothing we can't handle together.",
+            "Is it hard?",
+            () => "A little at first, but nothing we can't handle together.",
           ],
         ],
         [
           [
-            "How did you find out about all this?",
+            "How did you learn all this?",
+            () => "Lots of practice — just like you're doing now.",
+          ],
+          [
+            "Did it trip up other people too at first?",
+            () => "Everyone. That's why it's worth reviewing well.",
+          ],
+          [
+            "And if I still get it wrong?",
             () =>
-              "It was by accident. I was walking and noticed something strange.",
-          ],
-          [
-            "Has anyone else tried to solve this?",
-            () => "Yes, but nobody succeeded. That's why we need help.",
-          ],
-          [
-            "What happens if we do nothing?",
-            () => "Things would get really bad. We can't just sit around.",
+              "No worries. Mistakes are part of learning; what matters is trying.",
           ],
           [
             "Tell me more about this place.",
-            () => "This place has many secrets. Some are better left alone.",
+            () =>
+              "This place has its charm. Every corner reminds you of something.",
           ],
           [
-            "Do you trust the people here?",
-            () =>
-              "Some of them, yes. Others, not so much. We need to be careful.",
+            "Do people here always talk like this?",
+            () => "Everyone has their own style. That's the beauty of it.",
           ],
         ],
       ],
       speechPrompts: [
-        () => "Interesting... What do you think about all of this?",
+        () => "Interesting... and how would you say it?",
         () => "Hmm, tell me more. What's your take?",
-        () => "Before we continue... how do you see the situation?",
-        () => "I want to hear your perspective. What would you say?",
-        () => "That makes me think... what do you believe happened?",
+        () => "Before we continue... how do you see it?",
+        () => "I want to hear your version. What would you say?",
+        () => "That makes me think... what do you reckon?",
       ],
       playerBridge: (fromNpc) =>
-        `${fromNpc} sent me. They say you know something important.`,
+        `${fromNpc} sent me. They say I can practice this with you.`,
       npcHandoff: (nextNpc) =>
-        `Go find ${nextNpc}. I think they know something more that can help us.`,
-      questComplete: "Quest complete! You solved the mystery.",
+        `Go find ${nextNpc}. I think they can show you something more.`,
+      questComplete: "You did it! You reviewed everything really well.",
       gatherIntro: (itemName) =>
-        `I need you to find ${itemName} somewhere around here. Be careful, there are lots of things out there that won't help.`,
+        `Help me find ${itemName} somewhere around here. Heads up, several things out there aren't it.`,
       gatherHint: (hint) => `A clue: ${hint}`,
       gatherWrongItem: (wrongName, correctName) =>
-        `That's ${wrongName}. Not what I need. Look for ${correctName}.`,
-      gatherSuccess: (itemName) => `Good. You have ${itemName}. That helps.`,
+        `That's ${wrongName}. Not what I'm looking for. Look for ${correctName}.`,
+      gatherSuccess: (itemName) =>
+        `That's it! You've got ${itemName}. Just what I needed.`,
       gatherPlayerReport: (itemName) => `I found ${itemName}. Here it is.`,
-      speechContinue: "I understand what you're saying. Let's keep going.",
+      speechContinue: "I like how you put that. Let's keep going.",
     },
   };
 
@@ -1722,7 +1711,7 @@ async function adaptQuestForReviewContext(
     "protect",
   );
   const prompt = [
-    "You are rewriting a structured RPG quest so it becomes a chapter review for a language-learning game.",
+    "You are redesigning a structured RPG quest so it becomes an engaging, in-context chapter review for a language-learning game.",
     `Target language: ${targetLangName} (code: ${normalizedTargetLang}).`,
     `CEFR level: ${levelKey}.`,
     reviewContext?.curriculumSummary
@@ -1753,9 +1742,14 @@ async function adaptQuestForReviewContext(
       ? "Beginner rule: rewrite everything into very short, concrete, high-frequency review language with adult register. No abstract, literary, or poetic lines."
       : "",
     getAdultBeginnerToneRule(levelKey, "rpg"),
-    `Rewrite every learner-facing string into ${targetLangName} and align it to the review brief.`,
-    "This includes intro, storySeed, step titles/intros, node dialogue, player lines, choice text, choice replies, gather item names, hints, and gather-data item names/hints.",
-    "Keep the JSON structure exactly the same.",
+    "IMPORTANT: The quest JSON below is only a GENERIC scaffold — a placeholder mystery padded with filler small-talk (lines such as \"what happened? tell me everything\", \"the situation is serious\", or \"I'm ready to help, where do I start?\"). Do NOT preserve that generic plot or that filler. Replace the words while keeping the structure.",
+    "Reauthor the learner-facing text so the WHOLE conversation becomes a believable, real-world situation where THIS unit's language is actually used. The characters should naturally USE and talk about the unit's target language the way real people would in that context, so it feels like reviewing something the learner has genuinely practiced — not a quiz wrapped in a fake mystery.",
+    "Make each player choice a distinct, meaningful way to handle the moment using the unit's language (different phrasings, registers, regional variants, tones, or word choices the unit teaches) — never interchangeable filler reactions. Each choice reply (npcReply) must react specifically to that choice and reinforce the point, so picking it actually teaches something.",
+    "NPC lines should DEMONSTRATE the unit's target language in use, not merely mention the topic by name.",
+    "If the unit is abstract (e.g. regional variation, register/formality, style, tone, or grammar patterns), ground it in concrete moments: have the characters actually speak in the relevant variants or registers, and let the player choose the form that fits the person, place, or situation. Never settle for vague narration about the topic.",
+    "Avoid sounding robotic, repetitive, or generic. Keep every line warm, specific, and conversational.",
+    `Rewrite EVERY learner-facing string into ${targetLangName}: intro, storySeed, step titles/intros, node dialogue (npcLine), player lines (playerLine), choice text, choice replies (npcReply), speech replies, gather item names and hints, and gather-data item names/hints.`,
+    "Keep the JSON structure exactly the same: the same number of steps, nodes, and choices, and the same ids and nextNodeId links. Only the human-readable text may change.",
     "Do NOT change keys, ids, stepIdx, npcIdx, startNpcIdx, nextNodeId, responseMode, terminal, isCorrect, sprite, or any numbers/booleans.",
     npcPlaceholderEntries.length
       ? "Character name placeholders like __NPC_0__ represent the fixed roster. Preserve every placeholder exactly as written and never invent any other person name."
@@ -1770,6 +1764,14 @@ async function adaptQuestForReviewContext(
   const localizedRaw = await callResponses({
     model: SCENARIO_MODEL,
     input: prompt,
+    // Reauthoring dialogue into meaningful, unit-specific scenes is a creative
+    // task — give the model a real thinking budget (instead of the default
+    // minimal one) plus JSON output so it stops doing shallow string swaps.
+    generationConfig: {
+      thinkingConfig: { thinkingBudget: 2048 },
+      temperature: 1,
+      responseMimeType: "application/json",
+    },
   });
   const localized = parseJSON(localizedRaw);
   const placeholdersPreserved = areNpcPlaceholdersPreserved(
@@ -3456,7 +3458,7 @@ Required JSON shape:
   ],
   "quest": {
     "intro": "one sentence in TARGET language at ${levelKey} level",
-    "storySeed": "one dramatic sentence in TARGET language at ${levelKey} level describing the main mystery",
+    "storySeed": "one vivid, intriguing sentence in TARGET language at ${levelKey} level that sets up the scene's central situation and gives a natural reason to use this unit's language (not necessarily a crime or mystery)",
     "startNpcIdx": 0
   },
   "greetings": {
@@ -3524,7 +3526,7 @@ Required JSON shape:
   ],
   "quest": {
     "intro": "one sentence in TARGET language at ${levelKey} level",
-    "storySeed": "one dramatic sentence in TARGET language at ${levelKey} level describing the main mystery",
+    "storySeed": "one vivid, intriguing sentence in TARGET language at ${levelKey} level that sets up the scene's central situation and gives a natural reason to use this unit's language (not necessarily a crime or mystery)",
     "startNpcIdx": 0
   },
   "greetings": {

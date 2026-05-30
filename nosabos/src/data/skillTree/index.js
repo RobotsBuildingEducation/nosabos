@@ -1,9 +1,10 @@
 /**
- * Lazy-loading skill tree data manager
+ * Skill tree data access helpers.
  *
- * This module provides efficient loading of skill tree data by CEFR level.
- * Instead of loading all skill tree data at once, it loads only what's needed
- * based on user progress, significantly improving performance.
+ * The lesson tree itself lives in ../skillTreeData.js (the aggregate source of
+ * truth). This module exposes it to components via lightweight loaders and a
+ * few pure progress helpers. (The old per-level lazy-loading modules
+ * a1.js…c2.js were unused duplicates and have been removed.)
  */
 
 import { CEFR_LEVELS } from "../flashcards/common.js";
@@ -15,65 +16,14 @@ export const SKILL_STATUS = {
   COMPLETED: "completed",
 };
 
-// Cache for loaded skill tree data
-const skillTreeCache = new Map();
-
-// Dynamic imports for each CEFR level
-const levelLoaders = {
-  "Pre-A1": () => import("./pre-a1.js").then((m) => m.SKILL_TREE_PRE_A1),
-  A1: () => import("./a1.js").then((m) => m.SKILL_TREE_A1),
-  A2: () => import("./a2.js").then((m) => m.SKILL_TREE_A2),
-  B1: () => import("./b1.js").then((m) => m.SKILL_TREE_B1),
-  B2: () => import("./b2.js").then((m) => m.SKILL_TREE_B2),
-  C1: () => import("./c1.js").then((m) => m.SKILL_TREE_C1),
-  C2: () => import("./c2.js").then((m) => m.SKILL_TREE_C2),
-};
-
-/**
- * Load skill tree data for a specific CEFR level
- * @param {string} level - CEFR level (A1, A2, B1, B2, C1, C2)
- * @returns {Promise<Array>} Skill tree units for the specified level
- */
-export async function loadSkillTreeForLevel(level) {
-  if (skillTreeCache.has(level)) {
-    return skillTreeCache.get(level);
-  }
-
-  const loader = levelLoaders[level];
-  if (!loader) {
-    console.warn(`No loader found for level ${level}`);
-    return [];
-  }
-
-  try {
-    const skillTree = await loader();
-    skillTreeCache.set(level, skillTree);
-    return skillTree;
-  } catch (error) {
-    console.error(`Error loading skill tree for level ${level}:`, error);
-    return [];
-  }
-}
-
-/**
- * Load skill tree data for multiple CEFR levels
- * @param {Array<string>} levels - Array of CEFR levels to load
- * @returns {Promise<Array>} Combined skill tree units from all specified levels
- */
-export async function loadSkillTreeForLevels(levels) {
-  const promises = levels.map((level) => loadSkillTreeForLevel(level));
-  const results = await Promise.all(promises);
-  return results.flat();
-}
-
 async function loadAggregateSkillTreeData() {
   return import("../skillTreeData.js");
 }
 
 /**
  * Load the learning path for a specific target language and level.
- * Uses the current aggregate data source through a dynamic import so the
- * lesson tree stays behaviorally identical while leaving the main bundle.
+ * Uses the aggregate data source through a dynamic import so the lesson tree
+ * stays out of the main bundle.
  */
 export async function loadLearningPath(targetLang, level) {
   const { getLearningPath } = await loadAggregateSkillTreeData();
@@ -156,46 +106,4 @@ export function getLevelsToLoad(userProgress = {}) {
   }
 
   return levelsToLoad;
-}
-
-/**
- * Load relevant skill tree data based on user progress
- * @param {Object} userProgress - User progress object
- * @returns {Promise<Array>} Relevant skill tree units
- */
-export async function loadRelevantSkillTree(userProgress = {}) {
-  const levelsToLoad = getLevelsToLoad(userProgress);
-  return loadSkillTreeForLevels(levelsToLoad);
-}
-
-/**
- * Preload all skill tree data
- * @returns {Promise<Array>} All skill tree units
- */
-export async function loadAllSkillTree() {
-  return loadSkillTreeForLevels(CEFR_LEVELS);
-}
-
-/**
- * Clear the skill tree cache
- */
-export function clearSkillTreeCache() {
-  skillTreeCache.clear();
-}
-
-/**
- * Get cache statistics
- * @returns {Object} Cache stats
- */
-export function getSkillTreeCacheStats() {
-  const cachedLevels = Array.from(skillTreeCache.keys());
-  const cachedCount = cachedLevels.reduce((total, level) => {
-    return total + (skillTreeCache.get(level)?.length || 0);
-  }, 0);
-
-  return {
-    cachedLevels,
-    cachedCount,
-    totalLevels: CEFR_LEVELS.length,
-  };
 }

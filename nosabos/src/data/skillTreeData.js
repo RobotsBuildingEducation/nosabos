@@ -1030,10 +1030,21 @@ const baseLearningPath = withLocalizedSkillTreeText({
           xpReward: 45,
           modes: ["vocabulary", "grammar"],
           content: {
-            vocabulary: { topic: "greetings" },
+            vocabulary: {
+              topic: "greetings and polite words",
+              focusPoints: [
+                "hola, buenos días, buenas tardes/noches",
+                "adiós, hasta luego",
+                "por favor, gracias, de nada",
+              ],
+            },
             grammar: {
-              topic: "greetings structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "greeting people formally and informally",
+              focusPoints: [
+                "¿cómo estás? (informal) vs ¿cómo está usted? (formal)",
+                "me llamo... / soy...",
+                "mucho gusto, encantado/a",
+              ],
             },
           },
         },
@@ -1049,12 +1060,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "greetings conversation",
-              prompt: "Practice using greetings in real conversation",
+              scenario: "meeting someone new and saying hello",
+              prompt: "Practice greetings and introductions: 'hola, me llamo...'",
             },
             stories: {
-              topic: "greetings",
-              prompt: "Read and discuss greetings",
+              topic: "a first conversation",
+              prompt: "Read a short greeting dialogue and discuss it",
             },
           },
         },
@@ -1070,12 +1081,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "greetings",
-              prompt: "Advanced greetings content and comprehension",
+              topic: "formal vs informal greetings",
+              prompt: "Read and notice when to use tú vs usted in greetings",
             },
             realtime: {
-              scenario: "greetings mastery",
-              prompt: "Demonstrate mastery of greetings",
+              scenario: "greeting a friend vs a stranger",
+              prompt: "Demonstrate greetings and introductions in the right register",
             },
           },
         },
@@ -1092,10 +1103,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           isFinalQuiz: true,
           quizConfig: { questionsRequired: 10, passingScore: 8 },
           content: {
-            vocabulary: { topic: "greetings" },
+            vocabulary: {
+              topic: "greetings and polite words",
+              focusPoints: [
+                "hola, adiós, gracias, por favor",
+                "me llamo..., mucho gusto",
+              ],
+            },
             grammar: {
-              topics: ["greetings structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "greeting people formally and informally",
+              ],
+              focusPoints: [
+                "¿cómo estás? vs ¿cómo está usted?",
+              ],
             },
           },
         },
@@ -1126,10 +1147,21 @@ const baseLearningPath = withLocalizedSkillTreeText({
           xpReward: 45,
           modes: ["vocabulary", "grammar"],
           content: {
-            vocabulary: { topic: "numbers" },
+            vocabulary: {
+              topic: "numbers 0-20",
+              focusPoints: [
+                "cero, uno, dos, tres, cuatro, cinco",
+                "seis, siete, ocho, nueve, diez",
+                "once, doce... veinte",
+              ],
+            },
             grammar: {
-              topic: "numbers structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "using numbers to count and quantify",
+              focusPoints: [
+                "hay + number (hay tres libros)",
+                "un/una vs uno",
+                "¿cuántos/cuántas hay?",
+              ],
             },
           },
         },
@@ -1148,10 +1180,13 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "numbers conversation",
-              prompt: "Practice using numbers in real conversation",
+              scenario: "counting things out loud with a friend",
+              prompt: "Practice numbers 0-20 with 'hay' and '¿cuántos hay?'",
             },
-            stories: { topic: "numbers", prompt: "Read and discuss numbers" },
+            stories: {
+              topic: "numbers in everyday life",
+              prompt: "Read a short text with numbers and discuss the quantities",
+            },
           },
         },
         {
@@ -1169,12 +1204,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "numbers",
-              prompt: "Advanced numbers content and comprehension",
+              topic: "numbers in prices and quantities",
+              prompt: "Read and say numbers in counts and simple prices",
             },
             realtime: {
-              scenario: "numbers mastery",
-              prompt: "Demonstrate mastery of numbers",
+              scenario: "telling someone how many you have",
+              prompt: "Demonstrate numbers 0-20 to count and quantify",
             },
           },
         },
@@ -1191,10 +1226,21 @@ const baseLearningPath = withLocalizedSkillTreeText({
           isFinalQuiz: true,
           quizConfig: { questionsRequired: 10, passingScore: 8 },
           content: {
-            vocabulary: { topic: "numbers" },
+            vocabulary: {
+              topic: "numbers 0-20",
+              focusPoints: [
+                "cero a diez",
+                "once a veinte",
+              ],
+            },
             grammar: {
-              topics: ["numbers structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "counting and quantifying",
+              ],
+              focusPoints: [
+                "hay + number",
+                "¿cuántos hay?",
+              ],
             },
           },
         },
@@ -1225,10 +1271,21 @@ const baseLearningPath = withLocalizedSkillTreeText({
           xpReward: 55,
           modes: ["vocabulary", "grammar"],
           content: {
-            vocabulary: { topic: "numbers" },
+            vocabulary: {
+              topic: "numbers 21-100",
+              focusPoints: [
+                "veintiuno, treinta, cuarenta, cincuenta",
+                "sesenta, setenta, ochenta, noventa, cien",
+                "compounds: treinta y cinco, cuarenta y dos",
+              ],
+            },
             grammar: {
-              topic: "numbers structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "forming numbers 21-100",
+              focusPoints: [
+                "y in compounds (cuarenta y dos)",
+                "cien vs ciento",
+                "agreement: veintiún libros, veintiuna casas",
+              ],
             },
           },
         },
@@ -1244,10 +1301,13 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "numbers conversation",
-              prompt: "Practice using numbers in real conversation",
+              scenario: "exchanging phone numbers and prices",
+              prompt: "Practice numbers 21-100 with prices, ages, and phone numbers",
             },
-            stories: { topic: "numbers", prompt: "Read and discuss numbers" },
+            stories: {
+              topic: "numbers in prices and quantities",
+              prompt: "Read prices and amounts and say the numbers aloud",
+            },
           },
         },
         {
@@ -1265,12 +1325,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "numbers",
-              prompt: "Advanced numbers content and comprehension",
+              topic: "larger numbers in real contexts",
+              prompt: "Read larger numbers (prices, years, quantities) and interpret them",
             },
             realtime: {
-              scenario: "numbers mastery",
-              prompt: "Demonstrate mastery of numbers",
+              scenario: "saying totals, ages, and years",
+              prompt: "Demonstrate numbers 21-100 in prices, ages, and quantities",
             },
           },
         },
@@ -1287,10 +1347,21 @@ const baseLearningPath = withLocalizedSkillTreeText({
           isFinalQuiz: true,
           quizConfig: { questionsRequired: 10, passingScore: 8 },
           content: {
-            vocabulary: { topic: "numbers" },
+            vocabulary: {
+              topic: "numbers 21-100",
+              focusPoints: [
+                "veintiuno a cien",
+                "compound numbers",
+              ],
+            },
             grammar: {
-              topics: ["numbers structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "forming numbers 21-100",
+              ],
+              focusPoints: [
+                "y in compounds",
+                "cien vs ciento",
+              ],
             },
           },
         },
@@ -1455,11 +1526,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "days of week",
+              topic: "the days of the week",
+              focusPoints: [
+                "lunes, martes, miércoles, jueves",
+                "viernes, sábado, domingo",
+                "hoy, mañana, ayer",
+              ],
             },
             grammar: {
-              topic: "days of week structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "talking about days",
+              focusPoints: [
+                "el lunes (on Monday) vs los lunes (on Mondays)",
+                "el fin de semana",
+                "¿qué día es hoy?",
+              ],
             },
           },
         },
@@ -1478,12 +1558,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "days of week conversation",
-              prompt: "Practice using days of week in real conversation",
+              scenario: "planning which day to meet",
+              prompt: "Practice the days of the week with 'el' and 'los'",
             },
             stories: {
-              topic: "days of week",
-              prompt: "Read and discuss days of week",
+              topic: "a weekly schedule",
+              prompt: "Read a simple schedule and discuss what happens each day",
             },
           },
         },
@@ -1502,12 +1582,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "days of week",
-              prompt: "Advanced days of week content and comprehension",
+              topic: "days and routines",
+              prompt: "Read about a weekly routine and notice the days",
             },
             realtime: {
-              scenario: "days of week mastery",
-              prompt: "Demonstrate mastery of days of week",
+              scenario: "describing your typical week",
+              prompt: "Demonstrate the days of the week to talk about your week",
             },
           },
         },
@@ -1531,11 +1611,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "days of week",
+              topic: "the days of the week",
+              focusPoints: [
+                "lunes a domingo",
+                "hoy, mañana, ayer",
+              ],
             },
             grammar: {
-              topics: ["days of week structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "talking about days",
+              ],
+              focusPoints: [
+                "el lunes vs los lunes",
+                "¿qué día es hoy?",
+              ],
             },
           },
         },
@@ -1569,11 +1658,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "time expressions",
+              topic: "months and dates",
+              focusPoints: [
+                "enero, febrero, marzo... diciembre",
+                "las estaciones: primavera, verano, otoño, invierno",
+                "el cumpleaños",
+              ],
             },
             grammar: {
-              topic: "time expressions structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "saying the date",
+              focusPoints: [
+                "el + number + de + month (el 5 de mayo)",
+                "¿qué fecha es hoy?",
+                "¿cuándo es tu cumpleaños?",
+              ],
             },
           },
         },
@@ -1592,12 +1690,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "time expressions conversation",
-              prompt: "Practice using time expressions in real conversation",
+              scenario: "asking when someone's birthday is",
+              prompt: "Practice months and dates: 'mi cumpleaños es el ... de ...'",
             },
             stories: {
-              topic: "time expressions",
-              prompt: "Read and discuss time expressions",
+              topic: "important dates and holidays",
+              prompt: "Read about dates in the year and discuss them",
             },
           },
         },
@@ -1616,12 +1714,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "time expressions",
-              prompt: "Advanced time expressions content and comprehension",
+              topic: "dates in invitations and plans",
+              prompt: "Read an invitation and find the date",
             },
             realtime: {
-              scenario: "time expressions mastery",
-              prompt: "Demonstrate mastery of time expressions",
+              scenario: "scheduling an event by date",
+              prompt: "Demonstrate months and dates to set a day",
             },
           },
         },
@@ -1645,11 +1743,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "time expressions",
+              topic: "months and dates",
+              focusPoints: [
+                "enero a diciembre",
+                "las cuatro estaciones",
+              ],
             },
             grammar: {
-              topics: ["time expressions structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "saying the date",
+              ],
+              focusPoints: [
+                "el + número + de + mes",
+                "¿qué fecha es hoy?",
+              ],
             },
           },
         },
@@ -1683,11 +1790,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "time",
+              topic: "telling the time",
+              focusPoints: [
+                "la hora, el minuto",
+                "y cuarto, y media, menos cuarto",
+                "de la mañana / de la tarde / de la noche",
+              ],
             },
             grammar: {
-              topic: "time structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "asking and saying the time",
+              focusPoints: [
+                "¿qué hora es?",
+                "es la una vs son las dos",
+                "a las + time (a las tres)",
+              ],
             },
           },
         },
@@ -1706,12 +1822,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "time conversation",
-              prompt: "Practice using time in real conversation",
+              scenario: "asking what time a place opens",
+              prompt: "Practice '¿qué hora es?' and 'a las...' for times",
             },
             stories: {
-              topic: "time",
-              prompt: "Read and discuss time",
+              topic: "a daily timetable",
+              prompt: "Read a schedule with times and discuss it",
             },
           },
         },
@@ -1730,12 +1846,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "time",
-              prompt: "Advanced time content and comprehension",
+              topic: "times of events and routines",
+              prompt: "Read and say the times in a daily plan",
             },
             realtime: {
-              scenario: "time mastery",
-              prompt: "Demonstrate mastery of time",
+              scenario: "arranging to meet at a specific time",
+              prompt: "Demonstrate telling the time and using 'a las...'",
             },
           },
         },
@@ -1759,11 +1875,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "time",
+              topic: "telling the time",
+              focusPoints: [
+                "y cuarto, y media, menos cuarto",
+                "de la mañana/tarde/noche",
+              ],
             },
             grammar: {
-              topics: ["time structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "asking and saying the time",
+              ],
+              focusPoints: [
+                "es la una vs son las dos",
+                "a las + hora",
+              ],
             },
           },
         },
@@ -1797,11 +1922,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "family",
+              topic: "family members",
+              focusPoints: [
+                "madre, padre, hermano, hermana",
+                "abuelo/a, tío/a, primo/a",
+                "hijo/a, esposo/a",
+              ],
             },
             grammar: {
-              topic: "family structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "talking about your family",
+              focusPoints: [
+                "possessives: mi, tu, su, nuestro",
+                "tener (tengo dos hermanos)",
+                "gender and plural of family nouns",
+              ],
             },
           },
         },
@@ -1820,12 +1954,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "family conversation",
-              prompt: "Practice using family in real conversation",
+              scenario: "introducing your family to a friend",
+              prompt: "Practice family words with 'mi/tu' and 'tener'",
             },
             stories: {
-              topic: "family",
-              prompt: "Read and discuss family",
+              topic: "a family description",
+              prompt: "Read about someone's family and discuss the relationships",
             },
           },
         },
@@ -1844,12 +1978,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "family",
-              prompt: "Advanced family content and comprehension",
+              topic: "family relationships",
+              prompt: "Read a family tree description and identify who is who",
             },
             realtime: {
-              scenario: "family mastery",
-              prompt: "Demonstrate mastery of family",
+              scenario: "describing your own family",
+              prompt: "Demonstrate family vocabulary with possessives and 'tener'",
             },
           },
         },
@@ -1873,11 +2007,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "family",
+              topic: "family members",
+              focusPoints: [
+                "madre, padre, hermano/a",
+                "abuelos, tíos, primos",
+              ],
             },
             grammar: {
-              topics: ["family structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "talking about your family",
+              ],
+              focusPoints: [
+                "possessives mi/tu/su",
+                "tener + family",
+              ],
             },
           },
         },
@@ -1911,11 +2054,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "colors",
+              topic: "colors and shapes",
+              focusPoints: [
+                "rojo, azul, verde, amarillo, negro, blanco",
+                "el círculo, el cuadrado, el triángulo",
+                "claro / oscuro",
+              ],
             },
             grammar: {
-              topic: "colors structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "describing things with colors",
+              focusPoints: [
+                "adjective agreement: rojo/roja, rojos/rojas",
+                "noun + adjective order (la casa roja)",
+                "¿de qué color es?",
+              ],
             },
           },
         },
@@ -1934,12 +2086,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "colors conversation",
-              prompt: "Practice using colors in real conversation",
+              scenario: "describing objects by color in a room",
+              prompt: "Practice colors with agreement: 'la mesa es blanca'",
             },
             stories: {
-              topic: "colors",
-              prompt: "Read and discuss colors",
+              topic: "colors in descriptions",
+              prompt: "Read a description and notice the colors and agreement",
             },
           },
         },
@@ -1958,12 +2110,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "colors",
-              prompt: "Advanced colors content and comprehension",
+              topic: "colors and adjective agreement",
+              prompt: "Read and match colors to nouns with the right ending",
             },
             realtime: {
-              scenario: "colors mastery",
-              prompt: "Demonstrate mastery of colors",
+              scenario: "describing what you are wearing by color",
+              prompt: "Demonstrate colors with correct adjective agreement",
             },
           },
         },
@@ -1987,11 +2139,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "colors",
+              topic: "colors and shapes",
+              focusPoints: [
+                "rojo, azul, verde, amarillo",
+                "círculo, cuadrado, triángulo",
+              ],
             },
             grammar: {
-              topics: ["colors structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "describing things with colors",
+              ],
+              focusPoints: [
+                "agreement rojo/roja",
+                "¿de qué color es?",
+              ],
             },
           },
         },
@@ -2026,10 +2187,19 @@ const baseLearningPath = withLocalizedSkillTreeText({
           content: {
             vocabulary: {
               topic: "food and drinks",
+              focusPoints: [
+                "el pan, la fruta, la carne, el pescado",
+                "el agua, el café, la leche, el zumo/jugo",
+                "el desayuno, la comida, la cena",
+              ],
             },
             grammar: {
-              topic: "food and drinks structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "talking about food you like and want",
+              focusPoints: [
+                "me gusta + singular / me gustan + plural",
+                "quiero / quería + food",
+                "el/la with food nouns",
+              ],
             },
           },
         },
@@ -2048,12 +2218,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "food and drinks conversation",
-              prompt: "Practice using food and drinks in real conversation",
+              scenario: "talking about what you eat for breakfast",
+              prompt: "Practice food words with 'me gusta' and 'quiero'",
             },
             stories: {
-              topic: "food and drinks",
-              prompt: "Read and discuss food and drinks",
+              topic: "meals and eating habits",
+              prompt: "Read about someone's meals and discuss",
             },
           },
         },
@@ -2072,12 +2242,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "food and drinks",
-              prompt: "Advanced food and drinks content and comprehension",
+              topic: "food preferences",
+              prompt: "Read and notice 'me gusta' vs 'me gustan' with foods",
             },
             realtime: {
-              scenario: "food and drinks mastery",
-              prompt: "Demonstrate mastery of food and drinks",
+              scenario: "saying what you like and want to eat",
+              prompt: "Demonstrate food vocabulary with likes and wants",
             },
           },
         },
@@ -2102,10 +2272,19 @@ const baseLearningPath = withLocalizedSkillTreeText({
           content: {
             vocabulary: {
               topic: "food and drinks",
+              focusPoints: [
+                "pan, fruta, carne, pescado",
+                "agua, café, leche, zumo/jugo",
+              ],
             },
             grammar: {
-              topics: ["food and drinks structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "talking about food",
+              ],
+              focusPoints: [
+                "me gusta vs me gustan",
+                "quiero + food",
+              ],
             },
           },
         },
@@ -2139,11 +2318,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "food and drinks",
+              topic: "ordering at a restaurant",
+              focusPoints: [
+                "el menú, la carta, la cuenta",
+                "el/la camarero/a, el plato, la bebida",
+                "la propina, la mesa",
+              ],
             },
             grammar: {
-              topic: "food and drinks structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "polite ordering phrases",
+              focusPoints: [
+                "quería / me pone / para mí...",
+                "¿qué desea? / ¿algo más?",
+                "la cuenta, por favor",
+              ],
             },
           },
         },
@@ -2162,12 +2350,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "food and drinks conversation",
-              prompt: "Practice using food and drinks in real conversation",
+              scenario: "ordering a meal from a waiter",
+              prompt: "Practice ordering: 'para mí..., la cuenta, por favor'",
             },
             stories: {
-              topic: "food and drinks",
-              prompt: "Read and discuss food and drinks",
+              topic: "a restaurant scene",
+              prompt: "Read a restaurant dialogue and discuss the order",
             },
           },
         },
@@ -2186,12 +2374,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "food and drinks",
-              prompt: "Advanced food and drinks content and comprehension",
+              topic: "restaurant interactions",
+              prompt: "Read a menu and a short order and follow along",
             },
             realtime: {
-              scenario: "food and drinks mastery",
-              prompt: "Demonstrate mastery of food and drinks",
+              scenario: "asking for the menu and the bill",
+              prompt: "Demonstrate ordering politely at a restaurant",
             },
           },
         },
@@ -2215,11 +2403,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "food and drinks",
+              topic: "at the restaurant",
+              focusPoints: [
+                "el menú, la cuenta, el camarero",
+                "el plato, la bebida",
+              ],
             },
             grammar: {
-              topics: ["food and drinks structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "polite ordering phrases",
+              ],
+              focusPoints: [
+                "quería / me pone / para mí",
+                "la cuenta, por favor",
+              ],
             },
           },
         },
@@ -2253,11 +2450,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "common objects",
+              topic: "common everyday objects",
+              focusPoints: [
+                "la mesa, la silla, el libro, el bolígrafo",
+                "el teléfono, las llaves, la mochila",
+                "la puerta, la ventana",
+              ],
             },
             grammar: {
-              topic: "common objects structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "pointing things out",
+              focusPoints: [
+                "este/esta vs ese/esa",
+                "hay (there is/are)",
+                "¿qué es esto? / es un/una...",
+              ],
             },
           },
         },
@@ -2276,12 +2482,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "common objects conversation",
-              prompt: "Practice using common objects in real conversation",
+              scenario: "naming the things on your desk",
+              prompt: "Practice object names with 'esto es...' and 'hay...'",
             },
             stories: {
-              topic: "common objects",
-              prompt: "Read and discuss common objects",
+              topic: "objects around us",
+              prompt: "Read a description of a room's objects and discuss",
             },
           },
         },
@@ -2300,12 +2506,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "common objects",
-              prompt: "Advanced common objects content and comprehension",
+              topic: "this and that with objects",
+              prompt: "Read and notice este/ese for near and far objects",
             },
             realtime: {
-              scenario: "common objects mastery",
-              prompt: "Demonstrate mastery of common objects",
+              scenario: "asking what something is",
+              prompt: "Demonstrate object vocabulary with '¿qué es esto?'",
             },
           },
         },
@@ -2330,10 +2536,19 @@ const baseLearningPath = withLocalizedSkillTreeText({
           content: {
             vocabulary: {
               topic: "common objects",
+              focusPoints: [
+                "mesa, silla, libro, bolígrafo",
+                "teléfono, llaves, mochila",
+              ],
             },
             grammar: {
-              topics: ["common objects structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "pointing things out",
+              ],
+              focusPoints: [
+                "este/esta vs ese/esa",
+                "hay + object",
+              ],
             },
           },
         },
@@ -2367,11 +2582,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "house and rooms",
+              topic: "the house and its rooms",
+              focusPoints: [
+                "la cocina, el baño, el dormitorio",
+                "el salón, el comedor, el pasillo",
+                "los muebles: la cama, el sofá",
+              ],
             },
             grammar: {
-              topic: "house and rooms structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "saying where things are",
+              focusPoints: [
+                "estar for location (está en...)",
+                "prepositions: en, sobre, debajo de, al lado de",
+                "¿dónde está?",
+              ],
             },
           },
         },
@@ -2390,12 +2614,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "house and rooms conversation",
-              prompt: "Practice using house and rooms in real conversation",
+              scenario: "giving a friend a tour of your home",
+              prompt: "Practice rooms with 'está en...' and prepositions of place",
             },
             stories: {
-              topic: "house and rooms",
-              prompt: "Read and discuss house and rooms",
+              topic: "a description of a home",
+              prompt: "Read about a house and discuss where the rooms are",
             },
           },
         },
@@ -2414,12 +2638,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "house and rooms",
-              prompt: "Advanced house and rooms content and comprehension",
+              topic: "describing where things are",
+              prompt: "Read and locate objects using prepositions of place",
             },
             realtime: {
-              scenario: "house and rooms mastery",
-              prompt: "Demonstrate mastery of house and rooms",
+              scenario: "describing your room",
+              prompt: "Demonstrate house vocabulary with 'estar' and place words",
             },
           },
         },
@@ -2443,11 +2667,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "house and rooms",
+              topic: "the house and rooms",
+              focusPoints: [
+                "cocina, baño, dormitorio, salón",
+                "cama, sofá, mesa",
+              ],
             },
             grammar: {
-              topics: ["house and rooms structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "saying where things are",
+              ],
+              focusPoints: [
+                "estar for location",
+                "en, sobre, debajo de, al lado de",
+              ],
             },
           },
         },
@@ -2482,10 +2715,19 @@ const baseLearningPath = withLocalizedSkillTreeText({
           content: {
             vocabulary: {
               topic: "clothing",
+              focusPoints: [
+                "la camisa, los pantalones, los zapatos",
+                "el vestido, la falda, la chaqueta",
+                "el abrigo, el sombrero",
+              ],
             },
             grammar: {
-              topic: "clothing structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "talking about what you wear",
+              focusPoints: [
+                "llevar / ponerse (reflexive)",
+                "agreement and plural of clothes",
+                "colors + clothing (camisa azul)",
+              ],
             },
           },
         },
@@ -2504,12 +2746,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "clothing conversation",
-              prompt: "Practice using clothing in real conversation",
+              scenario: "choosing an outfit for an occasion",
+              prompt: "Practice clothing with 'llevar' and colors",
             },
             stories: {
-              topic: "clothing",
-              prompt: "Read and discuss clothing",
+              topic: "describing what people wear",
+              prompt: "Read a description of outfits and discuss",
             },
           },
         },
@@ -2528,12 +2770,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "clothing",
-              prompt: "Advanced clothing content and comprehension",
+              topic: "clothing and the weather",
+              prompt: "Read and match clothes to situations",
             },
             realtime: {
-              scenario: "clothing mastery",
-              prompt: "Demonstrate mastery of clothing",
+              scenario: "describing what you are wearing today",
+              prompt: "Demonstrate clothing vocabulary with 'llevar' and colors",
             },
           },
         },
@@ -2558,10 +2800,19 @@ const baseLearningPath = withLocalizedSkillTreeText({
           content: {
             vocabulary: {
               topic: "clothing",
+              focusPoints: [
+                "camisa, pantalones, zapatos",
+                "vestido, falda, chaqueta",
+              ],
             },
             grammar: {
-              topics: ["clothing structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "talking about what you wear",
+              ],
+              focusPoints: [
+                "llevar / ponerse",
+                "colors + clothing",
+              ],
             },
           },
         },
@@ -2595,11 +2846,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "daily activities",
+              topic: "daily routine activities",
+              focusPoints: [
+                "levantarse, ducharse, vestirse",
+                "desayunar, trabajar, estudiar",
+                "acostarse, dormir",
+              ],
             },
             grammar: {
-              topic: "daily activities structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "describing your routine",
+              focusPoints: [
+                "reflexive verbs (me levanto, me ducho)",
+                "present tense for habits",
+                "time + activity (a las ocho me levanto)",
+              ],
             },
           },
         },
@@ -2618,12 +2878,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "daily activities conversation",
-              prompt: "Practice using daily activities in real conversation",
+              scenario: "describing your morning routine to a friend",
+              prompt: "Practice reflexive verbs: 'me levanto, me ducho, desayuno'",
             },
             stories: {
-              topic: "daily activities",
-              prompt: "Read and discuss daily activities",
+              topic: "a daily routine",
+              prompt: "Read about someone's day and discuss the routine",
             },
           },
         },
@@ -2642,12 +2902,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "daily activities",
-              prompt: "Advanced daily activities content and comprehension",
+              topic: "routines and times",
+              prompt: "Read a routine and notice the reflexive verbs and times",
             },
             realtime: {
-              scenario: "daily activities mastery",
-              prompt: "Demonstrate mastery of daily activities",
+              scenario: "telling someone your typical day",
+              prompt: "Demonstrate routine verbs with times of day",
             },
           },
         },
@@ -2671,11 +2931,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "daily activities",
+              topic: "daily routine",
+              focusPoints: [
+                "levantarse, ducharse, vestirse",
+                "desayunar, trabajar, acostarse",
+              ],
             },
             grammar: {
-              topics: ["daily activities structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "describing your routine",
+              ],
+              focusPoints: [
+                "reflexive verbs (me levanto)",
+                "time + activity",
+              ],
             },
           },
         },
@@ -2709,11 +2978,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "weather",
+              topic: "the weather",
+              focusPoints: [
+                "hace sol, hace calor, hace frío",
+                "llueve, nieva, hace viento",
+                "está nublado, está despejado",
+              ],
             },
             grammar: {
-              topic: "weather structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "talking about the weather",
+              focusPoints: [
+                "hace + noun (hace frío)",
+                "está + adjective (está nublado)",
+                "¿qué tiempo hace?",
+              ],
             },
           },
         },
@@ -2732,12 +3010,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "weather conversation",
-              prompt: "Practice using weather in real conversation",
+              scenario: "chatting about today's weather",
+              prompt: "Practice '¿qué tiempo hace?' and 'hace.../está...'",
             },
             stories: {
-              topic: "weather",
-              prompt: "Read and discuss weather",
+              topic: "weather and the seasons",
+              prompt: "Read a weather report and discuss it",
             },
           },
         },
@@ -2756,12 +3034,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "weather",
-              prompt: "Advanced weather content and comprehension",
+              topic: "weather in different places",
+              prompt: "Read and compare the weather in two cities",
             },
             realtime: {
-              scenario: "weather mastery",
-              prompt: "Demonstrate mastery of weather",
+              scenario: "describing the weather where you are",
+              prompt: "Demonstrate weather expressions with 'hace' and 'está'",
             },
           },
         },
@@ -2785,11 +3063,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "weather",
+              topic: "the weather",
+              focusPoints: [
+                "hace sol/calor/frío",
+                "llueve, nieva, está nublado",
+              ],
             },
             grammar: {
-              topics: ["weather structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "talking about the weather",
+              ],
+              focusPoints: [
+                "hace + noun vs está + adjective",
+                "¿qué tiempo hace?",
+              ],
             },
           },
         },
@@ -2823,11 +3110,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "preferences",
+              topic: "likes and dislikes",
+              focusPoints: [
+                "me gusta / me encanta",
+                "no me gusta / odio",
+                "me gusta mucho / nada",
+              ],
             },
             grammar: {
-              topic: "preferences structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "the verb gustar",
+              focusPoints: [
+                "me gusta + singular / me gustan + plural",
+                "me gusta + infinitive (me gusta leer)",
+                "a mí me gusta, a ti te gusta",
+              ],
             },
           },
         },
@@ -2846,12 +3142,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "preferences conversation",
-              prompt: "Practice using preferences in real conversation",
+              scenario: "comparing what you both like",
+              prompt: "Practice 'me gusta/gustan' and 'a mí también/tampoco'",
             },
             stories: {
-              topic: "preferences",
-              prompt: "Read and discuss preferences",
+              topic: "preferences and hobbies",
+              prompt: "Read about someone's likes and discuss",
             },
           },
         },
@@ -2870,12 +3166,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "preferences",
-              prompt: "Advanced preferences content and comprehension",
+              topic: "expressing preferences",
+              prompt: "Read and notice 'me gusta' vs 'me gustan' and 'a mí me...'",
             },
             realtime: {
-              scenario: "preferences mastery",
-              prompt: "Demonstrate mastery of preferences",
+              scenario: "telling a friend what you like and dislike",
+              prompt: "Demonstrate gustar with singular, plural, and infinitives",
             },
           },
         },
@@ -2899,11 +3195,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "preferences",
+              topic: "likes and dislikes",
+              focusPoints: [
+                "me gusta / me encanta",
+                "no me gusta / odio",
+              ],
             },
             grammar: {
-              topics: ["preferences structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "the verb gustar",
+              ],
+              focusPoints: [
+                "me gusta vs me gustan",
+                "a mí me gusta + infinitive",
+              ],
             },
           },
         },
@@ -2938,10 +3243,19 @@ const baseLearningPath = withLocalizedSkillTreeText({
           content: {
             vocabulary: {
               topic: "question words",
+              focusPoints: [
+                "qué, quién, dónde, cuándo",
+                "cómo, por qué, cuánto",
+                "cuál / cuáles",
+              ],
             },
             grammar: {
-              topic: "question words structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "forming simple questions",
+              focusPoints: [
+                "question word + verb (¿dónde vives?)",
+                "yes/no questions and ¿verdad?",
+                "written accents on question words",
+              ],
             },
           },
         },
@@ -2960,12 +3274,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "question words conversation",
-              prompt: "Practice using question words in real conversation",
+              scenario: "getting to know someone with questions",
+              prompt: "Practice asking '¿dónde...?', '¿cómo...?', '¿por qué...?'",
             },
             stories: {
-              topic: "question words",
-              prompt: "Read and discuss question words",
+              topic: "an interview",
+              prompt: "Read a short interview and notice the questions",
             },
           },
         },
@@ -2984,12 +3298,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "question words",
-              prompt: "Advanced question words content and comprehension",
+              topic: "questions and answers",
+              prompt: "Read and match questions to their answers",
             },
             realtime: {
-              scenario: "question words mastery",
-              prompt: "Demonstrate mastery of question words",
+              scenario: "interviewing a new friend",
+              prompt: "Demonstrate question words to ask about someone",
             },
           },
         },
@@ -3014,10 +3328,19 @@ const baseLearningPath = withLocalizedSkillTreeText({
           content: {
             vocabulary: {
               topic: "question words",
+              focusPoints: [
+                "qué, quién, dónde, cuándo",
+                "cómo, por qué, cuánto",
+              ],
             },
             grammar: {
-              topics: ["question words structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "forming simple questions",
+              ],
+              focusPoints: [
+                "question word + verb",
+                "accents on question words",
+              ],
             },
           },
         },
@@ -3053,11 +3376,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "physical descriptions",
+              topic: "describing people's appearance and personality",
+              focusPoints: [
+                "alto/a, bajo/a, moreno/a, rubio/a",
+                "delgado/a, fuerte, joven, mayor",
+                "simpático/a, tímido/a, alegre",
+              ],
             },
             grammar: {
-              topic: "physical descriptions structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "ser and adjectives for description",
+              focusPoints: [
+                "ser + adjective (es alto)",
+                "agreement in gender and number",
+                "tener + noun (tiene el pelo largo)",
+              ],
             },
           },
         },
@@ -3076,13 +3408,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "physical descriptions conversation",
-              prompt:
-                "Practice using physical descriptions in real conversation",
+              scenario: "describing a friend to someone who hasn't met them",
+              prompt: "Practice 'es...' and 'tiene...' to describe appearance and character",
             },
             stories: {
-              topic: "physical descriptions",
-              prompt: "Read and discuss physical descriptions",
+              topic: "a character description",
+              prompt: "Read a description of a person and discuss",
             },
           },
         },
@@ -3101,13 +3432,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "physical descriptions",
-              prompt:
-                "Advanced physical descriptions content and comprehension",
+              topic: "physical vs personality description",
+              prompt: "Read and separate looks (es alto) from character (es amable)",
             },
             realtime: {
-              scenario: "physical descriptions mastery",
-              prompt: "Demonstrate mastery of physical descriptions",
+              scenario: "describing someone in a photo",
+              prompt: "Demonstrate description with 'ser', 'tener', and agreement",
             },
           },
         },
@@ -3131,11 +3461,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "physical descriptions",
+              topic: "describing people",
+              focusPoints: [
+                "alto, bajo, moreno, rubio",
+                "simpático, tímido, alegre",
+              ],
             },
             grammar: {
-              topics: ["physical descriptions structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "ser and adjectives for description",
+              ],
+              focusPoints: [
+                "ser + adjective with agreement",
+                "tener el pelo...",
+              ],
             },
           },
         },
@@ -3169,11 +3508,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "places",
+              topic: "describing places",
+              focusPoints: [
+                "grande, pequeño, bonito, feo",
+                "tranquilo, ruidoso, moderno, antiguo",
+                "la ciudad, el pueblo, el barrio",
+              ],
             },
             grammar: {
-              topic: "places structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "hay, estar, and ser for places",
+              focusPoints: [
+                "hay + noun (hay un parque)",
+                "estar for location (está en el centro)",
+                "ser for characteristics (es grande)",
+              ],
             },
           },
         },
@@ -3192,12 +3540,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "places conversation",
-              prompt: "Practice using places in real conversation",
+              scenario: "describing your town to a visitor",
+              prompt: "Practice 'hay...', 'está...', and 'es...' to describe a place",
             },
             stories: {
-              topic: "places",
-              prompt: "Read and discuss places",
+              topic: "a description of a city",
+              prompt: "Read about a place and discuss what it's like",
             },
           },
         },
@@ -3216,12 +3564,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "places",
-              prompt: "Advanced places content and comprehension",
+              topic: "hay vs estar vs ser",
+              prompt: "Read and choose hay/está/es to describe places",
             },
             realtime: {
-              scenario: "places mastery",
-              prompt: "Demonstrate mastery of places",
+              scenario: "comparing two neighborhoods",
+              prompt: "Demonstrate place description with hay, estar, and ser",
             },
           },
         },
@@ -3245,11 +3593,19 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "places",
+              topic: "describing places",
+              focusPoints: [
+                "grande, pequeño, tranquilo, ruidoso",
+                "ciudad, pueblo, barrio",
+              ],
             },
             grammar: {
-              topics: ["places structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "hay, estar, and ser for places",
+              ],
+              focusPoints: [
+                "hay vs está vs es",
+              ],
             },
           },
         },
@@ -3283,11 +3639,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "shopping",
+              topic: "shopping and money",
+              focusPoints: [
+                "la tienda, el precio, la talla",
+                "caro/a, barato/a, la oferta",
+                "el euro, pagar, el cambio",
+              ],
             },
             grammar: {
-              topic: "shopping structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "asking about prices and items",
+              focusPoints: [
+                "¿cuánto cuesta? / ¿cuánto es?",
+                "demonstratives: este, ese, aquel",
+                "quería / me llevo...",
+              ],
             },
           },
         },
@@ -3306,12 +3671,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "shopping conversation",
-              prompt: "Practice using shopping in real conversation",
+              scenario: "buying clothes and asking the price",
+              prompt: "Practice '¿cuánto cuesta?' and 'me llevo...' while shopping",
             },
             stories: {
-              topic: "shopping",
-              prompt: "Read and discuss shopping",
+              topic: "a shopping conversation",
+              prompt: "Read a shop dialogue and discuss the purchase",
             },
           },
         },
@@ -3330,12 +3695,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "shopping",
-              prompt: "Advanced shopping content and comprehension",
+              topic: "prices and paying",
+              prompt: "Read prices and a receipt and follow the amounts",
             },
             realtime: {
-              scenario: "shopping mastery",
-              prompt: "Demonstrate mastery of shopping",
+              scenario: "paying and asking for the price",
+              prompt: "Demonstrate shopping vocabulary and price questions",
             },
           },
         },
@@ -3359,11 +3724,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "shopping",
+              topic: "shopping and money",
+              focusPoints: [
+                "tienda, precio, talla, oferta",
+                "caro, barato, pagar",
+              ],
             },
             grammar: {
-              topics: ["shopping structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "asking about prices and items",
+              ],
+              focusPoints: [
+                "¿cuánto cuesta?",
+                "este/ese/aquel",
+              ],
             },
           },
         },
@@ -3397,11 +3771,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "shopping",
+              topic: "at the market",
+              focusPoints: [
+                "la fruta, la verdura, la carne, el pescado",
+                "el kilo, el gramo, la docena",
+                "el puesto, la bolsa",
+              ],
             },
             grammar: {
-              topic: "shopping structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "asking for quantities",
+              focusPoints: [
+                "un kilo de / medio kilo de",
+                "¿a cuánto está(n)?",
+                "quisiera / póngame...",
+              ],
             },
           },
         },
@@ -3420,12 +3803,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "shopping conversation",
-              prompt: "Practice using shopping in real conversation",
+              scenario: "buying fruit and vegetables at a market",
+              prompt: "Practice quantities: 'un kilo de...', '¿a cuánto está?'",
             },
             stories: {
-              topic: "shopping",
-              prompt: "Read and discuss shopping",
+              topic: "a market scene",
+              prompt: "Read a market dialogue and discuss the quantities bought",
             },
           },
         },
@@ -3444,12 +3827,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "shopping",
-              prompt: "Advanced shopping content and comprehension",
+              topic: "quantities and prices at the market",
+              prompt: "Read and follow amounts and prices in a market list",
             },
             realtime: {
-              scenario: "shopping mastery",
-              prompt: "Demonstrate mastery of shopping",
+              scenario: "ordering produce by weight",
+              prompt: "Demonstrate market vocabulary with quantities and prices",
             },
           },
         },
@@ -3473,11 +3856,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "shopping",
+              topic: "at the market",
+              focusPoints: [
+                "fruta, verdura, carne, pescado",
+                "kilo, gramo, docena",
+              ],
             },
             grammar: {
-              topics: ["shopping structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "asking for quantities",
+              ],
+              focusPoints: [
+                "un kilo de / medio kilo de",
+                "¿a cuánto está?",
+              ],
             },
           },
         },
@@ -3512,10 +3904,19 @@ const baseLearningPath = withLocalizedSkillTreeText({
           content: {
             vocabulary: {
               topic: "transportation",
+              focusPoints: [
+                "el autobús, el tren, el metro, el coche",
+                "el billete/boleto, la parada, la estación",
+                "el aeropuerto, el avión",
+              ],
             },
             grammar: {
-              topic: "transportation structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "talking about getting around",
+              focusPoints: [
+                "ir en + transport (en autobús, a pie)",
+                "coger/tomar el autobús",
+                "¿cómo vas a...?",
+              ],
             },
           },
         },
@@ -3534,12 +3935,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "transportation conversation",
-              prompt: "Practice using transportation in real conversation",
+              scenario: "asking how to get to a place by public transport",
+              prompt: "Practice 'ir en...' and buying a ticket",
             },
             stories: {
-              topic: "transportation",
-              prompt: "Read and discuss transportation",
+              topic: "getting around a city",
+              prompt: "Read about a journey and discuss the transport used",
             },
           },
         },
@@ -3558,12 +3959,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "transportation",
-              prompt: "Advanced transportation content and comprehension",
+              topic: "transport options and tickets",
+              prompt: "Read a transport schedule and find the details",
             },
             realtime: {
-              scenario: "transportation mastery",
-              prompt: "Demonstrate mastery of transportation",
+              scenario: "planning a trip across town",
+              prompt: "Demonstrate transport vocabulary with 'ir en' and tickets",
             },
           },
         },
@@ -3588,10 +3989,19 @@ const baseLearningPath = withLocalizedSkillTreeText({
           content: {
             vocabulary: {
               topic: "transportation",
+              focusPoints: [
+                "autobús, tren, metro, coche",
+                "billete/boleto, parada, estación",
+              ],
             },
             grammar: {
-              topics: ["transportation structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "getting around",
+              ],
+              focusPoints: [
+                "ir en + transport",
+                "coger/tomar el autobús",
+              ],
             },
           },
         },
@@ -3626,10 +4036,19 @@ const baseLearningPath = withLocalizedSkillTreeText({
           content: {
             vocabulary: {
               topic: "directions",
+              focusPoints: [
+                "a la derecha, a la izquierda, recto/todo recto",
+                "cerca, lejos, al lado de, enfrente de",
+                "la esquina, la calle, la plaza",
+              ],
             },
             grammar: {
-              topic: "directions structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "asking for and giving directions",
+              focusPoints: [
+                "¿cómo se va a...? / ¿dónde está...?",
+                "imperatives: gire, siga, cruce",
+                "estar for location",
+              ],
             },
           },
         },
@@ -3648,12 +4067,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "directions conversation",
-              prompt: "Practice using directions in real conversation",
+              scenario: "asking a stranger how to get to the station",
+              prompt: "Practice '¿cómo se va a...?' and 'gire a la derecha'",
             },
             stories: {
-              topic: "directions",
-              prompt: "Read and discuss directions",
+              topic: "following directions",
+              prompt: "Read directions to a place and trace the route",
             },
           },
         },
@@ -3672,12 +4091,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "directions",
-              prompt: "Advanced directions content and comprehension",
+              topic: "directions and city places",
+              prompt: "Read a route description and find the destination",
             },
             realtime: {
-              scenario: "directions mastery",
-              prompt: "Demonstrate mastery of directions",
+              scenario: "guiding someone to a nearby place",
+              prompt: "Demonstrate directions with imperatives and place words",
             },
           },
         },
@@ -3702,10 +4121,19 @@ const baseLearningPath = withLocalizedSkillTreeText({
           content: {
             vocabulary: {
               topic: "directions",
+              focusPoints: [
+                "a la derecha/izquierda, recto",
+                "cerca, lejos, al lado de, enfrente de",
+              ],
             },
             grammar: {
-              topics: ["directions structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "asking for and giving directions",
+              ],
+              focusPoints: [
+                "¿cómo se va a...?",
+                "gire, siga, cruce",
+              ],
             },
           },
         },
@@ -3739,11 +4167,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "invitations",
+              topic: "making plans and invitations",
+              focusPoints: [
+                "quedar, invitar, la cita",
+                "¿te apetece...? / ¿quieres...?",
+                "vale, de acuerdo, lo siento, no puedo",
+              ],
             },
             grammar: {
-              topic: "invitations structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "arranging to meet",
+              focusPoints: [
+                "ir a + infinitive for plans",
+                "quedar (¿quedamos a las...?)",
+                "accepting and declining",
+              ],
             },
           },
         },
@@ -3762,12 +4199,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "invitations conversation",
-              prompt: "Practice using invitations in real conversation",
+              scenario: "inviting a friend out and agreeing on a time",
+              prompt: "Practice '¿te apetece...?' and 'quedamos a las...'",
             },
             stories: {
-              topic: "invitations",
-              prompt: "Read and discuss invitations",
+              topic: "a chat about weekend plans",
+              prompt: "Read friends making plans and discuss the arrangement",
             },
           },
         },
@@ -3786,12 +4223,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "invitations",
-              prompt: "Advanced invitations content and comprehension",
+              topic: "accepting and turning down invitations",
+              prompt: "Read and notice how people accept or decline plans",
             },
             realtime: {
-              scenario: "invitations mastery",
-              prompt: "Demonstrate mastery of invitations",
+              scenario: "planning an outing with a friend",
+              prompt: "Demonstrate making, accepting, and declining invitations",
             },
           },
         },
@@ -3815,11 +4252,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "invitations",
+              topic: "making plans",
+              focusPoints: [
+                "quedar, invitar, cita",
+                "¿te apetece...?, vale, no puedo",
+              ],
             },
             grammar: {
-              topics: ["invitations structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "arranging to meet",
+              ],
+              focusPoints: [
+                "ir a + infinitive",
+                "quedar a las...",
+              ],
             },
           },
         },
@@ -3853,11 +4299,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "arts and reading",
+              topic: "hobbies and free time",
+              focusPoints: [
+                "leer, pintar, cocinar, bailar",
+                "la música, el cine, los videojuegos",
+                "el tiempo libre, la afición",
+              ],
             },
             grammar: {
-              topic: "arts and reading structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "talking about what you like to do",
+              focusPoints: [
+                "gustar + infinitive (me gusta leer)",
+                "soler + infinitive (suelo...)",
+                "frequency: a veces, siempre, nunca",
+              ],
             },
           },
         },
@@ -3876,12 +4331,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "arts and reading conversation",
-              prompt: "Practice using arts and reading in real conversation",
+              scenario: "talking about what you do in your free time",
+              prompt: "Practice 'me gusta + infinitive' and frequency words",
             },
             stories: {
-              topic: "arts and reading",
-              prompt: "Read and discuss arts and reading",
+              topic: "hobbies and pastimes",
+              prompt: "Read about someone's hobbies and discuss",
             },
           },
         },
@@ -3900,12 +4355,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "arts and reading",
-              prompt: "Advanced arts and reading content and comprehension",
+              topic: "free-time habits",
+              prompt: "Read and notice how often someone does activities",
             },
             realtime: {
-              scenario: "arts and reading mastery",
-              prompt: "Demonstrate mastery of arts and reading",
+              scenario: "comparing hobbies with a friend",
+              prompt: "Demonstrate hobby vocabulary with gustar and frequency",
             },
           },
         },
@@ -3929,11 +4384,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "arts and reading",
+              topic: "hobbies and interests",
+              focusPoints: [
+                "leer, pintar, cocinar, bailar",
+                "música, cine, tiempo libre",
+              ],
             },
             grammar: {
-              topics: ["arts and reading structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "talking about what you like to do",
+              ],
+              focusPoints: [
+                "gustar + infinitive",
+                "soler + infinitive, frequency",
+              ],
             },
           },
         },
@@ -3967,11 +4431,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "sports",
+              topic: "sports and exercise",
+              focusPoints: [
+                "el fútbol, el baloncesto, el tenis",
+                "correr, nadar, montar en bici",
+                "el gimnasio, el equipo, el partido",
+              ],
             },
             grammar: {
-              topic: "sports structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "talking about doing sports",
+              focusPoints: [
+                "jugar a (juego al fútbol)",
+                "hacer / practicar (hago deporte)",
+                "frequency: dos veces por semana",
+              ],
             },
           },
         },
@@ -3990,12 +4463,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "sports conversation",
-              prompt: "Practice using sports in real conversation",
+              scenario: "talking about the sports you play",
+              prompt: "Practice 'juego al...', 'hago...', and frequency",
             },
             stories: {
-              topic: "sports",
-              prompt: "Read and discuss sports",
+              topic: "an active lifestyle",
+              prompt: "Read about someone's exercise habits and discuss",
             },
           },
         },
@@ -4014,12 +4487,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "sports",
-              prompt: "Advanced sports content and comprehension",
+              topic: "sports and frequency",
+              prompt: "Read and notice 'jugar a' vs 'hacer/practicar' with sports",
             },
             realtime: {
-              scenario: "sports mastery",
-              prompt: "Demonstrate mastery of sports",
+              scenario: "describing your exercise routine",
+              prompt: "Demonstrate sports vocabulary with jugar/hacer and frequency",
             },
           },
         },
@@ -4043,11 +4516,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "sports",
+              topic: "sports and exercise",
+              focusPoints: [
+                "fútbol, baloncesto, tenis",
+                "correr, nadar, gimnasio",
+              ],
             },
             grammar: {
-              topics: ["sports structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "talking about doing sports",
+              ],
+              focusPoints: [
+                "jugar a vs hacer/practicar",
+                "frequency expressions",
+              ],
             },
           },
         },
@@ -4081,11 +4563,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "time expressions",
+              topic: "the regular preterite and time markers",
+              focusPoints: [
+                "ayer, anoche, la semana pasada",
+                "el año pasado, hace dos días",
+                "ya, por fin",
+              ],
             },
             grammar: {
-              topic: "time expressions structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "forming the regular preterite",
+              focusPoints: [
+                "-ar: hablé, hablaste, habló",
+                "-er/-ir: comí, comiste, comió",
+                "for completed past actions",
+              ],
             },
           },
         },
@@ -4104,12 +4595,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "time expressions conversation",
-              prompt: "Practice using time expressions in real conversation",
+              scenario: "telling a friend what you did yesterday",
+              prompt: "Practice the regular preterite: 'ayer hablé, comí, trabajé'",
             },
             stories: {
-              topic: "time expressions",
-              prompt: "Read and discuss time expressions",
+              topic: "a short account of a past day",
+              prompt: "Read about what someone did and discuss",
             },
           },
         },
@@ -4128,12 +4619,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "time expressions",
-              prompt: "Advanced time expressions content and comprehension",
+              topic: "the preterite in a sequence of events",
+              prompt: "Read a past narrative and notice the preterite verbs",
             },
             realtime: {
-              scenario: "time expressions mastery",
-              prompt: "Demonstrate mastery of time expressions",
+              scenario: "recounting last weekend",
+              prompt: "Demonstrate the regular preterite with time markers",
             },
           },
         },
@@ -4157,11 +4648,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "time expressions",
+              topic: "the regular preterite",
+              focusPoints: [
+                "ayer, anoche, la semana pasada",
+                "hace + time",
+              ],
             },
             grammar: {
-              topics: ["time expressions structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "forming the regular preterite",
+              ],
+              focusPoints: [
+                "-ar: -é/-aste/-ó",
+                "-er/-ir: -í/-iste/-ió",
+              ],
             },
           },
         },
@@ -4195,11 +4695,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "time expressions",
+              topic: "irregular preterite verbs",
+              focusPoints: [
+                "ser/ir: fui, fuiste, fue",
+                "tener: tuve; estar: estuve",
+                "hacer: hice; poder: pude; decir: dije",
+              ],
             },
             grammar: {
-              topic: "time expressions structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "using common irregular preterites",
+              focusPoints: [
+                "irregular stems (tuv-, estuv-, hic-)",
+                "ser and ir share fui/fue",
+                "for completed past actions",
+              ],
             },
           },
         },
@@ -4218,12 +4727,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "time expressions conversation",
-              prompt: "Practice using time expressions in real conversation",
+              scenario: "telling a friend about a trip you took",
+              prompt: "Practice irregulars: 'fui, tuve, hice, estuve'",
             },
             stories: {
-              topic: "time expressions",
-              prompt: "Read and discuss time expressions",
+              topic: "a past story with irregular verbs",
+              prompt: "Read a past account and spot the irregular preterites",
             },
           },
         },
@@ -4242,12 +4751,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "time expressions",
-              prompt: "Advanced time expressions content and comprehension",
+              topic: "regular vs irregular preterite",
+              prompt: "Read and tell regular (-é/-í) from irregular (fui, hice)",
             },
             realtime: {
-              scenario: "time expressions mastery",
-              prompt: "Demonstrate mastery of time expressions",
+              scenario: "recounting an eventful day",
+              prompt: "Demonstrate irregular preterite verbs in a short story",
             },
           },
         },
@@ -4271,11 +4780,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "time expressions",
+              topic: "irregular preterite",
+              focusPoints: [
+                "fui/fue, tuve, estuve",
+                "hice, pude, dije",
+              ],
             },
             grammar: {
-              topics: ["time expressions structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "using common irregular preterites",
+              ],
+              focusPoints: [
+                "irregular stems",
+                "ser/ir = fui/fue",
+              ],
             },
           },
         },
@@ -4309,11 +4827,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "narrative and storytelling",
+              topic: "telling a story",
+              focusPoints: [
+                "primero, luego, después, entonces",
+                "al final, de repente, mientras",
+                "érase una vez",
+              ],
             },
             grammar: {
-              topic: "narrative and storytelling structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "preterite vs imperfect in narration",
+              focusPoints: [
+                "imperfect for background (era, había, hacía)",
+                "preterite for events (llegó, dijo)",
+                "linking events with connectors",
+              ],
             },
           },
         },
@@ -4332,13 +4859,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "narrative and storytelling conversation",
-              prompt:
-                "Practice using narrative and storytelling in real conversation",
+              scenario: "telling a friend a story about something that happened",
+              prompt: "Practice connectors and preterite/imperfect to narrate",
             },
             stories: {
-              topic: "narrative and storytelling",
-              prompt: "Read and discuss narrative and storytelling",
+              topic: "a short story",
+              prompt: "Read a short narrative and notice background vs events",
             },
           },
         },
@@ -4357,13 +4883,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "narrative and storytelling",
-              prompt:
-                "Advanced narrative and storytelling content and comprehension",
+              topic: "background vs events in a story",
+              prompt: "Read and separate the scene (imperfect) from the action (preterite)",
             },
             realtime: {
-              scenario: "narrative and storytelling mastery",
-              prompt: "Demonstrate mastery of narrative and storytelling",
+              scenario: "narrating a memorable event",
+              prompt: "Demonstrate storytelling with connectors and past tenses",
             },
           },
         },
@@ -4387,11 +4912,19 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "narrative and storytelling",
+              topic: "telling stories",
+              focusPoints: [
+                "primero, luego, después, al final",
+                "de repente, mientras",
+              ],
             },
             grammar: {
-              topics: ["narrative and storytelling structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "preterite vs imperfect in narration",
+              ],
+              focusPoints: [
+                "imperfect for background vs preterite for events",
+              ],
             },
           },
         },
@@ -4425,11 +4958,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "time expressions",
+              topic: "talking about future plans",
+              focusPoints: [
+                "mañana, la próxima semana, el próximo año",
+                "pronto, dentro de, este fin de semana",
+                "los planes, el proyecto",
+              ],
             },
             grammar: {
-              topic: "time expressions structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "expressing intentions",
+              focusPoints: [
+                "ir a + infinitive (voy a viajar)",
+                "pensar + infinitive, querer + infinitive",
+                "me gustaría + infinitive",
+              ],
             },
           },
         },
@@ -4448,12 +4990,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "time expressions conversation",
-              prompt: "Practice using time expressions in real conversation",
+              scenario: "talking about your plans for the holidays",
+              prompt: "Practice 'voy a...', 'pienso...', and 'me gustaría...'",
             },
             stories: {
-              topic: "time expressions",
-              prompt: "Read and discuss time expressions",
+              topic: "future plans and intentions",
+              prompt: "Read about someone's plans and discuss",
             },
           },
         },
@@ -4472,12 +5014,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "time expressions",
-              prompt: "Advanced time expressions content and comprehension",
+              topic: "ways to talk about the future",
+              prompt: "Read and notice 'ir a', 'pensar', and 'querer' + infinitive",
             },
             realtime: {
-              scenario: "time expressions mastery",
-              prompt: "Demonstrate mastery of time expressions",
+              scenario: "sharing your goals for next year",
+              prompt: "Demonstrate future plans with 'ir a + infinitive' and intentions",
             },
           },
         },
@@ -4501,11 +5043,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "time expressions",
+              topic: "future plans",
+              focusPoints: [
+                "mañana, la próxima semana, pronto",
+                "los planes, el proyecto",
+              ],
             },
             grammar: {
-              topics: ["time expressions structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "expressing intentions",
+              ],
+              focusPoints: [
+                "ir a + infinitive",
+                "pensar/querer + infinitive",
+              ],
             },
           },
         },
@@ -4539,11 +5090,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "body parts",
+              topic: "the body and health",
+              focusPoints: [
+                "la cabeza, el estómago, la garganta",
+                "el brazo, la pierna, la espalda",
+                "sano/a, enfermo/a, el dolor",
+              ],
             },
             grammar: {
-              topic: "body parts structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "saying what hurts",
+              focusPoints: [
+                "me duele + singular / me duelen + plural",
+                "doler works like gustar",
+                "tener dolor de cabeza",
+              ],
             },
           },
         },
@@ -4562,12 +5122,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "body parts conversation",
-              prompt: "Practice using body parts in real conversation",
+              scenario: "telling someone you don't feel well",
+              prompt: "Practice 'me duele(n)...' and 'tengo dolor de...'",
             },
             stories: {
-              topic: "body parts",
-              prompt: "Read and discuss body parts",
+              topic: "talking about health",
+              prompt: "Read about someone feeling ill and discuss",
             },
           },
         },
@@ -4586,12 +5146,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "body parts",
-              prompt: "Advanced body parts content and comprehension",
+              topic: "body parts and aches",
+              prompt: "Read and match symptoms to body parts with 'doler'",
             },
             realtime: {
-              scenario: "body parts mastery",
-              prompt: "Demonstrate mastery of body parts",
+              scenario: "describing where it hurts",
+              prompt: "Demonstrate body vocabulary with 'me duele' and 'me duelen'",
             },
           },
         },
@@ -4615,11 +5175,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "body parts",
+              topic: "the body and health",
+              focusPoints: [
+                "cabeza, estómago, garganta",
+                "brazo, pierna, espalda",
+              ],
             },
             grammar: {
-              topics: ["body parts structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "saying what hurts",
+              ],
+              focusPoints: [
+                "me duele vs me duelen",
+                "tener dolor de...",
+              ],
             },
           },
         },
@@ -4653,11 +5222,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "health",
+              topic: "at the doctor's",
+              focusPoints: [
+                "el médico, la cita, los síntomas",
+                "la fiebre, la tos, el resfriado, la gripe",
+                "la receta, la medicina, la farmacia",
+              ],
             },
             grammar: {
-              topic: "health structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "describing symptoms and getting advice",
+              focusPoints: [
+                "me encuentro mal, tengo fiebre",
+                "debería / tiene que + infinitive",
+                "¿qué le pasa? / ¿desde cuándo?",
+              ],
             },
           },
         },
@@ -4676,12 +5254,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "health conversation",
-              prompt: "Practice using health in real conversation",
+              scenario: "a visit to the doctor describing your symptoms",
+              prompt: "Practice 'me encuentro mal, tengo...' and advice with 'debería'",
             },
             stories: {
-              topic: "health",
-              prompt: "Read and discuss health",
+              topic: "a doctor's appointment",
+              prompt: "Read a clinic dialogue and discuss the advice given",
             },
           },
         },
@@ -4700,12 +5278,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "health",
-              prompt: "Advanced health content and comprehension",
+              topic: "symptoms and remedies",
+              prompt: "Read about an illness and the recommended treatment",
             },
             realtime: {
-              scenario: "health mastery",
-              prompt: "Demonstrate mastery of health",
+              scenario: "explaining how you feel and asking for advice",
+              prompt: "Demonstrate health vocabulary to describe symptoms and get advice",
             },
           },
         },
@@ -4729,11 +5307,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "health",
+              topic: "at the doctor's",
+              focusPoints: [
+                "médico, cita, síntomas",
+                "fiebre, tos, receta, farmacia",
+              ],
             },
             grammar: {
-              topics: ["health structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "describing symptoms and getting advice",
+              ],
+              focusPoints: [
+                "tengo fiebre / me encuentro mal",
+                "debería / tiene que + infinitive",
+              ],
             },
           },
         },
@@ -4767,11 +5354,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "careers",
+              topic: "jobs and professions",
+              focusPoints: [
+                "médico/a, profesor/a, ingeniero/a",
+                "abogado/a, cocinero/a, dependiente/a",
+                "la empresa, la oficina, el horario",
+              ],
             },
             grammar: {
-              topic: "careers structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "talking about work",
+              focusPoints: [
+                "ser + profession with no article (soy profesor)",
+                "trabajar de / en / como",
+                "¿a qué te dedicas?",
+              ],
             },
           },
         },
@@ -4790,12 +5386,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "careers conversation",
-              prompt: "Practice using careers in real conversation",
+              scenario: "talking about what you and others do for work",
+              prompt: "Practice 'soy...', 'trabajo de/en...', and '¿a qué te dedicas?'",
             },
             stories: {
-              topic: "careers",
-              prompt: "Read and discuss careers",
+              topic: "different jobs",
+              prompt: "Read about people's professions and discuss",
             },
           },
         },
@@ -4814,12 +5410,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "careers",
-              prompt: "Advanced careers content and comprehension",
+              topic: "professions and workplaces",
+              prompt: "Read and match jobs to where people work",
             },
             realtime: {
-              scenario: "careers mastery",
-              prompt: "Demonstrate mastery of careers",
+              scenario: "describing your job or dream job",
+              prompt: "Demonstrate job vocabulary with 'ser' and 'trabajar de/en'",
             },
           },
         },
@@ -4843,11 +5439,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "careers",
+              topic: "jobs and professions",
+              focusPoints: [
+                "médico, profesor, ingeniero",
+                "abogado, cocinero, dependiente",
+              ],
             },
             grammar: {
-              topics: ["careers structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "talking about work",
+              ],
+              focusPoints: [
+                "ser + profession (no article)",
+                "trabajar de/en/como",
+              ],
             },
           },
         },
@@ -4881,11 +5486,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "education",
+              topic: "school and education",
+              focusPoints: [
+                "la clase, el examen, la asignatura",
+                "el/la profesor/a, el/la alumno/a, los deberes",
+                "el horario, la nota, la carrera",
+              ],
             },
             grammar: {
-              topic: "education structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "talking about studies",
+              focusPoints: [
+                "estudiar, aprender, aprobar/suspender",
+                "tener que + infinitive (tengo que estudiar)",
+                "school routine in the present",
+              ],
             },
           },
         },
@@ -4904,12 +5518,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "education conversation",
-              prompt: "Practice using education in real conversation",
+              scenario: "talking about your studies and timetable",
+              prompt: "Practice school vocabulary with 'estudio...' and 'tengo que...'",
             },
             stories: {
-              topic: "education",
-              prompt: "Read and discuss education",
+              topic: "a school day",
+              prompt: "Read about a student's day and discuss the subjects",
             },
           },
         },
@@ -4928,12 +5542,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "education",
-              prompt: "Advanced education content and comprehension",
+              topic: "subjects and school life",
+              prompt: "Read a timetable and discuss the subjects and times",
             },
             realtime: {
-              scenario: "education mastery",
-              prompt: "Demonstrate mastery of education",
+              scenario: "describing your studies",
+              prompt: "Demonstrate school vocabulary with 'estudiar' and 'tener que'",
             },
           },
         },
@@ -4957,11 +5571,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "education",
+              topic: "school and education",
+              focusPoints: [
+                "clase, examen, asignatura",
+                "profesor, alumno, deberes, nota",
+              ],
             },
             grammar: {
-              topics: ["education structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "talking about studies",
+              ],
+              focusPoints: [
+                "estudiar, aprobar/suspender",
+                "tener que + infinitive",
+              ],
             },
           },
         },
@@ -4995,11 +5618,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "digital communication",
+              topic: "basic technology vocabulary",
+              focusPoints: [
+                "el móvil/celular, el ordenador/computadora",
+                "internet, la aplicación, el correo",
+                "la contraseña, la pantalla, el archivo",
+              ],
             },
             grammar: {
-              topic: "digital communication structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "talking about using technology",
+              focusPoints: [
+                "usar, descargar, enviar, navegar",
+                "common verbs for online actions",
+                "present tense for habits",
+              ],
             },
           },
         },
@@ -5018,13 +5650,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "digital communication conversation",
-              prompt:
-                "Practice using digital communication in real conversation",
+              scenario: "explaining how you use your phone day to day",
+              prompt: "Practice tech vocabulary with 'uso...', 'envío...', 'descargo...'",
             },
             stories: {
-              topic: "digital communication",
-              prompt: "Read and discuss digital communication",
+              topic: "technology in daily life",
+              prompt: "Read about how someone uses technology and discuss",
             },
           },
         },
@@ -5043,13 +5674,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "digital communication",
-              prompt:
-                "Advanced digital communication content and comprehension",
+              topic: "everyday technology",
+              prompt: "Read about apps and devices and notice the action verbs",
             },
             realtime: {
-              scenario: "digital communication mastery",
-              prompt: "Demonstrate mastery of digital communication",
+              scenario: "helping a friend with a device",
+              prompt: "Demonstrate tech vocabulary with verbs for online actions",
             },
           },
         },
@@ -5073,11 +5703,19 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "digital communication",
+              topic: "technology basics",
+              focusPoints: [
+                "móvil/celular, ordenador/computadora",
+                "internet, aplicación, correo, contraseña",
+              ],
             },
             grammar: {
-              topics: ["digital communication structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "talking about using technology",
+              ],
+              focusPoints: [
+                "usar, descargar, enviar, navegar",
+              ],
             },
           },
         },
@@ -5113,11 +5751,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "time expressions",
+              topic: "the present perfect (pretérito perfecto)",
+              focusPoints: [
+                "he/has/ha + participle",
+                "irregular participles: hecho, dicho, visto, escrito",
+                "markers: ya, todavía no, alguna vez, nunca",
+              ],
             },
             grammar: {
-              topic: "time expressions structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "forming and using the present perfect",
+              focusPoints: [
+                "haber (he, has, ha, hemos, han) + participle",
+                "regular participles: hablado, comido, vivido",
+                "for recent past and life experiences",
+              ],
             },
           },
         },
@@ -5136,12 +5783,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "time expressions conversation",
-              prompt: "Practice using time expressions in real conversation",
+              scenario: "telling a friend what you have done today",
+              prompt: "Practice the present perfect with 'ya', 'todavía no', and 'esta semana'",
             },
             stories: {
-              topic: "time expressions",
-              prompt: "Read and discuss time expressions",
+              topic: "life experiences with the present perfect",
+              prompt: "Read about someone's experiences ('he viajado a...') and discuss",
             },
           },
         },
@@ -5160,12 +5807,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "time expressions",
-              prompt: "Advanced time expressions content and comprehension",
+              topic: "present perfect vs preterite",
+              prompt: "Read and notice when to use 'he hecho' vs 'hice'",
             },
             realtime: {
-              scenario: "time expressions mastery",
-              prompt: "Demonstrate mastery of time expressions",
+              scenario: "asking about experiences (¿alguna vez has...?)",
+              prompt: "Demonstrate the present perfect to ask and answer about experiences",
             },
           },
         },
@@ -5189,11 +5836,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "time expressions",
+              topic: "the present perfect and its time markers",
+              focusPoints: [
+                "ya, todavía no, alguna vez, nunca",
+                "irregular participles",
+              ],
             },
             grammar: {
-              topics: ["time expressions structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "forming and using the present perfect",
+              ],
+              focusPoints: [
+                "haber + participle",
+                "present perfect vs preterite",
+              ],
             },
           },
         },
@@ -5227,11 +5883,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "time expressions",
+              topic: "the past continuous (estaba + gerundio)",
+              focusPoints: [
+                "estaba hablando, estabas comiendo",
+                "gerunds: -ando / -iendo",
+                "irregular gerunds: leyendo, durmiendo, pidiendo",
+              ],
             },
             grammar: {
-              topic: "time expressions structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "describing past actions in progress",
+              focusPoints: [
+                "estar (imperfect) + gerund",
+                "mientras + past continuous",
+                "interrupted actions: estaba... cuando...",
+              ],
             },
           },
         },
@@ -5250,12 +5915,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "time expressions conversation",
-              prompt: "Practice using time expressions in real conversation",
+              scenario: "describing what you were doing when something happened",
+              prompt: "Practice 'estaba ...ando cuando...' for interrupted past actions",
             },
             stories: {
-              topic: "time expressions",
-              prompt: "Read and discuss time expressions",
+              topic: "setting a scene in the past",
+              prompt: "Read a story and notice background actions ('llovía, la gente caminaba')",
             },
           },
         },
@@ -5274,12 +5939,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "time expressions",
-              prompt: "Advanced time expressions content and comprehension",
+              topic: "past continuous vs preterite in narration",
+              prompt: "Read and tell ongoing background (estaba) from completed events (hizo)",
             },
             realtime: {
-              scenario: "time expressions mastery",
-              prompt: "Demonstrate mastery of time expressions",
+              scenario: "recounting an interrupted moment",
+              prompt: "Demonstrate the past continuous to narrate what was happening",
             },
           },
         },
@@ -5303,11 +5968,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "time expressions",
+              topic: "the past continuous",
+              focusPoints: [
+                "estaba + gerundio",
+                "irregular gerunds",
+              ],
             },
             grammar: {
-              topics: ["time expressions structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "past continuous vs preterite",
+              ],
+              focusPoints: [
+                "estar (imperfect) + gerund",
+                "mientras / cuando",
+              ],
             },
           },
         },
@@ -5341,11 +6015,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "time expressions",
+              topic: "the simple future tense",
+              focusPoints: [
+                "hablaré, comerás, vivirá",
+                "irregular stems: tendré, haré, podré, saldré",
+                "markers: mañana, el año que viene, pronto",
+              ],
             },
             grammar: {
-              topic: "time expressions structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "forming the future and expressing probability",
+              focusPoints: [
+                "infinitive + é/ás/á/emos/án",
+                "future of probability (¿qué hora será?)",
+                "ir a + infinitive vs simple future",
+              ],
             },
           },
         },
@@ -5364,12 +6047,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "time expressions conversation",
-              prompt: "Practice using time expressions in real conversation",
+              scenario: "making plans and predictions for next year",
+              prompt: "Practice the future for plans ('viajaré') and predictions ('lloverá')",
             },
             stories: {
-              topic: "time expressions",
-              prompt: "Read and discuss time expressions",
+              topic: "predictions and resolutions",
+              prompt: "Read about future plans and discuss what will happen",
             },
           },
         },
@@ -5388,12 +6071,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "time expressions",
-              prompt: "Advanced time expressions content and comprehension",
+              topic: "future tense vs 'ir a + infinitive'",
+              prompt: "Read and compare 'iré' vs 'voy a ir'",
             },
             realtime: {
-              scenario: "time expressions mastery",
-              prompt: "Demonstrate mastery of time expressions",
+              scenario: "speculating about the future",
+              prompt: "Demonstrate the future for plans, predictions, and probability",
             },
           },
         },
@@ -5417,11 +6100,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "time expressions",
+              topic: "the simple future",
+              focusPoints: [
+                "regular endings é/ás/á",
+                "irregular stems: tendré, haré, podré",
+              ],
             },
             grammar: {
-              topics: ["time expressions structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "forming and using the future",
+              ],
+              focusPoints: [
+                "future of probability",
+                "ir a + infinitive vs future",
+              ],
             },
           },
         },
@@ -5455,11 +6147,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "comparisons",
+              topic: "comparatives and superlatives",
+              focusPoints: [
+                "más/menos ... que",
+                "tan ... como, tanto ... como",
+                "el/la más ... de",
+              ],
             },
             grammar: {
-              topic: "comparisons structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "forming comparisons",
+              focusPoints: [
+                "irregulars: mejor, peor, mayor, menor",
+                "superlative -ísimo (buenísimo)",
+                "equality vs inequality",
+              ],
             },
           },
         },
@@ -5478,12 +6179,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "comparisons conversation",
-              prompt: "Practice using comparisons in real conversation",
+              scenario: "comparing two cities you have lived in",
+              prompt: "Practice 'más/menos... que' and 'tan... como' to compare",
             },
             stories: {
-              topic: "comparisons",
-              prompt: "Read and discuss comparisons",
+              topic: "comparisons in descriptions",
+              prompt: "Read a comparison of two options and discuss",
             },
           },
         },
@@ -5502,12 +6203,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "comparisons",
-              prompt: "Advanced comparisons content and comprehension",
+              topic: "nuances of comparison",
+              prompt: "Read and notice equality vs inequality comparisons",
             },
             realtime: {
-              scenario: "comparisons mastery",
-              prompt: "Demonstrate mastery of comparisons",
+              scenario: "deciding between two options out loud",
+              prompt: "Demonstrate comparatives and superlatives to weigh choices",
             },
           },
         },
@@ -5531,11 +6232,19 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "comparisons",
+              topic: "comparatives and superlatives",
+              focusPoints: [
+                "más/menos que, tan como",
+                "el más / -ísimo",
+              ],
             },
             grammar: {
-              topics: ["comparisons structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "forming comparisons",
+              ],
+              focusPoints: [
+                "irregulars: mejor, peor, mayor, menor",
+              ],
             },
           },
         },
@@ -5569,11 +6278,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "advice and suggestions",
+              topic: "language for giving advice",
+              focusPoints: [
+                "deberías / tendrías que / podrías",
+                "te recomiendo / te aconsejo que",
+                "lo mejor es que + subjunctive",
+              ],
             },
             grammar: {
-              topic: "advice and suggestions structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "advice structures",
+              focusPoints: [
+                "conditional for soft advice (deberías)",
+                "recomendar/aconsejar que + subjunctive",
+                "¿por qué no + present?",
+              ],
             },
           },
         },
@@ -5592,13 +6310,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "advice and suggestions conversation",
-              prompt:
-                "Practice using advice and suggestions in real conversation",
+              scenario: "a friend asks you for advice about a problem",
+              prompt: "Practice giving advice with 'deberías' and 'te recomiendo que'",
             },
             stories: {
-              topic: "advice and suggestions",
-              prompt: "Read and discuss advice and suggestions",
+              topic: "advice columns",
+              prompt: "Read an advice exchange and discuss the suggestions",
             },
           },
         },
@@ -5617,13 +6334,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "advice and suggestions",
-              prompt:
-                "Advanced advice and suggestions content and comprehension",
+              topic: "direct vs softened advice",
+              prompt: "Read and compare 'haz esto' vs 'yo que tú, haría esto'",
             },
             realtime: {
-              scenario: "advice and suggestions mastery",
-              prompt: "Demonstrate mastery of advice and suggestions",
+              scenario: "helping someone make a decision",
+              prompt: "Demonstrate advice using conditional and subjunctive forms",
             },
           },
         },
@@ -5647,11 +6363,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "advice and suggestions",
+              topic: "giving advice",
+              focusPoints: [
+                "deberías, tendrías que, podrías",
+                "te recomiendo que + subjunctive",
+              ],
             },
             grammar: {
-              topics: ["advice and suggestions structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "advice structures",
+              ],
+              focusPoints: [
+                "conditional for advice",
+                "recomendar que + subjunctive",
+              ],
             },
           },
         },
@@ -5685,11 +6410,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "advice and suggestions",
+              topic: "language for making suggestions",
+              focusPoints: [
+                "¿por qué no...? / ¿qué tal si...?",
+                "podríamos / deberíamos",
+                "¿te parece si...? / vamos a...",
+              ],
             },
             grammar: {
-              topic: "advice and suggestions structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "suggestion structures",
+              focusPoints: [
+                "nosotros suggestions (vamos a, podríamos)",
+                "¿qué tal si + present?",
+                "hay que + infinitive for general advice",
+              ],
             },
           },
         },
@@ -5708,13 +6442,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "advice and suggestions conversation",
-              prompt:
-                "Practice using advice and suggestions in real conversation",
+              scenario: "planning a weekend with friends",
+              prompt: "Practice suggesting plans with '¿qué tal si...?' and 'podríamos'",
             },
             stories: {
-              topic: "advice and suggestions",
-              prompt: "Read and discuss advice and suggestions",
+              topic: "suggesting and agreeing on plans",
+              prompt: "Read a chat where friends make plans and discuss",
             },
           },
         },
@@ -5733,13 +6466,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "advice and suggestions",
-              prompt:
-                "Advanced advice and suggestions content and comprehension",
+              topic: "accepting and declining suggestions",
+              prompt: "Read and notice how people accept ('¡vale!') or decline politely",
             },
             realtime: {
-              scenario: "advice and suggestions mastery",
-              prompt: "Demonstrate mastery of advice and suggestions",
+              scenario: "negotiating a group plan",
+              prompt: "Demonstrate making, accepting, and declining suggestions",
             },
           },
         },
@@ -5763,11 +6495,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "advice and suggestions",
+              topic: "making suggestions",
+              focusPoints: [
+                "¿por qué no...?, ¿qué tal si...?",
+                "podríamos, vamos a",
+              ],
             },
             grammar: {
-              topics: ["advice and suggestions structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "suggestion structures",
+              ],
+              focusPoints: [
+                "nosotros suggestions",
+                "¿qué tal si + present?",
+              ],
             },
           },
         },
@@ -5801,11 +6542,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "conditional",
+              topic: "the simple conditional (would)",
+              focusPoints: [
+                "hablaría, comerías, viviría",
+                "irregular stems: tendría, haría, podría",
+                "me gustaría, ¿podrías?",
+              ],
             },
             grammar: {
-              topic: "conditional structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "forming and using the conditional",
+              focusPoints: [
+                "infinitive + ía endings",
+                "irregular stems (same as future)",
+                "for politeness and hypotheticals",
+              ],
             },
           },
         },
@@ -5824,12 +6574,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "conditional conversation",
-              prompt: "Practice using conditional in real conversation",
+              scenario: "making polite requests at a hotel",
+              prompt: "Practice '¿podría...?' and 'me gustaría...' for polite requests",
             },
             stories: {
-              topic: "conditional",
-              prompt: "Read and discuss conditional",
+              topic: "what would you do? (hypotheticals)",
+              prompt: "Read about a dilemma and discuss what you would do",
             },
           },
         },
@@ -5848,12 +6598,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "conditional",
-              prompt: "Advanced conditional content and comprehension",
+              topic: "conditional for advice and wishes",
+              prompt: "Read and notice 'yo que tú, ...' and 'me encantaría...'",
             },
             realtime: {
-              scenario: "conditional mastery",
-              prompt: "Demonstrate mastery of conditional",
+              scenario: "giving polite advice (yo en tu lugar...)",
+              prompt: "Demonstrate the conditional for politeness, wishes, and advice",
             },
           },
         },
@@ -5877,11 +6627,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "conditional",
+              topic: "the conditional",
+              focusPoints: [
+                "regular -ía endings",
+                "irregular stems: tendría, haría, podría",
+              ],
             },
             grammar: {
-              topics: ["conditional structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "forming and using the conditional",
+              ],
+              focusPoints: [
+                "politeness (¿podrías?)",
+                "hypotheticals (yo que tú)",
+              ],
             },
           },
         },
@@ -5915,11 +6674,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "travel",
+              topic: "travel and tourism vocabulary",
+              focusPoints: [
+                "el vuelo, la maleta, el pasaporte",
+                "el alojamiento, la reserva, el billete/boleto",
+                "la aduana, el embarque",
+              ],
             },
             grammar: {
-              topic: "travel structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "language for getting around",
+              focusPoints: [
+                "asking directions: ¿cómo llego a...?",
+                "polite requests at a counter",
+                "prepositions of place and movement",
+              ],
             },
           },
         },
@@ -5938,12 +6706,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "travel conversation",
-              prompt: "Practice using travel in real conversation",
+              scenario: "checking in at the airport and asking about your flight",
+              prompt: "Practice travel phrases for check-in, gates, and delays",
             },
             stories: {
-              topic: "travel",
-              prompt: "Read and discuss travel",
+              topic: "a travel anecdote",
+              prompt: "Read a short trip story and discuss what happened",
             },
           },
         },
@@ -5962,12 +6730,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "travel",
-              prompt: "Advanced travel content and comprehension",
+              topic: "bookings and itineraries",
+              prompt: "Read a hotel or flight confirmation and find the key details",
             },
             realtime: {
-              scenario: "travel mastery",
-              prompt: "Demonstrate mastery of travel",
+              scenario: "booking a room and asking about the area",
+              prompt: "Demonstrate travel vocabulary to book and ask for recommendations",
             },
           },
         },
@@ -5991,11 +6759,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "travel",
+              topic: "travel and tourism",
+              focusPoints: [
+                "vuelo, maleta, pasaporte, reserva",
+                "billete/boleto, alojamiento",
+              ],
             },
             grammar: {
-              topics: ["travel structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "language for getting around",
+              ],
+              focusPoints: [
+                "asking directions",
+                "polite requests at a counter",
+              ],
             },
           },
         },
@@ -6029,11 +6806,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "environment",
+              topic: "environment and sustainability vocabulary",
+              focusPoints: [
+                "el medio ambiente, el cambio climático",
+                "el reciclaje, la contaminación, los residuos",
+                "la energía renovable, sostenible",
+              ],
             },
             grammar: {
-              topic: "environment structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "talking about problems and solutions",
+              focusPoints: [
+                "impersonal se (se debería reciclar)",
+                "hay que / es necesario + infinitive",
+                "cause-and-effect connectors",
+              ],
             },
           },
         },
@@ -6052,12 +6838,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "environment conversation",
-              prompt: "Practice using environment in real conversation",
+              scenario: "discussing how to be greener at home",
+              prompt: "Practice environment vocabulary and 'deberíamos / hay que' for solutions",
             },
             stories: {
-              topic: "environment",
-              prompt: "Read and discuss environment",
+              topic: "an environmental news story",
+              prompt: "Read about a local environmental issue and discuss",
             },
           },
         },
@@ -6076,12 +6862,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "environment",
-              prompt: "Advanced environment content and comprehension",
+              topic: "environmental problems and proposals",
+              prompt: "Read an article and identify the problem and proposed solutions",
             },
             realtime: {
-              scenario: "environment mastery",
-              prompt: "Demonstrate mastery of environment",
+              scenario: "debating a green policy",
+              prompt: "Demonstrate environment vocabulary to argue for a solution",
             },
           },
         },
@@ -6105,11 +6891,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "environment",
+              topic: "environment and sustainability",
+              focusPoints: [
+                "medio ambiente, cambio climático",
+                "reciclaje, contaminación, energía renovable",
+              ],
             },
             grammar: {
-              topics: ["environment structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "problems and solutions",
+              ],
+              focusPoints: [
+                "impersonal se",
+                "hay que / es necesario + infinitive",
+              ],
             },
           },
         },
@@ -6143,11 +6938,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "culture",
+              topic: "culture and traditions vocabulary",
+              focusPoints: [
+                "la tradición, la costumbre, la fiesta",
+                "el festival, el desfile, la gastronomía",
+                "celebrar, festejar, disfrazarse",
+              ],
             },
             grammar: {
-              topic: "culture structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "describing customs and habits",
+              focusPoints: [
+                "soler + infinitive (solemos celebrar)",
+                "se + verb for general customs",
+                "frequency expressions (cada año, suele)",
+              ],
             },
           },
         },
@@ -6166,12 +6970,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "culture conversation",
-              prompt: "Practice using culture in real conversation",
+              scenario: "explaining a holiday from your country",
+              prompt: "Practice describing a celebration with 'solemos' and 'se celebra'",
             },
             stories: {
-              topic: "culture",
-              prompt: "Read and discuss culture",
+              topic: "a traditional festival",
+              prompt: "Read about a festival and discuss its customs",
             },
           },
         },
@@ -6190,12 +6994,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "culture",
-              prompt: "Advanced culture content and comprehension",
+              topic: "comparing traditions",
+              prompt: "Read about two celebrations and compare them",
             },
             realtime: {
-              scenario: "culture mastery",
-              prompt: "Demonstrate mastery of culture",
+              scenario: "inviting someone to a celebration and explaining it",
+              prompt: "Demonstrate culture vocabulary to describe a tradition",
             },
           },
         },
@@ -6219,11 +7023,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "culture",
+              topic: "culture and traditions",
+              focusPoints: [
+                "tradición, costumbre, fiesta, festival",
+                "gastronomía, desfile",
+              ],
             },
             grammar: {
-              topics: ["culture structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "describing customs and habits",
+              ],
+              focusPoints: [
+                "soler + infinitive",
+                "se for general customs",
+              ],
             },
           },
         },
@@ -6257,11 +7070,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "current events",
+              topic: "media and news vocabulary",
+              focusPoints: [
+                "las noticias, el titular, el reportaje",
+                "el periódico, la entrevista, la fuente",
+                "las redes sociales, los medios",
+              ],
             },
             grammar: {
-              topic: "current events structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "reporting what you read or heard",
+              focusPoints: [
+                "según + source (según el periódico)",
+                "reported speech basics (dice que...)",
+                "expressing certainty and doubt",
+              ],
             },
           },
         },
@@ -6280,12 +7102,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "current events conversation",
-              prompt: "Practice using current events in real conversation",
+              scenario: "discussing a news story you saw",
+              prompt: "Practice talking about the news with 'según...' and 'dicen que...'",
             },
             stories: {
-              topic: "current events",
-              prompt: "Read and discuss current events",
+              topic: "a short news article",
+              prompt: "Read a headline and summary and discuss the story",
             },
           },
         },
@@ -6304,12 +7126,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "current events",
-              prompt: "Advanced current events content and comprehension",
+              topic: "fact vs opinion in the news",
+              prompt: "Read an article and separate facts from opinions",
             },
             realtime: {
-              scenario: "current events mastery",
-              prompt: "Demonstrate mastery of current events",
+              scenario: "reacting to current events",
+              prompt: "Demonstrate media vocabulary to report and react to news",
             },
           },
         },
@@ -6333,11 +7155,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "current events",
+              topic: "media and news",
+              focusPoints: [
+                "noticias, titular, reportaje",
+                "redes sociales, fuente, medios",
+              ],
             },
             grammar: {
-              topics: ["current events structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "reporting what you heard",
+              ],
+              focusPoints: [
+                "según + source",
+                "dice que...",
+              ],
             },
           },
         },
@@ -6371,11 +7202,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "opinions and debate",
+              topic: "expressing and reacting to opinions",
+              focusPoints: [
+                "creo que, pienso que, me parece que",
+                "en mi opinión, desde mi punto de vista",
+                "estoy de acuerdo / en contra",
+              ],
             },
             grammar: {
-              topic: "opinions and debate structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "opinion structures",
+              focusPoints: [
+                "creo que + indicative",
+                "no creo que + subjunctive",
+                "agreeing and disagreeing politely",
+              ],
             },
           },
         },
@@ -6394,12 +7234,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "opinions and debate conversation",
-              prompt: "Practice using opinions and debate in real conversation",
+              scenario: "sharing opinions about a film with a friend",
+              prompt: "Practice giving opinions and (dis)agreeing politely",
             },
             stories: {
-              topic: "opinions and debate",
-              prompt: "Read and discuss opinions and debate",
+              topic: "opinions in a discussion",
+              prompt: "Read a debate and identify each person's opinion",
             },
           },
         },
@@ -6418,12 +7258,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "opinions and debate",
-              prompt: "Advanced opinions and debate content and comprehension",
+              topic: "supporting an opinion with reasons",
+              prompt: "Read an opinion and find the reasons given",
             },
             realtime: {
-              scenario: "opinions and debate mastery",
-              prompt: "Demonstrate mastery of opinions and debate",
+              scenario: "a friendly disagreement",
+              prompt: "Demonstrate giving, supporting, and challenging opinions",
             },
           },
         },
@@ -6447,11 +7287,19 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "opinions and debate",
+              topic: "expressing opinions",
+              focusPoints: [
+                "creo que, me parece que, en mi opinión",
+                "estoy de acuerdo / en contra",
+              ],
             },
             grammar: {
-              topics: ["opinions and debate structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "opinion structures",
+              ],
+              focusPoints: [
+                "creo que + indicative vs no creo que + subjunctive",
+              ],
             },
           },
         },
@@ -6485,11 +7333,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "complaints",
+              topic: "language for making a complaint",
+              focusPoints: [
+                "la queja, el reclamo, el reembolso",
+                "no funciona, está roto, defectuoso",
+                "devolver, cambiar, reclamar",
+              ],
             },
             grammar: {
-              topic: "complaints structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "complaining politely",
+              focusPoints: [
+                "softeners: quería, me gustaría, ¿sería posible?",
+                "usted register for service",
+                "the problem + the request",
+              ],
             },
           },
         },
@@ -6508,12 +7365,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "complaints conversation",
-              prompt: "Practice using complaints in real conversation",
+              scenario: "returning a faulty product to a store",
+              prompt: "Practice complaining politely and asking for a refund",
             },
             stories: {
-              topic: "complaints",
-              prompt: "Read and discuss complaints",
+              topic: "a complaint letter or review",
+              prompt: "Read a complaint and discuss the issue and the request",
             },
           },
         },
@@ -6532,12 +7389,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "complaints",
-              prompt: "Advanced complaints content and comprehension",
+              topic: "polite vs rude complaints",
+              prompt: "Read two complaints and compare their tone",
             },
             realtime: {
-              scenario: "complaints mastery",
-              prompt: "Demonstrate mastery of complaints",
+              scenario: "complaining about a hotel room",
+              prompt: "Demonstrate a polite, effective complaint",
             },
           },
         },
@@ -6561,11 +7418,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "complaints",
+              topic: "making complaints",
+              focusPoints: [
+                "queja, reclamo, reembolso",
+                "no funciona, defectuoso, devolver",
+              ],
             },
             grammar: {
-              topics: ["complaints structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "complaining politely",
+              ],
+              focusPoints: [
+                "softeners: quería, me gustaría",
+                "usted register",
+              ],
             },
           },
         },
@@ -6599,11 +7465,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "experiences",
+              topic: "talking about past experiences",
+              focusPoints: [
+                "alguna vez, nunca, una vez",
+                "hace + time (hace dos años)",
+                "he probado, he visitado",
+              ],
             },
             grammar: {
-              topic: "experiences structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "narrating experiences",
+              focusPoints: [
+                "present perfect for life experiences",
+                "preterite for specific past events",
+                "sequencing: primero, luego, al final",
+              ],
             },
           },
         },
@@ -6622,12 +7497,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "experiences conversation",
-              prompt: "Practice using experiences in real conversation",
+              scenario: "swapping travel and life stories with a friend",
+              prompt: "Practice '¿alguna vez has...?' and narrating what happened",
             },
             stories: {
-              topic: "experiences",
-              prompt: "Read and discuss experiences",
+              topic: "a memorable experience",
+              prompt: "Read someone's account of an experience and discuss",
             },
           },
         },
@@ -6646,12 +7521,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "experiences",
-              prompt: "Advanced experiences content and comprehension",
+              topic: "ordering events in a story",
+              prompt: "Read a narrative and follow its sequence of events",
             },
             realtime: {
-              scenario: "experiences mastery",
-              prompt: "Demonstrate mastery of experiences",
+              scenario: "telling the story of your best trip",
+              prompt: "Demonstrate narrating an experience with linked past tenses",
             },
           },
         },
@@ -6675,11 +7550,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "experiences",
+              topic: "past experiences",
+              focusPoints: [
+                "alguna vez, nunca, una vez",
+                "hace + time",
+              ],
             },
             grammar: {
-              topics: ["experiences structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "narrating experiences",
+              ],
+              focusPoints: [
+                "present perfect vs preterite",
+                "sequencing connectors",
+              ],
             },
           },
         },
@@ -6713,11 +7597,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "probability",
+              topic: "expressing probability and possibility",
+              focusPoints: [
+                "quizás, tal vez, a lo mejor",
+                "probablemente, seguramente",
+                "es probable / posible que",
+              ],
             },
             grammar: {
               topic: "probability structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              focusPoints: [
+                "quizás/tal vez + subjunctive",
+                "a lo mejor + indicative",
+                "deber de + infinitive (must be)",
+              ],
             },
           },
         },
@@ -6736,12 +7629,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "probability conversation",
-              prompt: "Practice using probability in real conversation",
+              scenario: "guessing why a friend is running late",
+              prompt: "Practice 'quizás esté...', 'a lo mejor...', and 'debe de estar...'",
             },
             stories: {
-              topic: "probability",
-              prompt: "Read and discuss probability",
+              topic: "speculating about a mystery",
+              prompt: "Read a puzzling situation and discuss what probably happened",
             },
           },
         },
@@ -6760,12 +7653,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "probability",
-              prompt: "Advanced probability content and comprehension",
+              topic: "degrees of certainty",
+              prompt: "Read and rank how sure the writer is (seguramente vs quizás)",
             },
             realtime: {
-              scenario: "probability mastery",
-              prompt: "Demonstrate mastery of probability",
+              scenario: "predicting an uncertain outcome",
+              prompt: "Demonstrate probability with the subjunctive and indicative",
             },
           },
         },
@@ -6789,11 +7682,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "probability",
+              topic: "probability and possibility",
+              focusPoints: [
+                "quizás, tal vez, a lo mejor",
+                "es probable que",
+              ],
             },
             grammar: {
-              topics: ["probability structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "probability structures",
+              ],
+              focusPoints: [
+                "quizás + subjunctive vs a lo mejor + indicative",
+                "deber de + infinitive",
+              ],
             },
           },
         },
@@ -6829,11 +7731,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "time expressions",
+              topic: "the past perfect (pluscuamperfecto)",
+              focusPoints: [
+                "había hablado, habías comido",
+                "había + participle",
+                "markers: ya, todavía no, antes de que",
+              ],
             },
             grammar: {
-              topic: "time expressions structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "an action before another past action",
+              focusPoints: [
+                "haber (imperfect: había) + participle",
+                "ya había... cuando...",
+                "sequencing earlier past events",
+              ],
             },
           },
         },
@@ -6852,12 +7763,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "time expressions conversation",
-              prompt: "Practice using time expressions in real conversation",
+              scenario: "explaining what had already happened before an event",
+              prompt: "Practice 'cuando llegué, ya había...' to order past events",
             },
             stories: {
-              topic: "time expressions",
-              prompt: "Read and discuss time expressions",
+              topic: "flashbacks and backstory",
+              prompt: "Read a narrative and notice earlier events (había...)",
             },
           },
         },
@@ -6876,12 +7787,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "time expressions",
-              prompt: "Advanced time expressions content and comprehension",
+              topic: "past perfect vs preterite and imperfect",
+              prompt: "Read and order events using había + participle vs simple past",
             },
             realtime: {
-              scenario: "time expressions mastery",
-              prompt: "Demonstrate mastery of time expressions",
+              scenario: "recounting a misunderstanding that had built up",
+              prompt: "Demonstrate the past perfect to sequence earlier and later past events",
             },
           },
         },
@@ -6905,11 +7816,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "time expressions",
+              topic: "the past perfect",
+              focusPoints: [
+                "había + participle",
+                "ya, todavía no, antes de que",
+              ],
             },
             grammar: {
-              topics: ["time expressions structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "sequencing past events",
+              ],
+              focusPoints: [
+                "había + participle",
+                "past perfect vs preterite",
+              ],
             },
           },
         },
@@ -6943,11 +7863,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "passive",
+              topic: "the passive voice",
+              focusPoints: [
+                "ser + participle + por (fue construido por)",
+                "pasiva refleja: se venden casas",
+                "estar + participle: la puerta está cerrada",
+              ],
             },
             grammar: {
-              topic: "passive structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "forming and choosing passive structures",
+              focusPoints: [
+                "ser-passive vs pasiva refleja (se)",
+                "agreement of the participle",
+                "when to use passive vs active",
+              ],
             },
           },
         },
@@ -6966,12 +7895,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "passive conversation",
-              prompt: "Practice using passive in real conversation",
+              scenario: "describing how a product is made",
+              prompt: "Practice 'se hace...' and 'es fabricado por...' to describe processes",
             },
             stories: {
-              topic: "passive",
-              prompt: "Read and discuss passive",
+              topic: "the passive voice in reports and news",
+              prompt: "Read a news report and notice passive constructions",
             },
           },
         },
@@ -6990,12 +7919,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "passive",
-              prompt: "Advanced passive content and comprehension",
+              topic: "passive vs active and impersonal se",
+              prompt: "Read and convert between active, passive, and impersonal",
             },
             realtime: {
-              scenario: "passive mastery",
-              prompt: "Demonstrate mastery of passive",
+              scenario: "explaining a procedure formally",
+              prompt: "Demonstrate passive and pasiva refleja in a formal description",
             },
           },
         },
@@ -7019,11 +7948,21 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "passive",
+              topic: "the passive voice",
+              focusPoints: [
+                "ser + participle + por",
+                "pasiva refleja (se vende)",
+                "estar + participle",
+              ],
             },
             grammar: {
-              topics: ["passive structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "forming and choosing passive structures",
+              ],
+              focusPoints: [
+                "ser-passive vs pasiva refleja",
+                "participle agreement",
+              ],
             },
           },
         },
@@ -7057,11 +7996,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "narrative and storytelling",
+              topic: "reporting what others said",
+              focusPoints: [
+                "dijo que, comentó que, añadió que",
+                "preguntó si / qué / cuándo",
+                "pidió/sugirió que + subjunctive",
+              ],
             },
             grammar: {
-              topic: "narrative and storytelling structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "reported speech and backshift",
+              focusPoints: [
+                "present → imperfect (dice → dijo que ...aba)",
+                "preterite → past perfect, future → conditional",
+                "deixis: aquí→allí, hoy→aquel día",
+              ],
             },
           },
         },
@@ -7080,13 +8028,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "narrative and storytelling conversation",
-              prompt:
-                "Practice using narrative and storytelling in real conversation",
+              scenario: "passing on a message from one friend to another",
+              prompt: "Practice 'me dijo que...' and 'me preguntó si...' with backshift",
             },
             stories: {
-              topic: "narrative and storytelling",
-              prompt: "Read and discuss narrative and storytelling",
+              topic: "reporting a conversation",
+              prompt: "Read a dialogue and retell it in reported speech",
             },
           },
         },
@@ -7105,13 +8052,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "narrative and storytelling",
-              prompt:
-                "Advanced narrative and storytelling content and comprehension",
+              topic: "direct vs reported speech",
+              prompt: "Read and convert quotes into reported speech",
             },
             realtime: {
-              scenario: "narrative and storytelling mastery",
-              prompt: "Demonstrate mastery of narrative and storytelling",
+              scenario: "relaying an argument you witnessed",
+              prompt: "Demonstrate reported speech with correct tense and pronoun shifts",
             },
           },
         },
@@ -7135,11 +8081,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "narrative and storytelling",
+              topic: "reported speech",
+              focusPoints: [
+                "dijo que, preguntó si, pidió que",
+                "comentó, añadió, sugirió",
+              ],
             },
             grammar: {
-              topics: ["narrative and storytelling structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "reported speech and backshift",
+              ],
+              focusPoints: [
+                "tense backshift",
+                "deixis: aquí→allí, hoy→aquel día",
+              ],
             },
           },
         },
@@ -7173,11 +8128,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "relative clauses",
+              topic: "relative pronouns",
+              focusPoints: [
+                "que, quien/quienes",
+                "el/la que, el/la cual",
+                "cuyo/a, donde",
+              ],
             },
             grammar: {
-              topic: "relative clauses structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "joining sentences with relative clauses",
+              focusPoints: [
+                "restrictive vs non-restrictive (commas)",
+                "preposition + relative: con quien, en el que",
+                "cuyo for possession",
+              ],
             },
           },
         },
@@ -7196,12 +8160,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "relative clauses conversation",
-              prompt: "Practice using relative clauses in real conversation",
+              scenario: "describing a person or place precisely",
+              prompt: "Practice combining ideas with 'que', 'quien', and 'donde'",
             },
             stories: {
-              topic: "relative clauses",
-              prompt: "Read and discuss relative clauses",
+              topic: "relative clauses in descriptions",
+              prompt: "Read a detailed description and notice the relative clauses",
             },
           },
         },
@@ -7220,12 +8184,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "relative clauses",
-              prompt: "Advanced relative clauses content and comprehension",
+              topic: "complex relative clauses",
+              prompt: "Read sentences with 'el cual' and 'cuyo' and unpack them",
             },
             realtime: {
-              scenario: "relative clauses mastery",
-              prompt: "Demonstrate mastery of relative clauses",
+              scenario: "defining something without naming it",
+              prompt: "Demonstrate relative clauses to define and add information",
             },
           },
         },
@@ -7249,11 +8213,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "relative clauses",
+              topic: "relative pronouns",
+              focusPoints: [
+                "que, quien, el que/el cual",
+                "cuyo, donde",
+              ],
             },
             grammar: {
-              topics: ["relative clauses structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "relative clauses",
+              ],
+              focusPoints: [
+                "restrictive vs non-restrictive",
+                "preposition + relative",
+              ],
             },
           },
         },
@@ -7287,11 +8260,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "register",
+              topic: "formal and informal register",
+              focusPoints: [
+                "tú vs usted (and ustedes)",
+                "informal: hola, ¿qué tal?, un beso",
+                "formal: buenos días, atentamente",
+              ],
             },
             grammar: {
-              topic: "register structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "shifting register",
+              focusPoints: [
+                "verb agreement with tú vs usted",
+                "softened requests (¿le importaría...?)",
+                "formal vs colloquial vocabulary",
+              ],
             },
           },
         },
@@ -7310,12 +8292,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "register conversation",
-              prompt: "Practice using register in real conversation",
+              scenario: "the same message to a friend vs to your boss",
+              prompt: "Practice switching between tú/informal and usted/formal",
             },
             stories: {
-              topic: "register",
-              prompt: "Read and discuss register",
+              topic: "register in messages and letters",
+              prompt: "Read a formal and an informal message and compare them",
             },
           },
         },
@@ -7334,12 +8316,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "register",
-              prompt: "Advanced register content and comprehension",
+              topic: "matching register to context",
+              prompt: "Read texts and judge whether the register fits the situation",
             },
             realtime: {
-              scenario: "register mastery",
-              prompt: "Demonstrate mastery of register",
+              scenario: "introducing yourself in an interview vs at a party",
+              prompt: "Demonstrate appropriate register for formal and informal settings",
             },
           },
         },
@@ -7363,11 +8345,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "register",
+              topic: "formal vs informal register",
+              focusPoints: [
+                "tú vs usted",
+                "formal vs colloquial greetings",
+              ],
             },
             grammar: {
-              topics: ["register structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "shifting register",
+              ],
+              focusPoints: [
+                "tú vs usted agreement",
+                "softened formal requests",
+              ],
             },
           },
         },
@@ -7401,11 +8392,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "professional",
+              topic: "business vocabulary",
+              focusPoints: [
+                "la empresa, el departamento, el cargo",
+                "las ventas, el presupuesto, el contrato",
+                "el cliente, el proveedor, la reunión",
+              ],
             },
             grammar: {
-              topic: "professional structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "business communication structures",
+              focusPoints: [
+                "formal email openings and closings",
+                "le agradecería que + subjunctive",
+                "polite negotiation phrases",
+              ],
             },
           },
         },
@@ -7424,12 +8424,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "professional conversation",
-              prompt: "Practice using professional in real conversation",
+              scenario: "a meeting to discuss a project deadline",
+              prompt: "Practice business vocabulary for meetings and updates",
             },
             stories: {
-              topic: "professional",
-              prompt: "Read and discuss professional",
+              topic: "a business email exchange",
+              prompt: "Read a professional email thread and discuss its purpose",
             },
           },
         },
@@ -7448,12 +8448,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "professional",
-              prompt: "Advanced professional content and comprehension",
+              topic: "interpreting business documents",
+              prompt: "Read a short proposal or report and find the key points",
             },
             realtime: {
-              scenario: "professional mastery",
-              prompt: "Demonstrate mastery of professional",
+              scenario: "negotiating terms with a client",
+              prompt: "Demonstrate professional negotiation language",
             },
           },
         },
@@ -7477,11 +8477,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "professional",
+              topic: "business vocabulary",
+              focusPoints: [
+                "empresa, ventas, presupuesto, contrato",
+                "cliente, proveedor, reunión",
+              ],
             },
             grammar: {
-              topics: ["professional structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "business communication structures",
+              ],
+              focusPoints: [
+                "formal email formulas",
+                "polite negotiation phrases",
+              ],
             },
           },
         },
@@ -7515,11 +8524,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "science",
+              topic: "science and technology vocabulary",
+              focusPoints: [
+                "la investigación, el experimento, la hipótesis",
+                "la tecnología, el descubrimiento, los datos",
+                "la inteligencia artificial, el avance",
+              ],
             },
             grammar: {
-              topic: "science structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "explaining processes and findings",
+              focusPoints: [
+                "impersonal se (se demostró que)",
+                "passive voice for results",
+                "connectors: debido a, por lo tanto",
+              ],
             },
           },
         },
@@ -7538,12 +8556,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "science conversation",
-              prompt: "Practice using science in real conversation",
+              scenario: "explaining a new technology to a friend",
+              prompt: "Practice science vocabulary to describe how something works",
             },
             stories: {
-              topic: "science",
-              prompt: "Read and discuss science",
+              topic: "a popular-science article",
+              prompt: "Read about a discovery and discuss its impact",
             },
           },
         },
@@ -7562,12 +8580,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "science",
-              prompt: "Advanced science content and comprehension",
+              topic: "comprehending science writing",
+              prompt: "Read a science text and paraphrase the main finding",
             },
             realtime: {
-              scenario: "science mastery",
-              prompt: "Demonstrate mastery of science",
+              scenario: "debating the pros and cons of AI",
+              prompt: "Demonstrate science vocabulary to argue a position",
             },
           },
         },
@@ -7591,11 +8609,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "science",
+              topic: "science and technology",
+              focusPoints: [
+                "investigación, experimento, hipótesis",
+                "tecnología, datos, inteligencia artificial",
+              ],
             },
             grammar: {
-              topics: ["science structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "explaining processes and findings",
+              ],
+              focusPoints: [
+                "impersonal se, passive for results",
+                "cause/result connectors",
+              ],
             },
           },
         },
@@ -7629,11 +8656,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "social justice",
+              topic: "social issues vocabulary",
+              focusPoints: [
+                "la desigualdad, la pobreza, los derechos",
+                "la justicia, la inmigración, la discriminación",
+                "el voluntariado, la solidaridad",
+              ],
             },
             grammar: {
-              topic: "social justice structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "discussing problems and proposals",
+              focusPoints: [
+                "es injusto que / no creo que + subjunctive",
+                "expressing cause and consequence",
+                "general/impersonal statements",
+              ],
             },
           },
         },
@@ -7652,12 +8688,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "social justice conversation",
-              prompt: "Practice using social justice in real conversation",
+              scenario: "discussing a social problem in your community",
+              prompt: "Practice social-issue vocabulary and opinion structures",
             },
             stories: {
-              topic: "social justice",
-              prompt: "Read and discuss social justice",
+              topic: "a story about a social cause",
+              prompt: "Read about a community initiative and discuss it",
             },
           },
         },
@@ -7676,12 +8712,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "social justice",
-              prompt: "Advanced social justice content and comprehension",
+              topic: "argument and evidence on social issues",
+              prompt: "Read an opinion piece and identify claims and support",
             },
             realtime: {
-              scenario: "social justice mastery",
-              prompt: "Demonstrate mastery of social justice",
+              scenario: "proposing a solution to inequality",
+              prompt: "Demonstrate social vocabulary to argue for change",
             },
           },
         },
@@ -7705,11 +8741,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "social justice",
+              topic: "social issues",
+              focusPoints: [
+                "desigualdad, pobreza, derechos",
+                "justicia, inmigración, discriminación",
+              ],
             },
             grammar: {
-              topics: ["social justice structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "discussing problems and proposals",
+              ],
+              focusPoints: [
+                "es injusto que + subjunctive",
+                "cause and consequence",
+              ],
             },
           },
         },
@@ -7743,11 +8788,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "literature",
+              topic: "arts and literature vocabulary",
+              focusPoints: [
+                "la novela, el cuento, el autor",
+                "la obra, la pintura, la escultura",
+                "el género, la trama, el personaje",
+              ],
             },
             grammar: {
-              topic: "literature structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "describing and reviewing art",
+              focusPoints: [
+                "se trata de / trata sobre",
+                "opinion + reason (me gustó porque)",
+                "past tenses to summarize a plot",
+              ],
             },
           },
         },
@@ -7766,12 +8820,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "literature conversation",
-              prompt: "Practice using literature in real conversation",
+              scenario: "recommending a book or film to a friend",
+              prompt: "Practice summarizing a plot and giving your opinion",
             },
             stories: {
-              topic: "literature",
-              prompt: "Read and discuss literature",
+              topic: "a book or film review",
+              prompt: "Read a review and discuss the opinion and reasons",
             },
           },
         },
@@ -7790,12 +8844,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "literature",
-              prompt: "Advanced literature content and comprehension",
+              topic: "interpreting a short literary text",
+              prompt: "Read a passage and discuss its theme and characters",
             },
             realtime: {
-              scenario: "literature mastery",
-              prompt: "Demonstrate mastery of literature",
+              scenario: "discussing your favorite work",
+              prompt: "Demonstrate arts vocabulary to describe and evaluate a work",
             },
           },
         },
@@ -7819,11 +8873,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "literature",
+              topic: "arts and literature",
+              focusPoints: [
+                "novela, cuento, autor, obra",
+                "género, trama, personaje",
+              ],
             },
             grammar: {
-              topics: ["literature structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "describing and reviewing art",
+              ],
+              focusPoints: [
+                "se trata de / trata sobre",
+                "opinion + reason",
+              ],
             },
           },
         },
@@ -7857,11 +8920,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "politics",
+              topic: "politics and society vocabulary",
+              focusPoints: [
+                "el gobierno, las elecciones, el partido",
+                "la ley, el ciudadano, el derecho",
+                "votar, gobernar, la democracia",
+              ],
             },
             grammar: {
-              topic: "politics structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "discussing politics respectfully",
+              focusPoints: [
+                "dudo que / no creo que + subjunctive",
+                "concession (aunque, si bien)",
+                "impersonal opinions (se dice que)",
+              ],
             },
           },
         },
@@ -7880,12 +8952,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "politics conversation",
-              prompt: "Practice using politics in real conversation",
+              scenario: "a calm discussion about an election",
+              prompt: "Practice politics vocabulary and balanced opinion language",
             },
             stories: {
-              topic: "politics",
-              prompt: "Read and discuss politics",
+              topic: "a news piece on a policy",
+              prompt: "Read about a political issue and discuss different views",
             },
           },
         },
@@ -7904,12 +8976,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "politics",
-              prompt: "Advanced politics content and comprehension",
+              topic: "bias and perspective in political texts",
+              prompt: "Read two takes on an issue and compare their stance",
             },
             realtime: {
-              scenario: "politics mastery",
-              prompt: "Demonstrate mastery of politics",
+              scenario: "debating a policy proposal politely",
+              prompt: "Demonstrate politics vocabulary with concession and rebuttal",
             },
           },
         },
@@ -7933,11 +9005,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "politics",
+              topic: "politics and society",
+              focusPoints: [
+                "gobierno, elecciones, partido, ley",
+                "ciudadano, votar, democracia",
+              ],
             },
             grammar: {
-              topics: ["politics structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "discussing politics",
+              ],
+              focusPoints: [
+                "dudo que + subjunctive",
+                "concession: aunque, si bien",
+              ],
             },
           },
         },
@@ -7971,11 +9052,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "wellness",
+              topic: "health and lifestyle vocabulary",
+              focusPoints: [
+                "la salud, el bienestar, la dieta",
+                "el ejercicio, el estrés, el descanso",
+                "los hábitos, el sueño, la alimentación",
+              ],
             },
             grammar: {
-              topic: "wellness structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "talking about habits and advice",
+              focusPoints: [
+                "soler + infinitive for routines",
+                "es bueno que / te recomiendo que + subjunctive",
+                "reflexive verbs (cuidarse, relajarse)",
+              ],
             },
           },
         },
@@ -7994,12 +9084,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "wellness conversation",
-              prompt: "Practice using wellness in real conversation",
+              scenario: "talking to a friend about healthier habits",
+              prompt: "Practice health vocabulary and advice ('deberías', 'es bueno que')",
             },
             stories: {
-              topic: "wellness",
-              prompt: "Read and discuss wellness",
+              topic: "a wellness article",
+              prompt: "Read tips on a healthy lifestyle and discuss",
             },
           },
         },
@@ -8018,12 +9108,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "wellness",
-              prompt: "Advanced wellness content and comprehension",
+              topic: "habits and their effects",
+              prompt: "Read about a habit and its impact on health",
             },
             realtime: {
-              scenario: "wellness mastery",
-              prompt: "Demonstrate mastery of wellness",
+              scenario: "at the doctor describing symptoms and getting advice",
+              prompt: "Demonstrate health vocabulary to describe a problem and advice",
             },
           },
         },
@@ -8047,11 +9137,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "wellness",
+              topic: "health and lifestyle",
+              focusPoints: [
+                "salud, bienestar, dieta, ejercicio",
+                "estrés, hábitos, descanso",
+              ],
             },
             grammar: {
-              topics: ["wellness structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "habits and advice",
+              ],
+              focusPoints: [
+                "soler + infinitive",
+                "es bueno que + subjunctive",
+              ],
             },
           },
         },
@@ -8085,11 +9184,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "abstract",
+              topic: "vocabulary for abstract ideas",
+              focusPoints: [
+                "la libertad, la felicidad, la justicia",
+                "el éxito, la verdad, el tiempo",
+                "el significado, el propósito",
+              ],
             },
             grammar: {
-              topic: "abstract structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "discussing abstract concepts",
+              focusPoints: [
+                "lo + adjective (lo importante, lo difícil)",
+                "subjunctive after value judgments (es esencial que)",
+                "nominalization of verbs",
+              ],
             },
           },
         },
@@ -8108,12 +9216,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "abstract conversation",
-              prompt: "Practice using abstract in real conversation",
+              scenario: "a philosophical chat about happiness",
+              prompt: "Practice abstract vocabulary and 'lo + adjetivo' to discuss ideas",
             },
             stories: {
-              topic: "abstract",
-              prompt: "Read and discuss abstract",
+              topic: "an essay on an abstract theme",
+              prompt: "Read a reflective text and discuss its main idea",
             },
           },
         },
@@ -8132,12 +9240,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "abstract",
-              prompt: "Advanced abstract content and comprehension",
+              topic: "interpreting abstract arguments",
+              prompt: "Read a philosophical passage and paraphrase its point",
             },
             realtime: {
-              scenario: "abstract mastery",
-              prompt: "Demonstrate mastery of abstract",
+              scenario: "defending what success means to you",
+              prompt: "Demonstrate abstract vocabulary to express a nuanced view",
             },
           },
         },
@@ -8161,11 +9269,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "abstract",
+              topic: "abstract concepts",
+              focusPoints: [
+                "libertad, felicidad, justicia",
+                "éxito, verdad, propósito",
+              ],
             },
             grammar: {
-              topics: ["abstract structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "discussing abstract concepts",
+              ],
+              focusPoints: [
+                "lo + adjetivo",
+                "subjunctive after value judgments",
+              ],
             },
           },
         },
@@ -8201,11 +9318,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "subjunctive",
+              topic: "verbs and expressions that trigger the present subjunctive",
+              focusPoints: [
+                "querer que, esperar que, dudar que",
+                "es importante que, es necesario que",
+                "ojalá (que)",
+              ],
             },
             grammar: {
-              topic: "subjunctive structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "forming the present subjunctive",
+              focusPoints: [
+                "regular: hable, coma, viva",
+                "irregulars: sea, vaya, haya, sepa, dé",
+                "stem changes: pueda, quiera, pida",
+              ],
             },
           },
         },
@@ -8224,12 +9350,14 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "subjunctive conversation",
-              prompt: "Practice using subjunctive in real conversation",
+              scenario: "giving advice and wishes to a friend (espero que te vaya bien)",
+              prompt:
+                "Practice the present subjunctive after querer que, esperar que, and ojalá",
             },
             stories: {
-              topic: "subjunctive",
-              prompt: "Read and discuss subjunctive",
+              topic: "the subjunctive in opinions and emotions",
+              prompt:
+                "Read a text and spot the subjunctive after 'me alegra que' and 'es una lástima que'",
             },
           },
         },
@@ -8248,12 +9376,14 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "subjunctive",
-              prompt: "Advanced subjunctive content and comprehension",
+              topic: "subjunctive vs indicative in subordinate clauses",
+              prompt:
+                "Read and decide when a clause needs subjunctive (doubt, emotion, wish) vs indicative (fact)",
             },
             realtime: {
-              scenario: "subjunctive mastery",
-              prompt: "Demonstrate mastery of subjunctive",
+              scenario: "negotiating plans using cuando, para que, and a menos que",
+              prompt:
+                "Demonstrate the present subjunctive in purpose, time, and condition clauses",
             },
           },
         },
@@ -8277,11 +9407,15 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "subjunctive",
+              topic: "present subjunctive triggers",
+              focusPoints: [
+                "querer/esperar/dudar que",
+                "es importante/necesario que, ojalá",
+              ],
             },
             grammar: {
-              topics: ["subjunctive structures"],
-              focusPoints: ["comprehensive review"],
+              topics: ["forming and using the present subjunctive"],
+              focusPoints: ["subjunctive vs indicative"],
             },
           },
         },
@@ -8315,11 +9449,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "subjunctive",
+              topic: "past-tense triggers for the imperfect subjunctive",
+              focusPoints: [
+                "quería que, esperaba que, dudaba que",
+                "como si + past subjunctive",
+                "ojalá (pudiera)",
+              ],
             },
             grammar: {
-              topic: "subjunctive structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "forming the imperfect subjunctive (-ra and -se forms)",
+              focusPoints: [
+                "hablara/hablase, comiera/comiese",
+                "irregulars: fuera, tuviera, pudiera, hiciera",
+                "built from the 3rd-person plural preterite stem",
+              ],
             },
           },
         },
@@ -8338,12 +9481,14 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "subjunctive conversation",
-              prompt: "Practice using subjunctive in real conversation",
+              scenario: "making polite requests with quisiera and me gustaría que",
+              prompt:
+                "Practice softening requests and wishes with the imperfect subjunctive",
             },
             stories: {
-              topic: "subjunctive",
-              prompt: "Read and discuss subjunctive",
+              topic: "the past subjunctive in storytelling and hypotheticals",
+              prompt:
+                "Read a narrative and notice 'como si fuera' and reported wishes",
             },
           },
         },
@@ -8362,12 +9507,14 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "subjunctive",
-              prompt: "Advanced subjunctive content and comprehension",
+              topic: "imperfect subjunctive in si-clauses and reported speech",
+              prompt:
+                "Read and identify hypothetical and past-wish uses of the imperfect subjunctive",
             },
             realtime: {
-              scenario: "subjunctive mastery",
-              prompt: "Demonstrate mastery of subjunctive",
+              scenario: "talking about unreal situations (si tuviera tiempo, viajaría)",
+              prompt:
+                "Demonstrate the imperfect subjunctive in si-clauses and after past-tense triggers",
             },
           },
         },
@@ -8391,11 +9538,15 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "subjunctive",
+              topic: "imperfect subjunctive triggers",
+              focusPoints: [
+                "quería/esperaba/dudaba que",
+                "como si, ojalá + past subjunctive",
+              ],
             },
             grammar: {
-              topics: ["subjunctive structures"],
-              focusPoints: ["comprehensive review"],
+              topics: ["forming and using the imperfect subjunctive"],
+              focusPoints: ["-ra/-se forms (fuera, tuviera)", "si-clauses"],
             },
           },
         },
@@ -8429,11 +9580,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "conditional",
+              topic: "connectors for conditions and hypotheses",
+              focusPoints: [
+                "si, a menos que, en caso de que",
+                "siempre que, con tal de que",
+                "de + infinitive (de haberlo sabido)",
+              ],
             },
             grammar: {
-              topic: "conditional structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "the three types of si-clauses",
+              focusPoints: [
+                "si tengo tiempo, iré (real)",
+                "si tuviera tiempo, iría (unreal present)",
+                "si hubiera tenido tiempo, habría ido (unreal past)",
+              ],
             },
           },
         },
@@ -8452,12 +9612,14 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "conditional conversation",
-              prompt: "Practice using conditional in real conversation",
+              scenario: "discussing 'what would you do if...' dilemmas",
+              prompt:
+                "Practice unreal conditionals like 'si pudiera, viviría en...'",
             },
             stories: {
-              topic: "conditional",
-              prompt: "Read and discuss conditional",
+              topic: "regrets and alternate outcomes (the third conditional)",
+              prompt:
+                "Read about a missed chance and discuss 'lo que habría pasado si...'",
             },
           },
         },
@@ -8476,12 +9638,14 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "conditional",
-              prompt: "Advanced conditional content and comprehension",
+              topic: "mixed and advanced conditional structures",
+              prompt:
+                "Read and analyze conditionals that mix time frames",
             },
             realtime: {
-              scenario: "conditional mastery",
-              prompt: "Demonstrate mastery of conditional",
+              scenario: "negotiating with conditions (con tal de que, a no ser que)",
+              prompt:
+                "Demonstrate conditional clauses across real, unreal, and past-unreal situations",
             },
           },
         },
@@ -8505,11 +9669,15 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "conditional",
+              topic: "conditional connectors",
+              focusPoints: [
+                "si, a menos que, en caso de que",
+                "con tal de que, siempre que",
+              ],
             },
             grammar: {
-              topics: ["conditional structures"],
-              focusPoints: ["comprehensive review"],
+              topics: ["the three si-clause types", "mixed conditionals"],
+              focusPoints: ["si + present / imperfect subj / pluperfect subj"],
             },
           },
         },
@@ -8543,11 +9711,21 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "idioms",
+              topic: "high-frequency Spanish idioms",
+              focusPoints: [
+                "echar de menos (to miss someone)",
+                "darse cuenta de (to realize)",
+                "valer la pena (to be worth it)",
+                "tener ganas de (to feel like)",
+              ],
             },
             grammar: {
-              topic: "idioms structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "verbal idiom structures",
+              focusPoints: [
+                "reflexive idioms: ponerse las pilas, hacerse el tonto",
+                "dar idioms: dar la lata, dar igual",
+                "fixed prepositions inside idioms",
+              ],
             },
           },
         },
@@ -8566,12 +9744,13 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "idioms conversation",
-              prompt: "Practice using idioms in real conversation",
+              scenario: "catching up with a friend using everyday idioms",
+              prompt:
+                "Practice using idioms like 'echar de menos' and 'tener ganas de' naturally",
             },
             stories: {
-              topic: "idioms",
-              prompt: "Read and discuss idioms",
+              topic: "idioms in everyday dialogue",
+              prompt: "Read a casual conversation and explain each idiom's meaning",
             },
           },
         },
@@ -8590,12 +9769,14 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "idioms",
-              prompt: "Advanced idioms content and comprehension",
+              topic: "inferring idiom meaning from context",
+              prompt:
+                "Read texts and work out unfamiliar idioms from the surrounding context",
             },
             realtime: {
-              scenario: "idioms mastery",
-              prompt: "Demonstrate mastery of idioms",
+              scenario: "telling a short story peppered with idioms",
+              prompt:
+                "Demonstrate natural use of common idioms in a short narrative",
             },
           },
         },
@@ -8619,11 +9800,15 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "idioms",
+              topic: "common idioms",
+              focusPoints: [
+                "echar de menos, darse cuenta, valer la pena",
+                "tener ganas de",
+              ],
             },
             grammar: {
-              topics: ["idioms structures"],
-              focusPoints: ["comprehensive review"],
+              topics: ["verbal idiom structures"],
+              focusPoints: ["reflexive and dar idioms"],
             },
           },
         },
@@ -8657,11 +9842,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "academic",
+              topic: "academic vocabulary and essay structure",
+              focusPoints: [
+                "la tesis, el argumento, la conclusión",
+                "la hipótesis, la metodología",
+                "plantear, argumentar, sostener",
+              ],
             },
             grammar: {
-              topic: "academic structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "formal academic structures",
+              focusPoints: [
+                "impersonal se and the passive voice",
+                "nominalization: analizar → el análisis",
+                "connectors: por consiguiente, en cuanto a, cabe señalar",
+              ],
             },
           },
         },
@@ -8680,12 +9874,14 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "academic conversation",
-              prompt: "Practice using academic in real conversation",
+              scenario: "defending a thesis to a professor",
+              prompt:
+                "Practice presenting and supporting an argument in formal register",
             },
             stories: {
-              topic: "academic",
-              prompt: "Read and discuss academic",
+              topic: "the structure of an academic essay",
+              prompt:
+                "Read an essay excerpt and identify the thesis, evidence, and conclusion",
             },
           },
         },
@@ -8704,12 +9900,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "academic",
-              prompt: "Advanced academic content and comprehension",
+              topic: "comprehending dense academic prose",
+              prompt: "Read an abstract and paraphrase its argument in plain Spanish",
             },
             realtime: {
-              scenario: "academic mastery",
-              prompt: "Demonstrate mastery of academic",
+              scenario: "summarizing research objectively",
+              prompt: "Demonstrate a formal, objective academic register",
             },
           },
         },
@@ -8733,11 +9929,15 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "academic",
+              topic: "academic vocabulary and essay structure",
+              focusPoints: [
+                "tesis, argumento, conclusión",
+                "hipótesis, metodología",
+              ],
             },
             grammar: {
-              topics: ["academic structures"],
-              focusPoints: ["comprehensive review"],
+              topics: ["formal academic structures"],
+              focusPoints: ["impersonal se, passive, nominalization"],
             },
           },
         },
@@ -8771,11 +9971,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "professional",
+              topic: "workplace and business vocabulary",
+              focusPoints: [
+                "la reunión, el plazo, el informe",
+                "el cliente, el proveedor, la propuesta",
+                "agendar, gestionar, coordinar",
+              ],
             },
             grammar: {
-              topic: "professional structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "formal email and request formulas",
+              focusPoints: [
+                "le agradecería que + subjunctive",
+                "quedo a la espera de su respuesta",
+                "atentamente / un cordial saludo",
+              ],
             },
           },
         },
@@ -8794,12 +10003,13 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "professional conversation",
-              prompt: "Practice using professional in real conversation",
+              scenario: "a phone call to reschedule a meeting",
+              prompt:
+                "Practice polite, formal workplace requests and confirmations",
             },
             stories: {
-              topic: "professional",
-              prompt: "Read and discuss professional",
+              topic: "reading professional emails and memos",
+              prompt: "Read a business email and discuss its tone and structure",
             },
           },
         },
@@ -8818,12 +10028,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "professional",
-              prompt: "Advanced professional content and comprehension",
+              topic: "interpreting professional documents",
+              prompt: "Read a proposal and summarize its key points",
             },
             realtime: {
-              scenario: "professional mastery",
-              prompt: "Demonstrate mastery of professional",
+              scenario: "presenting an update to your team",
+              prompt: "Demonstrate clear, professional communication in a meeting",
             },
           },
         },
@@ -8847,11 +10057,15 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "professional",
+              topic: "workplace and business vocabulary",
+              focusPoints: [
+                "reunión, plazo, informe",
+                "cliente, proveedor, propuesta",
+              ],
             },
             grammar: {
-              topics: ["professional structures"],
-              focusPoints: ["comprehensive review"],
+              topics: ["formal request and email formulas"],
+              focusPoints: ["le agradecería que + subjunctive", "professional closings"],
             },
           },
         },
@@ -8885,11 +10099,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "debate",
+              topic: "language for stating and defending opinions",
+              focusPoints: [
+                "en mi opinión, sostengo que, considero que",
+                "estoy a favor de / en contra de",
+                "argumentar, refutar, conceder",
+              ],
             },
             grammar: {
-              topic: "debate structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "structures for argument and concession",
+              focusPoints: [
+                "no creo que + subjunctive",
+                "si bien / aunque for concession",
+                "por un lado... por otro lado",
+              ],
             },
           },
         },
@@ -8908,12 +10131,14 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "debate conversation",
-              prompt: "Practice using debate in real conversation",
+              scenario: "debating a controversial topic respectfully",
+              prompt:
+                "Practice stating, supporting, and conceding points in a debate",
             },
             stories: {
-              topic: "debate",
-              prompt: "Read and discuss debate",
+              topic: "analyzing arguments in an opinion piece",
+              prompt:
+                "Read a persuasive text and identify claims, evidence, and counterarguments",
             },
           },
         },
@@ -8932,12 +10157,13 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "debate",
-              prompt: "Advanced debate content and comprehension",
+              topic: "evaluating the strength of an argument",
+              prompt: "Read two opposing views and weigh their reasoning",
             },
             realtime: {
-              scenario: "debate mastery",
-              prompt: "Demonstrate mastery of debate",
+              scenario: "rebutting an opposing view politely",
+              prompt:
+                "Demonstrate concession and rebuttal: 'si bien..., sin embargo...'",
             },
           },
         },
@@ -8961,11 +10187,15 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "debate",
+              topic: "opinion and argumentation language",
+              focusPoints: [
+                "sostengo que, considero que",
+                "a favor de / en contra de",
+              ],
             },
             grammar: {
-              topics: ["debate structures"],
-              focusPoints: ["comprehensive review"],
+              topics: ["argument and concession structures"],
+              focusPoints: ["no creo que + subjunctive", "concession: si bien, aunque"],
             },
           },
         },
@@ -8999,11 +10229,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "culture",
+              topic: "vocabulary for discussing culture and society",
+              focusPoints: [
+                "los valores, las costumbres, la identidad",
+                "la sociedad, la tradición, la modernidad",
+                "el estereotipo, la diversidad",
+              ],
             },
             grammar: {
-              topic: "culture structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "comparing and generalizing",
+              focusPoints: [
+                "comparatives: más/menos... que, tan... como",
+                "generalizations: suele(n), tiende(n) a",
+                "lo + adjective (lo importante es que)",
+              ],
             },
           },
         },
@@ -9022,12 +10261,14 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "culture conversation",
-              prompt: "Practice using culture in real conversation",
+              scenario: "comparing traditions in two countries",
+              prompt:
+                "Practice comparing cultural practices and values respectfully",
             },
             stories: {
-              topic: "culture",
-              prompt: "Read and discuss culture",
+              topic: "cultural themes in a short text",
+              prompt:
+                "Read about a social custom and analyze what it reveals about values",
             },
           },
         },
@@ -9046,12 +10287,13 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "culture",
-              prompt: "Advanced culture content and comprehension",
+              topic: "analyzing cultural perspectives in a text",
+              prompt: "Read an article and discuss its cultural assumptions",
             },
             realtime: {
-              scenario: "culture mastery",
-              prompt: "Demonstrate mastery of culture",
+              scenario: "discussing a stereotype vs the reality",
+              prompt:
+                "Demonstrate nuanced cultural analysis without overgeneralizing",
             },
           },
         },
@@ -9075,11 +10317,15 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "culture",
+              topic: "culture and society vocabulary",
+              focusPoints: [
+                "valores, costumbres, identidad",
+                "estereotipo, diversidad",
+              ],
             },
             grammar: {
-              topics: ["culture structures"],
-              focusPoints: ["comprehensive review"],
+              topics: ["comparison and generalization structures"],
+              focusPoints: ["comparatives", "suele/tiende a, lo + adjetivo"],
             },
           },
         },
@@ -9113,11 +10359,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "literature",
+              topic: "vocabulary for analyzing literature",
+              focusPoints: [
+                "el narrador, el personaje, la trama",
+                "la metáfora, el símbolo, el tono",
+                "el verso, la estrofa, la rima",
+              ],
             },
             grammar: {
-              topic: "literature structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "narrative tenses and literary style",
+              focusPoints: [
+                "preterite vs imperfect in narration",
+                "literary past forms (hubo, pretérito anterior)",
+                "stylistic word order and adjective placement",
+              ],
             },
           },
         },
@@ -9136,12 +10391,13 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "literature conversation",
-              prompt: "Practice using literature in real conversation",
+              scenario: "discussing a poem's imagery and tone",
+              prompt:
+                "Practice describing metaphor, symbol, and tone in a text",
             },
             stories: {
-              topic: "literature",
-              prompt: "Read and discuss literature",
+              topic: "reading and interpreting a short literary passage",
+              prompt: "Read a passage and discuss its narrator and imagery",
             },
           },
         },
@@ -9160,12 +10416,13 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "literature",
-              prompt: "Advanced literature content and comprehension",
+              topic: "analyzing theme and style in literature",
+              prompt:
+                "Read a short-story excerpt and identify its theme and techniques",
             },
             realtime: {
-              scenario: "literature mastery",
-              prompt: "Demonstrate mastery of literature",
+              scenario: "comparing two authors' styles",
+              prompt: "Demonstrate literary analysis using precise terminology",
             },
           },
         },
@@ -9189,11 +10446,15 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "literature",
+              topic: "literary analysis vocabulary",
+              focusPoints: [
+                "narrador, personaje, trama",
+                "metáfora, símbolo, tono",
+              ],
             },
             grammar: {
-              topics: ["literature structures"],
-              focusPoints: ["comprehensive review"],
+              topics: ["narrative tenses and literary style"],
+              focusPoints: ["preterite vs imperfect in narration"],
             },
           },
         },
@@ -9227,11 +10488,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "discourse",
+              topic: "discourse markers for organizing extended speech",
+              focusPoints: [
+                "en primer lugar, a continuación, por último",
+                "por lo tanto, en consecuencia",
+                "en definitiva, en resumen",
+              ],
             },
             grammar: {
-              topic: "discourse structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "cohesion and coherence devices",
+              focusPoints: [
+                "reference and pronouns to avoid repetition",
+                "connectors of contrast, cause, and result",
+                "topic shifts: en cuanto a, respecto a",
+              ],
             },
           },
         },
@@ -9250,12 +10520,13 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "discourse conversation",
-              prompt: "Practice using discourse in real conversation",
+              scenario: "giving a structured two-minute opinion",
+              prompt:
+                "Practice organizing extended speech with clear discourse markers",
             },
             stories: {
-              topic: "discourse",
-              prompt: "Read and discuss discourse",
+              topic: "tracing the thread of a long argument",
+              prompt: "Read an extended text and map how its ideas connect",
             },
           },
         },
@@ -9274,12 +10545,14 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "discourse",
-              prompt: "Advanced discourse content and comprehension",
+              topic: "analyzing cohesion in extended writing",
+              prompt:
+                "Read a long passage and identify its connectors and references",
             },
             realtime: {
-              scenario: "discourse mastery",
-              prompt: "Demonstrate mastery of discourse",
+              scenario: "summarizing a complex topic coherently",
+              prompt:
+                "Demonstrate coherent, well-structured discourse with smooth transitions",
             },
           },
         },
@@ -9303,11 +10576,15 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "discourse",
+              topic: "discourse markers and connectors",
+              focusPoints: [
+                "sequencing: en primer lugar, por último",
+                "result: por lo tanto, en consecuencia",
+              ],
             },
             grammar: {
-              topics: ["discourse structures"],
-              focusPoints: ["comprehensive review"],
+              topics: ["cohesion and coherence devices"],
+              focusPoints: ["reference and topic-shift devices"],
             },
           },
         },
@@ -9343,11 +10620,21 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "idioms and colloquial expressions",
+              topic: "everyday Spanish idioms",
+              focusPoints: [
+                "meter la pata (to mess up)",
+                "costar un ojo de la cara (to cost a fortune)",
+                "estar en las nubes (to daydream)",
+                "echar una mano (to lend a hand)",
+              ],
             },
             grammar: {
-              topic: "idioms and colloquial expressions structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "fixed idiomatic structures and verb collocations",
+              focusPoints: [
+                "dar/tener/hacer idioms: dar igual, tener ganas, hacer caso",
+                "ser pan comido (to be easy) vs estar pez (to be clueless)",
+                "idioms that don't translate word for word",
+              ],
             },
           },
         },
@@ -9366,13 +10653,16 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "idioms and colloquial expressions conversation",
+              scenario:
+                "a casual chat where friends drop idioms like 'no tener pelos en la lengua' and 'tomar el pelo'",
               prompt:
-                "Practice using idioms and colloquial expressions in real conversation",
+                "Practice using idioms naturally and noticing when someone is speaking figuratively",
             },
             stories: {
-              topic: "idioms and colloquial expressions",
-              prompt: "Read and discuss idioms and colloquial expressions",
+              topic:
+                "regional slang: vale (España), órale (México), che (Argentina)",
+              prompt:
+                "Read a dialogue full of colloquialisms and explain what each one really means",
             },
           },
         },
@@ -9391,14 +10681,15 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "idioms and colloquial expressions",
+              topic: "figurative vs literal meaning in idioms",
               prompt:
-                "Advanced idioms and colloquial expressions content and comprehension",
+                "Read texts with idioms and infer their meaning from context",
             },
             realtime: {
-              scenario: "idioms and colloquial expressions mastery",
+              scenario:
+                "explaining a Spanish idiom to someone who took it literally",
               prompt:
-                "Demonstrate mastery of idioms and colloquial expressions",
+                "Demonstrate mastery by using idioms correctly and paraphrasing what they mean",
             },
           },
         },
@@ -9422,11 +10713,15 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "idioms and colloquial expressions",
+              topic: "common idioms and colloquial expressions",
+              focusPoints: [
+                "meter la pata, tomar el pelo, echar una mano",
+                "regional slang: vale, órale, che",
+              ],
             },
             grammar: {
-              topics: ["idioms and colloquial expressions structures"],
-              focusPoints: ["comprehensive review"],
+              topics: ["idiomatic verb collocations"],
+              focusPoints: ["literal vs figurative meaning"],
             },
           },
         },
@@ -9460,11 +10755,22 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "regional language",
+              topic: "regional vocabulary that changes by country",
+              focusPoints: [
+                "el carro / el coche / el auto",
+                "la computadora / el ordenador",
+                "el celular / el móvil",
+                "el jugo / el zumo",
+                "la papa / la patata",
+              ],
             },
             grammar: {
-              topic: "regional language structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "regional second-person pronouns: tú, vos, usted, vosotros, ustedes",
+              focusPoints: [
+                "tú tienes vs vos tenés vs usted tiene",
+                "vosotros habláis (España) vs ustedes hablan (Latinoamérica)",
+                "voseo endings -ás/-és/-ís: vos hablás, comés, vivís",
+              ],
             },
           },
         },
@@ -9483,12 +10789,16 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "regional language conversation",
-              prompt: "Practice using regional language in real conversation",
+              scenario:
+                "chatting with friends from Argentina, Mexico, and Spain at the same table",
+              prompt:
+                "Practice switching between voseo (vos tenés, vení, decime) and tuteo (tú tienes, ven, dime) depending on who you are talking to",
             },
             stories: {
-              topic: "regional language",
-              prompt: "Read and discuss regional language",
+              topic:
+                "regional accents: seseo, yeísmo rioplatense, and Caribbean /s/ aspiration",
+              prompt:
+                "Read and discuss how the same words sound across regions, like 'calle' as /kaʝe/ vs /kaʃe/ and 'está' vs 'ehtá'",
             },
           },
         },
@@ -9507,12 +10817,16 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "regional language",
-              prompt: "Advanced regional language content and comprehension",
+              topic:
+                "spotting voseo, vosotros, and regional words in real texts",
+              prompt:
+                "Read short texts from Spain, the River Plate, and Central America and identify the regional pronouns and vocabulary",
             },
             realtime: {
-              scenario: "regional language mastery",
-              prompt: "Demonstrate mastery of regional language",
+              scenario:
+                "adapting your register for a Rioplatense friend vs a Peninsular colleague",
+              prompt:
+                "Demonstrate when to use vos, tú, usted, vosotros, and ustedes based on region and formality",
             },
           },
         },
@@ -9536,11 +10850,18 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "regional language",
+              topic: "regional vocabulary and pronoun systems",
+              focusPoints: [
+                "carro/coche, papa/patata, celular/móvil",
+                "tú / vos / usted / vosotros / ustedes",
+              ],
             },
             grammar: {
-              topics: ["regional language structures"],
-              focusPoints: ["comprehensive review"],
+              topics: ["voseo vs tuteo conjugations", "vosotros vs ustedes"],
+              focusPoints: [
+                "vos tenés vs tú tienes",
+                "vosotros habláis vs ustedes hablan",
+              ],
             },
           },
         },
@@ -9574,11 +10895,21 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "style",
+              topic: "formal vs colloquial synonyms",
+              focusPoints: [
+                "solicitar vs pedir",
+                "adquirir vs conseguir",
+                "comenzar vs empezar",
+                "no obstante vs pero",
+              ],
             },
             grammar: {
-              topic: "style structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "register markers and formal connectors",
+              focusPoints: [
+                "sin embargo, no obstante, por ende",
+                "cabe destacar que..., dicho esto...",
+                "impersonal se and passive voice for a formal tone",
+              ],
             },
           },
         },
@@ -9597,12 +10928,15 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "style conversation",
-              prompt: "Practice using style in real conversation",
+              scenario:
+                "making the same request as a casual text to a friend and a formal email to a boss",
+              prompt:
+                "Practice shifting register: '¿me pasás eso?' vs 'le agradecería que me enviara el documento'",
             },
             stories: {
-              topic: "style",
-              prompt: "Read and discuss style",
+              topic: "tone and rhetorical devices: metaphor, irony, hyperbole",
+              prompt:
+                "Read a passage and discuss how its tone (sincere, ironic, exaggerated) changes the meaning",
             },
           },
         },
@@ -9621,12 +10955,14 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "style",
-              prompt: "Advanced style content and comprehension",
+              topic: "formal and literary discourse markers and nominalization",
+              prompt:
+                "Read a formal opinion piece and identify hedging, connectors, and sophisticated phrasing",
             },
             realtime: {
-              scenario: "style mastery",
-              prompt: "Demonstrate mastery of style",
+              scenario: "giving diplomatic, softened feedback vs blunt feedback",
+              prompt:
+                "Demonstrate softening and politeness strategies, like 'quizás convendría...' and 'me preguntaba si...'",
             },
           },
         },
@@ -9650,11 +10986,21 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "style",
+              topic: "formal vs colloquial register",
+              focusPoints: [
+                "solicitar/pedir, adquirir/conseguir",
+                "formal email vs casual text wording",
+              ],
             },
             grammar: {
-              topics: ["style structures"],
-              focusPoints: ["comprehensive review"],
+              topics: [
+                "formal connectors and discourse markers",
+                "register shifting",
+              ],
+              focusPoints: [
+                "no obstante, por ende, cabe destacar",
+                "softening and hedging for politeness",
+              ],
             },
           },
         },
@@ -9688,11 +11034,21 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "rhetoric",
+              topic: "rhetorical and literary devices",
+              focusPoints: [
+                "metáfora vs símil (comparison with 'como')",
+                "hipérbole (exaggeration)",
+                "ironía",
+                "personificación",
+              ],
             },
             grammar: {
-              topic: "rhetoric structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "structures that create rhetorical effect",
+              focusPoints: [
+                "anáfora (repetition at the start of phrases)",
+                "preguntas retóricas",
+                "antítesis (contrasting ideas)",
+              ],
             },
           },
         },
@@ -9711,12 +11067,14 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "rhetoric conversation",
-              prompt: "Practice using rhetoric in real conversation",
+              scenario: "giving a persuasive toast or short speech",
+              prompt:
+                "Practice weaving in metáfora, ironía, and hipérbole to make your point vivid",
             },
             stories: {
-              topic: "rhetoric",
-              prompt: "Read and discuss rhetoric",
+              topic: "spotting irony and metaphor in literature",
+              prompt:
+                "Read a literary passage and discuss the devices the author uses",
             },
           },
         },
@@ -9735,12 +11093,14 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "rhetoric",
-              prompt: "Advanced rhetoric content and comprehension",
+              topic: "analyzing persuasive and figurative language",
+              prompt:
+                "Read an opinion column and identify its rhetorical devices and intended effect",
             },
             realtime: {
-              scenario: "rhetoric mastery",
-              prompt: "Demonstrate mastery of rhetoric",
+              scenario: "debating a topic with rhetorical flourish",
+              prompt:
+                "Demonstrate mastery by using rhetorical devices to persuade",
             },
           },
         },
@@ -9764,11 +11124,15 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "rhetoric",
+              topic: "rhetorical devices",
+              focusPoints: [
+                "metáfora, símil, hipérbole, ironía",
+                "personificación",
+              ],
             },
             grammar: {
-              topics: ["rhetoric structures"],
-              focusPoints: ["comprehensive review"],
+              topics: ["devices that create rhetorical effect"],
+              focusPoints: ["anáfora and preguntas retóricas"],
             },
           },
         },
@@ -9802,11 +11166,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "specialized",
+              topic: "professional and technical vocabulary by field",
+              focusPoints: [
+                "legal: el contrato, la cláusula, el demandante",
+                "medical: el diagnóstico, los síntomas, el tratamiento",
+                "business: la inversión, el presupuesto, las acciones",
+              ],
             },
             grammar: {
-              topic: "specialized structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "nominalization and formal terminology",
+              focusPoints: [
+                "turning verbs into nouns: implementar → la implementación",
+                "technical compounds and Latinisms",
+                "precise field-specific collocations",
+              ],
             },
           },
         },
@@ -9825,12 +11198,14 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "specialized conversation",
-              prompt: "Practice using specialized in real conversation",
+              scenario:
+                "a work meeting covering a budget, a contract, and a medical report",
+              prompt:
+                "Practice using precise field vocabulary (presupuesto, cláusula, diagnóstico) accurately",
             },
             stories: {
-              topic: "specialized",
-              prompt: "Read and discuss specialized",
+              topic: "academic and scientific register",
+              prompt: "Read a technical text and discuss its specialized terms",
             },
           },
         },
@@ -9849,12 +11224,15 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "specialized",
-              prompt: "Advanced specialized content and comprehension",
+              topic: "comprehending dense specialized texts",
+              prompt:
+                "Read a legal or scientific excerpt and paraphrase it in plain Spanish",
             },
             realtime: {
-              scenario: "specialized mastery",
-              prompt: "Demonstrate mastery of specialized",
+              scenario:
+                "explaining a technical topic to an expert vs a layperson",
+              prompt:
+                "Demonstrate mastery by switching between jargon and plain language",
             },
           },
         },
@@ -9878,11 +11256,15 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "specialized",
+              topic: "specialized vocabulary across fields",
+              focusPoints: [
+                "legal, medical, and business terms",
+                "jargon vs plain language",
+              ],
             },
             grammar: {
-              topics: ["specialized structures"],
-              focusPoints: ["comprehensive review"],
+              topics: ["formal terminology and nominalization"],
+              focusPoints: ["field-specific collocations"],
             },
           },
         },
@@ -9916,11 +11298,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "advanced vocabulary and nuanced expressions",
+              topic: "near-synonyms with different connotations",
+              focusPoints: [
+                "delgado / flaco / esquelético",
+                "barato / económico / cutre",
+                "bonito / lindo / hermoso",
+              ],
             },
             grammar: {
-              topic: "advanced vocabulary and nuanced expressions structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "subtle grammatical contrasts",
+              focusPoints: [
+                "ser vs estar for permanent vs temporary nuance",
+                "por vs para",
+                "indicative vs subjunctive for certainty vs doubt",
+              ],
             },
           },
         },
@@ -9940,14 +11331,14 @@ const baseLearningPath = withLocalizedSkillTreeText({
           content: {
             realtime: {
               scenario:
-                "advanced vocabulary and nuanced expressions conversation",
+                "reading between the lines in a tense but polite conversation",
               prompt:
-                "Practice using advanced vocabulary and nuanced expressions in real conversation",
+                "Practice conveying nuance through word choice and tone (suggesting vs insisting)",
             },
             stories: {
-              topic: "advanced vocabulary and nuanced expressions",
+              topic: "connotation and subtext in dialogue",
               prompt:
-                "Read and discuss advanced vocabulary and nuanced expressions",
+                "Read a scene and discuss what the characters imply but don't say",
             },
           },
         },
@@ -9966,14 +11357,15 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "advanced vocabulary and nuanced expressions",
+              topic: "implicature and tone in writing",
               prompt:
-                "Advanced advanced vocabulary and nuanced expressions content and comprehension",
+                "Read a passage and infer the writer's true attitude from subtle cues",
             },
             realtime: {
-              scenario: "advanced vocabulary and nuanced expressions mastery",
+              scenario:
+                "softening criticism vs being direct, depending on the listener",
               prompt:
-                "Demonstrate mastery of advanced vocabulary and nuanced expressions",
+                "Demonstrate mastery of nuance, irony, and politeness in context",
             },
           },
         },
@@ -9997,13 +11389,15 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "advanced vocabulary and nuanced expressions",
+              topic: "connotation and near-synonyms",
+              focusPoints: [
+                "delgado / flaco / esquelético",
+                "implication and subtext",
+              ],
             },
             grammar: {
-              topics: [
-                "advanced vocabulary and nuanced expressions structures",
-              ],
-              focusPoints: ["comprehensive review"],
+              topics: ["subtle contrasts: ser/estar, por/para, mood"],
+              focusPoints: ["nuance in word and structure choice"],
             },
           },
         },
@@ -10037,11 +11431,19 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "culture",
+              topic: "cultural references, festivals, and refranes",
+              focusPoints: [
+                "festivals: Día de Muertos, Las Fallas, Carnaval",
+                "refranes: 'A mal tiempo, buena cara'",
+                "sobremesa and tuteo vs usted etiquette",
+              ],
             },
             grammar: {
-              topic: "culture structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "language tied to customs and politeness",
+              focusPoints: [
+                "formal vs familiar address in social settings",
+                "set phrases for celebrations and condolences",
+              ],
             },
           },
         },
@@ -10060,12 +11462,15 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "culture conversation",
-              prompt: "Practice using culture in real conversation",
+              scenario:
+                "navigating a family gathering with greetings, sobremesa, and a toast",
+              prompt:
+                "Practice the right cultural register and expressions for a social occasion",
             },
             stories: {
-              topic: "culture",
-              prompt: "Read and discuss culture",
+              topic: "the cultural context behind traditions",
+              prompt:
+                "Read about a tradition like Día de Muertos and discuss its meaning",
             },
           },
         },
@@ -10084,12 +11489,15 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "culture",
-              prompt: "Advanced culture content and comprehension",
+              topic: "interpreting cultural references and humor",
+              prompt:
+                "Read a text rich in cultural allusions and explain the references",
             },
             realtime: {
-              scenario: "culture mastery",
-              prompt: "Demonstrate mastery of culture",
+              scenario:
+                "explaining a local custom to a foreigner and avoiding a faux pas",
+              prompt:
+                "Demonstrate cultural fluency by using refranes and the right etiquette in context",
             },
           },
         },
@@ -10113,11 +11521,15 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "culture",
+              topic: "cultural references and customs",
+              focusPoints: [
+                "festivals and refranes",
+                "social etiquette: besos, sobremesa, usted",
+              ],
             },
             grammar: {
-              topics: ["culture structures"],
-              focusPoints: ["comprehensive review"],
+              topics: ["culturally appropriate register"],
+              focusPoints: ["set phrases for social occasions"],
             },
           },
         },
@@ -10151,11 +11563,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "fluency",
+              topic: "fillers and discourse markers for fluent speech",
+              focusPoints: [
+                "muletillas: o sea, pues, es que, en plan",
+                "backchanneling: claro, ya, ajá",
+                "a ver, total, resulta que",
+              ],
             },
             grammar: {
-              topic: "fluency structures",
-              focusPoints: ["basic patterns", "common phrases"],
+              topic: "managing spontaneous discourse",
+              focusPoints: [
+                "self-correction: digo, quiero decir, mejor dicho",
+                "circumlocution to talk around unknown words",
+                "smooth turn-taking and connectors",
+              ],
             },
           },
         },
@@ -10174,12 +11595,14 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "fluency conversation",
-              prompt: "Practice using fluency in real conversation",
+              scenario: "a fast, overlapping group conversation at a café",
+              prompt:
+                "Practice keeping up: react with backchannels, interrupt politely, and self-correct on the fly",
             },
             stories: {
-              topic: "fluency",
-              prompt: "Read and discuss fluency",
+              topic: "natural spoken rhythm and connected speech",
+              prompt:
+                "Read a transcript of casual speech and discuss the fillers and reductions",
             },
           },
         },
@@ -10198,12 +11621,14 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "fluency",
-              prompt: "Advanced fluency content and comprehension",
+              topic: "understanding rapid, idiomatic speech in writing",
+              prompt:
+                "Read informal dialogue and follow the meaning despite slang and ellipsis",
             },
             realtime: {
-              scenario: "fluency mastery",
-              prompt: "Demonstrate mastery of fluency",
+              scenario: "telling a story spontaneously without pausing",
+              prompt:
+                "Demonstrate near-native fluency: speak at length, paraphrase, and keep the conversation flowing",
             },
           },
         },
@@ -10227,11 +11652,15 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "fluency",
+              topic: "fluency markers and discourse management",
+              focusPoints: [
+                "muletillas and backchanneling",
+                "self-correction and circumlocution",
+              ],
             },
             grammar: {
-              topics: ["fluency structures"],
-              focusPoints: ["comprehensive review"],
+              topics: ["strategies for spontaneous discourse"],
+              focusPoints: ["keeping speech flowing naturally"],
             },
           },
         },
@@ -11900,15 +13329,3 @@ export function getUnitProgress(unit, userProgress) {
   ).length;
   return Math.round((completed / total) * 100);
 }
-
-// Re-export lazy-loading utilities for better performance
-// These allow components to load only the skill tree data they need
-export {
-  loadSkillTreeForLevel,
-  loadSkillTreeForLevels,
-  loadRelevantSkillTree,
-  loadAllSkillTree,
-  getLevelsToLoad,
-  clearSkillTreeCache,
-  getSkillTreeCacheStats,
-} from "./skillTree/index.js";

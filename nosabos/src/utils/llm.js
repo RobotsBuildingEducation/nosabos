@@ -24,12 +24,18 @@ function textFromChunk(chunk) {
 export async function callResponses({
   model = DEFAULT_RESPONSES_MODEL,
   input,
+  generationConfig = null,
 }) {
   if (simplemodel) {
     try {
-      const resp = await simplemodel.generateContentStream({
+      const request = {
         contents: [{ role: "user", parts: [{ text: input }] }],
-      });
+      };
+      // Per-call override (e.g. enable a thinking budget for richer,
+      // less formulaic output). Replaces the model's default generationConfig
+      // for this request only.
+      if (generationConfig) request.generationConfig = generationConfig;
+      const resp = await simplemodel.generateContentStream(request);
 
       let aggregated = "";
       for await (const chunk of resp.stream) {
