@@ -119,6 +119,7 @@ function buildLiveGenerationConfig({
   includeTranscriptions = true,
   voice = DEFAULT_GEMINI_LIVE_VOICE,
   includeSpeechConfig = true,
+  inputLanguageCodes = null,
 } = {}) {
   const generationConfig = {
     responseModalities: [ResponseModality.AUDIO],
@@ -135,7 +136,16 @@ function buildLiveGenerationConfig({
   }
 
   if (includeTranscriptions) {
-    generationConfig.inputAudioTranscription = {};
+    // Hint the language of the learner's audio (BCP-47, e.g. ["fr-FR"]) so input
+    // transcription does not drift to a phonetically close language — the bug where
+    // spoken French was transcribed as Italian. This is a hint, not a hard lock.
+    // Note: the Firebase AI `AudioTranscriptionConfig` type is empty, but the SDK
+    // forwards this object verbatim into the Live `setup` message, so languageCodes
+    // reaches the backend at runtime.
+    generationConfig.inputAudioTranscription =
+      Array.isArray(inputLanguageCodes) && inputLanguageCodes.length
+        ? { languageCodes: inputLanguageCodes }
+        : {};
     generationConfig.outputAudioTranscription = {};
   }
 
@@ -175,6 +185,7 @@ function getGeminiLiveAI() {
 async function connectLiveSession({
   voice = DEFAULT_GEMINI_LIVE_VOICE,
   includeTranscriptions = true,
+  inputLanguageCodes = null,
 } = {}) {
   const ai = getGeminiLiveAI();
   const configs = [
@@ -182,21 +193,25 @@ async function connectLiveSession({
       includeTranscriptions,
       includeSpeechConfig: true,
       voice,
+      inputLanguageCodes,
     }),
     buildLiveGenerationConfig({
       includeTranscriptions: false,
       includeSpeechConfig: true,
       voice,
+      inputLanguageCodes,
     }),
     buildLiveGenerationConfig({
       includeTranscriptions,
       includeSpeechConfig: false,
       voice,
+      inputLanguageCodes,
     }),
     buildLiveGenerationConfig({
       includeTranscriptions: false,
       includeSpeechConfig: false,
       voice,
+      inputLanguageCodes,
     }),
   ];
   let firstError = null;
@@ -367,6 +382,7 @@ export async function createGeminiLiveRealtimeBridge({
   audioElement = null,
   initialInstructions = "",
   voice = DEFAULT_GEMINI_LIVE_VOICE,
+  inputLanguageCodes = null,
   onEvent,
   onAudioGraph,
   onError,
@@ -375,6 +391,7 @@ export async function createGeminiLiveRealtimeBridge({
     audioElement,
     initialInstructions,
     voice,
+    inputLanguageCodes,
     onEvent,
     onAudioGraph,
     onError,
@@ -388,6 +405,7 @@ class GeminiLiveRealtimeBridge {
     audioElement,
     initialInstructions,
     voice,
+    inputLanguageCodes,
     onEvent,
     onAudioGraph,
     onError,
@@ -395,6 +413,9 @@ class GeminiLiveRealtimeBridge {
     this.audioElement = audioElement;
     this.instructions = initialInstructions || "";
     this.voice = normalizeGeminiLiveVoice(voice);
+    this.inputLanguageCodes = Array.isArray(inputLanguageCodes)
+      ? inputLanguageCodes
+      : null;
     this.onEvent = onEvent;
     this.onAudioGraph = onAudioGraph;
     this.onError = onError;
@@ -441,9 +462,19 @@ class GeminiLiveRealtimeBridge {
   }
 
   async connectLiveSession() {
+    // TEMP debug (remove after verifying the input-language hint): logs exactly what
+    // inputAudioTranscription this live session will send — fires on the initial
+    // connect and on every periodic session reset, so the hint should persist.
+    console.info(
+      "[gemini-live] live session inputAudioTranscription:",
+      Array.isArray(this.inputLanguageCodes) && this.inputLanguageCodes.length
+        ? { languageCodes: this.inputLanguageCodes }
+        : {},
+    );
     return connectLiveSession({
       voice: this.voice,
       includeTranscriptions: true,
+      inputLanguageCodes: this.inputLanguageCodes,
     });
   }
 

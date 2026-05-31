@@ -103,6 +103,8 @@ import { useThemeStore } from "../useThemeStore";
 import {
   DEFAULT_SUPPORT_LANGUAGE,
   getLanguagePromptName,
+  LANGUAGE_LOCALES,
+  normalizePracticeLanguage,
   normalizeSupportLanguage,
 } from "../constants/languages";
 import {
@@ -4683,10 +4685,26 @@ export default function Tutor({
     try {
       await ensureSelectedTutorLessonStarted();
       assistantInputLockedRef.current = false;
+      // Hint the learner's spoken language to Gemini's input transcription so it
+      // does not drift to a phonetically close language (e.g. French heard as
+      // Italian), which happens far more on mobile where capture is noisier.
+      const inputLangBase = normalizePracticeLanguage(
+        targetLangRef.current || targetLang,
+      );
+      const inputLocale = LANGUAGE_LOCALES[inputLangBase];
+      // TEMP debug (remove after verifying the input-language hint): confirms this
+      // code path runs and what locale it resolved for the learner's target language.
+      console.info(
+        "[gemini-live] connecting Tutor — targetLang:",
+        inputLangBase,
+        "→ inputLanguageCodes:",
+        inputLocale ? [inputLocale] : null,
+      );
       const bridge = await createGeminiLiveRealtimeBridge({
         audioElement: audioRef.current,
         initialInstructions: buildLanguageInstructions(),
         voice: normalizeGeminiLiveVoice(voiceRef.current),
+        inputLanguageCodes: inputLocale ? [inputLocale] : null,
         onEvent: handleRealtimeEvent,
         onError: (message) => setErr((prev) => prev || message),
         onAudioGraph: ({ audioContext, analyser, floatBuffer, stream }) => {
