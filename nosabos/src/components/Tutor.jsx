@@ -1515,6 +1515,9 @@ function sanitizeTutorMessageForStorage(message) {
       : [],
     done: true,
     hasAudio: false,
+    // Preserve the tutorial welcome marker so a resumed session can tell the
+    // assistant-only greeting apart from a real tutor turn.
+    ...(message?.welcome ? { welcome: true } : {}),
     ts: Number.isFinite(Number(message?.ts)) ? Number(message.ts) : Date.now(),
   };
 }
@@ -3477,6 +3480,13 @@ export default function Tutor({
   const tutorKickoffSentRef = useRef(false);
   const tutorKickoffTimerRef = useRef(null);
   const tutorSessionReadyRef = useRef(false);
+  // Tutorial lesson opens with a support-language welcome turn. While true, the
+  // learner's next reply is treated as a greeting (no XP, no agenda progress)
+  // and triggers the real lesson kickoff.
+  const tutorWelcomePendingReplyRef = useRef(false);
+  // Response ids whose assistant message is the tutorial welcome (so it renders
+  // in the support language rather than the target language).
+  const tutorWelcomeRidSetRef = useRef(new Set());
 
   // Idle gating
   const isIdleRef = useRef(true);
@@ -4105,8 +4115,26 @@ export default function Tutor({
     writeStoredTutorMessages(storageKey, messages);
   }, [messages]);
 
-  function hasVisibleTutorConversation() {
-    return hasVisibleTutorMessages(messagesRef.current);
+  // The tutorial lesson opens with an assistant-only welcome greeting. That
+  // greeting on its own does NOT mean the lesson has started — it has started
+  // only once the learner has replied, made agenda progress, or received a real
+  // (non-welcome) tutor turn. For every other lesson, any visible message counts
+  // as started (matching the previous behavior). Used to gate the kickoff so a
+  // resumed session doesn't get stuck showing only the welcome.
+  function hasStartedTutorLessonConversation() {
+    const msgs = messagesRef.current || [];
+    if (!hasVisibleTutorMessages(msgs)) return false;
+    if (!isTutorStarterAgendaLesson(selectedTutorLessonRef.current)) return true;
+    const hasLearnerReply = msgs.some(
+      (m) => m.role === "user" && getTutorMessageVisibleText(m),
+    );
+    const hasAgendaProgress =
+      Object.keys(tutorStarterAgendaProgressRef.current || {}).length > 0;
+    const hasNonWelcomeTutorTurn = msgs.some(
+      (m) =>
+        m.role === "assistant" && !m.welcome && getTutorMessageVisibleText(m),
+    );
+    return hasLearnerReply || hasAgendaProgress || hasNonWelcomeTutorTurn;
   }
 
   function buildRecentOnScreenContextInstruction() {
@@ -4645,7 +4673,9 @@ export default function Tutor({
     playSound(submitActionSound);
     clearAutoStopTimer();
     clearTutorKickoffTimer();
-    tutorKickoffSentRef.current = hasVisibleTutorConversation();
+    tutorKickoffSentRef.current = hasStartedTutorLessonConversation();
+    tutorWelcomePendingReplyRef.current = false;
+    tutorWelcomeRidSetRef.current.clear();
     setErr("");
     setStatus("connecting");
     setUiState("idle");
@@ -4694,6 +4724,8 @@ export default function Tutor({
     clearAssistantUnlockTimer();
     aliveRef.current = false;
     tutorKickoffSentRef.current = false;
+    tutorWelcomePendingReplyRef.current = false;
+    tutorWelcomeRidSetRef.current.clear();
     tutorSessionReadyRef.current = false;
     assistantInputLockedRef.current = false;
     assistantSpeakingRef.current = false;
@@ -5105,6 +5137,30 @@ export default function Tutor({
     ]
       .filter(Boolean)
       .join(" ");
+  }
+
+  function buildTutorWelcomeInstructions() {
+    const tLang = targetLangRef.current || targetLang || "es";
+    const targetLanguageName =
+      getLanguagePromptName(tLang) || "the target language";
+    const supportCode = normalizeSupportLanguage(
+      supportLangRef.current || resolvedSupportLang,
+      DEFAULT_SUPPORT_LANGUAGE,
+    );
+    const supportLanguageName =
+      getLanguagePromptName(supportCode) || "the user's support language";
+
+    return [
+      "This is the very first message of the tutorial lesson. Give ONLY a short, warm welcome.",
+      `Speak entirely in ${supportLanguageName}. Do not use any ${targetLanguageName} yet.`,
+      "Greet the learner, welcome them to their first lesson, and introduce yourself as their realtime tutor who will guide them along the way.",
+      `In ${supportLanguageName}, convey something along the lines of: "Hello! Welcome to your first lesson. I'm your realtime tutor and I'll guide you along the way." Adapt it naturally into ${supportLanguageName} — do not copy the English wording — then invite them to say hello or to let you know when they are ready to begin.`,
+      "Do NOT teach, model, translate, or ask the learner to repeat any words yet. Do NOT introduce any lesson phrase, vocabulary, or practice task.",
+      "Do NOT mention XP, scoring, levels, or progress.",
+      "Keep it warm and brief: about 2-3 short sentences.",
+    ]
+      .filter(Boolean)
+      .join("\n");
   }
 
   function getTutorAgendaItemLabel(item, lang = "en") {
@@ -5690,11 +5746,65 @@ export default function Tutor({
     pendingGuardrailTextRef.current = "";
   }
 
+  function sendTutorStarterAgendaKickoff() {
+    const supportCode = normalizeSupportLanguage(
+      supportLangRef.current || resolvedSupportLang,
+      DEFAULT_SUPPORT_LANGUAGE,
+    );
+    const tLang = targetLangRef.current || targetLang || "es";
+    const nextItem = getNextTutorStarterAgendaItem(
+      tutorStarterAgendaProgressRef.current,
+    );
+    requestRealtimeTutorAgendaResponse({
+      item: nextItem,
+      isKickoff: true,
+      supportLang: supportCode,
+      targetLang: tLang,
+      kind: "tutor_kickoff",
+    });
+    logEvent(analytics, "tutor_lesson_kickoff_requested", {
+      lessonId: selectedTutorLessonRef.current?.id || "",
+    });
+  }
+
+  function requestTutorLessonWelcome() {
+    if (!aliveRef.current) return;
+    if (!dcRef.current || dcRef.current.readyState !== "open") return;
+
+    tutorWelcomePendingReplyRef.current = true;
+    clearAutoStopTimer();
+    setUiState("thinking");
+    setMood("thoughtful");
+    setAssistantInputLocked(true, { clearBuffer: false, updateSession: false });
+
+    try {
+      dcRef.current.send(
+        JSON.stringify({
+          type: "response.create",
+          response: {
+            modalities: ["audio", "text"],
+            instructions: buildTutorWelcomeInstructions(),
+            metadata: { kind: "tutor_welcome" },
+          },
+        }),
+      );
+      logEvent(analytics, "tutor_lesson_welcome_requested", {
+        lessonId: selectedTutorLessonRef.current?.id || "",
+      });
+    } catch {
+      tutorWelcomePendingReplyRef.current = false;
+      resumeListeningWithAutoStop();
+    }
+  }
+
   function requestTutorLessonKickoff() {
     if (tutorKickoffSentRef.current) return;
     if (!aliveRef.current) return;
     if (!dcRef.current || dcRef.current.readyState !== "open") return;
-    if (hasVisibleTutorConversation()) {
+    // Already underway (the learner replied, made agenda progress, or received a
+    // real tutor turn): just resume listening. The tutorial welcome on its own
+    // does not count as started.
+    if (hasStartedTutorLessonConversation()) {
       tutorKickoffSentRef.current = true;
       setAssistantInputLocked(false);
       setUiState(status === "connected" ? "listening" : "idle");
@@ -5715,24 +5825,16 @@ export default function Tutor({
     clearAutoStopTimer();
 
     if (isTutorStarterAgendaLesson(selectedTutorLessonRef.current)) {
-      const supportCode = normalizeSupportLanguage(
-        supportLangRef.current || resolvedSupportLang,
-        DEFAULT_SUPPORT_LANGUAGE,
-      );
-      const tLang = targetLangRef.current || targetLang || "es";
-      const nextItem = getNextTutorStarterAgendaItem(
-        tutorStarterAgendaProgressRef.current,
-      );
-      requestRealtimeTutorAgendaResponse({
-        item: nextItem,
-        isKickoff: true,
-        supportLang: supportCode,
-        targetLang: tLang,
-        kind: "tutor_kickoff",
-      });
-      logEvent(analytics, "tutor_lesson_kickoff_requested", {
-        lessonId: selectedTutorLessonRef.current?.id || "",
-      });
+      // Resumed after the welcome was shown but before the learner replied:
+      // start the actual lesson now instead of repeating the welcome.
+      if (hasVisibleTutorMessages(messagesRef.current)) {
+        sendTutorStarterAgendaKickoff();
+        return;
+      }
+      // Fresh start: open with a friendly welcome in the learner's support
+      // language. Replying to it earns no XP; once the learner responds, the
+      // transcript handler kicks off the lesson as it normally would.
+      requestTutorLessonWelcome();
       return;
     }
 
@@ -6779,7 +6881,7 @@ export default function Tutor({
     if (t === "session.updated") {
       tutorSessionReadyRef.current = true;
       if (aliveRef.current && !tutorKickoffSentRef.current) {
-        if (hasVisibleTutorConversation()) {
+        if (hasStartedTutorLessonConversation()) {
           tutorKickoffSentRef.current = true;
           setAssistantInputLocked(false);
           setUiState(status === "connected" ? "listening" : "idle");
@@ -6879,6 +6981,9 @@ export default function Tutor({
         setMood("happy");
         return;
       }
+      if (mdKind === "tutor_welcome" && rid) {
+        tutorWelcomeRidSetRef.current.add(rid);
+      }
       const mid = uid();
       respToMsg.current.set(rid, mid);
       setUiState("speaking");
@@ -6926,6 +7031,14 @@ export default function Tutor({
         done: true,
         ts: userTs,
       });
+      // Tutorial lesson: the learner's reply to the opening welcome is just a
+      // greeting. Award no XP and make no agenda progress; instead kick off the
+      // actual lesson now (the welcome was a separate, ungraded turn).
+      if (tutorWelcomePendingReplyRef.current) {
+        tutorWelcomePendingReplyRef.current = false;
+        sendTutorStarterAgendaKickoff();
+        return;
+      }
       turnCountRef.current += 1;
       const currentLesson = selectedTutorLessonRef.current;
       const isStarterLesson = isTutorStarterAgendaLesson(currentLesson);
@@ -7151,10 +7264,16 @@ export default function Tutor({
     }
     const exists = messagesRef.current.some((m) => m.id === mid);
     if (!exists) {
+      const isWelcome = tutorWelcomeRidSetRef.current.has(rid);
       pushMessage({
         id: mid,
         role: "assistant",
-        lang: targetLangRef.current || "es",
+        lang: isWelcome
+          ? normalizeSupportLanguage(
+              supportLangRef.current || resolvedSupportLang,
+              DEFAULT_SUPPORT_LANGUAGE,
+            )
+          : targetLangRef.current || "es",
         textFinal: "",
         textStream: "",
         translation: "",
@@ -7162,6 +7281,7 @@ export default function Tutor({
         pairs: [],
         done: false,
         hasAudio: false,
+        welcome: isWelcome,
         ts: Date.now(),
       });
     }
