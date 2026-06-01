@@ -31,15 +31,35 @@ const OUTPUT_SAMPLE_RATE = 24000;
 // Cost guardrails: Gemini Live bills audio input/output and accumulated session
 // context. Keep these defaults conservative so Tutor stays realtime without
 // streaming silence or growing one expensive session forever.
+// #3 VAD tuning: a lower loudness threshold catches softer speech, and a longer
+// pre-roll keeps more of the word onset (the quiet start of "bon"/"pomeriggio") that
+// the old 360ms window was clipping — clipped onsets are a top cause of misreads.
+// All overridable via env so they can be A/B tuned without code changes.
 const INPUT_SILENCE_RMS_THRESHOLD = Number(
-  import.meta.env.VITE_GEMINI_LIVE_INPUT_RMS_THRESHOLD || 0.006,
+  import.meta.env.VITE_GEMINI_LIVE_INPUT_RMS_THRESHOLD || 0.005,
 );
 const INPUT_PREROLL_MS = Number(
-  import.meta.env.VITE_GEMINI_LIVE_INPUT_PREROLL_MS || 360,
+  import.meta.env.VITE_GEMINI_LIVE_INPUT_PREROLL_MS || 700,
 );
 const INPUT_SPEECH_HOLD_MS = Number(
   import.meta.env.VITE_GEMINI_LIVE_INPUT_SPEECH_HOLD_MS || 2200,
 );
+
+// #1 Capture tuning: the "voice call" DSP (echo cancellation / noise suppression /
+// auto gain) is tuned for phone-call intelligibility, not ASR fidelity — it distorts
+// consonants, pumps levels mid-word, and on mobile often flips the mic into a
+// narrowband "communications" capture mode. All three default OFF for cleaner audio.
+// Echo cancellation is safe to disable here because the Tutor is strictly turn-based:
+// the mic track is hard-muted while the tutor speaks and only re-opens after the
+// playback analyser detects ~1.1s of silence (scheduleAssistantUnlockAfterQuiet), so
+// the tutor's own voice never overlaps an open mic — there is no echo to cancel.
+// All overridable via env (set to "true") for A/B testing or noisy/speakerphone setups.
+const INPUT_ECHO_CANCELLATION =
+  import.meta.env.VITE_GEMINI_LIVE_ECHO_CANCELLATION === "true";
+const INPUT_NOISE_SUPPRESSION =
+  import.meta.env.VITE_GEMINI_LIVE_NOISE_SUPPRESSION === "true";
+const INPUT_AUTO_GAIN_CONTROL =
+  import.meta.env.VITE_GEMINI_LIVE_AUTO_GAIN_CONTROL === "true";
 const SESSION_RESPONSE_LIMIT = Math.max(
   1,
   Number(import.meta.env.VITE_GEMINI_LIVE_SESSION_RESPONSE_LIMIT || 4),
@@ -52,24 +72,73 @@ class NosabosGeminiLiveAudio extends AudioWorkletProcessor {
     super();
     this.targetSampleRate = options.processorOptions.targetSampleRate || 16000;
     this.inputSampleRate = sampleRate;
+    this.ratio = this.inputSampleRate / this.targetSampleRate;
+
+    // #2 Anti-aliasing: before decimating to the target rate, low-pass just below the
+    // target Nyquist so high-frequency energy does not fold back as aliasing noise
+    // (which smears the consonant/vowel cues ASR depends on). RBJ cookbook biquad LPF.
+    const cutoff = Math.min(this.targetSampleRate * 0.45, this.inputSampleRate * 0.45);
+    const w0 = (2 * Math.PI * cutoff) / this.inputSampleRate;
+    const cosw0 = Math.cos(w0);
+    const sinw0 = Math.sin(w0);
+    const q = 0.707;
+    const alpha = sinw0 / (2 * q);
+    const a0 = 1 + alpha;
+    this.b0 = ((1 - cosw0) / 2) / a0;
+    this.b1 = (1 - cosw0) / a0;
+    this.b2 = ((1 - cosw0) / 2) / a0;
+    this.a1 = (-2 * cosw0) / a0;
+    this.a2 = (1 - alpha) / a0;
+    this.x1 = 0; this.x2 = 0; this.y1 = 0; this.y2 = 0;
+
+    // Resampler state, carried across render quanta so block boundaries stay smooth.
+    this.readPos = 0;
+    this.prevSample = 0;
   }
 
   process(inputs) {
     const input = inputs[0];
     if (!input || !input[0] || !input[0].length) return true;
     const pcm = input[0];
-    const outLength = Math.max(1, Math.round(pcm.length * this.targetSampleRate / this.inputSampleRate));
-    const resampled = new Float32Array(outLength);
-    const ratio = pcm.length / outLength;
-    for (let i = 0; i < outLength; i += 1) {
-      resampled[i] = pcm[Math.min(pcm.length - 1, Math.floor(i * ratio))] || 0;
+    const n = pcm.length;
+
+    // 1) Low-pass the block (biquad state persists across quanta).
+    const filtered = new Float32Array(n);
+    for (let i = 0; i < n; i += 1) {
+      const x0 = pcm[i];
+      const y0 =
+        this.b0 * x0 + this.b1 * this.x1 + this.b2 * this.x2 -
+        this.a1 * this.y1 - this.a2 * this.y2;
+      this.x2 = this.x1; this.x1 = x0;
+      this.y2 = this.y1; this.y1 = y0;
+      filtered[i] = y0;
     }
-    const int16 = new Int16Array(outLength);
-    for (let i = 0; i < outLength; i += 1) {
-      const sample = Math.max(-1, Math.min(1, resampled[i]));
-      int16[i] = sample < 0 ? sample * 32768 : sample * 32767;
+
+    // 2) Rate-convert with linear interpolation. readPos is fractional and carried
+    //    across blocks; a negative index interpolates against the previous block's
+    //    last sample so there are no clicks at the boundary.
+    const out = [];
+    let readPos = this.readPos;
+    while (readPos < n - 1) {
+      const idx = Math.floor(readPos);
+      const frac = readPos - idx;
+      const s0 = idx < 0 ? this.prevSample : filtered[idx];
+      const s1 = filtered[idx + 1];
+      out.push(s0 + (s1 - s0) * frac);
+      readPos += this.ratio;
     }
-    this.port.postMessage(int16.buffer, [int16.buffer]);
+    this.readPos = readPos - n;
+    this.prevSample = filtered[n - 1];
+
+    // 3) Float -> Int16 PCM.
+    const int16 = new Int16Array(out.length);
+    for (let i = 0; i < out.length; i += 1) {
+      const s = Math.max(-1, Math.min(1, out[i]));
+      int16[i] = s < 0 ? s * 32768 : s * 32767;
+    }
+    if (int16.length) {
+      this.port.postMessage(int16.buffer, [int16.buffer]);
+    }
     return true;
   }
 }
@@ -485,9 +554,9 @@ class GeminiLiveRealtimeBridge {
     this.audioContext = ctx;
     this.mediaStream = await navigator.mediaDevices.getUserMedia({
       audio: {
-        echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: true,
+        echoCancellation: INPUT_ECHO_CANCELLATION,
+        noiseSuppression: INPUT_NOISE_SUPPRESSION,
+        autoGainControl: INPUT_AUTO_GAIN_CONTROL,
       },
     });
 
