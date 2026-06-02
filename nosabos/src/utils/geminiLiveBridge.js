@@ -497,6 +497,8 @@ class GeminiLiveRealtimeBridge {
     this.playbackDestination = null;
     this.playbackAnalyser = null;
     this.playbackFloatBuffer = null;
+    this.playbackGain = null;
+    this.outputGain = 1; // TEMP volume test: playback gain multiplier (1 = unchanged)
     this.receiveLoopPromise = null;
     this.closed = false;
     this.pendingResponses = [];
@@ -588,7 +590,12 @@ class GeminiLiveRealtimeBridge {
     this.playbackAnalyser = ctx.createAnalyser();
     this.playbackAnalyser.fftSize = 256;
     this.playbackAnalyser.smoothingTimeConstant = 0.12;
-    this.playbackAnalyser.connect(this.playbackDestination);
+    // TEMP volume test: gain stage placed AFTER the analyser, so boosting playback
+    // does not change the levels the turn-taking quiet-detector reads from it.
+    this.playbackGain = ctx.createGain();
+    this.playbackGain.gain.value = this.outputGain;
+    this.playbackAnalyser.connect(this.playbackGain);
+    this.playbackGain.connect(this.playbackDestination);
     this.playbackFloatBuffer = new Float32Array(this.playbackAnalyser.fftSize);
 
     if (this.audioElement) {
@@ -964,6 +971,20 @@ class GeminiLiveRealtimeBridge {
     }
   }
 
+  setOutputGain(value) {
+    // TEMP volume test: scale tutor playback loudness. 1 = unchanged; capped to
+    // limit clipping/distortion, and ramped briefly to avoid clicks.
+    const v = Math.max(0, Math.min(4, Number(value) || 0));
+    this.outputGain = v;
+    if (!this.playbackGain) return;
+    try {
+      const now = this.audioContext?.currentTime ?? 0;
+      this.playbackGain.gain.setTargetAtTime(v, now, 0.02);
+    } catch {
+      this.playbackGain.gain.value = v;
+    }
+  }
+
   finishActiveResponse(type = "response.done") {
     if (!this.activeResponse) return;
     const response = this.activeResponse;
@@ -1051,6 +1072,11 @@ class GeminiLiveRealtimeBridge {
     }
     try {
       this.playbackAnalyser?.disconnect();
+    } catch {
+      // Audio graph cleanup is best-effort.
+    }
+    try {
+      this.playbackGain?.disconnect();
     } catch {
       // Audio graph cleanup is best-effort.
     }

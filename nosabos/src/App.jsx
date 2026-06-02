@@ -734,6 +734,10 @@ function TopBar({
   soundVolume,
   onVolumeChange,
   onVolumeSave,
+  // 🆕 tutor volume props
+  tutorVolume,
+  onTutorVolumeChange,
+  onTutorVolumeSave,
   playSound,
   // 🆕 mobile detection prop
   isMobile,
@@ -1919,25 +1923,35 @@ function TopBar({
                         </Box>
 
                         <Box bg="gray.800" p={3} rounded="md">
-                          <HStack justifyContent="space-between">
+                          <HStack justify="space-between" mb={2}>
                             <Text fontSize="sm">
-                              {t.teams_feed_allow_label || "Allow posts"}
+                              {t.tutor_volume_label || "Tutor volume"}
                             </Text>
-                            <Switch
-                              id="settings-allow-posts-switch"
-                              isChecked={allowPosts}
-                              onChange={(e) =>
-                                onAllowPostsChange(e.target.checked)
-                              }
-                            />
+                            <Text fontSize="sm" opacity={0.8}>
+                              ×{Number(tutorVolume).toFixed(1)}
+                            </Text>
                           </HStack>
-                          <Text fontSize="xs" opacity={0.6} mt={2}>
-                            {allowPosts
-                              ? t.teams_feed_allow_enabled ||
-                                "Automatic community posts enabled."
-                              : t.teams_feed_allow_disabled ||
-                                "Automatic community posts disabled."}
-                          </Text>
+                          <Slider
+                            aria-label="tutor-volume-slider"
+                            min={0}
+                            max={4}
+                            step={0.1}
+                            value={tutorVolume}
+                            onChange={(val) => {
+                              onTutorVolumeChange(val);
+                              playSliderTick(val, 0, 4);
+                            }}
+                            onChangeEnd={(val) => onTutorVolumeSave(val)}
+                          >
+                            <SliderTrack
+                              bg="gray.700"
+                              h={3}
+                              borderRadius="full"
+                            >
+                              <SliderFilledTrack bg="linear-gradient(90deg, #5dade2, #9370DB)" />
+                            </SliderTrack>
+                            <SliderThumb boxSize={6} />
+                          </Slider>
                         </Box>
 
                         <Box bg="gray.800" p={3} rounded="md">
@@ -1960,41 +1974,28 @@ function TopBar({
                               : t.sound_effects_disabled ||
                                 "Sound effects are muted."}
                           </Text>
-                          {soundEnabled && !isMobile && (
-                            <HStack mt={3} spacing={3} align="center">
-                              <Box w="100%">
-                                <HStack justify="space-between" mb={2}>
-                                  <Text fontSize="sm">
-                                    {t.sound_volume_label || "Volume"}
-                                  </Text>
-                                  <Text fontSize="sm" opacity={0.8}>
-                                    {soundVolume}%
-                                  </Text>
-                                </HStack>
-                                <Slider
-                                  aria-label="sound-volume-slider"
-                                  min={0}
-                                  max={100}
-                                  step={5}
-                                  value={soundVolume}
-                                  onChange={(val) => {
-                                    onVolumeChange(val);
-                                    playSliderTick(val, 0, 100);
-                                  }}
-                                  onChangeEnd={(val) => onVolumeSave(val)}
-                                >
-                                  <SliderTrack
-                                    bg="gray.700"
-                                    h={3}
-                                    borderRadius="full"
-                                  >
-                                    <SliderFilledTrack bg="linear-gradient(90deg, #5dade2, #9370DB)" />
-                                  </SliderTrack>
-                                  <SliderThumb boxSize={6} />
-                                </Slider>
-                              </Box>
-                            </HStack>
-                          )}
+                        </Box>
+
+                        <Box bg="gray.800" p={3} rounded="md">
+                          <HStack justifyContent="space-between">
+                            <Text fontSize="sm">
+                              {t.teams_feed_allow_label || "Allow posts"}
+                            </Text>
+                            <Switch
+                              id="settings-allow-posts-switch"
+                              isChecked={allowPosts}
+                              onChange={(e) =>
+                                onAllowPostsChange(e.target.checked)
+                              }
+                            />
+                          </HStack>
+                          <Text fontSize="xs" opacity={0.6} mt={2}>
+                            {allowPosts
+                              ? t.teams_feed_allow_enabled ||
+                                "Automatic community posts enabled."
+                              : t.teams_feed_allow_disabled ||
+                                "Automatic community posts disabled."}
+                          </Text>
                         </Box>
 
                         <ThemeModeField
@@ -2359,9 +2360,11 @@ export default function App({ onBootReady } = {}) {
   ]);
   const [allowPosts, setAllowPosts] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const [soundVolume, setSoundVolume] = useState(40);
+  const [soundVolume, setSoundVolume] = useState(100);
+  const [tutorVolume, setTutorVolume] = useState(1);
   const setSoundSettingsEnabled = useSoundSettings((s) => s.setSoundEnabled);
   const setSoundSettingsVolume = useSoundSettings((s) => s.setVolume);
+  const setSoundSettingsTutorVolume = useSoundSettings((s) => s.setTutorVolume);
   const playSound = useSoundSettings((s) => s.playSound);
   const warmupAudio = useSoundSettings((s) => s.warmupAudio);
 
@@ -2395,13 +2398,21 @@ export default function App({ onBootReady } = {}) {
     setSoundSettingsEnabled(enabled);
   }, [user?.soundEnabled, setSoundSettingsEnabled]);
 
-  // Sync soundVolume state with global store
+  // Sound effects are now an on/off switch with no volume control, so they always
+  // play at full volume when enabled. Ignore any stored soundVolume (which may be a
+  // stale value from the old slider) and force 100% for everyone.
   useEffect(() => {
-    // Default to 40 if user.soundVolume is not set
-    const vol = typeof user?.soundVolume === "number" ? user.soundVolume : 40;
-    setSoundVolume(vol);
-    setSoundSettingsVolume(vol);
-  }, [user?.soundVolume, setSoundSettingsVolume]);
+    setSoundVolume(100);
+    setSoundSettingsVolume(100);
+  }, [setSoundSettingsVolume]);
+
+  // Sync tutorVolume (Gemini Live playback gain, 0-4) state with global store
+  useEffect(() => {
+    // Default to 1 (no boost) if user.tutorVolume is not set
+    const vol = typeof user?.tutorVolume === "number" ? user.tutorVolume : 1;
+    setTutorVolume(vol);
+    setSoundSettingsTutorVolume(vol);
+  }, [user?.tutorVolume, setSoundSettingsTutorVolume]);
 
   // Warm up audio on first user interaction to eliminate mobile audio delay
   useEffect(() => {
@@ -3729,6 +3740,40 @@ export default function App({ onBootReady } = {}) {
     [resolveNpub, user, setUser],
   );
 
+  const handleTutorVolumeChange = useCallback(
+    (nextValue) => {
+      const normalized = Math.max(
+        0,
+        Math.min(4, Math.round(nextValue * 10) / 10),
+      );
+      setTutorVolume(normalized);
+      setSoundSettingsTutorVolume(normalized);
+    },
+    [setSoundSettingsTutorVolume],
+  );
+
+  const handleTutorVolumeSave = useCallback(
+    async (nextValue) => {
+      const normalized = Math.max(
+        0,
+        Math.min(4, Math.round(nextValue * 10) / 10),
+      );
+      const id = resolveNpub();
+      if (!id) return;
+      try {
+        await updateDoc(doc(database, "users", id), {
+          tutorVolume: normalized,
+        });
+        if (user) {
+          setUser?.({ ...user, tutorVolume: normalized });
+        }
+      } catch (error) {
+        // Silently fail - local state is already updated
+      }
+    },
+    [resolveNpub, user, setUser],
+  );
+
   const saveGlobalSettings = async (partial = {}) => {
     const npub = resolveNpub();
     if (!npub) return;
@@ -3962,7 +4007,7 @@ export default function App({ onBootReady } = {}) {
           identity: safe(payload.identity, user?.identity || null),
           soundEnabled: payload.soundEnabled !== false,
           soundVolume:
-            typeof payload.soundVolume === "number" ? payload.soundVolume : 40,
+            typeof payload.soundVolume === "number" ? payload.soundVolume : 100,
           themeMode: normalizedThemeMode,
         },
         { merge: true },
@@ -6798,6 +6843,9 @@ export default function App({ onBootReady } = {}) {
           soundVolume={soundVolume}
           onVolumeChange={handleVolumeChange}
           onVolumeSave={handleVolumeSave}
+          tutorVolume={tutorVolume}
+          onTutorVolumeChange={handleTutorVolumeChange}
+          onTutorVolumeSave={handleTutorVolumeSave}
           playSound={playSound}
           isMobile={isMobile}
           postNostrContent={postNostrContent}

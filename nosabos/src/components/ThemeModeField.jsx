@@ -1,28 +1,29 @@
 import React from "react";
 import { Box, HStack, SimpleGrid, Text, VStack } from "@chakra-ui/react";
-import { RiMoonClearLine, RiSunLine } from "react-icons/ri";
+import { RiMoonClearFill } from "react-icons/ri";
+import { LuSun } from "react-icons/lu";
 
 const OPTIONS = [
   {
     value: "dark",
-    icon: RiMoonClearLine,
+    icon: RiMoonClearFill,
     preview: {
       bg: "linear-gradient(180deg, #10172a 0%, #0b1220 100%)",
       panel: "rgba(17, 24, 39, 0.88)",
       text: "#e5e7eb",
       textMuted: "#94a3b8",
-      accent: "linear-gradient(135deg, #60a5fa, #8b5cf6)",
+      accent: "linear-gradient(135deg, #4fd1c5, #3f9f9b)",
     },
   },
   {
     value: "light",
-    icon: RiSunLine,
+    icon: LuSun,
     preview: {
       bg: "linear-gradient(180deg, #fffdf9 0%, #f7f1e7 100%)",
       panel: "rgba(255, 253, 249, 0.96)",
       text: "#2f261d",
       textMuted: "#8d7a67",
-      accent: "linear-gradient(135deg, #f59e0b, #f97316)",
+      accent: "linear-gradient(135deg, #4fd1c5, #3f9f9b)",
     },
   },
 ];

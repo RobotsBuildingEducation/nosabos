@@ -13,7 +13,7 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import { IoIosMore } from "react-icons/io";
-import { MdOutlineFileUpload } from "react-icons/md";
+import { MdInstallMobile, MdOutlineFileUpload } from "react-icons/md";
 import { CiSquarePlus } from "react-icons/ci";
 import { LuBadgeCheck, LuCopy, LuKeyRound, LuSettings } from "react-icons/lu";
 import { RxExternalLink } from "react-icons/rx";
@@ -106,7 +106,34 @@ export default function GettingStartedModal({
       {
         id: "step4",
         icon: <CiSquarePlus size={22} />,
-        text: tFn(lang, "app_install_step4"),
+        // Localized template with {home}/{app} markers where the option icons render.
+        text: String(tFn(lang, "app_install_step4") || "")
+          .split(/(\{home\}|\{app\})/g)
+          .map((part, i) =>
+            part === "{home}" ? (
+              <Box
+                as="span"
+                key={`h${i}`}
+                display="inline-flex"
+                alignItems="center"
+                verticalAlign="middle"
+              >
+                <CiSquarePlus size={16} />
+              </Box>
+            ) : part === "{app}" ? (
+              <Box
+                as="span"
+                key={`a${i}`}
+                display="inline-flex"
+                alignItems="center"
+                verticalAlign="middle"
+              >
+                <MdInstallMobile size={16} />
+              </Box>
+            ) : (
+              part
+            ),
+          ),
       },
       {
         id: "step5",

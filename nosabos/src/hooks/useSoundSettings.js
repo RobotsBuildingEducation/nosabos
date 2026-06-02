@@ -41,7 +41,10 @@ let initPromise = null;
  */
 const useSoundSettings = create((set, get) => ({
   soundEnabled: true,
-  volume: 40, // Volume level 0-100, default to 40%
+  volume: 100, // Volume level 0-100; default 100% (sound effects are an on/off switch)
+  // Tutor (Gemini Live) playback gain multiplier, 0-4 (1 = unchanged). Applied
+  // directly by the Tutor bridge via setOutputGain. Default 1 (no boost).
+  tutorVolume: 1,
   isInitialized: false,
 
   setSoundEnabled: (enabled) => {
@@ -53,6 +56,11 @@ const useSoundSettings = create((set, get) => ({
     const clampedVolume = Math.max(0, Math.min(100, volume));
     set({ volume: clampedVolume });
     soundManager.setVolume(clampedVolume / 100);
+  },
+
+  setTutorVolume: (value) => {
+    const clamped = Math.max(0, Math.min(4, Math.round(Number(value) * 10) / 10));
+    set({ tutorVolume: clamped });
   },
 
   /**

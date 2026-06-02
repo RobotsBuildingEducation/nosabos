@@ -3435,6 +3435,7 @@ export default function Tutor({
   const autoStopTimerRef = useRef(null);
   const playSound = useSoundSettings((s) => s.playSound);
   const soundIsInitialized = useSoundSettings((s) => s.isInitialized);
+  const tutorVolume = useSoundSettings((s) => s.tutorVolume);
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
   const voiceOrbSize =
@@ -3464,6 +3465,11 @@ export default function Tutor({
   const floatBufRef = useRef(null);
   const captureOutRef = useRef(null);
   const audioGraphReadyRef = useRef(false);
+
+  // Apply the saved Tutor volume (gain multiplier, 0-4) live to an active session.
+  useEffect(() => {
+    dcRef.current?.setOutputGain?.(tutorVolume);
+  }, [tutorVolume]);
 
   // Cached-clip index
   const audioCacheIndexRef = useRef(new Set());
@@ -4718,6 +4724,8 @@ export default function Tutor({
       dcRef.current = bridge;
       pcRef.current = bridge;
       localRef.current = bridge.mediaStream;
+      // Apply the user's saved Tutor volume (gain multiplier, 0-4) to this session.
+      bridge.setOutputGain?.(useSoundSettings.getState().tutorVolume);
       setLocalMicEnabled(true);
 
       setStatus("connected");

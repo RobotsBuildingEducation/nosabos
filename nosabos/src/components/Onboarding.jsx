@@ -168,7 +168,11 @@ export default function Onboarding({
       soundVolume:
         typeof initialDraft.soundVolume === "number"
           ? initialDraft.soundVolume
-          : 40,
+          : 100,
+      tutorVolume:
+        typeof initialDraft.tutorVolume === "number"
+          ? initialDraft.tutorVolume
+          : 1,
       themeMode:
         initialDraft.themeMode === "dark" || initialDraft.themeMode === "light"
           ? initialDraft.themeMode
@@ -185,10 +189,12 @@ export default function Onboarding({
   const [pauseMs, setPauseMs] = useState(defaults.pauseMs);
   const [soundEnabled, setSoundEnabled] = useState(defaults.soundEnabled);
   const [soundVolume, setSoundVolume] = useState(defaults.soundVolume);
+  const [tutorVolume, setTutorVolume] = useState(defaults.tutorVolume);
   const [themeMode, setThemeMode] = useState(defaults.themeMode);
   const playSound = useSoundSettings((s) => s.playSound);
   const setGlobalSoundEnabled = useSoundSettings((s) => s.setSoundEnabled);
   const setGlobalVolume = useSoundSettings((s) => s.setVolume);
+  const setGlobalTutorVolume = useSoundSettings((s) => s.setTutorVolume);
   const playSliderTick = useSoundSettings((s) => s.playSliderTick);
 
   const [isSaving, setIsSaving] = useState(false);
@@ -208,6 +214,10 @@ export default function Onboarding({
   useEffect(() => {
     setGlobalVolume(soundVolume);
   }, [setGlobalVolume, soundVolume]);
+
+  useEffect(() => {
+    setGlobalTutorVolume(tutorVolume);
+  }, [setGlobalTutorVolume, tutorVolume]);
 
   const playOnboardingSound = (sound) => {
     if (!soundEnabled) return;
@@ -288,6 +298,7 @@ export default function Onboarding({
         pauseMs,
         soundEnabled,
         soundVolume,
+        tutorVolume,
         themeMode,
       };
       await Promise.resolve(onComplete(payload));
@@ -698,6 +709,39 @@ export default function Onboarding({
                         personaPlaceholder={personaPlaceholder}
                       />
 
+                      <Box bg="gray.800" p={3} rounded="md">
+                        <HStack justifyContent="space-between">
+                          <Text
+                            fontSize="sm"
+                            fontWeight="semibold"
+                            color="var(--app-text-primary)"
+                          >
+                            {ui.tutor_volume_label || "Tutor volume"}
+                          </Text>
+                          <Text fontSize="sm" opacity={0.8}>
+                            ×{Number(tutorVolume).toFixed(1)}
+                          </Text>
+                        </HStack>
+                        <Slider
+                          aria-label="onboarding-tutor-volume-slider"
+                          mt={3}
+                          min={0}
+                          max={4}
+                          step={0.1}
+                          value={tutorVolume}
+                          onChange={(val) => {
+                            setTutorVolume(val);
+                            setGlobalTutorVolume(val);
+                            playOnboardingSliderTick(val, 0, 4);
+                          }}
+                        >
+                          <SliderTrack bg="gray.700" h={4} borderRadius="full">
+                            <SliderFilledTrack bg="linear-gradient(90deg, #5dade2, #9370DB)" />
+                          </SliderTrack>
+                          <SliderThumb boxSize={6} />
+                        </Slider>
+                      </Box>
+
                       {/* Voice Activity Pause Slider */}
                       <Box bg="gray.800" p={3} rounded="md">
                         <Text fontSize="sm" fontWeight="semibold" mb={1}>
@@ -754,47 +798,6 @@ export default function Onboarding({
                             : ui.sound_effects_disabled ||
                               "Sound effects are muted."}
                         </Text>
-                        {soundEnabled && (
-                          <HStack
-                            mt={3}
-                            spacing={4}
-                            align="end"
-                            w="100%"
-                            flexWrap="wrap"
-                          >
-                            <Box flex="1" minW="240px">
-                              <HStack justify="space-between" mb={2} mt={3}>
-                                <Text fontSize="sm">
-                                  {ui.sound_volume_label || "Volume"}
-                                </Text>
-                                <Text fontSize="sm" opacity={0.8}>
-                                  {soundVolume}%
-                                </Text>
-                              </HStack>
-                              <Slider
-                                aria-label="onboarding-volume-slider"
-                                min={0}
-                                max={100}
-                                step={5}
-                                value={soundVolume}
-                                onChange={(val) => {
-                                  setSoundVolume(val);
-                                  setGlobalVolume(val);
-                                  playOnboardingSliderTick(val, 0, 100);
-                                }}
-                              >
-                                <SliderTrack
-                                  bg="gray.700"
-                                  h={4}
-                                  borderRadius="full"
-                                >
-                                  <SliderFilledTrack bg="linear-gradient(90deg, #5dade2, #9370DB)" />
-                                </SliderTrack>
-                                <SliderThumb boxSize={6} />
-                              </Slider>
-                            </Box>
-                          </HStack>
-                        )}
                       </Box>
 
                       <ThemeModeField

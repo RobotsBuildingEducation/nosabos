@@ -42,7 +42,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { BsQrCode } from "react-icons/bs";
 import { SiCashapp, SiPatreon } from "react-icons/si";
 import { IoIosMore } from "react-icons/io";
-import { MdOutlineFileUpload } from "react-icons/md";
+import { MdInstallMobile, MdOutlineFileUpload } from "react-icons/md";
 import { CiSquarePlus } from "react-icons/ci";
 import { LuBadgeCheck, LuDoorOpen, LuKeyRound } from "react-icons/lu";
 import { RxExternalLink } from "react-icons/rx";
@@ -489,17 +489,48 @@ export function IdentityPanel({
       {
         id: "step3",
         icon: <MdOutlineFileUpload size={28} />,
-        text: t?.app_install_step3 || "Choose 'Share' or 'Install'.",
+        text: t?.app_install_step3 || "Press 'Share' and expand the window",
       },
       {
         id: "step4",
         icon: <CiSquarePlus size={28} />,
-        text: t?.app_install_step4 || "Add to home screen.",
+        // Localized template with {home}/{app} markers where the option icons render.
+        text: String(
+          t?.app_install_step4 ||
+            'Press {home} "Add to Home Screen" or {app} "Install App"',
+        )
+          .split(/(\{home\}|\{app\})/g)
+          .map((part, i) =>
+            part === "{home}" ? (
+              <Box
+                as="span"
+                key={`h${i}`}
+                display="inline-flex"
+                alignItems="center"
+                verticalAlign="middle"
+              >
+                <CiSquarePlus size={18} />
+              </Box>
+            ) : part === "{app}" ? (
+              <Box
+                as="span"
+                key={`a${i}`}
+                display="inline-flex"
+                alignItems="center"
+                verticalAlign="middle"
+              >
+                <MdInstallMobile size={18} />
+              </Box>
+            ) : (
+              part
+            ),
+          ),
       },
       {
         id: "step5",
         icon: <LuBadgeCheck size={28} />,
-        text: t?.app_install_step5 || "Launch from your home screen.",
+        text:
+          t?.app_install_step5 || "The app is now installed on your device!",
       },
       {
         id: "step6",

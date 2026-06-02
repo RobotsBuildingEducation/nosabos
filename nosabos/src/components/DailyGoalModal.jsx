@@ -49,7 +49,6 @@ import {
   nativeModalMotionProps,
   nativeOverlayMotionProps,
 } from "../utils/modalMotion.js";
-import { scheduleAfterNextPaint } from "../utils/afterPaint.js";
 
 const MS_24H = 24 * 60 * 60 * 1000;
 const PRESETS = [100, 150, 200, 300];
@@ -531,31 +530,6 @@ export default function DailyGoalModal({
     [runResponsiveAction],
   );
 
-  const [bodyReady, setBodyReady] = useState(false);
-  useEffect(() => {
-    if (!isOpen) {
-      setBodyReady(false);
-      return undefined;
-    }
-
-    return scheduleAfterNextPaint(() => setBodyReady(true));
-  }, [isOpen]);
-
-  // Lazy-mount the XP-activity heatmap AFTER the modal shell paints.
-  // The heatmap is still ~371 DOM nodes + a scrollable grid; rendering
-  // it on the same tick the modal opens is the last remaining cause of
-  // perceptible lag. Deferring to the next frame lets the modal appear
-  // instantly, and the heatmap fills in immediately afterwards.
-  const [heatmapReady, setHeatmapReady] = useState(false);
-  useEffect(() => {
-    if (!isOpen || !bodyReady) {
-      setHeatmapReady(false);
-      return undefined;
-    }
-
-    return scheduleAfterNextPaint(() => setHeatmapReady(true));
-  }, [bodyReady, isOpen]);
-
   // Reset field when modal re-opens or default changes
   useEffect(() => {
     if (isOpen) {
@@ -719,8 +693,7 @@ export default function DailyGoalModal({
             },
           }}
         >
-          {bodyReady ? (
-            <VStack align="stretch" spacing={5}>
+          <VStack align="stretch" spacing={5}>
               <DailyGoalPetPanel
                 lang={resolvedLang}
                 health={petHealth}
@@ -826,36 +799,16 @@ export default function DailyGoalModal({
                 </Text>
               </FormControl>
 
-              {heatmapReady ? (
-                <DailyGoalHeatmap
-                  lang={resolvedLang}
-                  completedGoalDates={completedGoalDates}
-                  dailyXpHistory={dailyXpHistory}
-                  currentDailyXp={currentDailyXp}
-                  currentGoalXp={currentGoalXp}
-                  labels={heatmapLabels}
-                  isLightTheme={isLightTheme}
-                />
-              ) : (
-                <Box
-                  p={4}
-                  borderRadius="xl"
-                  bg={isLightTheme ? APP_SURFACE_MUTED : "gray.800"}
-                  border="1px solid"
-                  borderColor={isLightTheme ? APP_BORDER : "gray.700"}
-                  minH={{ base: "150px", md: "170px" }}
-                />
-              )}
-            </VStack>
-          ) : (
-            <Box
-              minH={{ base: "430px", md: "500px" }}
-              borderRadius="xl"
-              bg={isLightTheme ? APP_SURFACE_MUTED : "gray.800"}
-              border="1px solid"
-              borderColor={isLightTheme ? APP_BORDER : "gray.700"}
-            />
-          )}
+              <DailyGoalHeatmap
+                lang={resolvedLang}
+                completedGoalDates={completedGoalDates}
+                dailyXpHistory={dailyXpHistory}
+                currentDailyXp={currentDailyXp}
+                currentGoalXp={currentGoalXp}
+                labels={heatmapLabels}
+                isLightTheme={isLightTheme}
+              />
+          </VStack>
         </ModalBody>
         {/* Footer */}
         <ModalFooter
@@ -865,21 +818,17 @@ export default function DailyGoalModal({
           borderColor={isLightTheme ? APP_BORDER : "gray.800"}
         >
           <HStack w="100%" justify="flex-end" spacing={3}>
-            {bodyReady ? (
-              <Button
-                colorScheme={isLightTheme ? undefined : "teal"}
-                bg={isLightTheme ? "#3f9f9b" : undefined}
-                color={isLightTheme ? "white" : undefined}
-                _hover={isLightTheme ? { bg: "#398f8b" } : undefined}
-                {...getActionPressProps("daily-goal-save", save)}
-                isDisabled={!npub}
-                boxShadow={"0px 4px 0px teal"}
-              >
-                {ui.save || L.save}
-              </Button>
-            ) : (
-              <Box h="40px" />
-            )}
+            <Button
+              colorScheme={isLightTheme ? undefined : "teal"}
+              bg={isLightTheme ? "#3f9f9b" : undefined}
+              color={isLightTheme ? "white" : undefined}
+              _hover={isLightTheme ? { bg: "#398f8b" } : undefined}
+              {...getActionPressProps("daily-goal-save", save)}
+              isDisabled={!npub}
+              boxShadow={"0px 4px 0px teal"}
+            >
+              {ui.save || L.save}
+            </Button>
           </HStack>
         </ModalFooter>
       </ModalContent>
