@@ -1298,6 +1298,7 @@ function TopBar({
                 colorScheme="teal"
                 variant={isTimerRunning ? "solid" : "outline"}
                 size="sm"
+                boxShadow={isTimerRunning ? "none" : undefined}
                 aria-label={uiCopy(appLanguage, {
                   en: "Open timer",
                   es: "Abrir temporizador",
@@ -1305,7 +1306,8 @@ function TopBar({
                   ja: "タイマーを開く",
                   zh: "打开计时器",
                 })}
-                _active={{ transform: "none" }}
+                _hover={isTimerRunning ? { boxShadow: "none" } : undefined}
+                _active={{ boxShadow: "none", transform: "none" }}
                 {...getTopBarPressProps("session-timer", onOpenTimerModal)}
               >
                 <FiClock />
