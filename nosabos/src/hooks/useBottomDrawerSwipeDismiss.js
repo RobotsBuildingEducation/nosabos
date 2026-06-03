@@ -4,7 +4,6 @@ const DRAG_ACTIVATION_DISTANCE = 6;
 const DISMISS_DISTANCE = 120;
 const DISMISS_VELOCITY = 0.6;
 const SNAP_BACK_TRANSITION = "transform 180ms cubic-bezier(0.22, 1, 0.36, 1)";
-const DISMISS_TRANSITION = "transform 150ms cubic-bezier(0.22, 1, 0.36, 1)";
 const INTERACTIVE_TARGET_SELECTOR = [
   "button",
   "input",
@@ -52,7 +51,7 @@ export default function useBottomDrawerSwipeDismiss({
   isEnabled = true,
 }) {
   const contentRef = useRef(null);
-  const containerRef = useRef(null);
+  const containerNodeRef = useRef(null);
   const overlayRef = useRef(null);
   const closeTimeoutRef = useRef(null);
   const animationFrameRef = useRef(null);
@@ -62,6 +61,11 @@ export default function useBottomDrawerSwipeDismiss({
   const transitionRef = useRef("none");
   const sheetHeightRef = useRef(0);
   const isDraggingRef = useRef(false);
+  // True from the moment a swipe-dismiss begins until the next open. While set,
+  // syncPresentation() refuses to move the sheet, so nothing (a resize from
+  // Chakra's scroll-unlock, the !isOpen reset, a stray rAF) can yank it back up
+  // mid-close. The dismiss writes the slide-off transform directly instead.
+  const isClosingRef = useRef(false);
 
   const [isDragging, setIsDragging] = useState(false);
 
@@ -83,6 +87,21 @@ export default function useBottomDrawerSwipeDismiss({
     setDragging(false);
   }, [setDragging]);
 
+  // Chakra's getDialogContainerProps() discards any ref we pass through
+  // `containerProps`, so we can't hand the hook a ref to the positioning
+  // container directly. Instead we resolve it by walking up from the content
+  // node (whose ref Chakra *does* forward) to the fixed full-screen wrapper.
+  // Transforming that wrapper moves the sheet without fighting framer-motion,
+  // which only drives the inner content element.
+  const getContainerNode = useCallback(() => {
+    const cached = containerNodeRef.current;
+    if (cached && cached.isConnected) return cached;
+    const node =
+      contentRef.current?.closest?.(".chakra-modal__content-container") || null;
+    containerNodeRef.current = node;
+    return node;
+  }, []);
+
   const getSheetHeight = useCallback(() => {
     if (sheetHeightRef.current > 0) return sheetHeightRef.current;
     if (typeof window === "undefined") return 0;
@@ -93,15 +112,22 @@ export default function useBottomDrawerSwipeDismiss({
   }, []);
 
   const syncPresentation = useCallback(() => {
+    // Once a dismiss is in flight the slide-off is owned directly by
+    // dismissDrawer; ignore any further sync so the sheet can't snap back up.
+    if (isClosingRef.current) return;
+
     const offsetY = offsetYRef.current;
     const transition = transitionRef.current;
-    const containerNode = containerRef.current;
+    const containerNode = getContainerNode();
 
     if (containerNode) {
       containerNode.style.transform = `translate3d(0, ${offsetY}px, 0)`;
       containerNode.style.transition = transition;
-      containerNode.style.willChange =
-        isDraggingRef.current || offsetY > 0 ? "transform" : "";
+      // Keep the GPU layer promoted for the whole life of the open sheet. The
+      // node is unmounted on close, so this is cleaned up automatically. Never
+      // toggle will-change mid-gesture — that re-rasterizes the sheet (rounded
+      // corners + shadow) on a new layer and shows up as a flicker.
+      containerNode.style.willChange = "transform";
       containerNode.style.backfaceVisibility = "hidden";
     }
 
@@ -117,10 +143,9 @@ export default function useBottomDrawerSwipeDismiss({
           : transition.replace("transform", "opacity");
       overlayNode.style.opacity = String(1 - progress * 0.55);
       overlayNode.style.transition = overlayTransition;
-      overlayNode.style.willChange =
-        isDraggingRef.current || offsetY > 0 ? "opacity" : "";
+      overlayNode.style.willChange = "opacity";
     }
-  }, [getSheetHeight]);
+  }, [getContainerNode, getSheetHeight]);
 
   const schedulePresentationSync = useCallback(() => {
     if (typeof window === "undefined") return;
@@ -173,27 +198,25 @@ export default function useBottomDrawerSwipeDismiss({
     }
 
     clearCloseTimeout();
-    setDrawerTransition(DISMISS_TRANSITION);
-    setDrawerOffset(getSheetHeight() + 40);
-    resetGesture();
 
-    closeTimeoutRef.current = window.setTimeout(() => {
-      closeTimeoutRef.current = null;
-      onClose();
-    }, 110);
-  }, [
-    animateBack,
-    clearCloseTimeout,
-    getSheetHeight,
-    onClose,
-    resetGesture,
-    setDrawerOffset,
-    setDrawerTransition,
-  ]);
+    // Lock the close so no later sync can snap the sheet back toward rest, then
+    // hand straight off to Chakra's own exit animation, which fades the sheet
+    // out from exactly where the finger released it. We deliberately do NOT run
+    // a second (slide-off) animation here: two animations on the same close were
+    // what produced the little bounce. One fade, nothing to fight, no bounce.
+    isClosingRef.current = true;
+    if (animationFrameRef.current !== null) {
+      window.cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    resetGesture();
+    onClose();
+  }, [animateBack, clearCloseTimeout, onClose, resetGesture]);
 
   const handlePointerDown = useCallback(
     (event) => {
       if (!isEnabled || !isOpen) return;
+      if (isClosingRef.current) return;
       if (typeof onClose !== "function") return;
       if (event.isPrimary === false) return;
       if (event.pointerType === "mouse" && event.button !== 0) return;
@@ -321,11 +344,24 @@ export default function useBottomDrawerSwipeDismiss({
     if (!isOpen) {
       clearCloseTimeout();
       resetGesture();
-      setDrawerTransition("none");
-      setDrawerOffset(0);
+      // Reset bookkeeping for the next open WITHOUT syncing to the DOM. While
+      // closing, Chakra keeps the (now translated-down) sheet mounted for its
+      // exit animation; pushing offset 0 onto that node here would snap it back
+      // up mid-dismiss. The next open resolves a fresh node starting at rest.
+      if (animationFrameRef.current !== null) {
+        window.cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      offsetYRef.current = 0;
+      transitionRef.current = "none";
+      containerNodeRef.current = null;
       return undefined;
     }
 
+    // Fresh open: cancel any in-flight dismiss and release the close lock so the
+    // new sheet can be driven again.
+    clearCloseTimeout();
+    isClosingRef.current = false;
     setDrawerTransition("none");
     setDrawerOffset(0);
     setDragging(false);
@@ -391,12 +427,16 @@ export default function useBottomDrawerSwipeDismiss({
     drawerContentProps: {
       ref: contentRef,
       onPointerDown: handlePointerDown,
+      // No `ref` here — Chakra overwrites it with its own overlay ref (see
+      // getContainerNode). Transform/transition are applied imperatively, so we
+      // deliberately keep them out of this style object to avoid React
+      // resetting them on re-render mid-drag.
       containerProps: {
-        ref: containerRef,
         style: {
-          transform: "translate3d(0, 0, 0)",
-          transition: "none",
           backfaceVisibility: "hidden",
+          // Promote the compositor layer from the first paint so the very first
+          // drag frame doesn't trigger a layer promotion (the swipe-start flicker).
+          willChange: "transform",
         },
       },
     },
@@ -405,6 +445,7 @@ export default function useBottomDrawerSwipeDismiss({
       style: {
         opacity: 1,
         transition: "opacity 0.18s ease",
+        willChange: "opacity",
       },
     },
     isDragging,
