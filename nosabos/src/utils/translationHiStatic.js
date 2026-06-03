@@ -100,6 +100,7 @@ export const TRANSLATION_HI_STATIC = {
   timer_modal_minutes_label: "मिनट",
   timer_modal_quick_picks: "त्वरित विकल्प",
   timer_modal_close: "बंद करें",
+  daily_goal_close: "बंद करें",
   timer_modal_start: "टाइमर शुरू करें",
   timer_modal_restart: "फिर से शुरू करें",
   timer_modal_max_hint: "अधिकतम 240 मिनट (4 घंटे)",

@@ -915,9 +915,6 @@ export default function LinksPage() {
   const secondaryAccent = isLightTheme ? "#c026d3" : "#ff00ff";
   const linkAccent = isLightTheme ? "#1d4ed8" : "#4da3ff";
   const walletAccent = isLightTheme ? "#15803d" : "#16b078";
-  const modalOverlayBg = isLightTheme
-    ? "rgba(76, 60, 40, 0.24)"
-    : "blackAlpha.800";
   const modalBg = isLightTheme ? APP_SURFACE_ELEVATED : "rgba(7, 16, 29, 0.95)";
   const modalBorderColor = isLightTheme ? APP_BORDER_STRONG : primaryAccent;
   const modalBorderSoft = isLightTheme ? APP_BORDER : "rgba(0, 255, 255, 0.3)";
@@ -1721,10 +1718,10 @@ export default function LinksPage() {
         size="md"
         motionPreset="none"
       >
-        {/* <ModalOverlay
+        <ModalOverlay
           motionProps={nativeOverlayMotionProps}
-          bg={modalOverlayBg}
-        /> */}
+          bg="var(--app-overlay)"
+        />
         <ModalContent
           motionProps={nativeModalMotionProps}
           dir={pageDirection}
@@ -1840,10 +1837,10 @@ export default function LinksPage() {
         scrollBehavior="inside"
         motionPreset="none"
       >
-        {/* <ModalOverlay
+        <ModalOverlay
           motionProps={nativeOverlayMotionProps}
-          bg={modalOverlayBg}
-        /> */}
+          bg="var(--app-overlay)"
+        />
         <ModalContent
           motionProps={nativeModalMotionProps}
           dir={pageDirection}
@@ -2401,10 +2398,10 @@ export default function LinksPage() {
         scrollBehavior="inside"
         motionPreset="none"
       >
-        {/* <ModalOverlay
+        <ModalOverlay
           motionProps={nativeOverlayMotionProps}
-          bg={modalOverlayBg}
-        /> */}
+          bg="var(--app-overlay)"
+        />
         <ModalContent
           motionProps={nativeModalMotionProps}
           dir={pageDirection}

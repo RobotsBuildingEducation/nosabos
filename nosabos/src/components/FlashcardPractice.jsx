@@ -963,11 +963,10 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
       isCentered
       motionPreset="none"
     >
-      {/* <ModalOverlay
+      <ModalOverlay
         motionProps={nativeOverlayMotionProps}
-        backdropFilter={isLightTheme ? "blur(4px)" : "blur(8px)"}
-        bg={isLightTheme ? "rgba(76, 60, 40, 0.22)" : "blackAlpha.700"}
-      /> */}
+        bg="var(--app-overlay)"
+      />
       <ModalContent
         motionProps={nativeModalMotionProps}
         bg={modalShellTheme.bg}

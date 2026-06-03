@@ -11800,7 +11800,7 @@ const CitizenshipAssistantDrawer = ({
     <Drawer isOpen={isOpen} placement="right" onClose={onClose} size="md">
       <DrawerOverlay
         motionProps={nativeOverlayMotionProps}
-        bg="blackAlpha.500"
+        bg="var(--app-overlay)"
       />
       <DrawerContent
         motionProps={nativeDrawerMotionProps}
@@ -13154,7 +13154,7 @@ export default function CitizenshipGuide() {
         isCentered
         motionPreset="none"
       >
-        <ModalOverlay motionProps={nativeOverlayMotionProps} />
+        <ModalOverlay motionProps={nativeOverlayMotionProps} bg="var(--app-overlay)" />
         <ModalContent
           motionProps={nativeModalMotionProps}
           bg="var(--app-surface)"

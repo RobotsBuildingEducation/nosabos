@@ -7879,11 +7879,10 @@ export default function Tutor({
         scrollBehavior="inside"
         motionPreset="none"
       >
-        {/* <ModalOverlay
+        <ModalOverlay
           motionProps={nativeOverlayMotionProps}
-          bg="blackAlpha.700"
-          backdropFilter="blur(4px)"
-        /> */}
+          bg="var(--app-overlay)"
+        />
         <ModalContent
           motionProps={nativeModalMotionProps}
           bg={isLightTheme ? APP_SURFACE : "gray.950"}
@@ -8045,11 +8044,10 @@ export default function Tutor({
         size="lg"
         motionPreset="none"
       >
-        {/* <ModalOverlay
+        <ModalOverlay
           motionProps={nativeOverlayMotionProps}
-          bg="blackAlpha.700"
-          backdropFilter="blur(4px)"
-        /> */}
+          bg="var(--app-overlay)"
+        />
         <ModalContent
           motionProps={nativeModalMotionProps}
           bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
@@ -8162,11 +8160,10 @@ export default function Tutor({
         size="xl"
         motionPreset="none"
       >
-        {/* <ModalOverlay
+        <ModalOverlay
           motionProps={nativeOverlayMotionProps}
-          bg="blackAlpha.700"
-          backdropFilter="blur(5px)"
-        /> */}
+          bg="var(--app-overlay)"
+        />
         <ModalContent
           motionProps={nativeModalMotionProps}
           mx={3}
@@ -8335,10 +8332,10 @@ export default function Tutor({
         size="xl"
         motionPreset="none"
       >
-        {/* <ModalOverlay
+        <ModalOverlay
           motionProps={nativeOverlayMotionProps}
-          bg="blackAlpha.700"
-        /> */}
+          bg="var(--app-overlay)"
+        />
         <ModalContent
           motionProps={nativeModalMotionProps}
           bg="gray.800"

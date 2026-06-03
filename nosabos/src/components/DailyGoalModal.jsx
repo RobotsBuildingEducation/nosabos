@@ -36,6 +36,7 @@ import {
 } from "../utils/translation.jsx";
 import DailyGoalPetPanel from "./DailyGoalPetPanel.jsx";
 import useSoundSettings from "../hooks/useSoundSettings";
+import useEscapeToClose from "../hooks/useEscapeToClose";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
 import { getDailyGoalPetHealth } from "../utils/dailyGoalPet.js";
@@ -59,7 +60,6 @@ const APP_BORDER_STRONG = "var(--app-border-strong)";
 const APP_TEXT_PRIMARY = "var(--app-text-primary)";
 const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
 const APP_TEXT_MUTED = "var(--app-text-muted)";
-const APP_OVERLAY = "var(--app-overlay)";
 const APP_SHADOW = "var(--app-shadow-soft)";
 
 // Precomputed static styles for heatmap cells — plain DOM nodes are ~10x
@@ -411,6 +411,9 @@ export default function DailyGoalModal({
   currentDailyXp = 0,
   currentGoalXp = 0,
   useSharedBackdrop = false,
+  // Opened manually (top bar) → dismissible: close button, click-outside, esc.
+  // Onboarding → false: locked, the user sets a goal to proceed.
+  dismissible = false,
 }) {
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
@@ -444,6 +447,7 @@ export default function DailyGoalModal({
       resetsIn: (when) =>
         getLabel("daily_goal_resets_in", `Resets in 24h · ${when}`, { when }),
       save: getLabel("daily_goal_save", "Save"),
+      close: getLabel("daily_goal_close", "Close"),
       title: getLabel("daily_goal_title", "Goal Manager"),
       subtitle: getLabel(
         "daily_goal_subtitle",
@@ -601,14 +605,19 @@ export default function DailyGoalModal({
     void playSound(selectSound);
   }, [blurActiveElement, onClose, playSound]);
 
+  // trapFocus is off here, so Chakra's closeOnEsc can't fire — handle Escape
+  // ourselves, but only when dismissible (i.e. opened from the top bar, not
+  // during the locked onboarding step).
+  useEscapeToClose(isOpen, handleClose, dismissible);
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
       isCentered
       size="lg"
-      closeOnOverlayClick={false}
-      closeOnEsc={true}
+      closeOnOverlayClick={dismissible}
+      closeOnEsc={false}
       motionPreset="none"
       returnFocusOnClose={false}
       trapFocus={false}
@@ -618,19 +627,10 @@ export default function DailyGoalModal({
       preserveScrollBarGap={false}
       lockFocusAcrossFrames={false}
     >
-      {/* <ModalOverlay
+      <ModalOverlay
         motionProps={nativeOverlayMotionProps}
-        bg={
-          useSharedBackdrop
-            ? "transparent"
-            : isLightTheme
-              ? APP_OVERLAY
-              : "blackAlpha.700"
-        }
-        backdropFilter={
-          useSharedBackdrop ? undefined : isLightTheme ? "blur(4px)" : undefined
-        }
-      /> */}
+        bg={useSharedBackdrop ? "transparent" : "var(--app-overlay)"}
+      />
 
       <ModalContent
         motionProps={nativeModalMotionProps}
@@ -648,14 +648,16 @@ export default function DailyGoalModal({
           },
         }}
       >
-        <ModalCloseButton
-          color={isLightTheme ? "white" : "currentColor"}
-          left={isRtl ? 3 : undefined}
-          right={isRtl ? "auto" : undefined}
-          _hover={{
-            bg: isLightTheme ? "rgba(255,255,255,0.12)" : "whiteAlpha.100",
-          }}
-        />
+        {dismissible && (
+          <ModalCloseButton
+            color={isLightTheme ? "white" : "currentColor"}
+            left={isRtl ? 3 : undefined}
+            right={isRtl ? "auto" : undefined}
+            _hover={{
+              bg: isLightTheme ? "rgba(255,255,255,0.12)" : "whiteAlpha.100",
+            }}
+          />
+        )}
         {/* Header */}
         <Box
           bg={
@@ -818,6 +820,18 @@ export default function DailyGoalModal({
           borderColor={isLightTheme ? APP_BORDER : "gray.800"}
         >
           <HStack w="100%" justify="flex-end" spacing={3}>
+            {dismissible && (
+              <Button
+                variant="ghost"
+                color={isLightTheme ? APP_TEXT_SECONDARY : "gray.300"}
+                _hover={{
+                  bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.100",
+                }}
+                onClick={handleClose}
+              >
+                {ui.close || L.close}
+              </Button>
+            )}
             <Button
               colorScheme={isLightTheme ? undefined : "teal"}
               bg={isLightTheme ? "#3f9f9b" : undefined}

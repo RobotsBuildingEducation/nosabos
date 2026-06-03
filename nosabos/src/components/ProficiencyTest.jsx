@@ -2861,11 +2861,10 @@ Return ONLY valid JSON:
         size="xl"
         motionPreset="none"
       >
-        {/* <ModalOverlay
+        <ModalOverlay
           motionProps={nativeOverlayMotionProps}
-          bg={isLightTheme ? "rgba(76, 60, 40, 0.18)" : "blackAlpha.700"}
-          backdropFilter="blur(4px)"
-        /> */}
+          bg="var(--app-overlay)"
+        />
         <ModalContent
           motionProps={nativeModalMotionProps}
           bg={isLightTheme ? APP_SURFACE_ELEVATED : "gray.900"}
@@ -2918,8 +2917,7 @@ Return ONLY valid JSON:
       >
         <DrawerOverlay
           motionProps={nativeOverlayMotionProps}
-          bg={isLightTheme ? "rgba(76, 60, 40, 0.18)" : "blackAlpha.700"}
-          backdropFilter="blur(6px)"
+          bg="var(--app-overlay)"
         />
         <DrawerContent
           motionProps={nativeDrawerMotionProps}
@@ -3386,8 +3384,7 @@ Return ONLY valid JSON:
         <DrawerOverlay
           {...rubricSwipeDismiss.overlayProps}
           motionProps={nativeOverlayMotionProps}
-          bg={isLightTheme ? "rgba(76, 60, 40, 0.18)" : "blackAlpha.700"}
-          backdropFilter="blur(6px)"
+          bg="var(--app-overlay)"
         />
         <DrawerContent
           {...rubricSwipeDismiss.drawerContentProps}
@@ -3592,11 +3589,10 @@ Return ONLY valid JSON:
         size="sm"
         motionPreset="none"
       >
-        {/* <ModalOverlay
+        <ModalOverlay
           motionProps={nativeOverlayMotionProps}
-          bg={isLightTheme ? "rgba(76, 60, 40, 0.18)" : "blackAlpha.700"}
-          backdropFilter="blur(4px)"
-        /> */}
+          bg="var(--app-overlay)"
+        />
         <ModalContent
           motionProps={nativeModalMotionProps}
           bg={isLightTheme ? APP_SURFACE_ELEVATED : "gray.900"}

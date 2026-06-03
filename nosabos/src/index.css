@@ -23,7 +23,8 @@ body {
   --app-text-primary: #e5e7eb;
   --app-text-secondary: #cbd5e1;
   --app-text-muted: #94a3b8;
-  --app-overlay: rgba(2, 6, 23, 0.68);
+  /* Modal/drawer dim — every overlay reads this one token. Bump these to taste. */
+  --app-overlay: rgba(2, 6, 23, 0.92);
   --app-glass-bg: rgba(11, 18, 32, 0.66);
   --app-glass-bg-soft: rgba(11, 18, 32, 0.12);
   --app-glass-hover: rgba(11, 18, 32, 0.82);
@@ -95,7 +96,8 @@ body {
   --app-text-primary: #2f261d;
   --app-text-secondary: #5b4b3a;
   --app-text-muted: #8d7a67;
-  --app-overlay: rgba(78, 60, 40, 0.18);
+  /* Modal/drawer dim — every overlay reads this one token. Bump these to taste. */
+  --app-overlay: rgba(28, 20, 12, 0.82);
   --app-glass-bg: rgba(255, 252, 247, 0.94);
   --app-glass-bg-soft: rgba(255, 249, 242, 0.88);
   --app-glass-hover: rgba(248, 241, 232, 0.98);
@@ -246,6 +248,13 @@ body {
   border-radius: inherit;
   pointer-events: none;
   z-index: 1;
+}
+
+/* Drawers (Slide content) sit flush against the screen edge, so the frame's
+   bottom border just reads as a cut-off line on mobile. Drop it for drawers
+   only — modals (centered, not .chakra-slide) keep their full frame. */
+.chakra-slide.chakra-modal__content::before {
+  border-bottom: none;
 }
 
 @keyframes app-modal-overlay-in {

@@ -150,16 +150,15 @@ export default function GettingStartedModal({
       onClose={handleGotIt}
       isCentered
       size="lg"
-      closeOnOverlayClick={false}
+      closeOnOverlayClick={true}
       closeOnEsc={true}
       motionPreset="none"
       returnFocusOnClose={false}
     >
-      {/* <ModalOverlay
+      <ModalOverlay
         motionProps={nativeOverlayMotionProps}
-        bg={useSharedBackdrop ? "transparent" : isLightTheme ? "rgba(76, 60, 40, 0.18)" : "blackAlpha.700"}
-        backdropFilter={useSharedBackdrop ? undefined : "blur(4px)"}
-      /> */}
+        bg={useSharedBackdrop ? "transparent" : "var(--app-overlay)"}
+      />
       <ModalContent
         motionProps={nativeModalMotionProps}
         bg={isLightTheme ? APP_SURFACE_ELEVATED : "gray.900"}

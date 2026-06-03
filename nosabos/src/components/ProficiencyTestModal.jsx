@@ -18,7 +18,7 @@ import RandomCharacter from "./RandomCharacter";
 import { t as tFn } from "../utils/translation";
 import {
   nativeModalMotionProps,
-  // nativeOverlayMotionProps,
+  nativeOverlayMotionProps,
 } from "../utils/modalMotion";
 
 export default function ProficiencyTestModal({
@@ -67,15 +67,14 @@ export default function ProficiencyTestModal({
       isCentered
       size="lg"
       closeOnOverlayClick={false}
-      closeOnEsc={true}
+      closeOnEsc={false}
       motionPreset="none"
       returnFocusOnClose={false}
     >
-      {/* <ModalOverlay
+      <ModalOverlay
         motionProps={nativeOverlayMotionProps}
-        bg={useSharedBackdrop ? "transparent" : "blackAlpha.700"}
-        backdropFilter={useSharedBackdrop ? undefined : "blur(4px)"}
-      /> */}
+        bg={useSharedBackdrop ? "transparent" : "var(--app-overlay)"}
+      />
       <ModalContent
         motionProps={nativeModalMotionProps}
         bg="gray.900"

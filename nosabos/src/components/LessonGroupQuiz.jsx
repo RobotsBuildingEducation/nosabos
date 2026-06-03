@@ -1472,7 +1472,7 @@ YES or NO
         size="lg"
         motionPreset="none"
       >
-        {/* <ModalOverlay motionProps={nativeOverlayMotionProps} /> */}
+        <ModalOverlay motionProps={nativeOverlayMotionProps} bg="var(--app-overlay)" />
         <ModalContent
           motionProps={nativeModalMotionProps}
           bg="#1a1e2e"

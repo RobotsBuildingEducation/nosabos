@@ -11,9 +11,7 @@ import {
   Button,
   Drawer,
   DrawerBody,
-  DrawerCloseButton,
   DrawerContent,
-  DrawerFooter,
   DrawerHeader,
   DrawerOverlay,
   Flex,
@@ -25,7 +23,6 @@ import {
 import { RiDeleteBinLine, RiVolumeUpLine, RiStopLine } from "react-icons/ri";
 import useNotesStore from "../hooks/useNotesStore";
 import { getPreferredTTSVoice, getTTSPlayer, TTS_LANG_TAG } from "../utils/tts";
-import translations from "../utils/translation";
 import BottomDrawerDragHandle from "./BottomDrawerDragHandle";
 import useBottomDrawerSwipeDismiss from "../hooks/useBottomDrawerSwipeDismiss";
 import VoiceOrb from "./VoiceOrb";
@@ -233,10 +230,6 @@ export default function NotesDrawer({
                     : lang === "es"
                       ? "Sin notas"
                       : "No notes";
-  const closeLabel =
-    translations[lang]?.teams_drawer_close ||
-    translations.en?.teams_drawer_close ||
-    "Close";
   const noteTitleFallback =
     lang === "ja"
       ? "メモ"
@@ -630,12 +623,6 @@ export default function NotesDrawer({
         }}
       >
         <BottomDrawerDragHandle isDragging={swipeDismiss.isDragging} />
-        <DrawerCloseButton
-          color={noteUi.icon}
-          _hover={{ color: noteUi.primaryText, bg: noteUi.closeHoverBg }}
-          top={4}
-          right={4}
-        />
         <DrawerHeader
           borderBottomWidth="1px"
           borderColor={noteUi.headerBorder}
@@ -768,24 +755,6 @@ export default function NotesDrawer({
             )}
           </Box>
         </DrawerBody>
-        <DrawerFooter borderTopWidth="1px" borderColor={noteUi.headerBorder}>
-          <Box
-            maxW="720px"
-            mx="auto"
-            w="100%"
-            display="flex"
-            justifyContent="flex-end"
-          >
-            <Button
-              variant={"ghost"}
-              color={noteUi.primaryText}
-              _hover={{ bg: noteUi.closeHoverBg }}
-              onClick={onClose}
-            >
-              {closeLabel}
-            </Button>
-          </Box>
-        </DrawerFooter>
       </DrawerContent>
     </Drawer>
   );

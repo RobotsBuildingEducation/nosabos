@@ -2002,11 +2002,10 @@ function LessonDetailModal({
       closeOnEsc={!isTransitioningToLesson}
       motionPreset="none"
     >
-      {/* <ModalOverlay
+      <ModalOverlay
         motionProps={nativeOverlayMotionProps}
-        backdropFilter="blur(8px)"
         bg="var(--app-overlay)"
-      /> */}
+      />
       <ModalContent
         ref={modalContentRef}
         motionProps={nativeModalMotionProps}

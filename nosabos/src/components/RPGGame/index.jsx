@@ -2950,9 +2950,6 @@ export default function RPGGame({
   const rpgChoiceShadow = isLightTheme
     ? "0px 3px 0px #d2c1a9"
     : "0px 4px 0px #a9a18c";
-  const rpgOverlayBg = isLightTheme
-    ? "rgba(76, 60, 40, 0.22)"
-    : "blackAlpha.700";
   const transitionCooldownUntilRef = useRef(0);
   const mapEntrySpawnRef = useRef(null);
   const npcAssignmentsCacheRef = useRef(null);
@@ -7398,7 +7395,7 @@ export default function RPGGame({
       >
         <ModalOverlay
           motionProps={nativeOverlayMotionProps}
-          bg={rpgOverlayBg}
+          bg="var(--app-overlay)"
         />
         <ModalContent
           motionProps={nativeModalMotionProps}
@@ -7515,7 +7512,7 @@ export default function RPGGame({
       >
         <ModalOverlay
           motionProps={nativeOverlayMotionProps}
-          bg={rpgOverlayBg}
+          bg="var(--app-overlay)"
         />
         <ModalContent
           motionProps={nativeModalMotionProps}

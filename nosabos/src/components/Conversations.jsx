@@ -3366,7 +3366,7 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
       >
         <ModalOverlay
           motionProps={nativeOverlayMotionProps}
-          bg="blackAlpha.700"
+          bg="var(--app-overlay)"
         />
         <ModalContent
           motionProps={nativeModalMotionProps}

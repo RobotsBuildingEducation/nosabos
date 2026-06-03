@@ -6742,14 +6742,13 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         onClose={() => setShowQuizSuccessModal(false)}
         isCentered
         size="lg"
-        closeOnOverlayClick={false}
+        closeOnOverlayClick={true}
         motionPreset="none"
       >
-        {/* <ModalOverlay
+        <ModalOverlay
           motionProps={nativeOverlayMotionProps}
-          bg="blackAlpha.700"
-          backdropFilter="blur(4px)"
-        /> */}
+          bg="var(--app-overlay)"
+        />
         <ModalContent
           motionProps={nativeModalMotionProps}
           bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
@@ -6869,14 +6868,13 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         onClose={() => setShowQuizFailureModal(false)}
         isCentered
         size="lg"
-        closeOnOverlayClick={false}
+        closeOnOverlayClick={true}
         motionPreset="none"
       >
-        {/* <ModalOverlay
+        <ModalOverlay
           motionProps={nativeOverlayMotionProps}
-          bg="blackAlpha.700"
-          backdropFilter="blur(4px)"
-        /> */}
+          bg="var(--app-overlay)"
+        />
         <ModalContent
           motionProps={nativeModalMotionProps}
           bg="linear-gradient(135deg, #e53e3e 0%, #c53030 100%)"

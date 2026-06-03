@@ -25,7 +25,11 @@ const useModalStore = create((set) => ({
 
   // ── Daily goal ────────────────────────────────────────────────────────────
   dailyGoalOpen: false,
-  openDailyGoal: () => set({ dailyGoalOpen: true }),
+  // dismissible = opened manually (top bar): show close affordances + overlay/
+  // esc. false = onboarding: locked, the user sets a goal to proceed.
+  dailyGoalDismissible: false,
+  openDailyGoal: (dismissible = false) =>
+    set({ dailyGoalOpen: true, dailyGoalDismissible: dismissible }),
   closeDailyGoal: () => set({ dailyGoalOpen: false }),
 
   // ── Skill-tree lesson detail ──────────────────────────────────────────────

@@ -662,6 +662,7 @@ export const TRANSLATION_PT_STATIC = {
   "timer_modal_quick_picks": "Opções rápidas",
   "timer_modal_cancel": "Cancelar",
   "timer_modal_close": "Fechar",
+  "daily_goal_close": "Fechar",
   "timer_modal_start": "Iniciar temporizador",
   "timer_modal_restart": "Reiniciar temporizador",
   "timer_modal_max_hint": "máx 240 minutos (4 horas)",

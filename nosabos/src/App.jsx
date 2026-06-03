@@ -1349,11 +1349,7 @@ function TopBar({
 
       {/* ---- Settings Drawer ---- */}
       <Drawer isOpen={settingsOpen} placement="bottom" onClose={closeSettings}>
-        {/* <DrawerOverlay
-          // {...settingsSwipeDismiss.overlayProps}
-          motionProps={nativeOverlayMotionProps}
-          // bg="var(--app-overlay)"
-        /> */}
+        {/* Drawers intentionally have no overlay (overlays are modal-only). */}
         <DrawerContent
           {...settingsSwipeDismiss.drawerContentProps}
           motionProps={nativeAnchoredDrawerMotionProps}
@@ -2962,9 +2958,9 @@ export default function App({ onBootReady } = {}) {
   // doesn't re-render this huge App component before the modal can open.
   // App reads the flag only via getState/subscribe in effects below — no
   // hook subscription — so flipping it doesn't trigger an App re-render.
-  const setDailyGoalOpen = useCallback((value) => {
+  const setDailyGoalOpen = useCallback((value, dismissible = false) => {
     const m = useModalStore.getState();
-    if (value) m.openDailyGoal();
+    if (value) m.openDailyGoal(dismissible);
     else m.closeDailyGoal();
   }, []);
   const [celebrateOpen, setCelebrateOpen] = useState(false);
@@ -6837,7 +6833,7 @@ export default function App({ onBootReady } = {}) {
             setTimerModalOpen(true);
           }}
           onTogglePauseTimer={handleTogglePauseTimer}
-          onOpenDailyGoalModal={() => setDailyGoalOpen(true)}
+          onOpenDailyGoalModal={() => setDailyGoalOpen(true, true)}
           allowPosts={allowPosts}
           onAllowPostsChange={handleAllowPostsChange}
           soundEnabled={soundEnabled}
@@ -7267,11 +7263,10 @@ export default function App({ onBootReady } = {}) {
         size="lg"
         motionPreset="none"
       >
-        {/* <ModalOverlay
+        <ModalOverlay
           motionProps={nativeOverlayMotionProps}
-          bg="blackAlpha.700"
-          backdropFilter="blur(4px)"
-        /> */}
+          bg="var(--app-overlay)"
+        />
         <ModalContent
           motionProps={nativeModalMotionProps}
           bg="linear-gradient(135deg, #c084fc 0%, #22d3ee 100%)"
@@ -7353,11 +7348,10 @@ export default function App({ onBootReady } = {}) {
         size="lg"
         motionPreset="none"
       >
-        {/* <ModalOverlay
+        <ModalOverlay
           motionProps={nativeOverlayMotionProps}
-          bg="blackAlpha.700"
-          backdropFilter="blur(4px)"
-        /> */}
+          bg="var(--app-overlay)"
+        />
         <ModalContent
           motionProps={nativeModalMotionProps}
           bg="linear-gradient(135deg, #0ea5e9 0%, #22c55e 100%)"
@@ -7483,11 +7477,10 @@ export default function App({ onBootReady } = {}) {
         size="lg"
         motionPreset="none"
       >
-        {/* <ModalOverlay
+        <ModalOverlay
           motionProps={nativeOverlayMotionProps}
-          bg="blackAlpha.700"
-          backdropFilter="blur(4px)"
-        /> */}
+          bg="var(--app-overlay)"
+        />
         <ModalContent
           motionProps={nativeModalMotionProps}
           bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
@@ -7620,14 +7613,13 @@ export default function App({ onBootReady } = {}) {
         onClose={handleCloseProficiencyCompletionModal}
         isCentered
         size="lg"
-        closeOnOverlayClick={false}
+        closeOnOverlayClick={true}
         motionPreset="none"
       >
-        {/* <ModalOverlay
+        <ModalOverlay
           motionProps={nativeOverlayMotionProps}
-          bg="blackAlpha.700"
-          backdropFilter="blur(4px)"
-        /> */}
+          bg="var(--app-overlay)"
+        />
         <ModalContent
           motionProps={nativeModalMotionProps}
           bg={
@@ -7774,7 +7766,21 @@ export default function App({ onBootReady } = {}) {
 // stable props (data + callbacks); only the Gate re-renders on flag flip.
 
 function OnboardingChainBackdrop({ appChainOpen }) {
-  if (!appChainOpen) return null;
+  // One persistent, solid dim shared by the whole onboarding modal chain.
+  // Perf notes:
+  // - No backdrop-filter. A full-screen blur is re-rasterized every frame while
+  //   the modals cross-fade — that was the jitter. A solid translucent fill is
+  //   ~free for the compositor.
+  // - Always mounted and opacity-toggled (not mount/unmounted), so it can't
+  //   flicker if the chain flag blips between steps; a solid-color opacity fade
+  //   is cheap and stays on one stable layer.
+  // Combine both halves of the chain here: proficiency/gettingStarted arrive via
+  // appChainOpen, while dailyGoal/timer are read from the store. This keeps the
+  // dim up for the whole sequence (no gap between any two steps) without making
+  // the App component subscribe to the two store booleans.
+  const dailyGoalOpen = useModalStore((s) => s.dailyGoalOpen);
+  const timerModalOpen = useModalStore((s) => s.timerModalOpen);
+  const chainOpen = appChainOpen || dailyGoalOpen || timerModalOpen;
   return (
     <Portal>
       <Box
@@ -7783,8 +7789,9 @@ function OnboardingChainBackdrop({ appChainOpen }) {
         inset="0"
         zIndex="1300"
         pointerEvents="none"
-        // bg="var(--app-overlay)"
-        // backdropFilter="blur(4px)"
+        bg="var(--app-overlay)"
+        opacity={chainOpen ? 1 : 0}
+        transition="opacity 0.16s ease"
       />
     </Portal>
   );
@@ -7792,6 +7799,13 @@ function OnboardingChainBackdrop({ appChainOpen }) {
 
 function DailyGoalModalGate({ appChainOpen, ...props }) {
   const isOpen = useModalStore((s) => s.dailyGoalOpen);
+  // Sibling-aware: keeps useSharedBackdrop true across the (flushSync, gap-free)
+  // daily-goal → timer swap, so the shared dim never blinks to this modal's own
+  // overlay mid-handoff.
+  const siblingOpen = useModalStore((s) => s.timerModalOpen);
+  // Dismissible (close button + overlay/esc) when opened manually from the top
+  // bar; locked during onboarding.
+  const dismissible = useModalStore((s) => s.dailyGoalDismissible);
   // Lazy-mount: don't put the heavy modal subtree in the React tree until
   // the first open. Once mounted it stays mounted (so subsequent opens just
   // flip isOpen). This matched the perf pattern of FlashcardPracticeGate,
@@ -7802,7 +7816,8 @@ function DailyGoalModalGate({ appChainOpen, ...props }) {
   return (
     <DailyGoalModal
       isOpen={isOpen}
-      useSharedBackdrop={appChainOpen}
+      useSharedBackdrop={appChainOpen || isOpen || siblingOpen}
+      dismissible={dismissible}
       {...props}
     />
   );
@@ -7810,13 +7825,15 @@ function DailyGoalModalGate({ appChainOpen, ...props }) {
 
 function SessionTimerModalGate({ appChainOpen, ...props }) {
   const isOpen = useModalStore((s) => s.timerModalOpen);
+  // Sibling-aware (see DailyGoalModalGate) so the shared dim survives the swap.
+  const siblingOpen = useModalStore((s) => s.dailyGoalOpen);
   const hasEverOpened = useRef(false);
   if (isOpen) hasEverOpened.current = true;
   if (!hasEverOpened.current) return null;
   return (
     <SessionTimerModal
       isOpen={isOpen}
-      useSharedBackdrop={appChainOpen}
+      useSharedBackdrop={appChainOpen || isOpen || siblingOpen}
       {...props}
     />
   );

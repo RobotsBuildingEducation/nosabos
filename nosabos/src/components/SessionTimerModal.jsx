@@ -25,6 +25,7 @@ import {
 } from "@chakra-ui/react";
 import { FiClock } from "react-icons/fi";
 import useSoundSettings from "../hooks/useSoundSettings";
+import useEscapeToClose from "../hooks/useEscapeToClose";
 import { useThemeStore } from "../useThemeStore";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
@@ -37,7 +38,6 @@ import {
   nativeModalMotionProps,
   nativeOverlayMotionProps,
 } from "../utils/modalMotion";
-import { scheduleAfterNextPaint } from "../utils/afterPaint";
 
 const APP_SURFACE = "var(--app-surface)";
 const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
@@ -47,7 +47,6 @@ const APP_BORDER_STRONG = "var(--app-border-strong)";
 const APP_TEXT_PRIMARY = "var(--app-text-primary)";
 const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
 const APP_TEXT_MUTED = "var(--app-text-muted)";
-const APP_OVERLAY = "var(--app-overlay)";
 const APP_SHADOW = "var(--app-shadow-soft)";
 const DEFAULT_TIMER_MINUTES = "10";
 
@@ -482,7 +481,6 @@ export default function SessionTimerModal({
   t = {},
   lang = "en",
   useSharedBackdrop = false,
-  deferBody = true,
 }) {
   const presets = [10, 20, 30, 45, 60, 90, 120, 180, 240];
   const playSound = useSoundSettings((s) => s.playSound);
@@ -503,21 +501,10 @@ export default function SessionTimerModal({
     if (isOpen) setLocalMinutes(normalizeTimerMinutesDraft(minutes));
   }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const [bodyReady, setBodyReady] = useState(false);
-  useEffect(() => {
-    if (!isOpen) {
-      setBodyReady(false);
-      return undefined;
-    }
-
-    if (!deferBody) {
-      setBodyReady(true);
-      return undefined;
-    }
-
-    return scheduleAfterNextPaint(() => setBodyReady(true));
-  }, [deferBody, isOpen]);
-  const shouldRenderBody = !deferBody || bodyReady;
+  // Render the body in a single pass. (It used to be deferred one paint behind
+  // the modal shell, which briefly showed an empty placeholder and read as a
+  // flicker when the modal opened.)
+  const shouldRenderBody = true;
 
   const deferPostAction = useCallback((task) => {
     if (typeof task !== "function") return;
@@ -565,12 +552,17 @@ export default function SessionTimerModal({
     });
   }, [deferPostAction, onMinutesChange, onStart, localMinutes, playSound]);
 
+  // trapFocus is off (so the modal doesn't focus an input and pop the keyboard),
+  // which means Chakra's closeOnEsc can't fire — handle Escape ourselves.
+  useEscapeToClose(isOpen, handleClose);
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
       isCentered
       size="lg"
+      closeOnEsc={false}
       motionPreset="none"
       returnFocusOnClose={false}
       trapFocus={false}
@@ -580,19 +572,10 @@ export default function SessionTimerModal({
       preserveScrollBarGap={false}
       lockFocusAcrossFrames={false}
     >
-      {/* <ModalOverlay
+      <ModalOverlay
         motionProps={nativeOverlayMotionProps}
-        bg={
-          useSharedBackdrop
-            ? "transparent"
-            : isLightTheme
-              ? APP_OVERLAY
-              : "blackAlpha.700"
-        }
-        backdropFilter={
-          useSharedBackdrop ? undefined : isLightTheme ? "blur(4px)" : undefined
-        }
-      /> */}
+        bg={useSharedBackdrop ? "transparent" : "var(--app-overlay)"}
+      />
       <ModalContent
         motionProps={nativeModalMotionProps}
         bg={isLightTheme ? APP_SURFACE_ELEVATED : "gray.900"}

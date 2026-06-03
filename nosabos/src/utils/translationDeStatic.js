@@ -832,6 +832,7 @@ export const TRANSLATION_DE_STATIC = {
   timer_modal_quick_picks: "Schnellauswahl",
   timer_modal_cancel: "Abbrechen",
   timer_modal_close: "Schließen",
+  daily_goal_close: "Schließen",
   timer_modal_start: "Timer starten",
   timer_modal_restart: "Timer neu starten",
   timer_modal_max_hint: "max. 240 Minuten (4 Stunden)",

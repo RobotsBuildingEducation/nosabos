@@ -4097,11 +4097,10 @@ Return ONLY JSON:
           size="xl"
           motionPreset="none"
         >
-          {/* <ModalOverlay
+          <ModalOverlay
             motionProps={nativeOverlayMotionProps}
-            bg="blackAlpha.700"
-            backdropFilter="blur(4px)"
-          /> */}
+            bg="var(--app-overlay)"
+          />
           <ModalContent
             motionProps={nativeModalMotionProps}
             bg="gray.900"
