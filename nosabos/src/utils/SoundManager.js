@@ -723,6 +723,25 @@ class SoundManager {
       });
     },
 
+    // Listening cue - clear "your turn" chime for hands-free Tutor sessions.
+    listeningCue: () => {
+      const synth = this.createDisposablePolySynth(
+        {
+          type: "triangle",
+          attack: 0.001,
+          decay: 0.06,
+          sustain: 0,
+          release: 0.08,
+        },
+        VOL.NORMAL,
+        420,
+      );
+      const now = Tone.now();
+      ["C6", "G6", "C7"].forEach((note, i) => {
+        synth.triggerAttackRelease(note, "32n", now + i * 0.045);
+      });
+    },
+
     // Mode switch - subtle transition (replaces modeswitcher.mp3)
     modeSwitch: () => {
       const synth = this.createDisposablePolySynth(

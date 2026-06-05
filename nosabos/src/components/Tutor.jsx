@@ -53,6 +53,10 @@ import {
   analytics,
   gradingLiteModel,
 } from "../firebaseResources/firebaseResources";
+// Schema comes from firebase/ai (same package as getLiveGenerativeModel in the
+// bridge) so the tool's parameter schema matches what the Live model expects —
+// not the @firebase/vertexai Schema re-exported by firebaseResources.
+import { Schema } from "firebase/ai";
 import { logEvent } from "firebase/analytics";
 
 import useUserStore from "../hooks/useUserStore";
@@ -96,6 +100,7 @@ import {
   SKILL_STATUS,
 } from "../data/skillTree/index.js";
 import useSoundSettings from "../hooks/useSoundSettings";
+import { listeningCueSound } from "../constants/sounds";
 import submitActionSound from "../assets/submitaction.mp3";
 import XpProgressHeader from "./XpProgressHeader";
 import RandomCharacter from "./RandomCharacter";
@@ -787,6 +792,90 @@ function getTutorStarterAgendaTitleText() {
     nl: "Tutorial - Eenvoudige kennismakingen",
   };
 }
+
+// Tool-call grading (flag-gated, default OFF). When enabled, the Live tutor model
+// (which heard the audio) drives grading directly via tools, instead of the verdict
+// being reverse-engineered from the (sometimes mistranscribed) transcript:
+//   • markTurnSuccessful    — did the learner complete the current task this turn?
+//   • proposeLessonComplete — model asks before ending; the app approves or denies.
+// The transcript grader and the closing-act judge stay as fallbacks.
+const TUTOR_TOOL_GRADING_ENABLED =
+  import.meta.env.VITE_GEMINI_LIVE_TOOL_GRADING === "true";
+
+// Safety cap: gemini-2.5 native audio can loop a tool call and never complete the
+// turn. If more than this many tool calls arrive in one learner turn, the handler
+// aborts the runaway response and reopens the mic so the user is never stuck.
+const MAX_TOOL_CALLS_PER_TURN = 3;
+
+function getLiveToolCallArgs(functionCall) {
+  const rawArgs =
+    functionCall?.args ??
+    functionCall?.arguments ??
+    functionCall?.parameters ??
+    {};
+  if (rawArgs && typeof rawArgs === "object") return rawArgs;
+  if (typeof rawArgs !== "string") return {};
+  try {
+    const parsed = JSON.parse(rawArgs);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function buildLiveToolResponse(functionCall, response) {
+  const toolResponse = {
+    name: functionCall?.name,
+    response,
+  };
+  if (functionCall?.id) {
+    toolResponse.id = functionCall.id;
+  }
+  return toolResponse;
+}
+
+const TUTOR_LIVE_TOOLS = {
+  functionDeclarations: [
+    {
+      name: "markTurnSuccessful",
+      description:
+        "Call markTurnSuccessful(correct:true) ONLY when the learner correctly produces or completes " +
+        "the CURRENT requested phrase or task this turn — that is the only thing that earns progress. " +
+        "Do NOT call it when: the learner makes a mistake or wrong attempt (instead correct them, and " +
+        "call it only after they say it correctly); the learner asks for help, a breakdown, the meaning, " +
+        "a repetition, or any question (just help — no progress); or the learner only greets or confirms " +
+        "(e.g. 'yes', 'ready'). Call it at most once per correct completion.",
+      parameters: Schema.object({
+        properties: {
+          correct: Schema.boolean({
+            description:
+              "True only if the learner correctly completed the current requested task this turn.",
+          }),
+          reason: Schema.string({
+            description: "Brief reason for the judgment.",
+          }),
+        },
+        optionalProperties: ["reason"],
+      }),
+    },
+    {
+      name: "proposeLessonComplete",
+      description:
+        "Call this BEFORE ending, summarizing, or saying goodbye to conclude the lesson, when you " +
+        "believe it is complete. Do NOT conclude on your own — wait for the response. If not approved, " +
+        "the lesson is NOT finished: keep teaching and reviewing the agenda items (and combinations), " +
+        "and do not say goodbye. If approved, you may wrap up.",
+      parameters: Schema.object({
+        properties: {
+          reason: Schema.string({
+            description: "Brief reason you believe the lesson is complete.",
+          }),
+        },
+        optionalProperties: ["reason"],
+      }),
+    },
+  ],
+};
 
 function isTutorStarterAgendaLesson(lesson) {
   const id = String(lesson?.id || "");
@@ -1866,7 +1955,6 @@ async function ensureUserDoc(npub, defaults = {}) {
             targetLang: "es",
             showTranslations: true,
             helpRequest: "",
-            pauseMs: 2000,
             practicePronunciation: false,
           },
           ...defaults,
@@ -3425,7 +3513,6 @@ export default function Tutor({
   activeNpub = "",
   targetLang = "es",
   supportLang = "",
-  pauseMs: initialPauseMs = 2000,
   maxProficiencyLevel = "Pre-A1",
   onFirstLessonComplete,
   onDailyGoalCelebration,
@@ -3487,6 +3574,7 @@ export default function Tutor({
   const pendingGuardrailTextRef = useRef("");
   const tutorKickoffSentRef = useRef(false);
   const tutorKickoffTimerRef = useRef(null);
+  const tutorKickoffRetryCountRef = useRef(0);
   const tutorSessionReadyRef = useRef(false);
   // Tutorial lesson opens with a support-language welcome turn. While true, the
   // learner's next reply is treated as a greeting (no XP, no agenda progress)
@@ -3502,6 +3590,7 @@ export default function Tutor({
   const assistantInputLockedRef = useRef(false);
   const assistantSpeakingRef = useRef(false);
   const assistantUnlockTimerRef = useRef(null);
+  const listeningCueLastPlayedAtRef = useRef(0);
   const pendingUserAudioCommitRef = useRef(false);
 
   // Track when current response started (for proper user message ordering)
@@ -3510,10 +3599,18 @@ export default function Tutor({
   // Connection/UI state
   const [status, setStatus] = useState("disconnected");
   const [err, setErr] = useState("");
-  const [uiState, setUiState] = useState("idle");
+  const [uiState, setUiStateState] = useState("idle");
+  const uiStateRef = useRef("idle");
+  const setUiState = useCallback((nextUiState) => {
+    const resolvedUiState =
+      typeof nextUiState === "function"
+        ? nextUiState(uiStateRef.current)
+        : nextUiState;
+    uiStateRef.current = resolvedUiState;
+    setUiStateState(resolvedUiState);
+  }, []);
   const [volume] = useState(0);
   const [mood, setMood] = useState("neutral");
-  const [pauseMs, setPauseMs] = useState(initialPauseMs);
   const [replayingId, setReplayingId] = useState(null);
   const [translatingMessageId, setTranslatingMessageId] = useState(null);
 
@@ -3551,7 +3648,6 @@ export default function Tutor({
   const voicePersonaRef = useRef(voicePersona);
   const targetLangRef = useRef(targetLang);
   const supportLangRef = useRef(supportLang || "");
-  const pauseMsRef = useRef(pauseMs);
 
   // Hydrate refs on changes
   useEffect(() => {
@@ -3566,9 +3662,6 @@ export default function Tutor({
   useEffect(() => {
     supportLangRef.current = supportLang || "";
   }, [supportLang]);
-  useEffect(() => {
-    pauseMsRef.current = pauseMs;
-  }, [pauseMs]);
 
   // Keep conversation settings ref updated
   useEffect(() => {
@@ -4082,6 +4175,15 @@ export default function Tutor({
 
   // Turn counter for XP awarding
   const turnCountRef = useRef(0);
+  // Award turn XP at most once per learner turn, so multiple verdict sources
+  // (transcript grader, background re-check, markTurnSuccessful tool call) can't
+  // stack XP for the same turn. Keyed on turnCountRef.current.
+  const tutorXpAwardedTurnRef = useRef(-1);
+  // Circuit breaker state for runaway tool-call loops (see the tool.call handler).
+  const toolCallBudgetRef = useRef({ turn: -1, count: 0, broke: false });
+  // False during the welcome/kickoff phase; flips true on the first real practice
+  // turn. Gates tool-grading XP so greeting/"I'm ready" turns can't be awarded XP.
+  const lessonPracticeStartedRef = useRef(false);
 
   // Messages
   const [messages, setMessages] = useState([]);
@@ -4243,8 +4345,11 @@ export default function Tutor({
   const xpLevelNumber = Math.floor(xp / 100) + 1;
   const progressPct = xp % 100;
 
-  // Timeline sorted by timestamp (newest-first for display)
+  // Timeline sorted by timestamp (newest-first; used to find the latest messages).
   const timeline = [...messages].sort((a, b) => b.ts - a.ts);
+  // The conversation log renders oldest-first (top → bottom) so the tutor's opening
+  // (the tutor starts the conversation) shows at the top, not buried at the bottom.
+  const conversationLog = [...timeline].reverse();
   const latestAssistantMessage = timeline.find((m) => {
     if (m.role !== "assistant") return false;
     return Boolean(getTutorMessageVisibleText(m));
@@ -4603,9 +4708,6 @@ export default function Tutor({
           if (typeof data.progress?.showTranslations === "boolean") {
             setShowTranslations(data.progress.showTranslations);
           }
-          if (Number.isFinite(data.progress?.pauseMs)) {
-            setPauseMs(data.progress.pauseMs);
-          }
           // Load conversation settings
           setConversationSettings((prev) => {
             const savedSubjects =
@@ -4682,6 +4784,7 @@ export default function Tutor({
     clearAutoStopTimer();
     clearTutorKickoffTimer();
     tutorKickoffSentRef.current = hasStartedTutorLessonConversation();
+    tutorKickoffRetryCountRef.current = 0;
     tutorWelcomePendingReplyRef.current = false;
     tutorWelcomeRidSetRef.current.clear();
     setErr("");
@@ -4691,26 +4794,41 @@ export default function Tutor({
     try {
       await ensureSelectedTutorLessonStarted();
       assistantInputLockedRef.current = false;
-      // Hint the learner's spoken language to Gemini's input transcription so it
-      // does not drift to a phonetically close language (e.g. French heard as
-      // Italian), which happens far more on mobile where capture is noisier.
-      const inputLangBase = normalizePracticeLanguage(
+      // Hint BOTH the learner's target language and their support (UI) language to
+      // Gemini's input transcription. Native-audio transcription only takes hints,
+      // not a hard lock, so it can still drift to a phonetically close language — the
+      // bug where English spoken during a French lesson got logged in Devanagari.
+      // Passing both candidates keeps the transcript on whichever language the learner
+      // is actually using: the target phrase they practice, or a question in support.
+      const targetBaseForHint = normalizePracticeLanguage(
         targetLangRef.current || targetLang,
       );
-      const inputLocale = LANGUAGE_LOCALES[inputLangBase];
+      const supportBaseForHint = normalizeSupportLanguage(
+        supportLangRef.current || supportLang,
+      );
+      // Target first (the phrase being practiced), support second (questions /
+      // teacher-talk). Dedupe so a learner whose target == support sends one code,
+      // and drop any base code missing from LANGUAGE_LOCALES.
+      const inputLanguageCodes = [
+        LANGUAGE_LOCALES[targetBaseForHint],
+        LANGUAGE_LOCALES[supportBaseForHint],
+      ].filter((locale, index, all) => locale && all.indexOf(locale) === index);
       // TEMP debug (remove after verifying the input-language hint): confirms this
-      // code path runs and what locale it resolved for the learner's target language.
+      // code path runs and what locales it resolved for target + support.
       console.info(
         "[gemini-live] connecting Tutor — targetLang:",
-        inputLangBase,
+        targetBaseForHint,
+        "supportLang:",
+        supportBaseForHint,
         "→ inputLanguageCodes:",
-        inputLocale ? [inputLocale] : null,
+        inputLanguageCodes,
       );
       const bridge = await createGeminiLiveRealtimeBridge({
         audioElement: audioRef.current,
         initialInstructions: buildLanguageInstructions(),
         voice: normalizeGeminiLiveVoice(voiceRef.current),
-        inputLanguageCodes: inputLocale ? [inputLocale] : null,
+        inputLanguageCodes: inputLanguageCodes.length ? inputLanguageCodes : null,
+        tools: TUTOR_TOOL_GRADING_ENABLED ? [TUTOR_LIVE_TOOLS] : undefined,
         onEvent: handleRealtimeEvent,
         onError: (message) => setErr((prev) => prev || message),
         onAudioGraph: ({ audioContext, analyser, floatBuffer, stream }) => {
@@ -5035,6 +5153,12 @@ export default function Tutor({
       starterAgendaContext,
       feedbackContext,
       completionControlInstruction,
+      TUTOR_TOOL_GRADING_ENABLED
+        ? `GRADING — call the markTurnSuccessful tool based on the learner's turn: (1) If they correctly produce the requested ${targetLanguageName} phrase or complete the task, call markTurnSuccessful(correct:true), praise briefly, and move to the next agenda item. (2) If they make a mistake, do NOT call it — briefly correct them and have them try again, then call markTurnSuccessful(correct:true) only once they get it right. (3) If they ask for help, a breakdown, the meaning, a repetition, or any question, do NOT call it — help them with the current phrase, then invite them to try; help never earns progress. Call markTurnSuccessful at most once per correct completion, and never for a greeting or "yes"/"ready".`
+        : "",
+      TUTOR_TOOL_GRADING_ENABLED
+        ? `LESSON FLOW — the app, not you, owns lesson completion. Work through the agenda one item at a time. Once every item has been practiced but the lesson is not yet complete, keep REVIEWING — re-practice items and combine them, calling markTurnSuccessful(correct:true) for each correct review — and do not stop or wind down. Never end, summarize, or say goodbye on your own; when you think the lesson is complete, call proposeLessonComplete and follow its decision (if not approved, keep teaching/reviewing).`
+        : "",
       "IMPORTANT: Match your language complexity to the learner's proficiency level. Do not use vocabulary or grammar above their level.",
       tutorPedagogyInstructions,
       speechAcceptanceInstructions,
@@ -5355,7 +5479,7 @@ export default function Tutor({
         ? `The app accepted the learner's last attempt for: ${acceptedItems}. Briefly praise it in ${supportLanguageName}, then move to the current agenda item. Do not mention internal completion state to the learner.`
         : "",
       latestTranscript && !latestTurnWasAccepted && !isKickoff
-        ? `The app did NOT accept the latest transcript as the current phrase. Do not say "nice work", "great", or imply the learner got it right. Briefly correct in ${supportLanguageName}, remind them what "${currentPhrase}" means, then ask them to try exactly this ${targetLanguageName} phrase: "${currentPhrase}".`
+        ? `The learner has not produced the phrase correctly yet, so do not say "nice work"/"great" or imply they got it right. FIRST fully respond to what they actually said: if they asked for help, a breakdown, the meaning, a repetition, or any question, give exactly that — about the SAME phrase you just asked them to try — in ${supportLanguageName} (e.g. break it into syllables). Then invite them to try that SAME phrase again. Stay on that phrase: do NOT switch to a different phrase, say you've "moved on", or change the agenda item, even if they ask for help several times — keep helping until they produce it.`
         : "",
       latestTranscript
         ? `Latest learner transcript: "${latestTranscript}".`
@@ -5364,8 +5488,8 @@ export default function Tutor({
         ? "Start the lesson and introduce only this first agenda item."
         : latestTurnWasAccepted
           ? "Briefly acknowledge the accepted attempt, then introduce only the current agenda item. Do not apologize and do not mention internal completion state."
-          : "Briefly correct the learner, then keep practicing only the current agenda item.",
-      currentPhrase
+          : "First fully address what the learner asked or said, then keep practicing the SAME phrase you just asked them to try — do not move to a different phrase or agenda item until they produce it correctly.",
+      currentPhrase && (isKickoff || latestTurnWasAccepted)
         ? `Your next practice prompt MUST be for the current model phrase: "${currentPhrase}".`
         : "",
       "Never ask the learner to repeat a completed agenda item, and never announce internal agenda state to the learner.",
@@ -5585,7 +5709,7 @@ export default function Tutor({
         `Use brief ${supportLanguageName} guidance and one tiny ${targetLanguageName} practice step.`,
         acceptedItemIds.length
           ? "The latest app-tracked item is complete. Continue to the next agenda item."
-          : "The latest turn was not accepted. Keep the learner on the current agenda item and ask for the model phrase again.",
+          : "The latest turn was not accepted. First address what the learner actually said — if they asked for help, a breakdown, the meaning, or a repetition, provide it for the current phrase — then invite them to try the current agenda item's phrase again.",
       ]
         .filter(Boolean)
         .join(" ");
@@ -5625,7 +5749,7 @@ export default function Tutor({
     if (assistantInputLockedRef.current) return null;
     return {
       type: "server_vad",
-      silence_duration_ms: pauseMsRef.current || 2000,
+      silence_duration_ms: 2000,
       threshold: 0.35,
       prefix_padding_ms: 120,
       create_response: false,
@@ -5676,18 +5800,35 @@ export default function Tutor({
     }
   }
 
-  function resumeListeningWithAutoStop() {
+  function resumeListeningWithAutoStop({ playCue = false } = {}) {
     setAssistantInputLocked(false);
     setUiState(aliveRef.current ? "listening" : "idle");
     setMood("neutral");
-    if (aliveRef.current) scheduleAutoStop();
+    if (aliveRef.current) {
+      if (playCue) {
+        playListeningCue();
+      }
+      scheduleAutoStop();
+    }
+  }
+
+  function playListeningCue() {
+    if (!aliveRef.current) return;
+    const now = Date.now();
+    if (now - listeningCueLastPlayedAtRef.current < 1200) return;
+    listeningCueLastPlayedAtRef.current = now;
+    setTimeout(() => {
+      if (!aliveRef.current) return;
+      void playSound(listeningCueSound);
+    }, 80);
   }
 
   function finishAssistantOutput() {
     clearAssistantUnlockTimer();
+    const shouldPlayListeningCue = assistantSpeakingRef.current;
     assistantSpeakingRef.current = false;
     enableVAD();
-    resumeListeningWithAutoStop();
+    resumeListeningWithAutoStop({ playCue: shouldPlayListeningCue });
   }
 
   function scheduleAssistantUnlockAfterQuiet() {
@@ -5726,7 +5867,8 @@ export default function Tutor({
     clearAutoStopTimer();
     setUiState("thinking");
     setMood("thoughtful");
-    setAssistantInputLocked(true, { clearBuffer: false, updateSession: false });
+    // Keep this lightweight: the transcript handler immediately requests the tutor
+    // response, and that request path mutes input while the tutor speaks.
   }
 
   function commitPendingUserSpeech() {
@@ -5798,6 +5940,9 @@ export default function Tutor({
     if (!dcRef.current || dcRef.current.readyState !== "open") return;
 
     tutorWelcomePendingReplyRef.current = true;
+    // New lesson conversation: no real practice turn has happened yet, so block
+    // tool-grading XP until the learner actually attempts a phrase.
+    lessonPracticeStartedRef.current = false;
     clearAutoStopTimer();
     setUiState("thinking");
     setMood("thoughtful");
@@ -5997,7 +6142,7 @@ export default function Tutor({
           session: {
             turn_detection: {
               type: "server_vad",
-              silence_duration_ms: pauseMsRef.current || 2000,
+              silence_duration_ms: 2000,
               threshold: 0.35,
               prefix_padding_ms: 120,
               create_response: false,
@@ -6140,6 +6285,12 @@ export default function Tutor({
 
     const assistantText = getTutorAssistantOutputText(mid);
     if (!assistantText) return;
+
+    // Tool-grading mode: proposeLessonComplete is the sole ending mechanism, so never
+    // run the per-turn closing-act flash judge. (Flag off → judge runs as before.)
+    if (TUTOR_TOOL_GRADING_ENABLED) {
+      return;
+    }
 
     tutorClosingActCheckedKeysRef.current.add(checkKey);
     const verdict = await judgeTutorClosingAct(assistantText);
@@ -6857,6 +7008,13 @@ export default function Tutor({
     if (!npub) {
       return { xpGain: 0, lessonCompletionTriggered: false };
     }
+    // Idempotent per turn: if this turn already awarded XP (e.g. the transcript
+    // grader credited it and then the markTurnSuccessful tool call also fired),
+    // do not award again.
+    if (tutorXpAwardedTurnRef.current === turnCountRef.current) {
+      return { xpGain: 0, lessonCompletionTriggered: false };
+    }
+    tutorXpAwardedTurnRef.current = turnCountRef.current;
 
     const xpGain =
       Math.floor(
@@ -6903,6 +7061,91 @@ export default function Tutor({
     }
     const t = data?.type;
     const rid = data?.response_id || data?.response?.id || data?.id || null;
+
+    if (t === "tool.call") {
+      if (!aliveRef.current) return;
+      const calls = Array.isArray(data.functionCalls) ? data.functionCalls : [];
+      // TEMP debug (remove after verifying tool-call grading): shows what the
+      // Live model called and with what args.
+      console.info("[gemini-live] tool.call", calls);
+      // Circuit breaker: cap tool calls per learner turn. gemini-2.5 native audio
+      // occasionally loops a tool call without ever completing the turn, leaving the
+      // user stuck in "thinking". Once over budget, abort the runaway response once
+      // and reopen the mic so the session can never hang.
+      const toolBudget = toolCallBudgetRef.current;
+      if (toolBudget.turn !== turnCountRef.current) {
+        toolBudget.turn = turnCountRef.current;
+        toolBudget.count = 0;
+        toolBudget.broke = false;
+      }
+      toolBudget.count += calls.length;
+      if (toolBudget.count > MAX_TOOL_CALLS_PER_TURN) {
+        if (!toolBudget.broke) {
+          toolBudget.broke = true;
+          console.warn(
+            "[gemini-live] tool-call loop detected — aborting turn to unstick the session",
+          );
+          try {
+            dcRef.current?.send?.(JSON.stringify({ type: "response.cancel" }));
+          } catch {
+            // best-effort cancel; ignore if the socket is already closing
+          }
+          finishAssistantOutput();
+        }
+        return;
+      }
+      const responses = [];
+      for (const fc of calls) {
+        if (fc?.name === "markTurnSuccessful") {
+          // Always answer so the live turn can continue (id is undefined on Vertex).
+          responses.push(
+            buildLiveToolResponse(fc, {
+              ok: true,
+              note: "Recorded. Continue your spoken reply and do not call markTurnSuccessful again this turn.",
+            }),
+          );
+          const args = getLiveToolCallArgs(fc);
+          if (args.correct === true && lessonPracticeStartedRef.current) {
+            const lesson = selectedTutorLessonRef.current;
+            const isStarterLesson = isTutorStarterAgendaLesson(lesson);
+            const starterCandidateItemIds = isStarterLesson
+              ? getTutorStarterAgendaCandidateItemIds()
+              : [];
+            // XP is deduped per turn inside awardTurnXp, so this coexists safely
+            // with the transcript grader (which remains the fallback).
+            applySuccessfulTutorTurnProgress({
+              isStarterLesson,
+              starterCandidateItemIds,
+              successful: true,
+              deferCompletionUntilIdle: true,
+            });
+          }
+        } else if (fc?.name === "proposeLessonComplete") {
+          // App owns completion. Approve only when the lesson's XP/agenda criteria are
+          // actually met; otherwise deny so the model keeps teaching — no goodbye is
+          // ever spoken because it asked first. Completion itself stays XP-driven, so
+          // approval here is just permission (no app action needed).
+          const allowed = !isTutorLessonPracticeInProgress();
+          const toolResponse = allowed
+            ? { approved: true }
+            : {
+                approved: false,
+                instruction:
+                  "The lesson is not complete yet. Do not end, summarize, or say goodbye — continue teaching the current agenda item.",
+              };
+          responses.push(buildLiveToolResponse(fc, toolResponse));
+        } else if (fc?.name) {
+          // Unknown tool: still answer so the model is not left waiting.
+          responses.push(
+            buildLiveToolResponse(fc, { ok: false, error: "unsupported_tool" }),
+          );
+        }
+      }
+      if (responses.length) {
+        dcRef.current?.sendToolResponses?.(responses);
+      }
+      return;
+    }
 
     if (t === "session.updated") {
       tutorSessionReadyRef.current = true;
@@ -7010,6 +7253,9 @@ export default function Tutor({
       if (mdKind === "tutor_welcome" && rid) {
         tutorWelcomeRidSetRef.current.add(rid);
       }
+      if (mdKind === "tutor_welcome" || mdKind === "tutor_kickoff") {
+        tutorKickoffRetryCountRef.current = 0;
+      }
       const mid = uid();
       respToMsg.current.set(rid, mid);
       setUiState("speaking");
@@ -7041,10 +7287,13 @@ export default function Tutor({
         return;
       }
       lastTranscriptRef.current = { text, ts: now };
-      // Use timestamp BEFORE the AI response started so user message appears first
-      const userTs = responseStartTimeRef.current
-        ? responseStartTimeRef.current - 1
-        : now;
+      // Timestamp the learner turn at "now". The transcript only commits while the
+      // tutor is NOT speaking (we early-return above otherwise), so `now` always falls
+      // after the tutor message being replied to and before the tutor's next reply —
+      // correct chronological order. The old `responseStartTimeRef - 1` hack back-dated
+      // the turn before the message it was replying to, which pushed the learner's first
+      // reply above the tutor's opening (tutor starts the conversation now).
+      const userTs = now;
       pushMessage({
         id: uid(),
         role: "user",
@@ -7066,6 +7315,8 @@ export default function Tutor({
         return;
       }
       turnCountRef.current += 1;
+      // Past the welcome/kickoff phase — real practice turns can now be graded.
+      lessonPracticeStartedRef.current = true;
       const currentLesson = selectedTutorLessonRef.current;
       const isStarterLesson = isTutorStarterAgendaLesson(currentLesson);
       const starterCandidateItemIds = isStarterLesson
@@ -7098,7 +7349,12 @@ export default function Tutor({
         regularTurnAccepted,
         directPhraseAnswer,
       });
+      // In tool-grading mode the markTurnSuccessful tool is the grader, so the
+      // transcript flash judges (the lesson-completion gate and the background
+      // re-check) are disabled entirely — no separate flash calls. The free local
+      // matcher below still credits exact phrase matches.
       const shouldGateEndOfLesson =
+        !TUTOR_TOOL_GRADING_ENABLED &&
         !localTurnSuccessful &&
         couldPotentialTutorTurnCompleteLesson({
           lesson: currentLesson,
@@ -7129,7 +7385,7 @@ export default function Tutor({
         });
         acceptedItemIds = progressResult.acceptedItemIds;
         lessonCompletionTriggered = progressResult.lessonCompletionTriggered;
-      } else if (!localTurnSuccessful) {
+      } else if (!localTurnSuccessful && !TUTOR_TOOL_GRADING_ENABLED) {
         validateTutorTurnForXpInBackground({
           text,
           lessonId: currentLesson?.id || "",
@@ -7221,15 +7477,27 @@ export default function Tutor({
       t === "response.done" ||
       t === "response.canceled"
     ) {
+      const mdKind = data?.response?.metadata?.kind;
+      const responseStartTimedOut = /did not start a response/i.test(
+        data?.error?.message || "",
+      );
       if (
         t === "response.canceled" &&
-        assistantInputLockedRef.current &&
-        assistantSpeakingRef.current
+        responseStartTimedOut &&
+        (mdKind === "tutor_welcome" || mdKind === "tutor_kickoff") &&
+        !hasStartedTutorLessonConversation() &&
+        tutorKickoffRetryCountRef.current < 1 &&
+        aliveRef.current
       ) {
+        tutorKickoffRetryCountRef.current += 1;
+        tutorKickoffSentRef.current = false;
+        tutorWelcomePendingReplyRef.current = false;
         finishAssistantOutput();
+        scheduleTutorLessonKickoff(350);
+        return;
       }
-      if (t === "response.canceled" && assistantSpeakingRef.current) {
-        setAssistantInputLocked(false);
+      if (t === "response.canceled" && assistantInputLockedRef.current) {
+        finishAssistantOutput();
       }
       if (
         t !== "response.canceled" &&
@@ -7279,6 +7547,9 @@ export default function Tutor({
         return;
       }
       setErr((p) => p || msg);
+      if (assistantInputLockedRef.current && !assistantSpeakingRef.current) {
+        resumeListeningWithAutoStop();
+      }
     }
   }
 
@@ -8348,7 +8619,7 @@ export default function Tutor({
           <ModalCloseButton />
           <ModalBody pb={5}>
             <VStack align="stretch" spacing={3}>
-              {timeline.map((m) => {
+              {conversationLog.map((m) => {
                 const isUser = m.role === "user";
                 if (isUser) {
                   return (

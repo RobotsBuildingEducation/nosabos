@@ -62,6 +62,7 @@ import {
 } from "../utils/geminiLiveVoices";
 
 const BASE_PATH = "/onboarding";
+const DEFAULT_VOICE_PAUSE_MS = 600;
 const stepContentReveal = keyframes`
   0% {
     opacity: 0;
@@ -160,7 +161,7 @@ export default function Onboarding({
       pauseMs:
         typeof initialDraft.pauseMs === "number" && initialDraft.pauseMs > 0
           ? initialDraft.pauseMs
-          : 1200,
+          : DEFAULT_VOICE_PAUSE_MS,
       soundEnabled:
         typeof initialDraft.soundEnabled === "boolean"
           ? initialDraft.soundEnabled
@@ -317,14 +318,14 @@ export default function Onboarding({
   const VAD_HINT =
     ui.onboarding_vad_hint ||
     uiCopy(supportLang, {
-      en: "Shorter = more responsive; longer = gives you time to finish speaking. 1.2 seconds is recommended for natural speech.",
-      es: "Más corta = más sensible; más larga = te deja terminar de hablar. 1.2 segundos es lo recomendado para un habla natural.",
-      pt: "Mais curta = mais responsiva; mais longa = dá tempo para terminar de falar. 1,2 segundos é o recomendado para uma fala natural.",
-      it: "Più breve = più reattiva; più lunga = ti lascia finire di parlare. 1,2 secondi è consigliato per un parlato naturale.",
-      fr: "Plus court = plus reactif ; plus long = te laisse finir de parler. 1,2 seconde est recommande pour une parole naturelle.",
-      ja: "短いほど反応が速く、長いほど話し終える時間ができます。自然な会話には1.2秒がおすすめです。",
-      ar: "الأقصر = استجابة أسرع، والأطول = يديك وقت تخلص كلامك. 1.2 ثانية مناسبة للكلام الطبيعي.",
-      zh: "更短 = 反应更快；更长 = 给你更多时间说完。自然对话建议 1.2 秒。",
+      en: "Shorter = more responsive; longer = gives you time to finish speaking. 0.6 seconds is recommended for a quick response.",
+      es: "Más corta = más sensible; más larga = te deja terminar de hablar. 0.6 segundos es lo recomendado para una respuesta rápida.",
+      pt: "Mais curta = mais responsiva; mais longa = dá tempo para terminar de falar. 0,6 segundos é o recomendado para uma resposta rápida.",
+      it: "Più breve = più reattiva; più lunga = ti lascia finire di parlare. 0,6 secondi è consigliato per una risposta rapida.",
+      fr: "Plus court = plus reactif ; plus long = te laisse finir de parler. 0,6 seconde est recommande pour une reponse rapide.",
+      ja: "短いほど反応が速く、長いほど話し終える時間ができます。素早い応答には0.6秒がおすすめです。",
+      ar: "الأقصر = استجابة أسرع، والأطول = يديك وقت تخلص كلامك. 0.6 ثانية مناسبة لرد سريع.",
+      zh: "更短 = 反应更快；更长 = 给你更多时间说完。快速回应建议 0.6 秒。",
     });
   const pauseSeconds = new Intl.NumberFormat(getLanguageLocale(supportLang), {
     minimumFractionDigits: 1,

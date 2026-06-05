@@ -6,5 +6,6 @@ export const nextButtonSound = "next";
 export const completeSound = "correct";
 export const deliciousSound = "correct";
 export const sparkleSound = "sparkle";
+export const listeningCueSound = "listeningCue";
 export const modeSwitcherSound = "randomChord";
 export const dailyGoalSound = "dailyGoal";

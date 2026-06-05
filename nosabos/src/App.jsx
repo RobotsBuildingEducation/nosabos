@@ -238,6 +238,7 @@ const ONBOARDING_TOTAL_STEPS = 1;
 const TEST_UNLOCK_NSEC =
   "nsec1akcvuhtemz3kw58gvvfg38uucu30zfsahyt6ulqapx44lype6a9q42qevv";
 
+const DEFAULT_VOICE_PAUSE_MS = 600;
 const LOADING_ORB_STATES = ["idle", "listening", "speaking"];
 
 function getRandomLoadingOrbState() {
@@ -811,7 +812,7 @@ function TopBar({
     typeof p.showTranslations === "boolean" ? p.showTranslations : true,
   );
   const [pauseMs, setPauseMs] = useState(
-    Number.isFinite(p.pauseMs) ? p.pauseMs : 1200,
+    Number.isFinite(p.pauseMs) ? p.pauseMs : DEFAULT_VOICE_PAUSE_MS,
   );
   const [helpRequest, setHelpRequest] = useState(
     p.helpRequest ?? user?.helpRequest ?? "",
@@ -862,15 +863,15 @@ function TopBar({
   const vadHint =
     t.onboarding_vad_hint ||
     uiCopy(appLanguage, {
-      en: "Shorter = more responsive; longer = gives you time to finish speaking. 1.2 seconds is recommended for natural speech.",
-      es: "Más corta = más sensible; más larga = te deja terminar de hablar. 1.2 segundos es lo recomendado para un habla natural.",
-      pt: "Mais curta = mais responsiva; mais longa = dá tempo para terminar de falar. 1,2 segundos é o recomendado para uma fala natural.",
-      it: "Più breve = più reattiva; più lunga = ti lascia finire di parlare. 1,2 secondi è consigliato per un parlato naturale.",
-      fr: "Plus court = plus reactif ; plus long = te laisse finir de parler. 1,2 seconde est recommande pour une parole naturelle.",
-      de: "Kürzer = reaktionsschneller; länger = gibt dir Zeit, auszusprechen. 1,2 Sekunden werden für natürliche Sprache empfohlen.",
-      ja: "短いほど反応が速く、長いほど話し終える時間ができます。自然な会話には1.2秒がおすすめです。",
-      ar: "الأقصر = استجابة أسرع؛ الأطول = يديك وقت تخلص كلامك. ١٫٢ ثانية مناسب للكلام الطبيعي.",
-      zh: "更短 = 反应更快；更长 = 给你更多时间说完。自然对话建议 1.2 秒。",
+      en: "Shorter = more responsive; longer = gives you time to finish speaking. 0.6 seconds is recommended for a quick response.",
+      es: "Más corta = más sensible; más larga = te deja terminar de hablar. 0.6 segundos es lo recomendado para una respuesta rápida.",
+      pt: "Mais curta = mais responsiva; mais longa = dá tempo para terminar de falar. 0,6 segundos é o recomendado para uma resposta rápida.",
+      it: "Più breve = più reattiva; più lunga = ti lascia finire di parlare. 0,6 secondi è consigliato per una risposta rapida.",
+      fr: "Plus court = plus reactif ; plus long = te laisse finir de parler. 0,6 seconde est recommande pour une reponse rapide.",
+      de: "Kürzer = reaktionsschneller; länger = gibt dir Zeit, auszusprechen. 0,6 Sekunden werden für eine schnelle Antwort empfohlen.",
+      ja: "短いほど反応が速く、長いほど話し終える時間ができます。素早い応答には0.6秒がおすすめです。",
+      ar: "الأقصر = استجابة أسرع؛ الأطول = يديك وقت تخلص كلامك. ٠٫٦ ثانية مناسب لرد سريع.",
+      zh: "更短 = 反应更快；更长 = 给你更多时间说完。快速回应建议 0.6 秒。",
     });
 
   // Japanese is visible for everyone (beta label applied in UI)
@@ -926,7 +927,9 @@ function TopBar({
     setShowTranslations(
       typeof q.showTranslations === "boolean" ? q.showTranslations : true,
     );
-    setPauseMs(Number.isFinite(q.pauseMs) ? q.pauseMs : 1200);
+    setPauseMs(
+      Number.isFinite(q.pauseMs) ? q.pauseMs : DEFAULT_VOICE_PAUSE_MS,
+    );
     const nextHelpRequest = String(q.helpRequest ?? user?.helpRequest ?? "");
     setHelpRequest(preferTextDraft("helpRequest", nextHelpRequest));
     setPracticePronunciation(!!q.practicePronunciation);
@@ -2808,7 +2811,7 @@ export default function App({ onBootReady } = {}) {
       "",
     targetLang: "es",
     showTranslations: true,
-    pauseMs: 1200,
+    pauseMs: DEFAULT_VOICE_PAUSE_MS,
     helpRequest: "",
     practicePronunciation: false,
   };
@@ -3777,7 +3780,9 @@ export default function App({ onBootReady } = {}) {
     if (!npub) return;
 
     const clampPause = (v) => {
-      const n = Number.isFinite(v) ? Math.round(v) : 1200;
+      const n = Number.isFinite(v)
+        ? Math.round(v)
+        : DEFAULT_VOICE_PAUSE_MS;
       return Math.max(200, Math.min(4000, Math.round(n / 100) * 100));
     };
 
@@ -3790,7 +3795,7 @@ export default function App({ onBootReady } = {}) {
         translations?.en?.onboarding_persona_default_example || "",
       targetLang: "es",
       showTranslations: true,
-      pauseMs: 1200,
+      pauseMs: DEFAULT_VOICE_PAUSE_MS,
       helpRequest: "",
       practicePronunciation: false,
     };
@@ -3963,7 +3968,10 @@ export default function App({ onBootReady } = {}) {
           payload.targetLang,
           DEFAULT_TARGET_LANGUAGE,
         ),
-        pauseMs: typeof payload.pauseMs === "number" ? payload.pauseMs : 800,
+        pauseMs:
+          typeof payload.pauseMs === "number"
+            ? payload.pauseMs
+            : DEFAULT_VOICE_PAUSE_MS,
         xp: 0,
         streak: 0,
       };
@@ -5650,7 +5658,7 @@ export default function App({ onBootReady } = {}) {
               supportLang={user?.progress?.supportLang}
               targetLang={user?.progress?.targetLang}
               showTranslations={user?.progress?.showTranslations}
-              pauseMs={user?.progress?.pauseMs}
+              pauseMs={user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS}
               helpRequest={user?.progress?.helpRequest}
               practicePronunciation={user?.progress?.practicePronunciation}
               onSwitchedAccount={async (id, sec) => {
@@ -5672,7 +5680,7 @@ export default function App({ onBootReady } = {}) {
               userLanguage={appLanguage}
               activeNpub={activeNpub}
               activeNsec={activeNsec}
-              pauseMs={user?.progress?.pauseMs}
+              pauseMs={user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS}
             />
           </>
         );
@@ -6972,7 +6980,7 @@ export default function App({ onBootReady } = {}) {
               targetLang={resolvedTargetLang}
               npub={activeNpub}
               languageXp={userProgress?.totalXp || 0}
-              pauseMs={user?.progress?.pauseMs}
+              pauseMs={user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS}
               onStartSkillTree={() => setPathMode("path")}
             />
           ) : (
@@ -6984,7 +6992,7 @@ export default function App({ onBootReady } = {}) {
               onStartLesson={handleStartLesson}
               onCompleteFlashcard={handleCompleteFlashcard}
               onRandomPracticeFlashcard={handleRandomPracticeFlashcard}
-              pauseMs={user?.progress?.pauseMs}
+              pauseMs={user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS}
               showMultipleLevels={true}
               levels={relevantLevels}
               // Mode-specific level props
@@ -7084,7 +7092,9 @@ export default function App({ onBootReady } = {}) {
                           supportLang={resolvedSupportLang}
                           targetLang={user?.progress?.targetLang}
                           showTranslations={user?.progress?.showTranslations}
-                          pauseMs={user?.progress?.pauseMs}
+                          pauseMs={
+                            user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS
+                          }
                           helpRequest={user?.progress?.helpRequest}
                           practicePronunciation={
                             user?.progress?.practicePronunciation
@@ -7114,7 +7124,9 @@ export default function App({ onBootReady } = {}) {
                           userLanguage={appLanguage}
                           activeNpub={activeNpub}
                           activeNsec={activeNsec}
-                          pauseMs={user?.progress?.pauseMs}
+                          pauseMs={
+                            user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS
+                          }
                           lesson={activeLesson}
                           lessonContent={activeLesson?.content?.stories}
                           onSkip={switchToRandomLessonMode}
@@ -7140,7 +7152,9 @@ export default function App({ onBootReady } = {}) {
                           userLanguage={appLanguage}
                           activeNpub={activeNpub}
                           activeNsec={activeNsec}
-                          pauseMs={user?.progress?.pauseMs}
+                          pauseMs={
+                            user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS
+                          }
                           lesson={activeLesson}
                           lessonContent={activeLesson?.content?.grammar}
                           isFinalQuiz={activeLesson?.isFinalQuiz || false}
@@ -7163,7 +7177,9 @@ export default function App({ onBootReady } = {}) {
                           userLanguage={appLanguage}
                           activeNpub={activeNpub}
                           activeNsec={activeNsec}
-                          pauseMs={user?.progress?.pauseMs}
+                          pauseMs={
+                            user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS
+                          }
                           lesson={activeLesson}
                           lessonContent={activeLesson?.content?.vocabulary}
                           isFinalQuiz={activeLesson?.isFinalQuiz || false}

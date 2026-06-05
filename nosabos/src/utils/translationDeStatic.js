@@ -113,7 +113,7 @@ export const TRANSLATION_DE_STATIC = {
   DEFAULT_PERSONA: "Ein freundlicher und hilfreicher Assistent",
   onboarding_vad_label: "Pause bei Sprachaktivität",
   onboarding_vad_hint:
-    "Kürzer = reagiert schneller; länger = gibt dir Zeit, auszusprechen. 1,2 Sekunden werden für natürliche Sprache empfohlen.",
+    "Kürzer = reagiert schneller; länger = gibt dir Zeit, auszusprechen. 0,6 Sekunden werden für eine schnelle Antwort empfohlen.",
   onboarding_vad_seconds: "{seconds} Sekunden",
   onboarding_effects_title: "Effekte",
   onboarding_effects_desc: "Passe Sounds, Haptik und Feedback an.",

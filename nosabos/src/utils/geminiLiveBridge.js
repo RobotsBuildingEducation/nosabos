@@ -5,6 +5,7 @@ import {
   ResponseModality,
   VertexAIBackend,
 } from "firebase/ai";
+
 import { app } from "../firebaseResources/firebaseResources";
 import {
   DEFAULT_GEMINI_LIVE_VOICE,
@@ -17,9 +18,18 @@ const GEMINI_LIVE_USES_VERTEX = GEMINI_LIVE_PROVIDER !== "google-ai";
 const GEMINI_LIVE_LOCATION =
   import.meta.env.VITE_GEMINI_LIVE_LOCATION || "us-central1";
 
+// Native-audio Live model defaults are split by backend because availability differs:
+// • Vertex AI backend: Gemini 3.1 Flash Live is NOT on Vertex — it tops out at the GA
+//   2.5 native-audio model. Keep 2.5 here; pointing this at a 3.1 string on Vertex fails
+//   to connect and Tutor falls back to text.
+// • Google AI (Developer API) backend: gemini-3.1-flash-live-preview is the current-gen
+//   native-audio Live model — faster, better acoustic nuance, ~2x context, and far more
+//   reliable audio tool-calling (which 2.5 loops/railroads on). Reachable via Firebase
+//   AI Logic's GoogleAIBackend. Select it with VITE_GEMINI_LIVE_PROVIDER=google-ai.
+// Either default stays overridable via VITE_TUTOR_GEMINI_LIVE_MODEL / VITE_GEMINI_LIVE_MODEL.
 export const DEFAULT_GEMINI_LIVE_MODEL = GEMINI_LIVE_USES_VERTEX
   ? "gemini-live-2.5-flash-native-audio"
-  : "gemini-2.5-flash-native-audio-preview-12-2025";
+  : "gemini-3.1-flash-live-preview";
 
 const GEMINI_LIVE_MODEL =
   (import.meta.env.VITE_TUTOR_GEMINI_LIVE_MODEL ||
@@ -63,6 +73,10 @@ const INPUT_AUTO_GAIN_CONTROL =
 const SESSION_RESPONSE_LIMIT = Math.max(
   1,
   Number(import.meta.env.VITE_GEMINI_LIVE_SESSION_RESPONSE_LIMIT || 4),
+);
+const MANUAL_RESPONSE_START_TIMEOUT_MS = Math.max(
+  5000,
+  Number(import.meta.env.VITE_GEMINI_LIVE_RESPONSE_START_TIMEOUT_MS || 20000),
 );
 
 const AUDIO_WORKLET_NAME = "nosabos-gemini-live-audio";
@@ -217,7 +231,6 @@ function buildLiveGenerationConfig({
         : {};
     generationConfig.outputAudioTranscription = {};
   }
-
   return generationConfig;
 }
 
@@ -255,6 +268,7 @@ async function connectLiveSession({
   voice = DEFAULT_GEMINI_LIVE_VOICE,
   includeTranscriptions = true,
   inputLanguageCodes = null,
+  tools = null,
 } = {}) {
   const ai = getGeminiLiveAI();
   const configs = [
@@ -285,11 +299,12 @@ async function connectLiveSession({
   ];
   let firstError = null;
 
-  for (const generationConfig of configs) {
+  for (const config of configs) {
     try {
       const liveModel = getLiveGenerativeModel(ai, {
         model: GEMINI_LIVE_MODEL,
-        generationConfig,
+        generationConfig: config,
+        ...(Array.isArray(tools) && tools.length ? { tools } : {}),
       });
       return await liveModel.connect();
     } catch (error) {
@@ -452,6 +467,7 @@ export async function createGeminiLiveRealtimeBridge({
   initialInstructions = "",
   voice = DEFAULT_GEMINI_LIVE_VOICE,
   inputLanguageCodes = null,
+  tools = null,
   onEvent,
   onAudioGraph,
   onError,
@@ -461,6 +477,7 @@ export async function createGeminiLiveRealtimeBridge({
     initialInstructions,
     voice,
     inputLanguageCodes,
+    tools,
     onEvent,
     onAudioGraph,
     onError,
@@ -475,6 +492,7 @@ class GeminiLiveRealtimeBridge {
     initialInstructions,
     voice,
     inputLanguageCodes,
+    tools,
     onEvent,
     onAudioGraph,
     onError,
@@ -485,6 +503,8 @@ class GeminiLiveRealtimeBridge {
     this.inputLanguageCodes = Array.isArray(inputLanguageCodes)
       ? inputLanguageCodes
       : null;
+    this.tools = Array.isArray(tools) && tools.length ? tools : null;
+    this.speechHoldMs = INPUT_SPEECH_HOLD_MS;
     this.onEvent = onEvent;
     this.onAudioGraph = onAudioGraph;
     this.onError = onError;
@@ -515,6 +535,9 @@ class GeminiLiveRealtimeBridge {
     this.completedResponsesSinceReset = 0;
     this.resettingSession = false;
     this.fullInstructionPromptsRemaining = 1;
+    this.responseBuffer = [];
+    this.responseTimer = null;
+    this.serverTurnComplete = false;
   }
 
   async connect() {
@@ -546,6 +569,7 @@ class GeminiLiveRealtimeBridge {
       voice: this.voice,
       includeTranscriptions: true,
       inputLanguageCodes: this.inputLanguageCodes,
+      tools: this.tools,
     });
   }
 
@@ -634,6 +658,12 @@ class GeminiLiveRealtimeBridge {
       }
       if (Object.prototype.hasOwnProperty.call(session, "turn_detection")) {
         this.setInputAudioEnabled(!!session.turn_detection);
+        if (session.turn_detection && typeof session.turn_detection === "object") {
+          const silenceMs = Number(session.turn_detection.silence_duration_ms);
+          if (Number.isFinite(silenceMs) && silenceMs > 0) {
+            this.speechHoldMs = silenceMs;
+          }
+        }
       }
       this.emit({ type: "session.updated" });
       return;
@@ -667,6 +697,7 @@ class GeminiLiveRealtimeBridge {
       text: "",
       started: false,
       prompt: "",
+      startTimeoutId: null,
     };
 
     // Repeating the full tutor policy every turn grows Live context cost.
@@ -691,6 +722,39 @@ class GeminiLiveRealtimeBridge {
     this.dispatchNextManualResponse();
   }
 
+  clearManualResponseStartTimeout(response) {
+    if (!response?.startTimeoutId) return;
+    clearTimeout(response.startTimeoutId);
+    response.startTimeoutId = null;
+  }
+
+  emitResponseCanceled(response, reason = "") {
+    if (!response) return;
+    this.clearManualResponseStartTimeout(response);
+    this.emit({
+      type: "response.canceled",
+      response_id: response.id,
+      response: { id: response.id, metadata: response.metadata || {} },
+      ...(reason ? { error: { message: reason } } : {}),
+    });
+  }
+
+  scheduleManualResponseStartTimeout(response) {
+    this.clearManualResponseStartTimeout(response);
+    response.startTimeoutId = setTimeout(() => {
+      if (this.closed || this.resettingSession) return;
+      if (this.activeResponse === response || response.started) return;
+      const pendingIndex = this.pendingResponses.indexOf(response);
+      if (pendingIndex === -1) return;
+      this.pendingResponses.splice(pendingIndex, 1);
+      this.emitResponseCanceled(
+        response,
+        "Gemini Live did not start a response in time.",
+      );
+      this.dispatchNextManualResponse();
+    }, MANUAL_RESPONSE_START_TIMEOUT_MS);
+  }
+
   dispatchNextManualResponse() {
     if (
       this.closed ||
@@ -706,12 +770,28 @@ class GeminiLiveRealtimeBridge {
 
     const response = this.pendingManualResponses.shift();
     this.pendingResponses.push(response);
+    this.scheduleManualResponseStartTimeout(response);
     this.setInputAudioEnabled(false);
     this.session.send(response.prompt || "Respond now.", true).catch((error) => {
+      this.clearManualResponseStartTimeout(response);
       this.pendingResponses = this.pendingResponses.filter((item) => item !== response);
+      this.emitResponseCanceled(response, error?.message || String(error));
       this.handleError(error);
       this.dispatchNextManualResponse();
     });
+  }
+
+  // Answer a model tool call (e.g. markTurnSuccessful) so the live turn can
+  // continue. On the Vertex backend FunctionResponse.id is undefined and the
+  // SDK matches responses by name; on the Google AI backend the id is echoed.
+  async sendToolResponses(functionResponses) {
+    if (this.closed || !this.session) return;
+    if (!Array.isArray(functionResponses) || !functionResponses.length) return;
+    try {
+      await this.session.sendFunctionResponses(functionResponses);
+    } catch (error) {
+      this.handleError(error);
+    }
   }
 
   async receiveLoop() {
@@ -726,6 +806,28 @@ class GeminiLiveRealtimeBridge {
   }
 
   async handleServerMessage(message) {
+    // Tutor no longer applies learner-pause output buffering. Manual responses
+    // should surface as soon as Gemini emits them; input gating still controls what
+    // mic audio is sent upstream.
+    const delayRemaining = 0;
+
+    // Tool calls and cancellations arrive on the same receive() stream as
+    // serverContent. Surface them to the consumer (Tutor) before the
+    // serverContent early-return below would silently drop them.
+    if (message?.type === "toolCall" && Array.isArray(message.functionCalls)) {
+      this.emitOrBuffer({ type: "event", event: { type: "tool.call", functionCalls: message.functionCalls } }, delayRemaining);
+      return;
+    }
+    if (message?.type === "toolCallCancellation") {
+      const functionIds = Array.isArray(message.functionIds)
+        ? message.functionIds
+        : Array.isArray(message.ids)
+          ? message.ids
+          : [];
+      this.emitOrBuffer({ type: "event", event: { type: "tool.cancel", functionIds } }, delayRemaining);
+      return;
+    }
+
     const serverContent = serverContentFromMessage(message);
     if (!serverContent) return;
 
@@ -737,6 +839,11 @@ class GeminiLiveRealtimeBridge {
       this.suppressAutoTurn = false;
       this.finishActiveResponse("response.canceled");
       this.interruptPlayback();
+      if (this.responseTimer) {
+        clearTimeout(this.responseTimer);
+        this.responseTimer = null;
+      }
+      this.responseBuffer = [];
     }
 
     const hasModelTurn = !!serverContent.modelTurn;
@@ -769,38 +876,38 @@ class GeminiLiveRealtimeBridge {
     }
 
     if (hasModelTurn || serverContent.outputTranscription?.text) {
-      this.ensureActiveResponse();
+      this.ensureActiveResponse(delayRemaining);
     }
 
     if (this.activeResponse && serverContent.outputTranscription?.text) {
       this.activeResponse.text += serverContent.outputTranscription.text;
-      this.emit({
+      this.emitOrBuffer({ type: "event", event: {
         type: "response.audio_transcript.delta",
         response_id: this.activeResponse.id,
         delta: serverContent.outputTranscription.text,
-      });
+      } }, delayRemaining);
     }
 
     const modelText = textFromModelTurn(serverContent.modelTurn);
     if (this.activeResponse && modelText) {
       this.activeResponse.text += modelText;
-      this.emit({
+      this.emitOrBuffer({ type: "event", event: {
         type: "response.text.delta",
         response_id: this.activeResponse.id,
         delta: modelText,
-      });
+      } }, delayRemaining);
     }
 
-    for (const inlineData of audioPartsFromModelTurn(serverContent.modelTurn)) {
-      this.playAudio(inlineData.data);
+    const audioParts = audioPartsFromModelTurn(serverContent.modelTurn);
+    if (audioParts.length) {
+      for (const inlineData of audioParts) {
+        this.emitOrBuffer({ type: "audio", data: inlineData.data }, delayRemaining);
+      }
     }
 
     if (serverContent.turnComplete && this.activeResponse) {
-      this.emit({
-        type: "response.output_audio.done",
-        response_id: this.activeResponse.id,
-      });
-      this.finishActiveResponse("response.done");
+      this.serverTurnComplete = true;
+      this.emitOrBuffer({ type: "turnComplete" }, delayRemaining);
     }
 
     if (serverContent.turnComplete && this.inputTranscript.trim()) {
@@ -845,7 +952,15 @@ class GeminiLiveRealtimeBridge {
     const isSpeech = rms >= INPUT_SILENCE_RMS_THRESHOLD;
 
     if (isSpeech) {
-      this.inputSpeechActiveUntil = now + INPUT_SPEECH_HOLD_MS;
+      this.inputSpeechActiveUntil = now + (this.speechHoldMs || INPUT_SPEECH_HOLD_MS);
+      if (this.responseTimer) {
+        clearTimeout(this.responseTimer);
+        this.responseTimer = null;
+      }
+      if (this.responseBuffer.length > 0) {
+        console.log(`[gemini-live] User started speaking, discarding ${this.responseBuffer.length} buffered items`);
+        this.responseBuffer = [];
+      }
     }
 
     if (now <= this.inputSpeechActiveUntil) {
@@ -890,7 +1005,7 @@ class GeminiLiveRealtimeBridge {
       .catch((error) => this.handleError(error));
   }
 
-  ensureActiveResponse() {
+  ensureActiveResponse(delayRemaining = 0) {
     if (this.activeResponse) return this.activeResponse;
     this.activeResponse =
       this.pendingResponses.shift() || {
@@ -898,16 +1013,22 @@ class GeminiLiveRealtimeBridge {
         metadata: {},
         text: "",
         started: false,
+        startTimeoutId: null,
       };
+    this.serverTurnComplete = false;
+    this.clearManualResponseStartTimeout(this.activeResponse);
     if (!this.activeResponse.started) {
       this.activeResponse.started = true;
-      this.emit({
-        type: "response.created",
-        response: {
-          id: this.activeResponse.id,
-          metadata: this.activeResponse.metadata || {},
-        },
-      });
+      this.emitOrBuffer({
+        type: "event",
+        event: {
+          type: "response.created",
+          response: {
+            id: this.activeResponse.id,
+            metadata: this.activeResponse.metadata || {},
+          },
+        }
+      }, delayRemaining);
     }
     return this.activeResponse;
   }
@@ -941,7 +1062,10 @@ class GeminiLiveRealtimeBridge {
       const source = this.audioContext.createBufferSource();
       source.buffer = buffer;
       source.connect(this.playbackAnalyser);
-      source.onended = () => this.scheduledSources.delete(source);
+      source.onended = () => {
+        this.scheduledSources.delete(source);
+        this.checkAndFinalizeResponse();
+      };
       this.scheduledSources.add(source);
       this.nextStartTime = Math.max(
         this.audioContext.currentTime + 0.02,
@@ -954,6 +1078,55 @@ class GeminiLiveRealtimeBridge {
       });
     } catch (error) {
       this.handleError(error);
+    }
+  }
+
+  emitOrBuffer(item, delayRemaining) {
+    if (delayRemaining > 0) {
+      this.responseBuffer.push(item);
+      this.scheduleResponseBuffer(delayRemaining);
+    } else {
+      this.flushResponseItem(item);
+    }
+  }
+
+  flushResponseItem(item) {
+    if (item.type === "audio") {
+      this.playAudio(item.data);
+    } else if (item.type === "event") {
+      this.emit(item.event);
+    } else if (item.type === "turnComplete") {
+      this.checkAndFinalizeResponse();
+    }
+  }
+
+  scheduleResponseBuffer(delayMs) {
+    if (this.responseTimer) return;
+    this.responseTimer = setTimeout(() => {
+      this.responseTimer = null;
+      if (this.closed || this.resettingSession) return;
+      console.log(`[gemini-live] VAD pause elapsed, flushing ${this.responseBuffer.length} buffered items`);
+      const items = this.responseBuffer;
+      this.responseBuffer = [];
+      for (const item of items) {
+        this.flushResponseItem(item);
+      }
+    }, delayMs);
+  }
+
+  checkAndFinalizeResponse() {
+    if (
+      this.serverTurnComplete &&
+      this.activeResponse &&
+      this.responseBuffer.length === 0 &&
+      this.scheduledSources.size === 0 &&
+      !this.responseTimer
+    ) {
+      this.emit({
+        type: "response.output_audio.done",
+        response_id: this.activeResponse.id,
+      });
+      this.finishActiveResponse("response.done");
     }
   }
 
@@ -988,6 +1161,7 @@ class GeminiLiveRealtimeBridge {
   finishActiveResponse(type = "response.done") {
     if (!this.activeResponse) return;
     const response = this.activeResponse;
+    this.clearManualResponseStartTimeout(response);
     this.emit({
       type,
       response_id: response.id,
@@ -1058,6 +1232,16 @@ class GeminiLiveRealtimeBridge {
     if (this.closed) return;
     this.closed = true;
     this.readyState = "closed";
+    if (this.responseTimer) {
+      clearTimeout(this.responseTimer);
+      this.responseTimer = null;
+    }
+    this.responseBuffer = [];
+    [...this.pendingManualResponses, ...this.pendingResponses, this.activeResponse]
+      .filter(Boolean)
+      .forEach((response) => this.clearManualResponseStartTimeout(response));
+    this.pendingManualResponses = [];
+    this.pendingResponses = [];
     this.interruptPlayback();
     try {
       this.workletNode?.port && (this.workletNode.port.onmessage = null);

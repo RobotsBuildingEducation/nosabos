@@ -3026,7 +3026,6 @@ export default function SkillTree({
                 activeNpub={activeNpub}
                 targetLang={targetLang}
                 supportLang={supportLang}
-                pauseMs={pauseMs}
                 maxProficiencyLevel={maxProficiencyLevel}
                 onFirstLessonComplete={onTutorFirstLessonComplete}
                 onDailyGoalCelebration={onTutorDailyGoalCelebration}
@@ -3063,7 +3062,6 @@ export default function SkillTree({
                 activeNpub={activeNpub}
                 targetLang={targetLang}
                 supportLang={supportLang}
-                pauseMs={pauseMs}
                 maxProficiencyLevel={maxProficiencyLevel}
                 onFirstLessonComplete={onTutorFirstLessonComplete}
                 onDailyGoalCelebration={onTutorDailyGoalCelebration}

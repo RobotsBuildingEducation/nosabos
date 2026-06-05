@@ -244,7 +244,7 @@ export const TRANSLATION_ZH_STATIC = {
     "语音功能会在接受你的回答前短暂停顿，让你有时间说完，然后语音助手再回应。",
   onboarding_vad_label: "回答之间的停顿",
   onboarding_vad_hint:
-    "越短响应越快，越长越能等你说完。1.2 秒适合自然讲话。",
+    "越短响应越快，越长越能等你说完。快速回应建议 0.6 秒。",
   onboarding_vad_seconds: "秒",
   onboarding_vad_seconds_value: "{value} 秒",
   onboarding_translations_toggle: "显示{language}翻译",
