@@ -5837,9 +5837,15 @@ export default function Tutor({
     const startedAt = Date.now();
     let heardAudio = false;
     let lastLoudAt = Date.now();
-    const quietMs = 1100;
-    const minWaitMs = 600;
-    const noAudioFallbackMs = 1800;
+    // The Gemini bridge only emits response.output_audio.done AFTER playback has fully
+    // drained (it waits for scheduledSources to empty), so by the time this runs the
+    // audio is already silent. The RMS poll therefore never "hears" audio and used to
+    // sit on the 1800ms no-audio fallback — that was the ~1.5-2s dead gap before
+    // "listening". Audio is confirmed finished here, so we only add a small natural
+    // beat. (The poll is kept purely as a safety net for any residual decay.)
+    const quietMs = 350;
+    const minWaitMs = 150;
+    const noAudioFallbackMs = 250;
     const maxWaitMs = 30000;
 
     assistantUnlockTimerRef.current = setInterval(() => {
