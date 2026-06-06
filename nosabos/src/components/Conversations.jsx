@@ -1203,6 +1203,11 @@ export default function Conversations({
     text: getRandomFallbackTopic(maxProficiencyLevel),
     completed: false,
   }));
+  const currentGoalRef = useRef(currentGoal);
+  currentGoalRef.current = currentGoal;
+
+  const handleRealtimeEventRef = useRef(null);
+  handleRealtimeEventRef.current = handleRealtimeEvent;
   const [goalsCompleted, setGoalsCompleted] = useState(0);
   const [isGeneratingGoal, setIsGeneratingGoal] = useState(false);
   const [streamingText, setStreamingText] = useState("");
@@ -1849,7 +1854,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
         setTimeout(() => applyLanguagePolicyNow(), 60);
       };
 
-      dc.onmessage = handleRealtimeEvent;
+      dc.onmessage = (evt) => handleRealtimeEventRef.current?.(evt);
 
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
@@ -2237,13 +2242,14 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
 
   // Evaluate if user's response satisfies the current goal
   async function evaluateGoalCompletion(userMessage, aiResponse) {
-    if (currentGoal.completed || goalCheckPendingRef.current) return;
+    const goal = currentGoalRef.current;
+    if (goal.completed || goalCheckPendingRef.current) return;
     if (!userMessage || userMessage.length < 3) return;
 
     goalCheckPendingRef.current = true;
 
     try {
-      const goalText = currentGoal.text.en;
+      const goalText = goal.text.en;
       const tLang = targetLangRef.current;
       const sLang = resolvedSupportLang;
       const languageName =
@@ -2281,37 +2287,30 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
           normalizeSupportLanguage(sLang, DEFAULT_SUPPORT_LANGUAGE),
         ) || "English";
 
-      const prompt = `You are evaluating if a language learner completed a conversation goal.
-
-CRITICAL REQUIREMENTS (BOTH must be met):
-1. The user MUST respond in ${languageName}. If they responded in ANY other language, the goal is NOT completed.
-2. The user's message MUST directly address the specific goal content. Generic or unrelated responses do NOT count.
+      const prompt = `You are a warm, encouraging language tutor checking whether a learner's reply makes a reasonable attempt at a conversation goal. You reward communication, not perfection, and you read the learner's words the way a real conversation partner would — not literally.
 
 Goal: "${goalText}"
 Target language: ${languageName}
-User said: "${userMessage}"
-AI responded: "${aiResponse}"
+Learner's reply (judge THIS): "${userMessage}"
+Conversation context (the tutor's line they answered): "${aiResponse}"
 
-STRICT EVALUATION CRITERIA:
-1. Language Check: Is the user's message in ${languageName}? (If not → completed = false)
-2. Content Relevance Check: Does the user's message directly address the specific topic/action in the goal?
-   - If the goal is "talk about your favorite place in the city" and user talks about their dog → completed = false
-   - If the goal is "describe your morning routine" and user talks about food → completed = false
-   - If the goal is "discuss your hobbies" and user talks about weather → completed = false
-   - The message must be TOPICALLY RELEVANT to the goal, not just grammatically correct
+Set completed = true when BOTH are true:
+1. The reply is mostly in ${languageName}.
+2. The learner gets the goal's main idea across — even if phrased differently, partially, informally, or without every sub-detail. On a close call, give credit.
 
-Examples of INCORRECT evaluation:
-- Goal: "Describe your favorite restaurant" / User: "My dog is white" → completed = false (wrong topic)
-- Goal: "Talk about your weekend plans" / User: "I like coffee" → completed = false (off-topic)
+Set completed = false ONLY when the reply is in the wrong language, is off-topic / unrelated to the goal, or makes no real attempt.
 
-Only mark completed = true if BOTH language AND content relevance are satisfied.
+Read it like a human, not literally. Examples that are completed = true (do not reject things like these):
+- Goal "Ask how the other person is feeling today" + reply "How are you feeling?" → true ("you" means the other person; the word "today" is not required).
+- Goal "Introduce your family and tell me their names and jobs" + reply "This is my family, Ana and Luis, and we work at a restaurant" → true (names and a job are given; no rigid "name: job" format is needed).
+- Goal "Describe your morning routine" + reply "I wake up, have coffee, then go to work" → true.
+Examples that are completed = false:
+- Goal "Describe your favorite restaurant" + reply "My dog is white" → false (off-topic).
+- A reply not in ${languageName} → false.
 
-FEEDBACK GUIDELINES:
-- Provide feedback in ${feedbackLanguage}
-- If completed = true: Provide encouraging, specific praise (e.g., "Great! You talked about your favorite restaurant perfectly!")
-- If completed = false: Keep it SHORT - 1-2 sentences max. Just briefly tell them what to try instead (e.g., "Try talking about the goal topic." or "Use ${languageName} to respond.")
+Feedback in ${feedbackLanguage}, one short sentence: if true, give warm, specific praise; if false, briefly say what to try.
 
-Respond with ONLY a JSON object: {"completed": true/false, "reason": "brief, actionable feedback in ${feedbackLanguage}"}`;
+Respond with ONLY a JSON object: {"completed": true/false, "reason": "..."}`;
 
       const body = {
         model: TRANSLATE_MODEL,
@@ -2343,6 +2342,13 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "brief, act
         "";
 
       const parsed = safeParseJson(responseText);
+      // Guard against a stale verdict: this grade was started for `goal`, but the
+      // grading call is async (~1-2s). If the goal advanced in the meantime, applying
+      // this result would show feedback about the wrong (previous) goal. Discard it.
+      if (currentGoalRef.current !== goal) {
+        goalCheckPendingRef.current = false;
+        return;
+      }
       if (parsed?.completed) {
         // Set positive feedback
         const defaultSuccess =

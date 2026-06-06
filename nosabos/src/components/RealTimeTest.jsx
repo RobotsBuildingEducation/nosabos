@@ -33,6 +33,7 @@ import {
   FaDice,
   FaRegCommentDots,
   FaExclamation,
+  FaCheck,
 } from "react-icons/fa";
 import { RiVolumeUpLine } from "react-icons/ri";
 import { MdOutlineTranslate } from "react-icons/md";
@@ -83,6 +84,7 @@ import { getAdultBeginnerToneRule } from "../utils/adultBeginnerTone";
 import useSoundSettings from "../hooks/useSoundSettings";
 import submitActionSound from "../assets/submitaction.mp3";
 import nextButtonSound from "../assets/nextbutton.mp3";
+import deliciousSound from "../assets/delicious.mp3";
 import { useThemeStore } from "../useThemeStore";
 import XpProgressHeader from "./XpProgressHeader";
 import {
@@ -2734,6 +2736,7 @@ Return ONLY JSON:
       }
 
       if (met) {
+        playSound(deliciousSound);
         await recordGoalCompletion(goal, conf);
         setGoalCompleted(true); // Mark goal as completed, wait for user to click "Next Goal"
       }
@@ -3802,7 +3805,15 @@ Return ONLY JSON:
                       mt={2}
                       spacing={2}
                       align="flex-start"
-                      color={isLightTheme ? "#8f4a5e" : "whiteAlpha.900"}
+                      color={
+                        goalCompleted
+                          ? isLightTheme
+                            ? "#0d9488"
+                            : "#2dd4bf"
+                          : isLightTheme
+                            ? "#8f4a5e"
+                            : "whiteAlpha.900"
+                      }
                     >
                       <Box
                         mt="2px"
@@ -3814,14 +3825,32 @@ Return ONLY JSON:
                         borderRadius="full"
                         border="1px solid"
                         borderColor={
-                          isLightTheme ? "rgba(165, 89, 108, 0.38)" : "red.300"
+                          goalCompleted
+                            ? isLightTheme
+                              ? "rgba(13, 148, 136, 0.38)"
+                              : "teal.300"
+                            : isLightTheme
+                              ? "rgba(165, 89, 108, 0.38)"
+                              : "red.300"
                         }
                         bg={
-                          isLightTheme
-                            ? "rgba(214, 96, 122, 0.16)"
-                            : "rgba(239,68,68,0.9)"
+                          goalCompleted
+                            ? isLightTheme
+                              ? "rgba(13, 148, 136, 0.12)"
+                              : "rgba(13, 148, 136, 0.9)"
+                            : isLightTheme
+                              ? "rgba(214, 96, 122, 0.16)"
+                              : "rgba(239,68,68,0.9)"
                         }
-                        color={isLightTheme ? "#8f4a5e" : "white"}
+                        color={
+                          goalCompleted
+                            ? isLightTheme
+                              ? "#0d9488"
+                              : "white"
+                            : isLightTheme
+                              ? "#8f4a5e"
+                              : "white"
+                        }
                         boxShadow={
                           isLightTheme
                             ? "0 1px 0 rgba(255,255,255,0.45)"
@@ -3829,12 +3858,24 @@ Return ONLY JSON:
                         }
                         flexShrink={0}
                       >
-                        <FaExclamation size={7} />
+                        {goalCompleted ? (
+                          <FaCheck size={7} />
+                        ) : (
+                          <FaExclamation size={7} />
+                        )}
                       </Box>
                       <Text
                         fontSize="xs"
                         opacity={0.95}
-                        color={isLightTheme ? "#8f4a5e" : "whiteAlpha.900"}
+                        color={
+                          goalCompleted
+                            ? isLightTheme
+                              ? "#0d9488"
+                              : "whiteAlpha.900"
+                            : isLightTheme
+                              ? "#8f4a5e"
+                              : "whiteAlpha.900"
+                        }
                       >
                         {goalFeedback}
                       </Text>
@@ -4034,60 +4075,170 @@ Return ONLY JSON:
               )}
             </Button>
 
-            <Button
-              onClick={handleNextGoal}
-              size="md"
-              height="48px"
-              px={{ base: 6, md: 8 }}
-              rounded="full"
-              variant={isLightTheme ? "outline" : "solid"}
-              color={
-                isLightTheme
-                  ? goalCompleted
-                    ? "#134e4a"
-                    : APP_TEXT_MUTED
-                  : "white"
-              }
-              textShadow={isLightTheme ? "none" : "0 0 16px rgba(0,0,0,0.9)"}
-              mb={20}
-              bg={
-                isLightTheme
-                  ? APP_SURFACE
-                  : !goalCompleted
-                    ? "gray.800"
-                    : "cyan.700"
-              }
-              border="1px solid"
-              borderColor={
-                isLightTheme
-                  ? goalCompleted
-                    ? "rgba(64, 198, 217, 0.95)"
-                    : APP_BORDER
-                  : "cyan"
-              }
-              boxShadow={isLightTheme ? "none" : undefined}
-              _hover={
-                isLightTheme && goalCompleted
-                  ? {
-                      bg: APP_SURFACE_MUTED,
-                      borderColor: "#40c6d9",
-                    }
-                  : undefined
-              }
-              _disabled={
-                isLightTheme
-                  ? {
-                      opacity: 1,
-                      bg: APP_SURFACE,
-                      color: APP_TEXT_MUTED,
-                      borderColor: APP_BORDER,
-                    }
-                  : undefined
-              }
-              disabled={!goalCompleted}
-            >
-              {uiText("ra_btn_next", "Next")}
-            </Button>
+            <Box position="relative" mb={20}>
+              <Button
+                onClick={handleNextGoal}
+                size="md"
+                height="48px"
+                px={{ base: 6, md: 8 }}
+                rounded="full"
+                variant={isLightTheme ? "outline" : "solid"}
+                color={
+                  isLightTheme
+                    ? goalCompleted
+                      ? "#134e4a"
+                      : APP_TEXT_MUTED
+                    : "white"
+                }
+                textShadow={isLightTheme ? "none" : "0 0 16px rgba(0,0,0,0.9)"}
+                bg={
+                  isLightTheme
+                    ? APP_SURFACE
+                    : !goalCompleted
+                      ? "gray.800"
+                      : "cyan.700"
+                }
+                border="1px solid"
+                borderColor={
+                  isLightTheme
+                    ? goalCompleted
+                      ? "rgba(64, 198, 217, 0.95)"
+                      : APP_BORDER
+                    : "cyan"
+                }
+                boxShadow={isLightTheme ? "none" : undefined}
+                _hover={
+                  isLightTheme && goalCompleted
+                    ? {
+                        bg: APP_SURFACE_MUTED,
+                        borderColor: "#40c6d9",
+                      }
+                    : undefined
+                }
+                _disabled={
+                  isLightTheme
+                    ? {
+                        opacity: 1,
+                        bg: APP_SURFACE,
+                        color: APP_TEXT_MUTED,
+                        borderColor: APP_BORDER,
+                      }
+                    : undefined
+                }
+                disabled={!goalCompleted}
+                animation={
+                  goalCompleted
+                    ? `${
+                        isLightTheme ? "pulse-glow-unlock-light" : "pulse-glow-unlock"
+                      } 2.2s infinite ease-in-out`
+                    : undefined
+                }
+                sx={
+                  goalCompleted
+                    ? {
+                        "@keyframes pulse-glow-unlock": {
+                          "0%, 100%": {
+                            boxShadow: "0 0 8px rgba(45, 212, 191, 0.3), 0 0 0 0 rgba(45, 212, 191, 0)",
+                            transform: "scale(1)",
+                          },
+                          "50%": {
+                            boxShadow: "0 0 20px rgba(45, 212, 191, 0.8), 0 0 0 4px rgba(45, 212, 191, 0.4)",
+                            transform: "scale(1.04)",
+                          },
+                        },
+                        "@keyframes pulse-glow-unlock-light": {
+                          "0%, 100%": {
+                            boxShadow: "0 0 8px rgba(64, 198, 217, 0.3), 0 0 0 0 rgba(64, 198, 217, 0)",
+                            transform: "scale(1)",
+                          },
+                          "50%": {
+                            boxShadow: "0 0 22px rgba(64, 198, 217, 0.8), 0 0 0 4px rgba(64, 198, 217, 0.45)",
+                            transform: "scale(1.04)",
+                          },
+                        },
+                      }
+                    : undefined
+                }
+              >
+                {uiText("ra_btn_next", "Next")}
+              </Button>
+              {goalCompleted && (
+                <>
+                  <Box
+                    pointerEvents="none"
+                    position="absolute"
+                    top="-8px"
+                    left="10px"
+                    w="8px"
+                    h="8px"
+                    borderRadius="full"
+                    bg="white"
+                    boxShadow="0 0 8px 2px rgba(255,255,255,0.8), 0 0 14px rgba(255,255,255,0.6)"
+                    animation="btn-sparkle 2.2s ease-in-out infinite"
+                    sx={{
+                      "@keyframes btn-sparkle": {
+                        "0%, 100%": {
+                          opacity: 0,
+                          transform: "scale(0.3) rotate(0deg)",
+                        },
+                        "50%": {
+                          opacity: 0.95,
+                          transform: "scale(1.2) rotate(45deg)",
+                        },
+                      },
+                    }}
+                  />
+                  <Box
+                    pointerEvents="none"
+                    position="absolute"
+                    bottom="-6px"
+                    right="15px"
+                    w="6px"
+                    h="6px"
+                    borderRadius="full"
+                    bg="white"
+                    boxShadow="0 0 6px 2px rgba(255,255,255,0.8), 0 0 12px rgba(255,255,255,0.5)"
+                    animation="btn-sparkle-delayed 2.5s ease-in-out infinite 0.6s"
+                    sx={{
+                      "@keyframes btn-sparkle-delayed": {
+                        "0%, 100%": {
+                          opacity: 0,
+                          transform: "scale(0.2) rotate(0deg)",
+                        },
+                        "50%": {
+                          opacity: 0.9,
+                          transform: "scale(1.1) rotate(-30deg)",
+                        },
+                      },
+                    }}
+                  />
+                  <Box
+                    pointerEvents="none"
+                    position="absolute"
+                    top="4px"
+                    right="-5px"
+                    w="6px"
+                    h="6px"
+                    borderRadius="full"
+                    bg="white"
+                    boxShadow="0 0 6px 2px rgba(255,255,255,0.8), 0 0 12px rgba(255,255,255,0.5)"
+                    animation="btn-sparkle-delayed2 2s ease-in-out infinite 1.2s"
+                    sx={{
+                      "@keyframes btn-sparkle-delayed2": {
+                        "0%, 100%": {
+                          opacity: 0,
+                          transform: "scale(0.2) rotate(0deg)",
+                        },
+                        "50%": {
+                          opacity: 0.95,
+                          transform: "scale(1) rotate(15deg)",
+                        },
+                      },
+                    }}
+                  />
+                </>
+              )}
+            </Box>
           </HStack>
         </Center>
 
