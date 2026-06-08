@@ -70,9 +70,13 @@ const INPUT_NOISE_SUPPRESSION =
   import.meta.env.VITE_GEMINI_LIVE_NOISE_SUPPRESSION === "true";
 const INPUT_AUTO_GAIN_CONTROL =
   import.meta.env.VITE_GEMINI_LIVE_AUTO_GAIN_CONTROL === "true";
+// Periodic Live-session resets were meant to cap accumulated context cost, but
+// reconnecting mid-lesson is too risky for the voice loop: it can drop the next
+// learner turn or leave a queued tutor response waiting on a slow reconnect.
+// Keep the knob for explicit experiments, but default to no automatic reset.
 const SESSION_RESPONSE_LIMIT = Math.max(
-  1,
-  Number(import.meta.env.VITE_GEMINI_LIVE_SESSION_RESPONSE_LIMIT || 4),
+  0,
+  Number(import.meta.env.VITE_GEMINI_LIVE_SESSION_RESPONSE_LIMIT || 0),
 );
 const MANUAL_RESPONSE_START_TIMEOUT_MS = Math.max(
   5000,
@@ -528,11 +532,13 @@ class GeminiLiveRealtimeBridge {
     this.nextStartTime = 0;
     this.inputTranscript = "";
     this.suppressAutoTurn = false;
+    this.desiredInputAudioEnabled = true;
     this.inputAudioEnabled = true;
     this.inputSpeechActiveUntil = 0;
     this.inputPrerollBuffers = [];
     this.inputPrerollDurationMs = 0;
     this.completedResponsesSinceReset = 0;
+    this.resetPending = false;
     this.resettingSession = false;
     this.fullInstructionPromptsRemaining = 1;
     this.responseBuffer = [];
@@ -768,6 +774,11 @@ class GeminiLiveRealtimeBridge {
       return;
     }
 
+    if (this.resetPending) {
+      this.resetLiveSessionSoon();
+      return;
+    }
+
     const response = this.pendingManualResponses.shift();
     this.pendingResponses.push(response);
     this.scheduleManualResponseStartTimeout(response);
@@ -915,13 +926,15 @@ class GeminiLiveRealtimeBridge {
     }
   }
 
-  setInputAudioEnabled(enabled) {
+  applyInputAudioEnabled() {
     // This is the billing gate, not only a UI mute. Disabled means no PCM
-    // audio is sent to Gemini Live.
-    this.inputAudioEnabled = !!enabled;
+    // audio is sent to Gemini Live. Session resets temporarily force the
+    // effective gate closed without changing the Tutor's latest desired state.
+    const enabled = !!this.desiredInputAudioEnabled && !this.resettingSession;
+    this.inputAudioEnabled = enabled;
     try {
       this.mediaStream?.getAudioTracks?.().forEach((track) => {
-        track.enabled = !!enabled;
+        track.enabled = enabled;
       });
     } catch {
       // Track state is best-effort; the bridge-level gate below is authoritative.
@@ -931,6 +944,11 @@ class GeminiLiveRealtimeBridge {
       this.inputPrerollBuffers = [];
       this.inputPrerollDurationMs = 0;
     }
+  }
+
+  setInputAudioEnabled(enabled) {
+    this.desiredInputAudioEnabled = !!enabled;
+    this.applyInputAudioEnabled();
   }
 
   handleInputAudioBuffer(buffer) {
@@ -1170,8 +1188,11 @@ class GeminiLiveRealtimeBridge {
     this.activeResponse = null;
     if (type === "response.done") {
       this.completedResponsesSinceReset += 1;
-      if (this.completedResponsesSinceReset >= SESSION_RESPONSE_LIMIT) {
-        this.resetLiveSessionSoon();
+      if (
+        SESSION_RESPONSE_LIMIT > 0 &&
+        this.completedResponsesSinceReset >= SESSION_RESPONSE_LIMIT
+      ) {
+        this.resetPending = true;
       }
     }
     this.dispatchNextManualResponse();
@@ -1182,8 +1203,7 @@ class GeminiLiveRealtimeBridge {
       this.closed ||
       this.resettingSession ||
       this.activeResponse ||
-      this.pendingResponses.length ||
-      this.pendingManualResponses.length
+      this.pendingResponses.length
     ) {
       return;
     }
@@ -1195,8 +1215,7 @@ class GeminiLiveRealtimeBridge {
     // Live bills the accumulated session context on later turns, so reset
     // periodically to bound multi-turn lesson cost.
     this.resettingSession = true;
-    const previousInputEnabled = this.inputAudioEnabled;
-    this.setInputAudioEnabled(false);
+    this.applyInputAudioEnabled();
     const oldSession = this.session;
     this.session = null;
     this.suppressAutoTurn = false;
@@ -1210,13 +1229,15 @@ class GeminiLiveRealtimeBridge {
       if (this.closed) return;
       this.session = await this.connectLiveSession();
       this.completedResponsesSinceReset = 0;
+      this.resetPending = false;
       this.fullInstructionPromptsRemaining = 1;
-      this.setInputAudioEnabled(previousInputEnabled);
       this.receiveLoopPromise = this.receiveLoop();
       this.resettingSession = false;
+      this.applyInputAudioEnabled();
       this.dispatchNextManualResponse();
     } finally {
       this.resettingSession = false;
+      this.applyInputAudioEnabled();
     }
   }
 
