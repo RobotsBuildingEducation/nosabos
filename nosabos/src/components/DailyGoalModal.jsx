@@ -39,7 +39,6 @@ import useSoundSettings from "../hooks/useSoundSettings";
 import useEscapeToClose from "../hooks/useEscapeToClose";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
-import { getDailyGoalPetHealth } from "../utils/dailyGoalPet.js";
 import {
   DEFAULT_SUPPORT_LANGUAGE,
   getLanguageDirection,
@@ -567,26 +566,13 @@ export default function DailyGoalModal({
     }
 
     try {
-      const resetAt = new Date(Date.now() + MS_24H).toISOString();
-      const todayKey = getLocalDayKey(new Date());
+      // Only change the target — preserve XP earned, the day's window, and
+      // celebration/pet state. (Primary save path is onSaveGoal above; this
+      // fallback runs only when no handler was provided.)
       await setDoc(
         doc(database, "users", npub),
         {
           dailyGoalXp: parsed,
-          dailyXp: 0,
-          dailyResetAt: resetAt,
-          dailyHasCelebrated: false,
-          dailyGoalPetHealth: getDailyGoalPetHealth({
-            dailyGoalPetHealth: petHealth,
-          }),
-          ...(todayKey
-            ? {
-                dailyXpHistory: {
-                  ...(dailyXpHistory || {}),
-                  [todayKey]: 0,
-                },
-              }
-            : {}),
           updatedAt: new Date().toISOString(),
         },
         { merge: true },

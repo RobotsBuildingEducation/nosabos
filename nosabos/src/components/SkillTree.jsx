@@ -318,7 +318,15 @@ function PathModeFallback({ fill = false }) {
   );
 }
 
-const KEEP_ALIVE_PATH_MODES = ["path", "flashcards", "conversations", "tutor"];
+const KEEP_ALIVE_PATH_MODES = [
+  "path",
+  "flashcards",
+  "conversations",
+  "tutor",
+  // "plate" renders nothing inside SkillTree (the Daily Plate home is owned
+  // by App.jsx) but must normalize to itself so no other mode shows through.
+  "plate",
+];
 const normalizeKeepAlivePathMode = (mode) =>
   KEEP_ALIVE_PATH_MODES.includes(mode) ? mode : "path";
 const isKeepAliveModeVisible = (pathMode, mode) =>
@@ -2560,7 +2568,7 @@ export default function SkillTree({
       ? lessonLevelCompletionStatus
       : flashcardLevelCompletionStatus;
   const isConversationStyleMode =
-    pathMode === "conversations" || pathMode === "tutor";
+    pathMode === "conversations" || pathMode === "tutor" || pathMode === "plate";
 
   const levelsKey = Array.isArray(levels) ? levels.join("|") : "";
   const requestedUnitsKey = `${showMultipleLevels ? "multi" : "single"}:${targetLang}:${

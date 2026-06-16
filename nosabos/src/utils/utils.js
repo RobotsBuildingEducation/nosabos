@@ -9,6 +9,7 @@ import {
   getDailyGoalPetHealth,
   hasDailyGoalResetExpired,
 } from "./dailyGoalPet";
+import { PLATE_XP_SOURCE_FIELDS } from "./dailyPlate";
 
 function getStoredLocalNpub() {
   if (typeof window === "undefined") return "";
@@ -36,6 +37,8 @@ function syncAwardedXpToLocalStore({
   dailyGoalXp,
   todayKey,
   petHealth,
+  activityField,
+  activityCount,
 }) {
   try {
     const store = useUserStore.getState?.();
@@ -79,6 +82,18 @@ function syncAwardedXpToLocalStore({
             : delta,
         },
       };
+      if (activityField && Number.isFinite(activityCount) && todayKey) {
+        const currentLangActivity =
+          currentProgress?.[activityField]?.[langKey] || {};
+        const currentCount = Number(currentLangActivity?.[todayKey]) || 0;
+        patch.progress[activityField] = {
+          ...(currentProgress?.[activityField] || {}),
+          [langKey]: {
+            ...currentLangActivity,
+            [todayKey]: Math.max(currentCount, activityCount),
+          },
+        };
+      }
     }
     if (Number.isFinite(syncedDailyXp)) patch.dailyXp = syncedDailyXp;
     if (Number.isFinite(nextDailyGoalXp)) patch.dailyGoalXp = nextDailyGoalXp;
@@ -96,11 +111,16 @@ function syncAwardedXpToLocalStore({
   }
 }
 
-export async function awardXp(npub, amount, targetLang = "es") {
+export async function awardXp(npub, amount, targetLang = "es", source = "") {
   if (!npub || !amount) return null;
   const ref = doc(database, "users", npub);
   const delta = Math.max(1, Math.round(amount));
   const now = new Date();
+  // Format today's date as YYYY-MM-DD for calendar + daily-plate tracking
+  const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  // Tagged sources ("lesson"/"speak") also count one action toward the
+  // matching daily-plate course; untagged awards only move XP.
+  const activityField = PLATE_XP_SOURCE_FIELDS[source] || null;
   let shouldCelebrateGoal = false;
   let celebrationPetHealth = null;
   let awardedDailyXp = null;
@@ -108,6 +128,7 @@ export async function awardXp(npub, amount, targetLang = "es") {
   let awardedTodayKey = "";
   let awardedPetHealth = null;
   let awardedLangKey = "";
+  let awardedActivityCount = null;
 
   await runTransaction(database, async (tx) => {
     const snap = await tx.get(ref);
@@ -147,6 +168,16 @@ export async function awardXp(npub, amount, targetLang = "es") {
       },
     };
 
+    if (activityField) {
+      const langActivity = existingProgress?.[activityField]?.[langKey] || {};
+      const nextActivityCount = (Number(langActivity?.[todayKey]) || 0) + 1;
+      nextProgress[activityField] = {
+        ...(existingProgress?.[activityField] || {}),
+        [langKey]: { ...langActivity, [todayKey]: nextActivityCount },
+      };
+      awardedActivityCount = nextActivityCount;
+    }
+
     // Celebrate once per day upon reaching goal
     const parsedGoal = Number(
       data.dailyGoalXp ?? data.progress?.dailyGoalXp ?? data.stats?.dailyGoalXp,
@@ -162,8 +193,6 @@ export async function awardXp(npub, amount, targetLang = "es") {
       celebrationPetHealth = nextPetHealth;
     }
 
-    // Format today's date as YYYY-MM-DD for calendar tracking
-    const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
     awardedDailyXp = nextDaily;
     awardedDailyGoalXp = goal;
     awardedTodayKey = todayKey;
@@ -208,11 +237,14 @@ export async function awardXp(npub, amount, targetLang = "es") {
     dailyGoalXp: awardedDailyGoalXp,
     todayKey: awardedTodayKey,
     petHealth: awardedPetHealth,
+    activityField,
+    activityCount: awardedActivityCount,
   });
 
   const result = {
     amount: delta,
     npub,
+    source,
     dailyXp: awardedDailyXp,
     dailyGoalXp: awardedDailyGoalXp,
     todayKey: awardedTodayKey,
@@ -228,6 +260,7 @@ export async function awardXp(npub, amount, targetLang = "es") {
         detail: {
           amount: result.amount,
           npub: result.npub,
+          source: result.source,
           dailyXp: result.dailyXp,
           dailyGoalXp: result.dailyGoalXp,
           todayKey: result.todayKey,

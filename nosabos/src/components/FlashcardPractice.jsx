@@ -252,6 +252,8 @@ export default function FlashcardPractice({
   supportLang = "en",
   pauseMs = 2000,
   languageXp = 0,
+  dailyReviewed = 0,
+  dailyTarget = 0,
 }) {
   const [textAnswer, setTextAnswer] = useState("");
   const [showResult, setShowResult] = useState(false);
@@ -293,6 +295,11 @@ export default function FlashcardPractice({
   const updatedTotalXp = currentLanguageXp + xpAwarded;
   const xpLevelNumber = Math.floor(updatedTotalXp / 100) + 1;
   const nextLevelProgressPct = updatedTotalXp % 100;
+  const dailyDoneToday = Math.min(Number(dailyReviewed) || 0, dailyTarget || 0);
+  const dailyProgressPct =
+    dailyTarget > 0
+      ? Math.min(100, Math.round(((Number(dailyReviewed) || 0) / dailyTarget) * 100))
+      : 0;
   const effectiveCardLanguage = getEffectiveCardLanguage(supportLang);
   const cardPromptTextProps = useMemo(
     () => getLanguageTextProps(effectiveCardLanguage),
@@ -1707,6 +1714,37 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
                               );
                             })}
                           </Box>
+
+                          {dailyTarget > 0 ? (
+                            <Box pt={1}>
+                              <HStack justify="space-between" mb={1}>
+                                <Text
+                                  fontSize="xs"
+                                  fontWeight="semibold"
+                                  color={
+                                    isLightTheme
+                                      ? APP_TEXT_SECONDARY
+                                      : "whiteAlpha.800"
+                                  }
+                                >
+                                  {getTranslation("flashcard_daily_target")}
+                                </Text>
+                                <Text
+                                  fontSize="xs"
+                                  fontWeight="bold"
+                                  color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
+                                >
+                                  {dailyDoneToday}/{dailyTarget}
+                                </Text>
+                              </HStack>
+                              <WaveBar
+                                value={dailyProgressPct}
+                                height={8}
+                                start="#f7d66c"
+                                end="#f0b429"
+                              />
+                            </Box>
+                          ) : null}
                         </VStack>
 
                         {assessmentMode === "ai" &&

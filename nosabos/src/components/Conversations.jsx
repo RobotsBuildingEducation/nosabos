@@ -2555,6 +2555,8 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
     }
 
     try {
+      // Untagged: free conversation doesn't fill the daily plate — the Tutor
+      // course counts completed Tutor lessons.
       await awardXp(npub, xpGain, targetLangRef.current);
       logEvent(analytics, "conversation_turn_xp", { xp: xpGain });
     } catch {}

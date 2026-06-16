@@ -74,6 +74,7 @@ import {
 } from "../utils/supportTranslation";
 import { getBidiTextProps, mergeBidiSx } from "../utils/bidiText";
 import { awardXp } from "../utils/utils";
+import { recordPlateActivity } from "../utils/dailyPlate";
 import {
   completeTutorLesson,
   getLanguageXp,
@@ -6469,12 +6470,16 @@ export default function Tutor({
         xpRequired || 1,
         targetLangRef.current,
       );
+      // Daily plate: a completed Tutor lesson fills the Tutor course.
+      void recordPlateActivity(npub, "speak", targetLangRef.current);
       if (xpRequired > 0) {
         setXp((v) => v + xpRequired);
         const lessonDailyGoalUpdate = applyTutorDailyGoalXpOptimistic(
           npub,
           xpRequired,
         );
+        // Untagged: Tutor lessons fill the plate's Tutor course (counted
+        // above), not the skill-tree Lessons course.
         const lessonAwardResult = await awardXp(
           npub,
           xpRequired,
@@ -7032,6 +7037,8 @@ export default function Tutor({
 
     const awardPromise = (async () => {
       try {
+        // Untagged: turn XP doesn't fill the plate — the Tutor course counts
+        // completed Tutor lessons.
         const awardResult = await awardXp(npub, xpGain, targetLangRef.current);
         await syncTutorDailyGoalXpFromFirestore(npub);
         logEvent(analytics, "conversation_turn_xp", { xp: xpGain });

@@ -764,7 +764,7 @@ export const translations = {
       "A steadier rhythm: review what is due, then add just enough new material.",
     flashcard_review_first:
       "Science-backed practice works best when overdue cards get cleared before fresh ones.",
-    flashcard_reviews_due: "Due reviews",
+    flashcard_reviews_due: "Review now",
     flashcard_new_queue: "New cards",
     flashcard_mastered_cards: "Learned cards",
     flashcard_streak: "Study streak",
@@ -781,13 +781,11 @@ export const translations = {
     flashcard_learn_next: "Learn next card",
     flashcard_strengthen_weak: "Review weak cards",
     flashcard_session_loading: "Preparing your review queue...",
-    flashcard_due_subtitle:
-      "These are ready right now. Clearing them first builds spacing and protects old memories.",
+    flashcard_due_subtitle: "Scheduled for today — review these first.",
     flashcard_new_subtitle:
       "Only the next unseen card is actionable. The rest stay locked so the deck does not overwhelm the learner.",
-    flashcard_weak_queue: "Weak cards",
-    flashcard_weak_subtitle:
-      "These are learned cards that are not due yet, but are most likely to slip without a little extra reinforcement.",
+    flashcard_weak_queue: "Keep practicing",
+    flashcard_weak_subtitle: "Learned, but not solid yet — a little extra reps.",
     flashcard_weak_reason_lapses: "Recent lapses",
     flashcard_weak_reason_mastery: "Low mastery",
     flashcard_weak_reason_slipping: "Keeps slipping",
@@ -1686,7 +1684,7 @@ export const translations = {
       "Un ritmo más estable: repasa lo pendiente y luego agrega solo el material nuevo necesario.",
     flashcard_review_first:
       "La práctica basada en la memoria funciona mejor cuando primero vacías los repasos pendientes y después agregas contenido nuevo.",
-    flashcard_reviews_due: "Repasos pendientes",
+    flashcard_reviews_due: "Repasar ahora",
     flashcard_new_queue: "Tarjetas nuevas",
     flashcard_mastered_cards: "Tarjetas aprendidas",
     flashcard_streak: "Racha de estudio",
@@ -1703,13 +1701,12 @@ export const translations = {
     flashcard_learn_next: "Aprender siguiente tarjeta",
     flashcard_strengthen_weak: "Repasar tarjetas débiles",
     flashcard_session_loading: "Preparando tu cola de repaso...",
-    flashcard_due_subtitle:
-      "Estas tarjetas ya están listas para repasar. Resolverlas primero fortalece el espaciado y protege recuerdos anteriores.",
+    flashcard_due_subtitle: "Programadas para hoy: repásalas primero.",
     flashcard_new_subtitle:
       "Solo la siguiente tarjeta no vista está activa. Las demás siguen bloqueadas para no saturar al estudiante.",
-    flashcard_weak_queue: "Tarjetas débiles",
+    flashcard_weak_queue: "Sigue practicando",
     flashcard_weak_subtitle:
-      "Estas tarjetas ya fueron aprendidas y aún no les toca repaso, pero son las que tienen más riesgo de olvidarse sin un refuerzo extra.",
+      "Aprendidas, pero aún no del todo: unos repasos más.",
     flashcard_weak_reason_lapses: "Falló recientemente",
     flashcard_weak_reason_mastery: "Dominio bajo",
     flashcard_weak_reason_slipping: "Sigue costando",
@@ -2581,7 +2578,7 @@ translations.it = {
     "Un ritmo più stabile: ripassa ciò che è dovuto, poi aggiungi solo il nuovo necessario.",
   flashcard_review_first:
     "La pratica basata sulla scienza funziona meglio quando le carte scadute vengono risolte prima di quelle nuove.",
-  flashcard_reviews_due: "Ripassi dovuti",
+  flashcard_reviews_due: "Ripassa ora",
   flashcard_new_queue: "Carte nuove",
   flashcard_mastered_cards: "Carte imparate",
   flashcard_streak: "Serie di studio",
@@ -2598,13 +2595,12 @@ translations.it = {
   flashcard_learn_next: "Impara la prossima carta",
   flashcard_strengthen_weak: "Ripassa carte deboli",
   flashcard_session_loading: "Preparazione della coda di ripasso...",
-  flashcard_due_subtitle:
-    "Queste sono pronte ora. Risolverle prima costruisce spaziatura e protegge i ricordi vecchi.",
+  flashcard_due_subtitle: "In programma per oggi: ripassale prima.",
   flashcard_new_subtitle:
     "Solo la prossima carta non vista è attiva. Le altre restano bloccate per non sovraccaricare lo studente.",
-  flashcard_weak_queue: "Carte deboli",
+  flashcard_weak_queue: "Continua a esercitarti",
   flashcard_weak_subtitle:
-    "Carte già imparate ma non ancora dovute, più a rischio di scivolare senza rinforzo.",
+    "Imparate, ma non ancora solide: qualche ripasso in più.",
   flashcard_weak_reason_lapses: "Errori recenti",
   flashcard_weak_reason_mastery: "Padronanza bassa",
   flashcard_weak_reason_slipping: "Continua a sfuggire",
@@ -3468,7 +3464,7 @@ translations.fr = {
     "Un rythme plus stable : revise ce qui est du, puis ajoute seulement le nouveau necessaire.",
   flashcard_review_first:
     "La pratique espacee fonctionne mieux quand les cartes dues sont resolues avant les nouvelles.",
-  flashcard_reviews_due: "Revisions dues",
+  flashcard_reviews_due: "Reviser maintenant",
   flashcard_new_queue: "Nouvelles cartes",
   flashcard_mastered_cards: "Cartes apprises",
   flashcard_streak: "Serie d'etude",
@@ -3485,13 +3481,12 @@ translations.fr = {
   flashcard_learn_next: "Apprendre la prochaine carte",
   flashcard_strengthen_weak: "Reviser les cartes faibles",
   flashcard_session_loading: "Preparation de la file de revision...",
-  flashcard_due_subtitle:
-    "Celles-ci sont pretes maintenant. Les traiter d'abord renforce l'espacement et protege les souvenirs anciens.",
+  flashcard_due_subtitle: "Prevues pour aujourd'hui : revise-les d'abord.",
   flashcard_new_subtitle:
     "Seule la prochaine carte non vue est active. Les autres restent verrouillees pour eviter de surcharger l'apprenant.",
-  flashcard_weak_queue: "Cartes faibles",
+  flashcard_weak_queue: "Continue a pratiquer",
   flashcard_weak_subtitle:
-    "Cartes deja apprises mais pas encore dues, avec plus de risque de s'effacer sans renforcement.",
+    "Apprises, mais pas encore solides : quelques repetitions de plus.",
   flashcard_weak_reason_lapses: "Erreurs recentes",
   flashcard_weak_reason_mastery: "Maitrise faible",
   flashcard_weak_reason_slipping: "Continue de s'echapper",
@@ -4436,7 +4431,7 @@ translations.ja = {
     "安定したリズムで、期限のカードを復習し、少しずつ新しい内容を追加します。",
   flashcard_review_first:
     "間隔反復は、期限切れカードを新しいカードより先に片付けると効果的です。",
-  flashcard_reviews_due: "期限の復習",
+  flashcard_reviews_due: "今すぐ復習",
   flashcard_new_queue: "新しいカード",
   flashcard_mastered_cards: "学習済みカード",
   flashcard_streak: "学習連続日数",
@@ -4453,13 +4448,12 @@ translations.ja = {
   flashcard_learn_next: "次のカードを学習",
   flashcard_strengthen_weak: "弱いカードを復習",
   flashcard_session_loading: "復習キューを準備中...",
-  flashcard_due_subtitle:
-    "今すぐ復習できます。先に片付けると間隔が整い、記憶を守れます。",
+  flashcard_due_subtitle: "今日の予定です。まず復習しましょう。",
   flashcard_new_subtitle:
     "次の未学習カードだけが使えます。残りは学習者を圧倒しないようロックされます。",
-  flashcard_weak_queue: "弱いカード",
+  flashcard_weak_queue: "練習を続ける",
   flashcard_weak_subtitle:
-    "まだ期限ではない学習済みカードのうち、少し補強しないと忘れやすいものです。",
+    "学習済みですが、まだ定着していません。もう少し練習を。",
   flashcard_weak_reason_lapses: "最近のミス",
   flashcard_weak_reason_mastery: "習熟度が低い",
   flashcard_weak_reason_slipping: "何度も忘れる",
@@ -4827,13 +4821,15 @@ translations.pt = {
   ra_toast_no_audio_replay: "Não há áudio disponível para reproduzir.",
   ra_help_help: "Descreva sua meta ou contexto (isso orienta a experiência).",
   flashcard_session_title: "Fluxo de cartões",
+  flashcard_reviews_due: "Revisar agora",
   flashcard_new_queue: "Cartões novos",
   flashcard_mastered_cards: "Cartões aprendidos",
   flashcard_cards_done_today: "{count}/{target} cartões concluídos hoje",
   flashcard_strengthen_weak: "Revisar cartões fracos",
-  flashcard_due_subtitle:
-    "Esses cartões já estão prontos para revisão. Resolver isso primeiro fortalece o espaçamento e protege lembranças anteriores.",
-  flashcard_weak_queue: "Cartões fracos",
+  flashcard_due_subtitle: "Agendados para hoje: revise primeiro.",
+  flashcard_weak_queue: "Continue praticando",
+  flashcard_weak_subtitle:
+    "Aprendidos, mas ainda não dominados: pratique um pouco mais.",
   path_switcher_flashcards: "Cartões",
   teams_feed_copy_title: "Chave copiada",
   app_sign_out: "Encerrar sessão",
