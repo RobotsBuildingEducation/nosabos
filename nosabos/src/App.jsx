@@ -7015,11 +7015,11 @@ export default function App({ onBootReady } = {}) {
   // Celebrate when a quest course completes.
   //  • In a guided session: full flow — celebrate each course, advance via the
   //    Continue button, and land home with the cleared celebration at the end.
-  //  • Outside a session: still acknowledge finishing the flashcard daily
-  //    target (the one course without a completion modal of its own) so the
-  //    gamification shows up everywhere, not just inside the quest. Lessons and
-  //    Tutor lessons already have their own celebrations, so we don't double up;
-  //    the plate-cleared bonus is handled separately by the bonus effect.
+  //  • Outside a session: acknowledge finishing any course (a lesson, Tutor
+  //    lesson, or flashcards) so the gamification shows up everywhere, not just
+  //    inside the quest. The celebration queue waits for the surface's own
+  //    completion modal first, so it chains after it. The plate-cleared bonus
+  //    is handled separately by the bonus effect.
   const platePrevSnapshotRef = useRef(null);
   useEffect(() => {
     const prev = platePrevSnapshotRef.current;
@@ -7039,13 +7039,16 @@ export default function App({ onBootReady } = {}) {
     const next = getNextPlateCourse(plateSnapshot);
 
     if (!plateSessionActive) {
-      // Standalone acknowledgement — only for the flashcard course, and only
-      // when the plate isn't fully cleared (the bonus effect celebrates that).
-      if (justDone === "review" && next) {
+      // Standalone acknowledgement for any course finished outside a guided
+      // session (a lesson, a Tutor lesson, or flashcards). The celebration
+      // queue waits for the surface's own completion modal to close first, so
+      // it chains after it rather than overlapping. Skip when this completion
+      // clears the whole plate — the bonus effect celebrates that instead.
+      if (next) {
         playSound(completeSound);
         requestPlateCelebration({
           type: "course",
-          completed: "review",
+          completed: justDone,
           next: null,
         });
       }
