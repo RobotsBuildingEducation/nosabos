@@ -58,6 +58,7 @@ import { LANDING_PAGE_HI_STATIC } from "../translations/landingPageHiStatic";
 import { LANDING_PAGE_PT_STATIC } from "../translations/landingPagePtStatic";
 import { LANDING_PAGE_ZH_STATIC } from "../translations/landingPageZhStatic";
 import { syncDocumentLanguage } from "../utils/documentLanguage";
+import { rememberSecretKeySignIn } from "../utils/authSession";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
 
@@ -1959,6 +1960,9 @@ const LandingPage = ({ onAuthenticated }) => {
     async (key) => {
       const result = await auth(key);
       if (!result) throw new Error("Invalid key");
+      rememberSecretKeySignIn(
+        result?.user?.npub || localStorage.getItem("local_npub"),
+      );
       onAuthenticated?.();
     },
     [auth, onAuthenticated],

@@ -249,6 +249,10 @@ import {
 import { syncDocumentLanguage } from "./utils/documentLanguage";
 import { getGermanCopy } from "./utils/germanCopy";
 import {
+  clearSecretKeySignIn,
+  getSecretKeySignInNpub,
+} from "./utils/authSession";
+import {
   nativeAnchoredDrawerMotionProps,
   nativeModalMotionProps,
   nativeOverlayMotionProps,
@@ -3069,13 +3073,16 @@ export default function App({ onBootReady } = {}) {
         "[CONNECT_DID] Read local_nsec from localStorage:",
         localStorage.getItem("local_nsec")?.substring(0, 20) + "...",
       );
+      const secretKeySignInNpub = getSecretKeySignInNpub();
       let userDoc = null;
+      let foundExistingUserDoc = false;
 
       if (id) {
         console.log(
           "[CONNECT_DID] Found existing npub, loading user from DB...",
         );
         userDoc = await loadUserObjectFromDB(database, id);
+        foundExistingUserDoc = Boolean(userDoc);
         if (!userDoc) {
           const base = {
             local_npub: id,
@@ -3114,6 +3121,40 @@ export default function App({ onBootReady } = {}) {
         await setDoc(doc(database, "users", id), base, { merge: true });
         userDoc = await loadUserObjectFromDB(database, id);
       }
+
+      // Choosing "I already have a key" is an explicit returning-account
+      // action. If that npub already has an app user document, trust the sign-
+      // in flow and repair onboarding completion instead of routing back into
+      // account setup. New/external Nostr keys still onboard because they do
+      // not have an existing app user document.
+      if (
+        foundExistingUserDoc &&
+        secretKeySignInNpub &&
+        secretKeySignInNpub === id &&
+        !hasCompletedOnboarding(userDoc)
+      ) {
+        const completedAt =
+          userDoc?.onboarding?.completedAt || new Date().toISOString();
+        const onboarding = {
+          ...(userDoc?.onboarding || {}),
+          completed: true,
+          completedAt,
+        };
+
+        await setDoc(
+          doc(database, "users", id),
+          {
+            local_npub: id,
+            updatedAt: new Date().toISOString(),
+            onboarding,
+          },
+          { merge: true },
+        );
+        userDoc = { ...userDoc, onboarding };
+        rememberLocalOnboardingCompletion(id, completedAt);
+      }
+
+      if (secretKeySignInNpub) clearSecretKeySignIn();
 
       if (id && storedDisplayName && !userDoc?.displayName) {
         await setDoc(
