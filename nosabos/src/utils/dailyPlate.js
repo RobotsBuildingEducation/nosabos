@@ -25,9 +25,24 @@ export const DAILY_PLATE_TARGETS = {
   review: FLASHCARD_DAILY_TARGET,
   learn: 1, // skill-tree lessons completed
   speak: 1, // Tutor lessons completed
-  conversation: 1, // Conversation goals completed
+  conversation: 4, // fallback only — overridden per-day to 4-7 user turns
   phonics: 3, // Alphabet/phonics letters practiced
 };
+
+// The Conversation quest asks for a short back-and-forth. Instead of a flat
+// target we vary it 4-7 user turns per day (deterministic per day + language)
+// so the ask feels fresh. Counted per user turn — see Conversations'
+// awardTurnXp — and applied by getDailyPlateSnapshot below.
+export const CONVERSATION_TURN_TARGET_MIN = 4;
+export const CONVERSATION_TURN_TARGET_MAX = 7;
+
+export function getConversationTurnTarget(dayKey = "", langKey = "") {
+  const span = CONVERSATION_TURN_TARGET_MAX - CONVERSATION_TURN_TARGET_MIN + 1;
+  // hashString (defined below) is a hoisted function declaration, so calling
+  // it here is fine even though it appears later in the file.
+  const roll = hashString(`conversation|${langKey}|${dayKey}`) % span;
+  return CONVERSATION_TURN_TARGET_MIN + roll;
+}
 
 // Every quest course that can be elected onto a daily plate, in canonical
 // display order. (phonics is reserved for Phase 3 once the bootcamp is
@@ -104,7 +119,10 @@ export function getDailyPlateSnapshot(
     Array.isArray(kinds) && kinds.length ? kinds : DAILY_PLATE_COURSE_ORDER;
 
   const courses = activeKinds.map((kind) => {
-    const target = DAILY_PLATE_TARGETS[kind] || 1;
+    const target =
+      kind === "conversation"
+        ? getConversationTurnTarget(dayKey, langKey)
+        : DAILY_PLATE_TARGETS[kind] || 1;
     const count = readDayCount(
       progress,
       DAILY_PLATE_ACTIVITY_FIELDS[kind],

@@ -2532,9 +2532,9 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
     setGoalsCompleted((v) => v + 1);
     setCurrentGoal((prev) => ({ ...prev, completed: true }));
 
-    // Daily plate: a completed conversation goal counts toward the (upcoming)
-    // Conversation quest course. Counter accrues now; not yet a visible course.
-    void recordPlateActivity(npub, "conversation", targetLangRef.current);
+    // Note: the Conversation quest course is filled per user turn (see
+    // awardTurnXp), not on goal completion — counting here too would
+    // double-count the turn that completes the goal.
 
     try {
       await awardXp(npub, xpGain, targetLangRef.current);
@@ -2559,9 +2559,14 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
       evaluateGoalCompletion(userMessage, aiResponse);
     }
 
+    // Daily quest: the Conversation course asks for 4-7 user turns of practice
+    // (target is per-day; see getConversationTurnTarget), so each real user
+    // turn counts toward it.
+    if (userMessage && userMessage.trim()) {
+      void recordPlateActivity(npub, "conversation", targetLangRef.current);
+    }
+
     try {
-      // Untagged: free conversation doesn't fill the daily plate — the Tutor
-      // course counts completed Tutor lessons.
       await awardXp(npub, xpGain, targetLangRef.current);
       logEvent(analytics, "conversation_turn_xp", { xp: xpGain });
     } catch {}
