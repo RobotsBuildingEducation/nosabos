@@ -296,6 +296,49 @@ const rememberLocalOnboardingCompletion = (id, completedAt) => {
 const hasCompletedOnboarding = (data) =>
   isTrue(data?.onboarding?.completed) || isTrue(data?.onboardingCompleted);
 
+// Onboarding writes this full progress profile only when the final step is
+// submitted. In-progress answers live under onboarding.draft instead. This is
+// therefore durable, cross-origin evidence for accounts whose completion flag
+// was lost or was incorrectly reset by an older bootstrap path.
+const hasPersistedOnboardingProfile = (data) => {
+  const progress = data?.progress;
+  if (!progress || typeof progress !== "object") return false;
+
+  const hasString = (key) =>
+    typeof progress[key] === "string" && progress[key].trim().length > 0;
+  const hasVoiceSettings =
+    hasString("voice") ||
+    hasString("tutorVoice") ||
+    hasString("voicePersona") ||
+    hasString("tutorVoicePersona");
+
+  return (
+    hasString("level") &&
+    hasString("supportLang") &&
+    hasString("targetLang") &&
+    hasVoiceSettings
+  );
+};
+
+const getPersistedOnboardingCompletion = (data) => {
+  const completedAt = data?.onboarding?.completedAt;
+  if (
+    (typeof completedAt === "string" && completedAt.trim()) ||
+    (completedAt && typeof completedAt === "object")
+  ) {
+    return { completed: true, completedAt };
+  }
+
+  if (hasPersistedOnboardingProfile(data)) {
+    return {
+      completed: true,
+      completedAt: data?.updatedAt || null,
+    };
+  }
+
+  return null;
+};
+
 const CEFR_LEVELS = new Set(["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"]);
 const ONBOARDING_TOTAL_STEPS = 1;
 const TEST_UNLOCK_NSEC =
@@ -648,8 +691,10 @@ async function ensureOnboardingField(db, id, data) {
   const hasStep =
     hasNested && Number.isFinite(Number(data.onboarding?.currentStep));
   const localCompletion = getLocalOnboardingCompletion(id);
+  const persistedCompletion = getPersistedOnboardingCompletion(data);
+  const completionRecovery = localCompletion || persistedCompletion;
   const shouldRestoreCompletion =
-    Boolean(localCompletion) && !hasCompletedOnboarding(data);
+    Boolean(completionRecovery) && !hasCompletedOnboarding(data);
 
   const shouldSetDefaults = !hasCompleted && !hasLegacyTopLevel;
   const shouldSetStep = !hasStep;
@@ -662,7 +707,7 @@ async function ensureOnboardingField(db, id, data) {
     if (shouldRestoreCompletion) {
       onboardingPayload.completed = true;
       onboardingPayload.completedAt =
-        onboardingPayload.completedAt || localCompletion.completedAt;
+        onboardingPayload.completedAt || completionRecovery.completedAt;
     } else if (shouldSetDefaults && !hasCompleted) {
       // The doc has no onboarding flag. Treat it as a pre-onboarding "legacy"
       // account (already onboarded) ONLY when there's real evidence of prior
@@ -671,6 +716,7 @@ async function ensureOnboardingField(db, id, data) {
       // onboarding whenever any other write created the user doc before
       // connectDID got to set completed=false.
       const looksUsed = Boolean(
+        hasPersistedOnboardingProfile(data) ||
         Number(data?.xp) > 0 ||
         Number(data?.progress?.xp) > 0 ||
         Number(data?.streak) > 0 ||
@@ -697,7 +743,9 @@ async function ensureOnboardingField(db, id, data) {
 
     await setDoc(
       doc(db, "users", id),
-      { onboarding: onboardingPayload },
+      // Including the document's npub also lets Firestore repair legacy user
+      // documents that predate the local_npub field required by current rules.
+      { local_npub: id, onboarding: onboardingPayload },
       { merge: true },
     );
     const snap = await getDoc(doc(db, "users", id));
