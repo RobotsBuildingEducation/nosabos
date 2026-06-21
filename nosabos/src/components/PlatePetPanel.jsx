@@ -3,8 +3,29 @@
 // Standalone copy of the daily-goal pet panel for the Daily Plate home —
 // kept independent of the modal's component file on purpose.
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Badge, Box, HStack, Text, VStack } from "@chakra-ui/react";
-import { FiHeart, FiTrendingDown, FiTrendingUp } from "react-icons/fi";
+import {
+  Badge,
+  Box,
+  Button,
+  HStack,
+  IconButton,
+  Input,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+  Text,
+  VStack,
+  useDisclosure,
+} from "@chakra-ui/react";
+import {
+  FiEdit2,
+  FiHeart,
+  FiTrendingDown,
+  FiTrendingUp,
+} from "react-icons/fi";
 import { MdShowChart } from "react-icons/md";
 import {
   WaveBar,
@@ -28,9 +49,36 @@ const SCALE = 3;
 const T = TILE * SCALE;
 const SCENE_Y_OFFSET = 4;
 const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
+const APP_SURFACE_MUTED = "var(--app-surface-muted)";
 const APP_BORDER = "var(--app-border)";
+const APP_BORDER_STRONG = "var(--app-border-strong)";
 const APP_TEXT_PRIMARY = "var(--app-text-primary)";
 const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
+
+const NAME_MAX_LENGTH = 24;
+
+// Localized copy for the "rename your companion" modal. Kept separate from
+// getCopy() since only this panel surfaces the edit affordance.
+const NAME_MODAL_COPY = {
+  en: { edit: "Name your companion", save: "Save", cancel: "Cancel" },
+  es: { edit: "Nombra a tu compañero", save: "Guardar", cancel: "Cancelar" },
+  pt: {
+    edit: "Dê um nome ao seu companheiro",
+    save: "Salvar",
+    cancel: "Cancelar",
+  },
+  fr: { edit: "Nomme ton compagnon", save: "Enregistrer", cancel: "Annuler" },
+  it: { edit: "Dai un nome al compagno", save: "Salva", cancel: "Annulla" },
+  de: { edit: "Benenne deinen Begleiter", save: "Speichern", cancel: "Abbrechen" },
+  ja: { edit: "相棒に名前をつけよう", save: "保存", cancel: "キャンセル" },
+  zh: { edit: "给你的伙伴起名字", save: "保存", cancel: "取消" },
+  hi: { edit: "अपने साथी का नाम रखें", save: "सहेजें", cancel: "रद्द करें" },
+  ar: { edit: "سمّي صاحبك", save: "حفظ", cancel: "إلغاء" },
+};
+
+function getNameModalCopy(lang) {
+  return NAME_MODAL_COPY[lang] || NAME_MODAL_COPY.en;
+}
 
 const DOG = {
   fur: "#d97706",
@@ -788,6 +836,10 @@ export default function PlatePetPanel({
   // Today's XP, shown under the health bar when provided
   dailyXp = null,
   dailyGoalXp = 0,
+  // Custom companion name; falls back to the localized default when empty.
+  petName = "",
+  // When provided, a pencil button next to the title opens a rename modal.
+  onRenamePet = null,
 }) {
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
@@ -799,6 +851,26 @@ export default function PlatePetPanel({
     [copy, isLightTheme, safeHealth],
   );
   const isCelebration = variant === "celebration";
+
+  const trimmedName = typeof petName === "string" ? petName.trim() : "";
+  const displayTitle = trimmedName || copy.title;
+  const canEdit = typeof onRenamePet === "function" && !isCelebration;
+  const nameModalCopy = getNameModalCopy(resolvedLang);
+  const nameModal = useDisclosure();
+  const nameInputRef = useRef(null);
+  const [draftName, setDraftName] = useState(trimmedName);
+
+  const openNameModal = () => {
+    setDraftName(trimmedName);
+    nameModal.onOpen();
+  };
+
+  const submitName = () => {
+    if (typeof onRenamePet === "function") {
+      onRenamePet(draftName.trim().slice(0, NAME_MAX_LENGTH));
+    }
+    nameModal.onClose();
+  };
   const rewardColor = isLightTheme ? "#48765f" : "green.200";
   const penaltyColor = isLightTheme ? "#a06a3b" : "orange.200";
   const previewCardBg = isLightTheme ? APP_SURFACE_ELEVATED : "blackAlpha.220";
@@ -814,6 +886,7 @@ export default function PlatePetPanel({
       : "transparent";
 
   return (
+    <>
     <Box
       bg={panelBg}
       border="1px solid"
@@ -856,14 +929,32 @@ export default function PlatePetPanel({
             minW={0}
           >
             <VStack align="stretch" spacing={{ base: 0.5, md: 1 }}>
-              <Text
-                fontSize={{ base: "lg", md: "xl" }}
-                fontWeight="bold"
-                lineHeight="1.1"
-                color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
-              >
-                {copy.title}
-              </Text>
+              <HStack spacing={1.5} align="center">
+                {canEdit ? (
+                  <IconButton
+                    aria-label={nameModalCopy.edit}
+                    icon={<FiEdit2 />}
+                    size="xs"
+                    variant="ghost"
+                    flexShrink={0}
+                    color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
+                    _hover={{
+                      bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.200",
+                    }}
+                    onClick={openNameModal}
+                  />
+                ) : null}
+                <Text
+                  fontSize={{ base: "lg", md: "xl" }}
+                  fontWeight="bold"
+                  lineHeight="1.1"
+                  color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
+                  noOfLines={2}
+                  wordBreak="break-word"
+                >
+                  {displayTitle}
+                </Text>
+              </HStack>
               {!isCelebration ? (
                 <Text
                   fontSize={{ base: "xs", md: "sm" }}
@@ -1086,5 +1177,74 @@ export default function PlatePetPanel({
         ) : null}
       </VStack>
     </Box>
+
+    {canEdit ? (
+      <Modal
+        isOpen={nameModal.isOpen}
+        onClose={nameModal.onClose}
+        isCentered
+        size="sm"
+        initialFocusRef={nameInputRef}
+        motionPreset="scale"
+      >
+        <ModalOverlay bg="var(--app-overlay)" />
+        <ModalContent
+          bg={isLightTheme ? APP_SURFACE_ELEVATED : "gray.900"}
+          color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
+          border="1px solid"
+          borderColor={isLightTheme ? APP_BORDER : "gray.700"}
+          rounded="2xl"
+          mx={4}
+        >
+          <ModalHeader fontSize="md" fontWeight="bold" pb={2}>
+            {nameModalCopy.edit}
+          </ModalHeader>
+          <ModalBody>
+            <Input
+              ref={nameInputRef}
+              value={draftName}
+              onChange={(e) =>
+                setDraftName(e.target.value.slice(0, NAME_MAX_LENGTH))
+              }
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  submitName();
+                }
+              }}
+              maxLength={NAME_MAX_LENGTH}
+              placeholder={copy.title}
+              bg={isLightTheme ? APP_SURFACE_ELEVATED : "gray.800"}
+              color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
+              borderColor={isLightTheme ? APP_BORDER_STRONG : undefined}
+              rounded="md"
+            />
+          </ModalBody>
+          <ModalFooter gap={3}>
+            <Button
+              variant="ghost"
+              color={isLightTheme ? APP_TEXT_SECONDARY : "gray.300"}
+              _hover={{
+                bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.100",
+              }}
+              onClick={nameModal.onClose}
+            >
+              {nameModalCopy.cancel}
+            </Button>
+            <Button
+              colorScheme={isLightTheme ? undefined : "teal"}
+              bg={isLightTheme ? "#3f9f9b" : undefined}
+              color={isLightTheme ? "white" : undefined}
+              _hover={isLightTheme ? { bg: "#398f8b" } : undefined}
+              boxShadow="0px 4px 0px teal"
+              onClick={submitName}
+            >
+              {nameModalCopy.save}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    ) : null}
+    </>
   );
 }
