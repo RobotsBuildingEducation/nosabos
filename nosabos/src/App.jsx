@@ -5481,6 +5481,46 @@ export default function App({ onBootReady } = {}) {
     ],
   );
 
+  // Rename the daily-goal companion. Empty string clears the custom name and
+  // falls back to the localized default ("Your companion").
+  const handleRenamePet = useCallback(
+    (rawName) => {
+      const name = String(rawName || "")
+        .trim()
+        .slice(0, 24);
+
+      // Optimistic local update so the quest panel, goal modal, and
+      // celebration all reflect the new name immediately.
+      patchUser?.({ dailyGoalPetName: name });
+
+      if (!activeNpub) return;
+
+      void setDoc(
+        doc(database, "users", activeNpub),
+        {
+          dailyGoalPetName: name,
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true },
+      ).catch((error) => {
+        console.error("Failed to save companion name:", error);
+        toast({
+          status: "error",
+          title: uiCopy(appLanguage, {
+            en: "Save failed",
+            es: "Error al guardar",
+            it: "Salvataggio non riuscito",
+            fr: "Echec de l'enregistrement",
+            ja: "保存に失敗しました",
+            zh: "保存失败",
+          }),
+          description: String(error?.message || error),
+        });
+      });
+    },
+    [activeNpub, appLanguage, patchUser, toast],
+  );
+
   const handleTimerModalClose = useCallback(() => {
     const shouldOpenProficiency = shouldShowProficiencyAfterTimer;
 
@@ -5877,6 +5917,8 @@ export default function App({ onBootReady } = {}) {
         patch.dailyGoalXp = data.dailyGoalXp;
       if (typeof data?.dailyGoalPetHealth === "number")
         patch.dailyGoalPetHealth = data.dailyGoalPetHealth;
+      if (typeof data?.dailyGoalPetName === "string")
+        patch.dailyGoalPetName = data.dailyGoalPetName;
       if (typeof data?.dailyGoalPetLastDelta === "number")
         patch.dailyGoalPetLastDelta = data.dailyGoalPetLastDelta;
       if (typeof data?.dailyGoalPetLastOutcome === "string")
@@ -7762,6 +7804,7 @@ export default function App({ onBootReady } = {}) {
         defaultGoal={dailyGoalTarget > 0 ? dailyGoalTarget : 100}
         t={t}
         petHealth={dailyGoalPetHealth}
+        petName={user?.dailyGoalPetName || ""}
         petLastOutcome={user?.dailyGoalPetLastOutcome || null}
         petLastDelta={user?.dailyGoalPetLastDelta ?? null}
         completedGoalDates={dailyGoalCompletedDates}
@@ -7875,6 +7918,8 @@ export default function App({ onBootReady } = {}) {
               questKinds={electedQuestKinds}
               ctaDisabled={showSkillTreeTutorial}
               petHealth={dailyGoalPetHealth}
+              petName={user?.dailyGoalPetName || ""}
+              onRenamePet={handleRenamePet}
               completedGoalDates={dailyGoalCompletedDates}
               dailyXpHistory={dailyGoalXpHistory}
             />
@@ -8373,6 +8418,7 @@ export default function App({ onBootReady } = {}) {
               <DailyGoalPetPanel
                 lang={appLanguage}
                 health={celebrationPetHealth}
+                petName={user?.dailyGoalPetName || ""}
                 lastOutcome="achieved"
                 lastDelta={celebrationPetDelta}
                 variant="celebration"

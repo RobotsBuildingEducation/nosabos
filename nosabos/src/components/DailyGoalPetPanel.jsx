@@ -770,12 +770,17 @@ export default function DailyGoalPetPanel({
   health = DAILY_GOAL_PET_DEFAULT_HEALTH,
   variant = "setup",
   showPreview = true,
+  // Custom companion name; falls back to the localized default ("Your
+  // companion") when empty. Edited from the daily-quest pet panel.
+  petName = "",
 }) {
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
   const resolvedLang = normalizeSupportLanguage(lang, DEFAULT_SUPPORT_LANGUAGE);
   const copy = useMemo(() => getCopy(resolvedLang), [resolvedLang]);
   const safeHealth = clampDailyGoalPetHealth(health);
+  const displayTitle =
+    (typeof petName === "string" && petName.trim()) || copy.title;
   const stage = useMemo(
     () => getPetStage(safeHealth, copy, isLightTheme),
     [copy, isLightTheme, safeHealth],
@@ -843,8 +848,10 @@ export default function DailyGoalPetPanel({
                 fontWeight="bold"
                 lineHeight="1.1"
                 color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
+                noOfLines={2}
+                wordBreak="break-word"
               >
-                {copy.title}
+                {displayTitle}
               </Text>
               {!isCelebration ? (
                 <Text
