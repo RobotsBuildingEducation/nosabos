@@ -2264,13 +2264,9 @@ export default function App({ onBootReady } = {}) {
     user?.progress?.targetLang,
     DEFAULT_TARGET_LANGUAGE,
   );
-  // localStorage holds the user's current choice (set on the landing page, on
-  // /links, and on every in-app language change), so it wins. Fall back to the
-  // saved doc value only when there's no stored choice (e.g. a fresh device).
   const resolvedSupportLang =
-    normalizeSupportLang(storedUiLang) ||
     normalizeSupportLang(user?.progress?.supportLang) ||
-    DEFAULT_SUPPORT_LANGUAGE;
+    normalizeSupportLanguage(storedUiLang, DEFAULT_SUPPORT_LANGUAGE);
   const resolvedLevel = migrateToCEFRLevel(user?.progress?.level) || "Pre-A1";
 
   useEffect(() => {
@@ -3042,7 +3038,6 @@ export default function App({ onBootReady } = {}) {
 
       if (userDoc) {
         const uiLang =
-          normalizeSupportLang(localStorage.getItem("appLanguage")) ||
           normalizeSupportLang(userDoc?.progress?.supportLang) ||
           normalizeSupportLanguage(
             userDoc.appLanguage,
