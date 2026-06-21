@@ -5,6 +5,11 @@ import {
   HStack,
   Text,
   Button,
+  Accordion,
+  AccordionItem,
+  AccordionButton,
+  AccordionPanel,
+  AccordionIcon,
 } from "@chakra-ui/react";
 import { keyframes } from "@emotion/react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -619,7 +624,7 @@ function DashboardStat({ label, value }) {
   );
 }
 
-function ActivityHeatmap({ activityMap, appLanguage }) {
+function ActivityHeatmap({ activityMap, appLanguage, embedded = false }) {
   const weeks = useMemo(
     () => buildHeatmapWeeks(activityMap, appLanguage),
     [activityMap, appLanguage],
@@ -701,26 +706,28 @@ function ActivityHeatmap({ activityMap, appLanguage }) {
 
   return (
     <Box
-      p={{ base: 3, md: 4 }}
-      borderRadius="2xl"
-      bg={APP_SURFACE_ELEVATED}
-      border="1px solid"
-      borderColor={APP_BORDER}
-      boxShadow={APP_SHADOW}
+      p={embedded ? 0 : { base: 3, md: 4 }}
+      borderRadius={embedded ? "0" : "2xl"}
+      bg={embedded ? "transparent" : APP_SURFACE_ELEVATED}
+      border={embedded ? "none" : "1px solid"}
+      borderColor={embedded ? "transparent" : APP_BORDER}
+      boxShadow={embedded ? "none" : APP_SHADOW}
     >
-      <HStack justify="space-between" align="baseline" mb={3} flexWrap="wrap">
-        <Text
-          fontSize="xs"
-          color={APP_TEXT_MUTED}
-          textTransform="uppercase"
-          letterSpacing="0.08em"
-        >
-          {getTranslation("flashcard_activity")}
-        </Text>
-        <Text fontSize="xs" color={APP_TEXT_SECONDARY}>
-          {getTranslation("flashcard_activity_subtitle")}
-        </Text>
-      </HStack>
+      {embedded ? null : (
+        <HStack justify="space-between" align="baseline" mb={3} flexWrap="wrap">
+          <Text
+            fontSize="xs"
+            color={APP_TEXT_MUTED}
+            textTransform="uppercase"
+            letterSpacing="0.08em"
+          >
+            {getTranslation("flashcard_activity")}
+          </Text>
+          <Text fontSize="xs" color={APP_TEXT_SECONDARY}>
+            {getTranslation("flashcard_activity_subtitle")}
+          </Text>
+        </HStack>
+      )}
 
       <Box
         overflowX="auto"
@@ -1093,10 +1100,6 @@ export default function FlashcardSkillTree({
     ? flashcardData.findIndex((card) => card.id === firstNewCard.id)
     : -1;
 
-  const weakestReviewCard = useMemo(() => {
-    return weakCards[0] || null;
-  }, [weakCards]);
-
   const fallbackActivityMap = useMemo(
     () => buildFallbackActivityMap(userProgress.flashcards || EMPTY_PROGRESS),
     [userProgress.flashcards],
@@ -1268,25 +1271,6 @@ export default function FlashcardSkillTree({
     closeFlashcardPractice();
   }, [closeFlashcardPractice]);
 
-  const handleLaunchDueSession = useCallback(() => {
-    if (dueCards[0]) {
-      openPracticeCard(dueCards[0], "review", "due");
-      return;
-    }
-
-    if (weakestReviewCard) {
-      openPracticeCard(weakestReviewCard, "review", "weak");
-    }
-  }, [dueCards, openPracticeCard, weakestReviewCard]);
-
-  const handleLaunchNewSession = useCallback(() => {
-    openPracticeCard(firstNewCard, "learn", "active");
-  }, [firstNewCard, openPracticeCard]);
-
-  const handleLaunchWeakCard = useCallback(() => {
-    openPracticeCard(weakestReviewCard, "review", "weak");
-  }, [openPracticeCard, weakestReviewCard]);
-
   const newCardsSection = (
     <DeckSection
       title={getTranslation("flashcard_new_queue")}
@@ -1317,6 +1301,20 @@ export default function FlashcardSkillTree({
       getCardStatus={getCardStatus}
       resolveCardStatus={() => "due"}
       handleCardClick={(card) => openPracticeCard(card, "review", "due")}
+      supportLang={supportLang}
+      skipInitialAnimation={!isReady}
+    />
+  );
+
+  const weakCardsSection = (
+    <DeckSection
+      title={getTranslation("flashcard_weak_queue")}
+      cards={weakCards}
+      reviewSnapshotMap={reviewSnapshotMap}
+      getCardStatus={getCardStatus}
+      resolveCardStatus={() => "weak"}
+      handleCardClick={(card) => openPracticeCard(card, "review", "weak")}
+      getCardNote={(_card, snapshot) => getWeakCardNote(snapshot)}
       supportLang={supportLang}
       skipInitialAnimation={!isReady}
     />
@@ -1358,11 +1356,6 @@ export default function FlashcardSkillTree({
               />
             </HStack>
 
-            <ActivityHeatmap
-              activityMap={dailyActivityMap}
-              appLanguage={appLanguage}
-            />
-
             <Box
               p={4}
               borderRadius="2xl"
@@ -1392,48 +1385,48 @@ export default function FlashcardSkillTree({
               />
             </Box>
 
-            <HStack spacing={3} flexWrap="wrap" align="stretch">
-              {dueCards.length > 0 ? (
-                <Button
-                  size="lg"
-                  colorScheme="teal"
-                  onClick={handleLaunchDueSession}
-                  minW={{ base: "100%", sm: "220px" }}
-                  flex={{ base: "1 1 100%", lg: "1 1 0" }}
-                >
-                  {getTranslation("flashcard_start_reviews")}
-                </Button>
-              ) : null}
-
-              {weakestReviewCard ? (
-                <Button
-                  size="lg"
-                  variant="ghost"
-                  color={APP_TEXT_PRIMARY}
-                  border="1px solid"
-                  borderColor={APP_BORDER_STRONG}
+            <Accordion allowToggle>
+              <AccordionItem
+                border="1px solid"
+                borderColor={APP_BORDER}
+                borderRadius="2xl"
+                bg={APP_SURFACE_ELEVATED}
+                boxShadow={APP_SHADOW}
+              >
+                <AccordionButton
+                  px={4}
+                  py={3}
                   _hover={{ bg: APP_SURFACE_MUTED }}
-                  onClick={handleLaunchWeakCard}
-                  minW={{ base: "100%", sm: "220px" }}
-                  flex={{ base: "1 1 100%", lg: "1 1 0" }}
+                  sx={{
+                    "&:focus, &:focus-visible": {
+                      outline: "none",
+                      boxShadow: "none",
+                    },
+                  }}
                 >
-                  {getTranslation("flashcard_strengthen_weak")}
-                </Button>
-              ) : null}
-
-              {firstNewCard ? (
-                <Button
-                  size="lg"
-                  colorScheme="teal"
-                  variant={dueCards.length > 0 ? "outline" : "solid"}
-                  onClick={handleLaunchNewSession}
-                  minW={{ base: "100%", sm: "220px" }}
-                  flex={{ base: "1 1 100%", lg: "1 1 0" }}
-                >
-                  {getTranslation("flashcard_learn_next")}
-                </Button>
-              ) : null}
-            </HStack>
+                  <Text
+                    fontSize="xs"
+                    color={APP_TEXT_MUTED}
+                    textTransform="uppercase"
+                    letterSpacing="0.08em"
+                    fontWeight="bold"
+                  >
+                    {getTranslation("flashcard_activity")}
+                  </Text>
+                  <AccordionIcon color={APP_TEXT_MUTED} />
+                </AccordionButton>
+                <AccordionPanel px={4} pb={4} pt={2}>
+                  <Text fontSize="xs" color={APP_TEXT_SECONDARY} mb={3}>
+                    {getTranslation("flashcard_activity_subtitle")}
+                  </Text>
+                  <ActivityHeatmap
+                    activityMap={dailyActivityMap}
+                    appLanguage={appLanguage}
+                    embedded
+                  />
+                </AccordionPanel>
+              </AccordionItem>
+            </Accordion>
           </VStack>
         </Box>
 
@@ -1448,26 +1441,16 @@ export default function FlashcardSkillTree({
         {dueCards.length > 0 ? (
           <>
             {dueCardsSection}
+            {weakCardsSection}
             {newCardsSection}
           </>
         ) : (
           <>
+            {weakCardsSection}
             {newCardsSection}
             {dueCardsSection}
           </>
         )}
-
-        <DeckSection
-          title={getTranslation("flashcard_weak_queue")}
-          cards={weakCards}
-          reviewSnapshotMap={reviewSnapshotMap}
-          getCardStatus={getCardStatus}
-          resolveCardStatus={() => "weak"}
-          handleCardClick={(card) => openPracticeCard(card, "review", "weak")}
-          getCardNote={(_card, snapshot) => getWeakCardNote(snapshot)}
-          supportLang={supportLang}
-          skipInitialAnimation={!isReady}
-        />
 
         {learningCards.length > 0 || remainingScheduledCards.length > 0 ? (
           <Box textAlign="center" py={1}>
@@ -1575,6 +1558,8 @@ export default function FlashcardSkillTree({
         supportLang={supportLang}
         pauseMs={pauseMs}
         languageXp={languageXp}
+        dailyReviewed={reviewedTodayCount}
+        dailyTarget={FLASHCARD_DAILY_TARGET}
       />
     </Box>
   );
@@ -1587,6 +1572,8 @@ function FlashcardPracticeGate({
   supportLang,
   pauseMs,
   languageXp,
+  dailyReviewed,
+  dailyTarget,
 }) {
   const isOpen = useModalStore((s) => s.flashcardPracticeOpen);
   const card = useModalStore((s) => s.practiceCard);
@@ -1601,6 +1588,8 @@ function FlashcardPracticeGate({
       supportLang={supportLang}
       pauseMs={pauseMs}
       languageXp={languageXp}
+      dailyReviewed={dailyReviewed}
+      dailyTarget={dailyTarget}
     />
   );
 }

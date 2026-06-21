@@ -603,17 +603,19 @@ class SoundManager {
     },
 
     // Main action submission - satisfying confirmation (replaces submitaction.mp3)
+    // Clean pluck (no sustain, short release) so the final note doesn't ring on
+    // as a lingering hum.
     submitAction: () => {
       const synth = this.createDisposablePolySynth(
         {
           type: "sine",
-          attack: 0.01,
-          decay: 0.12,
-          sustain: 0.05,
-          release: 0.15,
+          attack: 0.005,
+          decay: 0.09,
+          sustain: 0,
+          release: 0.08,
         },
         VOL.NORMAL,
-        400,
+        350,
       );
       const now = Tone.now();
       synth.triggerAttackRelease("C5", "32n", now);
@@ -781,6 +783,94 @@ class SoundManager {
       synth.triggerAttackRelease("C5", "4n", now + 0.24);
       synth.triggerAttackRelease("E5", "2n", now + 0.4);
       synth.triggerAttackRelease("G5", "2n", now + 0.48);
+    },
+
+    // Quest objective complete - soft, bubbly bloop with a warm bass thump.
+    // Round sine waves in a low/mid register read bubbly + bassy, not sharp.
+    questComplete: () => {
+      const bubble = this.createDisposablePolySynth(
+        {
+          type: "sine",
+          attack: 0.012,
+          decay: 0.14,
+          sustain: 0,
+          release: 0.2,
+        },
+        VOL.PROMINENT,
+        1000,
+      );
+      const bass = this.createDisposablePolySynth(
+        {
+          type: "sine",
+          attack: 0.015,
+          decay: 0.25,
+          sustain: 0.08,
+          release: 0.45,
+        },
+        VOL.NORMAL,
+        1000,
+      );
+      const now = Tone.now();
+      // Warm low body underneath.
+      bass.triggerAttackRelease("D2", "8n", now);
+      bass.triggerAttackRelease("A2", "8n", now + 0.14);
+      // Rounded bubbly pops, gentle rise capped in the mid register.
+      bubble.triggerAttackRelease("D4", "16n", now + 0.02);
+      bubble.triggerAttackRelease("F#4", "16n", now + 0.1);
+      bubble.triggerAttackRelease("A4", "16n", now + 0.18);
+      bubble.triggerAttackRelease("D5", "8n", now + 0.26);
+    },
+
+    // Whole daily quest cleared - warm, bassy grand finale. Round sine fanfare
+    // over punchy bass thumps (no sustained hum) with a quick sparkle tail, so
+    // it resolves in ~1s instead of dragging on.
+    questCleared: () => {
+      const lead = this.createDisposablePolySynth(
+        {
+          type: "sine",
+          attack: 0.01,
+          decay: 0.2,
+          sustain: 0.08,
+          release: 0.28,
+        },
+        VOL.LOUD,
+        1500,
+      );
+      const bass = this.createDisposablePolySynth(
+        {
+          type: "sine",
+          attack: 0.01,
+          decay: 0.18,
+          sustain: 0,
+          release: 0.22,
+        },
+        VOL.PROMINENT,
+        1500,
+      );
+      const shimmer = this.createDisposablePolySynth(
+        {
+          type: "sine",
+          attack: 0.004,
+          decay: 0.1,
+          sustain: 0,
+          release: 0.15,
+        },
+        VOL.SOFT,
+        1500,
+      );
+      const now = Tone.now();
+      // Punchy bass thumps for body (short, no lingering hum).
+      bass.triggerAttackRelease("G2", "8n", now);
+      bass.triggerAttackRelease("D2", "8n", now + 0.14);
+      // Warm rising fanfare into a low/mid G-major chord (short, not held).
+      lead.triggerAttackRelease("G3", "16n", now);
+      lead.triggerAttackRelease("B3", "16n", now + 0.09);
+      lead.triggerAttackRelease("D4", "16n", now + 0.18);
+      lead.triggerAttackRelease(["G4", "B4", "D5"], "4n", now + 0.28);
+      // Quick soft sparkle tail.
+      ["G5", "B5", "D6"].forEach((note, i) => {
+        shimmer.triggerAttackRelease(note, "32n", now + 0.44 + i * 0.06);
+      });
     },
 
     // Lesson completion - cute bubbly celebration with soft toy-like chimes

@@ -1,6 +1,11 @@
+// src/components/PlatePetPanel.jsx
+//
+// Standalone copy of the daily-goal pet panel for the Daily Plate home —
+// kept independent of the modal's component file on purpose.
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Badge, Box, HStack, Text, VStack } from "@chakra-ui/react";
 import { FiHeart, FiTrendingDown, FiTrendingUp } from "react-icons/fi";
+import { MdShowChart } from "react-icons/md";
 import {
   WaveBar,
   WAVE_BAR_PROGRESS_END,
@@ -72,6 +77,7 @@ function getCopy(lang) {
     return {
       title: "صاحبك",
       subtitle: "حافظ على صحته لما تحقق هدف XP اليومي.",
+      dailyXp: "XP اليومية",
       health: "الصحة",
       happy: "مبسوط",
       healthy: "صحي",
@@ -98,6 +104,7 @@ function getCopy(lang) {
     return {
       title: "आपका साथी",
       subtitle: "अपना रोज़ का XP लक्ष्य पूरा करके इसकी सेहत अच्छी रखें।",
+      dailyXp: "दैनिक XP",
       health: "सेहत",
       happy: "खुश",
       healthy: "स्वस्थ",
@@ -124,6 +131,7 @@ function getCopy(lang) {
     return {
       title: "你的伙伴",
       subtitle: "完成每日 XP 目标，照顾它的健康。",
+      dailyXp: "每日 XP",
       health: "健康",
       happy: "开心",
       healthy: "健康",
@@ -149,6 +157,7 @@ function getCopy(lang) {
     return {
       title: "あなたの相棒",
       subtitle: "毎日のXP目標を達成して元気を保ちましょう。",
+      dailyXp: "今日のXP",
       health: "健康",
       happy: "ごきげん",
       healthy: "元気",
@@ -175,6 +184,7 @@ function getCopy(lang) {
     return {
       title: "Ton compagnon",
       subtitle: "Garde sa sante elevee en atteignant ton objectif XP quotidien.",
+      dailyXp: "XP du jour",
       health: "Sante",
       happy: "Heureux",
       healthy: "En forme",
@@ -201,6 +211,7 @@ function getCopy(lang) {
     return {
       title: "Il tuo compagno",
       subtitle: "Mantieni alta la sua salute raggiungendo il tuo obiettivo XP giornaliero.",
+      dailyXp: "XP giornaliera",
       health: "Salute",
       happy: "Felice",
       healthy: "In salute",
@@ -227,6 +238,7 @@ function getCopy(lang) {
     return {
       title: "Dein Begleiter",
       subtitle: "Halte ihn gesund, indem du dein tägliches XP-Ziel erreichst.",
+      dailyXp: "Tägliche XP",
       health: "Gesundheit",
       happy: "Glücklich",
       healthy: "Gesund",
@@ -253,6 +265,7 @@ function getCopy(lang) {
     return {
       title: "Seu companheiro",
       subtitle: "Cuide da saude dele alcancando sua meta diaria de XP.",
+      dailyXp: "XP diária",
       health: "Saude",
       happy: "Feliz",
       healthy: "Saudavel",
@@ -279,6 +292,7 @@ function getCopy(lang) {
     return {
       title: "Tu compañero",
       subtitle: "Cuida su salud cumpliendo tu meta diaria de XP.",
+      dailyXp: "XP diaria",
       health: "Salud",
       happy: "Feliz",
       healthy: "Saludable",
@@ -304,6 +318,7 @@ function getCopy(lang) {
   return {
     title: "Your companion",
     subtitle: "Keep its health up by hitting your daily XP goal.",
+    dailyXp: "Daily XP",
     health: "Health",
     happy: "Happy",
     healthy: "Healthy",
@@ -765,11 +780,14 @@ function DogCanvas({ stage, isLightTheme, isCelebration = false }) {
   );
 }
 
-export default function DailyGoalPetPanel({
+export default function PlatePetPanel({
   lang = "en",
   health = DAILY_GOAL_PET_DEFAULT_HEALTH,
   variant = "setup",
   showPreview = true,
+  // Today's XP, shown under the health bar when provided
+  dailyXp = null,
+  dailyGoalXp = 0,
 }) {
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
@@ -867,7 +885,7 @@ export default function DailyGoalPetPanel({
                     boxSize={{ base: 3.5, md: 4 }}
                   />
                   <Text
-                    fontSize={{ base: "xs", md: "sm" }}
+                    fontSize="xs"
                     fontWeight="semibold"
                     color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
                   >
@@ -875,7 +893,7 @@ export default function DailyGoalPetPanel({
                   </Text>
                 </HStack>
                 <Text
-                  fontSize={{ base: "lg", md: "md" }}
+                  fontSize="xs"
                   fontWeight="bold"
                   lineHeight="1"
                   color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
@@ -890,9 +908,6 @@ export default function DailyGoalPetPanel({
                   height={14}
                   start={WAVE_BAR_PROGRESS_START}
                   end={WAVE_BAR_PROGRESS_END}
-                  // Health is a static state here (e.g. full at onboarding) — only
-                  // animate the fill when a celebration is showing a health gain.
-                  animateFill={isCelebration}
                   bg={
                     isLightTheme
                       ? "rgba(255, 255, 255, 0.58)"
@@ -905,6 +920,77 @@ export default function DailyGoalPetPanel({
                   }
                 />
               </Box>
+
+              {/* Today's XP — a second bar mirroring Health ("XP" is
+                  universal, so no per-language copy needed) */}
+              {dailyXp != null
+                ? (() => {
+                    const earned = Math.max(
+                      0,
+                      Math.round(Number(dailyXp) || 0),
+                    );
+                    const goal = Math.max(
+                      0,
+                      Math.round(Number(dailyGoalXp) || 0),
+                    );
+                    // Bar fill is clamped to 100%, but the readout shows the
+                    // true percentage (can exceed 100%).
+                    const rawPercent =
+                      goal > 0 ? Math.round((earned / goal) * 100) : 0;
+                    const pct = Math.min(100, rawPercent);
+                    return (
+                      <VStack
+                        align="stretch"
+                        spacing={{ base: 1.5, md: 2 }}
+                        mt={{ base: 2, md: 2.5 }}
+                      >
+                        <HStack justify="space-between" align="center">
+                          <HStack spacing={2}>
+                            <Box
+                              as={MdShowChart}
+                              color={isLightTheme ? "#b7791f" : "yellow.200"}
+                              boxSize={{ base: 3.5, md: 4 }}
+                            />
+                            <Text
+                              fontSize="xs"
+                              fontWeight="semibold"
+                              color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
+                            >
+                              {copy.dailyXp || "Daily XP"}
+                            </Text>
+                          </HStack>
+                          <Text
+                            fontSize="xs"
+                            fontWeight="bold"
+                            lineHeight="1"
+                            color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
+                          >
+                            {rawPercent}%
+                          </Text>
+                        </HStack>
+
+                        <Box w="100%">
+                          <WaveBar
+                            value={pct}
+                            height={14}
+                            start="#fbbf24"
+                            end="#f59e0b"
+                            bg={
+                              isLightTheme
+                                ? "rgba(255, 255, 255, 0.58)"
+                                : "rgba(255,255,255,0.22)"
+                            }
+                            border={
+                              isLightTheme
+                                ? "rgba(91, 75, 58, 0.10)"
+                                : "rgba(255,255,255,0.14)"
+                            }
+                          />
+                        </Box>
+                      </VStack>
+                    );
+                  })()
+                : null}
             </VStack>
           </VStack>
         </HStack>

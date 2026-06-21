@@ -1,5 +1,5 @@
 // src/components/Onboarding.jsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { keyframes } from "@emotion/react";
 import {
   Box,
@@ -136,6 +136,18 @@ export default function Onboarding({
     normalizedUserLang,
   );
   const [supportLang, setSupportLang] = useState(initialSupportLang);
+  // Follow the resolved app language (set on the landing page / /links / the
+  // user doc) until the user explicitly picks a support language here — so a
+  // late language resolution can't leave this stuck on the default.
+  const userPickedSupportLangRef = useRef(false);
+  useEffect(() => {
+    if (userPickedSupportLangRef.current) return;
+    const next = normalizeSupportLanguage(
+      userLanguage,
+      DEFAULT_SUPPORT_LANGUAGE,
+    );
+    setSupportLang((prev) => (prev === next ? prev : next));
+  }, [userLanguage]);
   const ui = translations[supportLang] || translations.en;
   const storedThemeMode = useThemeStore((s) => s.themeMode);
   const syncThemeMode = useThemeStore((s) => s.syncThemeMode);
@@ -249,6 +261,7 @@ export default function Onboarding({
   );
 
   const handleSupportLanguageChange = (value) => {
+    userPickedSupportLangRef.current = true;
     playOnboardingSound(selectSound);
     const normalized = normalizeSupportLanguage(
       value,
@@ -326,6 +339,7 @@ export default function Onboarding({
       ja: "短いほど反応が速く、長いほど話し終える時間ができます。素早い応答には0.6秒がおすすめです。",
       ar: "الأقصر = استجابة أسرع، والأطول = يديك وقت تخلص كلامك. 0.6 ثانية مناسبة لرد سريع.",
       zh: "更短 = 反应更快；更长 = 给你更多时间说完。快速回应建议 0.6 秒。",
+      hi: "छोटा = ज़्यादा तेज़ प्रतिक्रिया; लंबा = बोलना पूरा करने का समय देता है। तेज़ जवाब के लिए 0.6 सेकंड की सलाह दी जाती है।",
     });
   const pauseSeconds = new Intl.NumberFormat(getLanguageLocale(supportLang), {
     minimumFractionDigits: 1,
@@ -341,6 +355,7 @@ export default function Onboarding({
     ja: "秒",
     ar: "ثانية",
     zh: "秒",
+    hi: "सेकंड",
   });
   const supportOption =
     supportLanguageOptions.find((option) => option.value === supportLang) ||
@@ -358,6 +373,7 @@ export default function Onboarding({
     ja: ["言語", "音声", "効果"],
     ar: ["اللغات", "الصوت", "المؤثرات"],
     zh: ["语言", "声音", "效果"],
+    hi: ["भाषाएँ", "आवाज़", "प्रभाव"],
   });
 
   return (
@@ -847,6 +863,7 @@ export default function Onboarding({
                       ja: "戻る",
                       ar: "رجوع",
                       zh: "返回",
+                      hi: "वापस",
                     })}
                   </Button>
                 )}
@@ -870,6 +887,7 @@ export default function Onboarding({
                         ja: "次へ",
                         ar: "التالي",
                         zh: "下一步",
+                        hi: "आगे",
                       })}
                   </Button>
                 ) : (

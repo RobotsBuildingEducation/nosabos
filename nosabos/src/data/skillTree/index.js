@@ -62,6 +62,63 @@ export function getNextLesson(units, userProgress) {
 }
 
 /**
+ * Find the latest unlocked lesson (first IN_PROGRESS or AVAILABLE lesson by
+ * sequential-unlock rules), mirroring the skill tree's own status logic.
+ * `lessonsMap` is the per-language map of { [lessonId]: { status, ... } }.
+ * Returns { lesson, unit } or null (e.g. tutorial incomplete or all done).
+ */
+export function getLatestUnlockedLesson(
+  units = [],
+  lessonsMap = {},
+  isTutorialComplete = true,
+) {
+  if (!isTutorialComplete || !Array.isArray(units)) return null;
+
+  for (let unitIndex = 0; unitIndex < units.length; unitIndex++) {
+    const unit = units[unitIndex];
+    const previousUnit = unitIndex > 0 ? units[unitIndex - 1] : null;
+
+    for (
+      let lessonIndex = 0;
+      lessonIndex < unit.lessons.length;
+      lessonIndex++
+    ) {
+      const lesson = unit.lessons[lessonIndex];
+      const status = lessonsMap?.[lesson.id]?.status;
+
+      if (status === SKILL_STATUS.IN_PROGRESS) {
+        return { lesson, unit };
+      }
+
+      if (status !== SKILL_STATUS.COMPLETED) {
+        let isPreviousCompleted = false;
+
+        if (lessonIndex === 0) {
+          if (unitIndex === 0) {
+            isPreviousCompleted = true;
+          } else if (previousUnit) {
+            const prevUnitLastLesson =
+              previousUnit.lessons[previousUnit.lessons.length - 1];
+            isPreviousCompleted =
+              lessonsMap?.[prevUnitLastLesson.id]?.status ===
+              SKILL_STATUS.COMPLETED;
+          }
+        } else {
+          isPreviousCompleted =
+            lessonsMap?.[unit.lessons[lessonIndex - 1].id]?.status ===
+            SKILL_STATUS.COMPLETED;
+        }
+
+        if (isPreviousCompleted) {
+          return { lesson, unit };
+        }
+      }
+    }
+  }
+  return null;
+}
+
+/**
  * Get overall unit progress as a percentage.
  */
 export function getUnitProgress(unit, userProgress) {

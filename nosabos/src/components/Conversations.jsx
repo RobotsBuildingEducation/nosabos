@@ -70,6 +70,7 @@ import {
 } from "../utils/supportTranslation";
 import { getBidiTextProps, mergeBidiSx } from "../utils/bidiText";
 import { awardXp } from "../utils/utils";
+import { recordPlateActivity } from "../utils/dailyPlate";
 import { getLanguageXp } from "../utils/progressTracking";
 import {
   SOFT_STOP_BUTTON_BG,
@@ -2531,6 +2532,10 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
     setGoalsCompleted((v) => v + 1);
     setCurrentGoal((prev) => ({ ...prev, completed: true }));
 
+    // Note: the Conversation quest course is filled per user turn (see
+    // awardTurnXp), not on goal completion — counting here too would
+    // double-count the turn that completes the goal.
+
     try {
       await awardXp(npub, xpGain, targetLangRef.current);
       logEvent(analytics, "conversation_goal_completed", { xp: xpGain });
@@ -2552,6 +2557,13 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
     // Evaluate goal completion with AI
     if (userMessage) {
       evaluateGoalCompletion(userMessage, aiResponse);
+    }
+
+    // Daily quest: the Conversation course asks for 4-7 user turns of practice
+    // (target is per-day; see getConversationTurnTarget), so each real user
+    // turn counts toward it.
+    if (userMessage && userMessage.trim()) {
+      void recordPlateActivity(npub, "conversation", targetLangRef.current);
     }
 
     try {

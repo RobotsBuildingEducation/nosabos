@@ -431,7 +431,7 @@ export default function BitcoinSupportModal({
       position="fixed"
       inset={0}
       zIndex={1600}
-      bg="rgba(0, 0, 0, 0.72)"
+      bg="var(--app-overlay)"
       display="flex"
       alignItems="center"
       justifyContent="center"
