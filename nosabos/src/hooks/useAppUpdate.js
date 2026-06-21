@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { registerSW } from "virtual:pwa-register";
 
-const UPDATE_CHECK_INTERVAL_MS = 5 * 60 * 1000;
+const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000;
 
 export default function useAppUpdate() {
   useEffect(() => {
