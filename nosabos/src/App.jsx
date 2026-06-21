@@ -228,6 +228,7 @@ import dailyGoalSound from "./assets/dailygoal.mp3";
 import {
   DAILY_GOAL_PET_HEALTH_GAIN,
   buildDailyGoalResetFields,
+  countMissedDailyGoalWindows,
   getDailyGoalPetHealth,
   hasDailyGoalResetExpired,
 } from "./utils/dailyGoalPet";
@@ -1310,17 +1311,34 @@ function TopBar({
       });
 
       const expired = hasDailyGoalResetExpired(resetISO);
-      if (expired && goal > 0) {
+      // Catch up pet health for any whole days missed since it was last
+      // reflected — even when the 24h window hasn't rolled over. This is what
+      // recovers a long absence whose dailyResetAt was already bumped forward
+      // by an earlier app-open (so `expired` reads false today).
+      const missedDays = countMissedDailyGoalWindows(data, new Date());
+      if (goal > 0 && (expired || missedDays > 0)) {
         try {
           await runTransaction(database, async (tx) => {
             const latestSnap = await tx.get(ref);
             const latestData = latestSnap.exists() ? latestSnap.data() : {};
-            if (!hasDailyGoalResetExpired(latestData?.dailyResetAt)) return;
+            const latestExpired = hasDailyGoalResetExpired(
+              latestData?.dailyResetAt,
+            );
+            const latestMissed = countMissedDailyGoalWindows(
+              latestData,
+              new Date(),
+            );
+            // Another writer (or an earlier fire) may have already handled it.
+            if (!latestExpired && latestMissed <= 0) return;
 
             tx.set(
               ref,
               {
-                ...buildDailyGoalResetFields(latestData, new Date()),
+                ...buildDailyGoalResetFields(latestData, new Date(), {
+                  // Only roll the daily window when it actually expired;
+                  // otherwise just reconcile health and leave today's XP alone.
+                  resetWindow: latestExpired,
+                }),
                 updatedAt: new Date().toISOString(),
               },
               { merge: true },
@@ -1329,8 +1347,10 @@ function TopBar({
         } catch (error) {
           console.warn("Failed to apply daily goal reset:", error);
         }
-        dxp = getTodayDailyXpFromHistory(xpHistory);
-        resetISO = data?.dailyResetAt || resetISO;
+        if (expired) {
+          dxp = getTodayDailyXpFromHistory(xpHistory);
+          resetISO = data?.dailyResetAt || resetISO;
+        }
       }
 
       setDailyGoalXp(goal);
