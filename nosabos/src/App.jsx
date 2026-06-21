@@ -989,6 +989,7 @@ function TopBar({
     ja: "秒",
     ar: "ثواني",
     zh: "秒",
+    hi: "सेकंड",
   });
   const pauseSeconds = new Intl.NumberFormat(getLanguageLocale(appLanguage), {
     minimumFractionDigits: 1,
@@ -3037,14 +3038,38 @@ export default function App({ onBootReady } = {}) {
       setActiveNsec(localStorage.getItem("local_nsec") || "");
 
       if (userDoc) {
+        // Precedence: a saved support language (returning user) wins; otherwise
+        // honor the choice made on the landing page / /links, which lives in
+        // localStorage *before* the account doc knows about it. The doc's own
+        // appLanguage is the last resort — a doc created before a language was
+        // known resolves to the English default here, which is exactly what
+        // made onboarding ignore the landing-page language until a later
+        // refresh backfilled the doc.
+        const storedLang = normalizeSupportLang(
+          localStorage.getItem("appLanguage"),
+        );
+        const savedSupportLang = normalizeSupportLang(
+          userDoc?.progress?.supportLang,
+        );
         const uiLang =
-          normalizeSupportLang(userDoc?.progress?.supportLang) ||
-          normalizeSupportLanguage(
-            userDoc.appLanguage,
-            DEFAULT_SUPPORT_LANGUAGE,
-          );
+          savedSupportLang ||
+          storedLang ||
+          normalizeSupportLanguage(userDoc.appLanguage, DEFAULT_SUPPORT_LANGUAGE);
         setAppLanguage(uiLang);
         localStorage.setItem("appLanguage", uiLang);
+        // Backfill a language-less doc so subsequent reads (this device or
+        // another) resolve to the same language instead of the default.
+        if (
+          !savedSupportLang &&
+          normalizeSupportLanguage(userDoc.appLanguage, "") !== uiLang
+        ) {
+          setDoc(
+            doc(database, "users", id),
+            { appLanguage: uiLang },
+            { merge: true },
+          ).catch(() => {});
+          userDoc = { ...userDoc, appLanguage: uiLang };
+        }
         setUser?.(userDoc);
       }
     } catch (e) {
