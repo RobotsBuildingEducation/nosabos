@@ -267,6 +267,35 @@ const RPGGame = lazy(() => import("./components/RPGGame/index.jsx"));
 --------------------------- */
 const isTrue = (v) => v === true || v === "true" || v === 1 || v === "1";
 
+const onboardingCompletionStorageKey = (id) =>
+  `onboardingCompleted:${String(id || "").trim()}`;
+
+const getLocalOnboardingCompletion = (id) => {
+  if (typeof window === "undefined" || !id) return null;
+  try {
+    const raw = localStorage.getItem(onboardingCompletionStorageKey(id));
+    if (!raw) return null;
+    if (isTrue(raw)) return { completed: true, completedAt: null };
+    const parsed = JSON.parse(raw);
+    return isTrue(parsed?.completed) ? parsed : null;
+  } catch {
+    return null;
+  }
+};
+
+const rememberLocalOnboardingCompletion = (id, completedAt) => {
+  if (typeof window === "undefined" || !id) return;
+  try {
+    localStorage.setItem(
+      onboardingCompletionStorageKey(id),
+      JSON.stringify({ completed: true, completedAt: completedAt || null }),
+    );
+  } catch {}
+};
+
+const hasCompletedOnboarding = (data) =>
+  isTrue(data?.onboarding?.completed) || isTrue(data?.onboardingCompleted);
+
 const CEFR_LEVELS = new Set(["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"]);
 const ONBOARDING_TOTAL_STEPS = 1;
 const TEST_UNLOCK_NSEC =
@@ -618,16 +647,23 @@ async function ensureOnboardingField(db, id, data) {
   );
   const hasStep =
     hasNested && Number.isFinite(Number(data.onboarding?.currentStep));
+  const localCompletion = getLocalOnboardingCompletion(id);
+  const shouldRestoreCompletion =
+    Boolean(localCompletion) && !hasCompletedOnboarding(data);
 
   const shouldSetDefaults = !hasCompleted && !hasLegacyTopLevel;
   const shouldSetStep = !hasStep;
 
-  if (shouldSetDefaults || shouldSetStep) {
+  if (shouldSetDefaults || shouldSetStep || shouldRestoreCompletion) {
     const onboardingPayload = {
       ...(hasNested ? data.onboarding : {}),
     };
 
-    if (shouldSetDefaults && !hasCompleted) {
+    if (shouldRestoreCompletion) {
+      onboardingPayload.completed = true;
+      onboardingPayload.completedAt =
+        onboardingPayload.completedAt || localCompletion.completedAt;
+    } else if (shouldSetDefaults && !hasCompleted) {
       // The doc has no onboarding flag. Treat it as a pre-onboarding "legacy"
       // account (already onboarded) ONLY when there's real evidence of prior
       // use; otherwise it's a fresh/partial doc and onboarding must still run.
@@ -636,13 +672,13 @@ async function ensureOnboardingField(db, id, data) {
       // connectDID got to set completed=false.
       const looksUsed = Boolean(
         Number(data?.xp) > 0 ||
-          Number(data?.progress?.xp) > 0 ||
-          Number(data?.streak) > 0 ||
-          (Array.isArray(data?.completedGoalDates) &&
-            data.completedGoalDates.length > 0) ||
-          (data?.dailyXpHistory &&
-            typeof data.dailyXpHistory === "object" &&
-            Object.keys(data.dailyXpHistory).length > 0),
+        Number(data?.progress?.xp) > 0 ||
+        Number(data?.streak) > 0 ||
+        (Array.isArray(data?.completedGoalDates) &&
+          data.completedGoalDates.length > 0) ||
+        (data?.dailyXpHistory &&
+          typeof data.dailyXpHistory === "object" &&
+          Object.keys(data.dailyXpHistory).length > 0),
       );
       if (!looksUsed) {
         console.warn(
@@ -703,17 +739,23 @@ function isLegacyTutorLessonProgress(data) {
 
 async function loadUserObjectFromDB(db, id) {
   if (!id) return null;
+  const ref = doc(db, "users", id);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) return null;
+
+  // A confirmed missing root document is the only case that may return null.
+  // Bootstrap uses null to create a new user, so optional hydration failures
+  // must not be allowed to reset an existing user's onboarding state.
+  const userData = await ensureOnboardingField(db, id, {
+    id: snap.id,
+    ...snap.data(),
+  });
+
+  if (!userData.progress || typeof userData.progress !== "object") {
+    userData.progress = {};
+  }
+
   try {
-    const ref = doc(db, "users", id);
-    const snap = await getDoc(ref);
-    if (!snap.exists()) return null;
-
-    // Ensure onboarding fields first, then hydrate progress maps from subcollections.
-    let userData = await ensureOnboardingField(db, id, {
-      id: snap.id,
-      ...snap.data(),
-    });
-
     const [
       languageLessonsSnapshot,
       tutorLanguageLessonsSnapshot,
@@ -757,10 +799,6 @@ async function loadUserObjectFromDB(db, id) {
       };
     });
 
-    if (!userData.progress || typeof userData.progress !== "object") {
-      userData.progress = {};
-    }
-
     // Use subcollections as the canonical source of truth for lesson/flashcard progress.
     // This intentionally ignores any legacy nested progress JSON fields.
     userData.progress.languageLessons = languageLessons;
@@ -769,8 +807,11 @@ async function loadUserObjectFromDB(db, id) {
 
     return userData;
   } catch (e) {
-    console.error("loadUserObjectFromDB failed:", e);
-    return null;
+    console.warn(
+      "Progress hydration failed; continuing with the root user document:",
+      e,
+    );
+    return userData;
   }
 }
 
@@ -3038,6 +3079,13 @@ export default function App({ onBootReady } = {}) {
       setActiveNsec(localStorage.getItem("local_nsec") || "");
 
       if (userDoc) {
+        if (hasCompletedOnboarding(userDoc)) {
+          rememberLocalOnboardingCompletion(
+            id,
+            userDoc?.onboarding?.completedAt || null,
+          );
+        }
+
         // Precedence: a saved support language (returning user) wins; otherwise
         // honor the choice made on the landing page / /links, which lives in
         // localStorage *before* the account doc knows about it. The doc's own
@@ -3054,7 +3102,10 @@ export default function App({ onBootReady } = {}) {
         const uiLang =
           savedSupportLang ||
           storedLang ||
-          normalizeSupportLanguage(userDoc.appLanguage, DEFAULT_SUPPORT_LANGUAGE);
+          normalizeSupportLanguage(
+            userDoc.appLanguage,
+            DEFAULT_SUPPORT_LANGUAGE,
+          );
         setAppLanguage(uiLang);
         localStorage.setItem("appLanguage", uiLang);
         // Backfill a language-less doc so subsequent reads (this device or
@@ -3100,9 +3151,7 @@ export default function App({ onBootReady } = {}) {
   }, []);
 
   const onboardingDone = useMemo(() => {
-    const nested = user?.onboarding?.completed;
-    const legacy = user?.onboardingCompleted;
-    return isTrue(nested) || isTrue(legacy);
+    return hasCompletedOnboarding(user);
   }, [user]);
 
   const needsOnboarding = useMemo(() => !onboardingDone, [onboardingDone]);
@@ -3268,20 +3317,23 @@ export default function App({ onBootReady } = {}) {
   useEffect(() => {
     let cancelled = false;
 
+    const isProficiencyBlocked = () => {
+      const m = useModalStore.getState();
+      return (
+        m.dailyGoalOpen ||
+        m.timerModalOpen ||
+        proficiencyTestOpen ||
+        shouldShowTimerAfterGoal ||
+        shouldShowProficiencyAfterTimer
+      );
+    };
+
     const checkProficiencyDecision = async () => {
       if (cancelled) return;
       if (proficiencyCheckDoneRef.current) return;
       if (isLoadingApp || !user || !activeNpub) return;
       if (needsOnboarding) return;
-      const m = useModalStore.getState();
-      if (
-        m.dailyGoalOpen ||
-        m.timerModalOpen ||
-        proficiencyTestOpen ||
-        shouldShowProficiencyAfterTimer
-      ) {
-        return;
-      }
+      if (isProficiencyBlocked()) return;
 
       try {
         const snap = await getDoc(doc(database, "users", activeNpub));
@@ -3291,11 +3343,14 @@ export default function App({ onBootReady } = {}) {
           "proficiencyPlacement",
         );
 
-        proficiencyCheckDoneRef.current = true;
-
-        if (!hasDecision && !cancelled) {
-          setProficiencyTestOpen(true);
+        if (hasDecision) {
+          proficiencyCheckDoneRef.current = true;
+          return;
         }
+        if (cancelled || isProficiencyBlocked()) return;
+
+        proficiencyCheckDoneRef.current = true;
+        setProficiencyTestOpen(true);
       } catch (error) {
         console.warn("Failed to check proficiency decision flag:", error);
 
@@ -3303,11 +3358,14 @@ export default function App({ onBootReady } = {}) {
           user || {},
           "proficiencyPlacement",
         );
-        proficiencyCheckDoneRef.current = true;
-
-        if (!fallbackHasDecision && !cancelled) {
-          setProficiencyTestOpen(true);
+        if (fallbackHasDecision) {
+          proficiencyCheckDoneRef.current = true;
+          return;
         }
+        if (cancelled || isProficiencyBlocked()) return;
+
+        proficiencyCheckDoneRef.current = true;
+        setProficiencyTestOpen(true);
       }
     };
 
@@ -3334,6 +3392,7 @@ export default function App({ onBootReady } = {}) {
     activeNpub,
     needsOnboarding,
     proficiencyTestOpen,
+    shouldShowTimerAfterGoal,
     shouldShowProficiencyAfterTimer,
   ]);
 
@@ -3346,7 +3405,12 @@ export default function App({ onBootReady } = {}) {
       if (modesIntroCheckDoneRef.current) return;
       if (isLoadingApp || !user || !activeNpub) return;
       if (needsOnboarding) return;
-      if (proficiencyTestOpen || shouldShowProficiencyAfterTimer) return;
+      if (
+        proficiencyTestOpen ||
+        shouldShowTimerAfterGoal ||
+        shouldShowProficiencyAfterTimer
+      )
+        return;
       const m = useModalStore.getState();
       if (m.dailyGoalOpen || m.timerModalOpen) return;
 
@@ -3381,6 +3445,7 @@ export default function App({ onBootReady } = {}) {
     activeNpub,
     needsOnboarding,
     proficiencyTestOpen,
+    shouldShowTimerAfterGoal,
     shouldShowProficiencyAfterTimer,
   ]);
 
@@ -4219,19 +4284,21 @@ export default function App({ onBootReady } = {}) {
       setAppLanguage(uiLangForPersist);
       setPathMode("plate");
 
+      const completedOnboarding = {
+        ...(user?.onboarding || {}),
+        completed: true,
+        completedAt: now,
+        currentStep: 1,
+        draft: null,
+      };
+
       await setDoc(
         doc(database, "users", id),
         {
           local_npub: id,
           updatedAt: now,
           appLanguage: uiLangForPersist,
-          onboarding: {
-            ...(user?.onboarding || {}),
-            completed: true,
-            completedAt: now,
-            currentStep: 1, // Now just 1 step
-            draft: null,
-          },
+          onboarding: completedOnboarding,
           xp: 0,
           streak: 0,
           progress: { ...normalized },
@@ -4244,14 +4311,38 @@ export default function App({ onBootReady } = {}) {
         { merge: true },
       );
 
-      const fresh = await loadUserObjectFromDB(database, id);
-      if (fresh) setUser?.(fresh);
+      rememberLocalOnboardingCompletion(id, now);
 
-      // Prompt for daily goal right after onboarding
+      // Arm the entire first-run modal chain before releasing the onboarding
+      // route gate. Otherwise the returning-user proficiency effect can run in
+      // the gap before the post-write hydration finishes and open over the goal.
       proficiencyCheckDoneRef.current = true;
-      setDailyGoalOpen(true);
       setShouldShowTimerAfterGoal(true);
       setShouldShowProficiencyAfterTimer(true);
+      setDailyGoalOpen(true);
+
+      // The write above is the durable completion point. Release the route
+      // gate immediately instead of depending on another full DB hydration.
+      setUser?.({
+        ...(user || {}),
+        id: user?.id || id,
+        local_npub: id,
+        updatedAt: now,
+        appLanguage: uiLangForPersist,
+        onboarding: completedOnboarding,
+        xp: 0,
+        streak: 0,
+        progress: { ...(user?.progress || {}), ...normalized },
+        identity: safe(payload.identity, user?.identity || null),
+        soundEnabled: payload.soundEnabled !== false,
+        soundVolume:
+          typeof payload.soundVolume === "number" ? payload.soundVolume : 100,
+        themeMode: normalizedThemeMode,
+      });
+      navigate("/", { replace: true });
+
+      const fresh = await loadUserObjectFromDB(database, id);
+      if (fresh) setUser?.(fresh);
     } catch (e) {
       console.error("Failed to complete onboarding:", e);
     }
@@ -6946,7 +7037,13 @@ export default function App({ onBootReady } = {}) {
   ]);
 
   const plateSnapshot = useMemo(
-    () => getDailyPlateSnapshot(user, resolvedTargetLang, undefined, electedQuestKinds),
+    () =>
+      getDailyPlateSnapshot(
+        user,
+        resolvedTargetLang,
+        undefined,
+        electedQuestKinds,
+      ),
     [user, resolvedTargetLang, electedQuestKinds],
   );
 
@@ -6980,14 +7077,20 @@ export default function App({ onBootReady } = {}) {
     } else {
       const previous = readQuestPlate();
       const avoid =
-        previous && previous.langKey === langKey && Array.isArray(previous.kinds)
+        previous &&
+        previous.langKey === langKey &&
+        Array.isArray(previous.kinds)
           ? previous.kinds
           : [];
       kinds = electDailyQuestCourses({
         available: availableQuestKinds,
         avoid,
         seed: `${activeNpub}:${langKey}:${dayKey}`,
-        weights: getQuestNeglectWeights(currentUser, langKey, availableQuestKinds),
+        weights: getQuestNeglectWeights(
+          currentUser,
+          langKey,
+          availableQuestKinds,
+        ),
       });
     }
     if (!kinds.length) kinds = DAILY_PLATE_COURSE_ORDER;
@@ -6999,7 +7102,12 @@ export default function App({ onBootReady } = {}) {
     // `user` intentionally omitted — read fresh via getState so this doesn't
     // re-run on every XP patch (already-elected days early-return anyway).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [plateSnapshot.langKey, plateSnapshot.dayKey, availableQuestKinds, activeNpub]);
+  }, [
+    plateSnapshot.langKey,
+    plateSnapshot.dayKey,
+    availableQuestKinds,
+    activeNpub,
+  ]);
 
   const [plateSessionActive, setPlateSessionActive] = useState(false);
 
@@ -7096,7 +7204,9 @@ export default function App({ onBootReady } = {}) {
     // Only lessons / Tutor lessons render their own completion-modal chain that
     // we must wait behind. Flashcards / phonics / conversation don't, so they
     // shouldn't pay the grace-window wait — show their celebration promptly.
-    const expectsModal = Boolean(pendingPlateCelebrationRef.current?.expectsModal);
+    const expectsModal = Boolean(
+      pendingPlateCelebrationRef.current?.expectsModal,
+    );
     const chain = { sawModal: false, quietChecks: 0 };
 
     const showQueued = () => {
@@ -7240,7 +7350,9 @@ export default function App({ onBootReady } = {}) {
 
     const justDone = plateSnapshot.courses
       .map((course) => course.kind)
-      .find((kind) => plateSnapshot.byKind[kind]?.done && !prev.byKind[kind]?.done);
+      .find(
+        (kind) => plateSnapshot.byKind[kind]?.done && !prev.byKind[kind]?.done,
+      );
     if (!justDone) return;
 
     const next = getNextPlateCourse(plateSnapshot);
@@ -8432,7 +8544,9 @@ export default function App({ onBootReady } = {}) {
                     transform: "translateY(2px)",
                   }}
                   _focus={{ boxShadow: "0 4px 0 rgba(154, 52, 18, 0.6)" }}
-                  _focusVisible={{ boxShadow: "0 4px 0 rgba(154, 52, 18, 0.6)" }}
+                  _focusVisible={{
+                    boxShadow: "0 4px 0 rgba(154, 52, 18, 0.6)",
+                  }}
                   onClick={handlePlateCelebrationContinue}
                   fontWeight="bold"
                   fontSize="lg"
@@ -8521,7 +8635,9 @@ export default function App({ onBootReady } = {}) {
                     transform: "translateY(2px)",
                   }}
                   _focus={{ boxShadow: "0 4px 0 rgba(44, 122, 123, 0.55)" }}
-                  _focusVisible={{ boxShadow: "0 4px 0 rgba(44, 122, 123, 0.55)" }}
+                  _focusVisible={{
+                    boxShadow: "0 4px 0 rgba(44, 122, 123, 0.55)",
+                  }}
                   onClick={handlePlateCelebrationContinue}
                   fontWeight="bold"
                   fontSize="lg"
