@@ -4,7 +4,8 @@
 // (DailyPlate card, DailyPlateHome, and App's session conductor). Lives
 // outside the component files so Fast Refresh keeps working.
 import { PiCardsBold, PiPath } from "react-icons/pi";
-import { RiBook2Line } from "react-icons/ri";
+import { RiBook2Line, RiChat3Line } from "react-icons/ri";
+import { LuLanguages } from "react-icons/lu";
 
 import {
   DEFAULT_SUPPORT_LANGUAGE,
@@ -65,6 +66,36 @@ export const PLATE_COURSE_META = {
       hi: "ट्यूटर",
     },
   },
+  conversation: {
+    icon: RiChat3Line,
+    label: {
+      en: "Conversation",
+      es: "Conversación",
+      pt: "Conversação",
+      fr: "Conversation",
+      it: "Conversazione",
+      ja: "会話",
+      zh: "对话",
+      ru: "Разговор",
+      ar: "محادثة",
+      hi: "बातचीत",
+    },
+  },
+  phonics: {
+    icon: LuLanguages,
+    label: {
+      en: "Phonics",
+      es: "Fonética",
+      pt: "Fonética",
+      fr: "Phonétique",
+      it: "Fonetica",
+      ja: "フォニックス",
+      zh: "自然拼读",
+      ru: "Фонетика",
+      ar: "الصوتيات",
+      hi: "ध्वनिकी",
+    },
+  },
 };
 
 export const PLATE_TITLE_COPY = {
@@ -107,16 +138,16 @@ export const PLATE_BONUS_TOAST_COPY = {
 };
 
 export const PLATE_EXERCISE_COMPLETE_COPY = {
-  en: "Quest Complete!",
-  es: "¡Misión completada!",
-  pt: "Missão concluída!",
-  fr: "Quête terminée !",
-  it: "Missione completata!",
-  ja: "クエスト完了！",
+  en: "Task complete!",
+  es: "¡Tarea completada!",
+  pt: "Tarefa concluída!",
+  fr: "Tâche terminée !",
+  it: "Attività completata!",
+  ja: "タスク完了！",
   zh: "任务完成！",
-  ru: "Задание выполнено!",
+  ru: "Задача выполнена!",
   ar: "اكتملت المهمة!",
-  hi: "क्वेस्ट पूरी हुई!",
+  hi: "कार्य पूरा हुआ!",
 };
 
 export const PLATE_CONTINUE_COPY = {

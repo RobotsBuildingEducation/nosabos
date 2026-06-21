@@ -19,7 +19,6 @@ import useSoundSettings from "../hooks/useSoundSettings";
 import { useThemeStore } from "../useThemeStore";
 import selectSound from "../assets/select.mp3";
 import {
-  DAILY_PLATE_COURSE_ORDER,
   getDailyPlateSnapshot,
   getNextPlateCourse,
 } from "../utils/dailyPlate";
@@ -32,16 +31,16 @@ import {
 } from "../utils/dailyPlateCopy";
 
 const START_COPY = {
-  en: "Start daily practice",
-  es: "Comenzar práctica diaria",
-  pt: "Começar prática diária",
-  fr: "Commencer la pratique du jour",
-  it: "Inizia la pratica quotidiana",
-  ja: "今日の練習を始める",
-  zh: "开始每日练习",
-  ru: "Начать ежедневную практику",
-  ar: "ابدأ التدريب اليومي",
-  hi: "दैनिक अभ्यास शुरू करें",
+  en: "Start tasks",
+  es: "Comenzar tareas",
+  pt: "Começar tarefas",
+  fr: "Commencer les tâches",
+  it: "Inizia le attività",
+  ja: "タスクを始める",
+  zh: "开始任务",
+  ru: "Начать задания",
+  ar: "ابدأ المهام",
+  hi: "कार्य शुरू करें",
 };
 
 const CONTINUE_COPY = {
@@ -58,16 +57,16 @@ const CONTINUE_COPY = {
 };
 
 const SUBTITLE_COPY = {
-  en: "Complete your quests to earn an XP bonus",
-  es: "Completa tus misiones y gana un bono de XP",
-  pt: "Conclua suas missões e ganhe um bônus de XP",
-  fr: "Termine tes quêtes pour gagner un bonus d'XP",
-  it: "Completa le missioni e ottieni un bonus di XP",
-  ja: "クエストを達成してXPボーナスを獲得しよう",
+  en: "Complete your tasks to earn an XP bonus",
+  es: "Completa tus tareas y gana un bono de XP",
+  pt: "Conclua suas tarefas e ganhe um bônus de XP",
+  fr: "Termine tes tâches pour gagner un bonus d'XP",
+  it: "Completa le attività e ottieni un bonus di XP",
+  ja: "タスクを達成してXPボーナスを獲得しよう",
   zh: "完成所有任务可获得经验值奖励",
   ru: "Выполни задания и получи XP-бонус",
   ar: "أكمل مهامك واحصل على مكافأة XP",
-  hi: "अपनी क्वेस्ट पूरी करें और XP बोनस पाएं",
+  hi: "अपने कार्य पूरे करें और XP बोनस पाएं",
 };
 
 export default function DailyPlateHome({
@@ -78,6 +77,10 @@ export default function DailyPlateHome({
   dailyGoalXp = 0,
   sessionActive = false,
   onStartPractice,
+  // onRegenerate, // dev-only: re-enable with the "Regenerate quest" button below
+  questKinds,
+  // Disable the primary CTA until the post-onboarding popover tour is finished.
+  ctaDisabled = false,
   // Daily-goal modal data, mirrored here for at-a-glance context
   petHealth,
   completedGoalDates = [],
@@ -104,10 +107,10 @@ export default function DailyPlateHome({
   }, []);
 
   const snapshot = useMemo(
-    () => getDailyPlateSnapshot(user, targetLang, now),
-    [user, targetLang, now],
+    () => getDailyPlateSnapshot(user, targetLang, now, questKinds),
+    [user, targetLang, now, questKinds],
   );
-  const { byKind, isCleared } = snapshot;
+  const { courses, isCleared } = snapshot;
   const nextCourse = getNextPlateCourse(snapshot);
 
   const dateLabel = useMemo(() => {
@@ -199,26 +202,12 @@ export default function DailyPlateHome({
           </Text>
         )}
 
-        {/* Primary CTA — hidden once every quest is done; the user picks
-            their own mode from the menu at that point. */}
-        {!isCleared ? (
-          <Button
-            onClick={handleStart}
-            size="lg"
-            colorScheme="teal"
-            variant="solid"
-            leftIcon={<FiPlay />}
-          >
-            {ctaLabel}
-          </Button>
-        ) : null}
-
-        {/* Course rows in guided order (display-only) */}
+        {/* Course rows in the plate's elected order (display-only) */}
         <VStack spacing={2.5} align="stretch">
-          {DAILY_PLATE_COURSE_ORDER.map((kind) => {
-            const course = byKind[kind];
-            if (!course) return null;
+          {courses.map((course) => {
+            const kind = course.kind;
             const meta = PLATE_COURSE_META[kind];
+            if (!meta) return null;
             const CourseIcon = meta.icon;
             const isNext = !isCleared && kind === nextCourse;
             // Border tells completion state only: teal when done, purple
@@ -301,7 +290,15 @@ export default function DailyPlateHome({
                         }
                         whiteSpace="nowrap"
                       >
-                        {course.count}/{course.target}
+                        {course.done
+                          ? `${
+                              course.target > 0
+                                ? Math.round(
+                                    (course.count / course.target) * 100,
+                                  )
+                                : 100
+                            }%`
+                          : `${course.count}/${course.target}`}
                       </Text>
                     </HStack>
                     <WaveBar
@@ -323,6 +320,21 @@ export default function DailyPlateHome({
           })}
         </VStack>
 
+        {/* Primary CTA — sits under the tasks; hidden once every quest is done,
+            as the user then picks their own mode from the menu. */}
+        {!isCleared ? (
+          <Button
+            onClick={handleStart}
+            size="lg"
+            colorScheme="teal"
+            variant="solid"
+            leftIcon={<FiPlay />}
+            isDisabled={ctaDisabled}
+          >
+            {ctaLabel}
+          </Button>
+        ) : null}
+
         {/* Pet + daily activity — same data the daily-goal modal shows,
             minus the goal-setting controls (the top bar opens that). */}
         <PlatePetPanel
@@ -340,6 +352,25 @@ export default function DailyPlateHome({
           currentDailyXp={dailyXp}
           currentGoalXp={dailyGoalXp}
         />
+
+        {/* Dev/testing only: reset today's quest so the flow can be re-run.
+            Commented out for shipping — re-enable this block (and the
+            onRegenerate prop above) when testing the quest flow.
+        {onRegenerate ? (
+          <Button
+            size="sm"
+            variant="ghost"
+            color="var(--app-text-muted)"
+            alignSelf="center"
+            onClick={() => {
+              playSound(selectSound);
+              onRegenerate();
+            }}
+          >
+            ↻ Regenerate quest (dev)
+          </Button>
+        ) : null}
+        */}
       </VStack>
     </Box>
   );

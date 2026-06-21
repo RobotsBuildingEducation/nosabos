@@ -47,19 +47,6 @@ const HEADER_TITLE = {
   zh: "使用方法",
 };
 
-const HEADER_SUBTITLE = {
-  en: "Your ways to practice — switch anytime from the bottom menu.",
-  es: "Tus formas de practicar: cambia cuando quieras desde el menú inferior.",
-  pt: "Suas formas de praticar — alterne quando quiser pelo menu inferior.",
-  it: "I tuoi modi per esercitarti: cambia quando vuoi dal menu in basso.",
-  fr: "Tes façons de pratiquer — change à tout moment depuis le menu du bas.",
-  de: "Deine Übungsmöglichkeiten – wechsle jederzeit über das untere Menü.",
-  ja: "練習方法はいろいろ。下のメニューからいつでも切り替えられます。",
-  hi: "अभ्यास के आपके तरीके — नीचे के मेनू से कभी भी बदलें।",
-  ar: "طرق التدريب لديك — بدّل في أي وقت من القائمة السفلية.",
-  zh: "你的练习方式——随时从底部菜单切换。",
-};
-
 const BACK_LABEL = {
   en: "Back",
   es: "Atrás",
@@ -118,16 +105,16 @@ const buildSlides = (includePhonics) => [
       zh: "每日任务",
     },
     description: {
-      en: "Your home base. Start a short guided session each day — tutor, lessons, and flash cards — and complete your quests for bonus XP.",
-      es: "Tu base. Comienza cada día una sesión guiada corta —tutor, lecciones y tarjetas— y completa tus misiones para ganar XP extra.",
-      pt: "Sua base. Comece a cada dia uma sessão guiada curta — tutor, lições e cartões — e conclua suas missões para ganhar XP bônus.",
-      it: "La tua base. Inizia ogni giorno una breve sessione guidata — tutor, lezioni e schede — e completa le missioni per XP bonus.",
-      fr: "Ton point de départ. Lance chaque jour une courte session guidée — tuteur, leçons et cartes — et termine tes quêtes pour un bonus d'XP.",
-      de: "Deine Basis. Starte jeden Tag eine kurze geführte Sitzung – Tutor, Lektionen und Karten – und schließe deine Quests für Bonus-XP ab.",
-      ja: "あなたの拠点。毎日、短いガイド付きセッション（チューター・レッスン・カード）から始め、クエストを達成するとボーナスXPがもらえます。",
-      hi: "आपका मुख्य ठिकाना। हर दिन एक छोटा गाइडेड सत्र शुरू करें — ट्यूटर, पाठ और फ्लैशकार्ड — और बोनस XP के लिए अपनी क्वेस्ट पूरी करें।",
-      ar: "نقطة انطلاقك. ابدأ كل يوم جلسة موجَّهة قصيرة — المعلم والدروس والبطاقات — وأكمل مهامك للحصول على نقاط XP إضافية.",
-      zh: "你的大本营。每天开始一段简短的引导练习——导师、课程和卡片——完成任务即可获得额外经验值。",
+      en: "Finish tasks using different learning modes to earn bonus XP for completing the daily quest.",
+      es: "Completa tareas usando distintos modos de aprendizaje y gana XP extra al terminar la misión diaria.",
+      pt: "Conclua tarefas usando diferentes modos de aprendizado e ganhe XP bônus ao completar a missão diária.",
+      it: "Completa attività usando diversi modi di apprendimento e guadagna XP bonus completando la missione quotidiana.",
+      fr: "Termine des tâches avec différents modes d'apprentissage et gagne un bonus d'XP en complétant la quête du jour.",
+      de: "Erledige Aufgaben mit verschiedenen Lernmodi und verdiene Bonus-XP, wenn du die tägliche Quest abschließt.",
+      ja: "さまざまな学習モードでタスクをこなし、デイリークエストを達成してボーナスXPを獲得しましょう。",
+      hi: "अलग-अलग लर्निंग मोड से कार्य पूरे करें और दैनिक क्वेस्ट पूरा करने पर बोनस XP कमाएँ।",
+      ar: "أكمل المهام باستخدام أوضاع تعلّم مختلفة واحصل على نقاط XP إضافية عند إتمام المهمة اليومية.",
+      zh: "使用不同的学习模式完成任务，完成每日任务即可获得额外经验值。",
     },
   },
   {
@@ -286,6 +273,10 @@ export default function ModesCarouselModal({
   onClose,
   includePhonics = false,
   lang = "en",
+  // When part of the onboarding chain, rely on the shared persistent backdrop
+  // instead of this modal's own overlay, so the dim doesn't flash off/on as the
+  // previous modal hands off to this one.
+  useSharedBackdrop = false,
 }) {
   const slides = useMemo(() => buildSlides(includePhonics), [includePhonics]);
   const [index, setIndex] = useState(0);
@@ -329,7 +320,7 @@ export default function ModesCarouselModal({
     >
       <ModalOverlay
         motionProps={nativeOverlayMotionProps}
-        bg="var(--app-overlay)"
+        bg={useSharedBackdrop ? "transparent" : "var(--app-overlay)"}
       />
       <ModalContent
         motionProps={nativeModalMotionProps}
@@ -347,9 +338,6 @@ export default function ModesCarouselModal({
             <VStack spacing={1} textAlign="center">
               <Text fontSize="lg" fontWeight="black">
                 {plateUiCopy(lang, HEADER_TITLE)}
-              </Text>
-              <Text fontSize="xs" color="var(--app-text-muted)">
-                {plateUiCopy(lang, HEADER_SUBTITLE)}
               </Text>
             </VStack>
 

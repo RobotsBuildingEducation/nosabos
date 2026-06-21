@@ -1100,10 +1100,6 @@ export default function FlashcardSkillTree({
     ? flashcardData.findIndex((card) => card.id === firstNewCard.id)
     : -1;
 
-  const weakestReviewCard = useMemo(() => {
-    return weakCards[0] || null;
-  }, [weakCards]);
-
   const fallbackActivityMap = useMemo(
     () => buildFallbackActivityMap(userProgress.flashcards || EMPTY_PROGRESS),
     [userProgress.flashcards],
@@ -1275,25 +1271,6 @@ export default function FlashcardSkillTree({
     closeFlashcardPractice();
   }, [closeFlashcardPractice]);
 
-  const handleLaunchDueSession = useCallback(() => {
-    if (dueCards[0]) {
-      openPracticeCard(dueCards[0], "review", "due");
-      return;
-    }
-
-    if (weakestReviewCard) {
-      openPracticeCard(weakestReviewCard, "review", "weak");
-    }
-  }, [dueCards, openPracticeCard, weakestReviewCard]);
-
-  const handleLaunchNewSession = useCallback(() => {
-    openPracticeCard(firstNewCard, "learn", "active");
-  }, [firstNewCard, openPracticeCard]);
-
-  const handleLaunchWeakCard = useCallback(() => {
-    openPracticeCard(weakestReviewCard, "review", "weak");
-  }, [openPracticeCard, weakestReviewCard]);
-
   const newCardsSection = (
     <DeckSection
       title={getTranslation("flashcard_new_queue")}
@@ -1450,49 +1427,6 @@ export default function FlashcardSkillTree({
                 </AccordionPanel>
               </AccordionItem>
             </Accordion>
-
-            <HStack spacing={3} flexWrap="wrap" align="stretch">
-              {dueCards.length > 0 ? (
-                <Button
-                  size="lg"
-                  colorScheme="teal"
-                  onClick={handleLaunchDueSession}
-                  minW={{ base: "100%", sm: "220px" }}
-                  flex={{ base: "1 1 100%", lg: "1 1 0" }}
-                >
-                  {getTranslation("flashcard_start_reviews")}
-                </Button>
-              ) : null}
-
-              {weakestReviewCard ? (
-                <Button
-                  size="lg"
-                  variant="ghost"
-                  color={APP_TEXT_PRIMARY}
-                  border="1px solid"
-                  borderColor={APP_BORDER_STRONG}
-                  _hover={{ bg: APP_SURFACE_MUTED }}
-                  onClick={handleLaunchWeakCard}
-                  minW={{ base: "100%", sm: "220px" }}
-                  flex={{ base: "1 1 100%", lg: "1 1 0" }}
-                >
-                  {getTranslation("flashcard_strengthen_weak")}
-                </Button>
-              ) : null}
-
-              {firstNewCard ? (
-                <Button
-                  size="lg"
-                  colorScheme="teal"
-                  variant={dueCards.length > 0 ? "outline" : "solid"}
-                  onClick={handleLaunchNewSession}
-                  minW={{ base: "100%", sm: "220px" }}
-                  flex={{ base: "1 1 100%", lg: "1 1 0" }}
-                >
-                  {getTranslation("flashcard_learn_next")}
-                </Button>
-              ) : null}
-            </HStack>
           </VStack>
         </Box>
 

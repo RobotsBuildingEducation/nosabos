@@ -45,10 +45,12 @@ import { MdSupportAgent } from "react-icons/md";
 import { detectUserLanguage } from "../utils/languageDetection";
 import { useDecentralizedIdentity } from "../hooks/useDecentralizedIdentity";
 import useSoundSettings from "../hooks/useSoundSettings";
+import * as Tone from "tone";
 import { useThemeStore } from "../useThemeStore";
 import {
   getPracticeLanguageOptions,
   getSupportLanguageOptions,
+  normalizeSupportLanguage,
 } from "../constants/languages";
 import { LANDING_PAGE_AR_STATIC } from "../translations/landingPageArStatic";
 import { LANDING_PAGE_DE_STATIC } from "../translations/landingPageDeStatic";
@@ -1808,12 +1810,44 @@ const LandingPage = ({ onAuthenticated }) => {
   const { generateNostrKeys, auth, authWithExtension, isNip07Available } =
     useDecentralizedIdentity();
   const playSound = useSoundSettings((s) => s.playSound);
+  const warmupAudio = useSoundSettings((s) => s.warmupAudio);
   const themeMode = useThemeStore((s) => s.themeMode);
   const syncThemeMode = useThemeStore((s) => s.syncThemeMode);
 
+  // Warm up the audio context on the first interaction so the very first sound
+  // (e.g. the sign-in/create button) plays cleanly instead of glitching with a
+  // hum while a cold AudioContext unlocks. Mirrors the main app's warmup, which
+  // never ran here because LandingPage renders before <App /> mounts.
+  useEffect(() => {
+    const handleFirstInteraction = () => {
+      // Tone.start() synchronously inside the gesture (required on iOS/mobile).
+      Tone.start();
+      warmupAudio();
+      document.removeEventListener("pointerdown", handleFirstInteraction);
+      document.removeEventListener("keydown", handleFirstInteraction);
+    };
+    document.addEventListener("pointerdown", handleFirstInteraction, {
+      once: true,
+    });
+    document.addEventListener("keydown", handleFirstInteraction, {
+      once: true,
+    });
+    return () => {
+      document.removeEventListener("pointerdown", handleFirstInteraction);
+      document.removeEventListener("keydown", handleFirstInteraction);
+    };
+  }, [warmupAudio]);
+
   const [lang, setLang] = useState(() => {
+    // Respect a language already chosen elsewhere (e.g. on /links or a previous
+    // visit) before falling back to detection. Overwriting it here clobbered
+    // that choice, so onboarding defaulted back to English.
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("appLanguage");
+      if (stored) return normalizeSupportLanguage(stored);
+    }
     const detected = detectUserLanguage();
-    // Save detected language to localStorage for App.jsx to use
+    // Persist the detected language so App.jsx / onboarding pick it up.
     if (typeof window !== "undefined") {
       localStorage.setItem("appLanguage", detected);
     }

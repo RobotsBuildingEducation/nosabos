@@ -890,6 +890,9 @@ export default function DailyGoalPetPanel({
                   height={14}
                   start={WAVE_BAR_PROGRESS_START}
                   end={WAVE_BAR_PROGRESS_END}
+                  // Health is a static state here (e.g. full at onboarding) — only
+                  // animate the fill when a celebration is showing a health gain.
+                  animateFill={isCelebration}
                   bg={
                     isLightTheme
                       ? "rgba(255, 255, 255, 0.58)"

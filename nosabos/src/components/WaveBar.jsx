@@ -15,6 +15,10 @@ export const WaveBar = ({
   delay = 0,
   bg = "rgba(255,255,255,0.8)",
   border = "#ededed",
+  // When false, render at the final width immediately instead of filling from 0
+  // — for bars that show a static state (e.g. current pet health) rather than
+  // progress.
+  animateFill = true,
 }) => {
   const id = useRef(`wave-${Math.random().toString(36).slice(2, 9)}`).current;
   const widthPct = `${clampPct(value)}%`;
@@ -30,9 +34,13 @@ export const WaveBar = ({
       backdropFilter="saturate(120%) blur(0px)"
     >
       <motion.div
-        initial={{ width: 0 }}
+        initial={{ width: animateFill ? 0 : widthPct }}
         animate={{ width: widthPct }}
-        transition={{ duration: 0.8, delay, ease: [0.22, 1, 0.36, 1] }}
+        transition={
+          animateFill
+            ? { duration: 0.8, delay, ease: [0.22, 1, 0.36, 1] }
+            : { duration: 0 }
+        }
         style={{ position: "absolute", top: 0, left: 0, bottom: 0 }}
       >
         <Box

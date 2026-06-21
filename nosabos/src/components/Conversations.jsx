@@ -70,6 +70,7 @@ import {
 } from "../utils/supportTranslation";
 import { getBidiTextProps, mergeBidiSx } from "../utils/bidiText";
 import { awardXp } from "../utils/utils";
+import { recordPlateActivity } from "../utils/dailyPlate";
 import { getLanguageXp } from "../utils/progressTracking";
 import {
   SOFT_STOP_BUTTON_BG,
@@ -2530,6 +2531,10 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
     setXp((v) => v + xpGain);
     setGoalsCompleted((v) => v + 1);
     setCurrentGoal((prev) => ({ ...prev, completed: true }));
+
+    // Daily plate: a completed conversation goal counts toward the (upcoming)
+    // Conversation quest course. Counter accrues now; not yet a visible course.
+    void recordPlateActivity(npub, "conversation", targetLangRef.current);
 
     try {
       await awardXp(npub, xpGain, targetLangRef.current);

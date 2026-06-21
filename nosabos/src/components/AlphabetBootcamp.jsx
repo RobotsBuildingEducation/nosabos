@@ -75,11 +75,13 @@ import {
   RiCheckLine,
   RiCloseLine,
   RiStarFill,
+  RiRefreshLine,
 } from "react-icons/ri";
 import { getPreferredTTSVoice, getTTSPlayer, TTS_LANG_TAG } from "../utils/tts";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
 import { awardXp } from "../utils/utils";
+import { recordPlateActivity } from "../utils/dailyPlate";
 import {
   SOFT_STOP_BUTTON_BG,
   SOFT_STOP_BUTTON_HOVER_BG,
@@ -102,8 +104,12 @@ import submitActionSound from "../assets/submitaction.mp3";
 import nextButtonSound from "../assets/nextbutton.mp3";
 import VoiceOrb from "./VoiceOrb";
 import XpProgressHeader from "./XpProgressHeader";
+import RandomCharacter from "./RandomCharacter";
+import { useThemeStore } from "../useThemeStore";
 import {
   DEFAULT_SUPPORT_LANGUAGE,
+  LANGUAGE_FALLBACK_LABELS,
+  LANGUAGE_PROMPT_LABELS,
   normalizeSupportLanguage,
 } from "../constants/languages";
 
@@ -505,6 +511,7 @@ const ALPHABET_UI_TEXT = {
     vowel: "Vowel",
     consonant: "Consonant",
     sign: "Sign",
+    sound: "Sound",
     practice: "Practice",
     playSound: "Play sound",
     playWord: "Play word",
@@ -533,7 +540,10 @@ const ALPHABET_UI_TEXT = {
     alphabetSubhead: "Start by learning {language} letters and sounds.",
     note: "After this, switch to Path mode in the menu to explore lessons.",
     complete: "Congratulations! You've completed the alphabet.",
+    deckComplete: "Deck cleared! Generate a new one to keep going.",
+    generateDeckError: "Couldn't generate a new deck. Please try again.",
     startSkillTree: "Start skill tree",
+    newRound: "New round",
     collection: "Collection",
     loadError: "We couldn't load the alphabet. Please try again.",
   },
@@ -572,6 +582,7 @@ const ALPHABET_UI_TEXT = {
       "Después de esto, cambia al modo Ruta en el menú para explorar las lecciones.",
     complete: "¡Felicidades! Has completado el alfabeto.",
     startSkillTree: "Iniciar árbol de habilidades",
+    newRound: "Nueva ronda",
     collection: "Colección",
     loadError: "No pudimos cargar el alfabeto. Intenta nuevamente.",
   },
@@ -610,6 +621,7 @@ const ALPHABET_UI_TEXT = {
       "Dopo questo, passa alla modalità Percorso nel menu per esplorare le lezioni.",
     complete: "Congratulazioni! Hai completato l'alfabeto.",
     startSkillTree: "Inizia l'albero delle abilità",
+    newRound: "Nuovo giro",
     collection: "Collezione",
     loadError: "Non siamo riusciti a caricare l'alfabeto. Riprova.",
   },
@@ -648,6 +660,7 @@ const ALPHABET_UI_TEXT = {
       "Ensuite, passe au mode Parcours dans le menu pour explorer les lecons.",
     complete: "Felicitations ! Tu as termine l'alphabet.",
     startSkillTree: "Commencer l'arbre",
+    newRound: "Nouvelle manche",
     collection: "Collection",
     loadError: "Impossible de charger l'alphabet. Reessaie.",
   },
@@ -686,6 +699,7 @@ const ALPHABET_UI_TEXT = {
       "Wechsle danach im Menü zum Pfadmodus, um Lektionen zu erkunden.",
     complete: "Glückwunsch! Du hast das Alphabet abgeschlossen.",
     startSkillTree: "Skill-Tree starten",
+    newRound: "Neue Runde",
     collection: "Sammlung",
     loadError: "Das Alphabet konnte nicht geladen werden. Bitte versuche es erneut.",
   },
@@ -722,6 +736,7 @@ const ALPHABET_UI_TEXT = {
     note: "この後は、メニューでパスモードに切り替えてレッスンを探索しましょう。",
     complete: "おめでとうございます！文字練習を完了しました。",
     startSkillTree: "スキルツリーを始める",
+    newRound: "新しいラウンド",
     collection: "コレクション",
     loadError: "文字データを読み込めませんでした。もう一度お試しください。",
   },
@@ -758,6 +773,7 @@ const ALPHABET_UI_TEXT = {
     note: "इसके बाद मेनू में पाथ मोड पर जाकर पाठों को देखें।",
     complete: "बधाई हो! आपने वर्णमाला पूरी कर ली है।",
     startSkillTree: "स्किल ट्री शुरू करें",
+    newRound: "नया दौर",
     collection: "संग्रह",
     loadError: "हम वर्णमाला लोड नहीं कर सके। कृपया फिर कोशिश करें।",
   },
@@ -795,6 +811,7 @@ const ALPHABET_UI_TEXT = {
       "بعد كده بدّل لوضع المسار من القائمة علشان تستكشف الدروس.",
     complete: "مبروك! خلّصت الأبجدية.",
     startSkillTree: "ابدأ شجرة المهارات",
+    newRound: "جولة جديدة",
     collection: "المجموعة",
     loadError: "ما قدرناش نحمّل الأبجدية. جرّب تاني.",
   },
@@ -832,6 +849,7 @@ const ALPHABET_UI_TEXT = {
       "完成后，在菜单中切换到路径模式继续学习课程。",
     complete: "恭喜！你已完成字母练习。",
     startSkillTree: "开始技能树",
+    newRound: "新一轮",
     collection: "收藏",
     loadError: "无法加载字母数据。请再试一次。",
   },
@@ -839,6 +857,7 @@ const ALPHABET_UI_TEXT = {
 
 ALPHABET_UI_TEXT.pt = {
   title: "Modo Alfabeto",
+  newRound: "Nova rodada",
   vowel: "Vogal",
   consonant: "Consoante",
   sign: "Sinal",
@@ -879,10 +898,63 @@ ALPHABET_UI_TEXT.pt = {
     "Não foi possível carregar os dados do alfabeto. Tente novamente.",
 };
 
+// Extra phonics-journey copy (the generated-deck flow). Kept here instead of in
+// every ALPHABET_UI_TEXT block; uiText falls back through this map, then to en.
+const PHONICS_EXTRA_UI_TEXT = {
+  es: {
+    sound: "Sonido",
+    deckComplete: "¡Mazo completado! Genera uno nuevo para seguir.",
+    generateDeckError: "No se pudo generar un mazo nuevo. Inténtalo de nuevo.",
+  },
+  pt: {
+    sound: "Som",
+    deckComplete: "Baralho concluído! Gere um novo para continuar.",
+    generateDeckError: "Não foi possível gerar um novo baralho. Tente de novo.",
+  },
+  it: {
+    sound: "Suono",
+    deckComplete: "Mazzo completato! Generane uno nuovo per continuare.",
+    generateDeckError: "Impossibile generare un nuovo mazzo. Riprova.",
+  },
+  fr: {
+    sound: "Son",
+    deckComplete: "Paquet terminé ! Génère-en un nouveau pour continuer.",
+    generateDeckError: "Impossible de générer un nouveau paquet. Réessaie.",
+  },
+  de: {
+    sound: "Laut",
+    deckComplete: "Stapel geschafft! Erzeuge einen neuen, um weiterzumachen.",
+    generateDeckError:
+      "Neuer Stapel konnte nicht erzeugt werden. Bitte erneut versuchen.",
+  },
+  ja: {
+    sound: "音",
+    deckComplete: "デッキ完了！新しいデッキを作って続けましょう。",
+    generateDeckError:
+      "新しいデッキを生成できませんでした。もう一度お試しください。",
+  },
+  hi: {
+    sound: "ध्वनि",
+    deckComplete: "डेक पूरा! जारी रखने के लिए नया बनाएँ।",
+    generateDeckError: "नया डेक नहीं बन सका। कृपया फिर से प्रयास करें।",
+  },
+  ar: {
+    sound: "صوت",
+    deckComplete: "اكتملت المجموعة! أنشئ واحدة جديدة للمتابعة.",
+    generateDeckError: "تعذّر إنشاء مجموعة جديدة. حاول مرة أخرى.",
+  },
+  zh: {
+    sound: "音",
+    deckComplete: "卡组完成！生成新的一组继续学习。",
+    generateDeckError: "无法生成新卡组。请重试。",
+  },
+};
+
 const uiText = (lang, key, params = {}) => {
   const normalizedLang = normalizeSupportLanguage(lang, DEFAULT_SUPPORT_LANGUAGE);
   const raw =
     ALPHABET_UI_TEXT[normalizedLang]?.[key] ??
+    PHONICS_EXTRA_UI_TEXT[normalizedLang]?.[key] ??
     ALPHABET_UI_TEXT.en[key] ??
     key;
   return raw.replace(/\{(\w+)\}/g, (_, token) =>
@@ -1145,6 +1217,173 @@ async function saveAlphabetPracticeWord(
   }
 }
 
+// Number of brand-new phonics cards generated per "New round".
+const NEW_DECK_SIZE = 6;
+
+// Localized display fields a generated phonics card can carry, mirroring the
+// base alphabet entries (name / sound / tip, with per-language suffixes).
+const GEN_DISPLAY_BASES = ["name", "sound", "tip"];
+const GEN_DISPLAY_SUFFIXES = [
+  "",
+  "Es",
+  "Pt",
+  "It",
+  "Fr",
+  "De",
+  "Ja",
+  "Hi",
+  "Ar",
+  "Zh",
+];
+
+// Copy just the present localized display fields off a card (for saving) or off
+// a Firestore doc (for reloading) so the same shape round-trips both ways.
+function pickGeneratedDisplayFields(source) {
+  const out = {};
+  GEN_DISPLAY_BASES.forEach((base) => {
+    GEN_DISPLAY_SUFFIXES.forEach((suffix) => {
+      const key = `${base}${suffix}`;
+      const value = source?.[key];
+      if (typeof value === "string" && value) out[key] = value;
+    });
+  });
+  return out;
+}
+
+// Turn a raw generated unit into a card shaped like a base alphabet entry, with
+// the pronunciation guide + tip in BOTH English (base keys) and the learner's
+// support language (suffixed keys), so the card reveals the same details.
+function buildGeneratedCard(unit, uiLang, id) {
+  const lang = normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE);
+  const suffix = LOCALIZED_FIELD_SUFFIX[lang] || "";
+  const card = {
+    id,
+    letter: unit.grapheme,
+    type: "sound",
+    generated: true,
+    name: unit.name || "",
+    sound: unit.soundEn || "",
+    tip: unit.tipEn || "",
+    // Tap-to-hear plays a real word demonstrating the sound (like base cards).
+    tts: unit.exampleWord || "",
+    practiceWord: unit.exampleWord || "",
+    practiceWordMeaning: normalizeMeaning({
+      en: unit.meaningEn || "",
+      [lang]: unit.meaningLoc || unit.meaningEn || "",
+    }),
+  };
+  if (suffix) {
+    if (unit.soundLoc || unit.soundEn) {
+      card[`sound${suffix}`] = unit.soundLoc || unit.soundEn;
+    }
+    if (unit.tipLoc || unit.tipEn) {
+      card[`tip${suffix}`] = unit.tipLoc || unit.tipEn;
+    }
+  }
+  return card;
+}
+
+// Generate a fresh batch of NEW phonics units (digraphs, blends, syllables,
+// less-common sounds) that go beyond the base alphabet. Guidance comes back in
+// English + the learner's support language so cards read in the right language.
+async function generateNewPhonicsUnits(
+  targetLang,
+  uiLang,
+  existingGraphemes = [],
+  count = NEW_DECK_SIZE,
+) {
+  const lang = normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE);
+  const languageName =
+    LANGUAGE_PROMPT_LABELS[targetLang] ||
+    LANGUAGE_NAMES[targetLang] ||
+    "the target language";
+  const scriptName = getScriptName(targetLang, uiLang);
+  const supportName =
+    LANGUAGE_PROMPT_LABELS[lang] || LANGUAGE_FALLBACK_LABELS[lang] || "English";
+  const avoid = existingGraphemes.filter(Boolean).slice(0, 200).join(", ");
+  const prompt = `You are creating phonics flashcards for a learner.
+- Target language being learned: ${languageName} (written in ${scriptName}).
+- The learner's OWN language, used for ALL explanations: ${supportName}.
+
+Generate ${count} NEW beginner-friendly ${languageName} phonics units that go BEYOND the basic alphabet — for example digraphs, consonant blends, common syllables, or less-common sounds.
+Avoid these already-covered units: ${avoid || "(none)"}.
+
+For each unit:
+- "grapheme": the sound/letters written in ${scriptName} (${languageName}).
+- "exampleWord": a common ${languageName} word that uses it, written in ${scriptName}.
+- "name": a very short English label.
+- "sound_en", "tip_en", "meaning_en": written in English.
+- "sound_loc", "tip_loc", "meaning_loc": written in ${supportName}. These three explanations MUST be in ${supportName}, NOT in ${languageName}.
+
+Respond ONLY with a JSON array of exactly ${count} objects in this exact shape:
+[{"grapheme":"...","name":"...","sound_en":"...","sound_loc":"...","tip_en":"...","tip_loc":"...","exampleWord":"...","meaning_en":"...","meaning_loc":"..."}]
+- Keep each grapheme short and beginner-friendly.
+- Do not repeat any avoided unit and do not duplicate within the list.
+- No extra text.`;
+
+  try {
+    const raw = await callResponses({
+      model: DEFAULT_RESPONSES_MODEL,
+      input: prompt,
+    });
+    const match = raw.match(/\[[\s\S]*\]/);
+    const parsed = JSON.parse(match ? match[0] : raw);
+    if (!Array.isArray(parsed)) return [];
+    const seen = new Set();
+    return parsed
+      .map((u) => ({
+        grapheme: String(u?.grapheme || "").trim(),
+        name: String(u?.name || "").trim(),
+        soundEn: String(u?.sound_en || u?.sound || "").trim(),
+        soundLoc: String(u?.sound_loc || u?.sound_en || u?.sound || "").trim(),
+        tipEn: String(u?.tip_en || u?.tip || "").trim(),
+        tipLoc: String(u?.tip_loc || u?.tip_en || u?.tip || "").trim(),
+        exampleWord: String(u?.exampleWord || u?.word || "").trim(),
+        meaningEn: String(u?.meaning_en || u?.meaning || "").trim(),
+        meaningLoc: String(
+          u?.meaning_loc || u?.meaning_en || u?.meaning || "",
+        ).trim(),
+      }))
+      .filter((u) => {
+        if (!u.grapheme) return false;
+        const key = u.grapheme.toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+  } catch (error) {
+    console.error("Failed to generate phonics units:", error);
+    return [];
+  }
+}
+
+// Persist a generated phonics unit's definition so the growing collection
+// survives reloads. Shares the alphabetPractice subcollection with letters;
+// merge keeps any later practice progress intact.
+async function saveGeneratedPhonicsUnit(npub, targetLang, card) {
+  if (!npub || !card?.id) return;
+  try {
+    await setDoc(
+      doc(database, "users", npub, "alphabetPractice", `${targetLang}_${card.id}`),
+      {
+        letterId: card.id,
+        targetLang,
+        generated: true,
+        grapheme: card.letter || "",
+        ...pickGeneratedDisplayFields(card),
+        tts: card.tts || null,
+        currentWord: card.practiceWord || null,
+        currentMeaning: card.practiceWordMeaning ?? null,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true },
+    );
+  } catch (error) {
+    console.error("Error saving generated phonics unit:", error);
+  }
+}
+
 const getPracticeLetterMarker = (letter) => {
   if (!letter?.letter) return "";
   return letter.letter.split("/")[0]?.trim()?.split(" ")[0] || "";
@@ -1181,7 +1420,7 @@ const getHighlightedWordParts = (word, marker) => {
 };
 
 function LetterCard({
-  playSound,
+  playSound = () => {},
   letter,
   onPlay,
   isPlaying,
@@ -1201,6 +1440,10 @@ function LetterCard({
   const [isPracticeMode, setIsPracticeMode] = useState(false);
   const [isFlipped, setIsFlipped] = useState(false);
   const [isGrading, setIsGrading] = useState(false);
+  const [isGeneratingWord, setIsGeneratingWord] = useState(false);
+  // Collect this card the first time it's cleared during this mount, so a new
+  // round re-collects letters even though their cumulative count is already > 0.
+  const collectedThisMountRef = useRef(false);
   const [showResult, setShowResult] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [isPlayingWord, setIsPlayingWord] = useState(false);
@@ -1320,18 +1563,27 @@ function LetterCard({
       setIsCorrect(isYes);
       setShowResult(true);
 
+      // Daily plate: every graded letter practice counts toward the Phonics
+      // quest course (pass or fail, like flashcard reviews).
+      if (npub) {
+        void recordPlateActivity(npub, "phonics", targetLang);
+      }
+
       let nextPracticeWord = practiceWord;
       let nextPracticeMeaning = practiceWordMeaningData;
 
       // Award XP and save progress
       if (isYes) {
+        // Auditory cue that the answer was correct.
+        playSound("correct");
         setCorrectCount((c) => c + 1);
         if (npub) {
           await awardXp(npub, xp, targetLang);
           onXpAwarded?.(xp);
         }
-        // First successful practice - collect the card
-        if (correctCount === 0) {
+        // Collect the card on its first clear this mount (works across rounds).
+        if (!collectedThisMountRef.current) {
+          collectedThisMountRef.current = true;
           onCardCollected?.(letter.id);
         }
       }
@@ -1369,11 +1621,38 @@ function LetterCard({
     }
   };
 
-  const handlePracticeClick = () => {
+  const handlePracticeClick = async () => {
     playSound(selectSound);
     setIsPracticeMode(true);
     setIsFlipped(true);
     setShowResult(false);
+
+    // Completed/collected letters may not have a practice word loaded yet —
+    // generate one on demand so Practice always has something to say.
+    if (!practiceWord && !isGeneratingWord) {
+      setIsGeneratingWord(true);
+      try {
+        const generated = await generateNewPracticeWord("");
+        if (generated?.word) {
+          const meaning = normalizeMeaning(generated.meaning);
+          setPracticeWord(generated.word);
+          setPracticeWordMeaningData(meaning);
+          onPracticeWordUpdated?.(letter.id, generated.word, meaning);
+          await saveAlphabetPracticeWord(
+            npub,
+            targetLang,
+            letter.id,
+            generated.word,
+            meaning,
+            correctCount,
+          );
+        }
+      } catch (error) {
+        console.error("Failed to generate practice word on demand:", error);
+      } finally {
+        setIsGeneratingWord(false);
+      }
+    }
   };
 
   const handleFlipBack = () => {
@@ -1635,7 +1914,7 @@ function LetterCard({
             <Badge colorScheme={typeColor} borderRadius="md" px={2} py={1}>
               {typeLabel}
             </Badge>
-            {practiceWord && (
+            <HStack spacing={2}>
               <Button
                 size="sm"
                 background="transparent"
@@ -1645,12 +1924,13 @@ function LetterCard({
                 color={APP_TEXT_PRIMARY}
                 leftIcon={<RiMicLine size={12} />}
                 onClick={handlePracticeClick}
+                isLoading={isGeneratingWord}
                 fontSize="xs"
                 _hover={{ bg: APP_SURFACE_MUTED }}
               >
-                  {uiText(uiLang, "practice")}
+                {uiText(uiLang, "practice")}
               </Button>
-            )}
+            </HStack>
           </HStack>
 
           <VStack spacing={3} align="center" textAlign="center" w="100%">
@@ -1753,29 +2033,35 @@ function LetterCard({
             {uiText(uiLang, "sayThisWord")}
           </Text>
 
-          <HStack spacing={2} align="center">
-            <Text fontSize="2xl" fontWeight="black" color={APP_TEXT_PRIMARY}>
-              {highlightedPracticeWord.map((part, index) => (
-                <Text
-                  key={`${part.text}-${index}`}
-                  as="span"
-                  color={part.highlight ? "green.500" : APP_TEXT_PRIMARY}
-                >
-                  {part.text}
-                </Text>
-              ))}
-            </Text>
-            <IconButton
-              aria-label={uiText(uiLang, "playWord")}
-              icon={isLoadingTts ? <Spinner size="xs" /> : <FiVolume2 />}
-              size="sm"
-              variant="ghost"
-              color={isLoadingTts || isPlayingWord ? "teal.500" : APP_TEXT_PRIMARY}
-              onClick={handlePlayWord}
-              isDisabled={isLoadingTts}
-              _hover={{ bg: APP_SURFACE_MUTED }}
-            />
-          </HStack>
+          {isGeneratingWord && !practiceWord ? (
+            <Spinner size="md" color="teal.400" my={2} />
+          ) : (
+            <HStack spacing={2} align="center">
+              <Text fontSize="2xl" fontWeight="black" color={APP_TEXT_PRIMARY}>
+                {highlightedPracticeWord.map((part, index) => (
+                  <Text
+                    key={`${part.text}-${index}`}
+                    as="span"
+                    color={part.highlight ? "green.500" : APP_TEXT_PRIMARY}
+                  >
+                    {part.text}
+                  </Text>
+                ))}
+              </Text>
+              <IconButton
+                aria-label={uiText(uiLang, "playWord")}
+                icon={isLoadingTts ? <Spinner size="xs" /> : <FiVolume2 />}
+                size="sm"
+                variant="ghost"
+                color={
+                  isLoadingTts || isPlayingWord ? "teal.500" : APP_TEXT_PRIMARY
+                }
+                onClick={handlePlayWord}
+                isDisabled={isLoadingTts}
+                _hover={{ bg: APP_SURFACE_MUTED }}
+              />
+            </HStack>
+          )}
 
           {showMeaning && (
             <Text fontSize="sm" color={APP_TEXT_SECONDARY}>
@@ -2056,9 +2342,9 @@ export default function AlphabetBootcamp({
   npub,
   languageXp = 0,
   pauseMs = 2000,
-  onStartSkillTree,
 }) {
   const uiLang = normalizeSupportLanguage(appLanguage, DEFAULT_SUPPORT_LANGUAGE);
+  const isLightTheme = useThemeStore((s) => s.themeMode) === "light";
   const alphabet = LANGUAGE_ALPHABETS[targetLang] || RUSSIAN_ALPHABET;
   const playerRef = useRef(null);
   const playbackRequestRef = useRef(0);
@@ -2073,6 +2359,11 @@ export default function AlphabetBootcamp({
   const [deck, setDeck] = useState([]);
   const [collectedLetters, setCollectedLetters] = useState([]);
   const [isInitialized, setIsInitialized] = useState(false);
+  // Generated phonics units beyond the base alphabet (persisted to Firestore),
+  // plus a flag shown while a fresh deck is being generated.
+  const [generatedCards, setGeneratedCards] = useState([]);
+  const [isGeneratingDeck, setIsGeneratingDeck] = useState(false);
+  const toast = useToast();
 
   // Update currentXp when languageXp prop changes
   useEffect(() => {
@@ -2083,10 +2374,77 @@ export default function AlphabetBootcamp({
     setCurrentXp((prev) => prev + xp);
   };
 
-  const handleStartSkillTreeClick = useCallback(() => {
+  // Generate an entirely new deck of fresh phonics units (digraphs, blends,
+  // syllables, less-common sounds) beyond what's already been seen. Completed
+  // cards are never touched — the collection only grows — and the new units are
+  // persisted so they survive reloads.
+  const handleNewRound = useCallback(async () => {
+    if (isGeneratingDeck) return;
     playSound(selectSound);
-    onStartSkillTree?.();
-  }, [onStartSkillTree, playSound]);
+    setIsGeneratingDeck(true);
+    try {
+      const existing = [...alphabet, ...generatedCards]
+        .map((c) => c.letter)
+        .filter(Boolean);
+      const units = await generateNewPhonicsUnits(
+        targetLang,
+        uiLang,
+        existing,
+        NEW_DECK_SIZE,
+      );
+      if (!units.length) {
+        toast({
+          title: uiText(uiLang, "generateDeckError"),
+          status: "error",
+          duration: 3000,
+        });
+        return;
+      }
+      const stamp = Date.now();
+      const newCards = units.map((u, i) =>
+        buildGeneratedCard(u, uiLang, `gen_${stamp}_${i}`),
+      );
+      await Promise.all(
+        newCards.map((c) => saveGeneratedPhonicsUnit(npub, targetLang, c)),
+      );
+      setGeneratedCards((prev) => [...prev, ...newCards]);
+      setSavedPracticeWords((prev) => {
+        const next = { ...prev };
+        newCards.forEach((c) => {
+          if (c.practiceWord) {
+            next[c.id] = {
+              word: c.practiceWord,
+              meaning: c.practiceWordMeaning,
+            };
+          }
+        });
+        return next;
+      });
+      // New deck = the freshly generated units; the collection is left intact.
+      setDeck((prev) => [...prev, ...shuffleArray(newCards)]);
+      if (typeof window !== "undefined") {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    } catch (error) {
+      console.error("Failed to generate a new phonics deck:", error);
+      toast({
+        title: uiText(uiLang, "generateDeckError"),
+        status: "error",
+        duration: 3000,
+      });
+    } finally {
+      setIsGeneratingDeck(false);
+    }
+  }, [
+    alphabet,
+    generatedCards,
+    isGeneratingDeck,
+    npub,
+    playSound,
+    targetLang,
+    toast,
+    uiLang,
+  ]);
 
   const targetLanguage = getLanguageName(targetLang, uiLang);
   const headline = uiText(uiLang, "alphabetHeadline", {
@@ -2097,10 +2455,14 @@ export default function AlphabetBootcamp({
   });
   const note = uiText(uiLang, "note");
   const hasLetters = Array.isArray(alphabet) && alphabet.length;
+  // Total known cards = base alphabet + every generated phonics unit so far.
+  const totalCards = (alphabet?.length || 0) + generatedCards.length;
   const isComplete =
     hasLetters &&
+    isInitialized &&
     deck.length === 0 &&
-    collectedLetters.length === alphabet.length;
+    totalCards > 0 &&
+    collectedLetters.length >= totalCards;
 
   // XP progress calculations
   const xpLevelNumber = Math.floor(currentXp / 100) + 1;
@@ -2218,6 +2580,7 @@ export default function AlphabetBootcamp({
   useEffect(() => {
     setSavedPracticeWords({});
     setSavedCorrectCounts({});
+    setGeneratedCards([]);
     setIsInitialized(false);
 
     if (!npub) {
@@ -2251,6 +2614,7 @@ export default function AlphabetBootcamp({
         const mapped = {};
         const correctCounts = {};
         const collectedIds = new Set();
+        const loadedGenerated = [];
 
         snapshot.forEach((docSnap) => {
           const data = docSnap.data();
@@ -2263,10 +2627,23 @@ export default function AlphabetBootcamp({
             }
             if (data?.correctCount) {
               correctCounts[data.letterId] = data.correctCount;
-              // Letters with at least 1 correct are "collected"
+              // Cards with at least 1 correct are "collected"
               if (data.correctCount >= 1) {
                 collectedIds.add(data.letterId);
               }
+            }
+            // Rebuild generated phonics units (beyond the base alphabet) so the
+            // grown collection + any unfinished deck survive reloads, keeping
+            // their localized pronunciation guide + tip.
+            if (data.generated) {
+              loadedGenerated.push({
+                id: data.letterId,
+                letter: data.grapheme || "",
+                tts: data.tts || "",
+                type: "sound",
+                generated: true,
+                ...pickGeneratedDisplayFields(data),
+              });
             }
           }
         });
@@ -2275,10 +2652,13 @@ export default function AlphabetBootcamp({
           clearTimeout(fallbackTimer);
           setSavedPracticeWords(mapped);
           setSavedCorrectCounts(correctCounts);
+          setGeneratedCards(loadedGenerated);
 
-          // Initialize deck: shuffle letters that haven't been collected
-          const uncollected = alphabet.filter((l) => !collectedIds.has(l.id));
-          const collected = alphabet.filter((l) => collectedIds.has(l.id));
+          // Deck = every known card (alphabet + generated) not yet collected;
+          // the collection keeps everything cleared so far.
+          const allCards = [...alphabet, ...loadedGenerated];
+          const uncollected = allCards.filter((c) => !collectedIds.has(c.id));
+          const collected = allCards.filter((c) => collectedIds.has(c.id));
 
           setDeck(shuffleArray(uncollected));
           setCollectedLetters(collected);
@@ -2320,13 +2700,7 @@ export default function AlphabetBootcamp({
           levelText={`${uiText(uiLang, "level")} ${xpLevelNumber}`}
           xpText={`XP ${currentXp}`}
           progressPct={nextLevelProgressPct}
-          barProps={{
-            height: 12,
-            start: "#38B2AC",
-            end: "#81E6D9",
-            bg: APP_SURFACE_MUTED,
-            border: APP_BORDER,
-          }}
+          xpBadgeProps={{ colorScheme: "teal", fontSize: "10px" }}
         />
       </Box>
 
@@ -2367,16 +2741,18 @@ export default function AlphabetBootcamp({
                     {uiText(uiLang, "progress")}
                   </Text>
                   <Text fontSize="xs" color={APP_TEXT_PRIMARY} fontWeight="bold">
-                    {collectedLetters.length} / {alphabet.length}
+                    {collectedLetters.length} / {totalCards}
                   </Text>
                 </HStack>
                 <WaveBar
-                  value={(collectedLetters.length / alphabet.length) * 100}
+                  value={
+                    totalCards > 0
+                      ? (collectedLetters.length / totalCards) * 100
+                      : 0
+                  }
                   height={10}
-                  start="#D69E2E"
-                  end="#F6E05E"
-                  bg={APP_SURFACE_MUTED}
-                  border={APP_BORDER}
+                  start="#fbbf24"
+                  end="#f59e0b"
                 />
               </Box>
 
@@ -2438,29 +2814,41 @@ export default function AlphabetBootcamp({
               <Flex
                 align="center"
                 justify="center"
-                bg="green.900"
+                bg={isLightTheme ? "green.50" : "green.900"}
                 borderRadius="lg"
                 border="1px solid"
-                borderColor="green.500"
+                borderColor={isLightTheme ? "green.300" : "green.500"}
                 p={6}
                 maxW="400px"
                 mx="auto"
               >
                 <VStack spacing={2}>
-                  <Text fontSize="2xl">🎉</Text>
-                  <Text color="green.200" fontWeight="bold" textAlign="center">
-                    {uiText(uiLang, "complete")}
+                  <RandomCharacter notSoRandomCharacter="30" />
+                  <Text
+                    color={isLightTheme ? "green.700" : "green.200"}
+                    fontWeight="bold"
+                    textAlign="center"
+                  >
+                    {uiText(
+                      uiLang,
+                      generatedCards.length > 0 ? "deckComplete" : "complete",
+                    )}
                   </Text>
                 </VStack>
               </Flex>
               {isComplete && (
-                <Button
-                  colorScheme="teal"
-                  size="lg"
-                  onClick={handleStartSkillTreeClick}
-                >
-                  {uiText(uiLang, "startSkillTree")}
-                </Button>
+                <VStack spacing={3}>
+                  <Button
+                    variant="outline"
+                    colorScheme="teal"
+                    size="lg"
+                    leftIcon={<RiRefreshLine />}
+                    onClick={handleNewRound}
+                    isLoading={isGeneratingDeck}
+                  >
+                    {uiText(uiLang, "newRound")}
+                  </Button>
+                </VStack>
               )}
             </VStack>
           )}
@@ -2483,6 +2871,7 @@ export default function AlphabetBootcamp({
                 {collectedLetters.map((item) => (
                   <LetterCard
                     key={item.id}
+                    playSound={playSound}
                     letter={item}
                     appLanguage={appLanguage}
                     targetLang={targetLang}

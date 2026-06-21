@@ -1,5 +1,5 @@
 // src/components/Onboarding.jsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { keyframes } from "@emotion/react";
 import {
   Box,
@@ -136,6 +136,18 @@ export default function Onboarding({
     normalizedUserLang,
   );
   const [supportLang, setSupportLang] = useState(initialSupportLang);
+  // Follow the resolved app language (set on the landing page / /links / the
+  // user doc) until the user explicitly picks a support language here — so a
+  // late language resolution can't leave this stuck on the default.
+  const userPickedSupportLangRef = useRef(false);
+  useEffect(() => {
+    if (userPickedSupportLangRef.current) return;
+    const next = normalizeSupportLanguage(
+      userLanguage,
+      DEFAULT_SUPPORT_LANGUAGE,
+    );
+    setSupportLang((prev) => (prev === next ? prev : next));
+  }, [userLanguage]);
   const ui = translations[supportLang] || translations.en;
   const storedThemeMode = useThemeStore((s) => s.themeMode);
   const syncThemeMode = useThemeStore((s) => s.syncThemeMode);
@@ -249,6 +261,7 @@ export default function Onboarding({
   );
 
   const handleSupportLanguageChange = (value) => {
+    userPickedSupportLangRef.current = true;
     playOnboardingSound(selectSound);
     const normalized = normalizeSupportLanguage(
       value,

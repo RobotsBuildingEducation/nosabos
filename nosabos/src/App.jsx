@@ -165,13 +165,20 @@ import {
   applyPlateBonusMarker,
   claimDailyPlateBonus,
   clearPlateSession,
+  electDailyQuestCourses,
   getDailyPlateSnapshot,
   getNextPlateCourse,
+  getQuestNeglectWeights,
+  hasSeenFirstQuest,
   isPlateSessionFor,
+  markFirstQuestSeen,
   readPlateSession,
+  readQuestPlate,
+  readQuestPlateKinds,
+  resetTodayPlate,
   startPlateSession,
+  writeQuestPlate,
 } from "./utils/dailyPlate";
-import { completeSound } from "./constants/sounds";
 import {
   startLesson,
   completeLesson,
@@ -197,6 +204,7 @@ import RandomCharacter from "./components/RandomCharacter";
 import {
   loadLearningPath,
   loadMultiLevelLearningPath,
+  getLatestUnlockedLesson,
 } from "./data/skillTree/index.js";
 import TutorialStepper from "./components/TutorialStepper";
 import TutorialActionBarPopovers from "./components/TutorialActionBarPopovers";
@@ -620,10 +628,30 @@ async function ensureOnboardingField(db, id, data) {
     };
 
     if (shouldSetDefaults && !hasCompleted) {
-      // New accounts are always created with onboarding.completed = false,
-      // so if we reach here the doc predates the onboarding system — it's
-      // an old account that already completed onboarding. Mark it true.
-      onboardingPayload.completed = true;
+      // The doc has no onboarding flag. Treat it as a pre-onboarding "legacy"
+      // account (already onboarded) ONLY when there's real evidence of prior
+      // use; otherwise it's a fresh/partial doc and onboarding must still run.
+      // Previously this always assumed completed=true, which silently skipped
+      // onboarding whenever any other write created the user doc before
+      // connectDID got to set completed=false.
+      const looksUsed = Boolean(
+        Number(data?.xp) > 0 ||
+          Number(data?.progress?.xp) > 0 ||
+          Number(data?.streak) > 0 ||
+          (Array.isArray(data?.completedGoalDates) &&
+            data.completedGoalDates.length > 0) ||
+          (data?.dailyXpHistory &&
+            typeof data.dailyXpHistory === "object" &&
+            Object.keys(data.dailyXpHistory).length > 0),
+      );
+      if (!looksUsed) {
+        console.warn(
+          "[ONBOARDING] users doc had no onboarding flag and no prior-use " +
+            "signals; keeping onboarding pending. doc keys:",
+          Object.keys(data || {}),
+        );
+      }
+      onboardingPayload.completed = looksUsed;
     }
 
     if (shouldSetStep) {
@@ -2236,9 +2264,13 @@ export default function App({ onBootReady } = {}) {
     user?.progress?.targetLang,
     DEFAULT_TARGET_LANGUAGE,
   );
+  // localStorage holds the user's current choice (set on the landing page, on
+  // /links, and on every in-app language change), so it wins. Fall back to the
+  // saved doc value only when there's no stored choice (e.g. a fresh device).
   const resolvedSupportLang =
+    normalizeSupportLang(storedUiLang) ||
     normalizeSupportLang(user?.progress?.supportLang) ||
-    normalizeSupportLanguage(storedUiLang, DEFAULT_SUPPORT_LANGUAGE);
+    DEFAULT_SUPPORT_LANGUAGE;
   const resolvedLevel = migrateToCEFRLevel(user?.progress?.level) || "Pre-A1";
 
   useEffect(() => {
@@ -2640,6 +2672,10 @@ export default function App({ onBootReady } = {}) {
       lastPathTargetRef.current !== null &&
       lastPathTargetRef.current !== rawTargetLang
     ) {
+      // Land at the top of the quest page, not the previous scroll position.
+      if (typeof window !== "undefined") {
+        window.scrollTo({ top: 0, behavior: "auto" });
+      }
       setPathMode("plate");
     }
     lastPathTargetRef.current = rawTargetLang;
@@ -3006,6 +3042,7 @@ export default function App({ onBootReady } = {}) {
 
       if (userDoc) {
         const uiLang =
+          normalizeSupportLang(localStorage.getItem("appLanguage")) ||
           normalizeSupportLang(userDoc?.progress?.supportLang) ||
           normalizeSupportLanguage(
             userDoc.appLanguage,
@@ -3192,7 +3229,8 @@ export default function App({ onBootReady } = {}) {
   // useModalStore, so the shared backdrop component and modal Gates combine
   // both sides themselves — this keeps App's render free of subscriptions
   // to the two store-backed booleans.
-  const appOnboardingChainOpen = proficiencyTestOpen || gettingStartedOpen;
+  const appOnboardingChainOpen =
+    proficiencyTestOpen || gettingStartedOpen || modesIntroOpen;
 
   useEffect(() => {
     if (timeUpOpen) {
@@ -5261,9 +5299,19 @@ export default function App({ onBootReady } = {}) {
     flushSync(() => {
       setProficiencyTestOpen(false);
     });
+    // Record the decision locally FIRST so the next modal in the chain (the
+    // modes-intro "How it works" carousel, which waits for proficiencyPlacement)
+    // opens immediately — don't make it wait on the Firestore round-trip.
+    // "skipped" is a sentinel — treated as falsy by the placement check but
+    // truthy enough to prevent the modal from re-opening.
+    patchUser?.({
+      proficiencyPlacement: "skipped",
+      proficiencyPlacements: {
+        ...(user?.proficiencyPlacements || {}),
+        [resolvedTargetLang]: "skipped",
+      },
+    });
     // Persist skip so the modal doesn't reappear every session.
-    // "skipped" is a sentinel — treated as falsy by the placement check
-    // but truthy enough to prevent the modal from re-opening.
     const id = resolveNpub();
     if (id) {
       try {
@@ -5276,13 +5324,6 @@ export default function App({ onBootReady } = {}) {
           },
           { merge: true },
         );
-        patchUser?.({
-          proficiencyPlacement: "skipped",
-          proficiencyPlacements: {
-            ...(user?.proficiencyPlacements || {}),
-            [resolvedTargetLang]: "skipped",
-          },
-        });
       } catch (e) {
         console.warn("Failed to persist proficiency skip:", e);
       }
@@ -6848,10 +6889,98 @@ export default function App({ onBootReady } = {}) {
      target completes. Course counts arrive through the user store (awardXp
      syncs them), so the conductor just watches snapshot transitions.
   ----------------------------------- */
-  const plateSnapshot = useMemo(
-    () => getDailyPlateSnapshot(user, resolvedTargetLang),
-    [user, resolvedTargetLang],
+  // Which course types make up the quest. Defaults to the fixed first-quest
+  // trio; the elector (and the dev re-roll button) can swap the composition.
+  const [electedQuestKinds, setElectedQuestKinds] = useState(
+    DAILY_PLATE_COURSE_ORDER,
   );
+
+  // Pool of course types that can be elected today. "learn" is gated on an
+  // unlocked lesson actually existing; the rest are always available.
+  // (phonics joins in Phase 3.)
+  const availableQuestKinds = useMemo(() => {
+    const kinds = ["speak", "review", "conversation"];
+    const units = skillTreeInitialUnits.units;
+    const lessonAvailable =
+      !Array.isArray(units) || units.length === 0
+        ? true // units not loaded yet — assume available
+        : Boolean(
+            getLatestUnlockedLesson(
+              units,
+              userProgress?.lessons || {},
+              hasCompletedSkillTreeTutorial,
+            ),
+          );
+    if (lessonAvailable) kinds.push("learn");
+    // Phonics is electable only for languages that have an alphabet deck.
+    if (ALPHABET_LANGS.includes(resolvedTargetLang)) kinds.push("phonics");
+    return kinds;
+    // ALPHABET_LANGS is a stable in-component literal; resolvedTargetLang is
+    // the real input here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    skillTreeInitialUnits.units,
+    userProgress?.lessons,
+    hasCompletedSkillTreeTutorial,
+    resolvedTargetLang,
+  ]);
+
+  const plateSnapshot = useMemo(
+    () => getDailyPlateSnapshot(user, resolvedTargetLang, undefined, electedQuestKinds),
+    [user, resolvedTargetLang, electedQuestKinds],
+  );
+
+  // Resolve today's quest composition:
+  //  • already elected today (survives refresh / dev re-rolls) → use it.
+  //  • first quest ever → the fixed trio (then mark first-seen).
+  //  • otherwise → auto-elect for the day: deterministic seed, neglect
+  //    weighting, and yesterday's set down-weighted so days differ.
+  useEffect(() => {
+    const langKey = plateSnapshot.langKey;
+    const dayKey = plateSnapshot.dayKey;
+    if (!langKey || !dayKey) return;
+
+    const todays = readQuestPlateKinds(langKey, dayKey);
+    if (todays && todays.length) {
+      setElectedQuestKinds((prev) =>
+        prev.join("|") === todays.join("|") ? prev : todays,
+      );
+      return;
+    }
+
+    // Need a loaded user before electing/marking (the first-seen flag and the
+    // neglect weights both come from the user doc).
+    if (!activeNpub) return;
+    const currentUser = useUserStore.getState?.()?.user || user;
+
+    let kinds;
+    if (!hasSeenFirstQuest(currentUser)) {
+      kinds = DAILY_PLATE_COURSE_ORDER;
+      void markFirstQuestSeen(activeNpub);
+    } else {
+      const previous = readQuestPlate();
+      const avoid =
+        previous && previous.langKey === langKey && Array.isArray(previous.kinds)
+          ? previous.kinds
+          : [];
+      kinds = electDailyQuestCourses({
+        available: availableQuestKinds,
+        avoid,
+        seed: `${activeNpub}:${langKey}:${dayKey}`,
+        weights: getQuestNeglectWeights(currentUser, langKey, availableQuestKinds),
+      });
+    }
+    if (!kinds.length) kinds = DAILY_PLATE_COURSE_ORDER;
+
+    writeQuestPlate(langKey, dayKey, kinds);
+    setElectedQuestKinds((prev) =>
+      prev.join("|") === kinds.join("|") ? prev : kinds,
+    );
+    // `user` intentionally omitted — read fresh via getState so this doesn't
+    // re-run on every XP patch (already-elected days early-return anyway).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [plateSnapshot.langKey, plateSnapshot.dayKey, availableQuestKinds, activeNpub]);
+
   const [plateSessionActive, setPlateSessionActive] = useState(false);
 
   const endPlateSession = useCallback(() => {
@@ -6895,6 +7024,14 @@ export default function App({ onBootReady } = {}) {
         goToSkillTreeMode("tutor");
         return;
       }
+      if (kind === "conversation") {
+        goToSkillTreeMode("conversations");
+        return;
+      }
+      if (kind === "phonics") {
+        goToSkillTreeMode("alphabet");
+        return;
+      }
       if (kind === "review") {
         goToSkillTreeMode("flashcards");
         return;
@@ -6936,12 +7073,22 @@ export default function App({ onBootReady } = {}) {
       plateCelebrationFlushTimerRef.current = null;
     }
     const startedAt = Date.now();
+    // Only lessons / Tutor lessons render their own completion-modal chain that
+    // we must wait behind. Flashcards / phonics / conversation don't, so they
+    // shouldn't pay the grace-window wait — show their celebration promptly.
+    const expectsModal = Boolean(pendingPlateCelebrationRef.current?.expectsModal);
     const chain = { sawModal: false, quietChecks: 0 };
 
     const showQueued = () => {
       const queued = pendingPlateCelebrationRef.current;
       pendingPlateCelebrationRef.current = null;
-      if (queued) setPlateCelebration((prev) => prev || queued);
+      if (!queued) return;
+      setPlateCelebration((prev) => prev || queued);
+      // Celebratory sound, timed to the modal's appearance: dedicated Tone.js
+      // synths — a cute "ta-da" for a single objective, a grand flourish when
+      // the whole daily is cleared. Played by name (not via the shared mp3->
+      // tone map) so each is unique to the quest flow.
+      playSound(queued.type === "cleared" ? "questCleared" : "questComplete");
     };
 
     const tick = () => {
@@ -6956,27 +7103,31 @@ export default function App({ onBootReady } = {}) {
       if (modalOpen) {
         chain.sawModal = true;
         chain.quietChecks = 0;
-        plateCelebrationFlushTimerRef.current = setTimeout(tick, 400);
-        return;
-      }
-      // No modal right now. Completion chains can start late (e.g. the Tutor
-      // waits for audio to settle), so give them a grace window; once a
-      // chain was seen, require consecutive quiet checks so the gap between
-      // chained modals doesn't fire early.
-      if (!chain.sawModal && Date.now() - startedAt < 4000) {
         plateCelebrationFlushTimerRef.current = setTimeout(tick, 300);
         return;
       }
+      // Wait for a not-yet-mounted completion chain only when one is expected
+      // (the Tutor can mount its modal late while audio settles).
+      if (expectsModal && !chain.sawModal && Date.now() - startedAt < 2500) {
+        plateCelebrationFlushTimerRef.current = setTimeout(tick, 250);
+        return;
+      }
+      // Once a chain was seen, require two consecutive quiet checks so the gap
+      // between chained modals doesn't fire early.
       chain.quietChecks += 1;
-      if (chain.sawModal && chain.quietChecks < 2) {
-        plateCelebrationFlushTimerRef.current = setTimeout(tick, 350);
+      const needed = chain.sawModal ? 2 : 1;
+      if (chain.quietChecks < needed) {
+        plateCelebrationFlushTimerRef.current = setTimeout(tick, 250);
         return;
       }
       showQueued();
     };
 
-    plateCelebrationFlushTimerRef.current = setTimeout(tick, 500);
-  }, []);
+    plateCelebrationFlushTimerRef.current = setTimeout(
+      tick,
+      expectsModal ? 400 : 100,
+    );
+  }, [playSound]);
 
   const requestPlateCelebration = useCallback(
     (celebration) => {
@@ -7012,6 +7163,25 @@ export default function App({ onBootReady } = {}) {
     }
   };
 
+  // Keep the quest celebration and the daily-goal celebration sequential.
+  // awardXp dispatches "daily:goalAchieved" only after its async Firestore
+  // write resolves (~1s), while recordPlateActivity bumps the quest counter
+  // synchronously — so the goal modal would otherwise pop on top of the quest
+  // modal a beat later. While a quest celebration is on screen we hold any
+  // goal celebration in the existing defer queue, then release it when the
+  // quest modal closes (button or backdrop, via handlePlateCelebrationContinue
+  // -> setPlateCelebration(null)). If the goal modal opened first instead, the
+  // flush's modal poll already waits behind it, so either order stays clean.
+  useEffect(() => {
+    if (!plateCelebration) return undefined;
+    deferDailyGoalCelebrationRef.current = true;
+    return () => {
+      // Clears the defer flag and surfaces any goal celebration that fired
+      // while the quest modal was up (no-op when none is queued).
+      openPendingDailyGoalCelebration();
+    };
+  }, [plateCelebration, openPendingDailyGoalCelebration]);
+
   // Celebrate when a quest course completes.
   //  • In a guided session: full flow — celebrate each course, advance via the
   //    Continue button, and land home with the cleared celebration at the end.
@@ -7021,22 +7191,42 @@ export default function App({ onBootReady } = {}) {
   //    completion modal first, so it chains after it. The plate-cleared bonus
   //    is handled separately by the bonus effect.
   const platePrevSnapshotRef = useRef(null);
+  // Guard against the conductor firing during initial hydration or a language
+  // switch: an already-completed course's saved count loads in as a not-done ->
+  // done transition, which would otherwise pop a "Quest Complete!" modal on
+  // every refresh. Arm only after the snapshot has had a moment to settle, and
+  // re-arm whenever the user or target language changes.
+  const plateConductorArmedRef = useRef(false);
+  useEffect(() => {
+    plateConductorArmedRef.current = false;
+    if (!activeNpub) return undefined;
+    const timer = setTimeout(() => {
+      plateConductorArmedRef.current = true;
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [activeNpub, resolvedTargetLang]);
+
   useEffect(() => {
     const prev = platePrevSnapshotRef.current;
     platePrevSnapshotRef.current = plateSnapshot;
     if (!prev) return;
+    // Only celebrate genuine in-session completions, not hydration transitions.
+    if (!plateConductorArmedRef.current) return;
     if (
       prev.dayKey !== plateSnapshot.dayKey ||
       prev.langKey !== plateSnapshot.langKey
     )
       return;
 
-    const justDone = DAILY_PLATE_COURSE_ORDER.find(
-      (kind) => plateSnapshot.byKind[kind]?.done && !prev.byKind[kind]?.done,
-    );
+    const justDone = plateSnapshot.courses
+      .map((course) => course.kind)
+      .find((kind) => plateSnapshot.byKind[kind]?.done && !prev.byKind[kind]?.done);
     if (!justDone) return;
 
     const next = getNextPlateCourse(plateSnapshot);
+    // Only lessons / Tutor lessons render their own completion modal that the
+    // celebration must wait behind; the rest show promptly.
+    const expectsModal = justDone === "learn" || justDone === "speak";
 
     if (!plateSessionActive) {
       // Standalone acknowledgement for any course finished outside a guided
@@ -7045,11 +7235,11 @@ export default function App({ onBootReady } = {}) {
       // it chains after it rather than overlapping. Skip when this completion
       // clears the whole plate — the bonus effect celebrates that instead.
       if (next) {
-        playSound(completeSound);
         requestPlateCelebration({
           type: "course",
           completed: justDone,
           next: null,
+          expectsModal,
         });
       }
       return;
@@ -7059,14 +7249,22 @@ export default function App({ onBootReady } = {}) {
       endPlateSession();
       // Don't navigate yet — show the cleared modal where the user is, then
       // return home when they dismiss it (navigateHome handled on close).
-      requestPlateCelebration({ type: "cleared", navigateHome: true });
+      requestPlateCelebration({
+        type: "cleared",
+        navigateHome: true,
+        expectsModal,
+      });
       return;
     }
-    playSound(completeSound);
     // Queued: renders after the surface's own completion-modal chain
     // (lesson celebration, Tutor agenda modals, daily-goal celebration).
     // Navigation to the next course happens on its Continue button.
-    requestPlateCelebration({ type: "course", completed: justDone, next });
+    requestPlateCelebration({
+      type: "course",
+      completed: justDone,
+      next,
+      expectsModal,
+    });
   }, [
     plateSnapshot,
     plateSessionActive,
@@ -7100,7 +7298,6 @@ export default function App({ onBootReady } = {}) {
           ),
         });
         await awardXp(activeNpub, DAILY_PLATE_BONUS_XP, plateSnapshot.langKey);
-        playSound(completeSound);
         // Covers plates cleared outside a guided session too; the once-per-
         // plate guard inside makes this a no-op when the conductor already
         // requested it.
@@ -7112,6 +7309,43 @@ export default function App({ onBootReady } = {}) {
       }
     })();
   }, [activeNpub, plateSnapshot, playSound, requestPlateCelebration]);
+
+  // Dev/testing: re-roll the quest composition (elect a fresh set of course
+  // types, avoiding the current one) and wipe today's progress so the new
+  // plate can be run from scratch. Also resets the in-memory celebration
+  // guards and any active guided session.
+  const handleRegenerateQuestPlate = useCallback(async () => {
+    // No seed → a fresh random roll each press; weights still apply so it
+    // previews the real (neglect-weighted) behavior.
+    const elected = electDailyQuestCourses({
+      available: availableQuestKinds,
+      avoid: electedQuestKinds,
+      weights: getQuestNeglectWeights(
+        useUserStore.getState?.()?.user,
+        plateSnapshot.langKey,
+        availableQuestKinds,
+      ),
+    });
+    if (elected.length) {
+      void markFirstQuestSeen(activeNpub);
+      writeQuestPlate(plateSnapshot.langKey, plateSnapshot.dayKey, elected);
+      setElectedQuestKinds(elected);
+    }
+    plateClearedCelebratedKeyRef.current = "";
+    platePrevSnapshotRef.current = null;
+    pendingPlateCelebrationRef.current = null;
+    setPlateCelebration(null);
+    endPlateSession();
+    await resetTodayPlate(activeNpub, resolvedTargetLang);
+  }, [
+    availableQuestKinds,
+    electedQuestKinds,
+    plateSnapshot.langKey,
+    plateSnapshot.dayKey,
+    activeNpub,
+    resolvedTargetLang,
+    endPlateSession,
+  ]);
 
   const handleBottomBarPathModeChange = useCallback(
     (newMode) => {
@@ -7416,6 +7650,9 @@ export default function App({ onBootReady } = {}) {
               dailyGoalXp={dailyGoalTarget}
               sessionActive={plateSessionActive}
               onStartPractice={handleStartDailyPractice}
+              onRegenerate={handleRegenerateQuestPlate}
+              questKinds={electedQuestKinds}
+              ctaDisabled={showSkillTreeTutorial}
               petHealth={dailyGoalPetHealth}
               completedGoalDates={dailyGoalCompletedDates}
               dailyXpHistory={dailyGoalXpHistory}
@@ -7428,7 +7665,6 @@ export default function App({ onBootReady } = {}) {
               npub={activeNpub}
               languageXp={userProgress?.totalXp || 0}
               pauseMs={user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS}
-              onStartSkillTree={() => setPathMode("path")}
             />
           ) : (
             // In plate mode the skill tree renders nothing visible, but it
@@ -7724,6 +7960,7 @@ export default function App({ onBootReady } = {}) {
         onClose={handleModesIntroClose}
         includePhonics={ALPHABET_LANGS.includes(resolvedTargetLang)}
         lang={appLanguage}
+        useSharedBackdrop={modesIntroOpen || appOnboardingChainOpen}
       />
 
       <BitcoinSupportModal
@@ -8167,8 +8404,15 @@ export default function App({ onBootReady } = {}) {
                   width="100%"
                   bg="white"
                   color="orange.600"
+                  boxShadow="0 4px 0 rgba(154, 52, 18, 0.6)"
                   _hover={{ bg: "rgba(255, 255, 255, 0.92)" }}
-                  _active={{ bg: "rgba(255, 255, 255, 0.82)" }}
+                  _active={{
+                    bg: "rgba(255, 255, 255, 0.82)",
+                    boxShadow: "0 2px 0 rgba(154, 52, 18, 0.6)",
+                    transform: "translateY(2px)",
+                  }}
+                  _focus={{ boxShadow: "0 4px 0 rgba(154, 52, 18, 0.6)" }}
+                  _focusVisible={{ boxShadow: "0 4px 0 rgba(154, 52, 18, 0.6)" }}
                   onClick={handlePlateCelebrationContinue}
                   fontWeight="bold"
                   fontSize="lg"
@@ -8249,8 +8493,15 @@ export default function App({ onBootReady } = {}) {
                   width="100%"
                   bg="white"
                   color="teal.600"
+                  boxShadow="0 4px 0 rgba(44, 122, 123, 0.55)"
                   _hover={{ bg: "rgba(255, 255, 255, 0.92)" }}
-                  _active={{ bg: "rgba(255, 255, 255, 0.82)" }}
+                  _active={{
+                    bg: "rgba(255, 255, 255, 0.82)",
+                    boxShadow: "0 2px 0 rgba(44, 122, 123, 0.55)",
+                    transform: "translateY(2px)",
+                  }}
+                  _focus={{ boxShadow: "0 4px 0 rgba(44, 122, 123, 0.55)" }}
+                  _focusVisible={{ boxShadow: "0 4px 0 rgba(44, 122, 123, 0.55)" }}
                   onClick={handlePlateCelebrationContinue}
                   fontWeight="bold"
                   fontSize="lg"
@@ -8438,6 +8689,20 @@ function OnboardingChainBackdrop({ appChainOpen }) {
   const dailyGoalOpen = useModalStore((s) => s.dailyGoalOpen);
   const timerModalOpen = useModalStore((s) => s.timerModalOpen);
   const chainOpen = appChainOpen || dailyGoalOpen || timerModalOpen;
+  // Latch the dim on through brief gaps between consecutive chain steps. When one
+  // modal closes a frame before the next opens (e.g. proficiency -> "how it
+  // works"), chainOpen blips false; the opacity transition would start fading
+  // and then snap back, which reads as a flash. So turn the dim on instantly but
+  // only turn it off after a short grace, cancelled if the next step opens.
+  const [visible, setVisible] = useState(chainOpen);
+  useEffect(() => {
+    if (chainOpen) {
+      setVisible(true);
+      return undefined;
+    }
+    const timer = setTimeout(() => setVisible(false), 160);
+    return () => clearTimeout(timer);
+  }, [chainOpen]);
   return (
     <Portal>
       <Box
@@ -8447,7 +8712,7 @@ function OnboardingChainBackdrop({ appChainOpen }) {
         zIndex="1300"
         pointerEvents="none"
         bg="var(--app-overlay)"
-        opacity={chainOpen ? 1 : 0}
+        opacity={visible ? 1 : 0}
         transition="opacity 0.16s ease"
       />
     </Portal>
