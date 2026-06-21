@@ -36,6 +36,7 @@ const START_COPY = {
   pt: "Começar tarefas",
   fr: "Commencer les tâches",
   it: "Inizia le attività",
+  de: "Aufgaben starten",
   ja: "タスクを始める",
   zh: "开始任务",
   ru: "Начать задания",
@@ -49,6 +50,7 @@ const CONTINUE_COPY = {
   pt: "Continuar prática",
   fr: "Continuer la pratique",
   it: "Continua la pratica",
+  de: "Weiterüben",
   ja: "練習を続ける",
   zh: "继续练习",
   ru: "Продолжить практику",
@@ -62,6 +64,7 @@ const SUBTITLE_COPY = {
   pt: "Conclua suas tarefas e ganhe um bônus de XP",
   fr: "Termine tes tâches pour gagner un bonus d'XP",
   it: "Completa le attività e ottieni un bonus di XP",
+  de: "Schließe deine Aufgaben ab, um einen XP-Bonus zu erhalten",
   ja: "タスクを達成してXPボーナスを獲得しよう",
   zh: "完成所有任务可获得经验值奖励",
   ru: "Выполни задания и получи XP-бонус",
@@ -251,8 +254,13 @@ export default function DailyPlateHome({
                     <CourseIcon size={18} />
                   </Box>
 
-                  <Box flex="1" minW={0}>
-                    <HStack justify="space-between" mb={1.5} spacing={2}>
+                  <Box flex="1" minW={0} h="38px" position="relative">
+                    <HStack
+                      h="38px"
+                      justify="space-between"
+                      align="center"
+                      spacing={2}
+                    >
                       <HStack spacing={2} minW={0}>
                         <Text
                           fontSize="sm"
@@ -301,14 +309,16 @@ export default function DailyPlateHome({
                           : `${course.count}/${course.target}`}
                       </Text>
                     </HStack>
-                    <WaveBar
-                      value={course.percent}
-                      height={8}
-                      start={course.done ? "#43e97b" : "#60A5FA"}
-                      end={course.done ? "#38f9d7" : "#2563EB"}
-                      bg="rgba(255,255,255,0.05)"
-                      border="rgba(255,255,255,0.1)"
-                    />
+                    <Box position="absolute" left={0} right={0} bottom="-3px">
+                      <WaveBar
+                        value={course.percent}
+                        height={8}
+                        start={course.done ? "#43e97b" : "#60A5FA"}
+                        end={course.done ? "#38f9d7" : "#2563EB"}
+                        bg="rgba(255,255,255,0.05)"
+                        border="rgba(255,255,255,0.1)"
+                      />
+                    </Box>
                   </Box>
 
                   {course.done ? (
