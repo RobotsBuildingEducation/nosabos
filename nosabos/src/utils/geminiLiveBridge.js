@@ -257,7 +257,10 @@ function audioPartsFromModelTurn(modelTurn) {
   const parts = Array.isArray(modelTurn?.parts) ? modelTurn.parts : [];
   return parts
     .map((part) => part?.inlineData)
-    .filter((inlineData) => inlineData?.data && /^audio\//i.test(inlineData?.mimeType || ""));
+    .filter(
+      (inlineData) =>
+        inlineData?.data && /^audio\//i.test(inlineData?.mimeType || ""),
+    );
 }
 
 function getGeminiLiveAI() {
@@ -348,7 +351,10 @@ function schedulePcmAudio({
 }
 
 function waitForAudioSchedule(audioContext, nextStartTime) {
-  const delayMs = Math.max(0, (nextStartTime - audioContext.currentTime) * 1000);
+  const delayMs = Math.max(
+    0,
+    (nextStartTime - audioContext.currentTime) * 1000,
+  );
   return new Promise((resolve) => setTimeout(resolve, delayMs + 120));
 }
 
@@ -358,7 +364,10 @@ export async function createGeminiLiveVoicePreviewPlayer({
   personality = "",
   language = "en",
 } = {}) {
-  if (typeof AudioContext === "undefined" && typeof webkitAudioContext === "undefined") {
+  if (
+    typeof AudioContext === "undefined" &&
+    typeof webkitAudioContext === "undefined"
+  ) {
     throw new Error("Web Audio is not supported in this browser.");
   }
 
@@ -434,7 +443,9 @@ export async function createGeminiLiveVoicePreviewPlayer({
         if (cleanedUp) break;
         const serverContent = serverContentFromMessage(message);
         if (!serverContent) continue;
-        for (const inlineData of audioPartsFromModelTurn(serverContent.modelTurn)) {
+        for (const inlineData of audioPartsFromModelTurn(
+          serverContent.modelTurn,
+        )) {
           nextStartTime = schedulePcmAudio({
             audioContext,
             destination,
@@ -547,10 +558,16 @@ class GeminiLiveRealtimeBridge {
   }
 
   async connect() {
-    if (typeof AudioContext === "undefined" && typeof webkitAudioContext === "undefined") {
+    if (
+      typeof AudioContext === "undefined" &&
+      typeof webkitAudioContext === "undefined"
+    ) {
       throw new Error("Web Audio is not supported in this browser.");
     }
-    if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+    if (
+      typeof navigator === "undefined" ||
+      !navigator.mediaDevices?.getUserMedia
+    ) {
       throw new Error("Microphone access is not supported in this browser.");
     }
 
@@ -664,7 +681,10 @@ class GeminiLiveRealtimeBridge {
       }
       if (Object.prototype.hasOwnProperty.call(session, "turn_detection")) {
         this.setInputAudioEnabled(!!session.turn_detection);
-        if (session.turn_detection && typeof session.turn_detection === "object") {
+        if (
+          session.turn_detection &&
+          typeof session.turn_detection === "object"
+        ) {
           const silenceMs = Number(session.turn_detection.silence_duration_ms);
           if (Number.isFinite(silenceMs) && silenceMs > 0) {
             this.speechHoldMs = silenceMs;
@@ -682,7 +702,10 @@ class GeminiLiveRealtimeBridge {
 
     if (payload?.type === "response.create") {
       const response = payload.response || {};
-      this.requestResponse(response.instructions || "", response.metadata || {});
+      this.requestResponse(
+        response.instructions || "",
+        response.metadata || {},
+      );
       return;
     }
 
@@ -783,13 +806,17 @@ class GeminiLiveRealtimeBridge {
     this.pendingResponses.push(response);
     this.scheduleManualResponseStartTimeout(response);
     this.setInputAudioEnabled(false);
-    this.session.send(response.prompt || "Respond now.", true).catch((error) => {
-      this.clearManualResponseStartTimeout(response);
-      this.pendingResponses = this.pendingResponses.filter((item) => item !== response);
-      this.emitResponseCanceled(response, error?.message || String(error));
-      this.handleError(error);
-      this.dispatchNextManualResponse();
-    });
+    this.session
+      .send(response.prompt || "Respond now.", true)
+      .catch((error) => {
+        this.clearManualResponseStartTimeout(response);
+        this.pendingResponses = this.pendingResponses.filter(
+          (item) => item !== response,
+        );
+        this.emitResponseCanceled(response, error?.message || String(error));
+        this.handleError(error);
+        this.dispatchNextManualResponse();
+      });
   }
 
   // Answer a model tool call (e.g. markTurnSuccessful) so the live turn can
@@ -826,7 +853,13 @@ class GeminiLiveRealtimeBridge {
     // serverContent. Surface them to the consumer (Tutor) before the
     // serverContent early-return below would silently drop them.
     if (message?.type === "toolCall" && Array.isArray(message.functionCalls)) {
-      this.emitOrBuffer({ type: "event", event: { type: "tool.call", functionCalls: message.functionCalls } }, delayRemaining);
+      this.emitOrBuffer(
+        {
+          type: "event",
+          event: { type: "tool.call", functionCalls: message.functionCalls },
+        },
+        delayRemaining,
+      );
       return;
     }
     if (message?.type === "toolCallCancellation") {
@@ -835,7 +868,10 @@ class GeminiLiveRealtimeBridge {
         : Array.isArray(message.ids)
           ? message.ids
           : [];
-      this.emitOrBuffer({ type: "event", event: { type: "tool.cancel", functionIds } }, delayRemaining);
+      this.emitOrBuffer(
+        { type: "event", event: { type: "tool.cancel", functionIds } },
+        delayRemaining,
+      );
       return;
     }
 
@@ -858,8 +894,7 @@ class GeminiLiveRealtimeBridge {
     }
 
     const hasModelTurn = !!serverContent.modelTurn;
-    const hasOutput =
-      hasModelTurn || !!serverContent.outputTranscription?.text;
+    const hasOutput = hasModelTurn || !!serverContent.outputTranscription?.text;
     const isUnrequestedOutput =
       hasOutput &&
       !this.activeResponse &&
@@ -892,27 +927,42 @@ class GeminiLiveRealtimeBridge {
 
     if (this.activeResponse && serverContent.outputTranscription?.text) {
       this.activeResponse.text += serverContent.outputTranscription.text;
-      this.emitOrBuffer({ type: "event", event: {
-        type: "response.audio_transcript.delta",
-        response_id: this.activeResponse.id,
-        delta: serverContent.outputTranscription.text,
-      } }, delayRemaining);
+      this.emitOrBuffer(
+        {
+          type: "event",
+          event: {
+            type: "response.audio_transcript.delta",
+            response_id: this.activeResponse.id,
+            delta: serverContent.outputTranscription.text,
+          },
+        },
+        delayRemaining,
+      );
     }
 
     const modelText = textFromModelTurn(serverContent.modelTurn);
     if (this.activeResponse && modelText) {
       this.activeResponse.text += modelText;
-      this.emitOrBuffer({ type: "event", event: {
-        type: "response.text.delta",
-        response_id: this.activeResponse.id,
-        delta: modelText,
-      } }, delayRemaining);
+      this.emitOrBuffer(
+        {
+          type: "event",
+          event: {
+            type: "response.text.delta",
+            response_id: this.activeResponse.id,
+            delta: modelText,
+          },
+        },
+        delayRemaining,
+      );
     }
 
     const audioParts = audioPartsFromModelTurn(serverContent.modelTurn);
     if (audioParts.length) {
       for (const inlineData of audioParts) {
-        this.emitOrBuffer({ type: "audio", data: inlineData.data }, delayRemaining);
+        this.emitOrBuffer(
+          { type: "audio", data: inlineData.data },
+          delayRemaining,
+        );
       }
     }
 
@@ -970,13 +1020,16 @@ class GeminiLiveRealtimeBridge {
     const isSpeech = rms >= INPUT_SILENCE_RMS_THRESHOLD;
 
     if (isSpeech) {
-      this.inputSpeechActiveUntil = now + (this.speechHoldMs || INPUT_SPEECH_HOLD_MS);
+      this.inputSpeechActiveUntil =
+        now + (this.speechHoldMs || INPUT_SPEECH_HOLD_MS);
       if (this.responseTimer) {
         clearTimeout(this.responseTimer);
         this.responseTimer = null;
       }
       if (this.responseBuffer.length > 0) {
-        console.log(`[gemini-live] User started speaking, discarding ${this.responseBuffer.length} buffered items`);
+        console.log(
+          `[gemini-live] User started speaking, discarding ${this.responseBuffer.length} buffered items`,
+        );
         this.responseBuffer = [];
       }
     }
@@ -1025,28 +1078,30 @@ class GeminiLiveRealtimeBridge {
 
   ensureActiveResponse(delayRemaining = 0) {
     if (this.activeResponse) return this.activeResponse;
-    this.activeResponse =
-      this.pendingResponses.shift() || {
-        id: `gemini_${uid()}`,
-        metadata: {},
-        text: "",
-        started: false,
-        startTimeoutId: null,
-      };
+    this.activeResponse = this.pendingResponses.shift() || {
+      id: `gemini_${uid()}`,
+      metadata: {},
+      text: "",
+      started: false,
+      startTimeoutId: null,
+    };
     this.serverTurnComplete = false;
     this.clearManualResponseStartTimeout(this.activeResponse);
     if (!this.activeResponse.started) {
       this.activeResponse.started = true;
-      this.emitOrBuffer({
-        type: "event",
-        event: {
-          type: "response.created",
-          response: {
-            id: this.activeResponse.id,
-            metadata: this.activeResponse.metadata || {},
+      this.emitOrBuffer(
+        {
+          type: "event",
+          event: {
+            type: "response.created",
+            response: {
+              id: this.activeResponse.id,
+              metadata: this.activeResponse.metadata || {},
+            },
           },
-        }
-      }, delayRemaining);
+        },
+        delayRemaining,
+      );
     }
     return this.activeResponse;
   }
@@ -1123,7 +1178,9 @@ class GeminiLiveRealtimeBridge {
     this.responseTimer = setTimeout(() => {
       this.responseTimer = null;
       if (this.closed || this.resettingSession) return;
-      console.log(`[gemini-live] VAD pause elapsed, flushing ${this.responseBuffer.length} buffered items`);
+      console.log(
+        `[gemini-live] VAD pause elapsed, flushing ${this.responseBuffer.length} buffered items`,
+      );
       const items = this.responseBuffer;
       this.responseBuffer = [];
       for (const item of items) {
@@ -1258,7 +1315,11 @@ class GeminiLiveRealtimeBridge {
       this.responseTimer = null;
     }
     this.responseBuffer = [];
-    [...this.pendingManualResponses, ...this.pendingResponses, this.activeResponse]
+    [
+      ...this.pendingManualResponses,
+      ...this.pendingResponses,
+      this.activeResponse,
+    ]
       .filter(Boolean)
       .forEach((response) => this.clearManualResponseStartTimeout(response));
     this.pendingManualResponses = [];

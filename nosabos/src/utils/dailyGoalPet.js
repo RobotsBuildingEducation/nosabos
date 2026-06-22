@@ -62,28 +62,12 @@ function getEffectiveGoal(data) {
   return Math.max(0, Math.round(Number(raw) || 0));
 }
 
-// Most recent day the user did anything we can prove (earned XP or reached the
-// goal). Durable — survives the rolling dailyResetAt being bumped forward by an
-// app-open that earned nothing, which is what makes the catch-up trustworthy.
-function lastActivityDayIndex(data) {
-  let best = NaN;
-  const consider = (key) => {
-    const index = dayIndexFromKey(key);
-    if (Number.isFinite(index) && (!Number.isFinite(best) || index > best)) {
-      best = index;
-    }
-  };
-
-  const history = data?.dailyXpHistory;
-  if (history && typeof history === "object") {
-    for (const key of Object.keys(history)) {
-      if (Number(history[key]) > 0) consider(key);
-    }
-  }
-  if (Array.isArray(data?.completedGoalDates)) {
-    for (const key of data.completedGoalDates) consider(key);
-  }
-  return best;
+// Day index for an ISO timestamp / epoch-ms (e.g. the account's createdAt).
+function dayIndexFromTimestamp(value) {
+  if (value == null) return NaN;
+  const ms = typeof value === "number" ? value : Date.parse(value);
+  if (!Number.isFinite(ms)) return NaN;
+  return dayIndexFromDate(new Date(ms));
 }
 
 // How many past days (before today) have lapsed without the goal being reached
@@ -91,10 +75,10 @@ function lastActivityDayIndex(data) {
 // days, not by how many times the app was opened.
 //
 // Anchored on `dailyGoalPetLastAccountedDay` (the last day already reflected in
-// health). For legacy data without it we fall back to the last day of recorded
-// activity, so an absence is still measured from the durable heatmap history
-// rather than the clobber-prone dailyResetAt. Today is in progress and never
-// counts. Returns 0 when no goal is configured.
+// health), which advances one day at a time. Accounts that predate the marker
+// anchor on the account's createdAt — the pet starts decaying the day after it
+// was born. Today is in progress and never counts. Returns 0 when no goal is
+// configured.
 export function countMissedDailyGoalWindows(data = {}, now = new Date()) {
   const goal = getEffectiveGoal(data);
   if (goal <= 0) return 0;
@@ -104,13 +88,13 @@ export function countMissedDailyGoalWindows(data = {}, now = new Date()) {
 
   let throughIndex = dayIndexFromKey(data?.dailyGoalPetLastAccountedDay);
   if (!Number.isFinite(throughIndex)) {
-    throughIndex = lastActivityDayIndex(data);
+    throughIndex = dayIndexFromTimestamp(data?.createdAt);
   }
   if (!Number.isFinite(throughIndex)) {
-    // Brand-new account with no history — nothing in the past to charge for.
+    // No marker and no creation date — nothing to charge retroactively.
     throughIndex = yesterdayIndex;
   }
-  // Safety bound for a very stale or corrupt anchor.
+  // Safety bound so a very old account doesn't scan an unbounded range.
   if (throughIndex < yesterdayIndex - MAX_CATCHUP_DAYS) {
     throughIndex = yesterdayIndex - MAX_CATCHUP_DAYS;
   }
