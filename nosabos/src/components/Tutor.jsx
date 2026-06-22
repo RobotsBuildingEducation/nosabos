@@ -8138,12 +8138,24 @@ export default function Tutor({
           <Box px={4} pt={2}>
             <Box
               as="pre"
-              bg="rgba(255,255,255,0.06)"
-              border="1px solid rgba(255,255,255,0.12)"
+              // Paper (light) mode: the old faint-white box + pale-pink text
+              // washed out on the cream background. Use a clear red panel with
+              // dark-red text so the error is legible.
+              bg={
+                isLightTheme
+                  ? "rgba(180, 35, 24, 0.08)"
+                  : "rgba(255,255,255,0.06)"
+              }
+              border={
+                isLightTheme
+                  ? "1px solid rgba(180, 35, 24, 0.38)"
+                  : "1px solid rgba(255,255,255,0.12)"
+              }
               p={3}
               borderRadius={8}
               whiteSpace="pre-wrap"
-              color="#fee2e2"
+              color={isLightTheme ? "#9b1c1c" : "#fee2e2"}
+              fontWeight={isLightTheme ? "medium" : undefined}
             >
               {err}
             </Box>
