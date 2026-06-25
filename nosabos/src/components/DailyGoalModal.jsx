@@ -404,6 +404,8 @@ export default function DailyGoalModal({
   ui = {},
   petHealth,
   petName = "",
+  petType = "dog",
+  onCustomizePet = null,
   petLastOutcome,
   petLastDelta,
   completedGoalDates = [],
@@ -687,6 +689,8 @@ export default function DailyGoalModal({
                 lang={resolvedLang}
                 health={petHealth}
                 petName={petName}
+                petType={petType}
+                onCustomizePet={onCustomizePet}
                 lastOutcome={petLastOutcome}
                 lastDelta={petLastDelta}
                 variant="setup"

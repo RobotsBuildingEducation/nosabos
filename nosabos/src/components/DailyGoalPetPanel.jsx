@@ -1,6 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Badge, Box, HStack, Text, VStack } from "@chakra-ui/react";
-import { FiHeart, FiTrendingDown, FiTrendingUp } from "react-icons/fi";
+import {
+  Badge,
+  Box,
+  HStack,
+  IconButton,
+  Text,
+  VStack,
+  useDisclosure,
+} from "@chakra-ui/react";
+import { FiEdit2, FiHeart, FiTrendingDown, FiTrendingUp } from "react-icons/fi";
 import {
   WaveBar,
   WAVE_BAR_PROGRESS_END,
@@ -17,12 +25,16 @@ import {
   DAILY_GOAL_PET_HEALTH_LOSS,
   clampDailyGoalPetHealth,
 } from "../utils/dailyGoalPet";
+import { normalizePetType } from "../utils/petTypes";
+import CompanionCustomizeModal from "./CompanionCustomizeModal";
+import { getCustomizeModalCopy } from "./companionCustomizeCopy";
 
 const TILE = 16;
 const SCALE = 3;
 const T = TILE * SCALE;
 const SCENE_Y_OFFSET = 4;
 const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
+const APP_SURFACE_MUTED = "var(--app-surface-muted)";
 const APP_BORDER = "var(--app-border)";
 const APP_TEXT_PRIMARY = "var(--app-text-primary)";
 const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
@@ -60,6 +72,31 @@ const DEAD_DOG = {
   accent: "#94a3b8",
   tongue: "#cbd5e1",
   eyeWhite: "#e5e7eb",
+};
+
+const ALIEN = {
+  body: "#9a7fd6",
+  body2: "#7c5fc0",
+  eye: "#2a1f45",
+  eyeLight: "#f6f1ff",
+  cheek: "#dca6d6",
+  leg: "#5a3fa6",
+};
+
+const SICK_ALIEN = {
+  ...ALIEN,
+  body: "#9d96b0",
+  body2: "#7f7793",
+  leg: "#5e576e",
+  cheek: "#b4adc4",
+};
+
+const DEAD_ALIEN = {
+  ...ALIEN,
+  body: "#8b8893",
+  body2: "#6e6b76",
+  eye: "#2a2832",
+  leg: "#5a5763",
 };
 
 function px(ctx, fill, x, y, width, height) {
@@ -116,7 +153,7 @@ function getCopy(lang) {
       rewardBadge: "इनाम +{delta}%",
       penaltyBadge: "जोखिम -{delta}%",
       previewHint:
-        "यह केवल पूर्वावलोकन है। इससे आपके कुत्ते की असली सेहत नहीं बदलती।",
+        "यह केवल पूर्वावलोकन है। इससे आपके साथी की असली सेहत नहीं बदलती।",
     };
   }
 
@@ -215,11 +252,11 @@ function getCopy(lang) {
       latestAchieved: "Ultimo aggiornamento: +{delta}% per aver raggiunto l'obiettivo",
       latestMissed: "Ultimo aggiornamento: {delta}% per aver mancato l'obiettivo",
       managementHint: "Raggiungi l'obiettivo oggi per mantenerlo forte.",
-      celebrationHint: "Il tuo cane ha ricevuto un aumento di salute.",
+      celebrationHint: "Il tuo compagno ha ricevuto un aumento di salute.",
       rewardBadge: "Ricompensa +{delta}%",
       penaltyBadge: "Rischio -{delta}%",
       previewHint:
-        "Solo anteprima. Non cambia la salute reale del cane.",
+        "Solo anteprima. Non cambia la salute reale del compagno.",
     };
   }
 
@@ -267,11 +304,11 @@ function getCopy(lang) {
       latestAchieved: "Ultima atualizacao: +{delta}% por cumprir sua meta",
       latestMissed: "Ultima atualizacao: {delta}% por nao cumprir sua meta",
       managementHint: "Cumpra a meta de hoje para mante-lo forte.",
-      celebrationHint: "Seu cachorrinho recebeu um aumento de saude.",
+      celebrationHint: "Seu companheiro recebeu um aumento de saude.",
       rewardBadge: "Recompensa +{delta}%",
       penaltyBadge: "Risco -{delta}%",
       previewHint:
-        "Isto e apenas uma visualizacao. Nao muda a saude real do seu cachorro.",
+        "Isto e apenas uma visualizacao. Nao muda a saude real do seu companheiro.",
     };
   }
 
@@ -293,11 +330,11 @@ function getCopy(lang) {
       latestAchieved: "Última actualización: +{delta}% por cumplir tu meta",
       latestMissed: "Última actualización: {delta}% por fallar tu meta",
       managementHint: "Cumple hoy para mantenerlo fuerte.",
-      celebrationHint: "Tu perrito recibió un boost de salud.",
+      celebrationHint: "Tu compañero recibió un boost de salud.",
       rewardBadge: "Recompensa +{delta}%",
       penaltyBadge: "Riesgo -{delta}%",
       previewHint:
-        "Vista previa solamente. No cambia la salud real del perrito.",
+        "Vista previa solamente. No cambia la salud real de tu compañero.",
     };
   }
 
@@ -318,10 +355,10 @@ function getCopy(lang) {
     latestAchieved: "Latest update: +{delta}% for hitting your goal",
     latestMissed: "Latest update: {delta}% for missing your goal",
     managementHint: "Hit today's goal to keep it strong.",
-    celebrationHint: "Your dog got a health boost today.",
+    celebrationHint: "Your companion got a health boost today.",
     rewardBadge: "Reward +{delta}%",
     penaltyBadge: "Risk -{delta}%",
-    previewHint: "Preview only. This does not change your dog's real health.",
+    previewHint: "Preview only. This does not change your companion's real health.",
   };
 }
 
@@ -556,13 +593,6 @@ function drawDeadDog(ctx) {
   ctx.save();
   ctx.translate(0, SCENE_Y_OFFSET);
 
-  const cx = T / 2;
-
-  ctx.fillStyle = "rgba(0,0,0,0.18)";
-  ctx.beginPath();
-  ctx.ellipse(cx, 35, 15, 4, 0, 0, Math.PI * 2);
-  ctx.fill();
-
   px(ctx, DEAD_DOG.furDark, 10, 22, 24, 10);
   px(ctx, DEAD_DOG.fur, 12, 20, 22, 10);
   px(ctx, DEAD_DOG.belly, 17, 23, 10, 6);
@@ -668,11 +698,6 @@ function drawAliveDog(ctx, frame, stage) {
           : 14;
   const showDefaultEyes = stage.face !== "unhealthy";
 
-  ctx.fillStyle = "rgba(0,0,0,0.22)";
-  ctx.beginPath();
-  ctx.ellipse(cx, by + 4, 12, 4, 0, 0, Math.PI * 2);
-  ctx.fill();
-
   px(ctx, palette.furDark, cx - 2 + tailWag + xShift, by - 22 + bob, 4, 6);
   px(ctx, palette.fur, cx - 10 + xShift, by - 18 + bob, 20, 14);
   px(ctx, palette.belly, cx - 6 + xShift, by - 12 + bob, 12, 10);
@@ -710,9 +735,335 @@ function drawDogCharacter(ctx, frame, stage) {
   drawAliveDog(ctx, frame, stage);
 }
 
-function DogCanvas({ stage, isLightTheme, isCelebration = false }) {
+function getAlienPalette(stage) {
+  if (stage.key === "dead") return DEAD_ALIEN;
+  if (stage.key === "unhealthy") return SICK_ALIEN;
+  return ALIEN;
+}
+
+function drawAlienBody(ctx, palette, cx, topY) {
+  px(ctx, palette.body, cx - 8, topY, 16, 1);
+  px(ctx, palette.body, cx - 10, topY + 1, 20, 1);
+  px(ctx, palette.body, cx - 12, topY + 2, 24, 1);
+  px(ctx, palette.body, cx - 13, topY + 3, 26, 16);
+  px(ctx, palette.body, cx - 12, topY + 19, 24, 1);
+  px(ctx, palette.body, cx - 10, topY + 20, 20, 1);
+  px(ctx, palette.body, cx - 8, topY + 21, 16, 1);
+  px(ctx, palette.body2, cx - 10, topY + 20, 20, 1);
+  px(ctx, palette.body2, cx - 8, topY + 21, 16, 1);
+}
+
+function drawAlienLegs(ctx, palette, cx, topY, stride) {
+  const y = topY + 21;
+  px(ctx, palette.leg, cx - 10 + stride, y, 3, 3);
+  px(ctx, palette.leg, cx - 5, y, 3, 3);
+  px(ctx, palette.leg, cx + 1, y, 3, 3);
+  px(ctx, palette.leg, cx + 6 - stride, y, 3, 3);
+}
+
+function drawAlienFace(ctx, key, palette, cx, topY) {
+  const E = palette.eye;
+
+  if (key === "happy") {
+    px(ctx, E, cx - 4, topY + 8, 2, 3);
+    px(ctx, E, cx + 2, topY + 8, 2, 3);
+    px(ctx, palette.eyeLight, cx - 4, topY + 8, 1, 1);
+    px(ctx, palette.eyeLight, cx + 2, topY + 8, 1, 1);
+    px(ctx, palette.cheek, cx - 7, topY + 11, 2, 1);
+    px(ctx, palette.cheek, cx + 5, topY + 11, 2, 1);
+    px(ctx, E, cx - 2, topY + 15, 1, 1);
+    px(ctx, E, cx + 1, topY + 15, 1, 1);
+    px(ctx, E, cx - 1, topY + 16, 2, 1);
+    return;
+  }
+
+  if (key === "healthy") {
+    px(ctx, E, cx - 4, topY + 8, 2, 2);
+    px(ctx, E, cx + 2, topY + 8, 2, 2);
+    px(ctx, E, cx - 2, topY + 15, 1, 1);
+    px(ctx, E, cx + 1, topY + 15, 1, 1);
+    px(ctx, E, cx - 1, topY + 16, 2, 1);
+    return;
+  }
+
+  if (key === "unhappy") {
+    px(ctx, E, cx - 4, topY + 9, 2, 2);
+    px(ctx, E, cx + 2, topY + 9, 2, 2);
+    px(ctx, E, cx - 3, topY + 7, 1, 1);
+    px(ctx, E, cx - 4, topY + 8, 1, 1);
+    px(ctx, E, cx + 2, topY + 7, 1, 1);
+    px(ctx, E, cx + 3, topY + 8, 1, 1);
+    px(ctx, E, cx - 1, topY + 15, 2, 1);
+    px(ctx, E, cx - 2, topY + 16, 1, 1);
+    px(ctx, E, cx + 1, topY + 16, 1, 1);
+    return;
+  }
+
+  if (key === "stressed") {
+    px(ctx, E, cx - 4, topY + 8, 2, 2);
+    px(ctx, E, cx + 2, topY + 8, 2, 2);
+    px(ctx, E, cx - 4, topY + 6, 2, 1);
+    px(ctx, E, cx + 2, topY + 6, 2, 1);
+    px(ctx, E, cx - 3, topY + 16, 1, 1);
+    px(ctx, E, cx - 2, topY + 15, 1, 1);
+    px(ctx, E, cx - 1, topY + 16, 1, 1);
+    px(ctx, E, cx, topY + 15, 1, 1);
+    px(ctx, E, cx + 1, topY + 16, 1, 1);
+    return;
+  }
+
+  if (key === "unhealthy") {
+    px(ctx, E, cx - 5, topY + 8, 3, 1);
+    px(ctx, E, cx - 4, topY + 9, 1, 1);
+    px(ctx, E, cx + 2, topY + 8, 3, 1);
+    px(ctx, E, cx + 3, topY + 9, 1, 1);
+    px(ctx, E, cx - 2, topY + 16, 1, 1);
+    px(ctx, E, cx - 1, topY + 15, 1, 1);
+    px(ctx, E, cx, topY + 16, 1, 1);
+  }
+}
+
+function drawAlienProps(ctx, key, cx, topY, frame) {
+  if (key === "happy") {
+    const heart = "#d36aa6";
+    px(ctx, heart, cx + 5, topY - 6, 2, 1);
+    px(ctx, heart, cx + 8, topY - 6, 2, 1);
+    px(ctx, heart, cx + 5, topY - 5, 5, 1);
+    px(ctx, heart, cx + 6, topY - 4, 3, 1);
+    px(ctx, heart, cx + 7, topY - 3, 1, 1);
+    return;
+  }
+
+  if (key === "stressed") {
+    const bounce = frame % 6 < 3 ? 0 : 1;
+    px(ctx, "#86c9ee", cx + 7, topY + 3 + bounce, 2, 2);
+    px(ctx, "#86c9ee", cx + 8, topY + 2 + bounce, 1, 1);
+  }
+}
+
+function drawDeadAlien(ctx) {
+  ctx.save();
+  ctx.translate(0, SCENE_Y_OFFSET);
+
+  const cx = T / 2;
+  const topY = 7;
+
+  drawAlienBody(ctx, DEAD_ALIEN, cx, topY);
+  drawAlienLegs(ctx, DEAD_ALIEN, cx, topY, 0);
+
+  const halo = "#f2d06a";
+  px(ctx, halo, cx - 5, topY - 7, 10, 1);
+  px(ctx, halo, cx - 5, topY - 5, 10, 1);
+  px(ctx, halo, cx - 6, topY - 6, 1, 1);
+  px(ctx, halo, cx + 5, topY - 6, 1, 1);
+
+  const E = DEAD_ALIEN.eye;
+  px(ctx, E, cx - 5, topY + 8, 1, 1);
+  px(ctx, E, cx - 3, topY + 8, 1, 1);
+  px(ctx, E, cx - 4, topY + 9, 1, 1);
+  px(ctx, E, cx - 5, topY + 10, 1, 1);
+  px(ctx, E, cx - 3, topY + 10, 1, 1);
+  px(ctx, E, cx + 2, topY + 8, 1, 1);
+  px(ctx, E, cx + 4, topY + 8, 1, 1);
+  px(ctx, E, cx + 3, topY + 9, 1, 1);
+  px(ctx, E, cx + 2, topY + 10, 1, 1);
+  px(ctx, E, cx + 4, topY + 10, 1, 1);
+  px(ctx, E, cx - 2, topY + 15, 4, 1);
+
+  ctx.restore();
+}
+
+function drawAliveAlien(ctx, frame, stage) {
+  ctx.save();
+  ctx.translate(0, SCENE_Y_OFFSET);
+
+  const cx = T / 2;
+  const phase = frame % 6;
+  const motion = stage.motion ?? stage.key;
+  const palette = getAlienPalette(stage);
+  const xShift =
+    motion === "stressed"
+      ? phase % 2 === 0
+        ? -1
+        : 1
+      : motion === "unhappy"
+        ? phase < 3
+          ? 0
+          : -1
+        : 0;
+  const stride =
+    motion === "happy" || motion === "healthy"
+      ? phase === 1 || phase === 5
+        ? 1
+        : phase === 3
+          ? -1
+          : 0
+      : 0;
+  const bob =
+    motion === "happy"
+      ? phase === 2 || phase === 4
+        ? -2
+        : 0
+      : motion === "healthy"
+        ? phase === 2 || phase === 4
+          ? -1
+          : 0
+        : motion === "unhappy"
+          ? phase < 3
+            ? 0
+            : 1
+          : motion === "stressed"
+            ? phase % 2 === 0
+              ? -1
+              : 1
+            : phase < 3
+              ? 1
+              : 0;
+  const topY = 6 + bob;
+  const ox = cx + xShift;
+
+  drawAlienBody(ctx, palette, ox, topY);
+  drawAlienLegs(ctx, palette, ox, topY, stride);
+  drawAlienFace(ctx, stage.key, palette, ox, topY);
+  drawAlienProps(ctx, stage.key, ox, topY, frame);
+
+  ctx.restore();
+}
+
+function drawAlienCharacter(ctx, frame, stage) {
+  if (stage.key === "dead") {
+    drawDeadAlien(ctx);
+    return;
+  }
+  drawAliveAlien(ctx, frame, stage);
+}
+
+const GHOST = {
+  body: "#e6ecfa",
+  body2: "#c2cde8",
+  bodyLight: "#f3f6fe",
+  eye: "#2f3566",
+};
+
+const SICK_GHOST = {
+  ...GHOST,
+  body: "#cdd7c0",
+  body2: "#a8b291",
+};
+
+const DEAD_GHOST = {
+  ...GHOST,
+  body: "#d8d8e0",
+  body2: "#b5b5c0",
+  eye: "#5a5a66",
+};
+
+const GHOST_HW = [
+  3, 5, 7, 8, 9, 10, 11, 11, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
+  12, 12, 12, 12,
+];
+
+function getGhostPalette(stage) {
+  if (stage.key === "dead") return DEAD_GHOST;
+  if (stage.key === "unhealthy") return SICK_GHOST;
+  return GHOST;
+}
+
+function drawGhostBody(ctx, palette, cx, gy) {
+  for (let i = 0; i < GHOST_HW.length; i++) {
+    px(ctx, palette.body, cx - GHOST_HW[i], gy + i, 2 * GHOST_HW[i], 1);
+  }
+  const b = gy + GHOST_HW.length;
+  px(ctx, palette.body, cx - 12, b, 7, 1);
+  px(ctx, palette.body, cx - 3, b, 6, 1);
+  px(ctx, palette.body, cx + 5, b, 7, 1);
+  px(ctx, palette.body, cx - 11, b + 1, 5, 1);
+  px(ctx, palette.body, cx - 2, b + 1, 4, 1);
+  px(ctx, palette.body, cx + 6, b + 1, 5, 1);
+  for (let i = 4; i < GHOST_HW.length; i++) {
+    px(ctx, palette.body2, cx + GHOST_HW[i] - 1, gy + i, 1, 1);
+  }
+  px(ctx, palette.body2, cx - 11, b + 1, 5, 1);
+  px(ctx, palette.body2, cx - 2, b + 1, 4, 1);
+  px(ctx, palette.body2, cx + 6, b + 1, 5, 1);
+  px(ctx, palette.bodyLight, cx - 6, gy + 2, 3, 1);
+  px(ctx, palette.bodyLight, cx - 8, gy + 3, 2, 1);
+  px(ctx, palette.bodyLight, cx - 9, gy + 4, 2, 1);
+}
+
+function drawGhostEyes(ctx, palette, key, cx, gy) {
+  const E = palette.eye;
+  const y = gy + 12;
+  const pair = (rows) =>
+    rows.forEach(([dx, dy, w = 1, h = 1]) => {
+      px(ctx, E, cx - dx, y + dy, w, h);
+      px(ctx, E, cx + dx - (w - 1), y + dy, w, h);
+    });
+
+  if (key === "happy") {
+    pair([
+      [8, 2], [7, 1], [6, 0, 2, 1], [4, 1], [3, 2],
+      [8, 3], [7, 2], [6, 1, 2, 1], [4, 2], [3, 3],
+    ]);
+    return;
+  }
+  if (key === "unhappy") {
+    pair([[9, 0], [9, 1], [4, 0], [4, 1], [8, 2], [7, 2], [6, 2], [5, 2]]);
+    return;
+  }
+  if (key === "stressed") {
+    pair([[9, 0], [8, 1], [7, 2], [8, 3], [9, 4]]);
+    return;
+  }
+  if (key === "unhealthy") {
+    pair([[9, 0, 3, 1], [9, 3, 3, 1], [9, 1, 1, 2], [7, 1, 1, 2], [8, 1]]);
+    return;
+  }
+  if (key === "dead") {
+    pair([[9, 0], [7, 0], [8, 1], [9, 2], [7, 2]]);
+    px(ctx, "#f2d06a", cx - 5, gy - 2, 10, 1);
+    px(ctx, "#f2d06a", cx - 5, gy, 10, 1);
+    px(ctx, "#f2d06a", cx - 6, gy - 1, 1, 1);
+    px(ctx, "#f2d06a", cx + 5, gy - 1, 1, 1);
+    return;
+  }
+  pair([[8, 0, 1, 3], [9, 1], [7, 1]]);
+}
+
+function drawGhostCharacter(ctx, frame, stage) {
+  ctx.save();
+  ctx.translate(0, SCENE_Y_OFFSET);
+  const cx = T / 2;
+  const phase = frame % 6;
+  const palette = getGhostPalette(stage);
+  const bob = stage.key === "dead" ? 0 : [0, -1, -1, 0, 1, 0][phase];
+  const gy = 7 + bob;
+  drawGhostBody(ctx, palette, cx, gy);
+  drawGhostEyes(ctx, palette, stage.key, cx, gy);
+  ctx.restore();
+}
+
+function drawCompanionCharacter(ctx, frame, stage, petType) {
+  if (petType === "alien") {
+    drawAlienCharacter(ctx, frame, stage);
+    return;
+  }
+  if (petType === "ghost") {
+    drawGhostCharacter(ctx, frame, stage);
+    return;
+  }
+  drawDogCharacter(ctx, frame, stage);
+}
+
+function CompanionCanvas({
+  stage,
+  petType = "dog",
+  isLightTheme,
+  isCelebration = false,
+}) {
   const canvasRef = useRef(null);
   const [frame, setFrame] = useState(0);
+  const resolvedPetType = normalizePetType(petType);
   const canvasBackground = isCelebration
     ? isLightTheme
       ? "rgba(255, 253, 249, 0.52)"
@@ -741,13 +1092,15 @@ function DogCanvas({ stage, isLightTheme, isCelebration = false }) {
     ctx.imageSmoothingEnabled = false;
     ctx.clearRect(0, 0, T, T);
 
-    drawDogCharacter(ctx, frame, stage);
-  }, [frame, stage]);
+    drawCompanionCharacter(ctx, frame, stage, resolvedPetType);
+  }, [frame, resolvedPetType, stage]);
 
   return (
     <Box
       as="canvas"
       ref={canvasRef}
+      role="img"
+      aria-label={`${stage.label} ${resolvedPetType} companion`}
       w={{ base: "96px", md: "144px" }}
       h={{ base: "96px", md: "144px" }}
       borderRadius={{ base: "lg", md: "xl" }}
@@ -773,6 +1126,9 @@ export default function DailyGoalPetPanel({
   // Custom companion name; falls back to the localized default ("Your
   // companion") when empty. Edited from the daily-quest pet panel.
   petName = "",
+  petType = "dog",
+  // When provided, a pencil button by the title opens the customize modal.
+  onCustomizePet = null,
 }) {
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
@@ -781,11 +1137,15 @@ export default function DailyGoalPetPanel({
   const safeHealth = clampDailyGoalPetHealth(health);
   const displayTitle =
     (typeof petName === "string" && petName.trim()) || copy.title;
+  const resolvedPetType = normalizePetType(petType);
   const stage = useMemo(
     () => getPetStage(safeHealth, copy, isLightTheme),
     [copy, isLightTheme, safeHealth],
   );
   const isCelebration = variant === "celebration";
+  const canCustomize = typeof onCustomizePet === "function" && !isCelebration;
+  const customizeModalCopy = getCustomizeModalCopy(resolvedLang);
+  const customizeModal = useDisclosure();
   const rewardColor = isLightTheme ? "#48765f" : "green.200";
   const penaltyColor = isLightTheme ? "#a06a3b" : "orange.200";
   const previewCardBg = isLightTheme ? APP_SURFACE_ELEVATED : "blackAlpha.220";
@@ -801,6 +1161,7 @@ export default function DailyGoalPetPanel({
       : "transparent";
 
   return (
+    <>
     <Box
       bg={panelBg}
       border="1px solid"
@@ -817,8 +1178,9 @@ export default function DailyGoalPetPanel({
           flexDirection="row"
         >
           <VStack align="stretch" spacing={{ base: 1.5, md: 2 }} flexShrink={0}>
-            <DogCanvas
+            <CompanionCanvas
               stage={stage}
+              petType={resolvedPetType}
               isLightTheme={isLightTheme}
               isCelebration={isCelebration}
             />
@@ -843,16 +1205,32 @@ export default function DailyGoalPetPanel({
             minW={0}
           >
             <VStack align="stretch" spacing={{ base: 0.5, md: 1 }}>
-              <Text
-                fontSize={{ base: "lg", md: "xl" }}
-                fontWeight="bold"
-                lineHeight="1.1"
-                color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
-                noOfLines={2}
-                wordBreak="break-word"
-              >
-                {displayTitle}
-              </Text>
+              <HStack spacing={1.5} align="center">
+                {canCustomize ? (
+                  <IconButton
+                    aria-label={customizeModalCopy.edit}
+                    icon={<FiEdit2 />}
+                    size="xs"
+                    variant="ghost"
+                    flexShrink={0}
+                    color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
+                    _hover={{
+                      bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.200",
+                    }}
+                    onClick={customizeModal.onOpen}
+                  />
+                ) : null}
+                <Text
+                  fontSize={{ base: "lg", md: "xl" }}
+                  fontWeight="bold"
+                  lineHeight="1.1"
+                  color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
+                  noOfLines={2}
+                  wordBreak="break-word"
+                >
+                  {displayTitle}
+                </Text>
+              </HStack>
               {!isCelebration ? (
                 <Text
                   fontSize={{ base: "xs", md: "sm" }}
@@ -1007,5 +1385,20 @@ export default function DailyGoalPetPanel({
         ) : null}
       </VStack>
     </Box>
+    {canCustomize ? (
+      <CompanionCustomizeModal
+        isOpen={customizeModal.isOpen}
+        onClose={customizeModal.onClose}
+        lang={resolvedLang}
+        isLightTheme={isLightTheme}
+        petName={petName}
+        petType={petType}
+        placeholder={copy.title}
+        stage={stage}
+        drawCompanion={drawCompanionCharacter}
+        onSubmit={onCustomizePet}
+      />
+    ) : null}
+    </>
   );
 }

@@ -3,6 +3,8 @@ import { Box, Text } from "@chakra-ui/react";
 import * as Tone from "tone";
 import useSoundSettings from "../hooks/useSoundSettings";
 import { useThemeStore } from "../useThemeStore";
+import useUserStore from "../hooks/useUserStore";
+import { normalizePetType } from "../utils/petTypes";
 import {
   DEFAULT_SUPPORT_LANGUAGE,
   SUPPORT_LANGUAGE_CODES,
@@ -1162,6 +1164,11 @@ const DOG = {
   eyeWhite: "#ffffff", eyePupil: "#1f2937", outline: "#1a1a2e",
 };
 
+// ─── Alien character colors ─────────────────────────────────────────────────
+const ALIEN = {
+  body: "#9a7fd6", body2: "#7c5fc0", eye: "#2a1f45", leg: "#5a3fa6",
+};
+
 // ─── Tile-position seeded variation ─────────────────────────────────────────
 function seededRng(x, y) {
   let h = (x * 374761393 + y * 668265263 + 1013904223) | 0;
@@ -1516,6 +1523,91 @@ function drawDogCharacter(ctx, px, py, dir, frame) {
   }
 }
 
+// ─── Alien character drawing ────────────────────────────────────────────────
+function drawAlienCharacter(ctx, px, py, dir, frame) {
+  const cx = px * T + T / 2;
+  const cy = py * T + T / 2;
+  const phase = frame % 6;
+  const stride = phase === 1 || phase === 5 ? 1 : phase === 3 ? -1 : 0;
+  const bob = phase === 2 || phase === 4 ? -1 : 0;
+  const by = cy + 6;
+  const top = by - 21 + bob;
+  const d = (fs, rx, ry, rw, rh) => { ctx.fillStyle = fs; ctx.fillRect(rx, ry, rw, rh); };
+
+  ctx.fillStyle = "rgba(0,0,0,0.2)";
+  ctx.beginPath(); ctx.ellipse(cx, by + 4, 12, 4, 0, 0, Math.PI * 2); ctx.fill();
+
+  const ly = by - 1;
+  d(ALIEN.leg, cx - 10 + stride, ly, 3, 4);
+  d(ALIEN.leg, cx - 5, ly, 3, 4);
+  d(ALIEN.leg, cx + 1, ly, 3, 4);
+  d(ALIEN.leg, cx + 6 - stride, ly, 3, 4);
+
+  d(ALIEN.body, cx - 8, top, 16, 1);
+  d(ALIEN.body, cx - 10, top + 1, 20, 1);
+  d(ALIEN.body, cx - 12, top + 2, 24, 1);
+  d(ALIEN.body, cx - 13, top + 3, 26, 16);
+  d(ALIEN.body, cx - 12, top + 19, 24, 1);
+  d(ALIEN.body, cx - 10, top + 20, 20, 1);
+  d(ALIEN.body, cx - 8, top + 21, 16, 1);
+  d(ALIEN.body2, cx - 10, top + 20, 20, 1);
+  d(ALIEN.body2, cx - 8, top + 21, 16, 1);
+
+  const E = ALIEN.eye;
+  if (dir === "up") {
+    d(ALIEN.body2, cx - 9, top + 7, 18, 2);
+  } else if (dir === "left" || dir === "right") {
+    if (dir === "right") { ctx.save(); ctx.translate(cx, 0); ctx.scale(-1, 1); ctx.translate(-cx, 0); }
+    d(E, cx - 7, top + 8, 2, 2);
+    d(E, cx - 2, top + 8, 2, 2);
+    d(E, cx - 6, top + 15, 3, 1);
+    if (dir === "right") ctx.restore();
+  } else {
+    d(E, cx - 4, top + 8, 2, 2);
+    d(E, cx + 2, top + 8, 2, 2);
+    d(E, cx - 2, top + 15, 1, 1);
+    d(E, cx + 1, top + 15, 1, 1);
+    d(E, cx - 1, top + 16, 2, 1);
+  }
+}
+
+// ─── Ghost character drawing (floats, no walk cycle) ────────────────────────
+const GHOST = {
+  body: "#e6ecfa", body2: "#c2cde8", bodyLight: "#f3f6fe", eye: "#2f3566",
+};
+const GHOST_HW = [
+  3, 5, 7, 8, 9, 10, 11, 11, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
+  12, 12, 12, 12,
+];
+
+function drawGhostCharacter(ctx, px, py, dir, frame) {
+  const cx = px * T + T / 2;
+  const cy = py * T + T / 2;
+  const bob = Math.round(Math.sin(frame * 0.2) * 1.5);
+  const gy = cy - 20 + bob;
+  const lean = dir === "left" ? -1 : dir === "right" ? 1 : 0;
+  const d = (fs, rx, ry, rw, rh) => { ctx.fillStyle = fs; ctx.fillRect(rx, ry, rw, rh); };
+
+  ctx.fillStyle = "rgba(0,0,0,0.16)";
+  ctx.beginPath(); ctx.ellipse(cx, cy + 11, 9, 3, 0, 0, Math.PI * 2); ctx.fill();
+
+  for (let i = 0; i < GHOST_HW.length; i++) {
+    d(GHOST.body, cx - GHOST_HW[i], gy + i, 2 * GHOST_HW[i], 1);
+  }
+  const b = gy + GHOST_HW.length;
+  d(GHOST.body, cx - 12, b, 7, 1); d(GHOST.body, cx - 3, b, 6, 1); d(GHOST.body, cx + 5, b, 7, 1);
+  d(GHOST.body, cx - 11, b + 1, 5, 1); d(GHOST.body, cx - 2, b + 1, 4, 1); d(GHOST.body, cx + 6, b + 1, 5, 1);
+  for (let i = 4; i < GHOST_HW.length; i++) {
+    d(GHOST.body2, cx + GHOST_HW[i] - 1, gy + i, 1, 1);
+  }
+  d(GHOST.body2, cx - 11, b + 1, 5, 1); d(GHOST.body2, cx - 2, b + 1, 4, 1); d(GHOST.body2, cx + 6, b + 1, 5, 1);
+  d(GHOST.bodyLight, cx - 6, gy + 2, 3, 1); d(GHOST.bodyLight, cx - 8, gy + 3, 2, 1); d(GHOST.bodyLight, cx - 9, gy + 4, 2, 1);
+
+  const E = GHOST.eye, y = gy + 12;
+  d(E, cx - 8 + lean, y, 1, 3); d(E, cx - 9 + lean, y + 1, 1, 1); d(E, cx - 7 + lean, y + 1, 1, 1);
+  d(E, cx + 8 + lean, y, 1, 3); d(E, cx + 9 + lean, y + 1, 1, 1); d(E, cx + 7 + lean, y + 1, 1, 1);
+}
+
 function drawInteractHint(ctx, tileX, tileY, frame) {
   const cx = tileX * T + T / 2; const cy = tileY * T - 6;
   const bounce = Math.sin(frame * 0.08) * 4;
@@ -1537,6 +1629,12 @@ export default function LoadingMiniGame({ supportLang = "en" }) {
   const { playSound, warmupAudio } = useSoundSettings();
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
+  const dailyGoalPetType = useUserStore((s) => s.user?.dailyGoalPetType);
+  const resolvedPetType = normalizePetType(dailyGoalPetType);
+  const petTypeRef = useRef(resolvedPetType);
+  useEffect(() => {
+    petTypeRef.current = resolvedPetType;
+  }, [resolvedPetType]);
   const loaderPanelBg = isLightTheme
     ? "rgba(255, 250, 241, 0.98)"
     : "rgba(250, 244, 232, 0.96)";
@@ -1916,7 +2014,15 @@ export default function LoadingMiniGame({ supportLang = "en" }) {
         drawInteractHint(ctx, fx, fy, s.frame);
       }
 
-      drawDogCharacter(ctx, s.px, s.py, s.dir, s.moving ? s.walkFrame : 0);
+      const pt = petTypeRef.current;
+      const drawCharacter =
+        pt === "alien"
+          ? drawAlienCharacter
+          : pt === "ghost"
+            ? drawGhostCharacter
+            : drawDogCharacter;
+      const charFrame = pt === "ghost" ? s.frame : s.moving ? s.walkFrame : 0;
+      drawCharacter(ctx, s.px, s.py, s.dir, charFrame);
       ctx.restore();
 
       if (s.transitioning) drawTransition(ctx, cw, ch, s.transitionProgress);

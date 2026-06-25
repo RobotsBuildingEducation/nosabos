@@ -232,6 +232,7 @@ import {
   getDailyGoalPetHealth,
   hasDailyGoalResetExpired,
 } from "./utils/dailyGoalPet";
+import { normalizePetType } from "./utils/petTypes";
 import { normalizeThemeMode, useThemeStore } from "./useThemeStore";
 import {
   DEFAULT_SUPPORT_LANGUAGE,
@@ -2464,6 +2465,11 @@ export default function App({ onBootReady } = {}) {
     [user],
   );
 
+  const dailyGoalPetType = useMemo(
+    () => normalizePetType(user?.dailyGoalPetType),
+    [user?.dailyGoalPetType],
+  );
+
   // const { sendOneSatToNpub, initWalletService, init, walletBalance } =
   //   useNostrWalletStore((state) => ({
   //     sendOneSatToNpub: state.sendOneSatToNpub, // renamed from cashTap
@@ -3116,6 +3122,7 @@ export default function App({ onBootReady } = {}) {
             practicePronunciation: false,
             identity: null,
             displayName: storedDisplayName || "",
+            dailyGoalPetType: "dog",
           };
           await setDoc(doc(database, "users", id), base, { merge: true });
           userDoc = await loadUserObjectFromDB(database, id);
@@ -3137,6 +3144,7 @@ export default function App({ onBootReady } = {}) {
           practicePronunciation: false,
           identity: null,
           displayName: storedDisplayName || "",
+          dailyGoalPetType: "dog",
         };
         await setDoc(doc(database, "users", id), base, { merge: true });
         userDoc = await loadUserObjectFromDB(database, id);
@@ -5501,17 +5509,24 @@ export default function App({ onBootReady } = {}) {
     ],
   );
 
-  // Rename the daily-goal companion. Empty string clears the custom name and
+  // Customize the daily-goal companion. Empty string clears the custom name and
   // falls back to the localized default ("Your companion").
-  const handleRenamePet = useCallback(
-    (rawName) => {
+  const handleCustomizePet = useCallback(
+    (payload, fallbackPetType) => {
+      const rawName =
+        payload && typeof payload === "object" ? payload.name : payload;
+      const rawPetType =
+        payload && typeof payload === "object"
+          ? payload.petType
+          : fallbackPetType;
       const name = String(rawName || "")
         .trim()
         .slice(0, 24);
+      const petType = normalizePetType(rawPetType);
 
       // Optimistic local update so the quest panel, goal modal, and
-      // celebration all reflect the new name immediately.
-      patchUser?.({ dailyGoalPetName: name });
+      // celebration all reflect the customization immediately.
+      patchUser?.({ dailyGoalPetName: name, dailyGoalPetType: petType });
 
       if (!activeNpub) return;
 
@@ -5519,11 +5534,12 @@ export default function App({ onBootReady } = {}) {
         doc(database, "users", activeNpub),
         {
           dailyGoalPetName: name,
+          dailyGoalPetType: petType,
           updatedAt: new Date().toISOString(),
         },
         { merge: true },
       ).catch((error) => {
-        console.error("Failed to save companion name:", error);
+        console.error("Failed to save companion customization:", error);
         toast({
           status: "error",
           title: uiCopy(appLanguage, {
@@ -5939,6 +5955,8 @@ export default function App({ onBootReady } = {}) {
         patch.dailyGoalPetHealth = data.dailyGoalPetHealth;
       if (typeof data?.dailyGoalPetName === "string")
         patch.dailyGoalPetName = data.dailyGoalPetName;
+      if (typeof data?.dailyGoalPetType === "string")
+        patch.dailyGoalPetType = normalizePetType(data.dailyGoalPetType);
       if (typeof data?.dailyGoalPetLastDelta === "number")
         patch.dailyGoalPetLastDelta = data.dailyGoalPetLastDelta;
       if (typeof data?.dailyGoalPetLastOutcome === "string")
@@ -7825,6 +7843,8 @@ export default function App({ onBootReady } = {}) {
         t={t}
         petHealth={dailyGoalPetHealth}
         petName={user?.dailyGoalPetName || ""}
+        petType={dailyGoalPetType}
+        onCustomizePet={handleCustomizePet}
         petLastOutcome={user?.dailyGoalPetLastOutcome || null}
         petLastDelta={user?.dailyGoalPetLastDelta ?? null}
         completedGoalDates={dailyGoalCompletedDates}
@@ -7939,7 +7959,8 @@ export default function App({ onBootReady } = {}) {
               ctaDisabled={showSkillTreeTutorial}
               petHealth={dailyGoalPetHealth}
               petName={user?.dailyGoalPetName || ""}
-              onRenamePet={handleRenamePet}
+              petType={dailyGoalPetType}
+              onCustomizePet={handleCustomizePet}
               completedGoalDates={dailyGoalCompletedDates}
               dailyXpHistory={dailyGoalXpHistory}
             />
@@ -8439,6 +8460,7 @@ export default function App({ onBootReady } = {}) {
                 lang={appLanguage}
                 health={celebrationPetHealth}
                 petName={user?.dailyGoalPetName || ""}
+                petType={dailyGoalPetType}
                 lastOutcome="achieved"
                 lastDelta={celebrationPetDelta}
                 variant="celebration"
