@@ -174,7 +174,7 @@ export default function CompanionCustomizeModal({
                 {copy.companion}
               </Text>
               <SimpleGrid columns={2} spacing={2}>
-                {["dog", "alien", "ghost", "robot", "slime"].map((type) => {
+                {["dog", "alien", "ghost", "robot", "slime", "axolotl"].map((type) => {
                   const active = draftPetType === type;
                   return (
                     <Button

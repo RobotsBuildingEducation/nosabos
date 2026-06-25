@@ -1328,7 +1328,155 @@ function drawSlimeCharacter(ctx, frame, stage) {
   ctx.restore();
 }
 
+const AXOLOTL = {
+  body: "#f9a8d4",
+  bodyLt: "#fbcfe8",
+  belly: "#fdf2f8",
+  gill: "#fb7185",
+  gillTip: "#f43f5e",
+  gillSoft: "#fecdd3",
+  cheek: "#f472b6",
+  eye: "#3f1d2b",
+  smile: "#be185d",
+};
+
+const SICK_AXOLOTL = {
+  ...AXOLOTL,
+  body: "#cda9b6",
+  bodyLt: "#dcc1cb",
+  belly: "#ece2e7",
+  gill: "#bd8a98",
+  gillTip: "#ab7886",
+  gillSoft: "#d7c2c9",
+  cheek: "#bd8a98",
+  smile: "#7d5160",
+};
+
+const DEAD_AXOLOTL = {
+  ...AXOLOTL,
+  body: "#b8b3bd",
+  bodyLt: "#cfcad3",
+  belly: "#e4e1e7",
+  gill: "#9aa0a6",
+  gillTip: "#878d94",
+  gillSoft: "#cfcad3",
+  cheek: "#9aa0a6",
+  eye: "#4b4b52",
+  smile: "#6b6b73",
+};
+
+function getAxolotlPalette(stage) {
+  if (stage.key === "dead") return DEAD_AXOLOTL;
+  if (stage.key === "unhealthy") return SICK_AXOLOTL;
+  return AXOLOTL;
+}
+
+// External gills: bushy feathery clusters hugging the head's upper-side curve
+// (3 per side). NOT thin floating spikes — that read as "weird".
+function drawAxolotlGills(ctx, p, cx, o) {
+  const g = p.gill;
+  const t = p.gillTip;
+  const s = p.gillSoft;
+  px(ctx, g, cx - 11, 10 + o, 4, 3); px(ctx, t, cx - 13, 9 + o, 2, 2); px(ctx, s, cx - 10, 11 + o, 1, 1);
+  px(ctx, g, cx - 12, 14 + o, 4, 3); px(ctx, t, cx - 14, 15 + o, 2, 2); px(ctx, s, cx - 11, 15 + o, 1, 1);
+  px(ctx, g, cx - 13, 18 + o, 4, 3); px(ctx, t, cx - 15, 20 + o, 2, 2); px(ctx, s, cx - 12, 19 + o, 1, 1);
+  px(ctx, g, cx + 7, 10 + o, 4, 3); px(ctx, t, cx + 11, 9 + o, 2, 2); px(ctx, s, cx + 9, 11 + o, 1, 1);
+  px(ctx, g, cx + 8, 14 + o, 4, 3); px(ctx, t, cx + 12, 15 + o, 2, 2); px(ctx, s, cx + 10, 15 + o, 1, 1);
+  px(ctx, g, cx + 9, 18 + o, 4, 3); px(ctx, t, cx + 13, 20 + o, 2, 2); px(ctx, s, cx + 11, 19 + o, 1, 1);
+}
+
+function drawAxolotlBody(ctx, p, cx, o) {
+  // oval (egg) silhouette
+  px(ctx, p.body, cx - 4, 8 + o, 8, 1);
+  px(ctx, p.body, cx - 6, 9 + o, 12, 1);
+  px(ctx, p.body, cx - 7, 10 + o, 14, 2);
+  px(ctx, p.body, cx - 8, 12 + o, 16, 1);
+  px(ctx, p.body, cx - 9, 13 + o, 18, 3);
+  px(ctx, p.body, cx - 10, 16 + o, 20, 7);
+  px(ctx, p.body, cx - 9, 23 + o, 18, 3);
+  px(ctx, p.body, cx - 8, 26 + o, 15, 2);
+  px(ctx, p.body, cx - 6, 28 + o, 12, 1);
+  // soft upper-left sheen for roundness
+  px(ctx, p.bodyLt, cx - 7, 11 + o, 5, 1);
+  px(ctx, p.bodyLt, cx - 8, 12 + o, 5, 2);
+  // belly patch
+  px(ctx, p.belly, cx - 5, 18 + o, 10, 1);
+  px(ctx, p.belly, cx - 6, 19 + o, 12, 7);
+  px(ctx, p.belly, cx - 5, 26 + o, 10, 1);
+  // little arms
+  px(ctx, p.body, cx - 11, 23 + o, 3, 3);
+  px(ctx, p.body, cx + 8, 23 + o, 3, 3);
+  // feet
+  px(ctx, p.body, cx - 6, 29 + o, 5, 3);
+  px(ctx, p.body, cx + 1, 29 + o, 5, 3);
+  px(ctx, p.bodyLt, cx - 6, 31 + o, 5, 1);
+  px(ctx, p.bodyLt, cx + 1, 31 + o, 5, 1);
+}
+
+function drawAxolotlFace(ctx, key, p, cx, o) {
+  const eye = p.eye;
+  if (key === "dead") {
+    px(ctx, eye, cx - 7, 13 + o, 1, 1); px(ctx, eye, cx - 5, 13 + o, 1, 1);
+    px(ctx, eye, cx - 6, 14 + o, 1, 1);
+    px(ctx, eye, cx - 7, 15 + o, 1, 1); px(ctx, eye, cx - 5, 15 + o, 1, 1);
+    px(ctx, eye, cx + 4, 13 + o, 1, 1); px(ctx, eye, cx + 6, 13 + o, 1, 1);
+    px(ctx, eye, cx + 5, 14 + o, 1, 1);
+    px(ctx, eye, cx + 4, 15 + o, 1, 1); px(ctx, eye, cx + 6, 15 + o, 1, 1);
+    px(ctx, p.smile, cx - 2, 19 + o, 4, 1);
+    px(ctx, "#f2d06a", cx - 5, 4 + o, 10, 1);
+    px(ctx, "#f2d06a", cx - 5, 6 + o, 10, 1);
+    px(ctx, "#f2d06a", cx - 6, 5 + o, 1, 1);
+    px(ctx, "#f2d06a", cx + 5, 5 + o, 1, 1);
+    return;
+  }
+  if (key === "happy" || key === "healthy" || key === "stressed") {
+    px(ctx, p.cheek, cx - 8, 17 + o, 3, 2);
+    px(ctx, p.cheek, cx + 5, 17 + o, 3, 2);
+  }
+  if (key === "stressed") {
+    px(ctx, eye, cx - 7, 14 + o, 1, 1); px(ctx, eye, cx - 6, 15 + o, 1, 1); px(ctx, eye, cx - 7, 16 + o, 1, 1);
+    px(ctx, eye, cx + 6, 14 + o, 1, 1); px(ctx, eye, cx + 5, 15 + o, 1, 1); px(ctx, eye, cx + 6, 16 + o, 1, 1);
+  } else if (key === "unhealthy") {
+    px(ctx, eye, cx - 7, 15 + o, 3, 1); px(ctx, eye, cx - 6, 16 + o, 1, 1);
+    px(ctx, eye, cx + 4, 15 + o, 3, 1); px(ctx, eye, cx + 5, 16 + o, 1, 1);
+  } else {
+    px(ctx, eye, cx - 6, 14 + o, 2, 2); px(ctx, eye, cx + 4, 14 + o, 2, 2);
+    px(ctx, "#ffffff", cx - 6, 14 + o, 1, 1); px(ctx, "#ffffff", cx + 4, 14 + o, 1, 1);
+  }
+  if (key === "happy") {
+    px(ctx, p.smile, cx - 3, 18 + o, 1, 1); px(ctx, p.smile, cx + 2, 18 + o, 1, 1);
+    px(ctx, p.smile, cx - 2, 19 + o, 4, 1);
+    px(ctx, p.smile, cx - 1, 20 + o, 2, 1);
+  } else if (key === "unhappy") {
+    px(ctx, p.smile, cx - 2, 19 + o, 1, 1); px(ctx, p.smile, cx - 1, 18 + o, 2, 1); px(ctx, p.smile, cx + 1, 19 + o, 1, 1);
+  } else if (key === "stressed") {
+    px(ctx, p.smile, cx - 2, 19 + o, 1, 1); px(ctx, p.smile, cx - 1, 18 + o, 1, 1);
+    px(ctx, p.smile, cx, 19 + o, 1, 1); px(ctx, p.smile, cx + 1, 18 + o, 1, 1); px(ctx, p.smile, cx + 2, 19 + o, 1, 1);
+  } else if (key === "unhealthy") {
+    px(ctx, p.smile, cx - 1, 19 + o, 3, 1); px(ctx, p.smile, cx, 20 + o, 1, 1);
+  } else {
+    px(ctx, p.smile, cx - 2, 18 + o, 1, 1); px(ctx, p.smile, cx - 1, 19 + o, 2, 1); px(ctx, p.smile, cx + 1, 18 + o, 1, 1);
+  }
+}
+
+function drawAxolotlCharacter(ctx, frame, stage) {
+  ctx.save();
+  ctx.translate(0, SCENE_Y_OFFSET);
+  const cx = T / 2;
+  const phase = frame % 6;
+  const palette = getAxolotlPalette(stage);
+  const o = stage.key === "dead" ? 0 : [0, -1, -1, 0, 1, 0][phase];
+  drawAxolotlGills(ctx, palette, cx, o);
+  drawAxolotlBody(ctx, palette, cx, o);
+  drawAxolotlFace(ctx, stage.key, palette, cx, o);
+  ctx.restore();
+}
+
 function drawCompanionCharacter(ctx, frame, stage, petType) {
+  if (petType === "axolotl") {
+    drawAxolotlCharacter(ctx, frame, stage);
+    return;
+  }
   if (petType === "alien") {
     drawAlienCharacter(ctx, frame, stage);
     return;

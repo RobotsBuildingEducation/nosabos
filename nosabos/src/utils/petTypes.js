@@ -1,5 +1,12 @@
 export const DEFAULT_PET_TYPE = "dog";
-export const PET_TYPES = [DEFAULT_PET_TYPE, "alien", "ghost", "robot", "slime"];
+export const PET_TYPES = [
+  DEFAULT_PET_TYPE,
+  "alien",
+  "ghost",
+  "robot",
+  "slime",
+  "axolotl",
+];
 
 export function normalizePetType(value) {
   const type = String(value || "").toLowerCase();

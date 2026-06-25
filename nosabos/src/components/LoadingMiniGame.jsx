@@ -1698,6 +1698,42 @@ function drawInteractHint(ctx, tileX, tileY, frame) {
   ctx.textAlign = "center"; ctx.fillText("!", cx, cy + bounce); ctx.restore();
 }
 
+// ─── Axolotl character drawing (front-facing, gentle bob, eyes lean) ─────────
+const AXOLOTL = {
+  body: "#f9a8d4", bodyLt: "#fbcfe8", belly: "#fdf2f8",
+  gill: "#fb7185", gillTip: "#f43f5e", gillSoft: "#fecdd3",
+  cheek: "#f472b6", eye: "#3f1d2b", smile: "#be185d",
+};
+function drawAxolotlCharacter(ctx, px, py, dir, frame) {
+  const cx = px * T + T / 2;
+  const cy = py * T + T / 2;
+  const bob = Math.round(Math.sin(frame * 0.2) * 1.5);
+  const lean = dir === "left" ? -1 : dir === "right" ? 1 : 0;
+  const P = AXOLOTL;
+  const a = (fs, lx, ly, w, h) => { ctx.fillStyle = fs; ctx.fillRect(cx + lx - 24, cy - 28 + bob + ly, w, h); };
+
+  ctx.fillStyle = "rgba(0,0,0,0.16)";
+  ctx.beginPath(); ctx.ellipse(cx, cy + 11, 9, 3, 0, 0, Math.PI * 2); ctx.fill();
+
+  a(P.gill,13,10,4,3); a(P.gillTip,11,9,2,2); a(P.gillSoft,14,11,1,1);
+  a(P.gill,12,14,4,3); a(P.gillTip,10,15,2,2); a(P.gillSoft,13,15,1,1);
+  a(P.gill,11,18,4,3); a(P.gillTip,9,20,2,2); a(P.gillSoft,12,19,1,1);
+  a(P.gill,31,10,4,3); a(P.gillTip,35,9,2,2); a(P.gillSoft,33,11,1,1);
+  a(P.gill,32,14,4,3); a(P.gillTip,36,15,2,2); a(P.gillSoft,34,15,1,1);
+  a(P.gill,33,18,4,3); a(P.gillTip,37,20,2,2); a(P.gillSoft,35,19,1,1);
+
+  a(P.body,20,8,8,1); a(P.body,18,9,12,1); a(P.body,17,10,14,2); a(P.body,16,12,16,1); a(P.body,15,13,18,3); a(P.body,14,16,20,7); a(P.body,15,23,18,3); a(P.body,16,26,15,2); a(P.body,18,28,12,1);
+  a(P.bodyLt,17,11,5,1); a(P.bodyLt,16,12,5,2);
+  a(P.belly,19,18,10,1); a(P.belly,18,19,12,7); a(P.belly,19,26,10,1);
+  a(P.body,13,23,3,3); a(P.body,32,23,3,3);
+  a(P.body,18,29,5,3); a(P.body,25,29,5,3); a(P.bodyLt,18,31,5,1); a(P.bodyLt,25,31,5,1);
+
+  a(P.cheek,16,17,3,2); a(P.cheek,29,17,3,2);
+  a(P.eye,18+lean,14,2,2); a(P.eye,28+lean,14,2,2);
+  a("#ffffff",18+lean,14,1,1); a("#ffffff",28+lean,14,1,1);
+  a(P.smile,21,18,1,1); a(P.smile,26,18,1,1); a(P.smile,22,19,4,1); a(P.smile,23,20,2,1);
+}
+
 function drawTransition(ctx, w, h, progress) {
   ctx.fillStyle = "#000";
   ctx.globalAlpha = progress < 0.5 ? progress * 2 : 2 - progress * 2;
@@ -2098,7 +2134,9 @@ export default function LoadingMiniGame({ supportLang = "en" }) {
 
       const pt = petTypeRef.current;
       const drawCharacter =
-        pt === "alien"
+        pt === "axolotl"
+          ? drawAxolotlCharacter
+          : pt === "alien"
           ? drawAlienCharacter
           : pt === "ghost"
             ? drawGhostCharacter
@@ -2108,7 +2146,7 @@ export default function LoadingMiniGame({ supportLang = "en" }) {
                 ? drawSlimeCharacter
                 : drawDogCharacter;
       const charFrame =
-        pt === "ghost" || pt === "robot" || pt === "slime"
+        pt === "ghost" || pt === "robot" || pt === "slime" || pt === "axolotl"
           ? s.frame
           : s.moving
             ? s.walkFrame
