@@ -73,6 +73,7 @@ import {
   nativeModalMotionProps,
   nativeOverlayMotionProps,
 } from "../utils/modalMotion";
+import { rememberAccountSwitch } from "../utils/authSession";
 
 const HINDI_SUPPORT_COPY = {
   "Enter a display name": "एक प्रदर्शित नाम दर्ज करें",
@@ -446,6 +447,7 @@ export function IdentityPanel({
 
       localStorage.setItem("local_npub", npub);
       localStorage.setItem("local_nsec", nsec);
+      rememberAccountSwitch(npub);
 
       setCurrentId(npub);
       setCurrentSecret(nsec);

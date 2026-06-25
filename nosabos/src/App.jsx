@@ -251,8 +251,11 @@ import {
 import { syncDocumentLanguage } from "./utils/documentLanguage";
 import { getGermanCopy } from "./utils/germanCopy";
 import {
+  clearAccountSwitch,
   clearSecretKeySignIn,
+  getAccountSwitchNpub,
   getSecretKeySignInNpub,
+  rememberAccountSwitch,
 } from "./utils/authSession";
 import {
   nativeAnchoredDrawerMotionProps,
@@ -3091,6 +3094,12 @@ export default function App({ onBootReady } = {}) {
     setIsLoadingApp(true);
     try {
       let id = (localStorage.getItem("local_npub") || "").trim();
+      const previousUser = useUserStore.getState()?.user;
+      const previousUserNpub =
+        previousUser?.local_npub || previousUser?.id || activeNpub;
+      if (id && previousUserNpub && previousUserNpub !== id) {
+        setUser?.(null);
+      }
       const storedDisplayName = (
         localStorage.getItem("displayName") || ""
       ).trim();
@@ -3100,6 +3109,9 @@ export default function App({ onBootReady } = {}) {
         localStorage.getItem("local_nsec")?.substring(0, 20) + "...",
       );
       const secretKeySignInNpub = getSecretKeySignInNpub();
+      const accountSwitchNpub = getAccountSwitchNpub();
+      const explicitReturningAccountNpub =
+        secretKeySignInNpub === id || accountSwitchNpub === id;
       let userDoc = null;
       let foundExistingUserDoc = false;
 
@@ -3150,15 +3162,11 @@ export default function App({ onBootReady } = {}) {
         userDoc = await loadUserObjectFromDB(database, id);
       }
 
-      // Choosing "I already have a key" is an explicit returning-account
-      // action. If that npub already has an app user document, trust the sign-
-      // in flow and repair onboarding completion instead of routing back into
-      // account setup. New/external Nostr keys still onboard because they do
-      // not have an existing app user document.
+      // Explicit returning-account actions should load the existing app user
+      // doc instead of sending the account back through onboarding.
       if (
         foundExistingUserDoc &&
-        secretKeySignInNpub &&
-        secretKeySignInNpub === id &&
+        explicitReturningAccountNpub &&
         !hasCompletedOnboarding(userDoc)
       ) {
         const completedAt =
@@ -3183,6 +3191,7 @@ export default function App({ onBootReady } = {}) {
       }
 
       if (secretKeySignInNpub) clearSecretKeySignIn();
+      if (accountSwitchNpub) clearAccountSwitch();
 
       if (id && storedDisplayName && !userDoc?.displayName) {
         await setDoc(
@@ -3245,6 +3254,28 @@ export default function App({ onBootReady } = {}) {
     } finally {
       setIsLoadingApp(false);
     }
+  };
+
+  const handleSwitchedAccount = async (id, sec) => {
+    const nextNpub = String(id || "").trim();
+    const nextNsec = typeof sec === "string" ? sec.trim() : "";
+
+    if (nextNpub) {
+      localStorage.setItem("local_npub", nextNpub);
+      rememberAccountSwitch(nextNpub);
+    }
+    if (typeof sec === "string") {
+      localStorage.setItem("local_nsec", nextNsec);
+    }
+
+    setActiveNpub(nextNpub || (localStorage.getItem("local_npub") || ""));
+    setActiveNsec(
+      typeof sec === "string"
+        ? nextNsec
+        : localStorage.getItem("local_nsec") || "",
+    );
+    setUser?.(null);
+    await connectDID();
   };
 
   useEffect(() => {
@@ -6138,14 +6169,7 @@ export default function App({ onBootReady } = {}) {
               pauseMs={user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS}
               helpRequest={user?.progress?.helpRequest}
               practicePronunciation={user?.progress?.practicePronunciation}
-              onSwitchedAccount={async (id, sec) => {
-                if (id) localStorage.setItem("local_npub", id);
-                if (typeof sec === "string")
-                  localStorage.setItem("local_nsec", sec);
-                await connectDID();
-                setActiveNpub(localStorage.getItem("local_npub") || "");
-                setActiveNsec(localStorage.getItem("local_nsec") || "");
-              }}
+              onSwitchedAccount={handleSwitchedAccount}
             />
           </>
         );
@@ -7785,9 +7809,7 @@ export default function App({ onBootReady } = {}) {
           cefrResult={cefrResult}
           cefrLoading={cefrLoading}
           cefrError={cefrError}
-          onSwitchedAccount={async (id, sec) => {
-            /* ... */
-          }}
+          onSwitchedAccount={handleSwitchedAccount}
           onPatchSettings={saveGlobalSettings}
           settingsOpen={settingsOpen}
           closeSettings={() => setSettingsOpen(false)}
@@ -8100,18 +8122,7 @@ export default function App({ onBootReady } = {}) {
                           lesson={activeLesson}
                           lessonContent={activeLesson?.content?.realtime}
                           onSkip={switchToRandomLessonMode}
-                          onSwitchedAccount={async (id, sec) => {
-                            if (id) localStorage.setItem("local_npub", id);
-                            if (typeof sec === "string")
-                              localStorage.setItem("local_nsec", sec);
-                            await connectDID();
-                            setActiveNpub(
-                              localStorage.getItem("local_npub") || "",
-                            );
-                            setActiveNsec(
-                              localStorage.getItem("local_nsec") || "",
-                            );
-                          }}
+                          onSwitchedAccount={handleSwitchedAccount}
                         />
                       </TabPanel>
                     );
