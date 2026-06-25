@@ -232,6 +232,7 @@ import {
   getDailyGoalPetHealth,
   hasDailyGoalResetExpired,
 } from "./utils/dailyGoalPet";
+import { normalizePetType } from "./utils/petTypes";
 import { normalizeThemeMode, useThemeStore } from "./useThemeStore";
 import {
   DEFAULT_SUPPORT_LANGUAGE,
@@ -250,8 +251,11 @@ import {
 import { syncDocumentLanguage } from "./utils/documentLanguage";
 import { getGermanCopy } from "./utils/germanCopy";
 import {
+  clearAccountSwitch,
   clearSecretKeySignIn,
+  getAccountSwitchNpub,
   getSecretKeySignInNpub,
+  rememberAccountSwitch,
 } from "./utils/authSession";
 import {
   nativeAnchoredDrawerMotionProps,
@@ -2464,6 +2468,11 @@ export default function App({ onBootReady } = {}) {
     [user],
   );
 
+  const dailyGoalPetType = useMemo(
+    () => normalizePetType(user?.dailyGoalPetType),
+    [user?.dailyGoalPetType],
+  );
+
   // const { sendOneSatToNpub, initWalletService, init, walletBalance } =
   //   useNostrWalletStore((state) => ({
   //     sendOneSatToNpub: state.sendOneSatToNpub, // renamed from cashTap
@@ -2733,6 +2742,27 @@ export default function App({ onBootReady } = {}) {
     return "plate";
   });
   const lastPathTargetRef = useRef(null);
+  const [voiceConnectionStatuses, setVoiceConnectionStatuses] = useState({
+    conversations: "disconnected",
+    tutor: "disconnected",
+  });
+  const [isBottomActionBarMinimized, setIsBottomActionBarMinimized] =
+    useState(false);
+
+  const handleVoiceConnectionStatusChange = useCallback((mode, status) => {
+    if (mode !== "conversations" && mode !== "tutor") return;
+    const nextStatus =
+      status === "connecting" || status === "connected"
+        ? status
+        : "disconnected";
+    setVoiceConnectionStatuses((prev) =>
+      prev[mode] === nextStatus ? prev : { ...prev, [mode]: nextStatus },
+    );
+  }, []);
+
+  const handleBottomActionBarMinimizedChange = useCallback((nextValue) => {
+    setIsBottomActionBarMinimized(Boolean(nextValue));
+  }, []);
 
   // Ref to trigger scroll to latest unlocked lesson
   const scrollToLatestUnlockedRef = useRef(null);
@@ -3085,6 +3115,12 @@ export default function App({ onBootReady } = {}) {
     setIsLoadingApp(true);
     try {
       let id = (localStorage.getItem("local_npub") || "").trim();
+      const previousUser = useUserStore.getState()?.user;
+      const previousUserNpub =
+        previousUser?.local_npub || previousUser?.id || activeNpub;
+      if (id && previousUserNpub && previousUserNpub !== id) {
+        setUser?.(null);
+      }
       const storedDisplayName = (
         localStorage.getItem("displayName") || ""
       ).trim();
@@ -3094,6 +3130,9 @@ export default function App({ onBootReady } = {}) {
         localStorage.getItem("local_nsec")?.substring(0, 20) + "...",
       );
       const secretKeySignInNpub = getSecretKeySignInNpub();
+      const accountSwitchNpub = getAccountSwitchNpub();
+      const explicitReturningAccountNpub =
+        secretKeySignInNpub === id || accountSwitchNpub === id;
       let userDoc = null;
       let foundExistingUserDoc = false;
 
@@ -3116,6 +3155,7 @@ export default function App({ onBootReady } = {}) {
             practicePronunciation: false,
             identity: null,
             displayName: storedDisplayName || "",
+            dailyGoalPetType: "dog",
           };
           await setDoc(doc(database, "users", id), base, { merge: true });
           userDoc = await loadUserObjectFromDB(database, id);
@@ -3137,20 +3177,17 @@ export default function App({ onBootReady } = {}) {
           practicePronunciation: false,
           identity: null,
           displayName: storedDisplayName || "",
+          dailyGoalPetType: "dog",
         };
         await setDoc(doc(database, "users", id), base, { merge: true });
         userDoc = await loadUserObjectFromDB(database, id);
       }
 
-      // Choosing "I already have a key" is an explicit returning-account
-      // action. If that npub already has an app user document, trust the sign-
-      // in flow and repair onboarding completion instead of routing back into
-      // account setup. New/external Nostr keys still onboard because they do
-      // not have an existing app user document.
+      // Explicit returning-account actions should load the existing app user
+      // doc instead of sending the account back through onboarding.
       if (
         foundExistingUserDoc &&
-        secretKeySignInNpub &&
-        secretKeySignInNpub === id &&
+        explicitReturningAccountNpub &&
         !hasCompletedOnboarding(userDoc)
       ) {
         const completedAt =
@@ -3175,6 +3212,7 @@ export default function App({ onBootReady } = {}) {
       }
 
       if (secretKeySignInNpub) clearSecretKeySignIn();
+      if (accountSwitchNpub) clearAccountSwitch();
 
       if (id && storedDisplayName && !userDoc?.displayName) {
         await setDoc(
@@ -3237,6 +3275,28 @@ export default function App({ onBootReady } = {}) {
     } finally {
       setIsLoadingApp(false);
     }
+  };
+
+  const handleSwitchedAccount = async (id, sec) => {
+    const nextNpub = String(id || "").trim();
+    const nextNsec = typeof sec === "string" ? sec.trim() : "";
+
+    if (nextNpub) {
+      localStorage.setItem("local_npub", nextNpub);
+      rememberAccountSwitch(nextNpub);
+    }
+    if (typeof sec === "string") {
+      localStorage.setItem("local_nsec", nextNsec);
+    }
+
+    setActiveNpub(nextNpub || (localStorage.getItem("local_npub") || ""));
+    setActiveNsec(
+      typeof sec === "string"
+        ? nextNsec
+        : localStorage.getItem("local_nsec") || "",
+    );
+    setUser?.(null);
+    await connectDID();
   };
 
   useEffect(() => {
@@ -5501,17 +5561,24 @@ export default function App({ onBootReady } = {}) {
     ],
   );
 
-  // Rename the daily-goal companion. Empty string clears the custom name and
+  // Customize the daily-goal companion. Empty string clears the custom name and
   // falls back to the localized default ("Your companion").
-  const handleRenamePet = useCallback(
-    (rawName) => {
+  const handleCustomizePet = useCallback(
+    (payload, fallbackPetType) => {
+      const rawName =
+        payload && typeof payload === "object" ? payload.name : payload;
+      const rawPetType =
+        payload && typeof payload === "object"
+          ? payload.petType
+          : fallbackPetType;
       const name = String(rawName || "")
         .trim()
         .slice(0, 24);
+      const petType = normalizePetType(rawPetType);
 
       // Optimistic local update so the quest panel, goal modal, and
-      // celebration all reflect the new name immediately.
-      patchUser?.({ dailyGoalPetName: name });
+      // celebration all reflect the customization immediately.
+      patchUser?.({ dailyGoalPetName: name, dailyGoalPetType: petType });
 
       if (!activeNpub) return;
 
@@ -5519,11 +5586,12 @@ export default function App({ onBootReady } = {}) {
         doc(database, "users", activeNpub),
         {
           dailyGoalPetName: name,
+          dailyGoalPetType: petType,
           updatedAt: new Date().toISOString(),
         },
         { merge: true },
       ).catch((error) => {
-        console.error("Failed to save companion name:", error);
+        console.error("Failed to save companion customization:", error);
         toast({
           status: "error",
           title: uiCopy(appLanguage, {
@@ -5939,6 +6007,8 @@ export default function App({ onBootReady } = {}) {
         patch.dailyGoalPetHealth = data.dailyGoalPetHealth;
       if (typeof data?.dailyGoalPetName === "string")
         patch.dailyGoalPetName = data.dailyGoalPetName;
+      if (typeof data?.dailyGoalPetType === "string")
+        patch.dailyGoalPetType = normalizePetType(data.dailyGoalPetType);
       if (typeof data?.dailyGoalPetLastDelta === "number")
         patch.dailyGoalPetLastDelta = data.dailyGoalPetLastDelta;
       if (typeof data?.dailyGoalPetLastOutcome === "string")
@@ -6120,14 +6190,8 @@ export default function App({ onBootReady } = {}) {
               pauseMs={user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS}
               helpRequest={user?.progress?.helpRequest}
               practicePronunciation={user?.progress?.practicePronunciation}
-              onSwitchedAccount={async (id, sec) => {
-                if (id) localStorage.setItem("local_npub", id);
-                if (typeof sec === "string")
-                  localStorage.setItem("local_nsec", sec);
-                await connectDID();
-                setActiveNpub(localStorage.getItem("local_npub") || "");
-                setActiveNsec(localStorage.getItem("local_nsec") || "");
-              }}
+              bottomActionBarMinimized={isBottomActionBarMinimized}
+              onSwitchedAccount={handleSwitchedAccount}
             />
           </>
         );
@@ -7750,6 +7814,14 @@ export default function App({ onBootReady } = {}) {
   const isVoiceSurfaceMode =
     viewMode === "skillTree" &&
     (pathMode === "conversations" || pathMode === "tutor");
+  const activeVoiceConnectionStatus =
+    pathMode === "conversations" || pathMode === "tutor"
+      ? voiceConnectionStatuses[pathMode]
+      : "disconnected";
+  const shouldCollapseBottomActionBar =
+    isVoiceSurfaceMode &&
+    (activeVoiceConnectionStatus === "connecting" ||
+      activeVoiceConnectionStatus === "connected");
   const skillTreeSceneBottomPadding = isVoiceSurfaceMode
     ? 0
     : { base: 32, md: 24 };
@@ -7767,9 +7839,7 @@ export default function App({ onBootReady } = {}) {
           cefrResult={cefrResult}
           cefrLoading={cefrLoading}
           cefrError={cefrError}
-          onSwitchedAccount={async (id, sec) => {
-            /* ... */
-          }}
+          onSwitchedAccount={handleSwitchedAccount}
           onPatchSettings={saveGlobalSettings}
           settingsOpen={settingsOpen}
           closeSettings={() => setSettingsOpen(false)}
@@ -7825,6 +7895,8 @@ export default function App({ onBootReady } = {}) {
         t={t}
         petHealth={dailyGoalPetHealth}
         petName={user?.dailyGoalPetName || ""}
+        petType={dailyGoalPetType}
+        onCustomizePet={handleCustomizePet}
         petLastOutcome={user?.dailyGoalPetLastOutcome || null}
         petLastDelta={user?.dailyGoalPetLastDelta ?? null}
         completedGoalDates={dailyGoalCompletedDates}
@@ -7899,6 +7971,8 @@ export default function App({ onBootReady } = {}) {
           notesIsLoading={notesIsLoading}
           notesIsDone={notesIsDone}
           pathMode={pathMode}
+          shouldAutoMinimize={shouldCollapseBottomActionBar}
+          onMinimizedChange={handleBottomActionBarMinimizedChange}
           onPathModeChange={handleBottomBarPathModeChange}
           onScrollToLatest={() => {
             // Trigger scroll when already in path mode
@@ -7939,7 +8013,8 @@ export default function App({ onBootReady } = {}) {
               ctaDisabled={showSkillTreeTutorial}
               petHealth={dailyGoalPetHealth}
               petName={user?.dailyGoalPetName || ""}
-              onRenamePet={handleRenamePet}
+              petType={dailyGoalPetType}
+              onCustomizePet={handleCustomizePet}
               completedGoalDates={dailyGoalCompletedDates}
               dailyXpHistory={dailyGoalXpHistory}
             />
@@ -7996,6 +8071,10 @@ export default function App({ onBootReady } = {}) {
                 initialUnitsKey={skillTreeInitialUnits.key || ""}
                 onTutorFirstLessonComplete={handleTutorFirstLessonComplete}
                 onTutorDailyGoalCelebration={handleTutorDailyGoalCelebration}
+                bottomActionBarMinimized={isBottomActionBarMinimized}
+                onVoiceConnectionStatusChange={
+                  handleVoiceConnectionStatusChange
+                }
                 // Tutorial props
                 isTutorialComplete={hasCompletedSkillTreeTutorial}
               />
@@ -8079,18 +8158,8 @@ export default function App({ onBootReady } = {}) {
                           lesson={activeLesson}
                           lessonContent={activeLesson?.content?.realtime}
                           onSkip={switchToRandomLessonMode}
-                          onSwitchedAccount={async (id, sec) => {
-                            if (id) localStorage.setItem("local_npub", id);
-                            if (typeof sec === "string")
-                              localStorage.setItem("local_nsec", sec);
-                            await connectDID();
-                            setActiveNpub(
-                              localStorage.getItem("local_npub") || "",
-                            );
-                            setActiveNsec(
-                              localStorage.getItem("local_nsec") || "",
-                            );
-                          }}
+                          bottomActionBarMinimized={isBottomActionBarMinimized}
+                          onSwitchedAccount={handleSwitchedAccount}
                         />
                       </TabPanel>
                     );
@@ -8439,6 +8508,7 @@ export default function App({ onBootReady } = {}) {
                 lang={appLanguage}
                 health={celebrationPetHealth}
                 petName={user?.dailyGoalPetName || ""}
+                petType={dailyGoalPetType}
                 lastOutcome="achieved"
                 lastDelta={celebrationPetDelta}
                 variant="celebration"
@@ -9102,6 +9172,8 @@ function BottomActionBar({
   notesIsLoading = false,
   notesIsDone = false,
   pathMode = "tutor",
+  shouldAutoMinimize = false,
+  onMinimizedChange,
   onPathModeChange,
   onScrollToLatest,
   currentTab,
@@ -9253,19 +9325,28 @@ function BottomActionBar({
     : notesIsDone
       ? "notesDone 1.5s ease-out"
       : undefined;
-  // Auto-minimize when entering a lesson or switching modules
-  const [isMinimized, setIsMinimized] = useState(viewMode === "lesson");
-  const prevViewMode = useRef(viewMode);
+  const shouldShowMinimizeControls = viewMode === "lesson" || shouldAutoMinimize;
+  // Auto-minimize when entering a lesson, switching modules, or starting voice.
+  const [isMinimized, setIsMinimized] = useState(shouldShowMinimizeControls);
+  const prevShouldShowMinimizeControls = useRef(shouldShowMinimizeControls);
   const prevTab = useRef(currentTab);
+  const effectiveIsMinimized = isMinimized && shouldShowMinimizeControls;
 
   useEffect(() => {
-    if (viewMode === "lesson" && prevViewMode.current !== "lesson") {
+    if (
+      shouldShowMinimizeControls &&
+      !prevShouldShowMinimizeControls.current
+    ) {
       setIsMinimized(true);
-    } else if (viewMode !== "lesson") {
+    } else if (!shouldShowMinimizeControls) {
       setIsMinimized(false);
     }
-    prevViewMode.current = viewMode;
-  }, [viewMode]);
+    prevShouldShowMinimizeControls.current = shouldShowMinimizeControls;
+  }, [shouldShowMinimizeControls]);
+
+  useEffect(() => {
+    onMinimizedChange?.(effectiveIsMinimized);
+  }, [effectiveIsMinimized, onMinimizedChange]);
 
   // Re-minimize when switching modules within a lesson
   useEffect(() => {
@@ -9298,8 +9379,8 @@ function BottomActionBar({
       ? "notesDone 1.5s ease-out"
       : undefined;
 
-  // Render minimized pill when in lesson and minimized
-  if (isMinimized && viewMode === "lesson") {
+  // Render minimized pill when this surface supports collapsing.
+  if (effectiveIsMinimized) {
     return (
       <Box
         position="fixed"
@@ -9424,7 +9505,7 @@ function BottomActionBar({
             borderRadius="24px"
           >
             {/* Minimize caret above buttons */}
-            {viewMode === "lesson" && (
+            {shouldShowMinimizeControls && (
               <Flex justify="center" mb={1}>
                 <Box
                   as="button"

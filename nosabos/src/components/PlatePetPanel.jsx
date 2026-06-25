@@ -16,6 +16,7 @@ import {
   ModalFooter,
   ModalHeader,
   ModalOverlay,
+  SimpleGrid,
   Text,
   VStack,
   useDisclosure,
@@ -43,6 +44,8 @@ import {
   DAILY_GOAL_PET_HEALTH_LOSS,
   clampDailyGoalPetHealth,
 } from "../utils/dailyGoalPet";
+import { PET_TYPES, normalizePetType } from "../utils/petTypes";
+import { getCustomizeModalCopy } from "./companionCustomizeCopy";
 
 const TILE = 16;
 const SCALE = 3;
@@ -56,29 +59,6 @@ const APP_TEXT_PRIMARY = "var(--app-text-primary)";
 const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
 
 const NAME_MAX_LENGTH = 24;
-
-// Localized copy for the "rename your companion" modal. Kept separate from
-// getCopy() since only this panel surfaces the edit affordance.
-const NAME_MODAL_COPY = {
-  en: { edit: "Name your companion", save: "Save", cancel: "Cancel" },
-  es: { edit: "Nombra a tu compañero", save: "Guardar", cancel: "Cancelar" },
-  pt: {
-    edit: "Dê um nome ao seu companheiro",
-    save: "Salvar",
-    cancel: "Cancelar",
-  },
-  fr: { edit: "Nomme ton compagnon", save: "Enregistrer", cancel: "Annuler" },
-  it: { edit: "Dai un nome al compagno", save: "Salva", cancel: "Annulla" },
-  de: { edit: "Benenne deinen Begleiter", save: "Speichern", cancel: "Abbrechen" },
-  ja: { edit: "相棒に名前をつけよう", save: "保存", cancel: "キャンセル" },
-  zh: { edit: "给你的伙伴起名字", save: "保存", cancel: "取消" },
-  hi: { edit: "अपने साथी का नाम रखें", save: "सहेजें", cancel: "रद्द करें" },
-  ar: { edit: "سمّي صاحبك", save: "حفظ", cancel: "إلغاء" },
-};
-
-function getNameModalCopy(lang) {
-  return NAME_MODAL_COPY[lang] || NAME_MODAL_COPY.en;
-}
 
 const DOG = {
   fur: "#d97706",
@@ -113,6 +93,31 @@ const DEAD_DOG = {
   accent: "#94a3b8",
   tongue: "#cbd5e1",
   eyeWhite: "#e5e7eb",
+};
+
+const ALIEN = {
+  body: "#9a7fd6",
+  body2: "#7c5fc0",
+  eye: "#2a1f45",
+  eyeLight: "#f6f1ff",
+  cheek: "#dca6d6",
+  leg: "#5a3fa6",
+};
+
+const SICK_ALIEN = {
+  ...ALIEN,
+  body: "#9d96b0",
+  body2: "#7f7793",
+  leg: "#5e576e",
+  cheek: "#b4adc4",
+};
+
+const DEAD_ALIEN = {
+  ...ALIEN,
+  body: "#8b8893",
+  body2: "#6e6b76",
+  eye: "#2a2832",
+  leg: "#5a5763",
 };
 
 function px(ctx, fill, x, y, width, height) {
@@ -171,7 +176,7 @@ function getCopy(lang) {
       rewardBadge: "इनाम +{delta}%",
       penaltyBadge: "जोखिम -{delta}%",
       previewHint:
-        "यह केवल पूर्वावलोकन है। इससे आपके कुत्ते की असली सेहत नहीं बदलती।",
+        "यह केवल पूर्वावलोकन है। इससे आपके साथी की असली सेहत नहीं बदलती।",
     };
   }
 
@@ -274,11 +279,11 @@ function getCopy(lang) {
       latestAchieved: "Ultimo aggiornamento: +{delta}% per aver raggiunto l'obiettivo",
       latestMissed: "Ultimo aggiornamento: {delta}% per aver mancato l'obiettivo",
       managementHint: "Raggiungi l'obiettivo oggi per mantenerlo forte.",
-      celebrationHint: "Il tuo cane ha ricevuto un aumento di salute.",
+      celebrationHint: "Il tuo compagno ha ricevuto un aumento di salute.",
       rewardBadge: "Ricompensa +{delta}%",
       penaltyBadge: "Rischio -{delta}%",
       previewHint:
-        "Solo anteprima. Non cambia la salute reale del cane.",
+        "Solo anteprima. Non cambia la salute reale del compagno.",
     };
   }
 
@@ -328,11 +333,11 @@ function getCopy(lang) {
       latestAchieved: "Ultima atualizacao: +{delta}% por cumprir sua meta",
       latestMissed: "Ultima atualizacao: {delta}% por nao cumprir sua meta",
       managementHint: "Cumpra a meta de hoje para mante-lo forte.",
-      celebrationHint: "Seu cachorrinho recebeu um aumento de saude.",
+      celebrationHint: "Seu companheiro recebeu um aumento de saude.",
       rewardBadge: "Recompensa +{delta}%",
       penaltyBadge: "Risco -{delta}%",
       previewHint:
-        "Isto e apenas uma visualizacao. Nao muda a saude real do seu cachorro.",
+        "Isto e apenas uma visualizacao. Nao muda a saude real do seu companheiro.",
     };
   }
 
@@ -355,11 +360,11 @@ function getCopy(lang) {
       latestAchieved: "Última actualización: +{delta}% por cumplir tu meta",
       latestMissed: "Última actualización: {delta}% por fallar tu meta",
       managementHint: "Cumple hoy para mantenerlo fuerte.",
-      celebrationHint: "Tu perrito recibió un boost de salud.",
+      celebrationHint: "Tu compañero recibió un boost de salud.",
       rewardBadge: "Recompensa +{delta}%",
       penaltyBadge: "Riesgo -{delta}%",
       previewHint:
-        "Vista previa solamente. No cambia la salud real del perrito.",
+        "Vista previa solamente. No cambia la salud real de tu compañero.",
     };
   }
 
@@ -381,10 +386,10 @@ function getCopy(lang) {
     latestAchieved: "Latest update: +{delta}% for hitting your goal",
     latestMissed: "Latest update: {delta}% for missing your goal",
     managementHint: "Hit today's goal to keep it strong.",
-    celebrationHint: "Your dog got a health boost today.",
+    celebrationHint: "Your companion got a health boost today.",
     rewardBadge: "Reward +{delta}%",
     penaltyBadge: "Risk -{delta}%",
-    previewHint: "Preview only. This does not change your dog's real health.",
+    previewHint: "Preview only. This does not change your companion's real health.",
   };
 }
 
@@ -619,13 +624,6 @@ function drawDeadDog(ctx) {
   ctx.save();
   ctx.translate(0, SCENE_Y_OFFSET);
 
-  const cx = T / 2;
-
-  ctx.fillStyle = "rgba(0,0,0,0.18)";
-  ctx.beginPath();
-  ctx.ellipse(cx, 35, 15, 4, 0, 0, Math.PI * 2);
-  ctx.fill();
-
   px(ctx, DEAD_DOG.furDark, 10, 22, 24, 10);
   px(ctx, DEAD_DOG.fur, 12, 20, 22, 10);
   px(ctx, DEAD_DOG.belly, 17, 23, 10, 6);
@@ -731,11 +729,6 @@ function drawAliveDog(ctx, frame, stage) {
           : 14;
   const showDefaultEyes = stage.face !== "unhealthy";
 
-  ctx.fillStyle = "rgba(0,0,0,0.22)";
-  ctx.beginPath();
-  ctx.ellipse(cx, by + 4, 12, 4, 0, 0, Math.PI * 2);
-  ctx.fill();
-
   px(ctx, palette.furDark, cx - 2 + tailWag + xShift, by - 22 + bob, 4, 6);
   px(ctx, palette.fur, cx - 10 + xShift, by - 18 + bob, 20, 14);
   px(ctx, palette.belly, cx - 6 + xShift, by - 12 + bob, 12, 10);
@@ -773,9 +766,778 @@ function drawDogCharacter(ctx, frame, stage) {
   drawAliveDog(ctx, frame, stage);
 }
 
-function DogCanvas({ stage, isLightTheme, isCelebration = false }) {
+function getAlienPalette(stage) {
+  if (stage.key === "dead") return DEAD_ALIEN;
+  if (stage.key === "unhealthy") return SICK_ALIEN;
+  return ALIEN;
+}
+
+function drawAlienBody(ctx, palette, cx, topY) {
+  px(ctx, palette.body, cx - 8, topY, 16, 1);
+  px(ctx, palette.body, cx - 10, topY + 1, 20, 1);
+  px(ctx, palette.body, cx - 12, topY + 2, 24, 1);
+  px(ctx, palette.body, cx - 13, topY + 3, 26, 16);
+  px(ctx, palette.body, cx - 12, topY + 19, 24, 1);
+  px(ctx, palette.body, cx - 10, topY + 20, 20, 1);
+  px(ctx, palette.body, cx - 8, topY + 21, 16, 1);
+  px(ctx, palette.body2, cx - 10, topY + 20, 20, 1);
+  px(ctx, palette.body2, cx - 8, topY + 21, 16, 1);
+}
+
+function drawAlienLegs(ctx, palette, cx, topY, stride) {
+  const y = topY + 21;
+  px(ctx, palette.leg, cx - 10 + stride, y, 3, 3);
+  px(ctx, palette.leg, cx - 5, y, 3, 3);
+  px(ctx, palette.leg, cx + 1, y, 3, 3);
+  px(ctx, palette.leg, cx + 6 - stride, y, 3, 3);
+}
+
+function drawAlienFace(ctx, key, palette, cx, topY) {
+  const E = palette.eye;
+
+  if (key === "happy") {
+    px(ctx, E, cx - 4, topY + 8, 2, 3);
+    px(ctx, E, cx + 2, topY + 8, 2, 3);
+    px(ctx, palette.eyeLight, cx - 4, topY + 8, 1, 1);
+    px(ctx, palette.eyeLight, cx + 2, topY + 8, 1, 1);
+    px(ctx, palette.cheek, cx - 7, topY + 11, 2, 1);
+    px(ctx, palette.cheek, cx + 5, topY + 11, 2, 1);
+    px(ctx, E, cx - 2, topY + 15, 1, 1);
+    px(ctx, E, cx + 1, topY + 15, 1, 1);
+    px(ctx, E, cx - 1, topY + 16, 2, 1);
+    return;
+  }
+
+  if (key === "healthy") {
+    px(ctx, E, cx - 4, topY + 8, 2, 2);
+    px(ctx, E, cx + 2, topY + 8, 2, 2);
+    px(ctx, E, cx - 2, topY + 15, 1, 1);
+    px(ctx, E, cx + 1, topY + 15, 1, 1);
+    px(ctx, E, cx - 1, topY + 16, 2, 1);
+    return;
+  }
+
+  if (key === "unhappy") {
+    px(ctx, E, cx - 4, topY + 9, 2, 2);
+    px(ctx, E, cx + 2, topY + 9, 2, 2);
+    px(ctx, E, cx - 3, topY + 7, 1, 1);
+    px(ctx, E, cx - 4, topY + 8, 1, 1);
+    px(ctx, E, cx + 2, topY + 7, 1, 1);
+    px(ctx, E, cx + 3, topY + 8, 1, 1);
+    px(ctx, E, cx - 1, topY + 15, 2, 1);
+    px(ctx, E, cx - 2, topY + 16, 1, 1);
+    px(ctx, E, cx + 1, topY + 16, 1, 1);
+    return;
+  }
+
+  if (key === "stressed") {
+    px(ctx, E, cx - 4, topY + 8, 2, 2);
+    px(ctx, E, cx + 2, topY + 8, 2, 2);
+    px(ctx, E, cx - 4, topY + 6, 2, 1);
+    px(ctx, E, cx + 2, topY + 6, 2, 1);
+    px(ctx, E, cx - 3, topY + 16, 1, 1);
+    px(ctx, E, cx - 2, topY + 15, 1, 1);
+    px(ctx, E, cx - 1, topY + 16, 1, 1);
+    px(ctx, E, cx, topY + 15, 1, 1);
+    px(ctx, E, cx + 1, topY + 16, 1, 1);
+    return;
+  }
+
+  if (key === "unhealthy") {
+    px(ctx, E, cx - 5, topY + 8, 3, 1);
+    px(ctx, E, cx - 4, topY + 9, 1, 1);
+    px(ctx, E, cx + 2, topY + 8, 3, 1);
+    px(ctx, E, cx + 3, topY + 9, 1, 1);
+    px(ctx, E, cx - 2, topY + 16, 1, 1);
+    px(ctx, E, cx - 1, topY + 15, 1, 1);
+    px(ctx, E, cx, topY + 16, 1, 1);
+  }
+}
+
+function drawAlienProps(ctx, key, cx, topY, frame) {
+  if (key === "happy") {
+    const heart = "#d36aa6";
+    px(ctx, heart, cx + 5, topY - 6, 2, 1);
+    px(ctx, heart, cx + 8, topY - 6, 2, 1);
+    px(ctx, heart, cx + 5, topY - 5, 5, 1);
+    px(ctx, heart, cx + 6, topY - 4, 3, 1);
+    px(ctx, heart, cx + 7, topY - 3, 1, 1);
+    return;
+  }
+
+  if (key === "stressed") {
+    const bounce = frame % 6 < 3 ? 0 : 1;
+    px(ctx, "#86c9ee", cx + 7, topY + 3 + bounce, 2, 2);
+    px(ctx, "#86c9ee", cx + 8, topY + 2 + bounce, 1, 1);
+  }
+}
+
+function drawDeadAlien(ctx) {
+  ctx.save();
+  ctx.translate(0, SCENE_Y_OFFSET);
+
+  const cx = T / 2;
+  const topY = 7;
+
+  drawAlienBody(ctx, DEAD_ALIEN, cx, topY);
+  drawAlienLegs(ctx, DEAD_ALIEN, cx, topY, 0);
+
+  const halo = "#f2d06a";
+  px(ctx, halo, cx - 5, topY - 7, 10, 1);
+  px(ctx, halo, cx - 5, topY - 5, 10, 1);
+  px(ctx, halo, cx - 6, topY - 6, 1, 1);
+  px(ctx, halo, cx + 5, topY - 6, 1, 1);
+
+  const E = DEAD_ALIEN.eye;
+  px(ctx, E, cx - 5, topY + 8, 1, 1);
+  px(ctx, E, cx - 3, topY + 8, 1, 1);
+  px(ctx, E, cx - 4, topY + 9, 1, 1);
+  px(ctx, E, cx - 5, topY + 10, 1, 1);
+  px(ctx, E, cx - 3, topY + 10, 1, 1);
+  px(ctx, E, cx + 2, topY + 8, 1, 1);
+  px(ctx, E, cx + 4, topY + 8, 1, 1);
+  px(ctx, E, cx + 3, topY + 9, 1, 1);
+  px(ctx, E, cx + 2, topY + 10, 1, 1);
+  px(ctx, E, cx + 4, topY + 10, 1, 1);
+  px(ctx, E, cx - 2, topY + 15, 4, 1);
+
+  ctx.restore();
+}
+
+function drawAliveAlien(ctx, frame, stage) {
+  ctx.save();
+  ctx.translate(0, SCENE_Y_OFFSET);
+
+  const cx = T / 2;
+  const phase = frame % 6;
+  const motion = stage.motion ?? stage.key;
+  const palette = getAlienPalette(stage);
+  const xShift =
+    motion === "stressed"
+      ? phase % 2 === 0
+        ? -1
+        : 1
+      : motion === "unhappy"
+        ? phase < 3
+          ? 0
+          : -1
+        : 0;
+  const stride =
+    motion === "happy" || motion === "healthy"
+      ? phase === 1 || phase === 5
+        ? 1
+        : phase === 3
+          ? -1
+          : 0
+      : 0;
+  const bob =
+    motion === "happy"
+      ? phase === 2 || phase === 4
+        ? -2
+        : 0
+      : motion === "healthy"
+        ? phase === 2 || phase === 4
+          ? -1
+          : 0
+        : motion === "unhappy"
+          ? phase < 3
+            ? 0
+            : 1
+          : motion === "stressed"
+            ? phase % 2 === 0
+              ? -1
+              : 1
+            : phase < 3
+              ? 1
+              : 0;
+  const topY = 6 + bob;
+  const ox = cx + xShift;
+
+  drawAlienBody(ctx, palette, ox, topY);
+  drawAlienLegs(ctx, palette, ox, topY, stride);
+  drawAlienFace(ctx, stage.key, palette, ox, topY);
+  drawAlienProps(ctx, stage.key, ox, topY, frame);
+
+  ctx.restore();
+}
+
+function drawAlienCharacter(ctx, frame, stage) {
+  if (stage.key === "dead") {
+    drawDeadAlien(ctx);
+    return;
+  }
+  drawAliveAlien(ctx, frame, stage);
+}
+
+const GHOST = {
+  body: "#e6ecfa",
+  body2: "#c2cde8",
+  bodyLight: "#f3f6fe",
+  eye: "#2f3566",
+};
+
+const SICK_GHOST = {
+  ...GHOST,
+  body: "#cdd7c0",
+  body2: "#a8b291",
+};
+
+const DEAD_GHOST = {
+  ...GHOST,
+  body: "#d8d8e0",
+  body2: "#b5b5c0",
+  eye: "#5a5a66",
+};
+
+const GHOST_HW = [
+  3, 5, 7, 8, 9, 10, 11, 11, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
+  12, 12, 12, 12,
+];
+
+function getGhostPalette(stage) {
+  if (stage.key === "dead") return DEAD_GHOST;
+  if (stage.key === "unhealthy") return SICK_GHOST;
+  return GHOST;
+}
+
+function drawGhostBody(ctx, palette, cx, gy) {
+  for (let i = 0; i < GHOST_HW.length; i++) {
+    px(ctx, palette.body, cx - GHOST_HW[i], gy + i, 2 * GHOST_HW[i], 1);
+  }
+  const b = gy + GHOST_HW.length;
+  px(ctx, palette.body, cx - 12, b, 7, 1);
+  px(ctx, palette.body, cx - 3, b, 6, 1);
+  px(ctx, palette.body, cx + 5, b, 7, 1);
+  px(ctx, palette.body, cx - 11, b + 1, 5, 1);
+  px(ctx, palette.body, cx - 2, b + 1, 4, 1);
+  px(ctx, palette.body, cx + 6, b + 1, 5, 1);
+  for (let i = 4; i < GHOST_HW.length; i++) {
+    px(ctx, palette.body2, cx + GHOST_HW[i] - 1, gy + i, 1, 1);
+  }
+  px(ctx, palette.body2, cx - 11, b + 1, 5, 1);
+  px(ctx, palette.body2, cx - 2, b + 1, 4, 1);
+  px(ctx, palette.body2, cx + 6, b + 1, 5, 1);
+  px(ctx, palette.bodyLight, cx - 6, gy + 2, 3, 1);
+  px(ctx, palette.bodyLight, cx - 8, gy + 3, 2, 1);
+  px(ctx, palette.bodyLight, cx - 9, gy + 4, 2, 1);
+}
+
+function drawGhostEyes(ctx, palette, key, cx, gy) {
+  const E = palette.eye;
+  const y = gy + 12;
+  const pair = (rows) =>
+    rows.forEach(([dx, dy, w = 1, h = 1]) => {
+      px(ctx, E, cx - dx, y + dy, w, h);
+      px(ctx, E, cx + dx - (w - 1), y + dy, w, h);
+    });
+
+  if (key === "happy") {
+    pair([
+      [8, 2], [7, 1], [6, 0, 2, 1], [4, 1], [3, 2],
+      [8, 3], [7, 2], [6, 1, 2, 1], [4, 2], [3, 3],
+    ]);
+    return;
+  }
+  if (key === "unhappy") {
+    pair([[9, 0], [9, 1], [4, 0], [4, 1], [8, 2], [7, 2], [6, 2], [5, 2]]);
+    return;
+  }
+  if (key === "stressed") {
+    pair([[9, 0], [8, 1], [7, 2], [8, 3], [9, 4]]);
+    return;
+  }
+  if (key === "unhealthy") {
+    pair([[9, 0, 3, 1], [9, 3, 3, 1], [9, 1, 1, 2], [7, 1, 1, 2], [8, 1]]);
+    return;
+  }
+  if (key === "dead") {
+    pair([[9, 0], [7, 0], [8, 1], [9, 2], [7, 2]]);
+    px(ctx, "#f2d06a", cx - 5, gy - 2, 10, 1);
+    px(ctx, "#f2d06a", cx - 5, gy, 10, 1);
+    px(ctx, "#f2d06a", cx - 6, gy - 1, 1, 1);
+    px(ctx, "#f2d06a", cx + 5, gy - 1, 1, 1);
+    return;
+  }
+  pair([[8, 0, 1, 3], [9, 1], [7, 1]]);
+}
+
+function drawGhostCharacter(ctx, frame, stage) {
+  ctx.save();
+  ctx.translate(0, SCENE_Y_OFFSET);
+  const cx = T / 2;
+  const phase = frame % 6;
+  const palette = getGhostPalette(stage);
+  const bob = stage.key === "dead" ? 0 : [0, -1, -1, 0, 1, 0][phase];
+  const gy = 7 + bob;
+  drawGhostBody(ctx, palette, cx, gy);
+  drawGhostEyes(ctx, palette, stage.key, cx, gy);
+  ctx.restore();
+}
+
+const ROBOT = {
+  metal: "#9fb4c9",
+  metalDark: "#7891ab",
+  screen: "#222a38",
+  eye: "#5fe0d8",
+  bulb: "#f0934e",
+  wheel: "#3a4452",
+};
+
+const SICK_ROBOT = {
+  ...ROBOT,
+  metal: "#9a9a8a",
+  metalDark: "#76766a",
+  eye: "#9ec0bd",
+  bulb: "#b89a6a",
+};
+
+const DEAD_ROBOT = {
+  ...ROBOT,
+  metal: "#8a8d92",
+  metalDark: "#6b6e73",
+  eye: "#5a6b6a",
+  bulb: "#5a5a60",
+  screen: "#1a1f28",
+  wheel: "#33373f",
+};
+
+function getRobotPalette(stage) {
+  if (stage.key === "dead") return DEAD_ROBOT;
+  if (stage.key === "unhealthy") return SICK_ROBOT;
+  return ROBOT;
+}
+
+function drawRobotBody(ctx, p, cx, by, key, phase) {
+  const blink = key !== "dead" && phase < 3;
+  px(ctx, p.metal, cx - 1, 9 + by, 2, 4);
+  if (key !== "dead") {
+    px(ctx, p.bulb, cx - 1, 6 + by, 2, 2);
+    if (blink) px(ctx, p.bulb, cx, 5 + by, 1, 1);
+  } else {
+    px(ctx, p.metalDark, cx - 1, 6 + by, 2, 2);
+  }
+  px(ctx, p.metal, cx - 9, 12 + by, 18, 1);
+  px(ctx, p.metal, cx - 10, 13 + by, 20, 8);
+  px(ctx, p.metal, cx - 9, 21 + by, 18, 1);
+  px(ctx, p.metalDark, cx + 9, 13 + by, 1, 8);
+  px(ctx, p.metalDark, cx - 10, 20 + by, 20, 1);
+  px(ctx, p.screen, cx - 7, 14 + by, 14, 6);
+  px(ctx, p.metal, cx - 8, 23 + by, 16, 1);
+  px(ctx, p.metal, cx - 9, 24 + by, 18, 7);
+  px(ctx, p.metal, cx - 8, 31 + by, 16, 1);
+  px(ctx, p.metalDark, cx + 8, 24 + by, 1, 7);
+  px(ctx, p.metal, cx - 11, 25 + by, 2, 4);
+  px(ctx, p.metal, cx + 9, 25 + by, 2, 4);
+  px(ctx, key === "dead" ? p.metalDark : p.eye, cx - 1, 26 + by, 2, 2);
+  px(ctx, p.wheel, cx - 7, 32 + by, 14, 3);
+  px(ctx, p.metalDark, cx - 7, 34 + by, 14, 1);
+  px(ctx, p.metal, cx - 1, 32 + by, 2, 2);
+}
+
+function drawRobotFace(ctx, p, key, cx, by) {
+  const E = p.eye;
+  const y = 16 + by;
+  if (key === "happy") {
+    px(ctx, E, cx - 6, y + 1, 1, 1);
+    px(ctx, E, cx - 5, y, 2, 1);
+    px(ctx, E, cx - 3, y + 1, 1, 1);
+    px(ctx, E, cx + 2, y + 1, 1, 1);
+    px(ctx, E, cx + 3, y, 2, 1);
+    px(ctx, E, cx + 5, y + 1, 1, 1);
+    px(ctx, E, cx - 3, y + 2, 1, 1);
+    px(ctx, E, cx - 2, y + 3, 4, 1);
+    px(ctx, E, cx + 2, y + 2, 1, 1);
+    return;
+  }
+  if (key === "healthy") {
+    px(ctx, E, cx - 5, y, 2, 2);
+    px(ctx, E, cx + 3, y, 2, 2);
+    return;
+  }
+  if (key === "unhappy") {
+    px(ctx, E, cx - 6, y, 1, 1);
+    px(ctx, E, cx - 5, y + 1, 2, 1);
+    px(ctx, E, cx + 3, y + 1, 2, 1);
+    px(ctx, E, cx + 5, y, 1, 1);
+    return;
+  }
+  if (key === "stressed") {
+    px(ctx, E, cx - 6, y - 1, 1, 1);
+    px(ctx, E, cx - 5, y, 1, 1);
+    px(ctx, E, cx - 4, y + 1, 1, 1);
+    px(ctx, E, cx - 5, y + 2, 1, 1);
+    px(ctx, E, cx - 6, y + 3, 1, 1);
+    px(ctx, E, cx + 5, y - 1, 1, 1);
+    px(ctx, E, cx + 4, y, 1, 1);
+    px(ctx, E, cx + 3, y + 1, 1, 1);
+    px(ctx, E, cx + 4, y + 2, 1, 1);
+    px(ctx, E, cx + 5, y + 3, 1, 1);
+    return;
+  }
+  if (key === "unhealthy") {
+    px(ctx, E, cx - 6, y + 1, 3, 1);
+    px(ctx, E, cx + 3, y + 1, 3, 1);
+    return;
+  }
+  if (key === "dead") {
+    px(ctx, E, cx - 4, y + 1, 8, 1);
+  }
+}
+
+function drawRobotCharacter(ctx, frame, stage) {
+  ctx.save();
+  ctx.translate(0, SCENE_Y_OFFSET);
+  const cx = T / 2;
+  const phase = frame % 6;
+  const key = stage.key;
+  const palette = getRobotPalette(stage);
+  const bob = key === "dead" ? 0 : phase === 2 || phase === 4 ? -1 : 0;
+  const jitter = key === "stressed" ? (phase % 2 === 0 ? -1 : 1) : 0;
+  drawRobotBody(ctx, palette, cx + jitter, bob, key, phase);
+  drawRobotFace(ctx, palette, key, cx + jitter, bob);
+  ctx.restore();
+}
+
+const SLIME = {
+  body: "#5fc92e",
+  outline: "#39791a",
+  hi: "#8ed848",
+  eye: "#26391a",
+  gold: "#f7c948",
+  cheek: "#f0a0ae",
+};
+
+const SICK_SLIME = {
+  ...SLIME,
+  body: "#9aa86a",
+  outline: "#69763f",
+  hi: "#b2c088",
+  gold: "#cbb56a",
+};
+
+const DEAD_SLIME = {
+  ...SLIME,
+  body: "#a7b59a",
+  outline: "#727f66",
+  hi: "#bcc7b2",
+  eye: "#46503c",
+  gold: "#8a9070",
+};
+
+const SLIME_HW = [
+  3, 5, 7, 9, 10, 11, 12, 12, 13, 13, 14, 14, 14, 14, 13, 13, 12, 10, 7,
+];
+
+function getSlimePalette(stage) {
+  if (stage.key === "dead") return DEAD_SLIME;
+  if (stage.key === "unhealthy") return SICK_SLIME;
+  return SLIME;
+}
+
+function drawSlimeBody(ctx, p, cx, topY) {
+  // ball-on-stalk antenna
+  px(ctx, p.outline, cx, topY - 2, 1, 2);
+  px(ctx, p.outline, cx + 1, topY - 3, 1, 1);
+  px(ctx, p.outline, cx + 2, topY - 4, 1, 1);
+  px(ctx, p.outline, cx + 3, topY - 4, 1, 1);
+  px(ctx, p.body, cx + 4, topY - 6, 3, 3);
+  px(ctx, p.outline, cx + 4, topY - 7, 3, 1);
+  px(ctx, p.outline, cx + 4, topY - 3, 3, 1);
+  px(ctx, p.outline, cx + 3, topY - 6, 1, 3);
+  px(ctx, p.outline, cx + 7, topY - 6, 1, 3);
+  // body (outline + inset fill)
+  const n = SLIME_HW.length;
+  for (let i = 0; i < n; i++) {
+    const w = SLIME_HW[i];
+    px(ctx, p.outline, cx - w, topY + i, 2 * w, 1);
+    if (i > 0 && i < n - 1) px(ctx, p.body, cx - (w - 1), topY + i, 2 * (w - 1), 1);
+  }
+  // soft green rim
+  px(ctx, p.hi, cx - 4, topY + 1, 8, 1);
+  px(ctx, p.hi, cx - 7, topY + 2, 4, 1);
+  px(ctx, p.hi, cx + 4, topY + 2, 4, 1);
+}
+
+function drawSlimeEyes(ctx, p, key, cx, topY) {
+  const E = p.eye;
+  const G = p.gold;
+  const ey = topY + 5;
+  const base = (ex) => {
+    px(ctx, E, ex + 1, ey, 4, 1);
+    px(ctx, E, ex, ey + 1, 6, 4);
+    px(ctx, E, ex + 1, ey + 5, 4, 1);
+  };
+  const glint = (ex, big) => {
+    if (big) {
+      px(ctx, G, ex + 2, ey + 1, 1, 3);
+      px(ctx, G, ex + 1, ey + 2, 3, 1);
+    } else {
+      px(ctx, G, ex + 1, ey + 2, 3, 1);
+      px(ctx, G, ex + 2, ey + 1, 1, 1);
+    }
+  };
+  if (key === "happy") {
+    base(cx - 8);
+    base(cx + 3);
+    glint(cx - 8, true);
+    glint(cx + 3, true);
+    px(ctx, p.cheek, cx - 10, topY + 11, 2, 1);
+    px(ctx, p.cheek, cx + 8, topY + 11, 2, 1);
+    px(ctx, E, cx - 3, topY + 12, 1, 1);
+    px(ctx, E, cx + 2, topY + 12, 1, 1);
+    px(ctx, E, cx - 2, topY + 13, 4, 1);
+    return;
+  }
+  if (key === "healthy") {
+    base(cx - 8);
+    base(cx + 3);
+    glint(cx - 8, false);
+    glint(cx + 3, false);
+    px(ctx, E, cx - 3, topY + 12, 1, 1);
+    px(ctx, E, cx - 2, topY + 13, 1, 1);
+    px(ctx, E, cx - 1, topY + 12, 1, 1);
+    px(ctx, E, cx, topY + 12, 1, 1);
+    px(ctx, E, cx + 1, topY + 13, 1, 1);
+    px(ctx, E, cx + 2, topY + 12, 1, 1);
+    return;
+  }
+  if (key === "unhappy") {
+    px(ctx, E, cx - 8, ey + 2, 5, 1);
+    px(ctx, E, cx - 8, ey + 3, 5, 2);
+    px(ctx, E, cx + 3, ey + 2, 5, 1);
+    px(ctx, E, cx + 3, ey + 3, 5, 2);
+    px(ctx, E, cx - 2, topY + 13, 5, 1);
+    px(ctx, E, cx - 3, topY + 14, 1, 1);
+    px(ctx, E, cx + 2, topY + 14, 1, 1);
+    return;
+  }
+  if (key === "stressed") {
+    px(ctx, E, cx - 8, ey + 1, 5, 1);
+    px(ctx, E, cx - 7, ey + 2, 5, 2);
+    px(ctx, E, cx + 3, ey + 1, 5, 1);
+    px(ctx, E, cx + 2, ey + 2, 5, 2);
+    px(ctx, E, cx - 3, topY + 14, 1, 1);
+    px(ctx, E, cx - 1, topY + 13, 1, 1);
+    px(ctx, E, cx + 1, topY + 14, 1, 1);
+    px(ctx, E, cx + 3, topY + 13, 1, 1);
+    return;
+  }
+  if (key === "unhealthy") {
+    px(ctx, E, cx - 8, ey + 2, 6, 1);
+    px(ctx, E, cx - 7, ey + 3, 2, 1);
+    px(ctx, E, cx + 2, ey + 2, 6, 1);
+    px(ctx, E, cx + 4, ey + 3, 2, 1);
+    px(ctx, E, cx - 2, topY + 13, 1, 1);
+    px(ctx, E, cx, topY + 14, 1, 1);
+    px(ctx, E, cx + 2, topY + 13, 1, 1);
+    return;
+  }
+  if (key === "dead") {
+    const xeye = (ex) => {
+      px(ctx, E, ex, ey + 1, 1, 1);
+      px(ctx, E, ex + 3, ey + 1, 1, 1);
+      px(ctx, E, ex + 1, ey + 2, 2, 1);
+      px(ctx, E, ex, ey + 3, 1, 1);
+      px(ctx, E, ex + 3, ey + 3, 1, 1);
+    };
+    xeye(cx - 8);
+    xeye(cx + 4);
+    px(ctx, E, cx - 2, topY + 13, 4, 1);
+  }
+}
+
+function drawSlimeCharacter(ctx, frame, stage) {
+  ctx.save();
+  ctx.translate(0, SCENE_Y_OFFSET);
+  const cx = T / 2;
+  const phase = frame % 6;
+  const palette = getSlimePalette(stage);
+  const toff = stage.key === "dead" ? 0 : [0, 0, -1, -1, 0, 0][phase];
+  const topY = 12 + toff;
+  drawSlimeBody(ctx, palette, cx, topY);
+  drawSlimeEyes(ctx, palette, stage.key, cx, topY);
+  ctx.restore();
+}
+
+const AXOLOTL = {
+  body: "#f9a8d4",
+  bodyLt: "#fbcfe8",
+  belly: "#fdf2f8",
+  gill: "#fb7185",
+  gillTip: "#f43f5e",
+  gillSoft: "#fecdd3",
+  cheek: "#f472b6",
+  eye: "#3f1d2b",
+  smile: "#be185d",
+};
+
+const SICK_AXOLOTL = {
+  ...AXOLOTL,
+  body: "#cda9b6",
+  bodyLt: "#dcc1cb",
+  belly: "#ece2e7",
+  gill: "#bd8a98",
+  gillTip: "#ab7886",
+  gillSoft: "#d7c2c9",
+  cheek: "#bd8a98",
+  smile: "#7d5160",
+};
+
+const DEAD_AXOLOTL = {
+  ...AXOLOTL,
+  body: "#b8b3bd",
+  bodyLt: "#cfcad3",
+  belly: "#e4e1e7",
+  gill: "#9aa0a6",
+  gillTip: "#878d94",
+  gillSoft: "#cfcad3",
+  cheek: "#9aa0a6",
+  eye: "#4b4b52",
+  smile: "#6b6b73",
+};
+
+function getAxolotlPalette(stage) {
+  if (stage.key === "dead") return DEAD_AXOLOTL;
+  if (stage.key === "unhealthy") return SICK_AXOLOTL;
+  return AXOLOTL;
+}
+
+// External gills: bushy feathery clusters hugging the head's upper-side curve
+// (3 per side). NOT thin floating spikes — that read as "weird".
+function drawAxolotlGills(ctx, p, cx, o) {
+  const g = p.gill;
+  const t = p.gillTip;
+  const s = p.gillSoft;
+  px(ctx, g, cx - 11, 10 + o, 4, 3); px(ctx, t, cx - 13, 9 + o, 2, 2); px(ctx, s, cx - 10, 11 + o, 1, 1);
+  px(ctx, g, cx - 12, 14 + o, 4, 3); px(ctx, t, cx - 14, 15 + o, 2, 2); px(ctx, s, cx - 11, 15 + o, 1, 1);
+  px(ctx, g, cx - 13, 18 + o, 4, 3); px(ctx, t, cx - 15, 20 + o, 2, 2); px(ctx, s, cx - 12, 19 + o, 1, 1);
+  px(ctx, g, cx + 7, 10 + o, 4, 3); px(ctx, t, cx + 11, 9 + o, 2, 2); px(ctx, s, cx + 9, 11 + o, 1, 1);
+  px(ctx, g, cx + 8, 14 + o, 4, 3); px(ctx, t, cx + 12, 15 + o, 2, 2); px(ctx, s, cx + 10, 15 + o, 1, 1);
+  px(ctx, g, cx + 9, 18 + o, 4, 3); px(ctx, t, cx + 13, 20 + o, 2, 2); px(ctx, s, cx + 11, 19 + o, 1, 1);
+}
+
+function drawAxolotlBody(ctx, p, cx, o) {
+  // oval (egg) silhouette
+  px(ctx, p.body, cx - 4, 8 + o, 8, 1);
+  px(ctx, p.body, cx - 6, 9 + o, 12, 1);
+  px(ctx, p.body, cx - 7, 10 + o, 14, 2);
+  px(ctx, p.body, cx - 8, 12 + o, 16, 1);
+  px(ctx, p.body, cx - 9, 13 + o, 18, 3);
+  px(ctx, p.body, cx - 10, 16 + o, 20, 7);
+  px(ctx, p.body, cx - 9, 23 + o, 18, 3);
+  px(ctx, p.body, cx - 8, 26 + o, 15, 2);
+  px(ctx, p.body, cx - 6, 28 + o, 12, 1);
+  // soft upper-left sheen for roundness
+  px(ctx, p.bodyLt, cx - 7, 11 + o, 5, 1);
+  px(ctx, p.bodyLt, cx - 8, 12 + o, 5, 2);
+  // belly patch
+  px(ctx, p.belly, cx - 5, 18 + o, 10, 1);
+  px(ctx, p.belly, cx - 6, 19 + o, 12, 7);
+  px(ctx, p.belly, cx - 5, 26 + o, 10, 1);
+  // little arms
+  px(ctx, p.body, cx - 11, 23 + o, 3, 3);
+  px(ctx, p.body, cx + 8, 23 + o, 3, 3);
+  // feet
+  px(ctx, p.body, cx - 6, 29 + o, 5, 3);
+  px(ctx, p.body, cx + 1, 29 + o, 5, 3);
+  px(ctx, p.bodyLt, cx - 6, 31 + o, 5, 1);
+  px(ctx, p.bodyLt, cx + 1, 31 + o, 5, 1);
+}
+
+function drawAxolotlTail(ctx, p, cx, o, wag) {
+  // flat fin tail sweeping out to the lower-right and curling up (wag animates it)
+  px(ctx, p.body, cx + 7, 25 + o, 4, 4);
+  px(ctx, p.body, cx + 10, 24 + o + wag, 3, 4);
+  px(ctx, p.bodyLt, cx + 10, 23 + o + wag, 4, 1);
+  px(ctx, p.body, cx + 13, 23 + o + wag, 2, 3);
+  px(ctx, p.bodyLt, cx + 13, 22 + o + wag, 3, 1);
+  px(ctx, p.body, cx + 15, 21 + o + wag, 1, 2);
+}
+
+// Emotion is EYES-ONLY (no mouth), like the ghost/slime.
+function drawAxolotlFace(ctx, key, p, cx, o) {
+  const E = p.eye;
+  const ey = 12 + o;
+  const pair = (rows) =>
+    rows.forEach(([dx, dy, w = 1, h = 1]) => {
+      px(ctx, E, cx - dx, ey + dy, w, h);
+      px(ctx, E, cx + dx - (w - 1), ey + dy, w, h);
+    });
+  if (key === "dead") {
+    pair([[9, 0], [7, 0], [8, 1], [9, 2], [7, 2]]); // x x
+    px(ctx, "#f2d06a", cx - 5, 4 + o, 10, 1);
+    px(ctx, "#f2d06a", cx - 5, 6 + o, 10, 1);
+    px(ctx, "#f2d06a", cx - 6, 5 + o, 1, 1);
+    px(ctx, "#f2d06a", cx + 5, 5 + o, 1, 1);
+    return;
+  }
+  if (key === "happy" || key === "healthy") {
+    px(ctx, p.cheek, cx - 9, 17 + o, 3, 2);
+    px(ctx, p.cheek, cx + 6, 17 + o, 3, 2);
+  }
+  if (key === "happy") {
+    pair([[9, 2], [8, 1], [6, 0, 3, 1], [4, 1], [3, 2]]); // ^ ^ joyful
+  } else if (key === "healthy") {
+    pair([[8, 0, 2, 3], [9, 1], [6, 1]]); // • • bright
+    px(ctx, "#ffffff", cx - 8, ey, 1, 1);
+    px(ctx, "#ffffff", cx + 7, ey, 1, 1);
+  } else if (key === "unhappy") {
+    pair([[9, 0], [9, 1], [5, 0], [5, 1], [8, 2], [7, 2], [6, 2]]); // worried
+  } else if (key === "stressed") {
+    pair([[9, 0], [8, 1], [7, 2], [8, 3], [9, 4]]); // > <
+  } else if (key === "unhealthy") {
+    pair([[9, 0, 3, 1], [9, 3, 3, 1], [9, 1, 1, 2], [7, 1, 1, 2], [8, 1]]); // @ @ woozy
+  }
+}
+
+function drawAxolotlCharacter(ctx, frame, stage) {
+  ctx.save();
+  ctx.translate(0, SCENE_Y_OFFSET);
+  const cx = T / 2;
+  const phase = frame % 6;
+  const palette = getAxolotlPalette(stage);
+  const o = stage.key === "dead" ? 0 : [0, -1, -1, 0, 1, 0][phase];
+  const wag = stage.key === "dead" ? 0 : [0, 0, 1, 1, 0, 0][phase];
+  drawAxolotlTail(ctx, palette, cx, o, wag);
+  drawAxolotlGills(ctx, palette, cx, o);
+  drawAxolotlBody(ctx, palette, cx, o);
+  drawAxolotlFace(ctx, stage.key, palette, cx, o);
+  ctx.restore();
+}
+
+function drawCompanionCharacter(ctx, frame, stage, petType) {
+  if (petType === "axolotl") {
+    drawAxolotlCharacter(ctx, frame, stage);
+    return;
+  }
+  if (petType === "alien") {
+    drawAlienCharacter(ctx, frame, stage);
+    return;
+  }
+  if (petType === "ghost") {
+    drawGhostCharacter(ctx, frame, stage);
+    return;
+  }
+  if (petType === "robot") {
+    drawRobotCharacter(ctx, frame, stage);
+    return;
+  }
+  if (petType === "slime") {
+    drawSlimeCharacter(ctx, frame, stage);
+    return;
+  }
+  drawDogCharacter(ctx, frame, stage);
+}
+
+function CompanionCanvas({
+  stage,
+  petType = "dog",
+  isLightTheme,
+  isCelebration = false,
+}) {
   const canvasRef = useRef(null);
   const [frame, setFrame] = useState(0);
+  const resolvedPetType = normalizePetType(petType);
   const canvasBackground = isCelebration
     ? isLightTheme
       ? "rgba(255, 253, 249, 0.52)"
@@ -804,13 +1566,15 @@ function DogCanvas({ stage, isLightTheme, isCelebration = false }) {
     ctx.imageSmoothingEnabled = false;
     ctx.clearRect(0, 0, T, T);
 
-    drawDogCharacter(ctx, frame, stage);
-  }, [frame, stage]);
+    drawCompanionCharacter(ctx, frame, stage, resolvedPetType);
+  }, [frame, resolvedPetType, stage]);
 
   return (
     <Box
       as="canvas"
       ref={canvasRef}
+      role="img"
+      aria-label={`${stage.label} ${resolvedPetType} companion`}
       w={{ base: "96px", md: "144px" }}
       h={{ base: "96px", md: "144px" }}
       borderRadius={{ base: "lg", md: "xl" }}
@@ -828,6 +1592,48 @@ function DogCanvas({ stage, isLightTheme, isCelebration = false }) {
   );
 }
 
+function CompanionOptionCanvas({ stage, petType = "dog" }) {
+  const canvasRef = useRef(null);
+  const [frame, setFrame] = useState(0);
+  const resolvedPetType = normalizePetType(petType);
+
+  useEffect(() => {
+    if (stage.key === "dead") {
+      setFrame(0);
+      return undefined;
+    }
+    const interval = window.setInterval(() => {
+      setFrame((current) => (current + 1) % 6);
+    }, 180);
+    return () => window.clearInterval(interval);
+  }, [stage.key]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    canvas.width = T;
+    canvas.height = T;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, T, T);
+    drawCompanionCharacter(ctx, frame, stage, resolvedPetType);
+  }, [frame, resolvedPetType, stage]);
+
+  return (
+    <Box
+      as="canvas"
+      ref={canvasRef}
+      aria-hidden="true"
+      w={{ base: "68px", md: "76px" }}
+      h={{ base: "68px", md: "76px" }}
+      flexShrink={0}
+      sx={{ imageRendering: "pixelated" }}
+    />
+  );
+}
+
 export default function PlatePetPanel({
   lang = "en",
   health = DAILY_GOAL_PET_DEFAULT_HEALTH,
@@ -838,8 +1644,9 @@ export default function PlatePetPanel({
   dailyGoalXp = 0,
   // Custom companion name; falls back to the localized default when empty.
   petName = "",
-  // When provided, a pencil button next to the title opens a rename modal.
-  onRenamePet = null,
+  petType = "dog",
+  // When provided, a pencil button next to the title opens the customize modal.
+  onCustomizePet = null,
 }) {
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
@@ -853,23 +1660,29 @@ export default function PlatePetPanel({
   const isCelebration = variant === "celebration";
 
   const trimmedName = typeof petName === "string" ? petName.trim() : "";
+  const resolvedPetType = normalizePetType(petType);
   const displayTitle = trimmedName || copy.title;
-  const canEdit = typeof onRenamePet === "function" && !isCelebration;
-  const nameModalCopy = getNameModalCopy(resolvedLang);
-  const nameModal = useDisclosure();
+  const canCustomize = typeof onCustomizePet === "function" && !isCelebration;
+  const customizeModalCopy = getCustomizeModalCopy(resolvedLang);
+  const customizeModal = useDisclosure();
   const nameInputRef = useRef(null);
   const [draftName, setDraftName] = useState(trimmedName);
+  const [draftPetType, setDraftPetType] = useState(resolvedPetType);
 
-  const openNameModal = () => {
+  const openCustomizeModal = () => {
     setDraftName(trimmedName);
-    nameModal.onOpen();
+    setDraftPetType(resolvedPetType);
+    customizeModal.onOpen();
   };
 
-  const submitName = () => {
-    if (typeof onRenamePet === "function") {
-      onRenamePet(draftName.trim().slice(0, NAME_MAX_LENGTH));
+  const submitCustomize = () => {
+    const name = draftName.trim().slice(0, NAME_MAX_LENGTH);
+    const type = normalizePetType(draftPetType);
+
+    if (typeof onCustomizePet === "function") {
+      onCustomizePet({ name, petType: type });
     }
-    nameModal.onClose();
+    customizeModal.onClose();
   };
   const rewardColor = isLightTheme ? "#48765f" : "green.200";
   const penaltyColor = isLightTheme ? "#a06a3b" : "orange.200";
@@ -903,8 +1716,9 @@ export default function PlatePetPanel({
           flexDirection="row"
         >
           <VStack align="stretch" spacing={{ base: 1.5, md: 2 }} flexShrink={0}>
-            <DogCanvas
+            <CompanionCanvas
               stage={stage}
+              petType={resolvedPetType}
               isLightTheme={isLightTheme}
               isCelebration={isCelebration}
             />
@@ -930,18 +1744,23 @@ export default function PlatePetPanel({
           >
             <VStack align="stretch" spacing={{ base: 0.5, md: 1 }}>
               <HStack spacing={1.5} align="center">
-                {canEdit ? (
+                {canCustomize ? (
                   <IconButton
-                    aria-label={nameModalCopy.edit}
-                    icon={<FiEdit2 />}
+                    aria-label={customizeModalCopy.edit}
+                    icon={<Box as={FiEdit2} boxSize={{ base: 4, md: 5 }} />}
                     size="xs"
                     variant="ghost"
+                    w={{ base: 6, md: 7 }}
+                    h={{ base: 6, md: 7 }}
+                    minW={{ base: 6, md: 7 }}
+                    p={0}
+                    alignSelf="center"
                     flexShrink={0}
                     color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
                     _hover={{
                       bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.200",
                     }}
-                    onClick={openNameModal}
+                    onClick={openCustomizeModal}
                   />
                 ) : null}
                 <Text
@@ -1178,10 +1997,10 @@ export default function PlatePetPanel({
       </VStack>
     </Box>
 
-    {canEdit ? (
+    {canCustomize ? (
       <Modal
-        isOpen={nameModal.isOpen}
-        onClose={nameModal.onClose}
+        isOpen={customizeModal.isOpen}
+        onClose={customizeModal.onClose}
         isCentered
         size="sm"
         initialFocusRef={nameInputRef}
@@ -1197,28 +2016,116 @@ export default function PlatePetPanel({
           mx={4}
         >
           <ModalHeader fontSize="md" fontWeight="bold" pb={2}>
-            {nameModalCopy.edit}
+            {customizeModalCopy.edit}
           </ModalHeader>
           <ModalBody>
-            <Input
-              ref={nameInputRef}
-              value={draftName}
-              onChange={(e) =>
-                setDraftName(e.target.value.slice(0, NAME_MAX_LENGTH))
-              }
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  submitName();
-                }
-              }}
-              maxLength={NAME_MAX_LENGTH}
-              placeholder={copy.title}
-              bg={isLightTheme ? APP_SURFACE_ELEVATED : "gray.800"}
-              color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
-              borderColor={isLightTheme ? APP_BORDER_STRONG : undefined}
-              rounded="md"
-            />
+            <VStack align="stretch" spacing={4}>
+              <Box>
+                <Text
+                  fontSize="xs"
+                  fontWeight="bold"
+                  color={isLightTheme ? APP_TEXT_SECONDARY : "gray.300"}
+                  mb={1.5}
+                >
+                  {customizeModalCopy.name}
+                </Text>
+                <Input
+                  ref={nameInputRef}
+                  value={draftName}
+                  onChange={(e) =>
+                    setDraftName(e.target.value.slice(0, NAME_MAX_LENGTH))
+                  }
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      submitCustomize();
+                    }
+                  }}
+                  maxLength={NAME_MAX_LENGTH}
+                  placeholder={copy.title}
+                  bg={isLightTheme ? APP_SURFACE_ELEVATED : "gray.800"}
+                  color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
+                  borderColor={isLightTheme ? APP_BORDER_STRONG : undefined}
+                  rounded="md"
+                />
+              </Box>
+
+              <Box>
+                <Text
+                  fontSize="xs"
+                  fontWeight="bold"
+                  color={isLightTheme ? APP_TEXT_SECONDARY : "gray.300"}
+                  mb={1.5}
+                >
+                  {customizeModalCopy.companion}
+                </Text>
+                <SimpleGrid columns={2} spacing={2}>
+                  {PET_TYPES.map((type) => {
+                    const active = draftPetType === type;
+                    return (
+                      <Button
+                        key={type}
+                        w="100%"
+                        h={{ base: "116px", md: "128px" }}
+                        minW={0}
+                        px={2}
+                        py={2}
+                        variant="ghost"
+                        aria-pressed={active}
+                        aria-label={customizeModalCopy[type]}
+                        border="2px solid"
+                        borderColor={
+                          active
+                            ? isLightTheme
+                              ? "#3f9f9b"
+                              : "#5eead4"
+                            : "transparent"
+                        }
+                        borderRadius="xl"
+                        bg={
+                          active
+                            ? isLightTheme
+                              ? "rgba(63, 159, 155, 0.12)"
+                              : "whiteAlpha.100"
+                            : "transparent"
+                        }
+                        _hover={{
+                          bg: active
+                            ? isLightTheme
+                              ? "rgba(63, 159, 155, 0.18)"
+                              : "whiteAlpha.200"
+                            : isLightTheme
+                              ? APP_SURFACE_MUTED
+                              : "whiteAlpha.100",
+                        }}
+                        _active={{ bg: undefined }}
+                        onClick={() => setDraftPetType(type)}
+                      >
+                        <VStack spacing={1.5} justify="center">
+                          <CompanionOptionCanvas stage={stage} petType={type} />
+                          <Text
+                            fontSize="xs"
+                            fontWeight="semibold"
+                            lineHeight="1"
+                            color={
+                              active
+                                ? isLightTheme
+                                  ? "#2f6a57"
+                                  : "teal.200"
+                                : isLightTheme
+                                  ? APP_TEXT_SECONDARY
+                                  : "gray.300"
+                            }
+                          >
+                            {customizeModalCopy[type]}
+                          </Text>
+                        </VStack>
+                      </Button>
+                    );
+                  })}
+                </SimpleGrid>
+              </Box>
+            </VStack>
           </ModalBody>
           <ModalFooter gap={3}>
             <Button
@@ -1227,9 +2134,9 @@ export default function PlatePetPanel({
               _hover={{
                 bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.100",
               }}
-              onClick={nameModal.onClose}
+              onClick={customizeModal.onClose}
             >
-              {nameModalCopy.cancel}
+              {customizeModalCopy.cancel}
             </Button>
             <Button
               colorScheme={isLightTheme ? undefined : "teal"}
@@ -1237,9 +2144,9 @@ export default function PlatePetPanel({
               color={isLightTheme ? "white" : undefined}
               _hover={isLightTheme ? { bg: "#398f8b" } : undefined}
               boxShadow="0px 4px 0px teal"
-              onClick={submitName}
+              onClick={submitCustomize}
             >
-              {nameModalCopy.save}
+              {customizeModalCopy.save}
             </Button>
           </ModalFooter>
         </ModalContent>

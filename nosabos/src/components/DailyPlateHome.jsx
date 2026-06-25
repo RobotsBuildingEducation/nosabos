@@ -88,9 +88,10 @@ export default function DailyPlateHome({
   petHealth,
   completedGoalDates = [],
   dailyXpHistory = {},
-  // Custom companion name + rename handler for the pet panel's pencil button
+  // Companion name/type + customize handler for the pet panel's pencil button.
   petName = "",
-  onRenamePet,
+  petType = "dog",
+  onCustomizePet,
 }) {
   const playSound = useSoundSettings((s) => s.playSound);
   const isLightTheme = useThemeStore((s) => s.themeMode) === "light";
@@ -358,7 +359,8 @@ export default function DailyPlateHome({
           dailyXp={dailyXp}
           dailyGoalXp={dailyGoalXp}
           petName={petName}
-          onRenamePet={onRenamePet}
+          petType={petType}
+          onCustomizePet={onCustomizePet}
         />
         <PlateActivityHeatmap
           lang={appLanguage}

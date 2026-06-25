@@ -1007,6 +1007,8 @@ export default function Conversations({
   supportLang = "en",
   pauseMs: initialPauseMs = 2000,
   maxProficiencyLevel = "A1",
+  onConnectionStatusChange,
+  bottomActionBarMinimized = false,
   isActive = true,
 }) {
   const aliveRef = useRef(false);
@@ -1069,6 +1071,17 @@ export default function Conversations({
   const [pauseMs, setPauseMs] = useState(initialPauseMs);
   const [replayingId, setReplayingId] = useState(null);
   const [translatingMessageId, setTranslatingMessageId] = useState(null);
+
+  useEffect(() => {
+    onConnectionStatusChange?.(status);
+  }, [onConnectionStatusChange, status]);
+
+  useEffect(
+    () => () => {
+      onConnectionStatusChange?.("disconnected");
+    },
+    [onConnectionStatusChange],
+  );
 
   // Learning prefs
   const [voice] = useState(() => getPreferredTTSVoice());
@@ -1402,6 +1415,13 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     status === "connected" && uiState !== "speaking" && uiState !== "thinking"
       ? "listening"
       : uiState;
+  const isVoiceSessionActive =
+    status === "connecting" || status === "connected";
+  const dockButtonBottomMargin = bottomActionBarMinimized
+    ? isVoiceSessionActive
+      ? 10
+      : 20
+    : 24;
   const [displayRobotState, setDisplayRobotState] = useState(liveUiState);
   const [previousRobotState, setPreviousRobotState] = useState(null);
   const [isRobotTransitioning, setIsRobotTransitioning] = useState(false);
@@ -3324,7 +3344,7 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
                   : undefined
               }
               textShadow={isLightTheme ? "none" : "0 0 16px rgba(0,0,0,0.9)"}
-              mb={20}
+              mb={dockButtonBottomMargin}
             >
               {status === "connected" ? (
                 <>
