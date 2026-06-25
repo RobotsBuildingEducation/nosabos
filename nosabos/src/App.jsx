@@ -3289,7 +3289,7 @@ export default function App({ onBootReady } = {}) {
       localStorage.setItem("local_nsec", nextNsec);
     }
 
-    setActiveNpub(nextNpub || (localStorage.getItem("local_npub") || ""));
+    setActiveNpub(nextNpub || localStorage.getItem("local_npub") || "");
     setActiveNsec(
       typeof sec === "string"
         ? nextNsec
@@ -9325,7 +9325,8 @@ function BottomActionBar({
     : notesIsDone
       ? "notesDone 1.5s ease-out"
       : undefined;
-  const shouldShowMinimizeControls = viewMode === "lesson" || shouldAutoMinimize;
+  const shouldShowMinimizeControls =
+    viewMode === "lesson" || shouldAutoMinimize;
   // Auto-minimize when entering a lesson, switching modules, or starting voice.
   const [isMinimized, setIsMinimized] = useState(shouldShowMinimizeControls);
   const prevShouldShowMinimizeControls = useRef(shouldShowMinimizeControls);
@@ -9333,10 +9334,7 @@ function BottomActionBar({
   const effectiveIsMinimized = isMinimized && shouldShowMinimizeControls;
 
   useEffect(() => {
-    if (
-      shouldShowMinimizeControls &&
-      !prevShouldShowMinimizeControls.current
-    ) {
+    if (shouldShowMinimizeControls && !prevShouldShowMinimizeControls.current) {
       setIsMinimized(true);
     } else if (!shouldShowMinimizeControls) {
       setIsMinimized(false);
