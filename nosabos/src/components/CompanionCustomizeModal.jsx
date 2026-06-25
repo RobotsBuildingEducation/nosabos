@@ -13,7 +13,7 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react";
-import { normalizePetType } from "../utils/petTypes";
+import { PET_TYPES, normalizePetType } from "../utils/petTypes";
 import { getCustomizeModalCopy } from "./companionCustomizeCopy";
 
 const TILE = 16;
@@ -174,7 +174,7 @@ export default function CompanionCustomizeModal({
                 {copy.companion}
               </Text>
               <SimpleGrid columns={2} spacing={2}>
-                {["dog", "alien", "ghost", "robot", "slime", "axolotl"].map((type) => {
+                {PET_TYPES.map((type) => {
                   const active = draftPetType === type;
                   return (
                     <Button

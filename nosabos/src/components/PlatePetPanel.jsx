@@ -16,6 +16,7 @@ import {
   ModalFooter,
   ModalHeader,
   ModalOverlay,
+  SimpleGrid,
   Text,
   VStack,
   useDisclosure,
@@ -43,7 +44,7 @@ import {
   DAILY_GOAL_PET_HEALTH_LOSS,
   clampDailyGoalPetHealth,
 } from "../utils/dailyGoalPet";
-import { normalizePetType } from "../utils/petTypes";
+import { PET_TYPES, normalizePetType } from "../utils/petTypes";
 import { getCustomizeModalCopy } from "./companionCustomizeCopy";
 
 const TILE = 16;
@@ -1746,9 +1747,14 @@ export default function PlatePetPanel({
                 {canCustomize ? (
                   <IconButton
                     aria-label={customizeModalCopy.edit}
-                    icon={<FiEdit2 />}
+                    icon={<Box as={FiEdit2} boxSize={{ base: 4, md: 5 }} />}
                     size="xs"
                     variant="ghost"
+                    w={{ base: 6, md: 7 }}
+                    h={{ base: 6, md: 7 }}
+                    minW={{ base: 6, md: 7 }}
+                    p={0}
+                    alignSelf="center"
                     flexShrink={0}
                     color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
                     _hover={{
@@ -2053,13 +2059,13 @@ export default function PlatePetPanel({
                 >
                   {customizeModalCopy.companion}
                 </Text>
-                <HStack spacing={2} align="stretch">
-                  {["dog", "alien"].map((type) => {
+                <SimpleGrid columns={2} spacing={2}>
+                  {PET_TYPES.map((type) => {
                     const active = draftPetType === type;
                     return (
                       <Button
                         key={type}
-                        flex="1"
+                        w="100%"
                         h={{ base: "116px", md: "128px" }}
                         minW={0}
                         px={2}
@@ -2117,7 +2123,7 @@ export default function PlatePetPanel({
                       </Button>
                     );
                   })}
-                </HStack>
+                </SimpleGrid>
               </Box>
             </VStack>
           </ModalBody>

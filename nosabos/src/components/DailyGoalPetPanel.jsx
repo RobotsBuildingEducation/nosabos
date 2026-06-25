@@ -1670,9 +1670,14 @@ export default function DailyGoalPetPanel({
                 {canCustomize ? (
                   <IconButton
                     aria-label={customizeModalCopy.edit}
-                    icon={<FiEdit2 />}
+                    icon={<Box as={FiEdit2} boxSize={{ base: 4, md: 5 }} />}
                     size="xs"
                     variant="ghost"
+                    w={{ base: 6, md: 7 }}
+                    h={{ base: 6, md: 7 }}
+                    minW={{ base: 6, md: 7 }}
+                    p={0}
+                    alignSelf="center"
                     flexShrink={0}
                     color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
                     _hover={{
