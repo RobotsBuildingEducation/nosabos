@@ -1604,6 +1604,24 @@ function drawGhostCharacter(ctx, px, py, dir, frame) {
   d(GHOST.bodyLight, cx - 6, gy + 2, 3, 1); d(GHOST.bodyLight, cx - 8, gy + 3, 2, 1); d(GHOST.bodyLight, cx - 9, gy + 4, 2, 1);
 
   const E = GHOST.eye, y = gy + 12;
+  if (dir === "up") {
+    d(GHOST.body2, cx - 7, gy + 11, 14, 1);
+    d(GHOST.body2, cx - 5, gy + 14, 10, 1);
+    d(GHOST.bodyLight, cx - 5, gy + 5, 2, 1);
+    return;
+  }
+  if (dir === "left") {
+    d(E, cx - 7, y, 1, 3);
+    d(E, cx - 8, y + 1, 1, 1);
+    d(E, cx - 10, y + 5, 2, 1);
+    return;
+  }
+  if (dir === "right") {
+    d(E, cx + 7, y, 1, 3);
+    d(E, cx + 8, y + 1, 1, 1);
+    d(E, cx + 9, y + 5, 2, 1);
+    return;
+  }
   d(E, cx - 8 + lean, y, 1, 3); d(E, cx - 9 + lean, y + 1, 1, 1); d(E, cx - 7 + lean, y + 1, 1, 1);
   d(E, cx + 8 + lean, y, 1, 3); d(E, cx + 9 + lean, y + 1, 1, 1); d(E, cx + 7 + lean, y + 1, 1, 1);
 }
@@ -1670,9 +1688,19 @@ function drawSlimeCharacter(ctx, px, py, dir, frame) {
   ctx.beginPath(); ctx.ellipse(cx, cy + 11, 12, 3, 0, 0, Math.PI * 2); ctx.fill();
 
   // antenna
-  d(O, cx, topY - 2, 1, 2); d(O, cx + 1, topY - 3, 1, 1); d(O, cx + 2, topY - 4, 1, 1); d(O, cx + 3, topY - 4, 1, 1);
-  d(B, cx + 4, topY - 6, 3, 3);
-  d(O, cx + 4, topY - 7, 3, 1); d(O, cx + 4, topY - 3, 3, 1); d(O, cx + 3, topY - 6, 1, 3); d(O, cx + 7, topY - 6, 1, 3);
+  if (dir === "left") {
+    d(O, cx, topY - 2, 1, 2); d(O, cx - 1, topY - 3, 1, 1); d(O, cx - 2, topY - 4, 1, 1); d(O, cx - 3, topY - 4, 1, 1);
+    d(B, cx - 7, topY - 6, 3, 3);
+    d(O, cx - 7, topY - 7, 3, 1); d(O, cx - 7, topY - 3, 3, 1); d(O, cx - 8, topY - 6, 1, 3); d(O, cx - 4, topY - 6, 1, 3);
+  } else if (dir === "up") {
+    d(O, cx, topY - 2, 1, 2); d(O, cx, topY - 4, 1, 2);
+    d(B, cx - 1, topY - 7, 3, 3);
+    d(O, cx - 1, topY - 8, 3, 1); d(O, cx - 1, topY - 4, 3, 1); d(O, cx - 2, topY - 7, 1, 3); d(O, cx + 2, topY - 7, 1, 3);
+  } else {
+    d(O, cx, topY - 2, 1, 2); d(O, cx + 1, topY - 3, 1, 1); d(O, cx + 2, topY - 4, 1, 1); d(O, cx + 3, topY - 4, 1, 1);
+    d(B, cx + 4, topY - 6, 3, 3);
+    d(O, cx + 4, topY - 7, 3, 1); d(O, cx + 4, topY - 3, 3, 1); d(O, cx + 3, topY - 6, 1, 3); d(O, cx + 7, topY - 6, 1, 3);
+  }
   // body
   for (let i = 0; i < SLIME_HW.length; i++) {
     const w = SLIME_HW[i];
@@ -1682,6 +1710,23 @@ function drawSlimeCharacter(ctx, px, py, dir, frame) {
   d(H, cx - 4, topY + 1, 8, 1); d(H, cx - 7, topY + 2, 4, 1); d(H, cx + 4, topY + 2, 4, 1);
   // eyes (calm, gold glint) + omega mouth, leaning toward travel
   const ey = topY + 5, lx = lean;
+  if (dir === "up") {
+    d(O, cx - 5, topY + 8, 10, 1);
+    d(O, cx - 3, topY + 11, 6, 1);
+    return;
+  }
+  if (dir === "left" || dir === "right") {
+    const eyeX = dir === "right" ? cx + 4 : cx - 8;
+    const glintX = dir === "right" ? eyeX : eyeX + 1;
+    d(E, eyeX, ey, 4, 1); d(E, eyeX - 1, ey + 1, 6, 4); d(E, eyeX, ey + 5, 4, 1);
+    d(G, glintX, ey + 2, 3, 1); d(G, glintX + 1, ey + 1, 1, 1);
+    if (dir === "right") {
+      d(E, cx + 2, topY + 12, 1, 1); d(E, cx + 3, topY + 13, 1, 1); d(E, cx + 4, topY + 12, 1, 1);
+    } else {
+      d(E, cx - 4, topY + 12, 1, 1); d(E, cx - 3, topY + 13, 1, 1); d(E, cx - 2, topY + 12, 1, 1);
+    }
+    return;
+  }
   d(E, cx - 7 + lx, ey, 4, 1); d(E, cx - 8 + lx, ey + 1, 6, 4); d(E, cx - 7 + lx, ey + 5, 4, 1);
   d(G, cx - 7 + lx, ey + 2, 3, 1); d(G, cx - 6 + lx, ey + 1, 1, 1);
   d(E, cx + 4 + lx, ey, 4, 1); d(E, cx + 3 + lx, ey + 1, 6, 4); d(E, cx + 4 + lx, ey + 5, 4, 1);
@@ -1698,7 +1743,7 @@ function drawInteractHint(ctx, tileX, tileY, frame) {
   ctx.textAlign = "center"; ctx.fillText("!", cx, cy + bounce); ctx.restore();
 }
 
-// ─── Axolotl character drawing (front-facing, gentle bob, eyes lean) ─────────
+// ─── Axolotl character drawing (directional, gentle bob, eyes lean) ──────────
 const AXOLOTL = {
   body: "#f9a8d4", bodyLt: "#fbcfe8", belly: "#fdf2f8",
   gill: "#fb7185", gillTip: "#f43f5e", gillSoft: "#fecdd3",
@@ -1715,6 +1760,38 @@ function drawAxolotlCharacter(ctx, px, py, dir, frame) {
   ctx.fillStyle = "rgba(0,0,0,0.16)";
   ctx.beginPath(); ctx.ellipse(cx, cy + 11, 9, 3, 0, 0, Math.PI * 2); ctx.fill();
 
+  if (dir === "up") {
+    a(P.gill,13,10,4,3); a(P.gillTip,11,9,2,2); a(P.gillSoft,14,11,1,1);
+    a(P.gill,12,14,4,3); a(P.gillTip,10,15,2,2); a(P.gillSoft,13,15,1,1);
+    a(P.gill,11,18,4,3); a(P.gillTip,9,20,2,2); a(P.gillSoft,12,19,1,1);
+    a(P.gill,31,10,4,3); a(P.gillTip,35,9,2,2); a(P.gillSoft,33,11,1,1);
+    a(P.gill,32,14,4,3); a(P.gillTip,36,15,2,2); a(P.gillSoft,34,15,1,1);
+    a(P.gill,33,18,4,3); a(P.gillTip,37,20,2,2); a(P.gillSoft,35,19,1,1);
+    a(P.body,20,8,8,1); a(P.body,18,9,12,1); a(P.body,17,10,14,2); a(P.body,16,12,16,1); a(P.body,15,13,18,3); a(P.body,14,16,20,7); a(P.body,15,23,18,3); a(P.body,16,26,15,2); a(P.body,18,28,12,1);
+    a(P.bodyLt,22,11,4,1); a(P.bodyLt,22,12,3,10); a(P.bodyLt,21,22,5,1);
+    a(P.body,13,23,3,3); a(P.body,32,23,3,3);
+    a(P.body,18,29,5,3); a(P.body,25,29,5,3); a(P.bodyLt,18,31,5,1); a(P.bodyLt,25,31,5,1);
+    a(P.body,33,24,4,4); a(P.bodyLt,34,23,5,1); a(P.body,37,22,3,4); a(P.bodyLt,38,21,4,1);
+    return;
+  }
+
+  if (dir === "left" || dir === "right") {
+    if (dir === "right") { ctx.save(); ctx.translate(cx, 0); ctx.scale(-1, 1); ctx.translate(-cx, 0); }
+    a(P.body,31,23,6,5); a(P.bodyLt,35,22,4,1); a(P.body,37,21,3,4); a(P.bodyLt,39,20,4,1);
+    a(P.gill,10,11,4,3); a(P.gillTip,8,10,2,2); a(P.gillSoft,11,12,1,1);
+    a(P.gill,9,15,4,3); a(P.gillTip,7,16,2,2); a(P.gillSoft,10,16,1,1);
+    a(P.gill,10,19,4,3); a(P.gillTip,8,21,2,2); a(P.gillSoft,11,20,1,1);
+    a(P.body,15,10,14,1); a(P.body,13,11,18,1); a(P.body,12,12,21,2); a(P.body,10,14,25,4); a(P.body,11,18,24,6); a(P.body,13,24,20,3); a(P.body,16,27,14,1);
+    a(P.bodyLt,13,12,6,1); a(P.bodyLt,12,13,5,2);
+    a(P.belly,18,18,11,5); a(P.belly,20,23,8,1);
+    a(P.body,14,24,4,2); a(P.body,26,26,5,3); a(P.bodyLt,26,28,5,1);
+    a(P.cheek,11,18,3,2);
+    a(P.eye,14,14,2,1); a(P.eye,13,15,4,1); a(P.eye,14,16,2,1); a("#ffffff",14,14,1,1);
+    a(P.smile,11,20,2,1);
+    if (dir === "right") ctx.restore();
+    return;
+  }
+
   a(P.gill,13,10,4,3); a(P.gillTip,11,9,2,2); a(P.gillSoft,14,11,1,1);
   a(P.gill,12,14,4,3); a(P.gillTip,10,15,2,2); a(P.gillSoft,13,15,1,1);
   a(P.gill,11,18,4,3); a(P.gillTip,9,20,2,2); a(P.gillSoft,12,19,1,1);
@@ -1729,8 +1806,13 @@ function drawAxolotlCharacter(ctx, px, py, dir, frame) {
   a(P.body,18,29,5,3); a(P.body,25,29,5,3); a(P.bodyLt,18,31,5,1); a(P.bodyLt,25,31,5,1);
 
   a(P.cheek,16,17,3,2); a(P.cheek,29,17,3,2);
-  a(P.eye,18+lean,14,2,2); a(P.eye,28+lean,14,2,2);
-  a("#ffffff",18+lean,14,1,1); a("#ffffff",28+lean,14,1,1);
+  const eye = (lx) => {
+    a(P.eye,lx+lean,13,2,1);
+    a(P.eye,lx-1+lean,14,4,1);
+    a(P.eye,lx+lean,15,2,1);
+    a("#ffffff",lx+lean,13,1,1);
+  };
+  eye(18); eye(28);
   a(P.smile,21,18,1,1); a(P.smile,26,18,1,1); a(P.smile,22,19,4,1); a(P.smile,23,20,2,1);
 }
 
@@ -1784,21 +1866,9 @@ export default function LoadingMiniGame({ supportLang = "en" }) {
 
   const [message, setMessage] = useState(null);
   const [roomName, setRoomName] = useState(null);
-  const [objectsFound, setObjectsFound] = useState(new Set());
+  const [, setObjectsFound] = useState(new Set());
   const messageTimeoutRef = useRef(null);
   const roomNameTimeoutRef = useRef(null);
-
-  const totalInteractables = useMemo(() => {
-    let count = 0;
-    for (const room of Object.values(world.rooms)) {
-      for (const row of room.map) {
-        for (const tile of row) {
-          if (INTERACT_TILES.has(tile)) count++;
-        }
-      }
-    }
-    return count;
-  }, [world]);
 
   const playGameSound = useCallback(
     (name) => { void (async () => { await warmupAudio(); await playSound(name); })(); },

@@ -1432,6 +1432,15 @@ function drawAxolotlFace(ctx, key, p, cx, o) {
       px(ctx, E, cx - dx, ey + dy, w, h);
       px(ctx, E, cx + dx - (w - 1), ey + dy, w, h);
     });
+  const drawEye = (originX, rows) => {
+    rows.forEach(([x, y, w = 1, h = 1, fill = E]) => {
+      px(ctx, fill, originX + x, ey + y, w, h);
+    });
+  };
+  const drawEyePair = (leftRows, rightRows = leftRows) => {
+    drawEye(cx - 9, leftRows);
+    drawEye(cx + 5, rightRows);
+  };
   if (key === "dead") {
     pair([[9, 0], [7, 0], [8, 1], [9, 2], [7, 2]]); // x x
     px(ctx, "#f2d06a", cx - 5, 4 + o, 10, 1);
@@ -1445,17 +1454,26 @@ function drawAxolotlFace(ctx, key, p, cx, o) {
     px(ctx, p.cheek, cx + 6, 17 + o, 3, 2);
   }
   if (key === "happy") {
-    pair([[9, 2], [8, 1], [6, 0, 3, 1], [4, 1], [3, 2]]); // ^ ^ joyful
+    drawEyePair([[0, 1], [1, 0, 3, 1], [4, 1]]); // tiny crescent eyes
   } else if (key === "healthy") {
-    pair([[8, 0, 2, 3], [9, 1], [6, 1]]); // • • bright
-    px(ctx, "#ffffff", cx - 8, ey, 1, 1);
-    px(ctx, "#ffffff", cx + 7, ey, 1, 1);
+    drawEyePair([
+      [1, 0, 2, 1],
+      [0, 1, 4, 1],
+      [1, 2, 2, 1],
+      [1, 0, 1, 1, "#ffffff"],
+    ]); // soft bright eyes
   } else if (key === "unhappy") {
-    pair([[9, 0], [9, 1], [5, 0], [5, 1], [8, 2], [7, 2], [6, 2]]); // worried
+    drawEyePair(
+      [[0, 0, 3, 1], [1, 1, 2, 1], [2, 2]],
+      [[1, 0, 3, 1], [1, 1, 2, 1], [1, 2]],
+    ); // gentle droop
   } else if (key === "stressed") {
-    pair([[9, 0], [8, 1], [7, 2], [8, 3], [9, 4]]); // > <
+    drawEyePair(
+      [[0, 0, 2, 1], [1, 1, 2, 1], [2, 2]],
+      [[2, 0, 2, 1], [1, 1, 2, 1], [1, 2]],
+    ); // small uneasy squint
   } else if (key === "unhealthy") {
-    pair([[9, 0, 3, 1], [9, 3, 3, 1], [9, 1, 1, 2], [7, 1, 1, 2], [8, 1]]); // @ @ woozy
+    drawEyePair([[0, 1, 4, 1], [1, 2, 2, 1]]); // sleepy half-lids
   }
 }
 
