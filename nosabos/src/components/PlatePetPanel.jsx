@@ -1443,49 +1443,49 @@ function drawAxolotlBody(ctx, p, cx, o) {
   px(ctx, p.bodyLt, cx + 1, 31 + o, 5, 1);
 }
 
+function drawAxolotlTail(ctx, p, cx, o, wag) {
+  // flat fin tail sweeping out to the lower-right and curling up (wag animates it)
+  px(ctx, p.body, cx + 7, 25 + o, 4, 4);
+  px(ctx, p.body, cx + 10, 24 + o + wag, 3, 4);
+  px(ctx, p.bodyLt, cx + 10, 23 + o + wag, 4, 1);
+  px(ctx, p.body, cx + 13, 23 + o + wag, 2, 3);
+  px(ctx, p.bodyLt, cx + 13, 22 + o + wag, 3, 1);
+  px(ctx, p.body, cx + 15, 21 + o + wag, 1, 2);
+}
+
+// Emotion is EYES-ONLY (no mouth), like the ghost/slime.
 function drawAxolotlFace(ctx, key, p, cx, o) {
-  const eye = p.eye;
+  const E = p.eye;
+  const ey = 12 + o;
+  const pair = (rows) =>
+    rows.forEach(([dx, dy, w = 1, h = 1]) => {
+      px(ctx, E, cx - dx, ey + dy, w, h);
+      px(ctx, E, cx + dx - (w - 1), ey + dy, w, h);
+    });
   if (key === "dead") {
-    px(ctx, eye, cx - 7, 13 + o, 1, 1); px(ctx, eye, cx - 5, 13 + o, 1, 1);
-    px(ctx, eye, cx - 6, 14 + o, 1, 1);
-    px(ctx, eye, cx - 7, 15 + o, 1, 1); px(ctx, eye, cx - 5, 15 + o, 1, 1);
-    px(ctx, eye, cx + 4, 13 + o, 1, 1); px(ctx, eye, cx + 6, 13 + o, 1, 1);
-    px(ctx, eye, cx + 5, 14 + o, 1, 1);
-    px(ctx, eye, cx + 4, 15 + o, 1, 1); px(ctx, eye, cx + 6, 15 + o, 1, 1);
-    px(ctx, p.smile, cx - 2, 19 + o, 4, 1);
+    pair([[9, 0], [7, 0], [8, 1], [9, 2], [7, 2]]); // x x
     px(ctx, "#f2d06a", cx - 5, 4 + o, 10, 1);
     px(ctx, "#f2d06a", cx - 5, 6 + o, 10, 1);
     px(ctx, "#f2d06a", cx - 6, 5 + o, 1, 1);
     px(ctx, "#f2d06a", cx + 5, 5 + o, 1, 1);
     return;
   }
-  if (key === "happy" || key === "healthy" || key === "stressed") {
-    px(ctx, p.cheek, cx - 8, 17 + o, 3, 2);
-    px(ctx, p.cheek, cx + 5, 17 + o, 3, 2);
-  }
-  if (key === "stressed") {
-    px(ctx, eye, cx - 7, 14 + o, 1, 1); px(ctx, eye, cx - 6, 15 + o, 1, 1); px(ctx, eye, cx - 7, 16 + o, 1, 1);
-    px(ctx, eye, cx + 6, 14 + o, 1, 1); px(ctx, eye, cx + 5, 15 + o, 1, 1); px(ctx, eye, cx + 6, 16 + o, 1, 1);
-  } else if (key === "unhealthy") {
-    px(ctx, eye, cx - 7, 15 + o, 3, 1); px(ctx, eye, cx - 6, 16 + o, 1, 1);
-    px(ctx, eye, cx + 4, 15 + o, 3, 1); px(ctx, eye, cx + 5, 16 + o, 1, 1);
-  } else {
-    px(ctx, eye, cx - 6, 14 + o, 2, 2); px(ctx, eye, cx + 4, 14 + o, 2, 2);
-    px(ctx, "#ffffff", cx - 6, 14 + o, 1, 1); px(ctx, "#ffffff", cx + 4, 14 + o, 1, 1);
+  if (key === "happy" || key === "healthy") {
+    px(ctx, p.cheek, cx - 9, 17 + o, 3, 2);
+    px(ctx, p.cheek, cx + 6, 17 + o, 3, 2);
   }
   if (key === "happy") {
-    px(ctx, p.smile, cx - 3, 18 + o, 1, 1); px(ctx, p.smile, cx + 2, 18 + o, 1, 1);
-    px(ctx, p.smile, cx - 2, 19 + o, 4, 1);
-    px(ctx, p.smile, cx - 1, 20 + o, 2, 1);
+    pair([[9, 2], [8, 1], [6, 0, 3, 1], [4, 1], [3, 2]]); // ^ ^ joyful
+  } else if (key === "healthy") {
+    pair([[8, 0, 2, 3], [9, 1], [6, 1]]); // • • bright
+    px(ctx, "#ffffff", cx - 8, ey, 1, 1);
+    px(ctx, "#ffffff", cx + 7, ey, 1, 1);
   } else if (key === "unhappy") {
-    px(ctx, p.smile, cx - 2, 19 + o, 1, 1); px(ctx, p.smile, cx - 1, 18 + o, 2, 1); px(ctx, p.smile, cx + 1, 19 + o, 1, 1);
+    pair([[9, 0], [9, 1], [5, 0], [5, 1], [8, 2], [7, 2], [6, 2]]); // worried
   } else if (key === "stressed") {
-    px(ctx, p.smile, cx - 2, 19 + o, 1, 1); px(ctx, p.smile, cx - 1, 18 + o, 1, 1);
-    px(ctx, p.smile, cx, 19 + o, 1, 1); px(ctx, p.smile, cx + 1, 18 + o, 1, 1); px(ctx, p.smile, cx + 2, 19 + o, 1, 1);
+    pair([[9, 0], [8, 1], [7, 2], [8, 3], [9, 4]]); // > <
   } else if (key === "unhealthy") {
-    px(ctx, p.smile, cx - 1, 19 + o, 3, 1); px(ctx, p.smile, cx, 20 + o, 1, 1);
-  } else {
-    px(ctx, p.smile, cx - 2, 18 + o, 1, 1); px(ctx, p.smile, cx - 1, 19 + o, 2, 1); px(ctx, p.smile, cx + 1, 18 + o, 1, 1);
+    pair([[9, 0, 3, 1], [9, 3, 3, 1], [9, 1, 1, 2], [7, 1, 1, 2], [8, 1]]); // @ @ woozy
   }
 }
 
@@ -1496,6 +1496,8 @@ function drawAxolotlCharacter(ctx, frame, stage) {
   const phase = frame % 6;
   const palette = getAxolotlPalette(stage);
   const o = stage.key === "dead" ? 0 : [0, -1, -1, 0, 1, 0][phase];
+  const wag = stage.key === "dead" ? 0 : [0, 0, 1, 1, 0, 0][phase];
+  drawAxolotlTail(ctx, palette, cx, o, wag);
   drawAxolotlGills(ctx, palette, cx, o);
   drawAxolotlBody(ctx, palette, cx, o);
   drawAxolotlFace(ctx, stage.key, palette, cx, o);
