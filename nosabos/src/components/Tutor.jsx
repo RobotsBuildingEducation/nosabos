@@ -3517,6 +3517,8 @@ export default function Tutor({
   maxProficiencyLevel = "Pre-A1",
   onFirstLessonComplete,
   onDailyGoalCelebration,
+  onConnectionStatusChange,
+  bottomActionBarMinimized = false,
   isActive = true,
 }) {
   const aliveRef = useRef(false);
@@ -3614,6 +3616,17 @@ export default function Tutor({
   const [mood, setMood] = useState("neutral");
   const [replayingId, setReplayingId] = useState(null);
   const [translatingMessageId, setTranslatingMessageId] = useState(null);
+
+  useEffect(() => {
+    onConnectionStatusChange?.(status);
+  }, [onConnectionStatusChange, status]);
+
+  useEffect(
+    () => () => {
+      onConnectionStatusChange?.("disconnected");
+    },
+    [onConnectionStatusChange],
+  );
 
   // Learning prefs
   const [voice, setVoice] = useState(
@@ -4315,6 +4328,13 @@ export default function Tutor({
     status === "connected" && uiState !== "speaking" && uiState !== "thinking"
       ? "listening"
       : uiState;
+  const isVoiceSessionActive =
+    status === "connecting" || status === "connected";
+  const dockButtonBottomMargin = bottomActionBarMinimized
+    ? isVoiceSessionActive
+      ? 10
+      : 20
+    : 24;
   const edgeGlowState = status === "connected" ? liveUiState : "idle";
   const [displayRobotState, setDisplayRobotState] = useState(liveUiState);
   const [previousRobotState, setPreviousRobotState] = useState(null);
@@ -8116,7 +8136,7 @@ export default function Tutor({
                   : undefined
               }
               textShadow={isLightTheme ? "none" : "0 0 16px rgba(0,0,0,0.9)"}
-              mb={20}
+              mb={dockButtonBottomMargin}
             >
               {status === "connected" ? (
                 <>

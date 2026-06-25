@@ -2742,6 +2742,27 @@ export default function App({ onBootReady } = {}) {
     return "plate";
   });
   const lastPathTargetRef = useRef(null);
+  const [voiceConnectionStatuses, setVoiceConnectionStatuses] = useState({
+    conversations: "disconnected",
+    tutor: "disconnected",
+  });
+  const [isBottomActionBarMinimized, setIsBottomActionBarMinimized] =
+    useState(false);
+
+  const handleVoiceConnectionStatusChange = useCallback((mode, status) => {
+    if (mode !== "conversations" && mode !== "tutor") return;
+    const nextStatus =
+      status === "connecting" || status === "connected"
+        ? status
+        : "disconnected";
+    setVoiceConnectionStatuses((prev) =>
+      prev[mode] === nextStatus ? prev : { ...prev, [mode]: nextStatus },
+    );
+  }, []);
+
+  const handleBottomActionBarMinimizedChange = useCallback((nextValue) => {
+    setIsBottomActionBarMinimized(Boolean(nextValue));
+  }, []);
 
   // Ref to trigger scroll to latest unlocked lesson
   const scrollToLatestUnlockedRef = useRef(null);
@@ -6169,6 +6190,7 @@ export default function App({ onBootReady } = {}) {
               pauseMs={user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS}
               helpRequest={user?.progress?.helpRequest}
               practicePronunciation={user?.progress?.practicePronunciation}
+              bottomActionBarMinimized={isBottomActionBarMinimized}
               onSwitchedAccount={handleSwitchedAccount}
             />
           </>
@@ -7792,6 +7814,14 @@ export default function App({ onBootReady } = {}) {
   const isVoiceSurfaceMode =
     viewMode === "skillTree" &&
     (pathMode === "conversations" || pathMode === "tutor");
+  const activeVoiceConnectionStatus =
+    pathMode === "conversations" || pathMode === "tutor"
+      ? voiceConnectionStatuses[pathMode]
+      : "disconnected";
+  const shouldCollapseBottomActionBar =
+    isVoiceSurfaceMode &&
+    (activeVoiceConnectionStatus === "connecting" ||
+      activeVoiceConnectionStatus === "connected");
   const skillTreeSceneBottomPadding = isVoiceSurfaceMode
     ? 0
     : { base: 32, md: 24 };
@@ -7941,6 +7971,8 @@ export default function App({ onBootReady } = {}) {
           notesIsLoading={notesIsLoading}
           notesIsDone={notesIsDone}
           pathMode={pathMode}
+          shouldAutoMinimize={shouldCollapseBottomActionBar}
+          onMinimizedChange={handleBottomActionBarMinimizedChange}
           onPathModeChange={handleBottomBarPathModeChange}
           onScrollToLatest={() => {
             // Trigger scroll when already in path mode
@@ -8039,6 +8071,10 @@ export default function App({ onBootReady } = {}) {
                 initialUnitsKey={skillTreeInitialUnits.key || ""}
                 onTutorFirstLessonComplete={handleTutorFirstLessonComplete}
                 onTutorDailyGoalCelebration={handleTutorDailyGoalCelebration}
+                bottomActionBarMinimized={isBottomActionBarMinimized}
+                onVoiceConnectionStatusChange={
+                  handleVoiceConnectionStatusChange
+                }
                 // Tutorial props
                 isTutorialComplete={hasCompletedSkillTreeTutorial}
               />
@@ -8122,6 +8158,7 @@ export default function App({ onBootReady } = {}) {
                           lesson={activeLesson}
                           lessonContent={activeLesson?.content?.realtime}
                           onSkip={switchToRandomLessonMode}
+                          bottomActionBarMinimized={isBottomActionBarMinimized}
                           onSwitchedAccount={handleSwitchedAccount}
                         />
                       </TabPanel>
@@ -9135,6 +9172,8 @@ function BottomActionBar({
   notesIsLoading = false,
   notesIsDone = false,
   pathMode = "tutor",
+  shouldAutoMinimize = false,
+  onMinimizedChange,
   onPathModeChange,
   onScrollToLatest,
   currentTab,
@@ -9286,19 +9325,28 @@ function BottomActionBar({
     : notesIsDone
       ? "notesDone 1.5s ease-out"
       : undefined;
-  // Auto-minimize when entering a lesson or switching modules
-  const [isMinimized, setIsMinimized] = useState(viewMode === "lesson");
-  const prevViewMode = useRef(viewMode);
+  const shouldShowMinimizeControls = viewMode === "lesson" || shouldAutoMinimize;
+  // Auto-minimize when entering a lesson, switching modules, or starting voice.
+  const [isMinimized, setIsMinimized] = useState(shouldShowMinimizeControls);
+  const prevShouldShowMinimizeControls = useRef(shouldShowMinimizeControls);
   const prevTab = useRef(currentTab);
+  const effectiveIsMinimized = isMinimized && shouldShowMinimizeControls;
 
   useEffect(() => {
-    if (viewMode === "lesson" && prevViewMode.current !== "lesson") {
+    if (
+      shouldShowMinimizeControls &&
+      !prevShouldShowMinimizeControls.current
+    ) {
       setIsMinimized(true);
-    } else if (viewMode !== "lesson") {
+    } else if (!shouldShowMinimizeControls) {
       setIsMinimized(false);
     }
-    prevViewMode.current = viewMode;
-  }, [viewMode]);
+    prevShouldShowMinimizeControls.current = shouldShowMinimizeControls;
+  }, [shouldShowMinimizeControls]);
+
+  useEffect(() => {
+    onMinimizedChange?.(effectiveIsMinimized);
+  }, [effectiveIsMinimized, onMinimizedChange]);
 
   // Re-minimize when switching modules within a lesson
   useEffect(() => {
@@ -9331,8 +9379,8 @@ function BottomActionBar({
       ? "notesDone 1.5s ease-out"
       : undefined;
 
-  // Render minimized pill when in lesson and minimized
-  if (isMinimized && viewMode === "lesson") {
+  // Render minimized pill when this surface supports collapsing.
+  if (effectiveIsMinimized) {
     return (
       <Box
         position="fixed"
@@ -9457,7 +9505,7 @@ function BottomActionBar({
             borderRadius="24px"
           >
             {/* Minimize caret above buttons */}
-            {viewMode === "lesson" && (
+            {shouldShowMinimizeControls && (
               <Flex justify="center" mb={1}>
                 <Box
                   as="button"

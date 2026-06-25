@@ -705,6 +705,8 @@ export default function RealTimeTest({
   activeNpub = "",
   activeNsec = "",
   onSwitchedAccount,
+  onConnectionStatusChange,
+  bottomActionBarMinimized = false,
   lesson = null,
   lessonContent = null,
   supportLang: initialSupportLang = "",
@@ -804,6 +806,17 @@ export default function RealTimeTest({
   const [showTranslations, setShowTranslations] = useState(true);
   const [practicePronunciation, setPracticePronunciation] = useState(
     !!user?.progress?.practicePronunciation,
+  );
+
+  useEffect(() => {
+    onConnectionStatusChange?.(status);
+  }, [onConnectionStatusChange, status]);
+
+  useEffect(
+    () => () => {
+      onConnectionStatusChange?.("disconnected");
+    },
+    [onConnectionStatusChange],
   );
 
   // live refs
@@ -3634,6 +3647,13 @@ Return ONLY JSON:
     isLightTheme,
   );
   const orbUiState = getRealtimeOrbVisualState(uiState);
+  const isVoiceSessionActive =
+    status === "connecting" || status === "connected";
+  const dockButtonBottomMargin = bottomActionBarMinimized
+    ? isVoiceSessionActive
+      ? 10
+      : 20
+    : 24;
 
   const liveStateLabel = uiStateLabel(uiState, uiLang);
   const currentGoalTitleText = goalTitleForUI(currentGoal);
@@ -4012,7 +4032,7 @@ Return ONLY JSON:
                   : undefined
               }
               textShadow={isLightTheme ? "none" : "0 0 16px rgba(0,0,0,0.9)"}
-              mb={20}
+              mb={dockButtonBottomMargin}
             >
               {uiText("ra_btn_skip", "Skip")}
             </Button>
@@ -4059,7 +4079,7 @@ Return ONLY JSON:
                   : undefined
               }
               textShadow={isLightTheme ? "none" : "0 0 16px rgba(0,0,0,0.9)"}
-              mb={20}
+              mb={dockButtonBottomMargin}
             >
               {status === "connected" ? (
                 <>
@@ -4075,7 +4095,7 @@ Return ONLY JSON:
               )}
             </Button>
 
-            <Box position="relative" mb={20}>
+            <Box position="relative" mb={dockButtonBottomMargin}>
               <Button
                 onClick={handleNextGoal}
                 size="md"

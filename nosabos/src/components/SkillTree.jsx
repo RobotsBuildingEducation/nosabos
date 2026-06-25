@@ -2507,6 +2507,8 @@ export default function SkillTree({
   onPathModeChange,
   scrollToLatestUnlockedRef,
   scrollToLatestTrigger = 0,
+  onVoiceConnectionStatusChange,
+  bottomActionBarMinimized = false,
   onTutorFirstLessonComplete,
   onTutorDailyGoalCelebration,
   // Tutorial props
@@ -2709,6 +2711,20 @@ export default function SkillTree({
       }
     },
     [onRandomPracticeFlashcard],
+  );
+
+  const handleConversationsConnectionStatusChange = useCallback(
+    (status) => {
+      onVoiceConnectionStatusChange?.("conversations", status);
+    },
+    [onVoiceConnectionStatusChange],
+  );
+
+  const handleTutorConnectionStatusChange = useCallback(
+    (status) => {
+      onVoiceConnectionStatusChange?.("tutor", status);
+    },
+    [onVoiceConnectionStatusChange],
   );
 
   // Calculate overall progress
@@ -3023,6 +3039,10 @@ export default function SkillTree({
                 pauseMs={pauseMs}
                 maxProficiencyLevel={maxProficiencyLevel}
                 isActive={isModeVisible("conversations")}
+                bottomActionBarMinimized={bottomActionBarMinimized}
+                onConnectionStatusChange={
+                  handleConversationsConnectionStatusChange
+                }
               />
             </Box>
 
@@ -3038,6 +3058,8 @@ export default function SkillTree({
                 onFirstLessonComplete={onTutorFirstLessonComplete}
                 onDailyGoalCelebration={onTutorDailyGoalCelebration}
                 isActive={isModeVisible("tutor")}
+                bottomActionBarMinimized={bottomActionBarMinimized}
+                onConnectionStatusChange={handleTutorConnectionStatusChange}
               />
             </Box>
           </>
@@ -3063,6 +3085,10 @@ export default function SkillTree({
                 pauseMs={pauseMs}
                 maxProficiencyLevel={maxProficiencyLevel}
                 isActive
+                bottomActionBarMinimized={bottomActionBarMinimized}
+                onConnectionStatusChange={
+                  handleConversationsConnectionStatusChange
+                }
               />
             )}
             {isModeVisible("tutor") && (
@@ -3074,6 +3100,8 @@ export default function SkillTree({
                 onFirstLessonComplete={onTutorFirstLessonComplete}
                 onDailyGoalCelebration={onTutorDailyGoalCelebration}
                 isActive
+                bottomActionBarMinimized={bottomActionBarMinimized}
+                onConnectionStatusChange={handleTutorConnectionStatusChange}
               />
             )}
           </>
