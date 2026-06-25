@@ -1167,6 +1167,167 @@ function drawRobotCharacter(ctx, frame, stage) {
   ctx.restore();
 }
 
+const SLIME = {
+  body: "#5fc92e",
+  outline: "#39791a",
+  hi: "#8ed848",
+  eye: "#26391a",
+  gold: "#f7c948",
+  cheek: "#f0a0ae",
+};
+
+const SICK_SLIME = {
+  ...SLIME,
+  body: "#9aa86a",
+  outline: "#69763f",
+  hi: "#b2c088",
+  gold: "#cbb56a",
+};
+
+const DEAD_SLIME = {
+  ...SLIME,
+  body: "#a7b59a",
+  outline: "#727f66",
+  hi: "#bcc7b2",
+  eye: "#46503c",
+  gold: "#8a9070",
+};
+
+const SLIME_HW = [
+  3, 5, 7, 9, 10, 11, 12, 12, 13, 13, 14, 14, 14, 14, 13, 13, 12, 10, 7,
+];
+
+function getSlimePalette(stage) {
+  if (stage.key === "dead") return DEAD_SLIME;
+  if (stage.key === "unhealthy") return SICK_SLIME;
+  return SLIME;
+}
+
+function drawSlimeBody(ctx, p, cx, topY) {
+  // ball-on-stalk antenna
+  px(ctx, p.outline, cx, topY - 2, 1, 2);
+  px(ctx, p.outline, cx + 1, topY - 3, 1, 1);
+  px(ctx, p.outline, cx + 2, topY - 4, 1, 1);
+  px(ctx, p.outline, cx + 3, topY - 4, 1, 1);
+  px(ctx, p.body, cx + 4, topY - 6, 3, 3);
+  px(ctx, p.outline, cx + 4, topY - 7, 3, 1);
+  px(ctx, p.outline, cx + 4, topY - 3, 3, 1);
+  px(ctx, p.outline, cx + 3, topY - 6, 1, 3);
+  px(ctx, p.outline, cx + 7, topY - 6, 1, 3);
+  // body (outline + inset fill)
+  const n = SLIME_HW.length;
+  for (let i = 0; i < n; i++) {
+    const w = SLIME_HW[i];
+    px(ctx, p.outline, cx - w, topY + i, 2 * w, 1);
+    if (i > 0 && i < n - 1) px(ctx, p.body, cx - (w - 1), topY + i, 2 * (w - 1), 1);
+  }
+  // soft green rim
+  px(ctx, p.hi, cx - 4, topY + 1, 8, 1);
+  px(ctx, p.hi, cx - 7, topY + 2, 4, 1);
+  px(ctx, p.hi, cx + 4, topY + 2, 4, 1);
+}
+
+function drawSlimeEyes(ctx, p, key, cx, topY) {
+  const E = p.eye;
+  const G = p.gold;
+  const ey = topY + 5;
+  const base = (ex) => {
+    px(ctx, E, ex + 1, ey, 4, 1);
+    px(ctx, E, ex, ey + 1, 6, 4);
+    px(ctx, E, ex + 1, ey + 5, 4, 1);
+  };
+  const glint = (ex, big) => {
+    if (big) {
+      px(ctx, G, ex + 2, ey + 1, 1, 3);
+      px(ctx, G, ex + 1, ey + 2, 3, 1);
+    } else {
+      px(ctx, G, ex + 1, ey + 2, 3, 1);
+      px(ctx, G, ex + 2, ey + 1, 1, 1);
+    }
+  };
+  if (key === "happy") {
+    base(cx - 8);
+    base(cx + 3);
+    glint(cx - 8, true);
+    glint(cx + 3, true);
+    px(ctx, p.cheek, cx - 10, topY + 11, 2, 1);
+    px(ctx, p.cheek, cx + 8, topY + 11, 2, 1);
+    px(ctx, E, cx - 3, topY + 12, 1, 1);
+    px(ctx, E, cx + 2, topY + 12, 1, 1);
+    px(ctx, E, cx - 2, topY + 13, 4, 1);
+    return;
+  }
+  if (key === "healthy") {
+    base(cx - 8);
+    base(cx + 3);
+    glint(cx - 8, false);
+    glint(cx + 3, false);
+    px(ctx, E, cx - 3, topY + 12, 1, 1);
+    px(ctx, E, cx - 2, topY + 13, 1, 1);
+    px(ctx, E, cx - 1, topY + 12, 1, 1);
+    px(ctx, E, cx, topY + 12, 1, 1);
+    px(ctx, E, cx + 1, topY + 13, 1, 1);
+    px(ctx, E, cx + 2, topY + 12, 1, 1);
+    return;
+  }
+  if (key === "unhappy") {
+    px(ctx, E, cx - 8, ey + 2, 5, 1);
+    px(ctx, E, cx - 8, ey + 3, 5, 2);
+    px(ctx, E, cx + 3, ey + 2, 5, 1);
+    px(ctx, E, cx + 3, ey + 3, 5, 2);
+    px(ctx, E, cx - 2, topY + 13, 5, 1);
+    px(ctx, E, cx - 3, topY + 14, 1, 1);
+    px(ctx, E, cx + 2, topY + 14, 1, 1);
+    return;
+  }
+  if (key === "stressed") {
+    px(ctx, E, cx - 8, ey + 1, 5, 1);
+    px(ctx, E, cx - 7, ey + 2, 5, 2);
+    px(ctx, E, cx + 3, ey + 1, 5, 1);
+    px(ctx, E, cx + 2, ey + 2, 5, 2);
+    px(ctx, E, cx - 3, topY + 14, 1, 1);
+    px(ctx, E, cx - 1, topY + 13, 1, 1);
+    px(ctx, E, cx + 1, topY + 14, 1, 1);
+    px(ctx, E, cx + 3, topY + 13, 1, 1);
+    return;
+  }
+  if (key === "unhealthy") {
+    px(ctx, E, cx - 8, ey + 2, 6, 1);
+    px(ctx, E, cx - 7, ey + 3, 2, 1);
+    px(ctx, E, cx + 2, ey + 2, 6, 1);
+    px(ctx, E, cx + 4, ey + 3, 2, 1);
+    px(ctx, E, cx - 2, topY + 13, 1, 1);
+    px(ctx, E, cx, topY + 14, 1, 1);
+    px(ctx, E, cx + 2, topY + 13, 1, 1);
+    return;
+  }
+  if (key === "dead") {
+    const xeye = (ex) => {
+      px(ctx, E, ex, ey + 1, 1, 1);
+      px(ctx, E, ex + 3, ey + 1, 1, 1);
+      px(ctx, E, ex + 1, ey + 2, 2, 1);
+      px(ctx, E, ex, ey + 3, 1, 1);
+      px(ctx, E, ex + 3, ey + 3, 1, 1);
+    };
+    xeye(cx - 8);
+    xeye(cx + 4);
+    px(ctx, E, cx - 2, topY + 13, 4, 1);
+  }
+}
+
+function drawSlimeCharacter(ctx, frame, stage) {
+  ctx.save();
+  ctx.translate(0, SCENE_Y_OFFSET);
+  const cx = T / 2;
+  const phase = frame % 6;
+  const palette = getSlimePalette(stage);
+  const toff = stage.key === "dead" ? 0 : [0, 0, -1, -1, 0, 0][phase];
+  const topY = 12 + toff;
+  drawSlimeBody(ctx, palette, cx, topY);
+  drawSlimeEyes(ctx, palette, stage.key, cx, topY);
+  ctx.restore();
+}
+
 function drawCompanionCharacter(ctx, frame, stage, petType) {
   if (petType === "alien") {
     drawAlienCharacter(ctx, frame, stage);
@@ -1178,6 +1339,10 @@ function drawCompanionCharacter(ctx, frame, stage, petType) {
   }
   if (petType === "robot") {
     drawRobotCharacter(ctx, frame, stage);
+    return;
+  }
+  if (petType === "slime") {
+    drawSlimeCharacter(ctx, frame, stage);
     return;
   }
   drawDogCharacter(ctx, frame, stage);

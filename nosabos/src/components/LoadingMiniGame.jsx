@@ -1648,6 +1648,48 @@ function drawRobotCharacter(ctx, px, py, dir, frame) {
   d(M, cx - 1, cy + 5, 2, 2);
 }
 
+// ─── Slime character drawing (hops in place, screen-style face) ─────────────
+const SLIME = {
+  body: "#5fc92e", outline: "#39791a", hi: "#8ed848",
+  eye: "#26391a", gold: "#f7c948",
+};
+const SLIME_HW = [
+  3, 5, 7, 9, 10, 11, 12, 12, 13, 13, 14, 14, 14, 14, 13, 13, 12, 10, 7,
+];
+
+function drawSlimeCharacter(ctx, px, py, dir, frame) {
+  const cx = px * T + T / 2;
+  const cy = py * T + T / 2;
+  const hop = Math.round(Math.abs(Math.sin(frame * 0.16)) * 2);
+  const topY = cy - 9 - hop;
+  const lean = dir === "left" ? -1 : dir === "right" ? 1 : 0;
+  const d = (fs, rx, ry, rw, rh) => { ctx.fillStyle = fs; ctx.fillRect(rx, ry, rw, rh); };
+  const O = SLIME.outline, B = SLIME.body, H = SLIME.hi, E = SLIME.eye, G = SLIME.gold;
+
+  ctx.fillStyle = "rgba(0,0,0,0.2)";
+  ctx.beginPath(); ctx.ellipse(cx, cy + 11, 12, 3, 0, 0, Math.PI * 2); ctx.fill();
+
+  // antenna
+  d(O, cx, topY - 2, 1, 2); d(O, cx + 1, topY - 3, 1, 1); d(O, cx + 2, topY - 4, 1, 1); d(O, cx + 3, topY - 4, 1, 1);
+  d(B, cx + 4, topY - 6, 3, 3);
+  d(O, cx + 4, topY - 7, 3, 1); d(O, cx + 4, topY - 3, 3, 1); d(O, cx + 3, topY - 6, 1, 3); d(O, cx + 7, topY - 6, 1, 3);
+  // body
+  for (let i = 0; i < SLIME_HW.length; i++) {
+    const w = SLIME_HW[i];
+    d(O, cx - w, topY + i, 2 * w, 1);
+    if (i > 0 && i < SLIME_HW.length - 1) d(B, cx - (w - 1), topY + i, 2 * (w - 1), 1);
+  }
+  d(H, cx - 4, topY + 1, 8, 1); d(H, cx - 7, topY + 2, 4, 1); d(H, cx + 4, topY + 2, 4, 1);
+  // eyes (calm, gold glint) + omega mouth, leaning toward travel
+  const ey = topY + 5, lx = lean;
+  d(E, cx - 7 + lx, ey, 4, 1); d(E, cx - 8 + lx, ey + 1, 6, 4); d(E, cx - 7 + lx, ey + 5, 4, 1);
+  d(G, cx - 7 + lx, ey + 2, 3, 1); d(G, cx - 6 + lx, ey + 1, 1, 1);
+  d(E, cx + 4 + lx, ey, 4, 1); d(E, cx + 3 + lx, ey + 1, 6, 4); d(E, cx + 4 + lx, ey + 5, 4, 1);
+  d(G, cx + 4 + lx, ey + 2, 3, 1); d(G, cx + 5 + lx, ey + 1, 1, 1);
+  d(E, cx - 3, topY + 12, 1, 1); d(E, cx - 2, topY + 13, 1, 1); d(E, cx - 1, topY + 12, 1, 1);
+  d(E, cx, topY + 12, 1, 1); d(E, cx + 1, topY + 13, 1, 1); d(E, cx + 2, topY + 12, 1, 1);
+}
+
 function drawInteractHint(ctx, tileX, tileY, frame) {
   const cx = tileX * T + T / 2; const cy = tileY * T - 6;
   const bounce = Math.sin(frame * 0.08) * 4;
@@ -2062,9 +2104,11 @@ export default function LoadingMiniGame({ supportLang = "en" }) {
             ? drawGhostCharacter
             : pt === "robot"
               ? drawRobotCharacter
-              : drawDogCharacter;
+              : pt === "slime"
+                ? drawSlimeCharacter
+                : drawDogCharacter;
       const charFrame =
-        pt === "ghost" || pt === "robot"
+        pt === "ghost" || pt === "robot" || pt === "slime"
           ? s.frame
           : s.moving
             ? s.walkFrame
