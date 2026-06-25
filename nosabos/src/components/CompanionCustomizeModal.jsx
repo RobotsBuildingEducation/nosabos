@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   Box,
   Button,
-  HStack,
   Input,
   Modal,
   ModalBody,
@@ -10,6 +9,7 @@ import {
   ModalFooter,
   ModalHeader,
   ModalOverlay,
+  SimpleGrid,
   Text,
   VStack,
 } from "@chakra-ui/react";
@@ -173,13 +173,13 @@ export default function CompanionCustomizeModal({
               >
                 {copy.companion}
               </Text>
-              <HStack spacing={2} align="stretch">
-                {["dog", "alien", "ghost"].map((type) => {
+              <SimpleGrid columns={2} spacing={2}>
+                {["dog", "alien", "ghost", "robot"].map((type) => {
                   const active = draftPetType === type;
                   return (
                     <Button
                       key={type}
-                      flex="1"
+                      w="100%"
                       h={{ base: "116px", md: "128px" }}
                       minW={0}
                       px={2}
@@ -241,7 +241,7 @@ export default function CompanionCustomizeModal({
                     </Button>
                   );
                 })}
-              </HStack>
+              </SimpleGrid>
             </Box>
           </VStack>
         </ModalBody>

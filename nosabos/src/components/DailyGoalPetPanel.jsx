@@ -1043,6 +1043,130 @@ function drawGhostCharacter(ctx, frame, stage) {
   ctx.restore();
 }
 
+const ROBOT = {
+  metal: "#9fb4c9",
+  metalDark: "#7891ab",
+  screen: "#222a38",
+  eye: "#5fe0d8",
+  bulb: "#f0934e",
+  wheel: "#3a4452",
+};
+
+const SICK_ROBOT = {
+  ...ROBOT,
+  metal: "#9a9a8a",
+  metalDark: "#76766a",
+  eye: "#9ec0bd",
+  bulb: "#b89a6a",
+};
+
+const DEAD_ROBOT = {
+  ...ROBOT,
+  metal: "#8a8d92",
+  metalDark: "#6b6e73",
+  eye: "#5a6b6a",
+  bulb: "#5a5a60",
+  screen: "#1a1f28",
+  wheel: "#33373f",
+};
+
+function getRobotPalette(stage) {
+  if (stage.key === "dead") return DEAD_ROBOT;
+  if (stage.key === "unhealthy") return SICK_ROBOT;
+  return ROBOT;
+}
+
+function drawRobotBody(ctx, p, cx, by, key, phase) {
+  const blink = key !== "dead" && phase < 3;
+  px(ctx, p.metal, cx - 1, 9 + by, 2, 4);
+  if (key !== "dead") {
+    px(ctx, p.bulb, cx - 1, 6 + by, 2, 2);
+    if (blink) px(ctx, p.bulb, cx, 5 + by, 1, 1);
+  } else {
+    px(ctx, p.metalDark, cx - 1, 6 + by, 2, 2);
+  }
+  px(ctx, p.metal, cx - 9, 12 + by, 18, 1);
+  px(ctx, p.metal, cx - 10, 13 + by, 20, 8);
+  px(ctx, p.metal, cx - 9, 21 + by, 18, 1);
+  px(ctx, p.metalDark, cx + 9, 13 + by, 1, 8);
+  px(ctx, p.metalDark, cx - 10, 20 + by, 20, 1);
+  px(ctx, p.screen, cx - 7, 14 + by, 14, 6);
+  px(ctx, p.metal, cx - 8, 23 + by, 16, 1);
+  px(ctx, p.metal, cx - 9, 24 + by, 18, 7);
+  px(ctx, p.metal, cx - 8, 31 + by, 16, 1);
+  px(ctx, p.metalDark, cx + 8, 24 + by, 1, 7);
+  px(ctx, p.metal, cx - 11, 25 + by, 2, 4);
+  px(ctx, p.metal, cx + 9, 25 + by, 2, 4);
+  px(ctx, key === "dead" ? p.metalDark : p.eye, cx - 1, 26 + by, 2, 2);
+  px(ctx, p.wheel, cx - 7, 32 + by, 14, 3);
+  px(ctx, p.metalDark, cx - 7, 34 + by, 14, 1);
+  px(ctx, p.metal, cx - 1, 32 + by, 2, 2);
+}
+
+function drawRobotFace(ctx, p, key, cx, by) {
+  const E = p.eye;
+  const y = 16 + by;
+  if (key === "happy") {
+    px(ctx, E, cx - 6, y + 1, 1, 1);
+    px(ctx, E, cx - 5, y, 2, 1);
+    px(ctx, E, cx - 3, y + 1, 1, 1);
+    px(ctx, E, cx + 2, y + 1, 1, 1);
+    px(ctx, E, cx + 3, y, 2, 1);
+    px(ctx, E, cx + 5, y + 1, 1, 1);
+    px(ctx, E, cx - 3, y + 2, 1, 1);
+    px(ctx, E, cx - 2, y + 3, 4, 1);
+    px(ctx, E, cx + 2, y + 2, 1, 1);
+    return;
+  }
+  if (key === "healthy") {
+    px(ctx, E, cx - 5, y, 2, 2);
+    px(ctx, E, cx + 3, y, 2, 2);
+    return;
+  }
+  if (key === "unhappy") {
+    px(ctx, E, cx - 6, y, 1, 1);
+    px(ctx, E, cx - 5, y + 1, 2, 1);
+    px(ctx, E, cx + 3, y + 1, 2, 1);
+    px(ctx, E, cx + 5, y, 1, 1);
+    return;
+  }
+  if (key === "stressed") {
+    px(ctx, E, cx - 6, y - 1, 1, 1);
+    px(ctx, E, cx - 5, y, 1, 1);
+    px(ctx, E, cx - 4, y + 1, 1, 1);
+    px(ctx, E, cx - 5, y + 2, 1, 1);
+    px(ctx, E, cx - 6, y + 3, 1, 1);
+    px(ctx, E, cx + 5, y - 1, 1, 1);
+    px(ctx, E, cx + 4, y, 1, 1);
+    px(ctx, E, cx + 3, y + 1, 1, 1);
+    px(ctx, E, cx + 4, y + 2, 1, 1);
+    px(ctx, E, cx + 5, y + 3, 1, 1);
+    return;
+  }
+  if (key === "unhealthy") {
+    px(ctx, E, cx - 6, y + 1, 3, 1);
+    px(ctx, E, cx + 3, y + 1, 3, 1);
+    return;
+  }
+  if (key === "dead") {
+    px(ctx, E, cx - 4, y + 1, 8, 1);
+  }
+}
+
+function drawRobotCharacter(ctx, frame, stage) {
+  ctx.save();
+  ctx.translate(0, SCENE_Y_OFFSET);
+  const cx = T / 2;
+  const phase = frame % 6;
+  const key = stage.key;
+  const palette = getRobotPalette(stage);
+  const bob = key === "dead" ? 0 : phase === 2 || phase === 4 ? -1 : 0;
+  const jitter = key === "stressed" ? (phase % 2 === 0 ? -1 : 1) : 0;
+  drawRobotBody(ctx, palette, cx + jitter, bob, key, phase);
+  drawRobotFace(ctx, palette, key, cx + jitter, bob);
+  ctx.restore();
+}
+
 function drawCompanionCharacter(ctx, frame, stage, petType) {
   if (petType === "alien") {
     drawAlienCharacter(ctx, frame, stage);
@@ -1050,6 +1174,10 @@ function drawCompanionCharacter(ctx, frame, stage, petType) {
   }
   if (petType === "ghost") {
     drawGhostCharacter(ctx, frame, stage);
+    return;
+  }
+  if (petType === "robot") {
+    drawRobotCharacter(ctx, frame, stage);
     return;
   }
   drawDogCharacter(ctx, frame, stage);

@@ -1608,6 +1608,46 @@ function drawGhostCharacter(ctx, px, py, dir, frame) {
   d(E, cx + 8 + lean, y, 1, 3); d(E, cx + 9 + lean, y + 1, 1, 1); d(E, cx + 7 + lean, y + 1, 1, 1);
 }
 
+// ─── Robot character drawing (rolls on a wheel, screen-face) ────────────────
+const ROBOT = {
+  metal: "#9fb4c9", metalDark: "#7891ab", screen: "#222a38",
+  eye: "#5fe0d8", bulb: "#f0934e", wheel: "#3a4452",
+};
+
+function drawRobotCharacter(ctx, px, py, dir, frame) {
+  const cx = px * T + T / 2;
+  const cy = py * T + T / 2;
+  const phase = frame % 6;
+  const blink = phase < 3;
+  const d = (fs, rx, ry, rw, rh) => { ctx.fillStyle = fs; ctx.fillRect(rx, ry, rw, rh); };
+  const M = ROBOT.metal, MD = ROBOT.metalDark, S = ROBOT.screen, E = ROBOT.eye, BU = ROBOT.bulb, WH = ROBOT.wheel;
+
+  ctx.fillStyle = "rgba(0,0,0,0.2)";
+  ctx.beginPath(); ctx.ellipse(cx, cy + 11, 11, 3, 0, 0, Math.PI * 2); ctx.fill();
+
+  d(M, cx - 1, cy - 19, 2, 4);
+  d(BU, cx - 1, cy - 22, 2, 2); if (blink) d(BU, cx, cy - 23, 1, 1);
+  d(M, cx - 9, cy - 16, 18, 1); d(M, cx - 10, cy - 15, 20, 8); d(M, cx - 9, cy - 7, 18, 1);
+  d(MD, cx + 9, cy - 15, 1, 8); d(MD, cx - 10, cy - 8, 20, 1);
+
+  if (dir === "up") {
+    d(MD, cx - 6, cy - 14, 12, 6);
+    d(M, cx - 5, cy - 13, 10, 1); d(M, cx - 5, cy - 11, 10, 1); d(M, cx - 5, cy - 9, 10, 1);
+  } else {
+    d(S, cx - 7, cy - 14, 14, 6);
+    const lean = dir === "left" ? -2 : dir === "right" ? 2 : 0;
+    d(E, cx - 5 + lean, cy - 12, 2, 2); d(E, cx + 3 + lean, cy - 12, 2, 2);
+  }
+
+  d(M, cx - 8, cy - 5, 16, 1); d(M, cx - 9, cy - 4, 18, 7); d(M, cx - 8, cy + 3, 16, 1);
+  d(MD, cx + 8, cy - 4, 1, 7);
+  d(M, cx - 11, cy - 3, 2, 4); d(M, cx + 9, cy - 3, 2, 4);
+  d(E, cx - 1, cy - 2, 2, 2);
+  d(WH, cx - 7, cy + 4, 14, 4); d(MD, cx - 7, cy + 7, 14, 1);
+  d(M, cx - 6 + (frame % 6), cy + 5, 1, 2);
+  d(M, cx - 1, cy + 5, 2, 2);
+}
+
 function drawInteractHint(ctx, tileX, tileY, frame) {
   const cx = tileX * T + T / 2; const cy = tileY * T - 6;
   const bounce = Math.sin(frame * 0.08) * 4;
@@ -2020,8 +2060,15 @@ export default function LoadingMiniGame({ supportLang = "en" }) {
           ? drawAlienCharacter
           : pt === "ghost"
             ? drawGhostCharacter
-            : drawDogCharacter;
-      const charFrame = pt === "ghost" ? s.frame : s.moving ? s.walkFrame : 0;
+            : pt === "robot"
+              ? drawRobotCharacter
+              : drawDogCharacter;
+      const charFrame =
+        pt === "ghost" || pt === "robot"
+          ? s.frame
+          : s.moving
+            ? s.walkFrame
+            : 0;
       drawCharacter(ctx, s.px, s.py, s.dir, charFrame);
       ctx.restore();
 
