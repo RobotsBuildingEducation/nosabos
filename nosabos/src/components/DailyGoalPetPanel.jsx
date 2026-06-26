@@ -25,7 +25,7 @@ import {
   DAILY_GOAL_PET_HEALTH_LOSS,
   clampDailyGoalPetHealth,
 } from "../utils/dailyGoalPet";
-import { normalizePetType } from "../utils/petTypes";
+import { getEffectivePetType, normalizePetType } from "../utils/petTypes";
 import CompanionCustomizeModal from "./CompanionCustomizeModal";
 import { getCustomizeModalCopy } from "./companionCustomizeCopy";
 
@@ -1588,6 +1588,7 @@ export default function DailyGoalPetPanel({
   // companion") when empty. Edited from the daily-quest pet panel.
   petName = "",
   petType = "dog",
+  companionLevel = 1,
   // When provided, a pencil button by the title opens the customize modal.
   onCustomizePet = null,
 }) {
@@ -1598,7 +1599,7 @@ export default function DailyGoalPetPanel({
   const safeHealth = clampDailyGoalPetHealth(health);
   const displayTitle =
     (typeof petName === "string" && petName.trim()) || copy.title;
-  const resolvedPetType = normalizePetType(petType);
+  const resolvedPetType = getEffectivePetType(petType, companionLevel);
   const stage = useMemo(
     () => getPetStage(safeHealth, copy, isLightTheme),
     [copy, isLightTheme, safeHealth],
@@ -1859,6 +1860,7 @@ export default function DailyGoalPetPanel({
         isLightTheme={isLightTheme}
         petName={petName}
         petType={petType}
+        companionLevel={companionLevel}
         placeholder={copy.title}
         stage={stage}
         drawCompanion={drawCompanionCharacter}

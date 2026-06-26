@@ -24,6 +24,7 @@ import {
 import {
   FiEdit2,
   FiHeart,
+  FiLock,
   FiTrendingDown,
   FiTrendingUp,
 } from "react-icons/fi";
@@ -44,7 +45,13 @@ import {
   DAILY_GOAL_PET_HEALTH_LOSS,
   clampDailyGoalPetHealth,
 } from "../utils/dailyGoalPet";
-import { PET_TYPES, normalizePetType } from "../utils/petTypes";
+import {
+  PET_TYPES,
+  getEffectivePetType,
+  getPetUnlockLevel,
+  isPetTypeUnlocked,
+  normalizePetType,
+} from "../utils/petTypes";
 import { getCustomizeModalCopy } from "./companionCustomizeCopy";
 
 const TILE = 16;
@@ -57,6 +64,10 @@ const APP_BORDER = "var(--app-border)";
 const APP_BORDER_STRONG = "var(--app-border-strong)";
 const APP_TEXT_PRIMARY = "var(--app-text-primary)";
 const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
+const UNLOCKED_TEXT_LIGHT = "#0f766e";
+const UNLOCKED_TEXT_DARK = "#5eead4";
+const ACTIVE_UNLOCKED_TEXT_LIGHT = "#0d9488";
+const ACTIVE_UNLOCKED_TEXT_DARK = "#99f6e4";
 
 const NAME_MAX_LENGTH = 24;
 
@@ -1645,6 +1656,7 @@ export default function PlatePetPanel({
   // Custom companion name; falls back to the localized default when empty.
   petName = "",
   petType = "dog",
+  companionLevel = 1,
   // When provided, a pencil button next to the title opens the customize modal.
   onCustomizePet = null,
 }) {
@@ -1660,7 +1672,7 @@ export default function PlatePetPanel({
   const isCelebration = variant === "celebration";
 
   const trimmedName = typeof petName === "string" ? petName.trim() : "";
-  const resolvedPetType = normalizePetType(petType);
+  const resolvedPetType = getEffectivePetType(petType, companionLevel);
   const displayTitle = trimmedName || copy.title;
   const canCustomize = typeof onCustomizePet === "function" && !isCelebration;
   const customizeModalCopy = getCustomizeModalCopy(resolvedLang);
@@ -1677,7 +1689,7 @@ export default function PlatePetPanel({
 
   const submitCustomize = () => {
     const name = draftName.trim().slice(0, NAME_MAX_LENGTH);
-    const type = normalizePetType(draftPetType);
+    const type = getEffectivePetType(draftPetType, companionLevel);
 
     if (typeof onCustomizePet === "function") {
       onCustomizePet({ name, petType: type });
@@ -2062,6 +2074,18 @@ export default function PlatePetPanel({
                 <SimpleGrid columns={2} spacing={2}>
                   {PET_TYPES.map((type) => {
                     const active = draftPetType === type;
+                    const unlockLevel = getPetUnlockLevel(type);
+                    const unlocked = isPetTypeUnlocked(type, companionLevel);
+                    const levelLabel =
+                      unlockLevel <= 1
+                        ? customizeModalCopy.starter
+                        : customizeModalCopy.unlockLevel.replace(
+                            "{level}",
+                            String(unlockLevel),
+                          );
+                    const ariaLabel = unlocked
+                      ? `${customizeModalCopy[type]}, ${levelLabel}`
+                      : `${customizeModalCopy[type]}, ${customizeModalCopy.locked}, ${levelLabel}`;
                     return (
                       <Button
                         key={type}
@@ -2072,7 +2096,8 @@ export default function PlatePetPanel({
                         py={2}
                         variant="ghost"
                         aria-pressed={active}
-                        aria-label={customizeModalCopy[type]}
+                        aria-label={ariaLabel}
+                        isDisabled={!unlocked}
                         border="2px solid"
                         borderColor={
                           active
@@ -2099,6 +2124,10 @@ export default function PlatePetPanel({
                               : "whiteAlpha.100",
                         }}
                         _active={{ bg: undefined }}
+                        _disabled={{
+                          opacity: isLightTheme ? 0.62 : 0.48,
+                          cursor: "not-allowed",
+                        }}
                         onClick={() => setDraftPetType(type)}
                       >
                         <VStack spacing={1.5} justify="center">
@@ -2110,15 +2139,47 @@ export default function PlatePetPanel({
                             color={
                               active
                                 ? isLightTheme
-                                  ? "#2f6a57"
-                                  : "teal.200"
-                                : isLightTheme
-                                  ? APP_TEXT_SECONDARY
-                                  : "gray.300"
+                                  ? ACTIVE_UNLOCKED_TEXT_LIGHT
+                                  : ACTIVE_UNLOCKED_TEXT_DARK
+                                : unlocked
+                                  ? isLightTheme
+                                    ? UNLOCKED_TEXT_LIGHT
+                                    : UNLOCKED_TEXT_DARK
+                                  : isLightTheme
+                                    ? APP_TEXT_SECONDARY
+                                    : "gray.300"
                             }
                           >
                             {customizeModalCopy[type]}
                           </Text>
+                          <HStack
+                            spacing={1}
+                            minH="14px"
+                            color={
+                              unlocked
+                                ? active
+                                  ? isLightTheme
+                                    ? ACTIVE_UNLOCKED_TEXT_LIGHT
+                                    : ACTIVE_UNLOCKED_TEXT_DARK
+                                  : isLightTheme
+                                    ? UNLOCKED_TEXT_LIGHT
+                                    : UNLOCKED_TEXT_DARK
+                                : isLightTheme
+                                  ? "#8a6b32"
+                                  : "yellow.200"
+                            }
+                          >
+                            {!unlocked ? (
+                              <Box as={FiLock} boxSize="10px" />
+                            ) : null}
+                            <Text
+                              fontSize="10px"
+                              fontWeight="bold"
+                              lineHeight="1"
+                            >
+                              {levelLabel}
+                            </Text>
+                          </HStack>
                         </VStack>
                       </Button>
                     );

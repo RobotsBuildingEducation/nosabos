@@ -134,6 +134,7 @@ import HelpChatFab from "./components/HelpChatFab";
 import { WaveBar } from "./components/WaveBar";
 import DailyGoalModal from "./components/DailyGoalModal";
 import DailyGoalPetPanel from "./components/DailyGoalPetPanel.jsx";
+import { getCustomizeModalCopy } from "./components/companionCustomizeCopy";
 import { IdentityPanel } from "./components/IdentityDrawer";
 import SubscriptionGate from "./components/SubscriptionGate";
 import { useNostrWalletStore } from "./hooks/useNostrWalletStore";
@@ -232,7 +233,13 @@ import {
   getDailyGoalPetHealth,
   hasDailyGoalResetExpired,
 } from "./utils/dailyGoalPet";
-import { normalizePetType } from "./utils/petTypes";
+import {
+  getCompanionLevelFromXp,
+  getEffectivePetType,
+  getNewlyUnlockedPetTypes,
+  getPetUnlockLevel,
+  normalizePetType,
+} from "./utils/petTypes";
 import { normalizeThemeMode, useThemeStore } from "./useThemeStore";
 import {
   DEFAULT_SUPPORT_LANGUAGE,
@@ -2463,14 +2470,24 @@ export default function App({ onBootReady } = {}) {
     [user?.dailyXpHistory],
   );
 
+  const companionXp = useMemo(() => {
+    const languageXp = getLanguageXp(user?.progress || {}, resolvedTargetLang);
+    return Number.isFinite(languageXp) && languageXp >= 0 ? languageXp : 0;
+  }, [user?.progress, resolvedTargetLang]);
+
+  const companionLevel = useMemo(
+    () => getCompanionLevelFromXp(companionXp),
+    [companionXp],
+  );
+
   const dailyGoalPetHealth = useMemo(
     () => getDailyGoalPetHealth(user || {}),
     [user],
   );
 
   const dailyGoalPetType = useMemo(
-    () => normalizePetType(user?.dailyGoalPetType),
-    [user?.dailyGoalPetType],
+    () => getEffectivePetType(user?.dailyGoalPetType, companionLevel),
+    [companionLevel, user?.dailyGoalPetType],
   );
 
   // const { sendOneSatToNpub, initWalletService, init, walletBalance } =
@@ -2860,6 +2877,64 @@ export default function App({ onBootReady } = {}) {
     useState(false);
   const [completedProficiencyData, setCompletedProficiencyData] =
     useState(null);
+
+  const [companionUnlockModal, setCompanionUnlockModal] = useState(null);
+  const [companionUnlockQueueTick, setCompanionUnlockQueueTick] = useState(0);
+  const companionUnlockQueueRef = useRef([]);
+  const companionUnlockFlushTimerRef = useRef(null);
+  const companionUnlockSeenRef = useRef(new Set());
+
+  const queueCompanionUnlocks = useCallback(
+    (types, reachedLevel, options = {}) => {
+      const unlockTypes = Array.isArray(types) ? types : [];
+      if (!unlockTypes.length) return;
+
+      const companionCopy = getCustomizeModalCopy(appLanguage);
+      const nextUnlocks = unlockTypes
+        .map((type) => {
+          const normalizedType = normalizePetType(type);
+          const unlockLevel = getPetUnlockLevel(normalizedType);
+          const key = `${activeNpub || "local"}:${normalizedType}`;
+          if (companionUnlockSeenRef.current.has(key)) return null;
+          companionUnlockSeenRef.current.add(key);
+          return {
+            type: normalizedType,
+            name: companionCopy[normalizedType] || normalizedType,
+            unlockLevel,
+            reachedLevel,
+            expectsModal: Boolean(options.expectsModal),
+          };
+        })
+        .filter(Boolean);
+
+      if (!nextUnlocks.length) return;
+      companionUnlockQueueRef.current.push(...nextUnlocks);
+      setCompanionUnlockQueueTick((tick) => tick + 1);
+    },
+    [activeNpub, appLanguage],
+  );
+
+  useEffect(() => {
+    return () => {
+      if (companionUnlockFlushTimerRef.current) {
+        clearTimeout(companionUnlockFlushTimerRef.current);
+        companionUnlockFlushTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    return useModalStore.subscribe((state, prev) => {
+      if (
+        state.dailyGoalOpen === prev.dailyGoalOpen &&
+        state.timerModalOpen === prev.timerModalOpen
+      ) {
+        return;
+      }
+      if (!companionUnlockQueueRef.current.length) return;
+      setCompanionUnlockQueueTick((tick) => tick + 1);
+    });
+  }, []);
 
   // Helper functions for tracking shown proficiency celebrations in user document
   const getCelebrationKey = (level, mode) => `${level}-${mode}`;
@@ -5574,7 +5649,7 @@ export default function App({ onBootReady } = {}) {
       const name = String(rawName || "")
         .trim()
         .slice(0, 24);
-      const petType = normalizePetType(rawPetType);
+      const petType = getEffectivePetType(rawPetType, companionLevel);
 
       // Optimistic local update so the quest panel, goal modal, and
       // celebration all reflect the customization immediately.
@@ -5606,8 +5681,30 @@ export default function App({ onBootReady } = {}) {
         });
       });
     },
-    [activeNpub, appLanguage, patchUser, toast],
+    [activeNpub, appLanguage, companionLevel, patchUser, toast],
   );
+
+  const handleCloseCompanionUnlockModal = useCallback(() => {
+    setCompanionUnlockModal(null);
+    setCompanionUnlockQueueTick((tick) => tick + 1);
+  }, []);
+
+  const handleEquipCompanionUnlock = useCallback(() => {
+    if (companionUnlockModal?.type) {
+      handleCustomizePet({
+        name: user?.dailyGoalPetName || "",
+        petType: companionUnlockModal.type,
+      });
+    }
+    setCompanionUnlockModal(null);
+    setCompanionUnlockQueueTick((tick) => tick + 1);
+  }, [companionUnlockModal, handleCustomizePet, user?.dailyGoalPetName]);
+
+  useEffect(() => {
+    if (companionUnlockModal) {
+      playSound(sparkleSound);
+    }
+  }, [companionUnlockModal, playSound]);
 
   const handleTimerModalClose = useCallback(() => {
     const shouldOpenProficiency = shouldShowProficiencyAfterTimer;
@@ -5818,6 +5915,32 @@ export default function App({ onBootReady } = {}) {
       }
       if (Object.keys(dailyPatch).length) patchUser?.(dailyPatch);
 
+      const awardedTargetLang =
+        typeof detail.targetLang === "string"
+          ? detail.targetLang.trim().toLowerCase()
+          : "";
+      const activeTargetLang = String(resolvedTargetLang || "")
+        .trim()
+        .toLowerCase();
+      const xpAmount = Math.max(0, Number(detail.amount) || 0);
+      const nextLanguageXp = Number(detail.languageXp);
+      if (
+        xpAmount > 0 &&
+        Number.isFinite(nextLanguageXp) &&
+        (!awardedTargetLang || awardedTargetLang === activeTargetLang)
+      ) {
+        const source = String(detail.source || "");
+        const previousCompanionLevel = getCompanionLevelFromXp(
+          Math.max(0, nextLanguageXp - xpAmount),
+        );
+        const nextCompanionLevel = getCompanionLevelFromXp(nextLanguageXp);
+        queueCompanionUnlocks(
+          getNewlyUnlockedPetTypes(previousCompanionLevel, nextCompanionLevel),
+          nextCompanionLevel,
+          { expectsModal: source === "lesson" || source === "speak" },
+        );
+      }
+
       console.log("hasSpendableBalance", hasSpendableBalance);
       if (!hasSpendableBalance) return;
       const mark = Date.now();
@@ -5839,6 +5962,8 @@ export default function App({ onBootReady } = {}) {
     activeNpub,
     hasSpendableBalance,
     patchUser,
+    queueCompanionUnlocks,
+    resolvedTargetLang,
     sendOneSatToNpub,
     user?.identity,
   ]);
@@ -6044,10 +6169,32 @@ export default function App({ onBootReady } = {}) {
         return;
       }
 
-      const diff = newXp - prevXpRef.current;
+      const previousXp = prevXpRef.current;
+      const diff = newXp - previousXp;
       prevXpRef.current = newXp;
 
       if (diff > 0) {
+        const previousCompanionXp = getLanguageXp(
+          existingProgress,
+          resolvedTargetLang,
+        );
+        const nextCompanionXp = getLanguageXp(
+          progressPayload,
+          resolvedTargetLang,
+        );
+        if (nextCompanionXp > previousCompanionXp) {
+          const previousCompanionLevel =
+            getCompanionLevelFromXp(previousCompanionXp);
+          const nextCompanionLevel = getCompanionLevelFromXp(nextCompanionXp);
+          const newlyUnlockedPets = getNewlyUnlockedPetTypes(
+            previousCompanionLevel,
+            nextCompanionLevel,
+          );
+          queueCompanionUnlocks(newlyUnlockedPets, nextCompanionLevel, {
+            expectsModal: viewMode === "lesson" && Boolean(activeLesson),
+          });
+        }
+
         const recentlySent =
           Date.now() - lastLocalXpEventRef.current <= 1500 &&
           lastLocalXpEventRef.current !== 0;
@@ -6143,6 +6290,7 @@ export default function App({ onBootReady } = {}) {
     sendOneSatToNpub,
     pickRandomFeature,
     patchUser,
+    queueCompanionUnlocks,
     maybePostNostrProgress,
     viewMode,
     activeLesson,
@@ -7410,6 +7558,97 @@ export default function App({ onBootReady } = {}) {
   const plateCelebrationFlushTimerRef = useRef(null);
   const plateClearedCelebratedKeyRef = useRef("");
 
+  const flushCompanionUnlockWhenQuiet = useCallback(() => {
+    if (companionUnlockFlushTimerRef.current) {
+      clearTimeout(companionUnlockFlushTimerRef.current);
+      companionUnlockFlushTimerRef.current = null;
+    }
+    if (companionUnlockModal || !companionUnlockQueueRef.current.length) return;
+
+    const startedAt = Date.now();
+    const expectsModal = companionUnlockQueueRef.current.some(
+      (item) => item?.expectsModal,
+    );
+    const chain = { sawModal: false, quietChecks: 0 };
+
+    const hasModalSurface = () => {
+      if (typeof document !== "undefined") {
+        const activeModalStack = Array.from(
+          document.querySelectorAll(
+            ".chakra-modal__content-container, .chakra-modal__overlay",
+          ),
+        ).filter((element) => {
+          const style = window.getComputedStyle(element);
+          return (
+            style.display !== "none" &&
+            style.visibility !== "hidden" &&
+            element.getAttribute("aria-hidden") !== "true"
+          );
+        }).length;
+        if (activeModalStack > 0) return true;
+      }
+
+      const modalStore = useModalStore.getState();
+      return Boolean(
+        modalStore.dailyGoalOpen ||
+          modalStore.timerModalOpen ||
+          pendingDailyGoalCelebrationRef.current ||
+          pendingLessonCompletionRef.current ||
+          pendingTutorialBitcoinModalRef.current ||
+          pendingPlateCelebrationRef.current,
+      );
+    };
+
+    const showQueued = () => {
+      const nextUnlock = companionUnlockQueueRef.current.shift() || null;
+      if (!nextUnlock) return;
+      setCompanionUnlockModal((prev) => prev || nextUnlock);
+    };
+
+    const tick = () => {
+      companionUnlockFlushTimerRef.current = null;
+      if (companionUnlockModal || !companionUnlockQueueRef.current.length) {
+        return;
+      }
+
+      if (hasModalSurface()) {
+        chain.sawModal = true;
+        chain.quietChecks = 0;
+        companionUnlockFlushTimerRef.current = setTimeout(tick, 90);
+        return;
+      }
+
+      const minimumWaitMs = expectsModal ? 900 : 120;
+      if (!chain.sawModal && Date.now() - startedAt < minimumWaitMs) {
+        companionUnlockFlushTimerRef.current = setTimeout(tick, 80);
+        return;
+      }
+
+      chain.quietChecks += 1;
+      const neededQuietChecks = 1;
+      if (chain.quietChecks < neededQuietChecks) {
+        companionUnlockFlushTimerRef.current = setTimeout(tick, 80);
+        return;
+      }
+
+      showQueued();
+    };
+
+    companionUnlockFlushTimerRef.current = setTimeout(
+      tick,
+      expectsModal ? 90 : 0,
+    );
+  }, [companionUnlockModal]);
+
+  useEffect(() => {
+    if (!companionUnlockQueueRef.current.length || companionUnlockModal) return;
+    flushCompanionUnlockWhenQuiet();
+  }, [
+    companionUnlockModal,
+    companionUnlockQueueTick,
+    flushCompanionUnlockWhenQuiet,
+  ]);
+
   const flushPlateCelebrationWhenQuiet = useCallback(() => {
     if (plateCelebrationFlushTimerRef.current) {
       clearTimeout(plateCelebrationFlushTimerRef.current);
@@ -7896,6 +8135,7 @@ export default function App({ onBootReady } = {}) {
         petHealth={dailyGoalPetHealth}
         petName={user?.dailyGoalPetName || ""}
         petType={dailyGoalPetType}
+        companionLevel={companionLevel}
         onCustomizePet={handleCustomizePet}
         petLastOutcome={user?.dailyGoalPetLastOutcome || null}
         petLastDelta={user?.dailyGoalPetLastDelta ?? null}
@@ -8014,6 +8254,7 @@ export default function App({ onBootReady } = {}) {
               petHealth={dailyGoalPetHealth}
               petName={user?.dailyGoalPetName || ""}
               petType={dailyGoalPetType}
+              companionLevel={companionLevel}
               onCustomizePet={handleCustomizePet}
               completedGoalDates={dailyGoalCompletedDates}
               dailyXpHistory={dailyGoalXpHistory}
@@ -8509,6 +8750,7 @@ export default function App({ onBootReady } = {}) {
                 health={celebrationPetHealth}
                 petName={user?.dailyGoalPetName || ""}
                 petType={dailyGoalPetType}
+                companionLevel={companionLevel}
                 lastOutcome="achieved"
                 lastDelta={celebrationPetDelta}
                 variant="celebration"
@@ -8536,6 +8778,132 @@ export default function App({ onBootReady } = {}) {
                   zh: "继续学习",
                 })}
               </Button>
+            </VStack>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+
+      {/* Companion unlock celebration modal */}
+      <Modal
+        isOpen={!!companionUnlockModal}
+        onClose={handleCloseCompanionUnlockModal}
+        returnFocusOnClose={false}
+        isCentered
+        size="lg"
+        motionPreset="none"
+      >
+        <ModalOverlay
+          motionProps={nativeOverlayMotionProps}
+          bg="var(--app-overlay)"
+        />
+        <ModalContent
+          motionProps={nativeModalMotionProps}
+          bg="linear-gradient(135deg, #0891b2 0%, #06b6d4 42%, #0e7490 100%)"
+          color="white"
+          borderRadius="2xl"
+          boxShadow="0 28px 80px rgba(8, 145, 178, 0.52)"
+          maxW={{ base: "90%", sm: "md" }}
+        >
+          <ModalCloseButton
+            color="white"
+            left={appLanguage === "ar" ? 3 : undefined}
+            right={appLanguage === "ar" ? "auto" : undefined}
+          />
+          <ModalBody py={10} px={{ base: 5, md: 8 }}>
+            <VStack spacing={6} textAlign="center">
+              <VStack spacing={2}>
+                <Text fontSize={{ base: "2xl", md: "3xl" }} fontWeight="bold">
+                  {uiCopy(appLanguage, {
+                    en: "{companion} unlocked!",
+                    es: "¡Desbloqueaste {companion}!",
+                    pt: "{companion} desbloqueado!",
+                    it: "{companion} sbloccato!",
+                    fr: "{companion} debloque !",
+                    ja: "{companion}をアンロック！",
+                    hi: "{companion} अनलॉक हुआ!",
+                    ar: "{companion} اتفتح!",
+                    zh: "{companion} 已解锁！",
+                  }).replace(
+                    "{companion}",
+                    companionUnlockModal?.name || "",
+                  )}
+                </Text>
+                <Text fontSize="md" opacity={0.9} lineHeight="1.45">
+                  {uiCopy(appLanguage, {
+                    en: "You reached Level {level}. This companion can join you now.",
+                    es: "Llegaste al nivel {level}. Este compañero ya puede acompañarte.",
+                    pt: "Voce chegou ao nivel {level}. Este companheiro ja pode ir com voce.",
+                    it: "Hai raggiunto il livello {level}. Questo compagno ora puo unirsi a te.",
+                    fr: "Tu as atteint le niveau {level}. Ce compagnon peut maintenant te rejoindre.",
+                    ja: "レベル{level}に到達しました。この相棒を連れていけます。",
+                    hi: "आप स्तर {level} पर पहुंच गए। यह साथी अब आपके साथ आ सकता है।",
+                    ar: "وصلت للمستوى {level}. الرفيق ده يقدر ينضم لك دلوقتي.",
+                    zh: "你达到了等级 {level}。这个伙伴现在可以加入你了。",
+                  }).replace(
+                    "{level}",
+                    String(companionUnlockModal?.unlockLevel || companionLevel),
+                  )}
+                </Text>
+              </VStack>
+
+              <DailyGoalPetPanel
+                lang={appLanguage}
+                health={100}
+                petName={companionUnlockModal?.name || ""}
+                petType={companionUnlockModal?.type || "dog"}
+                companionLevel={
+                  companionUnlockModal?.reachedLevel || companionLevel
+                }
+                variant="celebration"
+                showPreview={false}
+              />
+
+              <VStack spacing={3} w="100%">
+                <Button
+                  size="lg"
+                  width="100%"
+                  bg="white"
+                  color="#0e7490"
+                  _hover={{ bg: "rgba(255, 255, 255, 0.92)" }}
+                  _active={{ bg: "rgba(255, 255, 255, 0.82)" }}
+                  onClick={handleEquipCompanionUnlock}
+                  fontWeight="bold"
+                  fontSize="lg"
+                  py={6}
+                >
+                  {uiCopy(appLanguage, {
+                    en: "Equip",
+                    es: "Equipar",
+                    pt: "Equipar",
+                    it: "Equipaggia",
+                    fr: "Equiper",
+                    ja: "設定する",
+                    hi: "लगाएँ",
+                    ar: "استخدمه",
+                    zh: "装备",
+                  })}
+                </Button>
+                <Button
+                  size="md"
+                  width="100%"
+                  variant="ghost"
+                  color="white"
+                  _hover={{ bg: "rgba(207, 250, 254, 0.24)" }}
+                  onClick={handleCloseCompanionUnlockModal}
+                >
+                  {uiCopy(appLanguage, {
+                    en: "Keep current",
+                    es: "Mantener actual",
+                    pt: "Manter atual",
+                    it: "Mantieni attuale",
+                    fr: "Garder l'actuel",
+                    ja: "今のまま",
+                    hi: "मौजूदा रखें",
+                    ar: "خليك على الحالي",
+                    zh: "保留当前",
+                  })}
+                </Button>
+              </VStack>
             </VStack>
           </ModalBody>
         </ModalContent>

@@ -91,6 +91,7 @@ export default function DailyPlateHome({
   // Companion name/type + customize handler for the pet panel's pencil button.
   petName = "",
   petType = "dog",
+  companionLevel = 1,
   onCustomizePet,
 }) {
   const playSound = useSoundSettings((s) => s.playSound);
@@ -360,6 +361,7 @@ export default function DailyPlateHome({
           dailyGoalXp={dailyGoalXp}
           petName={petName}
           petType={petType}
+          companionLevel={companionLevel}
           onCustomizePet={onCustomizePet}
         />
         <PlateActivityHeatmap
