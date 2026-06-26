@@ -8857,6 +8857,7 @@ export default function App({ onBootReady } = {}) {
                   companionUnlockModal?.reachedLevel || companionLevel
                 }
                 variant="celebration"
+                celebrationTone="unlock"
                 showPreview={false}
               />
 

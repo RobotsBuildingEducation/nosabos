@@ -1521,12 +1521,16 @@ function CompanionCanvas({
   petType = "dog",
   isLightTheme,
   isCelebration = false,
+  celebrationTone = "default",
 }) {
   const canvasRef = useRef(null);
   const [frame, setFrame] = useState(0);
   const resolvedPetType = normalizePetType(petType);
+  const isUnlockCelebration = isCelebration && celebrationTone === "unlock";
   const canvasBackground = isCelebration
-    ? isLightTheme
+    ? isUnlockCelebration
+      ? "rgba(255, 255, 255, 0.74)"
+      : isLightTheme
       ? "rgba(255, 253, 249, 0.52)"
       : "rgba(255, 255, 255, 0.22)"
     : stage.background;
@@ -1567,7 +1571,9 @@ function CompanionCanvas({
       borderRadius={{ base: "lg", md: "xl" }}
       border="1px solid"
       borderColor={
-        isCelebration
+        isUnlockCelebration
+          ? "rgba(14, 165, 233, 0.18)"
+          : isCelebration
           ? "rgba(255, 255, 255, 0.38)"
           : isLightTheme
             ? "rgba(91, 75, 58, 0.12)"
@@ -1583,6 +1589,7 @@ export default function DailyGoalPetPanel({
   lang = "en",
   health = DAILY_GOAL_PET_DEFAULT_HEALTH,
   variant = "setup",
+  celebrationTone = "default",
   showPreview = true,
   // Custom companion name; falls back to the localized default ("Your
   // companion") when empty. Edited from the daily-quest pet panel.
@@ -1605,22 +1612,47 @@ export default function DailyGoalPetPanel({
     [copy, isLightTheme, safeHealth],
   );
   const isCelebration = variant === "celebration";
+  const isUnlockCelebration = isCelebration && celebrationTone === "unlock";
   const canCustomize = typeof onCustomizePet === "function" && !isCelebration;
   const customizeModalCopy = getCustomizeModalCopy(resolvedLang);
   const customizeModal = useDisclosure();
   const rewardColor = isLightTheme ? "#48765f" : "green.200";
   const penaltyColor = isLightTheme ? "#a06a3b" : "orange.200";
   const previewCardBg = isLightTheme ? APP_SURFACE_ELEVATED : "blackAlpha.220";
-  const panelBg = isCelebration
+  const panelBg = isUnlockCelebration
+    ? "linear-gradient(180deg, rgba(252, 254, 255, 0.96) 0%, rgba(232, 250, 255, 0.92) 100%)"
+    : isCelebration
     ? isLightTheme
       ? stage.background
       : "rgba(255, 255, 255, 0.18)"
     : stage.background;
-  const panelBorderColor = isCelebration
+  const panelBorderColor = isUnlockCelebration
+    ? "rgba(207, 250, 254, 0.86)"
+    : isCelebration
     ? "rgba(255, 255, 255, 0.38)"
     : isLightTheme
       ? APP_BORDER
       : "transparent";
+  const panelTextColor = isUnlockCelebration
+    ? "#1f2937"
+    : isLightTheme
+      ? APP_TEXT_PRIMARY
+      : undefined;
+  const panelSecondaryTextColor = isUnlockCelebration
+    ? "#0f766e"
+    : isLightTheme
+      ? APP_TEXT_SECONDARY
+      : undefined;
+  const panelBadgeBg = isUnlockCelebration
+    ? "rgba(6, 182, 212, 0.16)"
+    : isLightTheme
+      ? stage.badgeBg
+      : undefined;
+  const panelBadgeColor = isUnlockCelebration
+    ? "#0f766e"
+    : isLightTheme
+      ? stage.badgeColor
+      : undefined;
 
   return (
     <>
@@ -1629,6 +1661,11 @@ export default function DailyGoalPetPanel({
       border="1px solid"
       borderColor={panelBorderColor}
       borderRadius="2xl"
+      boxShadow={
+        isUnlockCelebration
+          ? "inset 0 1px 0 rgba(255,255,255,0.72), 0 18px 38px rgba(8,145,178,0.16)"
+          : undefined
+      }
       p={{ base: isCelebration ? 2.5 : 3, md: isCelebration ? 4 : 5 }}
       w="100%"
     >
@@ -1645,11 +1682,12 @@ export default function DailyGoalPetPanel({
               petType={resolvedPetType}
               isLightTheme={isLightTheme}
               isCelebration={isCelebration}
+              celebrationTone={celebrationTone}
             />
             <Badge
               colorScheme={stage.colorScheme}
-              bg={isLightTheme ? stage.badgeBg : undefined}
-              color={isLightTheme ? stage.badgeColor : undefined}
+              bg={panelBadgeBg}
+              color={panelBadgeColor}
               alignSelf="center"
               px={{ base: 2, md: 3 }}
               py={{ base: 0.35, md: 1 }}
@@ -1691,7 +1729,7 @@ export default function DailyGoalPetPanel({
                   fontSize={{ base: "lg", md: "xl" }}
                   fontWeight="bold"
                   lineHeight="1.1"
-                  color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
+                  color={panelTextColor}
                   noOfLines={2}
                   wordBreak="break-word"
                 >
@@ -1721,7 +1759,7 @@ export default function DailyGoalPetPanel({
                   <Text
                     fontSize={{ base: "xs", md: "sm" }}
                     fontWeight="semibold"
-                    color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
+                    color={panelSecondaryTextColor}
                   >
                     {copy.health}
                   </Text>
@@ -1730,7 +1768,7 @@ export default function DailyGoalPetPanel({
                   fontSize={{ base: "lg", md: "md" }}
                   fontWeight="bold"
                   lineHeight="1"
-                  color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
+                  color={panelTextColor}
                 >
                   {safeHealth}%
                 </Text>
