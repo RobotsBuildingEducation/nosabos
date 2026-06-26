@@ -8788,6 +8788,8 @@ export default function App({ onBootReady } = {}) {
         isOpen={!!companionUnlockModal}
         onClose={handleCloseCompanionUnlockModal}
         returnFocusOnClose={false}
+        closeOnOverlayClick={false}
+        closeOnEsc={false}
         isCentered
         size="lg"
         motionPreset="none"
@@ -8804,11 +8806,6 @@ export default function App({ onBootReady } = {}) {
           boxShadow="0 28px 80px rgba(8, 145, 178, 0.52)"
           maxW={{ base: "90%", sm: "md" }}
         >
-          <ModalCloseButton
-            color="white"
-            left={appLanguage === "ar" ? 3 : undefined}
-            right={appLanguage === "ar" ? "auto" : undefined}
-          />
           <ModalBody py={10} px={{ base: 5, md: 8 }}>
             <VStack spacing={6} textAlign="center">
               <VStack spacing={2}>
@@ -8828,17 +8825,22 @@ export default function App({ onBootReady } = {}) {
                     companionUnlockModal?.name || "",
                   )}
                 </Text>
-                <Text fontSize="md" opacity={0.9} lineHeight="1.45">
+                <Text
+                  fontSize="md"
+                  opacity={0.9}
+                  lineHeight="1.45"
+                  whiteSpace="pre-line"
+                >
                   {uiCopy(appLanguage, {
-                    en: "You reached Level {level}. This companion can join you now.",
-                    es: "Llegaste al nivel {level}. Este compañero ya puede acompañarte.",
-                    pt: "Voce chegou ao nivel {level}. Este companheiro ja pode ir com voce.",
-                    it: "Hai raggiunto il livello {level}. Questo compagno ora puo unirsi a te.",
-                    fr: "Tu as atteint le niveau {level}. Ce compagnon peut maintenant te rejoindre.",
-                    ja: "レベル{level}に到達しました。この相棒を連れていけます。",
-                    hi: "आप स्तर {level} पर पहुंच गए। यह साथी अब आपके साथ आ सकता है।",
-                    ar: "وصلت للمستوى {level}. الرفيق ده يقدر ينضم لك دلوقتي.",
-                    zh: "你达到了等级 {level}。这个伙伴现在可以加入你了。",
+                    en: "You reached Level {level}.\nThis companion can join you now.",
+                    es: "Llegaste al nivel {level}.\nEste compañero ya puede acompañarte.",
+                    pt: "Voce chegou ao nivel {level}.\nEste companheiro ja pode ir com voce.",
+                    it: "Hai raggiunto il livello {level}.\nQuesto compagno ora puo unirsi a te.",
+                    fr: "Tu as atteint le niveau {level}.\nCe compagnon peut maintenant te rejoindre.",
+                    ja: "レベル{level}に到達しました。\nこの相棒を連れていけます。",
+                    hi: "आप स्तर {level} पर पहुंच गए।\nयह साथी अब आपके साथ आ सकता है।",
+                    ar: "وصلت للمستوى {level}.\nالرفيق ده يقدر ينضم لك دلوقتي.",
+                    zh: "你达到了等级 {level}。\n这个伙伴现在可以加入你了。",
                   }).replace(
                     "{level}",
                     String(companionUnlockModal?.unlockLevel || companionLevel),
@@ -8858,7 +8860,7 @@ export default function App({ onBootReady } = {}) {
                 showPreview={false}
               />
 
-              <VStack spacing={3} w="100%">
+              <VStack spacing={4} w="100%">
                 <Button
                   size="lg"
                   width="100%"

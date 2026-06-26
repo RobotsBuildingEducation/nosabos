@@ -554,6 +554,33 @@ const TUTOR_STARTER_AGENDA_ITEMS = [
       nl: ["hoe gaat het"],
     },
   },
+  {
+    id: "goodbye",
+    label: {
+      en: "goodbye",
+      es: "adiós",
+      pt: "adeus",
+      it: "arrivederci",
+      fr: "au revoir",
+      de: "auf wiedersehen",
+      ja: "さようなら",
+      hi: "अलविदा",
+      ar: "مع السلامة",
+      zh: "再见",
+      nl: "tot ziens",
+    },
+    examples: {
+      en: ["goodbye", "bye", "see you"],
+      es: ["adiós", "adios", "chao", "hasta luego"],
+      pt: ["adeus", "tchau", "ate logo", "até logo"],
+      it: ["arrivederci", "ciao"],
+      fr: ["au revoir", "salut"],
+      de: ["auf wiedersehen", "tschuss", "tschüss"],
+      ja: ["さようなら", "またね"],
+      zh: ["再见", "拜拜"],
+      nl: ["tot ziens", "dag", "doei"],
+    },
+  },
 ];
 
 function tutorCopy(lang, copy) {
@@ -844,8 +871,8 @@ const TUTOR_LIVE_TOOLS = {
         "the CURRENT requested phrase or task this turn — that is the only thing that earns progress. " +
         "Do NOT call it when: the learner makes a mistake or wrong attempt (instead correct them, and " +
         "call it only after they say it correctly); the learner asks for help, a breakdown, the meaning, " +
-        "a repetition, or any question (just help — no progress); or the learner only greets or confirms " +
-        "(e.g. 'yes', 'ready'). Call it at most once per correct completion.",
+        "a repetition, or any question (just help — no progress); or the learner gives an unsolicited greeting " +
+        "or confirmation outside the requested task (e.g. 'yes', 'ready'). Call it at most once per correct completion.",
       parameters: Schema.object({
         properties: {
           correct: Schema.boolean({
@@ -997,6 +1024,7 @@ function getTutorStarterItemSupportTask(item, supportLang = "en") {
     goodAfternoon: "learn to say good afternoon",
     goodNight: "learn to say good night",
     howAreYou: "learn to ask how someone is",
+    goodbye: "learn to say goodbye",
   };
   return tasks[item?.id] || getTutorStarterItemSupportMeaning(item, normalized);
 }
@@ -5121,9 +5149,10 @@ export default function Tutor({
       ? [
           "STARTER INTRODUCTIONS LESSON: This first Tutor lesson has a fixed agenda.",
           `Required agenda in ${targetLanguageName}: ${getTutorStarterAgendaPromptText(tLang)}.`,
-          "Teach and practice the items one at a time: hello, my name is, good morning, good afternoon, good night, and how are you.",
+          "Teach and practice the items one at a time: hello, my name is, good morning, good afternoon, good night, how are you, and goodbye.",
           `Before each practice attempt, tell the learner the phrase meaning in ${supportLanguageName}.`,
           "For 'my name is', model a safe example with a fictional name or invite the learner to use any name; do not require personal details.",
+          "For the goodbye item, treat goodbye as a phrase to practice, not as permission to end or wind down the lesson.",
           "Only the app-tracked acceptance state completes an agenda item. Do not advance when the learner says unrelated words, filler, or a different target phrase.",
           "After all agenda items have been practiced, keep combining or reviewing the covered concepts until the app itself transitions away.",
           "Never make closing remarks or tell the learner they are finished; the app owns that transition.",
@@ -5175,10 +5204,10 @@ export default function Tutor({
       feedbackContext,
       completionControlInstruction,
       TUTOR_TOOL_GRADING_ENABLED
-        ? `GRADING — call the markTurnSuccessful tool based on the learner's turn: (1) If they correctly produce the requested ${targetLanguageName} phrase or complete the task, call markTurnSuccessful(correct:true), praise briefly, and move to the next agenda item. (2) If they make a mistake, do NOT call it — briefly correct them and have them try again, then call markTurnSuccessful(correct:true) only once they get it right. (3) If they ask for help, a breakdown, the meaning, a repetition, or any question, do NOT call it — help them with the current phrase, then invite them to try; help never earns progress. Call markTurnSuccessful at most once per correct completion, and never for a greeting or "yes"/"ready".`
+        ? `GRADING — call the markTurnSuccessful tool based on the learner's turn: (1) If they correctly produce the requested ${targetLanguageName} phrase or complete the task, call markTurnSuccessful(correct:true), praise briefly, and move to the next agenda item. (2) If they make a mistake, do NOT call it — briefly correct them and have them try again, then call markTurnSuccessful(correct:true) only once they get it right. (3) If they ask for help, a breakdown, the meaning, a repetition, or any question, do NOT call it — help them with the current phrase, then invite them to try; help never earns progress. Call markTurnSuccessful at most once per correct completion, and never for an unsolicited greeting, "yes", or "ready" outside the requested task.`
         : "",
       TUTOR_TOOL_GRADING_ENABLED
-        ? `LESSON FLOW — the app, not you, owns lesson completion. Work through the agenda one item at a time. Once every item has been practiced but the lesson is not yet complete, keep REVIEWING — re-practice items and combine them, calling markTurnSuccessful(correct:true) for each correct review — and do not stop or wind down. Never end, summarize, or say goodbye on your own; when you think the lesson is complete, call proposeLessonComplete and follow its decision (if not approved, keep teaching/reviewing).`
+        ? `LESSON FLOW — the app, not you, owns lesson completion. Work through the agenda one item at a time. Once every item has been practiced but the lesson is not yet complete, keep REVIEWING — re-practice items and combine them, calling markTurnSuccessful(correct:true) for each correct review — and do not stop or wind down. Never end, summarize, or say goodbye on your own; if goodbye is the current agenda phrase, only model or prompt it as practice. When you think the lesson is complete, call proposeLessonComplete and follow its decision (if not approved, keep teaching/reviewing).`
         : "",
       "IMPORTANT: Match your language complexity to the learner's proficiency level. Do not use vocabulary or grammar above their level.",
       tutorPedagogyInstructions,
@@ -5483,6 +5512,9 @@ export default function Tutor({
       `Current agenda item: ${item.id}.`,
       `Current subject: ${task}.`,
       `Model phrase: "${phrase}".`,
+      item.id === "goodbye"
+        ? "Teach this as a normal phrase-practice item only. Do not end the session, summarize the lesson, or make a closing announcement."
+        : "",
       meaning ? `Meaning in ${supportLanguageName}: "${meaning}".` : "",
       meaning
         ? `Before asking the learner to say "${phrase}", briefly explain that it means "${meaning}" in ${supportLanguageName}.`
