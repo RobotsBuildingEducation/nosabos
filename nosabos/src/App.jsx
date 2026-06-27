@@ -1463,6 +1463,7 @@ function TopBar({
         onPointerDown: shouldOpenOnPointerDown
           ? (event) => {
               if (event.button != null && event.button !== 0) return;
+              event.preventDefault();
               topBarPointerActionKeyRef.current = key;
               runTopBarAction(action);
 

@@ -461,7 +461,7 @@ export default function DailyGoalModal({
       activityEmpty: getLabel("daily_goal_activity_empty", "No XP"),
       activitySome: getLabel("daily_goal_activity_some", "Some XP"),
       activityGoal: getLabel("daily_goal_activity_goal", "Daily goal reached"),
-      inputLabel: getLabel("daily_goal_input_label", "XP per day"),
+      inputLabel: getLabel("daily_goal_input_label", "XP goal per day"),
       errNoUserTitle: getLabel("daily_goal_error_no_user", "No user ID"),
       errNoUserDesc: getLabel(
         "daily_goal_error_no_user_desc",
@@ -638,16 +638,6 @@ export default function DailyGoalModal({
           },
         }}
       >
-        {dismissible && (
-          <ModalCloseButton
-            color={isLightTheme ? "white" : "currentColor"}
-            left={isRtl ? 3 : undefined}
-            right={isRtl ? "auto" : undefined}
-            _hover={{
-              bg: isLightTheme ? "rgba(255,255,255,0.12)" : "whiteAlpha.100",
-            }}
-          />
-        )}
         {/* Header */}
         <Box
           bg={
@@ -781,9 +771,6 @@ export default function DailyGoalModal({
                     size="md"
                     w="180px"
                   />
-                  <Text color={isLightTheme ? APP_TEXT_SECONDARY : undefined}>
-                    {L.xpUnit}
-                  </Text>
                 </HStack>
                 <Text
                   mt={2}

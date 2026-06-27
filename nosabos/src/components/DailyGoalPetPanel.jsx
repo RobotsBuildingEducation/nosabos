@@ -8,7 +8,8 @@ import {
   VStack,
   useDisclosure,
 } from "@chakra-ui/react";
-import { FiEdit2, FiHeart, FiTrendingDown, FiTrendingUp } from "react-icons/fi";
+import { FiHeart, FiTrendingDown, FiTrendingUp } from "react-icons/fi";
+import { TbEdit } from "react-icons/tb";
 import {
   WaveBar,
   WAVE_BAR_PROGRESS_END,
@@ -38,6 +39,18 @@ const APP_SURFACE_MUTED = "var(--app-surface-muted)";
 const APP_BORDER = "var(--app-border)";
 const APP_TEXT_PRIMARY = "var(--app-text-primary)";
 const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
+const COMPANION_LEVEL_LABELS = {
+  ar: "المستوى",
+  de: "Level",
+  en: "Level",
+  es: "Nivel",
+  fr: "Niveau",
+  hi: "स्तर",
+  it: "Livello",
+  ja: "レベル",
+  pt: "Nível",
+  zh: "等级",
+};
 
 const DOG = {
   fur: "#d97706",
@@ -340,7 +353,7 @@ function getCopy(lang) {
 
   return {
     title: "Your companion",
-    subtitle: "Keep its health up by hitting your daily XP goal.",
+    subtitle: "Stay healthy by hitting your daily XP goal.",
     health: "Health",
     happy: "Happy",
     healthy: "Healthy",
@@ -360,6 +373,10 @@ function getCopy(lang) {
     penaltyBadge: "Risk -{delta}%",
     previewHint: "Preview only. This does not change your companion's real health.",
   };
+}
+
+function getCompanionLevelLabel(lang) {
+  return COMPANION_LEVEL_LABELS[lang] || COMPANION_LEVEL_LABELS.en;
 }
 
 function getPetStage(health, copy, isLightTheme = false) {
@@ -1604,9 +1621,16 @@ export default function DailyGoalPetPanel({
   const resolvedLang = normalizeSupportLanguage(lang, DEFAULT_SUPPORT_LANGUAGE);
   const copy = useMemo(() => getCopy(resolvedLang), [resolvedLang]);
   const safeHealth = clampDailyGoalPetHealth(health);
+  const safeCompanionLevel = Math.max(
+    1,
+    Math.floor(Number(companionLevel) || 1),
+  );
   const displayTitle =
     (typeof petName === "string" && petName.trim()) || copy.title;
-  const resolvedPetType = getEffectivePetType(petType, companionLevel);
+  const resolvedPetType = getEffectivePetType(petType, safeCompanionLevel);
+  const companionLevelText = `${getCompanionLevelLabel(
+    resolvedLang,
+  )} ${safeCompanionLevel}`;
   const stage = useMemo(
     () => getPetStage(safeHealth, copy, isLightTheme),
     [copy, isLightTheme, safeHealth],
@@ -1705,17 +1729,25 @@ export default function DailyGoalPetPanel({
             minW={0}
           >
             <VStack align="stretch" spacing={{ base: 0.5, md: 1 }}>
-              <HStack spacing={1.5} align="center">
+              <HStack
+                spacing={{ base: 1, md: 1.5 }}
+                align="center"
+                flexWrap="wrap"
+                rowGap={1}
+              >
                 {canCustomize ? (
                   <IconButton
                     aria-label={customizeModalCopy.edit}
-                    icon={<Box as={FiEdit2} boxSize={{ base: 4, md: 5 }} />}
-                    size="xs"
+                    icon={<Box as={TbEdit} boxSize={{ base: 3.5, md: 5 }} position="relative" top={{ base: "-0.5px", md: "0.25px" }} />}
+                    size="sm"
                     variant="ghost"
-                    w={{ base: 6, md: 7 }}
-                    h={{ base: 6, md: 7 }}
-                    minW={{ base: 6, md: 7 }}
+                    w={{ base: 5, md: 8 }}
+                    h={{ base: 5, md: 8 }}
+                    minW={{ base: 5, md: 8 }}
                     p={0}
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
                     alignSelf="center"
                     flexShrink={0}
                     color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
@@ -1726,7 +1758,7 @@ export default function DailyGoalPetPanel({
                   />
                 ) : null}
                 <Text
-                  fontSize={{ base: "lg", md: "xl" }}
+                  fontSize={{ base: "sm", sm: "lg", md: "xl" }}
                   fontWeight="bold"
                   lineHeight="1.1"
                   color={panelTextColor}
@@ -1738,7 +1770,7 @@ export default function DailyGoalPetPanel({
               </HStack>
               {!isCelebration ? (
                 <Text
-                  fontSize={{ base: "xs", md: "sm" }}
+                  fontSize="10px"
                   color={isLightTheme ? APP_TEXT_SECONDARY : undefined}
                   opacity={isLightTheme ? 1 : 0.9}
                   lineHeight="1.35"
@@ -1765,7 +1797,7 @@ export default function DailyGoalPetPanel({
                   </Text>
                 </HStack>
                 <Text
-                  fontSize={{ base: "lg", md: "md" }}
+                  fontSize={{ base: "sm", md: "md" }}
                   fontWeight="bold"
                   lineHeight="1"
                   color={panelTextColor}
@@ -1898,7 +1930,7 @@ export default function DailyGoalPetPanel({
         isLightTheme={isLightTheme}
         petName={petName}
         petType={petType}
-        companionLevel={companionLevel}
+        companionLevel={safeCompanionLevel}
         placeholder={copy.title}
         stage={stage}
         drawCompanion={drawCompanionCharacter}

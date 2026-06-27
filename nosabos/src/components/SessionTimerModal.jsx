@@ -595,19 +595,6 @@ export default function SessionTimerModal({
             <Text>{t.timer_modal_title || "Session timer"}</Text>
           </HStack>
         </ModalHeader>
-        <ModalCloseButton
-          color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
-          left={isRtl ? 3 : undefined}
-          right={isRtl ? "auto" : undefined}
-          _hover={{
-            bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.100",
-          }}
-          _focusVisible={{
-            boxShadow: isLightTheme
-              ? "0 0 0 2px rgba(63, 159, 155, 0.2)"
-              : undefined,
-          }}
-        />
         <ModalBody>
           {shouldRenderBody ? (
             <VStack align="stretch" spacing={4}>
