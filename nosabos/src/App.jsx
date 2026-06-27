@@ -7592,11 +7592,11 @@ export default function App({ onBootReady } = {}) {
       const modalStore = useModalStore.getState();
       return Boolean(
         modalStore.dailyGoalOpen ||
-          modalStore.timerModalOpen ||
-          pendingDailyGoalCelebrationRef.current ||
-          pendingLessonCompletionRef.current ||
-          pendingTutorialBitcoinModalRef.current ||
-          pendingPlateCelebrationRef.current,
+        modalStore.timerModalOpen ||
+        pendingDailyGoalCelebrationRef.current ||
+        pendingLessonCompletionRef.current ||
+        pendingTutorialBitcoinModalRef.current ||
+        pendingPlateCelebrationRef.current,
       );
     };
 
@@ -8821,10 +8821,7 @@ export default function App({ onBootReady } = {}) {
                     hi: "{companion} अनलॉक हुआ!",
                     ar: "{companion} اتفتح!",
                     zh: "{companion} 已解锁！",
-                  }).replace(
-                    "{companion}",
-                    companionUnlockModal?.name || "",
-                  )}
+                  }).replace("{companion}", companionUnlockModal?.name || "")}
                 </Text>
                 <Text
                   fontSize="md"
