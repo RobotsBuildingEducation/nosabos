@@ -424,7 +424,7 @@ const getUIDisplayText = (textObj) => {
 const getTranslation = (key, params = {}, languageOverride) => {
   const lang = normalizeSupportLanguage(languageOverride || getAppLanguage());
   const dict = translations[lang] ?? translations.en;
-  const raw = dict[key] || key;
+  const raw = dict[key] || translations.en?.[key] || key;
   if (typeof raw !== "string") return raw;
   return raw.replace(/\{(\w+)\}/g, (_, k) =>
     params[k] != null ? String(params[k]) : `{${k}}`,
@@ -2571,6 +2571,9 @@ export default function SkillTree({
       : flashcardLevelCompletionStatus;
   const isConversationStyleMode =
     pathMode === "conversations" || pathMode === "tutor" || pathMode === "plate";
+  const totalXp = Math.max(0, Number(userProgress?.totalXp) || 0);
+  const nextXpLevelProgressPct = totalXp % 100;
+  const nextXpLevel = Math.floor(totalXp / 100) + 2;
 
   const levelsKey = Array.isArray(levels) ? levels.join("|") : "";
   const requestedUnitsKey = `${showMultipleLevels ? "multi" : "single"}:${targetLang}:${
@@ -2953,11 +2956,12 @@ export default function SkillTree({
                     color="var(--app-text-primary)"
                     lineHeight="1"
                   >
-                    {userProgress.totalXp || 0} XP
+                    {totalXp} XP
                   </Text>
                   <Text fontSize="xs" color="gray.400" fontWeight="medium">
-                    {getTranslation("skill_tree_level", {
-                      level: Math.floor((userProgress.totalXp || 0) / 100) + 1,
+                    {getTranslation("skill_tree_next_level_progress", {
+                      percent: nextXpLevelProgressPct,
+                      level: nextXpLevel,
                     })}
                   </Text>
                 </VStack>

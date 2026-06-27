@@ -8,7 +8,8 @@ import {
   VStack,
   useDisclosure,
 } from "@chakra-ui/react";
-import { FiEdit2, FiHeart, FiTrendingDown, FiTrendingUp } from "react-icons/fi";
+import { FiHeart, FiTrendingDown, FiTrendingUp } from "react-icons/fi";
+import { TbEdit } from "react-icons/tb";
 import {
   WaveBar,
   WAVE_BAR_PROGRESS_END,
@@ -25,7 +26,7 @@ import {
   DAILY_GOAL_PET_HEALTH_LOSS,
   clampDailyGoalPetHealth,
 } from "../utils/dailyGoalPet";
-import { normalizePetType } from "../utils/petTypes";
+import { getEffectivePetType, normalizePetType } from "../utils/petTypes";
 import CompanionCustomizeModal from "./CompanionCustomizeModal";
 import { getCustomizeModalCopy } from "./companionCustomizeCopy";
 
@@ -38,6 +39,18 @@ const APP_SURFACE_MUTED = "var(--app-surface-muted)";
 const APP_BORDER = "var(--app-border)";
 const APP_TEXT_PRIMARY = "var(--app-text-primary)";
 const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
+const COMPANION_LEVEL_LABELS = {
+  ar: "المستوى",
+  de: "Level",
+  en: "Level",
+  es: "Nivel",
+  fr: "Niveau",
+  hi: "स्तर",
+  it: "Livello",
+  ja: "レベル",
+  pt: "Nível",
+  zh: "等级",
+};
 
 const DOG = {
   fur: "#d97706",
@@ -340,7 +353,7 @@ function getCopy(lang) {
 
   return {
     title: "Your companion",
-    subtitle: "Keep its health up by hitting your daily XP goal.",
+    subtitle: "Stay healthy by hitting your daily XP goal.",
     health: "Health",
     happy: "Happy",
     healthy: "Healthy",
@@ -360,6 +373,10 @@ function getCopy(lang) {
     penaltyBadge: "Risk -{delta}%",
     previewHint: "Preview only. This does not change your companion's real health.",
   };
+}
+
+function getCompanionLevelLabel(lang) {
+  return COMPANION_LEVEL_LABELS[lang] || COMPANION_LEVEL_LABELS.en;
 }
 
 function getPetStage(health, copy, isLightTheme = false) {
@@ -1521,12 +1538,16 @@ function CompanionCanvas({
   petType = "dog",
   isLightTheme,
   isCelebration = false,
+  celebrationTone = "default",
 }) {
   const canvasRef = useRef(null);
   const [frame, setFrame] = useState(0);
   const resolvedPetType = normalizePetType(petType);
+  const isUnlockCelebration = isCelebration && celebrationTone === "unlock";
   const canvasBackground = isCelebration
-    ? isLightTheme
+    ? isUnlockCelebration
+      ? "rgba(255, 255, 255, 0.74)"
+      : isLightTheme
       ? "rgba(255, 253, 249, 0.52)"
       : "rgba(255, 255, 255, 0.22)"
     : stage.background;
@@ -1567,7 +1588,9 @@ function CompanionCanvas({
       borderRadius={{ base: "lg", md: "xl" }}
       border="1px solid"
       borderColor={
-        isCelebration
+        isUnlockCelebration
+          ? "rgba(14, 165, 233, 0.18)"
+          : isCelebration
           ? "rgba(255, 255, 255, 0.38)"
           : isLightTheme
             ? "rgba(91, 75, 58, 0.12)"
@@ -1583,11 +1606,13 @@ export default function DailyGoalPetPanel({
   lang = "en",
   health = DAILY_GOAL_PET_DEFAULT_HEALTH,
   variant = "setup",
+  celebrationTone = "default",
   showPreview = true,
   // Custom companion name; falls back to the localized default ("Your
   // companion") when empty. Edited from the daily-quest pet panel.
   petName = "",
   petType = "dog",
+  companionLevel = 1,
   // When provided, a pencil button by the title opens the customize modal.
   onCustomizePet = null,
 }) {
@@ -1596,30 +1621,62 @@ export default function DailyGoalPetPanel({
   const resolvedLang = normalizeSupportLanguage(lang, DEFAULT_SUPPORT_LANGUAGE);
   const copy = useMemo(() => getCopy(resolvedLang), [resolvedLang]);
   const safeHealth = clampDailyGoalPetHealth(health);
+  const safeCompanionLevel = Math.max(
+    1,
+    Math.floor(Number(companionLevel) || 1),
+  );
   const displayTitle =
     (typeof petName === "string" && petName.trim()) || copy.title;
-  const resolvedPetType = normalizePetType(petType);
+  const resolvedPetType = getEffectivePetType(petType, safeCompanionLevel);
+  const companionLevelText = `${getCompanionLevelLabel(
+    resolvedLang,
+  )} ${safeCompanionLevel}`;
   const stage = useMemo(
     () => getPetStage(safeHealth, copy, isLightTheme),
     [copy, isLightTheme, safeHealth],
   );
   const isCelebration = variant === "celebration";
+  const isUnlockCelebration = isCelebration && celebrationTone === "unlock";
   const canCustomize = typeof onCustomizePet === "function" && !isCelebration;
   const customizeModalCopy = getCustomizeModalCopy(resolvedLang);
   const customizeModal = useDisclosure();
   const rewardColor = isLightTheme ? "#48765f" : "green.200";
   const penaltyColor = isLightTheme ? "#a06a3b" : "orange.200";
   const previewCardBg = isLightTheme ? APP_SURFACE_ELEVATED : "blackAlpha.220";
-  const panelBg = isCelebration
+  const panelBg = isUnlockCelebration
+    ? "linear-gradient(180deg, rgba(252, 254, 255, 0.96) 0%, rgba(232, 250, 255, 0.92) 100%)"
+    : isCelebration
     ? isLightTheme
       ? stage.background
       : "rgba(255, 255, 255, 0.18)"
     : stage.background;
-  const panelBorderColor = isCelebration
+  const panelBorderColor = isUnlockCelebration
+    ? "rgba(207, 250, 254, 0.86)"
+    : isCelebration
     ? "rgba(255, 255, 255, 0.38)"
     : isLightTheme
       ? APP_BORDER
       : "transparent";
+  const panelTextColor = isUnlockCelebration
+    ? "#1f2937"
+    : isLightTheme
+      ? APP_TEXT_PRIMARY
+      : undefined;
+  const panelSecondaryTextColor = isUnlockCelebration
+    ? "#0f766e"
+    : isLightTheme
+      ? APP_TEXT_SECONDARY
+      : undefined;
+  const panelBadgeBg = isUnlockCelebration
+    ? "rgba(6, 182, 212, 0.16)"
+    : isLightTheme
+      ? stage.badgeBg
+      : undefined;
+  const panelBadgeColor = isUnlockCelebration
+    ? "#0f766e"
+    : isLightTheme
+      ? stage.badgeColor
+      : undefined;
 
   return (
     <>
@@ -1628,6 +1685,11 @@ export default function DailyGoalPetPanel({
       border="1px solid"
       borderColor={panelBorderColor}
       borderRadius="2xl"
+      boxShadow={
+        isUnlockCelebration
+          ? "inset 0 1px 0 rgba(255,255,255,0.72), 0 18px 38px rgba(8,145,178,0.16)"
+          : undefined
+      }
       p={{ base: isCelebration ? 2.5 : 3, md: isCelebration ? 4 : 5 }}
       w="100%"
     >
@@ -1644,11 +1706,12 @@ export default function DailyGoalPetPanel({
               petType={resolvedPetType}
               isLightTheme={isLightTheme}
               isCelebration={isCelebration}
+              celebrationTone={celebrationTone}
             />
             <Badge
               colorScheme={stage.colorScheme}
-              bg={isLightTheme ? stage.badgeBg : undefined}
-              color={isLightTheme ? stage.badgeColor : undefined}
+              bg={panelBadgeBg}
+              color={panelBadgeColor}
               alignSelf="center"
               px={{ base: 2, md: 3 }}
               py={{ base: 0.35, md: 1 }}
@@ -1666,17 +1729,25 @@ export default function DailyGoalPetPanel({
             minW={0}
           >
             <VStack align="stretch" spacing={{ base: 0.5, md: 1 }}>
-              <HStack spacing={1.5} align="center">
+              <HStack
+                spacing={{ base: 1, md: 1.5 }}
+                align="center"
+                flexWrap="wrap"
+                rowGap={1}
+              >
                 {canCustomize ? (
                   <IconButton
                     aria-label={customizeModalCopy.edit}
-                    icon={<Box as={FiEdit2} boxSize={{ base: 4, md: 5 }} />}
-                    size="xs"
+                    icon={<Box as={TbEdit} boxSize={{ base: 3.5, md: 5 }} position="relative" top={{ base: "-0.5px", md: "0.25px" }} />}
+                    size="sm"
                     variant="ghost"
-                    w={{ base: 6, md: 7 }}
-                    h={{ base: 6, md: 7 }}
-                    minW={{ base: 6, md: 7 }}
+                    w={{ base: 5, md: 8 }}
+                    h={{ base: 5, md: 8 }}
+                    minW={{ base: 5, md: 8 }}
                     p={0}
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
                     alignSelf="center"
                     flexShrink={0}
                     color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
@@ -1687,10 +1758,10 @@ export default function DailyGoalPetPanel({
                   />
                 ) : null}
                 <Text
-                  fontSize={{ base: "lg", md: "xl" }}
+                  fontSize={{ base: "sm", sm: "lg", md: "xl" }}
                   fontWeight="bold"
                   lineHeight="1.1"
-                  color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
+                  color={panelTextColor}
                   noOfLines={2}
                   wordBreak="break-word"
                 >
@@ -1699,7 +1770,7 @@ export default function DailyGoalPetPanel({
               </HStack>
               {!isCelebration ? (
                 <Text
-                  fontSize={{ base: "xs", md: "sm" }}
+                  fontSize="10px"
                   color={isLightTheme ? APP_TEXT_SECONDARY : undefined}
                   opacity={isLightTheme ? 1 : 0.9}
                   lineHeight="1.35"
@@ -1720,16 +1791,16 @@ export default function DailyGoalPetPanel({
                   <Text
                     fontSize={{ base: "xs", md: "sm" }}
                     fontWeight="semibold"
-                    color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
+                    color={panelSecondaryTextColor}
                   >
                     {copy.health}
                   </Text>
                 </HStack>
                 <Text
-                  fontSize={{ base: "lg", md: "md" }}
+                  fontSize={{ base: "sm", md: "md" }}
                   fontWeight="bold"
                   lineHeight="1"
-                  color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
+                  color={panelTextColor}
                 >
                   {safeHealth}%
                 </Text>
@@ -1859,6 +1930,7 @@ export default function DailyGoalPetPanel({
         isLightTheme={isLightTheme}
         petName={petName}
         petType={petType}
+        companionLevel={safeCompanionLevel}
         placeholder={copy.title}
         stage={stage}
         drawCompanion={drawCompanionCharacter}

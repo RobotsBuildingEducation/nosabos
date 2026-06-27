@@ -19,7 +19,7 @@ export default function useEscapeToClose(isOpen, onClose, enabled = true) {
     if (typeof document === "undefined") return undefined;
 
     const handleKeyDown = (event) => {
-      if (event.key === "Escape" && !event.defaultPrevented) {
+      if (event.key === "Escape") {
         onClose();
       }
     };

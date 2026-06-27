@@ -22,12 +22,13 @@ import {
   useDisclosure,
 } from "@chakra-ui/react";
 import {
-  FiEdit2,
   FiHeart,
+  FiLock,
   FiTrendingDown,
   FiTrendingUp,
 } from "react-icons/fi";
 import { MdShowChart } from "react-icons/md";
+import { TbEdit } from "react-icons/tb";
 import {
   WaveBar,
   WAVE_BAR_PROGRESS_END,
@@ -44,7 +45,13 @@ import {
   DAILY_GOAL_PET_HEALTH_LOSS,
   clampDailyGoalPetHealth,
 } from "../utils/dailyGoalPet";
-import { PET_TYPES, normalizePetType } from "../utils/petTypes";
+import {
+  PET_TYPES,
+  getEffectivePetType,
+  getPetUnlockLevel,
+  isPetTypeUnlocked,
+  normalizePetType,
+} from "../utils/petTypes";
 import { getCustomizeModalCopy } from "./companionCustomizeCopy";
 
 const TILE = 16;
@@ -57,6 +64,22 @@ const APP_BORDER = "var(--app-border)";
 const APP_BORDER_STRONG = "var(--app-border-strong)";
 const APP_TEXT_PRIMARY = "var(--app-text-primary)";
 const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
+const UNLOCKED_TEXT_LIGHT = "#0f766e";
+const UNLOCKED_TEXT_DARK = "#5eead4";
+const ACTIVE_UNLOCKED_TEXT_LIGHT = "#0d9488";
+const ACTIVE_UNLOCKED_TEXT_DARK = "#99f6e4";
+const COMPANION_LEVEL_LABELS = {
+  ar: "المستوى",
+  de: "Level",
+  en: "Level",
+  es: "Nivel",
+  fr: "Niveau",
+  hi: "स्तर",
+  it: "Livello",
+  ja: "レベル",
+  pt: "Nível",
+  zh: "等级",
+};
 
 const NAME_MAX_LENGTH = 24;
 
@@ -370,7 +393,7 @@ function getCopy(lang) {
 
   return {
     title: "Your companion",
-    subtitle: "Keep its health up by hitting your daily XP goal.",
+    subtitle: "Stay healthy by hitting your daily XP goal.",
     dailyXp: "Daily XP",
     health: "Health",
     happy: "Happy",
@@ -391,6 +414,10 @@ function getCopy(lang) {
     penaltyBadge: "Risk -{delta}%",
     previewHint: "Preview only. This does not change your companion's real health.",
   };
+}
+
+function getCompanionLevelLabel(lang) {
+  return COMPANION_LEVEL_LABELS[lang] || COMPANION_LEVEL_LABELS.en;
 }
 
 function getPetStage(health, copy, isLightTheme = false) {
@@ -1645,6 +1672,7 @@ export default function PlatePetPanel({
   // Custom companion name; falls back to the localized default when empty.
   petName = "",
   petType = "dog",
+  companionLevel = 1,
   // When provided, a pencil button next to the title opens the customize modal.
   onCustomizePet = null,
 }) {
@@ -1660,8 +1688,15 @@ export default function PlatePetPanel({
   const isCelebration = variant === "celebration";
 
   const trimmedName = typeof petName === "string" ? petName.trim() : "";
-  const resolvedPetType = normalizePetType(petType);
+  const safeCompanionLevel = Math.max(
+    1,
+    Math.floor(Number(companionLevel) || 1),
+  );
+  const resolvedPetType = getEffectivePetType(petType, safeCompanionLevel);
   const displayTitle = trimmedName || copy.title;
+  const companionLevelText = `${getCompanionLevelLabel(
+    resolvedLang,
+  )} ${safeCompanionLevel}`;
   const canCustomize = typeof onCustomizePet === "function" && !isCelebration;
   const customizeModalCopy = getCustomizeModalCopy(resolvedLang);
   const customizeModal = useDisclosure();
@@ -1677,7 +1712,7 @@ export default function PlatePetPanel({
 
   const submitCustomize = () => {
     const name = draftName.trim().slice(0, NAME_MAX_LENGTH);
-    const type = normalizePetType(draftPetType);
+    const type = getEffectivePetType(draftPetType, safeCompanionLevel);
 
     if (typeof onCustomizePet === "function") {
       onCustomizePet({ name, petType: type });
@@ -1743,19 +1778,28 @@ export default function PlatePetPanel({
             minW={0}
           >
             <VStack align="stretch" spacing={{ base: 0.5, md: 1 }}>
-              <HStack spacing={1.5} align="center">
+              <HStack
+                spacing={{ base: 1, md: 1.5 }}
+                align="center"
+                flexWrap="wrap"
+                rowGap={1}
+              >
                 {canCustomize ? (
                   <IconButton
                     aria-label={customizeModalCopy.edit}
-                    icon={<Box as={FiEdit2} boxSize={{ base: 4, md: 5 }} />}
-                    size="xs"
+                    icon={<Box as={TbEdit} boxSize={{ base: 3.5, md: 5 }} position="relative" top={{ base: "-0.5px", md: "0.25px" }} />}
+                    size="sm"
                     variant="ghost"
-                    w={{ base: 6, md: 7 }}
-                    h={{ base: 6, md: 7 }}
-                    minW={{ base: 6, md: 7 }}
+                    w={{ base: 5, md: 8 }}
+                    h={{ base: 5, md: 8 }}
+                    minW={{ base: 5, md: 8 }}
                     p={0}
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
                     alignSelf="center"
                     flexShrink={0}
+                    bg="transparent"
                     color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
                     _hover={{
                       bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.200",
@@ -1764,19 +1808,44 @@ export default function PlatePetPanel({
                   />
                 ) : null}
                 <Text
-                  fontSize={{ base: "lg", md: "xl" }}
+                  fontSize={{ base: "sm", sm: "lg", md: "xl" }}
                   fontWeight="bold"
-                  lineHeight="1.1"
+                  lineHeight="1.2"
                   color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
                   noOfLines={2}
                   wordBreak="break-word"
                 >
                   {displayTitle}
                 </Text>
+                {!isCelebration ? (
+                  <HStack
+                    spacing={{ base: 1, md: 1.5 }}
+                    flexShrink={0}
+                    whiteSpace="nowrap"
+                    align="center"
+                  >
+                    <Text
+                      fontSize={{ base: "sm", sm: "lg", md: "xl" }}
+                      color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
+                      fontWeight="semibold"
+                      lineHeight="1.1"
+                    >
+                      |
+                    </Text>
+                    <Text
+                      fontSize={{ base: "sm", sm: "lg", md: "xl" }}
+                      fontWeight="bold"
+                      color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
+                      lineHeight="1.1"
+                    >
+                      {companionLevelText}
+                    </Text>
+                  </HStack>
+                ) : null}
               </HStack>
               {!isCelebration ? (
                 <Text
-                  fontSize={{ base: "xs", md: "sm" }}
+                  fontSize="10px"
                   color={isLightTheme ? APP_TEXT_SECONDARY : undefined}
                   opacity={isLightTheme ? 1 : 0.9}
                   lineHeight="1.35"
@@ -2062,6 +2131,21 @@ export default function PlatePetPanel({
                 <SimpleGrid columns={2} spacing={2}>
                   {PET_TYPES.map((type) => {
                     const active = draftPetType === type;
+                    const unlockLevel = getPetUnlockLevel(type);
+                    const unlocked = isPetTypeUnlocked(
+                      type,
+                      safeCompanionLevel,
+                    );
+                    const levelLabel =
+                      unlockLevel <= 1
+                        ? customizeModalCopy.starter
+                        : customizeModalCopy.unlockLevel.replace(
+                            "{level}",
+                            String(unlockLevel),
+                          );
+                    const ariaLabel = unlocked
+                      ? `${customizeModalCopy[type]}, ${levelLabel}`
+                      : `${customizeModalCopy[type]}, ${customizeModalCopy.locked}, ${levelLabel}`;
                     return (
                       <Button
                         key={type}
@@ -2072,7 +2156,8 @@ export default function PlatePetPanel({
                         py={2}
                         variant="ghost"
                         aria-pressed={active}
-                        aria-label={customizeModalCopy[type]}
+                        aria-label={ariaLabel}
+                        isDisabled={!unlocked}
                         border="2px solid"
                         borderColor={
                           active
@@ -2099,6 +2184,10 @@ export default function PlatePetPanel({
                               : "whiteAlpha.100",
                         }}
                         _active={{ bg: undefined }}
+                        _disabled={{
+                          opacity: isLightTheme ? 0.62 : 0.48,
+                          cursor: "not-allowed",
+                        }}
                         onClick={() => setDraftPetType(type)}
                       >
                         <VStack spacing={1.5} justify="center">
@@ -2110,15 +2199,47 @@ export default function PlatePetPanel({
                             color={
                               active
                                 ? isLightTheme
-                                  ? "#2f6a57"
-                                  : "teal.200"
-                                : isLightTheme
-                                  ? APP_TEXT_SECONDARY
-                                  : "gray.300"
+                                  ? ACTIVE_UNLOCKED_TEXT_LIGHT
+                                  : ACTIVE_UNLOCKED_TEXT_DARK
+                                : unlocked
+                                  ? isLightTheme
+                                    ? UNLOCKED_TEXT_LIGHT
+                                    : UNLOCKED_TEXT_DARK
+                                  : isLightTheme
+                                    ? APP_TEXT_SECONDARY
+                                    : "gray.300"
                             }
                           >
                             {customizeModalCopy[type]}
                           </Text>
+                          <HStack
+                            spacing={1}
+                            minH="14px"
+                            color={
+                              unlocked
+                                ? active
+                                  ? isLightTheme
+                                    ? ACTIVE_UNLOCKED_TEXT_LIGHT
+                                    : ACTIVE_UNLOCKED_TEXT_DARK
+                                  : isLightTheme
+                                    ? UNLOCKED_TEXT_LIGHT
+                                    : UNLOCKED_TEXT_DARK
+                                : isLightTheme
+                                  ? "#8a6b32"
+                                  : "yellow.200"
+                            }
+                          >
+                            {!unlocked ? (
+                              <Box as={FiLock} boxSize="10px" />
+                            ) : null}
+                            <Text
+                              fontSize="10px"
+                              fontWeight="bold"
+                              lineHeight="1"
+                            >
+                              {levelLabel}
+                            </Text>
+                          </HStack>
                         </VStack>
                       </Button>
                     );

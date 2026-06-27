@@ -25,7 +25,7 @@ export const translations = {
     dailyGoalProgress: "Goal",
     daily_goal_title: "Goal Manager",
     daily_goal_subtitle: "How many XP do you want to earn per day?",
-    daily_goal_input_label: "XP per day",
+    daily_goal_input_label: "XP goal per day",
     daily_goal_save: "Save",
     daily_goal_quick_picks: "Quick picks",
     daily_goal_fine_tune: "Fine-tune",
@@ -666,6 +666,7 @@ export const translations = {
     skill_tree_unlock_at: "Unlock at {xpRequired} XP",
     skill_tree_unlock_sequential: "Complete the previous lesson to unlock",
     skill_tree_level: "Level {level}",
+    skill_tree_next_level_progress: "{percent}% to Level {level}",
     skill_tree_no_path: "No learning path available for this language yet.",
     skill_tree_check_back: "Check back soon for structured lessons!",
     skill_tree_your_path: "Your Learning Path",
@@ -937,13 +938,12 @@ export const translations = {
     dailyGoalProgress: "Meta",
     daily_goal_title: "Gestor de metas",
     daily_goal_subtitle: "¿Cuántos XP quieres ganar al día?",
-    daily_goal_input_label: "XP por día",
+    daily_goal_input_label: "Meta de XP por día",
     daily_goal_save: "Guardar",
     daily_goal_quick_picks: "Atajos",
     daily_goal_fine_tune: "Ajuste fino",
     daily_goal_xp_unit: "XP / día",
-    daily_goal_level_explainer:
-      "Cada nivel = 100 XP. Esta meta es el {pct}% de un nivel por día.",
+    daily_goal_level_explainer: "Cada nivel = 100 XP.",
     daily_goal_preview: "Vista previa de la meta",
     daily_goal_resets_in: "Se reinicia en 24 h · {when}",
     daily_goal_error_no_user: "Sin ID de usuario",
@@ -1584,6 +1584,7 @@ export const translations = {
     skill_tree_unlock_sequential:
       "Completa la lección anterior para desbloquear",
     skill_tree_level: "Nivel {level}",
+    skill_tree_next_level_progress: "{percent}% al nivel {level}",
     skill_tree_no_path:
       "Aún no hay una ruta de aprendizaje disponible para este idioma.",
     skill_tree_check_back: "¡Vuelve pronto para lecciones estructuradas!",
@@ -1869,7 +1870,7 @@ translations.it = {
   dailyGoalProgress: "Obiettivo",
   daily_goal_title: "Gestione obiettivi",
   daily_goal_subtitle: "Quanti XP vuoi guadagnare al giorno?",
-  daily_goal_input_label: "XP al giorno",
+  daily_goal_input_label: "Obiettivo XP al giorno",
   daily_goal_save: "Salva",
   daily_goal_quick_picks: "Scelte rapide",
   daily_goal_fine_tune: "Regola",
@@ -2481,6 +2482,7 @@ translations.it = {
   skill_tree_unlock_at: "Sblocca a {xpRequired} XP",
   skill_tree_unlock_sequential: "Completa la lezione precedente per sbloccare",
   skill_tree_level: "Livello {level}",
+  skill_tree_next_level_progress: "{percent}% al livello {level}",
   skill_tree_no_path:
     "Non c'è ancora un percorso di apprendimento per questa lingua.",
   skill_tree_check_back: "Torna presto per lezioni strutturate!",
@@ -2752,7 +2754,7 @@ translations.fr = {
   dailyGoalProgress: "Objectif",
   daily_goal_title: "Gestionnaire d'objectifs",
   daily_goal_subtitle: "Combien d'XP veux-tu gagner par jour ?",
-  daily_goal_input_label: "XP par jour",
+  daily_goal_input_label: "Objectif XP par jour",
   daily_goal_save: "Enregistrer",
   daily_goal_quick_picks: "Choix rapides",
   daily_goal_fine_tune: "Ajuster",
@@ -3367,6 +3369,7 @@ translations.fr = {
   skill_tree_unlock_at: "Debloque a {xpRequired} XP",
   skill_tree_unlock_sequential: "Termine la lecon precedente pour debloquer",
   skill_tree_level: "Niveau {level}",
+  skill_tree_next_level_progress: "{percent}% vers le niveau {level}",
   skill_tree_no_path:
     "Il n'y a pas encore de parcours d'apprentissage pour cette langue.",
   skill_tree_check_back: "Reviens bientot pour des lecons structurees !",
@@ -3637,6 +3640,7 @@ translations.fr = {
 translations.de = {
   ...translations.en,
   ...TRANSLATION_DE_STATIC,
+  skill_tree_next_level_progress: "{percent}% bis Level {level}",
   "passcode.instructions": (
     <div>
       Gib den Abonnement-Zugangscode ein, um fortzufahren.
@@ -3709,7 +3713,7 @@ translations.ja = {
   dailyGoalProgress: "目標",
   daily_goal_title: "目標マネージャー",
   daily_goal_subtitle: "1日にどれくらいXPを獲得しますか？",
-  daily_goal_input_label: "1日あたりのXP",
+  daily_goal_input_label: "1日のXP目標",
   daily_goal_save: "保存",
   daily_goal_quick_picks: "クイック選択",
   daily_goal_fine_tune: "微調整",
@@ -4335,6 +4339,7 @@ translations.ja = {
   skill_tree_unlock_at: "{xpRequired} XPで解放",
   skill_tree_unlock_sequential: "前のレッスンを完了すると解放されます",
   skill_tree_level: "レベル {level}",
+  skill_tree_next_level_progress: "レベル {level} まで {percent}%",
   skill_tree_no_path: "この言語の学習パスはまだありません。",
   skill_tree_check_back: "構造化レッスンを近日追加予定です。",
   skill_tree_your_path: "あなたの学習パス",
@@ -4600,6 +4605,7 @@ translations.ja = {
 translations.ar = {
   ...translations.en,
   ...TRANSLATION_AR_STATIC,
+  skill_tree_next_level_progress: "{percent}% إلى المستوى {level}",
   "passcode.instructions": (
     <div>
       اكتب كود الاشتراك علشان تكمل.
@@ -4667,6 +4673,7 @@ translations.ar = {
 translations.hi = {
   ...translations.en,
   ...TRANSLATION_HI_STATIC,
+  skill_tree_next_level_progress: "स्तर {level} तक {percent}%",
   "passcode.instructions": (
     <div>
       जारी रखने के लिए सदस्यता पासकोड दर्ज करें।
@@ -4733,6 +4740,7 @@ translations.hi = {
 
 translations.pt = {
   ...TRANSLATION_PT_STATIC,
+  skill_tree_next_level_progress: "{percent}% para o nível {level}",
   daily_goal_title: "Gerenciador de metas",
   daily_goal_xp_unit: "XP / dia",
   app_mode_cards: "Cartões",
@@ -4925,6 +4933,7 @@ translations.pt = {
 translations.zh = {
   ...translations.en,
   ...TRANSLATION_ZH_STATIC,
+  skill_tree_next_level_progress: "{percent}% 到等级 {level}",
   "passcode.instructions": (
     <div>
       输入订阅通行码以继续。

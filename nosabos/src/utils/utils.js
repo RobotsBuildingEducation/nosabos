@@ -128,6 +128,7 @@ export async function awardXp(npub, amount, targetLang = "es", source = "") {
   let awardedTodayKey = "";
   let awardedPetHealth = null;
   let awardedLangKey = "";
+  let awardedLanguageXp = null;
   let awardedActivityCount = null;
 
   await runTransaction(database, async (tx) => {
@@ -142,6 +143,7 @@ export async function awardXp(npub, amount, targetLang = "es", source = "") {
     awardedLangKey = langKey;
     const existingProgress = data?.progress || {};
     const existingLangXp = existingProgress?.languageXp?.[langKey] || 0;
+    awardedLanguageXp = existingLangXp + delta;
 
     // Daily window check/reset
     const needsReset = hasDailyGoalResetExpired(data.dailyResetAt, now);
@@ -245,6 +247,8 @@ export async function awardXp(npub, amount, targetLang = "es", source = "") {
     amount: delta,
     npub,
     source,
+    targetLang: awardedLangKey,
+    languageXp: awardedLanguageXp,
     dailyXp: awardedDailyXp,
     dailyGoalXp: awardedDailyGoalXp,
     todayKey: awardedTodayKey,
@@ -261,6 +265,8 @@ export async function awardXp(npub, amount, targetLang = "es", source = "") {
           amount: result.amount,
           npub: result.npub,
           source: result.source,
+          targetLang: result.targetLang,
+          languageXp: result.languageXp,
           dailyXp: result.dailyXp,
           dailyGoalXp: result.dailyGoalXp,
           todayKey: result.todayKey,

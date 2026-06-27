@@ -79,8 +79,8 @@ const baseLearningPath = withLocalizedSkillTreeText({
             es: "Primeros Pasos",
           },
           description: {
-            en: "Learn basic introductions",
-            es: "Aprende introducciones básicas",
+            en: "Learn basic introductions and goodbyes",
+            es: "Aprende introducciones y despedidas básicas",
           },
           xpRequired: 0,
           xpReward: 1,
@@ -103,10 +103,11 @@ const baseLearningPath = withLocalizedSkillTreeText({
                 "good afternoon",
                 "good night",
                 "how are you",
+                "goodbye",
               ],
               tutorialDescription: {
-                en: "Learn first introduction phrases with interactive questions.",
-                es: "Aprende tus primeras frases de introducción con preguntas interactivas.",
+                en: "Learn first introduction and goodbye phrases with interactive questions.",
+                es: "Aprende tus primeras frases de introducción y despedida con preguntas interactivas.",
               },
             },
             grammar: {
@@ -115,52 +116,53 @@ const baseLearningPath = withLocalizedSkillTreeText({
                 "basic introduction patterns",
                 "time-based greetings",
                 "simple wellbeing questions",
+                "basic goodbye phrases",
               ],
               tutorialDescription: {
-                en: "Practice simple patterns for introductions and greetings.",
-                es: "Practica patrones simples para introducciones y saludos.",
+                en: "Practice simple patterns for introductions, greetings, and goodbyes.",
+                es: "Practica patrones simples para introducciones, saludos y despedidas.",
               },
             },
             reading: {
               topic: "tutorial",
-              prompt: "Read a simple introduction exchange",
+              prompt: "Read a simple introduction and goodbye exchange",
               tutorialDescription: {
-                en: "Read a short exchange with basic introductions.",
-                es: "Lee un intercambio corto con introducciones básicas.",
+                en: "Read a short exchange with basic introductions and goodbyes.",
+                es: "Lee un intercambio corto con introducciones y despedidas básicas.",
               },
             },
             stories: {
               topic: "tutorial",
-              prompt: "Practice basic introductions in a story",
+              prompt: "Practice basic introductions and goodbyes in a story",
               tutorialDescription: {
-                en: "Practice basic introductions in a short interactive story.",
-                es: "Practica introducciones básicas en una historia interactiva corta.",
+                en: "Practice basic introductions and goodbyes in a short interactive story.",
+                es: "Practica introducciones y despedidas básicas en una historia interactiva corta.",
               },
             },
             realtime: {
               topic: "tutorial",
-              scenario: "Learn basic introductions",
+              scenario: "Learn basic introductions and goodbyes",
               prompt:
-                "Practice hello, my name is, good morning, good afternoon, good night, and how are you",
+                "Practice hello, my name is, good morning, good afternoon, good night, how are you, and goodbye",
               successCriteria:
-                "The learner makes understandable attempts at hello, my name is, good morning, good afternoon, good night, and how are you.",
+                "The learner makes understandable attempts at hello, my name is, good morning, good afternoon, good night, how are you, and goodbye.",
               successCriteria_es:
-                'El estudiante intenta de forma comprensible decir "hola", "me llamo", "buenos días", "buenas tardes", "buenas noches" y "¿cómo estás?".',
+                'El estudiante intenta de forma comprensible decir "hola", "me llamo", "buenos días", "buenas tardes", "buenas noches", "¿cómo estás?" y "adiós".',
               successCriteria_pt:
-                'O aluno tenta de forma compreensível dizer "olá", "meu nome é", "bom dia", "boa tarde", "boa noite" e "como você está?".',
+                'O aluno tenta de forma compreensível dizer "olá", "meu nome é", "bom dia", "boa tarde", "boa noite", "como você está?" e "adeus".',
               successCriteria_fr:
-                'L\'apprenant essaie de dire de façon compréhensible "bonjour", "je m\'appelle", "bonjour", "bon après-midi", "bonne nuit" et "comment ça va ?".',
+                'L\'apprenant essaie de dire de façon compréhensible "bonjour", "je m\'appelle", "bonjour", "bon après-midi", "bonne nuit", "comment ça va ?" et "au revoir".',
               successCriteria_it:
-                'L\'apprendente prova in modo comprensibile a dire "ciao", "mi chiamo", "buongiorno", "buon pomeriggio", "buonanotte" e "come stai?".',
+                'L\'apprendente prova in modo comprensibile a dire "ciao", "mi chiamo", "buongiorno", "buon pomeriggio", "buonanotte", "come stai?" e "arrivederci".',
               successCriteria_nl:
-                'De leerling probeert begrijpelijk "hallo", "mijn naam is", "goedemorgen", "goedemiddag", "goedenacht" en "hoe gaat het?" te zeggen.',
+                'De leerling probeert begrijpelijk "hallo", "mijn naam is", "goedemorgen", "goedemiddag", "goedenacht", "hoe gaat het?" en "tot ziens" te zeggen.',
               successCriteria_nah:
                 "The learner makes understandable attempts at the basic introduction agenda.",
               successCriteria_ja:
                 "The learner makes understandable attempts at the basic introduction agenda.",
               tutorialDescription: {
-                en: "Practice basic introductions in a realtime tutoring session.",
-                es: "Practica introducciones básicas en una sesión de tutoría en tiempo real.",
+                en: "Practice basic introductions and goodbyes in a realtime tutoring session.",
+                es: "Practica introducciones y despedidas básicas en una sesión de tutoría en tiempo real.",
               },
             },
             game: {
@@ -175,6 +177,7 @@ const baseLearningPath = withLocalizedSkillTreeText({
                 "good afternoon",
                 "good night",
                 "how are you",
+                "goodbye",
               ],
               tutorialDescription: {
                 en: "Finish the tutorial by playing a short game review.",

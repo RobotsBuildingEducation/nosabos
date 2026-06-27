@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   Box,
   Button,
+  HStack,
   Input,
   Modal,
   ModalBody,
@@ -13,7 +14,14 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react";
-import { PET_TYPES, normalizePetType } from "../utils/petTypes";
+import { FiLock } from "react-icons/fi";
+import {
+  PET_TYPES,
+  getEffectivePetType,
+  getPetUnlockLevel,
+  isPetTypeUnlocked,
+  normalizePetType,
+} from "../utils/petTypes";
 import { getCustomizeModalCopy } from "./companionCustomizeCopy";
 
 const TILE = 16;
@@ -27,6 +35,10 @@ const APP_BORDER = "var(--app-border)";
 const APP_BORDER_STRONG = "var(--app-border-strong)";
 const APP_TEXT_PRIMARY = "var(--app-text-primary)";
 const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
+const UNLOCKED_TEXT_LIGHT = "#0f766e";
+const UNLOCKED_TEXT_DARK = "#5eead4";
+const ACTIVE_UNLOCKED_TEXT_LIGHT = "#0d9488";
+const ACTIVE_UNLOCKED_TEXT_DARK = "#99f6e4";
 
 // Small animated preview of a companion option, drawn with the panel's own
 // `drawCompanion(ctx, frame, stage, petType)` so the picker matches the panel.
@@ -82,6 +94,7 @@ export default function CompanionCustomizeModal({
   isLightTheme = false,
   petName = "",
   petType = "dog",
+  companionLevel = 1,
   placeholder = "",
   stage,
   drawCompanion,
@@ -89,7 +102,7 @@ export default function CompanionCustomizeModal({
 }) {
   const copy = getCustomizeModalCopy(lang);
   const trimmedName = typeof petName === "string" ? petName.trim() : "";
-  const resolvedPetType = normalizePetType(petType);
+  const resolvedPetType = getEffectivePetType(petType, companionLevel);
   const nameInputRef = useRef(null);
   const [draftName, setDraftName] = useState(trimmedName);
   const [draftPetType, setDraftPetType] = useState(resolvedPetType);
@@ -104,7 +117,7 @@ export default function CompanionCustomizeModal({
 
   const submitCustomize = () => {
     const name = draftName.trim().slice(0, NAME_MAX_LENGTH);
-    const type = normalizePetType(draftPetType);
+    const type = getEffectivePetType(draftPetType, companionLevel);
     if (typeof onSubmit === "function") {
       onSubmit({ name, petType: type });
     }
@@ -176,6 +189,18 @@ export default function CompanionCustomizeModal({
               <SimpleGrid columns={2} spacing={2}>
                 {PET_TYPES.map((type) => {
                   const active = draftPetType === type;
+                  const unlockLevel = getPetUnlockLevel(type);
+                  const unlocked = isPetTypeUnlocked(type, companionLevel);
+                  const levelLabel =
+                    unlockLevel <= 1
+                      ? copy.starter
+                      : copy.unlockLevel.replace(
+                          "{level}",
+                          String(unlockLevel),
+                        );
+                  const ariaLabel = unlocked
+                    ? `${copy[type]}, ${levelLabel}`
+                    : `${copy[type]}, ${copy.locked}, ${levelLabel}`;
                   return (
                     <Button
                       key={type}
@@ -186,7 +211,8 @@ export default function CompanionCustomizeModal({
                       py={2}
                       variant="ghost"
                       aria-pressed={active}
-                      aria-label={copy[type]}
+                      aria-label={ariaLabel}
+                      isDisabled={!unlocked}
                       border="2px solid"
                       borderColor={
                         active
@@ -213,6 +239,10 @@ export default function CompanionCustomizeModal({
                             : "whiteAlpha.100",
                       }}
                       _active={{ bg: undefined }}
+                      _disabled={{
+                        opacity: isLightTheme ? 0.62 : 0.48,
+                        cursor: "not-allowed",
+                      }}
                       onClick={() => setDraftPetType(type)}
                     >
                       <VStack spacing={1.5} justify="center">
@@ -228,15 +258,47 @@ export default function CompanionCustomizeModal({
                           color={
                             active
                               ? isLightTheme
-                                ? "#2f6a57"
-                                : "teal.200"
-                              : isLightTheme
-                                ? APP_TEXT_SECONDARY
-                                : "gray.300"
+                                ? ACTIVE_UNLOCKED_TEXT_LIGHT
+                                : ACTIVE_UNLOCKED_TEXT_DARK
+                              : unlocked
+                                ? isLightTheme
+                                  ? UNLOCKED_TEXT_LIGHT
+                                  : UNLOCKED_TEXT_DARK
+                                : isLightTheme
+                                  ? APP_TEXT_SECONDARY
+                                  : "gray.300"
                           }
                         >
                           {copy[type]}
                         </Text>
+                        <HStack
+                          spacing={1}
+                          minH="14px"
+                          color={
+                            unlocked
+                              ? active
+                                ? isLightTheme
+                                  ? ACTIVE_UNLOCKED_TEXT_LIGHT
+                                  : ACTIVE_UNLOCKED_TEXT_DARK
+                                : isLightTheme
+                                  ? UNLOCKED_TEXT_LIGHT
+                                  : UNLOCKED_TEXT_DARK
+                              : isLightTheme
+                                ? "#8a6b32"
+                                : "yellow.200"
+                          }
+                        >
+                          {!unlocked ? (
+                            <Box as={FiLock} boxSize="10px" />
+                          ) : null}
+                          <Text
+                            fontSize="10px"
+                            fontWeight="bold"
+                            lineHeight="1"
+                          >
+                            {levelLabel}
+                          </Text>
+                        </HStack>
                       </VStack>
                     </Button>
                   );
