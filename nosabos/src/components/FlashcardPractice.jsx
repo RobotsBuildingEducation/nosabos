@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import {
   Box,
@@ -48,6 +48,7 @@ import { translations } from "../utils/translation";
 import { WaveBar } from "./WaveBar";
 import useNotesStore from "../hooks/useNotesStore";
 import { generateNoteContent, buildNoteObject } from "../utils/noteGeneration";
+import { captureCompanionMemory } from "../utils/companionMemory";
 import { RiBookmarkLine } from "react-icons/ri";
 import { FiHelpCircle } from "react-icons/fi";
 import useSoundSettings from "../hooks/useSoundSettings";
@@ -285,6 +286,35 @@ export default function FlashcardPractice({
   const addNote = useNotesStore((s) => s.addNote);
   const setNotesLoading = useNotesStore((s) => s.setLoading);
   const triggerDoneAnimation = useNotesStore((s) => s.triggerDoneAnimation);
+
+  // Companion brain: auto-save a missed card (AI-graded "wrong") as a
+  // high-signal weak spot for tomorrow's quest. Deduped per card-open so a
+  // single miss is captured once, regardless of how many times the result
+  // effect re-runs.
+  const companionCapturedRef = useRef(null);
+  useEffect(() => {
+    if (!isOpen) {
+      companionCapturedRef.current = null;
+      return;
+    }
+    if (!showResult || isCorrect || assessmentMode !== "ai") return;
+    const cardId = card?.id || "";
+    if (companionCapturedRef.current === cardId) return;
+    companionCapturedRef.current = cardId;
+    captureCompanionMemory({
+      targetLang,
+      supportLang: effectiveCardLanguage,
+      sourceMode: "flashcard",
+      concept: getConceptText(card, effectiveCardLanguage),
+      userAnswer: textAnswer || recognizedText || "",
+      cefrLevel: card?.cefrLevel,
+      sourceContext: "flashcards",
+    });
+    triggerDoneAnimation();
+    // textAnswer/recognizedText are read at capture time but intentionally not
+    // deps — capture is gated on the showResult transition, not keystrokes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, showResult, isCorrect, assessmentMode, card]);
 
   const cefrColor = CEFR_COLORS[card.cefrLevel];
   const modalTrimTheme = useMemo(

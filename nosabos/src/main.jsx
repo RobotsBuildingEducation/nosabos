@@ -9,6 +9,11 @@ import {
 } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
+// Self-hosted DM Sans (the landing-page hero font) — bundled by Vite so it
+// renders reliably without an external request. Used by the companion's
+// speech balloon (and available app-wide).
+import "@fontsource/dm-sans/400.css";
+import "@fontsource/dm-sans/700.css";
 import "./useThemeStore";
 import { ChakraProvider } from "@chakra-ui/react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";

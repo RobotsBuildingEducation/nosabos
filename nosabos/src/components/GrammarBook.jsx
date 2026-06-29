@@ -62,6 +62,7 @@ import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import { shuffle } from "./quiz/utils";
 import useNotesStore from "../hooks/useNotesStore";
 import { generateNoteContent, buildNoteObject } from "../utils/noteGeneration";
+import { captureCompanionMemory } from "../utils/companionMemory";
 import VirtualKeyboard from "./VirtualKeyboard";
 import { MdKeyboard } from "react-icons/md";
 import useSoundSettings from "../hooks/useSoundSettings";
@@ -1120,6 +1121,35 @@ export default function GrammarBook({
   const addNote = useNotesStore((s) => s.addNote);
   const setNotesLoading = useNotesStore((s) => s.setLoading);
   const triggerDoneAnimation = useNotesStore((s) => s.triggerDoneAnimation);
+
+  // Companion brain: auto-save a missed grammar item as a high-signal weak spot
+  // for tomorrow's quest. Fires on the wrong-answer transition (lastOk === false)
+  // and dedupes by question so a single miss is captured once.
+  const companionCapturedRef = useRef(null);
+  useEffect(() => {
+    if (lastOk === null) {
+      companionCapturedRef.current = null;
+      return;
+    }
+    if (lastOk !== false || !currentQuestionData) return;
+    const sig = `${currentQuestionData.question || ""}|${currentQuestionData.userAnswer || ""}`;
+    if (companionCapturedRef.current === sig) return;
+    companionCapturedRef.current = sig;
+    captureCompanionMemory({
+      npub,
+      targetLang,
+      supportLang: supportCode,
+      sourceMode: "grammar",
+      concept:
+        currentQuestionData.question || currentQuestionData.correctAnswer || "",
+      userAnswer: currentQuestionData.userAnswer || "",
+      expectedAnswer: currentQuestionData.correctAnswer || "",
+      cefrLevel,
+      sourceContext: "grammar",
+    });
+    triggerDoneAnimation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastOk, currentQuestionData]);
 
   // inline assistant support feature (replaces modal)
   const [assistantSupportText, setAssistantSupportText] = useState("");

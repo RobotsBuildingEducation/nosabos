@@ -7,7 +7,7 @@
 // Deliberately plain (no entrance animations, no imports from other
 // component files' internals) — App.jsx's conductor drives the guided
 // session; this screen is where it starts and ends.
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Box, Button, HStack, Text, VStack } from "@chakra-ui/react";
 import { CheckCircleIcon } from "@chakra-ui/icons";
 import { FiPlay } from "react-icons/fi";
@@ -21,7 +21,20 @@ import selectSound from "../assets/select.mp3";
 import {
   getDailyPlateSnapshot,
   getNextPlateCourse,
+  hasSeenFirstQuest,
+  isPastFirstQuest,
 } from "../utils/dailyPlate";
+import {
+  getReusableMemory,
+  getStoredBlueprint,
+  getStoredRepairPlan,
+  getStoredQuestExplanation,
+  storeQuestExplanation,
+} from "../utils/companionMemory";
+import {
+  buildQuestBubble,
+  companionMemorySummary,
+} from "../utils/companionMemoryCopy";
 import {
   PLATE_CLEARED_COPY,
   PLATE_COURSE_META,
@@ -108,6 +121,7 @@ export default function DailyPlateHome({
     ? "rgba(49, 151, 149, 0.22)"
     : "rgba(45, 212, 191, 0.24)";
 
+  const [bubbleDismissed, setBubbleDismissed] = useState(false);
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 60_000);
@@ -120,6 +134,119 @@ export default function DailyPlateHome({
   );
   const { courses, isCleared } = snapshot;
   const nextCourse = getNextPlateCourse(snapshot);
+
+  /* --- Companion quest bubble ------------------------------------------
+     The manga-like note that frames the quest. On the very first quest it's a
+     warm welcome (introducing the companion, no memory personalization — the
+     caveat is honored); from the next quest on it's memory-aware framing. */
+  const pastFirst = isPastFirstQuest(user, snapshot.dayKey);
+  // The user has an established quest (so we're not flashing a bubble before the
+  // first plate is even composed). On the first quest this is true + !pastFirst.
+  const hasQuest = hasSeenFirstQuest(user);
+  const repairPlan = useMemo(
+    () => getStoredRepairPlan(user, targetLang, snapshot.dayKey),
+    [user, targetLang, snapshot.dayKey],
+  );
+  const reusableMemory = useMemo(
+    () => getReusableMemory(user, targetLang, now),
+    [user, targetLang, now],
+  );
+  const repairConcept =
+    repairPlan?.items?.[0]?.concept || reusableMemory[0]?.concept || "";
+  const repairCount = repairPlan?.items?.length || reusableMemory.length;
+  const taskList = useMemo(
+    () =>
+      courses
+        .map((course) => {
+          const meta = PLATE_COURSE_META[course.kind];
+          return meta ? plateUiCopy(appLanguage, meta.label) : null;
+        })
+        .filter(Boolean)
+        .join(", "),
+    [courses, appLanguage],
+  );
+  const leadKind = !pastFirst
+    ? "welcome"
+    : repairConcept
+      ? repairCount > 1
+        ? "repairMulti"
+        : "repair"
+      : "fresh";
+  const bubble = useMemo(
+    () =>
+      buildQuestBubble({
+        lang: appLanguage,
+        leadKind,
+        concept: repairConcept,
+        taskList,
+        cleared: isCleared && pastFirst && Boolean(repairConcept),
+      }),
+    [appLanguage, leadKind, repairConcept, taskList, isCleared, pastFirst],
+  );
+  // On returning days, prefer the AI-composed message from the batch blueprint
+  // (it's written from the day's whole note feed); fall back to the
+  // deterministic bubble when there's no blueprint yet or it failed. The first
+  // quest always uses the deterministic welcome (caveat: never personalized).
+  const blueprint = useMemo(
+    () => getStoredBlueprint(user, targetLang, snapshot.dayKey),
+    [user, targetLang, snapshot.dayKey],
+  );
+  const aiLong =
+    blueprint?.status === "ready" ? blueprint?.message?.long || "" : "";
+
+  // Welcome on the first quest; memory framing afterward. Cleared with nothing
+  // repaired → the "complete" banner says it all, so no bubble.
+  const bubbleText =
+    hasQuest && (!isCleared || (pastFirst && repairConcept))
+      ? pastFirst && aiLong
+        ? aiLong
+        : bubble.long
+      : "";
+
+  // The companion bubble waits for the post-onboarding action-bar tour to finish
+  // (ctaDisabled tracks that tour) so it doesn't compete with the stepper, then
+  // shows until the user taps "Continue" to dismiss it.
+  const showBubble = !!bubbleText && !bubbleDismissed && !ctaDisabled;
+  // The task list (and CTA) stay locked continuously: first while the stepper
+  // tour runs, then while the bubble is up — only freeing once the bubble is
+  // dismissed (or, when there's no bubble, once the tour ends).
+  const tasksLocked = ctaDisabled || showBubble;
+
+  // Persist the day's explanation to the user doc once (quest history /
+  // diary / notifications can read it later). Active-quest framing only — the
+  // cleared recap isn't stored as "why this quest existed".
+  const explanationWrittenRef = useRef("");
+  useEffect(() => {
+    // Only persist the "why this quest" rationale for returning quests, not the
+    // first-quest welcome.
+    if (!pastFirst || isCleared) return;
+    const { dayKey, langKey } = snapshot;
+    if (!dayKey || !langKey) return;
+    const onceKey = `${langKey}:${dayKey}`;
+    if (explanationWrittenRef.current === onceKey) return;
+    explanationWrittenRef.current = onceKey;
+    if (getStoredQuestExplanation(user, targetLang, dayKey)) return;
+    storeQuestExplanation({
+      targetLang,
+      dayKey,
+      explanation: {
+        questDayKey: dayKey,
+        targetLang: langKey,
+        questKinds: courses.map((course) => course.kind),
+        repairMemoryIds: repairPlan?.memoryIds || [],
+        shortBubbleText: bubble.short,
+        explanation: bubble.long,
+        companionMood: leadKind === "fresh" ? "neutral" : "focused",
+        sourceMemorySummary: repairConcept
+          ? companionMemorySummary(appLanguage, repairConcept)
+          : "",
+        createdAt: Date.now(),
+      },
+    });
+    // Intentionally keyed on the day/lang only — the bubble text is derived
+    // from those and we want a single write per quest day.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pastFirst, isCleared, snapshot.dayKey, snapshot.langKey]);
 
   const dateLabel = useMemo(() => {
     try {
@@ -155,7 +282,7 @@ export default function DailyPlateHome({
       position="relative"
       zIndex={1}
     >
-      <VStack w="100%" maxW="560px" spacing={4} align="stretch">
+      <VStack w="100%" maxW="560px" spacing={3} align="stretch">
         {/* Header */}
         <Box textAlign="center">
           <Text
@@ -211,7 +338,13 @@ export default function DailyPlateHome({
         )}
 
         {/* Course rows in the plate's elected order (display-only) */}
-        <VStack spacing={2.5} align="stretch">
+        <VStack
+          spacing={2.5}
+          align="stretch"
+          opacity={tasksLocked ? 0.4 : 1}
+          pointerEvents={tasksLocked ? "none" : "auto"}
+          transition="opacity 0.2s"
+        >
           {courses.map((course) => {
             const kind = course.kind;
             const meta = PLATE_COURSE_META[kind];
@@ -254,7 +387,9 @@ export default function DailyPlateHome({
                     bg={
                       course.done ? completedIconBg : "rgba(255,255,255,0.06)"
                     }
-                    color={course.done ? completedAccent : "var(--app-text-primary)"}
+                    color={
+                      course.done ? completedAccent : "var(--app-text-primary)"
+                    }
                   >
                     <CourseIcon size={18} />
                   </Box>
@@ -299,7 +434,9 @@ export default function DailyPlateHome({
                         fontSize="xs"
                         fontWeight="bold"
                         color={
-                          course.done ? completedAccent : "var(--app-text-muted)"
+                          course.done
+                            ? completedAccent
+                            : "var(--app-text-muted)"
                         }
                         whiteSpace="nowrap"
                       >
@@ -344,7 +481,7 @@ export default function DailyPlateHome({
             colorScheme="teal"
             variant="solid"
             leftIcon={<FiPlay />}
-            isDisabled={ctaDisabled}
+            isDisabled={tasksLocked}
           >
             {ctaLabel}
           </Button>
@@ -363,6 +500,11 @@ export default function DailyPlateHome({
           petType={petType}
           companionLevel={companionLevel}
           onCustomizePet={onCustomizePet}
+          questBubble={
+            showBubble
+              ? { text: bubbleText, onDismiss: () => setBubbleDismissed(true) }
+              : null
+          }
         />
         <PlateActivityHeatmap
           lang={appLanguage}

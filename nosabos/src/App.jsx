@@ -167,12 +167,16 @@ import {
   claimDailyPlateBonus,
   clearPlateSession,
   electDailyQuestCourses,
+  getDailyPlateDayKey,
   getDailyPlateSnapshot,
   getNextPlateCourse,
   getQuestNeglectWeights,
   hasSeenFirstQuest,
+  isPastFirstQuest,
   isPlateSessionFor,
+  markFirstQuestFlagOnly,
   markFirstQuestSeen,
+  normalizePlateLang,
   readPlateSession,
   readQuestPlate,
   readQuestPlateKinds,
@@ -180,6 +184,18 @@ import {
   startPlateSession,
   writeQuestPlate,
 } from "./utils/dailyPlate";
+import {
+  getBlueprintCarryOverKinds,
+  getReusableMemory,
+  getStoredRepairPlan,
+  getTodaysCapturedNotes,
+  getTomorrowKey,
+  getYesterdayKey,
+  pruneCompanionMemory,
+  runDailyBatch,
+  shouldRunDailyBatch,
+} from "./utils/companionMemory";
+import CompanionRepairModal from "./components/CompanionRepairModal";
 import {
   startLesson,
   completeLesson,
@@ -7400,15 +7416,41 @@ export default function App({ onBootReady } = {}) {
     resolvedTargetLang,
   ]);
 
+  // Stable per-day language/day keys (independent of the elected kinds), used
+  // by the repair + prune effects so they don't depend on the snapshot they
+  // help shape.
+  const plateLangKey = normalizePlateLang(resolvedTargetLang);
+  const plateDayKey = getDailyPlateDayKey();
+
+  // Today's repair plan (curated from yesterday's companion memory), if any.
+  const repairPlanToday = useMemo(
+    () => getStoredRepairPlan(user, resolvedTargetLang, plateDayKey),
+    [user, resolvedTargetLang, plateDayKey],
+  );
+
+  // Option A: kinds the learner left unfinished on an incomplete previous day,
+  // carried into today by the batch blueprint. Derived (never elected), like
+  // repair, so they can't fight the elector.
+  const carryOverKinds = useMemo(
+    () => getBlueprintCarryOverKinds(user, resolvedTargetLang, plateDayKey),
+    [user, resolvedTargetLang, plateDayKey],
+  );
+
+  // The plate's display kinds = elected base, with carried-over unfinished
+  // kinds and "repair" prepended (deduped). The elected base (persisted) never
+  // contains either, so this stays purely derived and can't fight the elector.
+  const questKinds = useMemo(() => {
+    const base = electedQuestKinds.filter((k) => k !== "repair");
+    const withRepair = repairPlanToday ? ["repair", ...base] : base;
+    if (!carryOverKinds.length) return withRepair;
+    const carry = carryOverKinds.filter((k) => !withRepair.includes(k));
+    return [...carry, ...withRepair];
+  }, [repairPlanToday, electedQuestKinds, carryOverKinds]);
+
   const plateSnapshot = useMemo(
     () =>
-      getDailyPlateSnapshot(
-        user,
-        resolvedTargetLang,
-        undefined,
-        electedQuestKinds,
-      ),
-    [user, resolvedTargetLang, electedQuestKinds],
+      getDailyPlateSnapshot(user, resolvedTargetLang, undefined, questKinds),
+    [user, resolvedTargetLang, questKinds],
   );
 
   // Resolve today's quest composition:
@@ -7426,6 +7468,16 @@ export default function App({ onBootReady } = {}) {
       setElectedQuestKinds((prev) =>
         prev.join("|") === todays.join("|") ? prev : todays,
       );
+      // A plate cached by older code may have skipped the first-seen flag for a
+      // returning user. Today's plate already exists, so they're past the intro
+      // — set the flag (no first-day stamp) so the companion bubble isn't gated
+      // off. (A genuine first-timer's trio election sets the flag itself below.)
+      if (
+        activeNpub &&
+        !hasSeenFirstQuest(useUserStore.getState?.()?.user || user)
+      ) {
+        void markFirstQuestFlagOnly(activeNpub);
+      }
       return;
     }
 
@@ -7473,6 +7525,111 @@ export default function App({ onBootReady } = {}) {
     activeNpub,
   ]);
 
+  // Companion brain: expire stale memory once per day. Notes live through the
+  // day after capture (Day T+1 reinforcement), then this prunes them (Day T+2).
+  // Gated on a loaded user so it never runs against an empty store, and prune
+  // itself only writes when it actually removed notes.
+  const memoryPrunedRef = useRef("");
+  useEffect(() => {
+    if (isLoadingApp || !user || !activeNpub || !plateLangKey || !plateDayKey)
+      return;
+    const onceKey = `${plateLangKey}:${plateDayKey}`;
+    if (memoryPrunedRef.current === onceKey) return;
+    memoryPrunedRef.current = onceKey;
+    void pruneCompanionMemory({ npub: activeNpub, targetLang: plateLangKey });
+  }, [isLoadingApp, user, activeNpub, plateLangKey, plateDayKey]);
+
+  // Companion batch — primary trigger. When today's quest clears, compose
+  // TOMORROW's blueprint (manga message + AI repair) from today's captured
+  // notes, so the next session is instant. Marker-first via shouldRunDailyBatch
+  // (skips if already generated, even across devices) + a ref for same-tick.
+  // No first-quest gate here: Day-1 completion legitimately seeds Day-2, which
+  // is past-intro; the caveat is enforced at consumption, not generation.
+  const blueprintCompletionRef = useRef("");
+  useEffect(() => {
+    if (isLoadingApp || !user || !activeNpub || !plateLangKey || !plateDayKey)
+      return;
+    if (!plateSnapshot.isCleared) return;
+    const tomorrowKey = getTomorrowKey();
+    if (!tomorrowKey) return;
+    const currentUser = useUserStore.getState?.()?.user || user;
+    if (!shouldRunDailyBatch(currentUser, plateLangKey, tomorrowKey)) return;
+    const sourceNotes = getTodaysCapturedNotes(currentUser, plateLangKey);
+    if (!sourceNotes.length) return;
+    const onceKey = `${plateLangKey}:${tomorrowKey}`;
+    if (blueprintCompletionRef.current === onceKey) return;
+    blueprintCompletionRef.current = onceKey;
+    void runDailyBatch({
+      npub: activeNpub,
+      targetLang: plateLangKey,
+      appLanguage,
+      sourceNotes,
+      targetDayKey: tomorrowKey,
+      todayCleared: true,
+      carryOverKinds: [],
+    });
+  }, [
+    isLoadingApp,
+    user,
+    activeNpub,
+    plateLangKey,
+    plateDayKey,
+    plateSnapshot.isCleared,
+    appLanguage,
+  ]);
+
+  // Companion batch — fallback. On open, if today has no blueprint yet (the
+  // completion trigger never fired — yesterday's quest went unfinished, or the
+  // tab closed before it ran) and yesterday left reusable notes, compose
+  // today's blueprint now. Reads yesterday's snapshot to carry over unfinished
+  // kinds and flag the incomplete day (Option A). Gated past the intro quest.
+  const blueprintFallbackRef = useRef("");
+  useEffect(() => {
+    if (isLoadingApp || !user || !activeNpub || !plateLangKey || !plateDayKey)
+      return;
+    const currentUser = useUserStore.getState?.()?.user || user;
+    if (!isPastFirstQuest(currentUser, plateDayKey)) return;
+    if (!shouldRunDailyBatch(currentUser, plateLangKey, plateDayKey)) return;
+    const sourceNotes = getReusableMemory(currentUser, plateLangKey);
+    if (!sourceNotes.length) return;
+    const onceKey = `${plateLangKey}:${plateDayKey}`;
+    if (blueprintFallbackRef.current === onceKey) return;
+    blueprintFallbackRef.current = onceKey;
+
+    // Did yesterday's quest get finished, and what was left unfinished?
+    const yKey = getYesterdayKey();
+    const yKinds = readQuestPlateKinds(plateLangKey, yKey) || [];
+    const ySnap = yKinds.length
+      ? getDailyPlateSnapshot(
+          currentUser,
+          plateLangKey,
+          new Date(Date.now() - 86_400_000),
+          yKinds,
+        )
+      : null;
+    const yesterdayComplete = ySnap ? ySnap.isCleared : true;
+    const carryOverKinds =
+      !yesterdayComplete && ySnap
+        ? ySnap.courses
+            .filter((c) => !c.done && c.kind !== "repair")
+            .map((c) => c.kind)
+            .slice(0, 2)
+        : [];
+
+    void runDailyBatch({
+      npub: activeNpub,
+      targetLang: plateLangKey,
+      appLanguage,
+      sourceNotes,
+      targetDayKey: plateDayKey,
+      todayCleared: yesterdayComplete,
+      carryOverKinds,
+    });
+  }, [isLoadingApp, user, activeNpub, plateLangKey, plateDayKey, appLanguage]);
+
+  // Repair surface (a short ephemeral flashcard pass) opens over the plate.
+  const [repairModalOpen, setRepairModalOpen] = useState(false);
+
   const [plateSessionActive, setPlateSessionActive] = useState(false);
 
   const endPlateSession = useCallback(() => {
@@ -7512,6 +7669,13 @@ export default function App({ onBootReady } = {}) {
   // the quest never auto-starts a session or picks the activity for them.
   const navigateToPlateCourse = useCallback(
     (kind) => {
+      if (kind === "repair") {
+        // Repair is an ephemeral pass that opens over the current surface —
+        // make sure the plate home is behind it, then open the modal.
+        goToSkillTreeMode("plate");
+        setRepairModalOpen(true);
+        return;
+      }
       if (kind === "speak") {
         goToSkillTreeMode("tutor");
         return;
@@ -8190,6 +8354,16 @@ export default function App({ onBootReady } = {}) {
         targetLang={resolvedTargetLang}
       />
 
+      <CompanionRepairModal
+        isOpen={repairModalOpen}
+        onClose={() => setRepairModalOpen(false)}
+        plan={repairPlanToday}
+        targetLang={resolvedTargetLang}
+        appLanguage={appLanguage}
+        npub={activeNpub}
+        startIndex={plateSnapshot.byKind?.repair?.count || 0}
+      />
+
       {!isGameFullScreen && (
         <BottomActionBar
           t={t}
@@ -8250,7 +8424,7 @@ export default function App({ onBootReady } = {}) {
               sessionActive={plateSessionActive}
               onStartPractice={handleStartDailyPractice}
               onRegenerate={handleRegenerateQuestPlate}
-              questKinds={electedQuestKinds}
+              questKinds={questKinds}
               ctaDisabled={showSkillTreeTutorial}
               petHealth={dailyGoalPetHealth}
               petName={user?.dailyGoalPetName || ""}

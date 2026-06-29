@@ -32,10 +32,9 @@ import {
   getLanguageLocale,
   normalizeSupportLanguage,
 } from "../constants/languages";
-import {
-  nativeAnchoredDrawerMotionProps,
-  nativeOverlayMotionProps,
-} from "../utils/modalMotion";
+import { nativeAnchoredDrawerMotionProps } from "../utils/modalMotion";
+import CompanionMemoryList from "./CompanionMemoryList";
+import { MEMORY_DRAWER_COPY, memoryCopy } from "../utils/companionMemoryCopy";
 
 const APP_SURFACE = "var(--app-surface)";
 const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
@@ -130,46 +129,10 @@ export default function NotesDrawer({
     return notes.filter((note) => note.targetLang === targetLang);
   }, [notes, targetLang]);
 
-  const drawerTitle =
-    lang === "ja"
-      ? "マイメモ"
-      : lang === "zh"
-        ? "我的笔记"
-        : lang === "ar"
-          ? "ملاحظاتي"
-          : lang === "fr"
-            ? "Mes notes"
-            : lang === "pt"
-              ? "Minhas notas"
-              : lang === "it"
-                ? "Le mie note"
-                : lang === "de"
-                  ? "Meine Notizen"
-                  : lang === "hi"
-                    ? "मेरे नोट्स"
-                    : lang === "es"
-                      ? "Mis Notas"
-                      : "My Notes";
-  const emptyMessage =
-    lang === "ja"
-      ? "まだメモがありません。フラッシュカード、語彙、文法を完了すると自動でメモが作成されます。"
-      : lang === "zh"
-        ? "还没有笔记。完成闪卡、词汇或语法练习后会自动创建笔记。"
-        : lang === "fr"
-          ? "Aucune note pour l'instant. Termine des cartes, du vocabulaire ou de la grammaire pour creer des notes automatiquement."
-          : lang === "pt"
-            ? "Voce ainda nao tem notas. Conclua cartoes, vocabulario ou gramatica para criar notas automaticamente."
-            : lang === "it"
-              ? "Ancora nessuna nota. Completa schede, vocabolario o grammatica per creare note automaticamente."
-              : lang === "de"
-                ? "Noch keine Notizen. Schließe Karten, Wortschatz oder Grammatik ab, um automatisch Notizen zu erstellen."
-                : lang === "hi"
-                  ? "अभी आपके पास कोई नोट नहीं है। फ्लैशकार्ड, शब्दावली या व्याकरण पूरा करें ताकि नोट अपने आप बन सकें।"
-                  : lang === "ar"
-                    ? "لسه ماعندكش ملاحظات. كمّل البطاقات أو المفردات أو القواعد علشان تتعمل ملاحظات تلقائيًا."
-                    : lang === "es"
-                      ? "Aún no tienes notas. Completa tarjetas, vocabulario o gramática para crear notas automáticamente."
-                      : "No notes yet. Complete flashcards, vocabulary or grammar to automatically create notes.";
+  // The notes drawer is now the companion's "Memory". Manual saved notes live
+  // on as a secondary section below the companion-brain list.
+  const drawerTitle = memoryCopy(lang, MEMORY_DRAWER_COPY.title);
+  const savedNotesHeading = memoryCopy(lang, MEMORY_DRAWER_COPY.savedNotesHeading);
   const clearAllLabel =
     lang === "ja"
       ? "すべて削除"
@@ -654,20 +617,18 @@ export default function NotesDrawer({
 
         <DrawerBody overflowY="auto" flex="1" py={4}>
           <Box maxW="720px" mx="auto" w="100%">
-            {filteredNotes.length === 0 ? (
-              <Flex
-                direction="column"
-                align="center"
-                justify="center"
-                h="200px"
-                textAlign="center"
-              >
-                <Text color={noteUi.secondaryText} fontSize="sm" maxW="520px">
-                  {emptyMessage}
+            <CompanionMemoryList targetLang={targetLang} lang={lang} />
+            {filteredNotes.length > 0 ? (
+              <Box>
+                <Text
+                  fontSize="md"
+                  fontWeight="bold"
+                  color={noteUi.primaryText}
+                  mb={3}
+                >
+                  {savedNotesHeading}
                 </Text>
-              </Flex>
-            ) : (
-              <Accordion allowToggle>
+                <Accordion allowToggle>
                 {CEFR_LEVELS.map((level) => {
                   const levelNotes = notesByCefr[level];
                   const hasNotes = levelNotes.length > 0;
@@ -751,8 +712,9 @@ export default function NotesDrawer({
                     </AccordionItem>
                   );
                 })}
-              </Accordion>
-            )}
+                </Accordion>
+              </Box>
+            ) : null}
           </Box>
         </DrawerBody>
       </DrawerContent>

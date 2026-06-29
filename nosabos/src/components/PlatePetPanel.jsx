@@ -53,6 +53,7 @@ import {
   normalizePetType,
 } from "../utils/petTypes";
 import { getCustomizeModalCopy } from "./companionCustomizeCopy";
+import CompanionQuestBubble from "./CompanionQuestBubble";
 
 const TILE = 16;
 const SCALE = 3;
@@ -1556,6 +1557,27 @@ function drawCompanionCharacter(ctx, frame, stage, petType) {
   drawDogCharacter(ctx, frame, stage);
 }
 
+// Per-pet manga-bubble nudge (px). Each procedural pet sits at a slightly
+// different head height on the 48px canvas, so the balloon's tail needs a small
+// vertical (and, for the alien, horizontal) tweak to land on the head. Positive
+// y = down, negative x = left. Dog is the baseline (0,0).
+const BUBBLE_OFFSET = {
+  dog: { x: 0, y: 0 },
+  alien: { x: -4, y: 4 },
+  robot: { x: 0, y: 10 },
+  slime: { x: 0, y: 10 },
+  ghost: { x: 0, y: 10 },
+  axolotl: { x: 0, y: 10 },
+};
+
+// On mobile, the non-dog pets need a small extra down-left nudge so the tail
+// sits on the head. The dog is the baseline (already well-placed) and is exempt.
+const BUBBLE_OFFSET_MOBILE = { x: -6, y: 6 };
+// The pet canvas is larger on desktop (md+), so the balloon sits too high there.
+// Add this extra downward nudge on top of each non-dog pet's base offset; the
+// dog is already correct on desktop, so it's exempt too.
+const BUBBLE_OFFSET_DESKTOP_Y = 16;
+
 function CompanionCanvas({
   stage,
   petType = "dog",
@@ -1675,6 +1697,8 @@ export default function PlatePetPanel({
   companionLevel = 1,
   // When provided, a pencil button next to the title opens the customize modal.
   onCustomizePet = null,
+  // Optional manga speech balloon { text } — rendered at the pet's top-right.
+  questBubble = null,
 }) {
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
@@ -1698,6 +1722,16 @@ export default function PlatePetPanel({
     resolvedLang,
   )} ${safeCompanionLevel}`;
   const canCustomize = typeof onCustomizePet === "function" && !isCelebration;
+  // While the manga bubble is up it overlaps the edit button; disable the button
+  // and drop it under the bubble, then restore once the bubble is dismissed.
+  const bubbleActive = !isCelebration && !!questBubble?.text;
+  const bubbleOff = BUBBLE_OFFSET[resolvedPetType] || BUBBLE_OFFSET.dog;
+  // The dog is the baseline pet and is already well-placed in both views, so it
+  // gets no extra mobile/desktop nudge; every other pet does.
+  const bubbleIsDog = resolvedPetType === "dog";
+  const bubbleMobileX = bubbleIsDog ? 0 : BUBBLE_OFFSET_MOBILE.x;
+  const bubbleMobileY = bubbleIsDog ? 0 : BUBBLE_OFFSET_MOBILE.y;
+  const bubbleDesktopY = bubbleIsDog ? 0 : BUBBLE_OFFSET_DESKTOP_Y;
   const customizeModalCopy = getCustomizeModalCopy(resolvedLang);
   const customizeModal = useDisclosure();
   const nameInputRef = useRef(null);
@@ -1751,12 +1785,36 @@ export default function PlatePetPanel({
           flexDirection="row"
         >
           <VStack align="stretch" spacing={{ base: 1.5, md: 2 }} flexShrink={0}>
-            <CompanionCanvas
-              stage={stage}
-              petType={resolvedPetType}
-              isLightTheme={isLightTheme}
-              isCelebration={isCelebration}
-            />
+            <Box position="relative" w="fit-content" alignSelf="center">
+              <CompanionCanvas
+                stage={stage}
+                petType={resolvedPetType}
+                isLightTheme={isLightTheme}
+                isCelebration={isCelebration}
+              />
+              {/* Manga balloon at the pet's top-right — overlaps surrounding
+                  content (zIndex) with its tail aimed back into the pet. */}
+              {!isCelebration && questBubble?.text ? (
+                <Box
+                  position="absolute"
+                  bottom="106%"
+                  left="54%"
+                  transform={{
+                    base: `translateX(-20%) translate(${
+                      bubbleOff.x + bubbleMobileX
+                    }px, ${bubbleOff.y + bubbleMobileY}px)`,
+                    md: `translateX(-20%) translate(${bubbleOff.x}px, ${
+                      bubbleOff.y + bubbleDesktopY
+                    }px)`,
+                  }}
+                  zIndex={30}
+                  pointerEvents="auto"
+                  w="max-content"
+                >
+                  <CompanionQuestBubble text={questBubble.text} onDismiss={questBubble.onDismiss} />
+                </Box>
+              ) : null}
+            </Box>
             <Badge
               colorScheme={stage.colorScheme}
               bg={isLightTheme ? stage.badgeBg : undefined}
@@ -1797,6 +1855,9 @@ export default function PlatePetPanel({
                     display="flex"
                     alignItems="center"
                     justifyContent="center"
+                    position="relative"
+                    zIndex={bubbleActive ? 1 : 35}
+                    isDisabled={bubbleActive}
                     alignSelf="center"
                     flexShrink={0}
                     bg="transparent"
