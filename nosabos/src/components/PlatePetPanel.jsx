@@ -1869,7 +1869,7 @@ export default function PlatePetPanel({
                   />
                 ) : null}
                 <Text
-                  fontSize={{ base: "sm", sm: "lg", md: "xl" }}
+                  fontSize={{ base: "sm", sm: "md", md: "lg" }}
                   fontWeight="bold"
                   lineHeight="1.2"
                   color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
@@ -1884,9 +1884,15 @@ export default function PlatePetPanel({
                     flexShrink={0}
                     whiteSpace="nowrap"
                     align="center"
+                    // The title uses noOfLines (display:-webkit-box) which sits a
+                    // hair higher than this row at the larger desktop size; a tiny
+                    // desktop-only nudge lines the level up with the name. Mobile
+                    // is already perfectly aligned, so it stays at 0.
+                    position="relative"
+                    top={{ base: "0px", md: "0.5px" }}
                   >
                     <Text
-                      fontSize={{ base: "sm", sm: "lg", md: "xl" }}
+                      fontSize={{ base: "sm", sm: "md", md: "lg" }}
                       color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
                       fontWeight="semibold"
                       lineHeight="1.1"
@@ -1894,7 +1900,7 @@ export default function PlatePetPanel({
                       |
                     </Text>
                     <Text
-                      fontSize={{ base: "sm", sm: "lg", md: "xl" }}
+                      fontSize={{ base: "sm", sm: "md", md: "lg" }}
                       fontWeight="bold"
                       color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
                       lineHeight="1.1"

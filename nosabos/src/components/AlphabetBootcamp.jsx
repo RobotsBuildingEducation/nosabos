@@ -82,6 +82,7 @@ import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
 import { awardXp } from "../utils/utils";
 import { recordPlateActivity } from "../utils/dailyPlate";
+import { captureCompanionMemory } from "../utils/companionMemory";
 import {
   SOFT_STOP_BUTTON_BG,
   SOFT_STOP_BUTTON_HOVER_BG,
@@ -1567,6 +1568,22 @@ function LetterCard({
       // quest course (pass or fail, like flashcard reviews).
       if (npub) {
         void recordPlateActivity(npub, "phonics", targetLang);
+      }
+
+      // Companion brain: a missed pronunciation is a high-signal phonics slip —
+      // bank it for tomorrow's repair quest (it enriches itself via the cheap
+      // model). Fire-and-forget so grading UI stays snappy.
+      if (!isYes) {
+        captureCompanionMemory({
+          npub,
+          targetLang,
+          supportLang: uiLang,
+          sourceMode: "phonics",
+          concept: practiceWord,
+          userAnswer: answer,
+          expectedAnswer: practiceWord,
+          sourceContext: "phonics",
+        });
       }
 
       let nextPracticeWord = practiceWord;

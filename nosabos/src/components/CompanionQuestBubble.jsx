@@ -155,10 +155,7 @@ export default function CompanionQuestBubble({
           textAlign="center"
           fontWeight="bold"
         >
-          {/* {text} */}
-          {
-            "Okay, listen, I had a dream last night where the alphabet personally chose you. That means we have maybe forty minutes before your old brain tries to escape. Don't worry. I locked the door. Today you're learning this language so hard that by dinner, waiters will assume you're from a village that doesn't exist."
-          }
+          {text}
         </Text>
         {onDismiss && (
           <Button

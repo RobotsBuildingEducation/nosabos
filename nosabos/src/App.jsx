@@ -3020,6 +3020,19 @@ export default function App({ onBootReady } = {}) {
 
     if (!activeNpub) return;
 
+    // Synchronous local flag too: the Firestore field can lag behind a refresh
+    // (user doc loads after the show-effect runs), which would briefly re-trigger
+    // onboarding. localStorage is read synchronously on the next mount, so the
+    // tutorial never re-shows once completed on this device.
+    try {
+      window.localStorage.setItem(
+        `skillTreeTutorialCompleted:${activeNpub}`,
+        "1",
+      );
+    } catch {
+      /* ignore quota/availability */
+    }
+
     try {
       setDoc(
         doc(database, "users", activeNpub),
@@ -3430,8 +3443,21 @@ export default function App({ onBootReady } = {}) {
 
     skillTreeTutorialCheckedRef.current = true;
 
+    // Treat the tutorial as done if EITHER the synced user flag or the local
+    // device flag is set. The local flag guards the refresh race where the user
+    // doc (with skillTreeTutorialCompleted) hasn't loaded yet when this runs.
+    let locallyCompleted = false;
+    try {
+      locallyCompleted =
+        window.localStorage.getItem(
+          `skillTreeTutorialCompleted:${activeNpub}`,
+        ) === "1";
+    } catch {
+      locallyCompleted = false;
+    }
+
     // Show tutorial if not completed
-    if (!user.skillTreeTutorialCompleted) {
+    if (!user.skillTreeTutorialCompleted && !locallyCompleted) {
       // Small delay to let UI settle
       setTimeout(() => {
         setShowSkillTreeTutorial(true);

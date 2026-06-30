@@ -121,7 +121,6 @@ export default function DailyPlateHome({
     ? "rgba(49, 151, 149, 0.22)"
     : "rgba(45, 212, 191, 0.24)";
 
-  const [bubbleDismissed, setBubbleDismissed] = useState(false);
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 60_000);
@@ -134,6 +133,41 @@ export default function DailyPlateHome({
   );
   const { courses, isCleared } = snapshot;
   const nextCourse = getNextPlateCourse(snapshot);
+
+  // The bubble's "Continue" dismissal persists per day (keyed by language + day)
+  // so a refresh doesn't re-show a bubble the user already continued past. The
+  // key naturally rolls over tomorrow, surfacing the next day's bubble.
+  const bubbleDismissKey = `companionBubbleDismissed:${targetLang}:${snapshot.dayKey}`;
+  // Lazy init reads the persisted flag on mount (no flash before the effect); the
+  // effect below re-syncs if the day/language rolls over while still mounted.
+  const [bubbleDismissed, setBubbleDismissed] = useState(() => {
+    try {
+      return (
+        typeof window !== "undefined" &&
+        window.localStorage.getItem(bubbleDismissKey) === "1"
+      );
+    } catch {
+      return false;
+    }
+  });
+  useEffect(() => {
+    try {
+      setBubbleDismissed(
+        typeof window !== "undefined" &&
+          window.localStorage.getItem(bubbleDismissKey) === "1",
+      );
+    } catch {
+      setBubbleDismissed(false);
+    }
+  }, [bubbleDismissKey]);
+  const dismissBubble = () => {
+    setBubbleDismissed(true);
+    try {
+      window.localStorage.setItem(bubbleDismissKey, "1");
+    } catch {
+      /* ignore quota/availability errors — dismissal still holds this session */
+    }
+  };
 
   /* --- Companion quest bubble ------------------------------------------
      The manga-like note that frames the quest. On the very first quest it's a
@@ -501,9 +535,7 @@ export default function DailyPlateHome({
           companionLevel={companionLevel}
           onCustomizePet={onCustomizePet}
           questBubble={
-            showBubble
-              ? { text: bubbleText, onDismiss: () => setBubbleDismissed(true) }
-              : null
+            showBubble ? { text: bubbleText, onDismiss: dismissBubble } : null
           }
         />
         <PlateActivityHeatmap

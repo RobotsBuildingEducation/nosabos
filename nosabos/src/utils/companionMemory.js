@@ -18,6 +18,7 @@
 import { doc, setDoc } from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
 import useUserStore from "../hooks/useUserStore";
+import useNotesStore from "../hooks/useNotesStore";
 import { getLocalDayKey } from "./flashcardReview";
 import { normalizePlateLang } from "./dailyPlate";
 import { buildQuestBubble, companionMemorySummary } from "./companionMemoryCopy";
@@ -227,11 +228,88 @@ function buildMemoryNote({
     severity: 1,
     recommendedRepairMode: repairModeForError(errorType),
     companionSummary: companionMemorySummary(supportLang, concept),
+    // Filled in shortly after capture by a cheap Flash-Lite pass (enrichNote).
+    // Until then they're empty and the UI falls back to companionSummary.
+    mistake: "", // what the learner got wrong (support language)
+    correction: String(expectedAnswer || "").slice(0, 240), // the right form
+    tip: "", // one short improvement tip (support language)
+    enriched: false,
     // Alive through Day T+1, pruned starting Day T+2.
     expiresAfterDayKey: getLocalDayKey(new Date(now.getTime() + DAY_MS)) || "",
     usedInQuestDayKey: null,
     status: MEMORY_STATUS.captured,
   };
+}
+
+/* -----------------------------------
+   Enrichment (cheap Flash-Lite pass, runs just after capture)
+----------------------------------- */
+// Ask the cheap model to describe the slip in plain terms: what the learner did
+// wrong, the correct form, and one short tip. Returns null on any failure so the
+// base note (already written) keeps its deterministic summary. Kept tiny and
+// strict-JSON so it's cheap and easy to parse.
+async function enrichNoteFields({
+  concept,
+  userAnswer,
+  expectedAnswer,
+  targetLang,
+  supportLang,
+  sourceMode,
+}) {
+  const targetName = langName(targetLang);
+  const supportName = langName(supportLang);
+  const input = [
+    `A learner studying ${targetName} just slipped up during a ${sourceMode} exercise.`,
+    `Prompt / concept: ${concept}`,
+    userAnswer
+      ? `What the learner answered: ${userAnswer}`
+      : `The learner could not produce an answer.`,
+    expectedAnswer ? `Expected answer: ${expectedAnswer}` : "",
+    `Explain the slip warmly and concretely so a teammate could repair it tomorrow.`,
+    `Write "did" and "tip" in ${supportName}. Write "fix" in ${targetName} when it's a word/phrase, otherwise in ${supportName}.`,
+    `Return ONLY strict minified JSON, no markdown, exactly:`,
+    `{"did":"what specifically was wrong, <=14 words","fix":"the correct form or answer","tip":"one short, encouraging way to remember it, <=16 words"}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  let raw = "";
+  try {
+    raw = await callResponses({ input });
+  } catch {
+    return null;
+  }
+  const parsed = parseBlueprintJson(raw); // tolerant {...} extractor, reused
+  if (!parsed) return null;
+  const did = String(parsed.did || "").trim().slice(0, 200);
+  const fix = String(parsed.fix || "").trim().slice(0, 200);
+  const tip = String(parsed.tip || "").trim().slice(0, 200);
+  if (!did && !fix && !tip) return null;
+  return { mistake: did, correction: fix, tip };
+}
+
+// Re-read the latest bucket and patch the just-captured note in place. Re-reading
+// avoids clobbering any capture that landed in between; if the note was pruned or
+// the user switched accounts, we simply skip.
+async function enrichAndPatchNote({ npub, langKey, noteId, fields }) {
+  if (!fields) return;
+  const store = useUserStore.getState?.();
+  const bucket = readBucket(store?.user || {}, langKey);
+  const idx = bucket.notes.findIndex((n) => n.id === noteId);
+  if (idx < 0) return;
+  const notes = [...bucket.notes];
+  const prev = notes[idx];
+  notes[idx] = {
+    ...prev,
+    mistake: fields.mistake || prev.mistake || "",
+    correction: fields.correction || prev.correction || "",
+    tip: fields.tip || prev.tip || "",
+    enriched: true,
+  };
+  await persistBucket(npub, langKey, {
+    notes,
+    lastPrunedDayKey: bucket.lastPrunedDayKey,
+  });
 }
 
 /**
@@ -240,6 +318,10 @@ function buildMemoryNote({
  * De-dupes within the same day by concept: a repeated miss bumps severity
  * instead of stacking near-identical notes. Returns the stored note (or null
  * when nothing was written).
+ *
+ * The base note is written immediately (so a capture is never lost), then a
+ * cheap Flash-Lite pass enriches it in the background with what went wrong + a
+ * tip. Callers fire-and-forget; the enrichment patch lands a moment later.
  */
 export async function captureCompanionMemory({
   npub,
@@ -306,6 +388,33 @@ export async function captureCompanionMemory({
     notes: trimmed,
     lastPrunedDayKey: bucket.lastPrunedDayKey,
   });
+
+  // Pulse the notes/memory action-bar button so the capture is visible the same
+  // way lessons/skill-tree saves are — centralized here so EVERY capture source
+  // (flashcards, vocab, grammar, tutor, phonics, conversation) lights it up,
+  // including the realtime modes that capture asynchronously.
+  try {
+    useNotesStore.getState?.().triggerDoneAnimation?.();
+  } catch {
+    /* non-fatal: the note is already saved */
+  }
+
+  // Background enrichment (cheap Flash-Lite): describe the slip + a tip, then
+  // patch the note a moment later. Fire-and-forget so capture stays snappy, and
+  // only for notes not already enriched (a repeated miss keeps its first pass).
+  if (!stored.enriched) {
+    void enrichNoteFields({
+      concept: trimmedConcept,
+      userAnswer: stored.userAnswer,
+      expectedAnswer: stored.expectedAnswer,
+      targetLang: langKey,
+      supportLang,
+      sourceMode,
+    }).then((fields) =>
+      enrichAndPatchNote({ npub, langKey, noteId: stored.id, fields }),
+    );
+  }
+
   return stored;
 }
 
@@ -728,7 +837,11 @@ function buildBatchInput({ ranked, targetLang, appLanguage, todayCleared, carryO
     memoryId: n.id,
     concept: n.concept,
     theirAnswer: n.userAnswer || "",
-    correctAnswer: n.expectedAnswer || "",
+    correctAnswer: n.expectedAnswer || n.correction || "",
+    // Enriched at capture time by the Flash-Lite pass — gives the batch a richer,
+    // already-diagnosed picture of each slip instead of just raw answers.
+    whatWentWrong: n.mistake || "",
+    improvementTip: n.tip || "",
     errorType: n.errorType,
     severity: n.severity || 1,
   }));

@@ -71,6 +71,8 @@ import {
 import { getBidiTextProps, mergeBidiSx } from "../utils/bidiText";
 import { awardXp } from "../utils/utils";
 import { recordPlateActivity } from "../utils/dailyPlate";
+import { callResponses } from "../utils/llm";
+import { captureCompanionMemory } from "../utils/companionMemory";
 import { getLanguageXp } from "../utils/progressTracking";
 import {
   SOFT_STOP_BUTTON_BG,
@@ -995,6 +997,52 @@ async function idbGetClip(id) {
     const req = tx.objectStore(IDB_STORE).get(id);
     req.onsuccess = () => resolve(req.result || null);
     req.onerror = () => reject(req.error || new Error("IDB get failed"));
+  });
+}
+
+// Companion brain: free-form conversation has no flashcard-style "wrong" event,
+// so after each substantive learner turn we ask the cheap model whether the
+// utterance contained a real target-language slip worth repairing. The model
+// self-filters (slip:false for clean turns) so we only capture genuine mistakes;
+// captureCompanionMemory then enriches + dedupes them. Fire-and-forget.
+async function captureConversationSlip({ text, targetLang, supportLang }) {
+  const trimmed = String(text || "").trim();
+  // Skip trivial turns (greetings, "yes", "ok") — they're not worth a call.
+  if (trimmed.split(/\s+/).filter(Boolean).length < 3) return;
+  const targetName = getLanguagePromptName(targetLang) || targetLang;
+  const supportName = getLanguagePromptName(supportLang) || supportLang;
+  const input = [
+    `A learner practicing ${targetName} just said this in a conversation:`,
+    `"${trimmed}"`,
+    `If it contains a clear ${targetName} mistake worth repairing later (grammar, conjugation, wrong word, gender/agreement, etc.), return ONLY strict minified JSON: {"slip":true,"concept":"a short skill label in ${supportName}","said":"the wrong fragment","correction":"the corrected ${targetName} form"}.`,
+    `If the turn is basically fine, or it's just a greeting/filler, return {"slip":false}. Never invent a mistake.`,
+  ].join("\n");
+
+  let raw = "";
+  try {
+    raw = await callResponses({ input });
+  } catch {
+    return;
+  }
+  const start = raw.indexOf("{");
+  const end = raw.lastIndexOf("}");
+  if (start < 0 || end <= start) return;
+  let parsed = null;
+  try {
+    parsed = JSON.parse(raw.slice(start, end + 1));
+  } catch {
+    return;
+  }
+  if (!parsed?.slip || !parsed.correction) return;
+
+  captureCompanionMemory({
+    targetLang,
+    supportLang,
+    sourceMode: "conversation",
+    concept: String(parsed.concept || parsed.said || trimmed).slice(0, 240),
+    userAnswer: String(parsed.said || trimmed),
+    expectedAnswer: String(parsed.correction || ""),
+    sourceContext: "conversation",
   });
 }
 
@@ -2707,6 +2755,12 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
         turnCountRef.current += 1;
         lastUserMessageRef.current = text;
         awardTurnXp(text, "");
+        // Companion brain: cheaply check this turn for a real slip to repair.
+        void captureConversationSlip({
+          text,
+          targetLang: targetLangRef.current,
+          supportLang: resolvedSupportLang,
+        });
       }
       return;
     }

@@ -75,6 +75,7 @@ import {
 import { getBidiTextProps, mergeBidiSx } from "../utils/bidiText";
 import { awardXp } from "../utils/utils";
 import { recordPlateActivity } from "../utils/dailyPlate";
+import { captureCompanionMemory } from "../utils/companionMemory";
 import {
   completeTutorLesson,
   getLanguageXp,
@@ -900,6 +901,31 @@ const TUTOR_LIVE_TOOLS = {
           }),
         },
         optionalProperties: ["reason"],
+      }),
+    },
+    {
+      name: "recordSlip",
+      description:
+        "Call this the moment you correct the learner on a genuine mistake — a wrong word, " +
+        "wrong conjugation/grammar, or a clearly mispronounced target-language phrase. It silently " +
+        "saves the slip so tomorrow's quest can repair it; it does NOT affect lesson progress and the " +
+        "learner never sees it, so keep teaching exactly as before. Call it at most once per distinct " +
+        "mistake. Do NOT call it when the learner simply asks for help, a meaning, or a repetition, or " +
+        "when they get it right.",
+      parameters: Schema.object({
+        properties: {
+          concept: Schema.string({
+            description:
+              "The skill being practiced, as a short label (e.g. 'ser vs estar', 'past tense of comer', 'rolling rr').",
+          }),
+          learnerSaid: Schema.string({
+            description: "What the learner actually produced (their wrong attempt).",
+          }),
+          correction: Schema.string({
+            description: "The correct target-language form you gave them.",
+          }),
+        },
+        optionalProperties: ["learnerSaid", "correction"],
       }),
     },
   ],
@@ -5204,7 +5230,7 @@ export default function Tutor({
       feedbackContext,
       completionControlInstruction,
       TUTOR_TOOL_GRADING_ENABLED
-        ? `GRADING — call the markTurnSuccessful tool based on the learner's turn: (1) If they correctly produce the requested ${targetLanguageName} phrase or complete the task, call markTurnSuccessful(correct:true), praise briefly, and move to the next agenda item. (2) If they make a mistake, do NOT call it — briefly correct them and have them try again, then call markTurnSuccessful(correct:true) only once they get it right. (3) If they ask for help, a breakdown, the meaning, a repetition, or any question, do NOT call it — help them with the current phrase, then invite them to try; help never earns progress. Call markTurnSuccessful at most once per correct completion, and never for an unsolicited greeting, "yes", or "ready" outside the requested task.`
+        ? `GRADING — call the markTurnSuccessful tool based on the learner's turn: (1) If they correctly produce the requested ${targetLanguageName} phrase or complete the task, call markTurnSuccessful(correct:true), praise briefly, and move to the next agenda item. (2) If they make a mistake, do NOT call markTurnSuccessful — briefly correct them and have them try again, then call markTurnSuccessful(correct:true) only once they get it right; AND the moment you correct a genuine mistake (a wrong word, wrong grammar/conjugation, or a clearly mispronounced ${targetLanguageName} phrase), also call recordSlip(concept, learnerSaid, correction) exactly once for that mistake to silently bank it for tomorrow's repair — this never affects progress and the learner must not be told. Do NOT call recordSlip for help requests, meanings, repetitions, or correct answers. (3) If they ask for help, a breakdown, the meaning, a repetition, or any question, do NOT call markTurnSuccessful — help them with the current phrase, then invite them to try; help never earns progress. Call markTurnSuccessful at most once per correct completion, and never for an unsolicited greeting, "yes", or "ready" outside the requested task.`
         : "",
       TUTOR_TOOL_GRADING_ENABLED
         ? `LESSON FLOW — the app, not you, owns lesson completion. Work through the agenda one item at a time. Once every item has been practiced but the lesson is not yet complete, keep REVIEWING — re-practice items and combine them, calling markTurnSuccessful(correct:true) for each correct review — and do not stop or wind down. Never end, summarize, or say goodbye on your own; if goodbye is the current agenda phrase, only model or prompt it as practice. When you think the lesson is complete, call proposeLessonComplete and follow its decision (if not approved, keep teaching/reviewing).`
@@ -6841,7 +6867,14 @@ export default function Tutor({
       `"""${String(latestAssistantText || "").slice(0, 1800)}"""`,
       "Latest learner transcript:",
       `"""${String(userMessage || "").slice(0, 800)}"""`,
-      'Return ONLY JSON: {"successful":true|false,"confidence":0..1,"reason":"short semantic reason"}',
+      // Also flag a genuine slip so the companion can repair it tomorrow. This is
+      // SEPARATE from XP: set mistake=true ONLY when the learner actually attempted
+      // the requested target-language task but produced it incorrectly (wrong word,
+      // wrong grammar/conjugation, or a clearly wrong/garbled phrase). Set
+      // mistake=false when they got it right, asked for help/meaning/repetition,
+      // were off-task, or gave filler — those are not repairable slips.
+      `When mistake=true, also give "concept" (a short skill label written in ${supportLanguageName}) and "correction" (the correct ${targetLanguageName} phrase the learner should have produced).`,
+      `Return ONLY JSON: {"successful":true|false,"confidence":0..1,"reason":"short semantic reason","mistake":true|false,"concept":"","correction":""}`,
     ]
       .filter(Boolean)
       .join("\n");
@@ -6886,6 +6919,28 @@ export default function Tutor({
         parsed.confidence === undefined
           ? 1
           : Math.max(0, Math.min(1, Number(parsed.confidence) || 0));
+
+      // Companion brain: the grader just classified this turn. If it was a real
+      // attempt that came out wrong, bank the slip for tomorrow's repair quest.
+      // This reuses the grader's own verdict (no extra call) and runs whether the
+      // turn went through the gate judge or background validation. Capture dedupes
+      // by concept per day and enriches itself via the cheap model.
+      if (parsed.mistake === true) {
+        const slipConcept = String(parsed.concept || "").trim();
+        const slipCorrection = String(parsed.correction || "").trim();
+        if (slipConcept || slipCorrection) {
+          captureCompanionMemory({
+            targetLang: targetLangRef.current,
+            supportLang: supportLangRef.current || "en",
+            sourceMode: "tutor",
+            concept: slipConcept || slipCorrection,
+            userAnswer: userMessage,
+            expectedAnswer: slipCorrection,
+            cefrLevel: selectedTutorLessonRef.current?.unit?.cefrLevel,
+            sourceContext: "tutor",
+          });
+        }
+      }
 
       return {
         successful: successful && confidence >= 0.55,
@@ -7199,6 +7254,31 @@ export default function Tutor({
                   "The lesson is not complete yet. Do not end, summarize, or say goodbye — continue teaching the current agenda item.",
               };
           responses.push(buildLiveToolResponse(fc, toolResponse));
+        } else if (fc?.name === "recordSlip") {
+          // Silently bank a corrected mistake for tomorrow's repair quest. This
+          // never touches lesson progress and the learner never sees it — just
+          // answer ok so the live turn keeps flowing, then fire-and-forget the
+          // capture (which enriches itself via the cheap model).
+          responses.push(
+            buildLiveToolResponse(fc, {
+              ok: true,
+              note: "Saved. Keep teaching; do not mention this to the learner.",
+            }),
+          );
+          const args = getLiveToolCallArgs(fc);
+          const slipConcept = String(args.concept || "").trim();
+          if (slipConcept) {
+            captureCompanionMemory({
+              targetLang: targetLangRef.current,
+              supportLang: supportLangRef.current || "en",
+              sourceMode: "tutor",
+              concept: slipConcept,
+              userAnswer: String(args.learnerSaid || ""),
+              expectedAnswer: String(args.correction || ""),
+              cefrLevel: selectedTutorLessonRef.current?.unit?.cefrLevel,
+              sourceContext: "tutor",
+            });
+          }
         } else if (fc?.name) {
           // Unknown tool: still answer so the model is not left waiting.
           responses.push(

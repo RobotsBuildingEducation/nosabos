@@ -11,6 +11,7 @@ import {
   Button,
   Drawer,
   DrawerBody,
+  DrawerCloseButton,
   DrawerContent,
   DrawerHeader,
   DrawerOverlay,
@@ -586,6 +587,13 @@ export default function NotesDrawer({
         }}
       >
         <BottomDrawerDragHandle isDragging={swipeDismiss.isDragging} />
+        <DrawerCloseButton
+          color={noteUi.primaryText}
+          _hover={{ bg: noteUi.closeHoverBg }}
+          top={4}
+          right={4}
+          onClick={onClose}
+        />
         <DrawerHeader
           borderBottomWidth="1px"
           borderColor={noteUi.headerBorder}

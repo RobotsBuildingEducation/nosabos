@@ -15,6 +15,7 @@ import {
   MEMORY_STATUS,
 } from "../utils/companionMemory";
 import {
+  MEMORY_CARD_COPY,
   MEMORY_DRAWER_COPY,
   memoryCopy,
   memoryStatusLabel,
@@ -60,6 +61,45 @@ const SOURCE_LABELS = {
     hi: "व्याकरण",
     ar: "قواعد",
   },
+  tutor: {
+    en: "Tutor",
+    es: "Tutor",
+    pt: "Tutor",
+    it: "Tutor",
+    fr: "Tuteur",
+    de: "Tutor",
+    ja: "チューター",
+    zh: "导师",
+    ru: "Репетитор",
+    hi: "ट्यूटर",
+    ar: "المعلّم",
+  },
+  conversation: {
+    en: "Conversation",
+    es: "Conversación",
+    pt: "Conversa",
+    it: "Conversazione",
+    fr: "Conversation",
+    de: "Gespräch",
+    ja: "会話",
+    zh: "对话",
+    ru: "Разговор",
+    hi: "बातचीत",
+    ar: "محادثة",
+  },
+  phonics: {
+    en: "Phonics",
+    es: "Fonética",
+    pt: "Fonética",
+    it: "Fonetica",
+    fr: "Phonétique",
+    de: "Phonetik",
+    ja: "発音",
+    zh: "拼读",
+    ru: "Фонетика",
+    hi: "ध्वनि",
+    ar: "صوتيات",
+  },
 };
 
 // Status → accent color (works on both themes via rgba).
@@ -79,12 +119,38 @@ function resolveStatus(note, isYesterday) {
   return "captured";
 }
 
+// A compact "label: value" row used for the answer / correction lines.
+function MemoryField({ label, value, labelColor, valueColor }) {
+  return (
+    <HStack spacing={1.5} align="baseline">
+      <Text
+        fontSize="9px"
+        fontWeight="bold"
+        textTransform="uppercase"
+        letterSpacing="0.04em"
+        color={labelColor}
+        flexShrink={0}
+      >
+        {label}
+      </Text>
+      <Text fontSize="xs" color={valueColor} noOfLines={2}>
+        {value}
+      </Text>
+    </HStack>
+  );
+}
+
 function MemoryCard({ note, lang, isYesterday }) {
   const statusKey = resolveStatus(note, isYesterday);
   const accent = STATUS_ACCENT[statusKey] || STATUS_ACCENT.captured;
   const sourceLabel =
     memoryCopy(lang, SOURCE_LABELS[note.sourceMode] || { en: note.sourceMode }) ||
     note.sourceMode;
+
+  const correctValue = note.correction || note.expectedAnswer || "";
+  // The companion's diagnosis + tip (filled by the Flash-Lite enrichment pass).
+  // Until that lands, mistake/tip are empty and we just show the answers.
+  const tipText = [note.mistake, note.tip].filter(Boolean).join(" ");
 
   return (
     <Box
@@ -95,7 +161,8 @@ function MemoryCard({ note, lang, isYesterday }) {
       px={3}
       py={2.5}
     >
-      <VStack align="stretch" spacing={1.5}>
+      <VStack align="stretch" spacing={2}>
+        {/* Header — the concept / target phrase */}
         <Text
           fontSize="sm"
           fontWeight="semibold"
@@ -104,11 +171,8 @@ function MemoryCard({ note, lang, isYesterday }) {
         >
           {note.concept}
         </Text>
-        {note.companionSummary ? (
-          <Text fontSize="xs" color="var(--app-text-secondary)" noOfLines={2}>
-            {note.companionSummary}
-          </Text>
-        ) : null}
+
+        {/* Tags — status + source + severity */}
         <HStack spacing={2} flexWrap="wrap">
           <Badge
             bg={accent.bg}
@@ -136,6 +200,51 @@ function MemoryCard({ note, lang, isYesterday }) {
             </Text>
           ) : null}
         </HStack>
+
+        {/* What the learner did / the correction / the explainer */}
+        <VStack align="stretch" spacing={1.5}>
+          <Box
+            bg="color-mix(in srgb, var(--app-surface-muted) 55%, transparent)"
+            borderRadius="8px"
+            px={2.5}
+            py={2}
+          >
+            <VStack align="stretch" spacing={1.5}>
+              <MemoryField
+                label={memoryCopy(lang, MEMORY_CARD_COPY.youSaid)}
+                value={
+                  note.userAnswer ||
+                  memoryCopy(lang, MEMORY_CARD_COPY.noAnswer)
+                }
+                labelColor="var(--app-text-muted)"
+                valueColor={
+                  note.userAnswer
+                    ? "var(--app-text-primary)"
+                    : "var(--app-text-muted)"
+                }
+              />
+              {correctValue ? (
+                <MemoryField
+                  label={memoryCopy(lang, MEMORY_CARD_COPY.correct)}
+                  value={correctValue}
+                  labelColor="#0d9488"
+                  valueColor="var(--app-text-primary)"
+                />
+              ) : null}
+            </VStack>
+          </Box>
+
+          {tipText ? (
+            <Text
+              fontSize="xs"
+              color="var(--app-text-secondary)"
+              fontStyle="italic"
+              noOfLines={3}
+            >
+              {tipText}
+            </Text>
+          ) : null}
+        </VStack>
       </VStack>
     </Box>
   );
@@ -173,13 +282,7 @@ export default function CompanionMemoryList({ targetLang = "es", lang = "en" }) 
 
   return (
     <Box mb={hasAny ? 5 : 3}>
-      <Text
-        fontSize="md"
-        fontWeight="bold"
-        color="var(--app-text-primary)"
-      >
-        {memoryCopy(lang, MEMORY_DRAWER_COPY.title)}
-      </Text>
+      {/* Title intentionally omitted — the drawer header already says "Memory". */}
       <Text fontSize="xs" color="var(--app-text-secondary)" mb={3}>
         {memoryCopy(lang, MEMORY_DRAWER_COPY.subtitle)}
       </Text>
