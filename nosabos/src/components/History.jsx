@@ -40,6 +40,7 @@ import VirtualKeyboard from "./VirtualKeyboard";
 import translations from "../utils/translation";
 import { getGermanCopy } from "../utils/germanCopy";
 import { awardXp } from "../utils/utils";
+import { captureCompanionMemory } from "../utils/companionMemory";
 import { getLanguageXp } from "../utils/progressTracking";
 import {
   appCheckFetch,
@@ -1780,6 +1781,22 @@ export default function History({
     setReviewCorrect(isCorrect);
     setReviewSubmitted(isCorrect);
     playSound(isCorrect ? deliciousSound : clickSound);
+
+    // Companion brain: a missed reading-comprehension question is a high-signal
+    // weak spot — bank it for tomorrow's repair (it enriches itself via the
+    // cheap model). Fire-and-forget so grading UI stays snappy.
+    if (!isCorrect) {
+      captureCompanionMemory({
+        npub,
+        targetLang,
+        supportLang,
+        sourceMode: "reading",
+        concept: reviewQuestion.question || "",
+        userAnswer: reviewAnswer || "",
+        expectedAnswer: reviewQuestion.answer || "",
+        sourceContext: "reading",
+      });
+    }
 
     // Award XP immediately on correct answer
     if (isCorrect && activeLecture && !activeLecture.awarded) {

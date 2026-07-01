@@ -1293,6 +1293,16 @@ export default function Vocabulary({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastOk, currentQuestionData]);
 
+  // Keep the AI explanation strictly opt-in. It was only cleared on a CORRECT
+  // answer, so once generated it lingered and re-appeared automatically on every
+  // later wrong grade (FeedbackRail shows it whenever !ok && explanationText).
+  // currentQuestionData is a fresh object per graded answer, so clearing on it
+  // wipes any prior explanation the moment a new answer is graded — the panel
+  // now shows only right after the user taps "Explain the answer".
+  useEffect(() => {
+    setExplanationText("");
+  }, [currentQuestionData]);
+
   // inline assistant support feature (replaces modal)
   const [assistantSupportText, setAssistantSupportText] = useState("");
   const [isLoadingAssistantSupport, setIsLoadingAssistantSupport] =
@@ -1419,9 +1429,13 @@ export default function Vocabulary({
   }
 
   // Quiz mode helper function
-  function handleQuizAnswer(isCorrect) {
+  function handleQuizAnswer(isCorrect, questionSnapshot = null) {
     // Mark current question as attempted (prevents multiple submissions)
     setQuizCurrentQuestionAttempted(true);
+    // Quiz grading branches early-return before the normal setCurrentQuestionData,
+    // so record the snapshot here — otherwise the companion capture effect (which
+    // keys on currentQuestionData) never fires for final-quiz mistakes.
+    if (questionSnapshot) setCurrentQuestionData(questionSnapshot);
 
     const newQuestionsAnswered = quizQuestionsAnswered + 1;
     const newCorrectAnswers = isCorrect
@@ -2585,7 +2599,12 @@ Return EXACTLY:
 
     // Handle quiz mode differently
     if (isFinalQuiz) {
-      handleQuizAnswer(ok);
+      handleQuizAnswer(ok, {
+        question: qFill,
+        userAnswer: ansFill,
+        correctAnswer: hFill,
+        questionType: "fill",
+      });
       setResFill(ok ? "correct" : "try_again");
       setLastOk(ok);
       setRecentXp(0); // No XP in quiz mode
@@ -2892,7 +2911,12 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
 
     // Handle quiz mode differently
     if (isFinalQuiz) {
-      handleQuizAnswer(ok);
+      handleQuizAnswer(ok, {
+        question: qMC,
+        userAnswer: pickMC,
+        correctAnswer: answerMC || hMC,
+        questionType: "mc",
+      });
       setResMC(ok ? "correct" : "try_again");
       setLastOk(ok);
       setRecentXp(0); // No XP in quiz mode
@@ -3232,7 +3256,12 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
 
     // Handle quiz mode differently
     if (isFinalQuiz) {
-      handleQuizAnswer(ok);
+      handleQuizAnswer(ok, {
+        question: qMA,
+        userAnswer: selectedStrings.join(", "),
+        correctAnswer: answersMA?.join(", ") || hMA,
+        questionType: "ma",
+      });
       setResMA(ok ? "correct" : "try_again");
       setLastOk(ok);
       setRecentXp(0); // No XP in quiz mode
@@ -4056,7 +4085,12 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
 
     // Handle quiz mode differently
     if (isFinalQuiz) {
-      handleQuizAnswer(ok);
+      handleQuizAnswer(ok, {
+        question: mStem || "Match the items:",
+        userAnswer: userMappings,
+        correctAnswer: mHint || "Check the correct pairings",
+        questionType: "match",
+      });
       setMResult(ok ? "correct" : "try_again");
       setLastOk(ok);
       setRecentXp(0); // No XP in quiz mode
@@ -4140,7 +4174,12 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     const delta = ok ? 6 : 0;
 
     if (isFinalQuiz) {
-      handleQuizAnswer(ok);
+      handleQuizAnswer(ok, {
+        question: tSentence,
+        userAnswer: userWords.join(" "),
+        correctAnswer: tCorrectWords.join(" "),
+        questionType: "translate",
+      });
       setLastOk(ok);
       setRecentXp(0);
       const nextFn =
@@ -4217,7 +4256,12 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
 
       // Handle quiz mode differently
       if (isFinalQuiz) {
-        handleQuizAnswer(ok);
+        handleQuizAnswer(ok, {
+          question: sPrompt || sStimulus || sTarget,
+          userAnswer: recognizedText || "",
+          correctAnswer: sTarget,
+          questionType: "speak",
+        });
         setLastOk(ok);
         setRecentXp(0); // No XP in quiz mode
       } else {

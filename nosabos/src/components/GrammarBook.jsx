@@ -1151,6 +1151,16 @@ export default function GrammarBook({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastOk, currentQuestionData]);
 
+  // Keep the AI explanation strictly opt-in. It was only cleared on a CORRECT
+  // answer, so once generated it lingered and re-appeared automatically on every
+  // later wrong grade (FeedbackRail shows it whenever !ok && explanationText).
+  // currentQuestionData is a fresh object per graded answer, so clearing on it
+  // wipes any prior explanation the moment a new answer is graded — the panel
+  // now shows only right after the user taps "Explain the answer".
+  useEffect(() => {
+    setExplanationText("");
+  }, [currentQuestionData]);
+
   // inline assistant support feature (replaces modal)
   const [assistantSupportText, setAssistantSupportText] = useState("");
   const [isLoadingAssistantSupport, setIsLoadingAssistantSupport] =
@@ -1282,8 +1292,12 @@ export default function GrammarBook({
   }
 
   // Quiz mode helper function
-  function handleQuizAnswer(isCorrect) {
+  function handleQuizAnswer(isCorrect, questionSnapshot = null) {
     setQuizCurrentQuestionAttempted(true);
+    // Quiz grading branches early-return before the normal setCurrentQuestionData,
+    // so record the snapshot here — otherwise the companion capture effect (which
+    // keys on currentQuestionData) never fires for final-quiz mistakes.
+    if (questionSnapshot) setCurrentQuestionData(questionSnapshot);
 
     const newQuestionsAnswered = quizQuestionsAnswered + 1;
     const newCorrectAnswers = isCorrect
@@ -3667,7 +3681,12 @@ Return JSON ONLY:
     const delta = ok ? 6 : 0; // ✅ normalized to 4-7 XP range
 
     if (isFinalQuiz) {
-      handleQuizAnswer(ok);
+      handleQuizAnswer(ok, {
+        question,
+        userAnswer: input,
+        correctAnswer: hint,
+        questionType: "fill",
+      });
       setLastOk(ok);
       setRecentXp(0);
       const nextFn =
@@ -3740,7 +3759,12 @@ Return JSON ONLY:
     const delta = ok ? 5 : 0; // ✅ normalized to 4-7 XP range
 
     if (isFinalQuiz) {
-      handleQuizAnswer(ok);
+      handleQuizAnswer(ok, {
+        question: mcQ,
+        userAnswer: mcPick,
+        correctAnswer: mcAnswer || mcHint,
+        questionType: "mc",
+      });
       setMcResult(ok ? "correct" : "try_again");
       setLastOk(ok);
       setRecentXp(0);
@@ -3816,7 +3840,12 @@ Return JSON ONLY:
     const delta = ok ? 6 : 0; // ✅ normalized to 4-7 XP range
 
     if (isFinalQuiz) {
-      handleQuizAnswer(ok);
+      handleQuizAnswer(ok, {
+        question: maQ,
+        userAnswer: selectedStrings.join(", "),
+        correctAnswer: maAnswers?.join(", ") || maHint,
+        questionType: "ma",
+      });
       setMaResult(ok ? "correct" : "try_again");
       setLastOk(ok);
       setRecentXp(0);
@@ -3886,7 +3915,12 @@ Return JSON ONLY:
     setMResult(ok ? "correct" : "try_again"); // for logs only
 
     if (isFinalQuiz) {
-      handleQuizAnswer(ok);
+      handleQuizAnswer(ok, {
+        question: mStem || "Match the items:",
+        userAnswer: userMappings,
+        correctAnswer: mHint || "Check the correct pairings",
+        questionType: "match",
+      });
       setLastOk(ok);
       setRecentXp(0);
       const nextFn =
@@ -3975,7 +4009,12 @@ Return JSON ONLY:
     const delta = ok ? 6 : 0;
 
     if (isFinalQuiz) {
-      handleQuizAnswer(ok);
+      handleQuizAnswer(ok, {
+        question: tSentence,
+        userAnswer: userWords.join(" "),
+        correctAnswer: tCorrectWords.join(" "),
+        questionType: "translate",
+      });
       setLastOk(ok);
       setRecentXp(0);
       const nextFn =
@@ -4051,7 +4090,12 @@ Return JSON ONLY:
       const delta = ok ? 6 : 0; // ✅ normalized to 4-7 XP range
 
       if (isFinalQuiz) {
-        handleQuizAnswer(ok);
+        handleQuizAnswer(ok, {
+          question: sPrompt || sTarget,
+          userAnswer: recognizedText || "",
+          correctAnswer: sTarget,
+          questionType: "speak",
+        });
         setLastOk(ok);
         setRecentXp(0);
         const nextFn =

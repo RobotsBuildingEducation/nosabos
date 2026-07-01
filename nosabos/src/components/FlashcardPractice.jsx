@@ -619,6 +619,25 @@ export default function FlashcardPractice({
   const handleReviewRating = async (rating) => {
     if (isSavingReview) return;
 
+    // Companion brain: a self-rated "again" is the spaced-repetition equivalent
+    // of getting it wrong ("I couldn't recall this") — a struggle signal the
+    // AI-graded capture path (which needs a typed answer) misses entirely. Bank
+    // it once per card-open, deduped against that path via companionCapturedRef.
+    if (rating === "again" && companionCapturedRef.current !== (card?.id || "")) {
+      companionCapturedRef.current = card?.id || "";
+      captureCompanionMemory({
+        targetLang,
+        supportLang: effectiveCardLanguage,
+        sourceMode: "flashcard",
+        concept: getConceptText(card, effectiveCardLanguage),
+        userAnswer: textAnswer || recognizedText || "",
+        expectedAnswer: streamedAnswer || "",
+        cefrLevel: card?.cefrLevel,
+        sourceContext: "flashcard-again",
+      });
+      triggerDoneAnimation();
+    }
+
     playReviewRatingSound(rating);
     setIsSavingReview(true);
     try {
@@ -649,6 +668,28 @@ export default function FlashcardPractice({
   };
 
   const handleClose = () => {
+    // Companion brain: closing a card after typing/recording an attempt but
+    // before it was ever graded = "started, struggled, gave up." Capture it once
+    // (read state before the resets below). Gated on an actual attempt so a plain
+    // open-and-close — which carries no struggle signal — is ignored.
+    const abandonedAttempt = (textAnswer || recognizedText || "").trim();
+    if (
+      abandonedAttempt &&
+      !showResult &&
+      companionCapturedRef.current !== (card?.id || "")
+    ) {
+      companionCapturedRef.current = card?.id || "";
+      captureCompanionMemory({
+        targetLang,
+        supportLang: effectiveCardLanguage,
+        sourceMode: "flashcard",
+        concept: getConceptText(card, effectiveCardLanguage),
+        userAnswer: abandonedAttempt,
+        cefrLevel: card?.cefrLevel,
+        sourceContext: "flashcard-abandoned",
+      });
+    }
+
     setTextAnswer("");
     setRecognizedText("");
     setShowResult(false);

@@ -75,7 +75,13 @@ import {
 import { getBidiTextProps, mergeBidiSx } from "../utils/bidiText";
 import { awardXp } from "../utils/utils";
 import { recordPlateActivity } from "../utils/dailyPlate";
-import { captureCompanionMemory } from "../utils/companionMemory";
+import {
+  captureCompanionMemory,
+  completeRepairFocus,
+  REPAIR_MAX_ITEMS,
+} from "../utils/companionMemory";
+import useRepairFocusStore from "../hooks/useRepairFocusStore";
+import RepairFocusBanner from "./RepairFocusBanner";
 import {
   completeTutorLesson,
   getLanguageXp,
@@ -5253,6 +5259,40 @@ export default function Tutor({
       .join(" ");
   }
 
+  // Routed repair (deep-seed): when the Daily Quest sends a tutor repair here,
+  // both the kickoff and every followup instruction lead with this directive so
+  // the model actually elicits the weak phrase(s) instead of going straight to
+  // the regular lesson. Deliberately skipped for the starter agenda lesson — the
+  // very first Tutor session must stay unaffected by companion-memory
+  // personalization (see the plan's non-negotiable first-quest caveat).
+  // Self-terminating: once judgeTutorTurnSuccessfulForXp clears the focus, the
+  // next instruction build naturally omits this block.
+  function buildTutorRepairAgendaInstruction({ isKickoff = false } = {}) {
+    const focus = useRepairFocusStore.getState().focus;
+    if (focus?.surface !== "tutor") return "";
+    if (isTutorStarterAgendaLesson(selectedTutorLessonRef.current)) return "";
+    const items = (focus.plan?.items || []).slice(0, REPAIR_MAX_ITEMS);
+    const phraseList = items
+      .map((it) => it.expectedAnswer || it.concept)
+      .filter(Boolean)
+      .join(", ");
+    if (!phraseList) return "";
+    const supportCode = normalizeSupportLanguage(
+      supportLangRef.current || resolvedSupportLang,
+      DEFAULT_SUPPORT_LANGUAGE,
+    );
+    const supportLanguageName =
+      getLanguagePromptName(supportCode) || "the user's support language";
+    const targetLanguageName =
+      getLanguagePromptName(targetLangRef.current || targetLang || "es") ||
+      "the target language";
+    return [
+      `REPAIR AGENDA (priority — run this ${isKickoff ? "first, before the regular lesson topic" : "before returning to the regular lesson topic"}): the companion saved these ${targetLanguageName} phrases the learner found tricky recently: ${phraseList}.`,
+      `Warm them up positively in ${supportLanguageName} framing — never say they got it wrong before; this is a fresh warm-up, not a test. Model one phrase, ask the learner to repeat or produce it, then use it in one tiny realistic exchange.`,
+      "Keep it brief: once the learner correctly says ONE of these phrases, move on naturally to the regular lesson agenda — do not drill all of them.",
+    ].join(" ");
+  }
+
   function buildTutorKickoffInstructions() {
     const tLang = targetLangRef.current || targetLang || "es";
     const targetLanguageName =
@@ -5337,6 +5377,7 @@ export default function Tutor({
 
     return [
       "Kick off the Tutor lesson now. Do not wait for the learner to speak first.",
+      buildTutorRepairAgendaInstruction({ isKickoff: true }),
       targetLanguageBoundaryInstruction,
       teacherTalkLanguageInstruction,
       codeSwitchingAudioInstruction,
@@ -5797,6 +5838,7 @@ export default function Tutor({
     const agendaTitle = getTutorLessonAgendaTitle(lesson, unit, supportCode);
     return [
       "Respond to the learner's latest turn as their tutor.",
+      buildTutorRepairAgendaInstruction(),
       targetLanguageBoundaryInstruction,
       teacherTalkLanguageInstruction,
       codeSwitchingAudioInstruction,
@@ -6823,6 +6865,15 @@ export default function Tutor({
       .map((item) => item.phrase || item.label)
       .filter(Boolean)
       .slice(0, 10);
+    // Routed repair: items the Daily Quest wants drilled here, if any.
+    const tutorRepairFocus = useRepairFocusStore.getState().focus;
+    const repairFocusItems =
+      tutorRepairFocus?.surface === "tutor"
+        ? (tutorRepairFocus.plan?.items || [])
+            .map((it) => ({ concept: it.concept, answer: it.expectedAnswer }))
+            .filter((it) => it.concept)
+            .slice(0, REPAIR_MAX_ITEMS)
+        : [];
 
     return [
       "You are a strict, language-neutral XP gate for a realtime language tutor.",
@@ -6863,6 +6914,9 @@ export default function Tutor({
       focusItems.length
         ? `Lesson concept list: ${JSON.stringify(focusItems)}`
         : "",
+      repairFocusItems.length
+        ? `REPAIR WATCH: the Daily Quest routed a repair here for these weak spots from a previous day: ${JSON.stringify(repairFocusItems)}. Separately from the lesson XP judgment, set "repairAdvanced":true if THIS turn shows the learner correctly producing/using one of these phrases or concepts (even approximately, in their own words) — this clears today's repair, so only set it for a genuine, correct attempt at one of them.`
+        : "",
       "Immediately previous tutor prompt:",
       `"""${String(latestAssistantText || "").slice(0, 1800)}"""`,
       "Latest learner transcript:",
@@ -6874,7 +6928,9 @@ export default function Tutor({
       // mistake=false when they got it right, asked for help/meaning/repetition,
       // were off-task, or gave filler — those are not repairable slips.
       `When mistake=true, also give "concept" (a short skill label written in ${supportLanguageName}) and "correction" (the correct ${targetLanguageName} phrase the learner should have produced).`,
-      `Return ONLY JSON: {"successful":true|false,"confidence":0..1,"reason":"short semantic reason","mistake":true|false,"concept":"","correction":""}`,
+      `Return ONLY JSON: {"successful":true|false,"confidence":0..1,"reason":"short semantic reason","mistake":true|false,"concept":"","correction":""${
+        repairFocusItems.length ? ',"repairAdvanced":true|false' : ""
+      }}`,
     ]
       .filter(Boolean)
       .join("\n");
@@ -6939,6 +6995,17 @@ export default function Tutor({
             cefrLevel: selectedTutorLessonRef.current?.unit?.cefrLevel,
             sourceContext: "tutor",
           });
+        }
+      }
+
+      // Routed repair: the grader just confirmed the learner correctly produced
+      // one of the repair-agenda phrases (see REPAIR WATCH in the prompt). One
+      // good rep clears today's repair — self-terminating, since the next
+      // grader call won't see a focus to ask about once it's cleared.
+      if (parsed.repairAdvanced === true) {
+        const tutorFocusNow = useRepairFocusStore.getState().focus;
+        if (tutorFocusNow?.surface === "tutor") {
+          void completeRepairFocus();
         }
       }
 
@@ -7952,6 +8019,13 @@ export default function Tutor({
       <Box color="gray.100" position="relative" pb="120px">
         {/* Header area: lesson agenda separated from robot */}
         <VStack px={4} mt={0} spacing={1} align="center">
+          {/* Repair focus: only shown when the Daily Quest routed a tutor
+              repair here (returns null otherwise). */}
+          <RepairFocusBanner
+            surface="tutor"
+            appLanguage={uiLang}
+            maxWidth="400px"
+          />
           <Box
             p={2}
             rounded="2xl"

@@ -1734,7 +1734,6 @@ export default function PlatePetPanel({
   const bubbleDesktopY = bubbleIsDog ? 0 : BUBBLE_OFFSET_DESKTOP_Y;
   const customizeModalCopy = getCustomizeModalCopy(resolvedLang);
   const customizeModal = useDisclosure();
-  const nameInputRef = useRef(null);
   const [draftName, setDraftName] = useState(trimmedName);
   const [draftPetType, setDraftPetType] = useState(resolvedPetType);
 
@@ -2139,7 +2138,7 @@ export default function PlatePetPanel({
         onClose={customizeModal.onClose}
         isCentered
         size="sm"
-        initialFocusRef={nameInputRef}
+        autoFocus={false}
         motionPreset="scale"
       >
         <ModalOverlay bg="var(--app-overlay)" />
@@ -2166,7 +2165,6 @@ export default function PlatePetPanel({
                   {customizeModalCopy.name}
                 </Text>
                 <Input
-                  ref={nameInputRef}
                   value={draftName}
                   onChange={(e) =>
                     setDraftName(e.target.value.slice(0, NAME_MAX_LENGTH))

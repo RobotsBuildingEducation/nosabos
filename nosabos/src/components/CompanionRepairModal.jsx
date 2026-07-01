@@ -24,10 +24,13 @@ import {
 } from "@chakra-ui/react";
 import { PiSparkleFill } from "react-icons/pi";
 import { RiMagicLine } from "react-icons/ri";
+import { TbBookmarkPlus, TbBookmarkFilled } from "react-icons/tb";
 
 import { recordPlateActivity } from "../utils/dailyPlate";
 import { markMemoryReinforced } from "../utils/companionMemory";
 import { repairCopy } from "../utils/companionMemoryCopy";
+import { buildNoteObject } from "../utils/noteGeneration";
+import useNotesStore from "../hooks/useNotesStore";
 
 export default function CompanionRepairModal({
   isOpen,
@@ -46,6 +49,11 @@ export default function CompanionRepairModal({
 
   const [index, setIndex] = useState(startIndex);
   const [revealed, setRevealed] = useState(false);
+  // Items the learner chose to keep as permanent notes (by memoryId/index), so
+  // the button reflects "saved" and can't double-add.
+  const [savedKeys, setSavedKeys] = useState(() => new Set());
+  const addNote = useNotesStore((s) => s.addNote);
+  const triggerDoneAnimation = useNotesStore((s) => s.triggerDoneAnimation);
 
   // Resume from the latest progress when the modal opens. Deliberately keyed on
   // `isOpen` only — startIndex updates as items are recorded mid-session, and we
@@ -54,6 +62,7 @@ export default function CompanionRepairModal({
     if (isOpen) {
       setIndex(Math.min(Math.max(0, startIndex), items.length));
       setRevealed(false);
+      setSavedKeys(new Set());
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
@@ -86,6 +95,32 @@ export default function CompanionRepairModal({
     onComplete?.();
     onClose?.();
   };
+
+  // Promote a repaired item into a permanent saved note so it outlives the
+  // 2-day repair lifecycle. Reuses the same note shape flashcards save, so it
+  // shows up in the drawer's "Saved notes" alongside manual notes.
+  const itemKey = (item, i) => item?.memoryId || `idx-${i}`;
+  const handleSaveCurrent = () => {
+    const item = items[index];
+    if (!item) return;
+    const key = itemKey(item, index);
+    if (savedKeys.has(key)) return;
+    addNote(
+      buildNoteObject({
+        lessonTitle: { en: item.concept, es: item.concept },
+        cefrLevel: item.cefrLevel || "A1",
+        example: item.expectedAnswer || item.concept,
+        summary: item.summary || "",
+        targetLang,
+        supportLang: appLanguage,
+        moduleType: "repair",
+        wasCorrect: false,
+      }),
+    );
+    triggerDoneAnimation();
+    setSavedKeys((prev) => new Set(prev).add(key));
+  };
+  const currentSaved = current ? savedKeys.has(itemKey(current, index)) : false;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} isCentered motionPreset="scale">
@@ -198,6 +233,29 @@ export default function CompanionRepairModal({
                         {current.userAnswer}”
                       </Text>
                     ) : null}
+                    <Button
+                      size="xs"
+                      variant="ghost"
+                      alignSelf="flex-start"
+                      mt={1}
+                      leftIcon={
+                        currentSaved ? (
+                          <TbBookmarkFilled size={14} />
+                        ) : (
+                          <TbBookmarkPlus size={14} />
+                        )
+                      }
+                      color={
+                        currentSaved ? "teal.300" : "var(--app-text-secondary)"
+                      }
+                      onClick={handleSaveCurrent}
+                      isDisabled={currentSaved}
+                    >
+                      {repairCopy(
+                        appLanguage,
+                        currentSaved ? "saved" : "saveNote",
+                      )}
+                    </Button>
                   </VStack>
                 ) : null}
               </Box>

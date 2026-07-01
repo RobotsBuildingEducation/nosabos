@@ -280,6 +280,34 @@ export default function CompanionMemoryList({ targetLang = "es", lang = "en" }) 
 
   const hasAny = todays.length > 0 || yesterdays.length > 0;
 
+  // Pre-hydration guard: until the user doc has loaded, we can't tell "no
+  // notes" from "notes not here yet" — showing the empty state would falsely
+  // claim the log vanished (it reappears once Firestore answers). Show a quiet
+  // placeholder instead of a wrong claim.
+  const hydrated = Boolean(user && user.id) || Boolean(user?.companionMemory);
+  if (!hydrated && !hasAny) {
+    return (
+      <Box mb={3}>
+        <Text fontSize="xs" color="var(--app-text-secondary)" mb={3}>
+          {memoryCopy(lang, MEMORY_DRAWER_COPY.subtitle)}
+        </Text>
+        <Box
+          bg="var(--app-glass-bg-soft)"
+          border="1px dashed"
+          borderColor="var(--app-border)"
+          borderRadius="12px"
+          px={3}
+          py={4}
+          opacity={0.6}
+        >
+          <Text fontSize="sm" color="var(--app-text-secondary)">
+            …
+          </Text>
+        </Box>
+      </Box>
+    );
+  }
+
   return (
     <Box mb={hasAny ? 5 : 3}>
       {/* Title intentionally omitted — the drawer header already says "Memory". */}

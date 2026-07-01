@@ -146,6 +146,7 @@ import RealWorldTasksModal, {
   REAL_WORLD_TASKS_REFRESH_MS,
 } from "./components/RealWorldTasksModal";
 import useNotesStore from "./hooks/useNotesStore";
+import useRepairFocusStore from "./hooks/useRepairFocusStore";
 import { subscribeToTeamInvites } from "./utils/teams";
 import SkillTree from "./components/SkillTree";
 import DailyPlateHome from "./components/DailyPlateHome";
@@ -185,6 +186,8 @@ import {
   writeQuestPlate,
 } from "./utils/dailyPlate";
 import {
+  buildEphemeralRepairLesson,
+  completeRepairLesson,
   getBlueprintCarryOverKinds,
   getReusableMemory,
   getStoredRepairPlan,
@@ -378,6 +381,17 @@ const TEST_UNLOCK_NSEC =
 
 const DEFAULT_VOICE_PAUSE_MS = 600;
 const LOADING_ORB_STATES = ["idle", "listening", "speaking"];
+
+// Repair routing: which live-engine surface each recommendedMode opens. Only
+// modes whose engine is wired (banner + completion) belong here; everything else
+// falls back to the quick card modal — which is correct, not a degradation
+// (a flashcard is the right tool for recall/rule repairs).
+const REPAIR_MODE_TO_SURFACE = {
+  phonics: "alphabet",
+  conversation: "conversations",
+  tutor: "tutor",
+  speak: "tutor",
+};
 
 function getRandomLoadingOrbState() {
   return LOADING_ORB_STATES[
@@ -1323,6 +1337,31 @@ function TopBar({
     const ref = doc(database, "users", activeNpub);
     const unsub = onSnapshot(ref, async (snap) => {
       const data = snap.exists() ? snap.data() : {};
+
+      // Keep the companion-brain fields live in the store. connectDID's
+      // one-shot read can lag or fail on a refresh, which used to strand the
+      // plate without its Repair course and show the Memory drawer empty until
+      // the next full reload ("sometimes it vanishes"). This listener retries
+      // until Firestore answers — and latency compensation means our own
+      // local writes are reflected immediately, so it can't clobber a capture
+      // that's still in flight.
+      try {
+        const companionPatch = {};
+        if (data?.companionMemory)
+          companionPatch.companionMemory = data.companionMemory;
+        if (data?.dailyQuestRepair)
+          companionPatch.dailyQuestRepair = data.dailyQuestRepair;
+        if (data?.dailyQuestBlueprint)
+          companionPatch.dailyQuestBlueprint = data.dailyQuestBlueprint;
+        if (data?.dailyQuestExplanations)
+          companionPatch.dailyQuestExplanations = data.dailyQuestExplanations;
+        if (Object.keys(companionPatch).length) {
+          useUserStore.getState().patchUser?.(companionPatch);
+        }
+      } catch {
+        /* non-fatal: the plate re-derives on the next snapshot */
+      }
+
       const goal = getEffectiveDailyGoalXp(data);
       let resetISO = data?.dailyResetAt || null;
       const completedDates = Array.isArray(data?.completedGoalDates)
@@ -4666,7 +4705,11 @@ export default function App({ onBootReady } = {}) {
   // Handle starting a lesson from the skill tree
   const handleStartLesson = async (lesson, preGeneratedScenario = null) => {
     if (!lesson) return false;
-    const enrichedLesson = await enrichLessonForGameReview(lesson);
+    // Ephemeral repair lessons aren't part of the learning path: no game-review
+    // enrichment (their id isn't in any unit) and no lesson-progress writes.
+    const enrichedLesson = lesson.isRepair
+      ? lesson
+      : await enrichLessonForGameReview(lesson);
 
     // Store pre-generated scenario for game lessons
     setPreGeneratedGameScenario(preGeneratedScenario || null);
@@ -4684,7 +4727,7 @@ export default function App({ onBootReady } = {}) {
       const preProgressSource = user?.progress || { totalXp: fallbackTotalXp };
       const currentXp = getLanguageXp(preProgressSource, lessonLang);
 
-      if (npub) {
+      if (npub && !enrichedLesson.isRepair) {
         // Pass current user progress so startLesson can preserve COMPLETED/IN_PROGRESS status
         await startLesson(
           npub,
@@ -4790,6 +4833,10 @@ export default function App({ onBootReady } = {}) {
       return false;
     }
   };
+  // Latest-instance ref so stable callbacks (e.g. the plate's repair routing)
+  // can launch a lesson without depending on this per-render function.
+  const handleStartLessonRef = useRef(handleStartLesson);
+  handleStartLessonRef.current = handleStartLesson;
 
   const persistFlashcardReview = useCallback(
     async (card) => {
@@ -4936,13 +4983,25 @@ export default function App({ onBootReady } = {}) {
       const lessonLang = activeLessonLanguageRef.current || resolvedTargetLang;
 
       try {
-        // completeLesson marks the lesson complete (status tracking only, no XP)
-        await completeLesson(
-          npub,
-          activeLesson.id,
-          activeLesson.xpReward,
-          lessonLang,
-        );
+        if (activeLesson.isRepair) {
+          // Ephemeral repair lesson: nothing to mark on the learning path.
+          // Completing it flips the plate's repair course + reinforces the
+          // memory notes (uses the live focus, or the data embedded in the
+          // lesson if the app reloaded mid-lesson).
+          void completeRepairLesson({
+            lesson: activeLesson,
+            npub,
+            targetLang: lessonLang,
+          });
+        } else {
+          // completeLesson marks the lesson complete (status tracking only, no XP)
+          await completeLesson(
+            npub,
+            activeLesson.id,
+            activeLesson.xpReward,
+            lessonLang,
+          );
+        }
 
         // awardXp handles all XP awarding with proper daily goal checking and celebration events
         deferDailyGoalCelebrationRef.current = true;
@@ -7593,6 +7652,7 @@ export default function App({ onBootReady } = {}) {
       targetDayKey: tomorrowKey,
       todayCleared: true,
       carryOverKinds: [],
+      cefrLevel: currentCEFRLevel,
     });
   }, [
     isLoadingApp,
@@ -7650,10 +7710,13 @@ export default function App({ onBootReady } = {}) {
       targetDayKey: plateDayKey,
       todayCleared: yesterdayComplete,
       carryOverKinds,
+      cefrLevel: currentCEFRLevel,
     });
   }, [isLoadingApp, user, activeNpub, plateLangKey, plateDayKey, appLanguage]);
 
-  // Repair surface (a short ephemeral flashcard pass) opens over the plate.
+  // Repair surface (a short ephemeral flashcard pass) opens over the plate —
+  // last-resort fallback only; flashcards/lesson repairs launch a real
+  // ephemeral lesson instead.
   const [repairModalOpen, setRepairModalOpen] = useState(false);
 
   const [plateSessionActive, setPlateSessionActive] = useState(false);
@@ -7696,8 +7759,58 @@ export default function App({ onBootReady } = {}) {
   const navigateToPlateCourse = useCallback(
     (kind) => {
       if (kind === "repair") {
-        // Repair is an ephemeral pass that opens over the current surface —
-        // make sure the plate home is behind it, then open the modal.
+        // Repair routes to the RIGHT kind of practice for the mistake. The
+        // blueprint picked a recommendedMode; for live-engine modes
+        // (phonics/conversation/speak) we stash the plan as a "repair focus" and
+        // route the user there so the engine can seed itself around the weak
+        // concept and mark the repair done once practiced. Recall-type modes
+        // (review/grammar/listening) stay as the quick card pass — a flashcard is
+        // the right tool for those.
+        const repairMode = repairPlanToday?.recommendedMode || "flashcards";
+        const repairSurface = REPAIR_MODE_TO_SURFACE[repairMode];
+        if (repairPlanToday && repairSurface) {
+          // Live-engine modes (conversation/tutor/phonics): stash the focus and
+          // route to the surface so the engine seeds itself.
+          useRepairFocusStore.getState().setFocus({
+            plan: repairPlanToday,
+            mode: repairMode,
+            surface: repairSurface,
+            targetLang: resolvedTargetLang,
+            supportLang: appLanguage,
+            npub: activeNpub,
+          });
+          goToSkillTreeMode(repairSurface);
+          return;
+        }
+        if (repairPlanToday) {
+          // flashcards / lesson → an EPHEMERAL lesson through the real lesson
+          // infrastructure: same view, same tabs, same XP bar and action bar,
+          // with each seeded engine generating strictly from the weak material.
+          const ephemeral = buildEphemeralRepairLesson({
+            plan: repairPlanToday,
+            targetLang: resolvedTargetLang,
+            cefrLevel: currentCEFRLevel,
+            dayKey: plateDayKey,
+            recommendedMode: repairMode,
+          });
+          if (ephemeral) {
+            useRepairFocusStore.getState().setFocus({
+              plan: repairPlanToday,
+              mode: repairMode,
+              surface: "lesson",
+              targetLang: resolvedTargetLang,
+              supportLang: appLanguage,
+              npub: activeNpub,
+            });
+            void handleStartLessonRef.current?.(ephemeral);
+            return;
+          }
+          // No usable items → the quick card fallback below.
+          goToSkillTreeMode("plate");
+          setRepairModalOpen(true);
+          return;
+        }
+        // No plan at all → the quick card fallback.
         goToSkillTreeMode("plate");
         setRepairModalOpen(true);
         return;
@@ -7722,7 +7835,15 @@ export default function App({ onBootReady } = {}) {
       goToSkillTreeMode("path");
       setScrollToLatestTrigger((prev) => prev + 1);
     },
-    [goToSkillTreeMode],
+    [
+      goToSkillTreeMode,
+      repairPlanToday,
+      resolvedTargetLang,
+      appLanguage,
+      activeNpub,
+      currentCEFRLevel,
+      plateDayKey,
+    ],
   );
 
   const handleStartDailyPractice = () => {
@@ -8248,10 +8369,6 @@ export default function App({ onBootReady } = {}) {
     pathMode === "conversations" || pathMode === "tutor"
       ? voiceConnectionStatuses[pathMode]
       : "disconnected";
-  const shouldCollapseBottomActionBar =
-    isVoiceSurfaceMode &&
-    (activeVoiceConnectionStatus === "connecting" ||
-      activeVoiceConnectionStatus === "connected");
   const skillTreeSceneBottomPadding = isVoiceSurfaceMode
     ? 0
     : { base: 32, md: 24 };
@@ -8390,6 +8507,7 @@ export default function App({ onBootReady } = {}) {
         startIndex={plateSnapshot.byKind?.repair?.count || 0}
       />
 
+
       {!isGameFullScreen && (
         <BottomActionBar
           t={t}
@@ -8412,7 +8530,6 @@ export default function App({ onBootReady } = {}) {
           notesIsLoading={notesIsLoading}
           notesIsDone={notesIsDone}
           pathMode={pathMode}
-          shouldAutoMinimize={shouldCollapseBottomActionBar}
           onMinimizedChange={handleBottomActionBarMinimizedChange}
           onPathModeChange={handleBottomBarPathModeChange}
           onScrollToLatest={() => {
@@ -9894,8 +10011,12 @@ function BottomActionBar({
     : notesIsDone
       ? "notesDone 1.5s ease-out"
       : undefined;
-  const shouldShowMinimizeControls =
-    viewMode === "lesson" || shouldAutoMinimize;
+  // Collapse/minimize removed: the bottom action bar stays full everywhere —
+  // no auto-minimize in lessons or voice modes, no collapse button, no minimized
+  // pill. Forcing this false neutralizes all of it (effectiveIsMinimized can
+  // never become true, the collapse control is gated off, and children receive
+  // bottomActionBarMinimized=false via onMinimizedChange, i.e. the full layout).
+  const shouldShowMinimizeControls = false;
   // Auto-minimize when entering a lesson, switching modules, or starting voice.
   const [isMinimized, setIsMinimized] = useState(shouldShowMinimizeControls);
   const prevShouldShowMinimizeControls = useRef(shouldShowMinimizeControls);

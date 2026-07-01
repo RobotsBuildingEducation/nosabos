@@ -72,7 +72,13 @@ import { getBidiTextProps, mergeBidiSx } from "../utils/bidiText";
 import { awardXp } from "../utils/utils";
 import { recordPlateActivity } from "../utils/dailyPlate";
 import { callResponses } from "../utils/llm";
-import { captureCompanionMemory } from "../utils/companionMemory";
+import {
+  captureCompanionMemory,
+  captureConversationSlip,
+  completeRepairFocus,
+} from "../utils/companionMemory";
+import useRepairFocusStore from "../hooks/useRepairFocusStore";
+import RepairFocusBanner from "./RepairFocusBanner";
 import { getLanguageXp } from "../utils/progressTracking";
 import {
   SOFT_STOP_BUTTON_BG,
@@ -1000,50 +1006,48 @@ async function idbGetClip(id) {
   });
 }
 
-// Companion brain: free-form conversation has no flashcard-style "wrong" event,
-// so after each substantive learner turn we ask the cheap model whether the
-// utterance contained a real target-language slip worth repairing. The model
-// self-filters (slip:false for clean turns) so we only capture genuine mistakes;
-// captureCompanionMemory then enriches + dedupes them. Fire-and-forget.
-async function captureConversationSlip({ text, targetLang, supportLang }) {
-  const trimmed = String(text || "").trim();
-  // Skip trivial turns (greetings, "yes", "ok") — they're not worth a call.
-  if (trimmed.split(/\s+/).filter(Boolean).length < 3) return;
+
+// Companion brain (deep-seed): when the Daily Quest routes a conversation
+// repair here, the very first goal should BE the repair — a short scenario
+// that gives the learner a real chance to use the weak concept, instead of a
+// random/contextual topic. One cheap call, same multi-language JSON shape
+// generateContextualGoal already produces, so the rest of the goal pipeline
+// (display, grading) works unmodified. Returns null on any failure; the
+// caller falls back to a plain templated goal so a slow/broken call never
+// blocks the session.
+async function buildRepairConversationGoal({
+  concept,
+  hint,
+  targetLang,
+  level,
+}) {
+  const trimmedConcept = String(concept || "").trim();
+  if (!trimmedConcept) return null;
   const targetName = getLanguagePromptName(targetLang) || targetLang;
-  const supportName = getLanguagePromptName(supportLang) || supportLang;
   const input = [
-    `A learner practicing ${targetName} just said this in a conversation:`,
-    `"${trimmed}"`,
-    `If it contains a clear ${targetName} mistake worth repairing later (grammar, conjugation, wrong word, gender/agreement, etc.), return ONLY strict minified JSON: {"slip":true,"concept":"a short skill label in ${supportName}","said":"the wrong fragment","correction":"the corrected ${targetName} form"}.`,
-    `If the turn is basically fine, or it's just a greeting/filler, return {"slip":false}. Never invent a mistake.`,
-  ].join("\n");
+    `A ${level || "A1"}-level learner needs another pass at this ${targetName} concept they struggled with: "${trimmedConcept}".`,
+    hint ? `Context: ${hint}` : "",
+    `Write a short, natural conversation goal (max 15 words) — a mini real-world scenario that gives them a genuine reason to use it, not a grammar-drill instruction.`,
+    `Respond with ONLY a JSON object: {"en":"goal in English","es":"goal in Spanish","pt":"goal in Portuguese","it":"goal in Italian","fr":"goal in French","de":"goal in German","ja":"goal in Japanese","hi":"goal in Hindi","ar":"goal in Egyptian Arabic","zh":"goal in Mandarin Chinese"} — each value max 15 words.`,
+  ]
+    .filter(Boolean)
+    .join("\n");
 
   let raw = "";
   try {
     raw = await callResponses({ input });
   } catch {
-    return;
+    return null;
   }
   const start = raw.indexOf("{");
   const end = raw.lastIndexOf("}");
-  if (start < 0 || end <= start) return;
-  let parsed = null;
+  if (start < 0 || end <= start) return null;
   try {
-    parsed = JSON.parse(raw.slice(start, end + 1));
+    const parsed = JSON.parse(raw.slice(start, end + 1));
+    return parsed?.en ? parsed : null;
   } catch {
-    return;
+    return null;
   }
-  if (!parsed?.slip || !parsed.correction) return;
-
-  captureCompanionMemory({
-    targetLang,
-    supportLang,
-    sourceMode: "conversation",
-    concept: String(parsed.concept || parsed.said || trimmed).slice(0, 240),
-    userAnswer: String(parsed.said || trimmed),
-    expectedAnswer: String(parsed.correction || ""),
-    sourceContext: "conversation",
-  });
 }
 
 /* ---------------------------
@@ -1249,6 +1253,9 @@ export default function Conversations({
     scrollConversationToTop();
     if (shouldRegenerateGoalRef.current) {
       shouldRegenerateGoalRef.current = false;
+      // Settings changed → abandons whatever goal was active, including a
+      // repair-seeded one; the replacement must not inherit that flag.
+      repairGoalSeededRef.current = false;
       // Small delay to let state update
       setTimeout(() => {
         generateConversationTopic();
@@ -1267,6 +1274,10 @@ export default function Conversations({
   }));
   const currentGoalRef = useRef(currentGoal);
   currentGoalRef.current = currentGoal;
+  // True only while the CURRENT goal is the one seeded from a routed repair —
+  // consumed (reset to false) the moment that specific goal resolves, so a
+  // later unrelated goal completing never double-fires the repair.
+  const repairGoalSeededRef = useRef(false);
 
   const handleRealtimeEventRef = useRef(null);
   handleRealtimeEventRef.current = handleRealtimeEvent;
@@ -1400,16 +1411,55 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     }
   }
 
-  // Generate initial topic on mount
+  // Generate initial topic on mount — OR, if the Daily Quest routed a
+  // conversation repair here, seed the very first goal around the weak
+  // concept instead of the usual random/AI topic.
   useEffect(() => {
-    if (!hasGeneratedInitialTopic.current) {
-      hasGeneratedInitialTopic.current = true;
+    if (hasGeneratedInitialTopic.current) return;
+    hasGeneratedInitialTopic.current = true;
+
+    const focus = useRepairFocusStore.getState().focus;
+    const item = focus?.surface === "conversations" ? focus.plan?.items?.[0] : null;
+    const concept = item?.concept || "";
+    if (!concept) {
       generateConversationTopic();
+      return;
     }
+
+    setIsGeneratingGoal(true);
+    const level =
+      conversationSettingsRef.current?.proficiencyLevel || maxProficiencyLevel;
+    buildRepairConversationGoal({
+      concept,
+      hint: item?.summary || "",
+      targetLang: focus.targetLang || targetLang,
+      level,
+    })
+      .then((goalText) => {
+        // AI seed succeeded → localized scenario goal. AI failed → a plain
+        // templated goal built straight from the concept (still genuinely
+        // about the repair, just unpolished), keyed in English + the user's
+        // support language so it never renders blank for non-English UIs.
+        const text =
+          goalText ||
+          (() => {
+            const t = { en: concept };
+            if (focus.supportLang && focus.supportLang !== "en") {
+              t[focus.supportLang] = concept;
+            }
+            return t;
+          })();
+        repairGoalSeededRef.current = true;
+        setCurrentGoal({ text, completed: false });
+      })
+      .finally(() => setIsGeneratingGoal(false));
   }, []);
 
   // Handler to get a new AI-generated topic
   const handleShuffleTopic = () => {
+    // Shuffling away from a repair-seeded goal abandons that repair attempt —
+    // the NEXT goal must not be mistaken for it when it later completes.
+    repairGoalSeededRef.current = false;
     generateConversationTopic();
   };
 
@@ -2440,6 +2490,16 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "..."}`;
                           : "Goal complete.";
         setGoalFeedback(parsed?.reason || defaultSuccess);
         await awardGoalXp();
+        // Routed repair: this completed goal was the one seeded from the
+        // weak concept (not some later unrelated goal) — clear the flag so
+        // it can't double-fire, then complete the repair if the focus is
+        // still active (the user may have skipped it via the banner).
+        if (repairGoalSeededRef.current) {
+          repairGoalSeededRef.current = false;
+          if (useRepairFocusStore.getState().focus?.surface === "conversations") {
+            void completeRepairFocus();
+          }
+        }
         // Generate contextual next goal
         setTimeout(() => generateContextualGoal(), 1500);
       } else {
@@ -2464,6 +2524,19 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "..."}`;
             : "Try addressing the goal.";
         setGoalFeedback(parsed?.reason || defaultGuidance);
         goalCheckPendingRef.current = false;
+        // Companion brain: the learner's turn did NOT satisfy the conversation
+        // goal — that's the "incorrect" signal for this mode. Bank it, deduped by
+        // the goal (concept), so multiple tries on the same goal collapse into one
+        // note (severity bumps) instead of spamming the log.
+        captureCompanionMemory({
+          targetLang: tLang,
+          supportLang: sLang,
+          sourceMode: "conversation",
+          concept: goal.text?.[sLang] || goalText || "",
+          userAnswer: userMessage,
+          expectedAnswer: goalText || "",
+          sourceContext: "conversation-goal",
+        });
       }
     } catch (e) {
       goalCheckPendingRef.current = false;
@@ -3021,6 +3094,13 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
       <Box color="gray.100" position="relative" pb="120px">
         {/* Header area: robot separated from goal card */}
         <VStack px={4} mt={0} spacing={1} align="center">
+          {/* Repair focus: only shown when the Daily Quest routed a
+              conversation repair here (returns null otherwise). */}
+          <RepairFocusBanner
+            surface="conversations"
+            appLanguage={resolvedSupportLang}
+            maxWidth="400px"
+          />
           <Box
             p={2}
             rounded="2xl"

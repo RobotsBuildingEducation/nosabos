@@ -82,7 +82,12 @@ import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
 import { awardXp } from "../utils/utils";
 import { recordPlateActivity } from "../utils/dailyPlate";
-import { captureCompanionMemory } from "../utils/companionMemory";
+import {
+  captureCompanionMemory,
+  completeRepairFocus,
+} from "../utils/companionMemory";
+import useRepairFocusStore from "../hooks/useRepairFocusStore";
+import RepairFocusBanner from "./RepairFocusBanner";
 import {
   SOFT_STOP_BUTTON_BG,
   SOFT_STOP_BUTTON_HOVER_BG,
@@ -1582,7 +1587,10 @@ function LetterCard({
           concept: practiceWord,
           userAnswer: answer,
           expectedAnswer: practiceWord,
-          sourceContext: "phonics",
+          // The letter/sound card id, not a generic label — lets a routed
+          // repair deep-seed the deck with this exact card instead of a
+          // random one (see the repair-focus deck reorder on mount).
+          sourceContext: letter?.id || "",
         });
       }
 
@@ -1594,6 +1602,11 @@ function LetterCard({
         // Auditory cue that the answer was correct.
         playSound("correct");
         setCorrectCount((c) => c + 1);
+        // Routed repair: a correct pronunciation here clears today's repair if
+        // the companion sent the learner to phonics to fix a weak sound.
+        if (useRepairFocusStore.getState().focus?.surface === "alphabet") {
+          void completeRepairFocus();
+        }
         if (npub) {
           await awardXp(npub, xp, targetLang);
           onXpAwarded?.(xp);
@@ -2353,6 +2366,25 @@ function watchRealtimeAudioCompletion(audio, onDone) {
   return detach;
 }
 
+// Routed repair (deep-seed): when the Daily Quest sends a phonics repair here,
+// move the exact weak letter/sound card (matched by the id captured at
+// mistake-time, see captureCompanionMemory's sourceContext above) to the front
+// of the deck so the very first card practiced IS the repair, instead of a
+// random one. No match (e.g. the card was a generated round that's since
+// expired) → deck order is left untouched, a safe no-op.
+function reorderDeckForRepairFocus(cards) {
+  const focus = useRepairFocusStore.getState().focus;
+  if (focus?.surface !== "alphabet") return cards;
+  const targetIds = new Set(
+    (focus.plan?.items || []).map((it) => it.sourceContext).filter(Boolean),
+  );
+  if (!targetIds.size) return cards;
+  const matched = cards.filter((c) => targetIds.has(c.id));
+  if (!matched.length) return cards;
+  const rest = cards.filter((c) => !targetIds.has(c.id));
+  return [...matched, ...rest];
+}
+
 export default function AlphabetBootcamp({
   appLanguage = "en",
   targetLang,
@@ -2677,7 +2709,7 @@ export default function AlphabetBootcamp({
           const uncollected = allCards.filter((c) => !collectedIds.has(c.id));
           const collected = allCards.filter((c) => collectedIds.has(c.id));
 
-          setDeck(shuffleArray(uncollected));
+          setDeck(reorderDeckForRepairFocus(shuffleArray(uncollected)));
           setCollectedLetters(collected);
           setIsInitialized(true);
         }
@@ -2688,7 +2720,7 @@ export default function AlphabetBootcamp({
           setSavedPracticeWords({});
           setSavedCorrectCounts({});
           // Fallback: all letters in deck
-          setDeck(shuffleArray(alphabet));
+          setDeck(reorderDeckForRepairFocus(shuffleArray(alphabet)));
           setCollectedLetters([]);
           setIsInitialized(true);
         }
@@ -2711,6 +2743,14 @@ export default function AlphabetBootcamp({
 
   return (
     <VStack align="stretch" spacing={4} w="100%" color={APP_TEXT_PRIMARY} px={6}>
+      {/* Repair focus: shown only when the Daily Quest routed a phonics repair
+          here (returns null otherwise, so it adds no gap on a normal visit). */}
+      <RepairFocusBanner
+        surface="alphabet"
+        appLanguage={appLanguage}
+        maxW="400px"
+        mt={12}
+      />
       {/* XP Progress Bar */}
       <Box maxW="400px" mx="auto" w="100%" zIndex={10} mt={12}>
         <XpProgressHeader

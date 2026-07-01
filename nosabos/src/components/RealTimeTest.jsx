@@ -72,6 +72,10 @@ import {
   useArchiveTextStream,
 } from "./realtimeArchiveStream";
 import { awardXp } from "../utils/utils";
+import {
+  captureCompanionMemory,
+  captureConversationSlip,
+} from "../utils/companionMemory";
 import { getLanguageXp } from "../utils/progressTracking";
 import {
   SOFT_STOP_BUTTON_BG,
@@ -2752,6 +2756,19 @@ Return ONLY JSON:
         playSound(deliciousSound);
         await recordGoalCompletion(goal, conf);
         setGoalCompleted(true); // Mark goal as completed, wait for user to click "Next Goal"
+      } else {
+        // Companion brain: the learner's turn did NOT meet the goal — that's the
+        // "incorrect" signal for this mode. Bank it, deduped by the goal (concept)
+        // so multiple tries on the same goal collapse into one note.
+        captureCompanionMemory({
+          targetLang: targetLangRef.current,
+          supportLang: supportLangRef.current || "en",
+          sourceMode: "conversation",
+          concept: titleTL || goal.title_en || "",
+          userAnswer: userUtterance,
+          expectedAnswer: rubricTL || "",
+          sourceContext: "realtime-goal",
+        });
       }
     } catch (e) {
       console.warn("Goal eval failed:", e?.message || e);
@@ -3253,6 +3270,13 @@ Return ONLY JSON:
         });
         await persistUserTurn(text, "en").catch(() => {});
         evaluateAndMaybeAdvanceGoal(text).catch(() => {});
+        // Companion brain: cheaply check this turn for a real slip to repair.
+        void captureConversationSlip({
+          text,
+          targetLang: targetLangRef.current,
+          supportLang: supportLangRef.current || "en",
+          sourceMode: "conversation",
+        });
       }
       return;
     }
