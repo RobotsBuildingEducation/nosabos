@@ -398,10 +398,14 @@ export default function StoryMode({
 
   const targetLang = progress.targetLang;
 
-  // Use CEFR level from the current lesson, or user's proficiency level as fallback
-  const cefrLevel = lesson?.id
-    ? extractCEFRLevel(lesson.id)
-    : getUserProficiencyLevel(progress, targetLang);
+  // Repair/ephemeral lessons carry an explicit CEFR level; regular path lessons
+  // can still derive it from their level-coded id.
+  const cefrLevel =
+    lesson?.cefrLevel ||
+    lessonContent?.cefrLevel ||
+    (lesson?.id
+      ? extractCEFRLevel(lesson.id)
+      : getUserProficiencyLevel(progress, targetLang));
 
   // APP UI language (drives all UI copy)
   const uiLang = getAppUILang();
@@ -1585,6 +1589,7 @@ export default function StoryMode({
           concept: target,
           userAnswer: recognizedText || "",
           expectedAnswer: target,
+          cefrLevel,
           sourceContext: "story",
         });
 

@@ -333,6 +333,7 @@ function buildFillStreamPrompt({
     ? `- TUTORIAL MODE: Create a VERY SIMPLE sentence about basic greetings only. The blank should be for a simple greeting word in ${TARGET}. Keep everything at absolute beginner level.`
     : lessonContent?.topic || lessonContent?.focusPoints
       ? [
+          lessonContent.levelGuard ? `- ${lessonContent.levelGuard}` : null,
           lessonContent.topic
             ? `- STRICT REQUIREMENT: Focus EXCLUSIVELY on grammar topic: ${lessonContent.topic}. Do NOT test any other grammar concepts. This is lesson-specific content and you MUST NOT diverge.`
             : null,
@@ -484,6 +485,7 @@ function buildMCStreamPrompt({
     ? `- TUTORIAL MODE: Create a VERY SIMPLE multiple-choice about basic greetings only. The correct answer MUST be a simple greeting in ${TARGET}. Keep everything at absolute beginner level.`
     : lessonContent?.topic || lessonContent?.focusPoints
       ? [
+          lessonContent.levelGuard ? `- ${lessonContent.levelGuard}` : null,
           lessonContent.topic
             ? `- STRICT REQUIREMENT: Focus EXCLUSIVELY on grammar topic: ${lessonContent.topic}. Do NOT test any other grammar concepts. This is lesson-specific content and you MUST NOT diverge.`
             : null,
@@ -587,6 +589,7 @@ function buildMAStreamPrompt({
     ? `- TUTORIAL MODE: Create a VERY SIMPLE multiple-answer about basic greetings only. The correct answers MUST be simple greetings in ${TARGET}. Keep everything at absolute beginner level.`
     : lessonContent?.topic || lessonContent?.focusPoints
       ? [
+          lessonContent.levelGuard ? `- ${lessonContent.levelGuard}` : null,
           lessonContent.topic
             ? `- STRICT REQUIREMENT: Focus EXCLUSIVELY on grammar topic: ${lessonContent.topic}. Do NOT test any other grammar concepts. This is lesson-specific content and you MUST NOT diverge.`
             : null,
@@ -660,6 +663,7 @@ function buildSpeakGrammarStreamPrompt({
     ? `- TUTORIAL MODE: Create a VERY SIMPLE speaking exercise about basic greetings only. The sentence MUST be a simple greeting like "Hello!", "¡Hola!", "Good morning!", "¡Buenos días!". Keep everything at absolute beginner level.`
     : lessonContent?.topic || lessonContent?.focusPoints
       ? [
+          lessonContent.levelGuard ? `- ${lessonContent.levelGuard}` : null,
           lessonContent.topic
             ? `- STRICT REQUIREMENT: Focus EXCLUSIVELY on grammar topic: ${lessonContent.topic}. Do NOT test any other grammar concepts. This is lesson-specific content and you MUST NOT diverge.`
             : null,
@@ -757,6 +761,7 @@ function buildTranslateStreamPrompt({
     ? `- TUTORIAL MODE: Create a VERY SIMPLE sentence about basic greetings only. Use only common greeting words. Keep everything at absolute beginner level.`
     : lessonContent?.topic || lessonContent?.focusPoints
       ? [
+          lessonContent.levelGuard ? `- ${lessonContent.levelGuard}` : null,
           lessonContent.topic
             ? `- STRICT REQUIREMENT: Focus EXCLUSIVELY on grammar topic: ${lessonContent.topic}. This is lesson-specific content.`
             : null,
@@ -944,8 +949,12 @@ export default function GrammarBook({
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, []);
 
-  // Extract CEFR level from lesson ID
-  const cefrLevel = lesson?.id ? extractCEFRLevel(lesson.id) : "A1";
+  // Repair/ephemeral lessons carry an explicit CEFR level; regular path lessons
+  // can still derive it from their level-coded id.
+  const cefrLevel =
+    lesson?.cefrLevel ||
+    lessonContent?.cefrLevel ||
+    (lesson?.id ? extractCEFRLevel(lesson.id) : "A1");
 
   // Quiz mode state
   const [quizQuestionsAnswered, setQuizQuestionsAnswered] = useState(0);

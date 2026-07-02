@@ -326,6 +326,9 @@ const resolveSupportLang = (supportLang, appUILang) =>
  */
 function buildVarietyLines(lessonContent, recentGood) {
   const lines = [];
+  if (lessonContent?.levelGuard) {
+    lines.push(`- ${lessonContent.levelGuard}`);
+  }
   if (lessonContent?.focusPoints?.length) {
     lines.push(
       `- Rotate through ALL of these vocabulary words across questions: ${JSON.stringify(
@@ -1068,8 +1071,12 @@ export default function Vocabulary({
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, []);
 
-  // Extract CEFR level from lesson ID
-  const cefrLevel = lesson?.id ? extractCEFRLevel(lesson.id) : "A1";
+  // Repair/ephemeral lessons carry an explicit CEFR level; regular path lessons
+  // can still derive it from their level-coded id.
+  const cefrLevel =
+    lesson?.cefrLevel ||
+    lessonContent?.cefrLevel ||
+    (lesson?.id ? extractCEFRLevel(lesson.id) : "A1");
 
   // Debug: Log lesson content to verify it's passed correctly
   console.log("[Vocabulary Component] lessonContent:", lessonContent);

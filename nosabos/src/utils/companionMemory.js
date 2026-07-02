@@ -28,6 +28,7 @@ import {
   REPAIR_COPY,
 } from "./companionMemoryCopy";
 import { callResponses } from "./llm";
+import { normalizeCEFRLevel } from "./cefrUtils";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -39,6 +40,15 @@ export const MEMORY_STATUS = {
   reinforced: "reinforced",
   expired: "expired",
 };
+
+function displayCEFRLevel(level, fallback = "Pre-A1") {
+  const normalized = normalizeCEFRLevel(level || fallback, fallback);
+  return normalized === "PRE-A1" ? "Pre-A1" : normalized;
+}
+
+function isFoundationCEFRLevel(level) {
+  return ["Pre-A1", "A1"].includes(displayCEFRLevel(level, "Pre-A1"));
+}
 
 // Error categories that help pick a repair mode + flavor the copy.
 export const ERROR_TYPES = [
@@ -233,7 +243,7 @@ function buildMemoryNote({
     userAnswer: String(userAnswer || "").slice(0, 240),
     expectedAnswer: String(expectedAnswer || "").slice(0, 240),
     errorType,
-    cefrLevel: cefrLevel || "A1",
+    cefrLevel: displayCEFRLevel(cefrLevel, "Pre-A1"),
     severity: 1,
     recommendedRepairMode: repairModeForError(errorType),
     companionSummary: companionMemorySummary(supportLang, concept),
@@ -440,6 +450,7 @@ export async function captureConversationSlip({
   targetLang,
   supportLang,
   sourceMode = "conversation",
+  cefrLevel,
 }) {
   const trimmed = String(text || "").trim();
   // Skip trivial turns (greetings, "yes", "ok") — they're not worth a call.
@@ -477,8 +488,42 @@ export async function captureConversationSlip({
     concept: String(parsed.concept || parsed.said || trimmed).slice(0, 240),
     userAnswer: String(parsed.said || trimmed),
     expectedAnswer: String(parsed.correction || ""),
+    cefrLevel,
     sourceContext: sourceMode,
   });
+}
+
+function repairLessonLevelGuard(cefrLevel) {
+  const level = displayCEFRLevel(cefrLevel, "Pre-A1");
+  if (level === "Pre-A1") {
+    return [
+      "REPAIR LEVEL GUARD: The learner is Pre-A1/A0.",
+      "Use only memorized high-frequency chunks, greetings, names, numbers, simple present-tense phrases, and one-clause sentences of about 3-6 words.",
+      "Do not introduce, name, compare, or test past tenses, preterite/indefinite/imperfect, subjunctive, conditional, object pronouns, or multi-clause grammar.",
+      "If the weak spot is advanced, downshift it into recognition or practice of one useful beginner word/chunk instead of teaching the advanced rule.",
+    ].join(" ");
+  }
+  if (level === "A1") {
+    return [
+      "REPAIR LEVEL GUARD: The learner is A1.",
+      "Use basic everyday vocabulary, simple present-tense patterns, memorized chunks, and short one-clause sentences.",
+      "Do not introduce, name, compare, or test past tenses, preterite/indefinite/imperfect, subjunctive, conditional, or advanced grammar.",
+      "If the weak spot is advanced, downshift it into one useful beginner-safe word/chunk.",
+    ].join(" ");
+  }
+  return `REPAIR LEVEL GUARD: Keep every exercise within CEFR ${level}; the repair topic must not exceed that level.`;
+}
+
+const FOUNDATION_ADVANCED_REPAIR_PATTERN =
+  /\b(pret[eé]rito|indefinid[oa]|imperfect[oa]|subjunctive|subjuntivo|conditional|condicional|past\s+tense|preterite|future\s+tense|object\s+pronoun|pronombres?\s+de\s+objeto|ayer|anoche|pasado|pasada|cuando\s+era|cuando\s+fui)\b/i;
+
+function isBeginnerSafeRepairTarget(value) {
+  const text = String(value || "").trim();
+  if (!text) return false;
+  if (FOUNDATION_ADVANCED_REPAIR_PATTERN.test(text)) return false;
+  if (/[.?!;:]/.test(text)) return false;
+  const wordCount = text.split(/\s+/).filter(Boolean).length;
+  return wordCount <= 4 && text.length <= 42;
 }
 
 /**
@@ -494,25 +539,40 @@ export async function captureConversationSlip({
 export function buildEphemeralRepairLesson({
   plan,
   targetLang,
-  cefrLevel = "A1",
+  cefrLevel = "Pre-A1",
   dayKey,
   recommendedMode = "lesson",
 }) {
   const items = Array.isArray(plan?.items) ? plan.items : [];
   const concepts = items.map((it) => it?.concept).filter(Boolean);
   if (!concepts.length) return null;
+  const lessonCefrLevel = displayCEFRLevel(cefrLevel, "Pre-A1");
+  const isFoundationLevel = isFoundationCEFRLevel(lessonCefrLevel);
+  const levelGuard = repairLessonLevelGuard(lessonCefrLevel);
 
   // Target-language material the engines should drill: prefer the corrected
   // form; fall back to the concept label.
-  const words = items
+  const rawWords = items
     .map((it) => it?.expectedAnswer || it?.concept)
     .filter(Boolean);
-  const focusPoints = items
-    .map((it) => {
-      const tip = it?.summary || "";
-      return tip ? `${it.concept}: ${tip}` : it?.concept;
-    })
-    .filter(Boolean);
+  const words = isFoundationLevel
+    ? rawWords.filter(isBeginnerSafeRepairTarget)
+    : rawWords;
+  const repairTargets = isFoundationLevel
+    ? words
+    : words.length
+      ? words
+      : concepts;
+  const focusPoints = isFoundationLevel
+    ? []
+    : [
+        ...items
+          .map((it) => {
+            const tip = it?.summary || "";
+            return tip ? `${it.concept}: ${tip}` : it?.concept;
+          })
+          .filter(Boolean),
+      ];
 
   // `flashcards` repair = pure recall → the vocabulary engine (it includes the
   // flashcard submodule). `lesson` repair = the FULL lesson experience: every
@@ -520,12 +580,26 @@ export function buildEphemeralRepairLesson({
   const modes =
     recommendedMode === "flashcards"
       ? ["vocabulary"]
+      : isFoundationLevel
+        ? ["vocabulary"]
       : [...REPAIR_LESSON_MODES];
 
-  const topic = concepts.join("; ");
+  const topic = isFoundationLevel
+    ? repairTargets.length
+      ? `beginner repair with these words or chunks: ${repairTargets.join("; ")}`
+      : "beginner repair based on recent weak spots"
+    : concepts.join("; ");
   const content = {};
   modes.forEach((m) => {
-    content[m] = { topic, words, focusPoints };
+    content[m] = {
+      topic,
+      words,
+      focusPoints,
+      cefrLevel: lessonCefrLevel,
+      isRepair: true,
+      levelGuard,
+      repairTargets,
+    };
   });
 
   return {
@@ -533,7 +607,7 @@ export function buildEphemeralRepairLesson({
     isRepair: true,
     title: { ...REPAIR_COPY.title },
     description: { ...REPAIR_COPY.intro },
-    cefrLevel,
+    cefrLevel: lessonCefrLevel,
     // Small goal: a handful of correct answers in the seeded engines completes
     // the lesson through the normal XP-goal path.
     xpReward: 10,
@@ -561,15 +635,19 @@ export async function completeRepairLesson({ lesson, npub, targetLang }) {
     return;
   }
   const target = Math.max(1, Number(lesson?.repairTarget) || 1);
+  // Parallel, like completeRepairFocus: local store patches flip the course
+  // instantly; the commutative increment(1) writes settle in the background.
+  const pending = [];
   for (let i = 0; i < target; i += 1) {
-    await recordPlateActivity(npub, "repair", targetLang);
+    pending.push(recordPlateActivity(npub, "repair", targetLang));
   }
   const memoryIds = Array.isArray(lesson?.repairMemoryIds)
     ? lesson.repairMemoryIds
     : [];
   if (memoryIds.length) {
-    await markMemoryReinforced({ npub, targetLang, memoryIds });
+    pending.push(markMemoryReinforced({ npub, targetLang, memoryIds }));
   }
+  await Promise.all(pending);
 }
 
 /* -----------------------------------
@@ -668,12 +746,18 @@ export async function completeRepairFocus() {
   // no-op and can't double-count the course.
   focusStore.clearFocus?.();
 
+  // Fire the increments in parallel: each call patches the local store
+  // synchronously before its Firestore write (so the repair course flips done
+  // immediately — the task-complete modal shouldn't wait on N sequential
+  // round-trips), and the writes use increment(1), which is commutative.
+  const pending = [];
   for (let i = 0; i < target; i += 1) {
-    await recordPlateActivity(npub, "repair", targetLang);
+    pending.push(recordPlateActivity(npub, "repair", targetLang));
   }
   if (memoryIds.length) {
-    await markMemoryReinforced({ npub, targetLang, memoryIds });
+    pending.push(markMemoryReinforced({ npub, targetLang, memoryIds }));
   }
+  await Promise.all(pending);
 }
 
 /**
@@ -1042,12 +1126,14 @@ function buildBatchInput({
 }) {
   const targetName = langName(targetLang);
   const supportName = langName(appLanguage);
-  const level = cefrLevel || ranked[0]?.cefrLevel || "A1";
+  const level = displayCEFRLevel(cefrLevel || ranked[0]?.cefrLevel, "Pre-A1");
+  const levelGuard = repairLessonLevelGuard(level);
   const notes = ranked.map((n) => ({
     memoryId: n.id,
     concept: n.concept,
     theirAnswer: n.userAnswer || "",
     correctAnswer: n.expectedAnswer || n.correction || "",
+    cefrLevel: displayCEFRLevel(n.cefrLevel || level, level),
     // Enriched at capture time by the Flash-Lite pass — gives the batch a richer,
     // already-diagnosed picture of each slip instead of just raw answers.
     whatWentWrong: n.mistake || "",
@@ -1070,6 +1156,7 @@ function buildBatchInput({
     completion,
     carry,
     `The learner is at CEFR level ${level}. Keep every prompt, answer, and the overall difficulty appropriate for ${level} — simpler and more concrete for Pre-A1/A1, more nuanced for higher levels. Never exceed their level.`,
+    levelGuard,
     `Pick "recommendedMode" to match how the weak concept is best PRACTICED — every mode is a real interactive surface, so choose deliberately and the "summary" must explain WHY this mode fits:`,
     `- "conversation": functional/communicative language the learner would say to another person — greetings, ordering, asking for things, small talk, directions. Great default for anything you'd actually say in dialogue.`,
     `- "tutor": producing one specific target-language phrase or sentence correctly out loud, or focused grammar-in-speech coaching.`,
@@ -1187,7 +1274,7 @@ function assembleAiBlueprint({
         errorType: note?.errorType || "unknown",
         sourceMode: note?.sourceMode || "",
         sourceContext: note?.sourceContext || "",
-        cefrLevel: note?.cefrLevel || "A1",
+        cefrLevel: displayCEFRLevel(note?.cefrLevel, "Pre-A1"),
         summary: String(it?.tip || it?.summary || note?.companionSummary || "").trim(),
       };
     })

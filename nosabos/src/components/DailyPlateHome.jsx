@@ -10,7 +10,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Box, Button, HStack, Text, VStack } from "@chakra-ui/react";
 import { CheckCircleIcon } from "@chakra-ui/icons";
-import { FiPlay } from "react-icons/fi";
+import { FiPlay, FiRotateCcw } from "react-icons/fi";
 
 import { WaveBar } from "./WaveBar";
 import PlatePetPanel from "./PlatePetPanel";
@@ -85,6 +85,20 @@ const SUBTITLE_COPY = {
   hi: "अपने कार्य पूरे करें और XP बोनस पाएं",
 };
 
+const RESET_COPY = {
+  en: "Reset plate",
+  es: "Reiniciar plato",
+  pt: "Reiniciar prato",
+  fr: "Réinitialiser le plateau",
+  it: "Reimposta piatto",
+  de: "Tafel zurücksetzen",
+  ja: "プレートをリセット",
+  zh: "重置任务盘",
+  ru: "Сбросить тарелку",
+  ar: "إعادة ضبط الطبق",
+  hi: "प्लेट रीसेट करें",
+};
+
 export default function DailyPlateHome({
   user,
   targetLang = "es",
@@ -93,7 +107,7 @@ export default function DailyPlateHome({
   dailyGoalXp = 0,
   sessionActive = false,
   onStartPractice,
-  // onRegenerate, // dev-only: re-enable with the "Regenerate quest" button below
+  onResetPlate,
   questKinds,
   // Disable the primary CTA until the post-onboarding popover tour is finished.
   ctaDisabled = false,
@@ -122,6 +136,7 @@ export default function DailyPlateHome({
     : "rgba(45, 212, 191, 0.24)";
 
   const [now, setNow] = useState(() => new Date());
+  const [isResettingPlate, setIsResettingPlate] = useState(false);
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 60_000);
     return () => clearInterval(id);
@@ -301,6 +316,26 @@ export default function DailyPlateHome({
   const handleStart = () => {
     playSound(selectSound);
     onStartPractice?.();
+  };
+
+  const handleResetPlate = async () => {
+    if (!onResetPlate || isResettingPlate) return;
+    playSound(selectSound);
+    setBubbleDismissed(false);
+    try {
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem(bubbleDismissKey);
+      }
+    } catch {
+      /* ignore quota/availability errors — reset still works for this session */
+    }
+
+    setIsResettingPlate(true);
+    try {
+      await onResetPlate();
+    } finally {
+      setIsResettingPlate(false);
+    }
   };
 
   return (
@@ -546,24 +581,19 @@ export default function DailyPlateHome({
           currentGoalXp={dailyGoalXp}
         />
 
-        {/* Dev/testing only: reset today's quest so the flow can be re-run.
-            Commented out for shipping — re-enable this block (and the
-            onRegenerate prop above) when testing the quest flow.
-        {onRegenerate ? (
+        {onResetPlate ? (
           <Button
             size="sm"
             variant="ghost"
             color="var(--app-text-muted)"
             alignSelf="center"
-            onClick={() => {
-              playSound(selectSound);
-              onRegenerate();
-            }}
+            leftIcon={<FiRotateCcw />}
+            onClick={handleResetPlate}
+            isLoading={isResettingPlate}
           >
-            ↻ Regenerate quest (dev)
+            {plateUiCopy(appLanguage, RESET_COPY)}
           </Button>
         ) : null}
-        */}
       </VStack>
     </Box>
   );

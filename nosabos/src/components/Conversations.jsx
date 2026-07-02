@@ -1281,6 +1281,23 @@ export default function Conversations({
 
   const handleRealtimeEventRef = useRef(null);
   handleRealtimeEventRef.current = handleRealtimeEvent;
+  // Latest-instance ref so the quest listener below can hang up without a
+  // stale closure (stop is re-created every render; function decls hoist).
+  const stopSessionRef = useRef(null);
+  stopSessionRef.current = stop;
+  // Guided quest: when the plate's Conversation course completes, App
+  // dispatches this event — end the live session gracefully so the
+  // task-complete modal isn't talking over it, and navigation to the next
+  // task starts clean. (Voice surfaces are keep-alive across mode switches,
+  // so nothing else would ever stop it.)
+  useEffect(() => {
+    const handler = (event) => {
+      if (event?.detail?.kind !== "conversation") return;
+      void stopSessionRef.current?.();
+    };
+    window.addEventListener("plate:courseComplete", handler);
+    return () => window.removeEventListener("plate:courseComplete", handler);
+  }, []);
   const [goalsCompleted, setGoalsCompleted] = useState(0);
   const [isGeneratingGoal, setIsGeneratingGoal] = useState(false);
   const [streamingText, setStreamingText] = useState("");
@@ -2528,6 +2545,10 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "..."}`;
         // goal — that's the "incorrect" signal for this mode. Bank it, deduped by
         // the goal (concept), so multiple tries on the same goal collapse into one
         // note (severity bumps) instead of spamming the log.
+        const captureLevel =
+          conversationSettingsRef.current?.proficiencyLevel ||
+          maxProficiencyLevel ||
+          "A1";
         captureCompanionMemory({
           targetLang: tLang,
           supportLang: sLang,
@@ -2535,6 +2556,7 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "..."}`;
           concept: goal.text?.[sLang] || goalText || "",
           userAnswer: userMessage,
           expectedAnswer: goalText || "",
+          cefrLevel: captureLevel,
           sourceContext: "conversation-goal",
         });
       }
@@ -2833,6 +2855,10 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
           text,
           targetLang: targetLangRef.current,
           supportLang: resolvedSupportLang,
+          cefrLevel:
+            conversationSettingsRef.current?.proficiencyLevel ||
+            maxProficiencyLevel ||
+            "A1",
         });
       }
       return;

@@ -917,10 +917,14 @@ export default function History({
     DEFAULT_TARGET_LANGUAGE,
   );
 
-  // Use CEFR level from the current lesson, or user's proficiency level as fallback
-  const cefrLevel = lesson?.id
-    ? extractCEFRLevel(lesson.id)
-    : getUserProficiencyLevel(progress, targetLang);
+  // Repair/ephemeral lessons carry an explicit CEFR level; regular path lessons
+  // can still derive it from their level-coded id.
+  const cefrLevel =
+    lesson?.cefrLevel ||
+    lessonContent?.cefrLevel ||
+    (lesson?.id
+      ? extractCEFRLevel(lesson.id)
+      : getUserProficiencyLevel(progress, targetLang));
 
   // Track lesson content changes to auto-trigger generation
   const lessonContentKey = useMemo(
@@ -1794,6 +1798,7 @@ export default function History({
         concept: reviewQuestion.question || "",
         userAnswer: reviewAnswer || "",
         expectedAnswer: reviewQuestion.answer || "",
+        cefrLevel,
         sourceContext: "reading",
       });
     }

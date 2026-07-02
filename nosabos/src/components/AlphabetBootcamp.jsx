@@ -1587,6 +1587,7 @@ function LetterCard({
           concept: practiceWord,
           userAnswer: answer,
           expectedAnswer: practiceWord,
+          cefrLevel: "Pre-A1",
           // The letter/sound card id, not a generic label — lets a routed
           // repair deep-seed the deck with this exact card instead of a
           // random one (see the repair-focus deck reorder on mount).
