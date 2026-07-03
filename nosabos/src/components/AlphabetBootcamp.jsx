@@ -1434,6 +1434,7 @@ function LetterCard({
   appLanguage,
   targetLang,
   npub,
+  cefrLevel = "Pre-A1",
   onXpAwarded,
   initialPracticeWord,
   initialPracticeWordMeaning,
@@ -1587,7 +1588,7 @@ function LetterCard({
           concept: practiceWord,
           userAnswer: answer,
           expectedAnswer: practiceWord,
-          cefrLevel: "Pre-A1",
+          cefrLevel,
           // The letter/sound card id, not a generic label — lets a routed
           // repair deep-seed the deck with this exact card instead of a
           // random one (see the repair-focus deck reorder on mount).
@@ -2391,6 +2392,7 @@ export default function AlphabetBootcamp({
   targetLang,
   npub,
   languageXp = 0,
+  cefrLevel = "Pre-A1",
   pauseMs = 2000,
 }) {
   const uiLang = normalizeSupportLanguage(appLanguage, DEFAULT_SUPPORT_LANGUAGE);
@@ -2825,6 +2827,7 @@ export default function AlphabetBootcamp({
                     appLanguage={appLanguage}
                     targetLang={targetLang}
                     npub={npub}
+                    cefrLevel={cefrLevel}
                     pauseMs={pauseMs}
                     onXpAwarded={handleXpAwarded}
                     initialPracticeWord={
@@ -2934,6 +2937,7 @@ export default function AlphabetBootcamp({
                     appLanguage={appLanguage}
                     targetLang={targetLang}
                     npub={npub}
+                    cefrLevel={cefrLevel}
                     pauseMs={pauseMs}
                     onXpAwarded={handleXpAwarded}
                     initialPracticeWord={

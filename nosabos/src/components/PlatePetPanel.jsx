@@ -59,6 +59,9 @@ const TILE = 16;
 const SCALE = 3;
 const T = TILE * SCALE;
 const SCENE_Y_OFFSET = 4;
+// Soft ground shadow shared by the companions; width tracks altitude so hops
+// and hovering read as real height on the 48px scene.
+const COMPANION_SHADOW = "rgba(100, 116, 139, 0.32)";
 const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
 const APP_SURFACE_MUTED = "var(--app-surface-muted)";
 const APP_BORDER = "var(--app-border)";
@@ -501,7 +504,7 @@ function getPetStage(health, copy, isLightTheme = false) {
   if (health <= 99) {
     return {
       key: "healthy",
-      motion: "happy",
+      motion: "healthy",
       palette: DOG,
       colorScheme: "teal",
       label: copy.healthy,
@@ -512,14 +515,14 @@ function getPetStage(health, copy, isLightTheme = false) {
       waveEnd: isLightTheme ? "#50a587" : "#14B8A6",
       badgeBg: isLightTheme ? "rgba(80, 165, 135, 0.14)" : undefined,
       badgeColor: isLightTheme ? "#2f6a57" : undefined,
-      face: "happy",
+      face: "healthy",
       decoration: null,
       showTongue: false,
     };
   }
   return {
     key: "happy",
-    motion: "healthy",
+    motion: "happy",
     palette: DOG,
     colorScheme: "green",
     label: copy.happy,
@@ -530,7 +533,7 @@ function getPetStage(health, copy, isLightTheme = false) {
     waveEnd: isLightTheme ? "#32a877" : "#22C55E",
     badgeBg: isLightTheme ? "rgba(50, 168, 119, 0.14)" : undefined,
     badgeColor: isLightTheme ? "#265f4a" : undefined,
-    face: "healthy",
+    face: "happy",
     decoration: "heart",
     showTongue: false,
   };
@@ -800,10 +803,12 @@ function getAlienPalette(stage) {
   return ALIEN;
 }
 
-function drawAlienBody(ctx, palette, cx, topY) {
-  px(ctx, palette.body, cx - 8, topY, 16, 1);
-  px(ctx, palette.body, cx - 10, topY + 1, 20, 1);
-  px(ctx, palette.body, cx - 12, topY + 2, 24, 1);
+// `tilt` shifts the dome's top rows sideways so the body reads as leaning
+// into its waddle while the base stays planted.
+function drawAlienBody(ctx, palette, cx, topY, tilt = 0) {
+  px(ctx, palette.body, cx - 8 + tilt, topY, 16, 1);
+  px(ctx, palette.body, cx - 10 + tilt, topY + 1, 20, 1);
+  px(ctx, palette.body, cx - 12 + tilt, topY + 2, 24, 1);
   px(ctx, palette.body, cx - 13, topY + 3, 26, 16);
   px(ctx, palette.body, cx - 12, topY + 19, 24, 1);
   px(ctx, palette.body, cx - 10, topY + 20, 20, 1);
@@ -812,12 +817,26 @@ function drawAlienBody(ctx, palette, cx, topY) {
   px(ctx, palette.body2, cx - 8, topY + 21, 16, 1);
 }
 
-function drawAlienLegs(ctx, palette, cx, topY, stride) {
+// `pose` (optional) animates the four legs individually: `lift(i)` raises a
+// leg 1px (diagonal pairs = waddle gait), `dx(i)` skitters a leg sideways,
+// `splay` pushes the outer legs outward, `drop`/`height` bend the legs for a
+// sagging stance. A falsy pose draws the neutral planted stance.
+function drawAlienLegs(ctx, palette, cx, topY, pose) {
   const y = topY + 21;
-  px(ctx, palette.leg, cx - 10 + stride, y, 3, 3);
-  px(ctx, palette.leg, cx - 5, y, 3, 3);
-  px(ctx, palette.leg, cx + 1, y, 3, 3);
-  px(ctx, palette.leg, cx + 6 - stride, y, 3, 3);
+  const xs = [-10, -5, 1, 6];
+  for (let i = 0; i < 4; i++) {
+    const dx = pose?.dx ? pose.dx(i) : 0;
+    const splay = pose?.splay ? (i === 0 ? -pose.splay : i === 3 ? pose.splay : 0) : 0;
+    const lift = pose?.lift ? pose.lift(i) : 0;
+    px(
+      ctx,
+      palette.leg,
+      cx + xs[i] + dx + splay,
+      y + (pose?.drop ?? 0) - lift,
+      3,
+      pose?.height ?? 3,
+    );
+  }
 }
 
 function drawAlienFace(ctx, key, palette, cx, topY) {
@@ -885,16 +904,28 @@ function drawAlienFace(ctx, key, palette, cx, topY) {
 function drawAlienProps(ctx, key, cx, topY, frame) {
   if (key === "happy") {
     const heart = "#d36aa6";
-    px(ctx, heart, cx + 5, topY - 6, 2, 1);
-    px(ctx, heart, cx + 8, topY - 6, 2, 1);
-    px(ctx, heart, cx + 5, topY - 5, 5, 1);
-    px(ctx, heart, cx + 6, topY - 4, 3, 1);
-    px(ctx, heart, cx + 7, topY - 3, 1, 1);
+    const big = frame % 6 >= 3;
+    const hx = cx + 5;
+    const hy = topY - 6 - (big ? 1 : 0);
+    if (big) {
+      px(ctx, heart, hx, hy, 2, 1);
+      px(ctx, heart, hx + 4, hy, 2, 1);
+      px(ctx, heart, hx - 1, hy + 1, 7, 1);
+      px(ctx, heart, hx, hy + 2, 5, 1);
+      px(ctx, heart, hx + 1, hy + 3, 3, 1);
+      px(ctx, heart, hx + 2, hy + 4, 1, 1);
+    } else {
+      px(ctx, heart, hx, hy, 2, 1);
+      px(ctx, heart, hx + 3, hy, 2, 1);
+      px(ctx, heart, hx, hy + 1, 5, 1);
+      px(ctx, heart, hx + 1, hy + 2, 3, 1);
+      px(ctx, heart, hx + 2, hy + 3, 1, 1);
+    }
     return;
   }
 
   if (key === "stressed") {
-    const bounce = frame % 6 < 3 ? 0 : 1;
+    const bounce = frame % 3 === 0 ? 0 : 1;
     px(ctx, "#86c9ee", cx + 7, topY + 3 + bounce, 2, 2);
     px(ctx, "#86c9ee", cx + 8, topY + 2 + bounce, 1, 1);
   }
@@ -937,54 +968,51 @@ function drawAliveAlien(ctx, frame, stage) {
   ctx.translate(0, SCENE_Y_OFFSET);
 
   const cx = T / 2;
-  const phase = frame % 6;
+  const t = frame % 12;
   const motion = stage.motion ?? stage.key;
   const palette = getAlienPalette(stage);
-  const xShift =
-    motion === "stressed"
-      ? phase % 2 === 0
-        ? -1
-        : 1
-      : motion === "unhappy"
-        ? phase < 3
-          ? 0
-          : -1
-        : 0;
-  const stride =
-    motion === "happy" || motion === "healthy"
-      ? phase === 1 || phase === 5
-        ? 1
-        : phase === 3
-          ? -1
-          : 0
-      : 0;
-  const bob =
-    motion === "happy"
-      ? phase === 2 || phase === 4
-        ? -2
-        : 0
-      : motion === "healthy"
-        ? phase === 2 || phase === 4
-          ? -1
-          : 0
-        : motion === "unhappy"
-          ? phase < 3
-            ? 0
-            : 1
-          : motion === "stressed"
-            ? phase % 2 === 0
-              ? -1
-              : 1
-            : phase < 3
-              ? 1
-              : 0;
+  let bob = 0;
+  let tilt = 0;
+  let jitterX = 0;
+  const pose = {};
+  if (motion === "happy" || motion === "healthy") {
+    bob = (
+      motion === "happy"
+        ? [0, -1, -1, 0, 0, 0, 0, 0, -2, -2, 0, 0]
+        : [0, -1, -1, 0, 0, 0, 0, -1, -1, 0, 0, 0]
+    )[t];
+    const hopping = motion === "happy" && (t === 8 || t === 9);
+    if (hopping) {
+      pose.height = 2; // legs tucked mid-air
+    } else {
+      const leftPair = t % 4 < 2;
+      pose.lift = (i) => ((i % 2 === 0) === leftPair ? 1 : 0);
+      tilt = leftPair ? 1 : -1;
+    }
+    if (motion === "happy" && t === 10) pose.splay = 1; // landing absorb
+  } else if (motion === "unhappy") {
+    bob = 1 + (t % 12 < 6 ? 0 : 1);
+    pose.height = 2;
+    pose.drop = 1;
+  } else if (motion === "stressed") {
+    jitterX = t % 2 === 0 ? -1 : 1;
+    bob = t % 2 === 0 ? -1 : 0;
+    pose.dx = (i) => (t + i) % 2;
+  } else if (motion === "unhealthy") {
+    bob = 1 + (t % 12 < 8 ? 0 : 1);
+    pose.height = 2;
+    pose.drop = 1;
+    pose.splay = 1;
+  }
   const topY = 6 + bob;
-  const ox = cx + xShift;
+  const ox = cx + jitterX;
+  const shadowW = bob < -1 ? 14 : 20;
+  px(ctx, COMPANION_SHADOW, cx - shadowW / 2, 30, shadowW, 1);
 
-  drawAlienBody(ctx, palette, ox, topY);
-  drawAlienLegs(ctx, palette, ox, topY, stride);
-  drawAlienFace(ctx, stage.key, palette, ox, topY);
-  drawAlienProps(ctx, stage.key, ox, topY, frame);
+  drawAlienBody(ctx, palette, ox, topY, tilt);
+  drawAlienLegs(ctx, palette, ox, topY, pose);
+  drawAlienFace(ctx, stage.key, palette, ox + tilt, topY);
+  drawAlienProps(ctx, stage.key, ox + tilt, topY, t);
 
   ctx.restore();
 }
@@ -1028,23 +1056,27 @@ function getGhostPalette(stage) {
   return GHOST;
 }
 
-function drawGhostBody(ctx, palette, cx, gy) {
+// The hem's three lobes can ripple independently (like trailing fabric);
+// `ripple(lobeIndex)` returns the per-lobe lift in px, or null for a still hem.
+function drawGhostBody(ctx, palette, cx, gy, ripple = null) {
   for (let i = 0; i < GHOST_HW.length; i++) {
     px(ctx, palette.body, cx - GHOST_HW[i], gy + i, 2 * GHOST_HW[i], 1);
   }
   const b = gy + GHOST_HW.length;
-  px(ctx, palette.body, cx - 12, b, 7, 1);
-  px(ctx, palette.body, cx - 3, b, 6, 1);
-  px(ctx, palette.body, cx + 5, b, 7, 1);
-  px(ctx, palette.body, cx - 11, b + 1, 5, 1);
-  px(ctx, palette.body, cx - 2, b + 1, 4, 1);
-  px(ctx, palette.body, cx + 6, b + 1, 5, 1);
+  const lobes = [
+    [-12, 7, -11, 5],
+    [-3, 6, -2, 4],
+    [5, 7, 6, 5],
+  ];
+  lobes.forEach(([x1, w1, x2, w2], i) => {
+    const lift = ripple ? ripple(i) : 0;
+    px(ctx, palette.body, cx + x1, b + lift, w1, 1);
+    px(ctx, palette.body, cx + x2, b + 1 + lift, w2, 1);
+    px(ctx, palette.body2, cx + x2, b + 1 + lift, w2, 1);
+  });
   for (let i = 4; i < GHOST_HW.length; i++) {
     px(ctx, palette.body2, cx + GHOST_HW[i] - 1, gy + i, 1, 1);
   }
-  px(ctx, palette.body2, cx - 11, b + 1, 5, 1);
-  px(ctx, palette.body2, cx - 2, b + 1, 4, 1);
-  px(ctx, palette.body2, cx + 6, b + 1, 5, 1);
   px(ctx, palette.bodyLight, cx - 6, gy + 2, 3, 1);
   px(ctx, palette.bodyLight, cx - 8, gy + 3, 2, 1);
   px(ctx, palette.bodyLight, cx - 9, gy + 4, 2, 1);
@@ -1093,12 +1125,45 @@ function drawGhostCharacter(ctx, frame, stage) {
   ctx.save();
   ctx.translate(0, SCENE_Y_OFFSET);
   const cx = T / 2;
-  const phase = frame % 6;
+  const t = frame % 12;
   const palette = getGhostPalette(stage);
-  const bob = stage.key === "dead" ? 0 : [0, -1, -1, 0, 1, 0][phase];
-  const gy = 7 + bob;
-  drawGhostBody(ctx, palette, cx, gy);
-  drawGhostEyes(ctx, palette, stage.key, cx, gy);
+  const motion = stage.key === "dead" ? "dead" : (stage.motion ?? stage.key);
+  let drift = 0;
+  let sway = 0;
+  let eyeDx = 0;
+  let eyeDy = 0;
+  let ripple = null;
+  let alpha = 1;
+  if (motion === "happy") {
+    drift = [0, -1, -2, -2, -2, -1, 0, 1, 2, 2, 1, 0][t];
+    sway = [0, 1, 1, 0, -1, -1, 0, 1, 1, 0, -1, -1][t];
+    eyeDx = sway;
+    ripple = (i) => ((t + i * 2) % 6 < 3 ? 0 : -1);
+  } else if (motion === "healthy") {
+    drift = [0, -1, -1, -1, 0, 0, 0, 1, 1, 1, 0, 0][t];
+    sway = [0, 0, 1, 1, 0, 0, 0, 0, -1, -1, 0, 0][t];
+    eyeDx = sway;
+    ripple = (i) => ((t + i * 4) % 12 < 6 ? 0 : -1);
+  } else if (motion === "unhappy") {
+    drift = 2 + (t % 12 < 6 ? 0 : 1);
+    eyeDy = 1;
+  } else if (motion === "stressed") {
+    drift = t % 2 === 0 ? -1 : 0;
+    sway = t % 2 === 0 ? -1 : 1;
+    ripple = (i) => ((t + i) % 2 === 0 ? 0 : -1);
+  } else if (motion === "unhealthy") {
+    drift = 3 + (t % 12 < 6 ? 0 : 1);
+    alpha = t === 5 || t === 11 ? 0.5 : 1;
+  }
+  const gy = 7 + drift;
+  if (motion !== "dead") {
+    const shadowW = Math.max(8, Math.min(18, 16 - 2 * (7 - gy)));
+    px(ctx, COMPANION_SHADOW, cx - shadowW / 2, 37, shadowW, 1);
+  }
+  ctx.globalAlpha = alpha;
+  drawGhostBody(ctx, palette, cx + sway, gy, ripple);
+  drawGhostEyes(ctx, palette, stage.key, cx + sway + eyeDx, gy + eyeDy);
+  ctx.globalAlpha = 1;
   ctx.restore();
 }
 
@@ -1135,31 +1200,81 @@ function getRobotPalette(stage) {
   return ROBOT;
 }
 
-function drawRobotBody(ctx, p, cx, by, key, phase) {
-  const blink = key !== "dead" && phase < 3;
-  px(ctx, p.metal, cx - 1, 9 + by, 2, 4);
-  if (key !== "dead") {
-    px(ctx, p.bulb, cx - 1, 6 + by, 2, 2);
-    if (blink) px(ctx, p.bulb, cx, 5 + by, 1, 1);
-  } else {
-    px(ctx, p.metalDark, cx - 1, 6 + by, 2, 2);
-  }
-  px(ctx, p.metal, cx - 9, 12 + by, 18, 1);
-  px(ctx, p.metal, cx - 10, 13 + by, 20, 8);
-  px(ctx, p.metal, cx - 9, 21 + by, 18, 1);
-  px(ctx, p.metalDark, cx + 9, 13 + by, 1, 8);
-  px(ctx, p.metalDark, cx - 10, 20 + by, 20, 1);
-  px(ctx, p.screen, cx - 7, 14 + by, 14, 6);
+// The robot is drawn in decoupled parts so they can move independently: the
+// wheeled chassis stays planted, the torso rides suspension, the head lags the
+// torso by one frame, and the antenna lags the head (follow-through).
+function drawRobotChassis(ctx, p, cx, motion, t) {
+  px(ctx, p.wheel, cx - 7, 32, 14, 3);
+  px(ctx, p.metalDark, cx - 7, 34, 14, 1);
+  px(ctx, p.metal, cx - 1, 32, 2, 2);
+  if (motion === "dead") return;
+  const speed =
+    motion === "happy"
+      ? 3
+      : motion === "healthy"
+        ? 2
+        : motion === "stressed"
+          ? 4
+          : motion === "unhappy"
+            ? 1
+            : 0;
+  const scroll = motion === "unhealthy" ? Math.floor(t / 2) : t * speed;
+  px(ctx, "#232a35", cx - 7 + (scroll % 14), 33, 1, 1);
+  px(ctx, "#232a35", cx - 7 + ((scroll + 7) % 14), 33, 1, 1);
+}
+
+function drawRobotTorso(ctx, p, cx, by, key, armDrop) {
+  px(ctx, p.metal, cx - 11, 25 + by + armDrop, 2, 4);
+  px(ctx, p.metal, cx + 9, 25 + by + armDrop, 2, 4);
   px(ctx, p.metal, cx - 8, 23 + by, 16, 1);
   px(ctx, p.metal, cx - 9, 24 + by, 18, 7);
   px(ctx, p.metal, cx - 8, 31 + by, 16, 1);
   px(ctx, p.metalDark, cx + 8, 24 + by, 1, 7);
-  px(ctx, p.metal, cx - 11, 25 + by, 2, 4);
-  px(ctx, p.metal, cx + 9, 25 + by, 2, 4);
   px(ctx, key === "dead" ? p.metalDark : p.eye, cx - 1, 26 + by, 2, 2);
-  px(ctx, p.wheel, cx - 7, 32 + by, 14, 3);
-  px(ctx, p.metalDark, cx - 7, 34 + by, 14, 1);
-  px(ctx, p.metal, cx - 1, 32 + by, 2, 2);
+}
+
+function drawRobotHead(ctx, p, cx, hy, key, t) {
+  px(ctx, p.metal, cx - 9, 12 + hy, 18, 1);
+  px(ctx, p.metal, cx - 10, 13 + hy, 20, 8);
+  px(ctx, p.metal, cx - 9, 21 + hy, 18, 1);
+  px(ctx, p.metalDark, cx + 9, 13 + hy, 1, 8);
+  px(ctx, p.metalDark, cx - 10, 20 + hy, 20, 1);
+  px(ctx, p.screen, cx - 7, 14 + hy, 14, 6);
+  if (key !== "dead") {
+    px(ctx, "rgba(255, 255, 255, 0.10)", cx - 7, 14 + hy + (t % 6), 14, 1);
+  }
+}
+
+function drawRobotAntenna(ctx, p, cx, hy, ay, lean, key, t) {
+  px(ctx, p.metal, cx - 1, 9 + hy, 2, 4);
+  if (key === "dead") {
+    px(ctx, p.metalDark, cx - 1, 6, 2, 2);
+    return;
+  }
+  px(
+    ctx,
+    p.metalDark,
+    cx + lean,
+    8 + Math.min(ay, hy),
+    1,
+    Math.max(1, Math.abs(hy - ay)),
+  );
+  let on = false;
+  let tip = false;
+  if (key === "happy") {
+    on = true;
+    tip = t % 6 < 3;
+  } else if (key === "healthy") {
+    on = t % 6 < 3;
+  } else if (key === "unhappy") {
+    on = t % 12 < 3;
+  } else if (key === "stressed") {
+    on = t % 2 === 0;
+  } else {
+    on = t < 2;
+  }
+  px(ctx, on ? p.bulb : p.metalDark, cx - 1 + lean, 6 + ay, 2, 2);
+  if (on && tip) px(ctx, p.bulb, cx + lean, 5 + ay, 1, 1);
 }
 
 function drawRobotFace(ctx, p, key, cx, by) {
@@ -1216,13 +1331,63 @@ function drawRobotCharacter(ctx, frame, stage) {
   ctx.save();
   ctx.translate(0, SCENE_Y_OFFSET);
   const cx = T / 2;
-  const phase = frame % 6;
+  const t = frame % 12;
   const key = stage.key;
+  const motion = key === "dead" ? "dead" : (stage.motion ?? key);
   const palette = getRobotPalette(stage);
-  const bob = key === "dead" ? 0 : phase === 2 || phase === 4 ? -1 : 0;
-  const jitter = key === "stressed" ? (phase % 2 === 0 ? -1 : 1) : 0;
-  drawRobotBody(ctx, palette, cx + jitter, bob, key, phase);
-  drawRobotFace(ctx, palette, key, cx + jitter, bob);
+  let bobs = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+  let rest = 0;
+  let jitter = 0;
+  let headJitter = 0;
+  if (motion === "happy") {
+    bobs = [0, -1, -2, -1, 0, 0, 0, -1, -2, -1, 0, 0];
+  } else if (motion === "healthy") {
+    bobs = [0, -1, -1, 0, 0, 0, 0, -1, -1, 0, 0, 0];
+  } else if (motion === "unhappy") {
+    bobs = [0, 0, 0, -1, -1, 0, 0, 0, 0, 0, 0, 0];
+    rest = 1;
+  } else if (motion === "stressed") {
+    bobs = [-1, 0, -1, 0, -1, 0, -1, 0, -1, 0, -1, 0];
+    jitter = t % 2 === 0 ? -1 : 1;
+    headJitter = -jitter;
+  } else if (motion === "unhealthy") {
+    bobs = [0, 0, 0, 0, 0, 0, 0, 0, -1, -1, 0, 0];
+    rest = 1;
+  }
+  const bodyBob = motion === "dead" ? 0 : bobs[t] + rest;
+  const headBob = motion === "dead" ? 0 : bobs[(t + 11) % 12] + rest;
+  const antennaBob = motion === "dead" ? 0 : bobs[(t + 10) % 12] + rest;
+  const lean = Math.max(-1, Math.min(1, headBob - antennaBob));
+  if (motion !== "dead") {
+    px(ctx, COMPANION_SHADOW, cx - 8, 36, 16, 1);
+  }
+  drawRobotChassis(ctx, palette, cx, motion, t);
+  drawRobotTorso(ctx, palette, cx + jitter, bodyBob, key, bodyBob < 0 ? 1 : 0);
+  drawRobotHead(ctx, palette, cx + headJitter, headBob, key, t);
+  let faceDx = 0;
+  if (key === "unhealthy") {
+    if (t === 3) faceDx = -1;
+    if (t === 9) faceDx = 1;
+    px(
+      ctx,
+      "rgba(255, 255, 255, 0.18)",
+      cx + headJitter - 7 + ((t * 5) % 14),
+      14 + headBob + ((t * 3) % 6),
+      1,
+      1,
+    );
+  }
+  drawRobotFace(ctx, palette, key, cx + headJitter + faceDx, headBob);
+  drawRobotAntenna(
+    ctx,
+    palette,
+    cx + headJitter,
+    headBob,
+    antennaBob,
+    lean,
+    key,
+    t,
+  );
   ctx.restore();
 }
 
@@ -1255,6 +1420,20 @@ const DEAD_SLIME = {
 const SLIME_HW = [
   3, 5, 7, 9, 10, 11, 12, 12, 13, 13, 14, 14, 14, 14, 13, 13, 12, 10, 7,
 ];
+// Squash-and-stretch silhouettes. All shapes share the same bottom row
+// (SLIME_BASELINE) so the slime deforms with its feet planted instead of
+// floating: stretch is taller/narrower, squash shorter/wider, melt is the
+// sagging puddle used when unhappy or sick.
+const SLIME_HW_STRETCH = [
+  3, 4, 6, 8, 9, 10, 11, 11, 12, 12, 12, 13, 13, 13, 13, 12, 12, 11, 10, 8, 6,
+];
+const SLIME_HW_SQUASH = [
+  5, 8, 10, 12, 13, 14, 14, 15, 15, 15, 15, 15, 14, 13, 12, 10,
+];
+const SLIME_HW_MELT = [
+  3, 5, 7, 9, 10, 11, 12, 12, 13, 13, 13, 14, 14, 15, 15, 16, 16,
+];
+const SLIME_BASELINE = 31;
 
 function getSlimePalette(stage) {
   if (stage.key === "dead") return DEAD_SLIME;
@@ -1262,35 +1441,58 @@ function getSlimePalette(stage) {
   return SLIME;
 }
 
-function drawSlimeBody(ctx, p, cx, topY) {
+// `rows` selects the silhouette, `jitter(rowIndex)` shifts individual rows for
+// the jelly tremble, and ballDx/ballDy drag the antenna ball behind the body
+// (follow-through).
+function drawSlimeBody(
+  ctx,
+  p,
+  cx,
+  topY,
+  rows = SLIME_HW,
+  jitter = null,
+  ballDx = 0,
+  ballDy = 0,
+) {
   // ball-on-stalk antenna
-  px(ctx, p.outline, cx, topY - 2, 1, 2);
-  px(ctx, p.outline, cx + 1, topY - 3, 1, 1);
-  px(ctx, p.outline, cx + 2, topY - 4, 1, 1);
-  px(ctx, p.outline, cx + 3, topY - 4, 1, 1);
-  px(ctx, p.body, cx + 4, topY - 6, 3, 3);
-  px(ctx, p.outline, cx + 4, topY - 7, 3, 1);
-  px(ctx, p.outline, cx + 4, topY - 3, 3, 1);
-  px(ctx, p.outline, cx + 3, topY - 6, 1, 3);
-  px(ctx, p.outline, cx + 7, topY - 6, 1, 3);
+  const stalkDx = jitter ? jitter(0) : 0;
+  px(ctx, p.outline, cx + stalkDx, topY - 2, 1, 2);
+  px(ctx, p.outline, cx + 1 + stalkDx, topY - 3, 1, 1);
+  px(ctx, p.outline, cx + 2 + stalkDx, topY - 4, 1, 1);
+  px(ctx, p.outline, cx + 3 + stalkDx, topY - 4, 1, 1);
+  px(ctx, p.body, cx + 4 + ballDx, topY - 6 + ballDy, 3, 3);
+  px(ctx, p.outline, cx + 4 + ballDx, topY - 7 + ballDy, 3, 1);
+  px(ctx, p.outline, cx + 4 + ballDx, topY - 3 + ballDy, 3, 1);
+  px(ctx, p.outline, cx + 3 + ballDx, topY - 6 + ballDy, 1, 3);
+  px(ctx, p.outline, cx + 7 + ballDx, topY - 6 + ballDy, 1, 3);
   // body (outline + inset fill)
-  const n = SLIME_HW.length;
+  const n = rows.length;
   for (let i = 0; i < n; i++) {
-    const w = SLIME_HW[i];
-    px(ctx, p.outline, cx - w, topY + i, 2 * w, 1);
-    if (i > 0 && i < n - 1) px(ctx, p.body, cx - (w - 1), topY + i, 2 * (w - 1), 1);
+    const w = rows[i];
+    const dx = jitter ? jitter(i) : 0;
+    px(ctx, p.outline, cx - w + dx, topY + i, 2 * w, 1);
+    if (i > 0 && i < n - 1)
+      px(ctx, p.body, cx - (w - 1) + dx, topY + i, 2 * (w - 1), 1);
   }
   // soft green rim
-  px(ctx, p.hi, cx - 4, topY + 1, 8, 1);
-  px(ctx, p.hi, cx - 7, topY + 2, 4, 1);
-  px(ctx, p.hi, cx + 4, topY + 2, 4, 1);
+  const rim1 = jitter ? jitter(1) : 0;
+  const rim2 = jitter ? jitter(2) : 0;
+  px(ctx, p.hi, cx - 4 + rim1, topY + 1, 8, 1);
+  px(ctx, p.hi, cx - 7 + rim2, topY + 2, 4, 1);
+  px(ctx, p.hi, cx + 4 + rim2, topY + 2, 4, 1);
 }
 
-function drawSlimeEyes(ctx, p, key, cx, topY) {
+function drawSlimeEyes(ctx, p, key, cx, topY, squish = false) {
   const E = p.eye;
   const G = p.gold;
   const ey = topY + 5;
   const base = (ex) => {
+    if (squish) {
+      px(ctx, E, ex + 1, ey + 1, 4, 1);
+      px(ctx, E, ex, ey + 2, 6, 3);
+      px(ctx, E, ex + 1, ey + 5, 4, 1);
+      return;
+    }
     px(ctx, E, ex + 1, ey, 4, 1);
     px(ctx, E, ex, ey + 1, 6, 4);
     px(ctx, E, ex + 1, ey + 5, 4, 1);
@@ -1378,12 +1580,59 @@ function drawSlimeCharacter(ctx, frame, stage) {
   ctx.save();
   ctx.translate(0, SCENE_Y_OFFSET);
   const cx = T / 2;
-  const phase = frame % 6;
+  const t = frame % 12;
   const palette = getSlimePalette(stage);
-  const toff = stage.key === "dead" ? 0 : [0, 0, -1, -1, 0, 0][phase];
-  const topY = 12 + toff;
-  drawSlimeBody(ctx, palette, cx, topY);
-  drawSlimeEyes(ctx, palette, stage.key, cx, topY);
+  const motion = stage.key === "dead" ? "dead" : (stage.motion ?? stage.key);
+  const shapes = [SLIME_HW, SLIME_HW_SQUASH, SLIME_HW_STRETCH];
+  let rows = SLIME_HW;
+  let hop = 0;
+  let jitter = null;
+  let ballDx = 0;
+  let ballDy = 0;
+  let squish = false;
+  if (motion === "happy") {
+    // anticipation squash -> stretch launch -> airborne -> landing splat
+    const seq = [0, 1, 1, 2, 2, 2, 1, 1, 0, 0, 2, 0];
+    const hops = [0, 0, 0, -1, -3, -2, 0, 0, 0, 0, 0, 0];
+    rows = shapes[seq[t]];
+    hop = hops[t];
+    squish = seq[t] === 1;
+    const prev = (t + 11) % 12;
+    const prevTop = SLIME_BASELINE - shapes[seq[prev]].length + hops[prev];
+    const currTop = SLIME_BASELINE - rows.length + hop;
+    ballDy = Math.max(-2, Math.min(2, prevTop - currTop));
+  } else if (motion === "healthy") {
+    const seq = [0, 0, 2, 2, 2, 0, 0, 1, 1, 1, 0, 0];
+    rows = shapes[seq[t]];
+    squish = seq[t] === 1;
+    const prev = (t + 11) % 12;
+    ballDy = Math.max(
+      -2,
+      Math.min(2, rows.length - shapes[seq[prev]].length),
+    );
+  } else if (motion === "unhappy") {
+    rows = t % 12 < 6 ? SLIME_HW_MELT : SLIME_HW_MELT.slice(1);
+    ballDx = 1;
+    ballDy = 2;
+  } else if (motion === "stressed") {
+    jitter = (i) => (i < 10 ? (t % 2 === 0 ? -1 : 1) : 0);
+    ballDx = t % 2 === 0 ? 1 : -1;
+  } else if (motion === "unhealthy") {
+    rows = t % 12 < 8 ? SLIME_HW_MELT : SLIME_HW_MELT.slice(1);
+    ballDx = 1;
+    ballDy = 2;
+  }
+  const topY = motion === "dead" ? 12 : SLIME_BASELINE - rows.length + hop;
+  if (motion !== "dead") {
+    const shadowW = Math.max(8, 20 + 4 * Math.min(0, hop));
+    px(ctx, COMPANION_SHADOW, cx - shadowW / 2, 31, shadowW, 1);
+  }
+  drawSlimeBody(ctx, palette, cx, topY, rows, jitter, ballDx, ballDy);
+  drawSlimeEyes(ctx, palette, stage.key, cx, topY, squish);
+  if (motion === "unhealthy") {
+    if (t < 10) px(ctx, palette.body, cx + 13, 18 + t, 1, 2);
+    else px(ctx, palette.body, cx + 12, 30, 3, 1);
+  }
   ctx.restore();
 }
 
@@ -1432,16 +1681,34 @@ function getAxolotlPalette(stage) {
 
 // External gills: bushy feathery clusters hugging the head's upper-side curve
 // (3 per side). NOT thin floating spikes — that read as "weird".
-function drawAxolotlGills(ctx, p, cx, o) {
+// `ext(tuftIndex)` extends a tuft's tip 1px outward (staggered = breathing);
+// tufts are indexed 0-2 left top-to-bottom, 3-5 right. `droop` sinks them all.
+function drawAxolotlGills(ctx, p, cx, o, ext = null, droop = 0) {
   const g = p.gill;
   const t = p.gillTip;
   const s = p.gillSoft;
-  px(ctx, g, cx - 11, 10 + o, 4, 3); px(ctx, t, cx - 13, 9 + o, 2, 2); px(ctx, s, cx - 10, 11 + o, 1, 1);
-  px(ctx, g, cx - 12, 14 + o, 4, 3); px(ctx, t, cx - 14, 15 + o, 2, 2); px(ctx, s, cx - 11, 15 + o, 1, 1);
-  px(ctx, g, cx - 13, 18 + o, 4, 3); px(ctx, t, cx - 15, 20 + o, 2, 2); px(ctx, s, cx - 12, 19 + o, 1, 1);
-  px(ctx, g, cx + 7, 10 + o, 4, 3); px(ctx, t, cx + 11, 9 + o, 2, 2); px(ctx, s, cx + 9, 11 + o, 1, 1);
-  px(ctx, g, cx + 8, 14 + o, 4, 3); px(ctx, t, cx + 12, 15 + o, 2, 2); px(ctx, s, cx + 10, 15 + o, 1, 1);
-  px(ctx, g, cx + 9, 18 + o, 4, 3); px(ctx, t, cx + 13, 20 + o, 2, 2); px(ctx, s, cx + 11, 19 + o, 1, 1);
+  const left = [
+    [-11, 10, -13, 9, -10, 11],
+    [-12, 14, -14, 15, -11, 15],
+    [-13, 18, -15, 20, -12, 19],
+  ];
+  const right = [
+    [7, 10, 11, 9, 9, 11],
+    [8, 14, 12, 15, 10, 15],
+    [9, 18, 13, 20, 11, 19],
+  ];
+  left.forEach(([bx, by, tx, ty, sx, sy], i) => {
+    const e = ext ? ext(i) : 0;
+    px(ctx, g, cx + bx, by + o + droop, 4, 3);
+    px(ctx, t, cx + tx - e, ty + o + droop, 2, 2);
+    px(ctx, s, cx + sx, sy + o + droop, 1, 1);
+  });
+  right.forEach(([bx, by, tx, ty, sx, sy], i) => {
+    const e = ext ? ext(i + 3) : 0;
+    px(ctx, g, cx + bx, by + o + droop, 4, 3);
+    px(ctx, t, cx + tx + e, ty + o + droop, 2, 2);
+    px(ctx, s, cx + sx, sy + o + droop, 1, 1);
+  });
 }
 
 function drawAxolotlBody(ctx, p, cx, o) {
@@ -1483,7 +1750,7 @@ function drawAxolotlTail(ctx, p, cx, o, wag) {
 }
 
 // Emotion is EYES-ONLY (no mouth), like the ghost/slime.
-function drawAxolotlFace(ctx, key, p, cx, o) {
+function drawAxolotlFace(ctx, key, p, cx, o, blink = false) {
   const E = p.eye;
   const ey = 12 + o;
   const pair = (rows) =>
@@ -1502,6 +1769,10 @@ function drawAxolotlFace(ctx, key, p, cx, o) {
   if (key === "happy" || key === "healthy") {
     px(ctx, p.cheek, cx - 9, 17 + o, 3, 2);
     px(ctx, p.cheek, cx + 6, 17 + o, 3, 2);
+  }
+  if (blink && (key === "happy" || key === "healthy" || key === "unhappy")) {
+    pair([[9, 1, 4, 1]]); // closed lids mid-blink
+    return;
   }
   if (key === "happy") {
     pair([[9, 2], [8, 1], [6, 0, 3, 1], [4, 1], [3, 2]]); // ^ ^ joyful
@@ -1522,14 +1793,56 @@ function drawAxolotlCharacter(ctx, frame, stage) {
   ctx.save();
   ctx.translate(0, SCENE_Y_OFFSET);
   const cx = T / 2;
-  const phase = frame % 6;
+  const t = frame % 12;
   const palette = getAxolotlPalette(stage);
-  const o = stage.key === "dead" ? 0 : [0, -1, -1, 0, 1, 0][phase];
-  const wag = stage.key === "dead" ? 0 : [0, 0, 1, 1, 0, 0][phase];
-  drawAxolotlTail(ctx, palette, cx, o, wag);
-  drawAxolotlGills(ctx, palette, cx, o);
-  drawAxolotlBody(ctx, palette, cx, o);
-  drawAxolotlFace(ctx, stage.key, palette, cx, o);
+  const motion = stage.key === "dead" ? "dead" : (stage.motion ?? stage.key);
+  let o = 0;
+  let driftX = 0;
+  let wag = 0;
+  let gillExt = null;
+  let gillDroop = 0;
+  let blink = false;
+  let bubbles = false;
+  if (motion === "happy") {
+    o = [0, -1, -2, -2, -1, 0, 0, 1, 2, 2, 1, 0][t];
+    driftX = [0, 0, -1, -1, 0, 0, 0, 0, 1, 1, 0, 0][t];
+    wag = [0, -1, 0, 1, 0, -1, 0, 1, 0, -1, 0, 1][t];
+    gillExt = (i) => ((t + i * 2) % 6 < 2 ? 1 : 0);
+    blink = t === 11;
+    bubbles = true;
+  } else if (motion === "healthy") {
+    o = [0, -1, -1, -1, 0, 0, 0, 1, 1, 1, 0, 0][t];
+    driftX = [0, 0, -1, -1, 0, 0, 0, 0, 1, 1, 0, 0][t];
+    wag = [0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0][t];
+    gillExt = (i) => ((t + i * 2) % 12 < 3 ? 1 : 0);
+    blink = t === 11;
+    bubbles = true;
+  } else if (motion === "unhappy") {
+    o = 1 + (t % 12 < 6 ? 0 : 1);
+    wag = 1 + (t % 12 < 6 ? 0 : 1);
+    gillExt = (i) => ((t + i * 2) % 12 < 2 ? 1 : 0);
+    blink = t === 11;
+  } else if (motion === "stressed") {
+    o = t % 2 === 0 ? -1 : 0;
+    driftX = t % 2 === 0 ? -1 : 1;
+    wag = t % 2;
+    gillExt = (i) => ((t + i) % 3 < 1 ? 1 : 0);
+  } else if (motion === "unhealthy") {
+    o = 2 + (t % 12 < 6 ? 0 : -1);
+    wag = 2;
+    gillDroop = 1;
+  }
+  const ox = cx + driftX;
+  drawAxolotlTail(ctx, palette, ox, o, wag);
+  drawAxolotlGills(ctx, palette, ox, o, gillExt, gillDroop);
+  drawAxolotlBody(ctx, palette, ox, o);
+  drawAxolotlFace(ctx, stage.key, palette, ox, o, blink);
+  if (bubbles) {
+    const rise1 = 20 - (t % 12);
+    if (rise1 > 6) px(ctx, "#9ad7f2", cx + 10 + (t % 2), rise1, 1, 1);
+    const rise2 = 20 - ((t + 7) % 12);
+    if (rise2 > 6) px(ctx, "#c7e8f8", cx + 13 - (t % 2), rise2, 1, 1);
+  }
   ctx.restore();
 }
 
@@ -1599,7 +1912,7 @@ function CompanionCanvas({
       return undefined;
     }
     const interval = window.setInterval(() => {
-      setFrame((current) => (current + 1) % 6);
+      setFrame((current) => (current + 1) % 12);
     }, 180);
     return () => window.clearInterval(interval);
   }, [stage.key]);
@@ -1652,7 +1965,7 @@ function CompanionOptionCanvas({ stage, petType = "dog" }) {
       return undefined;
     }
     const interval = window.setInterval(() => {
-      setFrame((current) => (current + 1) % 6);
+      setFrame((current) => (current + 1) % 12);
     }, 180);
     return () => window.clearInterval(interval);
   }, [stage.key]);

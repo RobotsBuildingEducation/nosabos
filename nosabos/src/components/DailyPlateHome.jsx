@@ -188,14 +188,19 @@ export default function DailyPlateHome({
      The manga-like note that frames the quest. On the very first quest it's a
      warm welcome (introducing the companion, no memory personalization — the
      caveat is honored); from the next quest on it's memory-aware framing. */
-  const pastFirst = isPastFirstQuest(user, snapshot.dayKey);
-  // The user has an established quest (so we're not flashing a bubble before the
-  // first plate is even composed). On the first quest this is true + !pastFirst.
-  const hasQuest = hasSeenFirstQuest(user);
   const repairPlan = useMemo(
     () => getStoredRepairPlan(user, targetLang, snapshot.dayKey),
     [user, targetLang, snapshot.dayKey],
   );
+  // A repair plan for today can only derive from a previous day's captures, so
+  // its presence proves the intro quest is behind the user even when the
+  // first-quest-day stamp is wrong (e.g. clobbered by a raced new-day boot) —
+  // never greet a repair day with the welcome message.
+  const pastFirst =
+    isPastFirstQuest(user, snapshot.dayKey) || Boolean(repairPlan);
+  // The user has an established quest (so we're not flashing a bubble before the
+  // first plate is even composed). On the first quest this is true + !pastFirst.
+  const hasQuest = hasSeenFirstQuest(user) || Boolean(repairPlan);
   const reusableMemory = useMemo(
     () => getReusableMemory(user, targetLang, now),
     [user, targetLang, now],

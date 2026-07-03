@@ -9,7 +9,13 @@
 //   progress.<field>[langKey][YYYY-MM-DD] = number
 // `flashcardDailyActivity` was already written by the flashcard review flow;
 // the other two are bumped by awardXp() when callers tag a source.
-import { doc, increment, runTransaction, setDoc } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  increment,
+  runTransaction,
+  setDoc,
+} from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
 import useUserStore from "../hooks/useUserStore";
 import { FLASHCARD_DAILY_TARGET, getLocalDayKey } from "./flashcardReview";
@@ -416,8 +422,45 @@ export async function markFirstQuestSeen(npub) {
 
   if (!npub) return;
   try {
-    const existingFirstDay =
+    // The first quest day is written once, ever. The local store may not have
+    // loaded yet when this runs (a raced new-day boot), so trusting it alone
+    // clobbered the real stamp with today — check the server copy first and
+    // preserve it, re-syncing the local store if it had raced ahead.
+    let remoteProgress = null;
+    try {
+      const snap = await getDoc(doc(database, "users", npub));
+      remoteProgress = snap.exists() ? snap.data()?.progress || null : null;
+    } catch {
+      /* offline/read failure — fall through with local knowledge only */
+    }
+    const localFirstDay =
       useUserStore.getState?.()?.user?.progress?.dailyQuestFirstDayKey;
+    if (remoteProgress?.dailyQuestFirstSeen) {
+      // The server already knows the intro happened — whether stamped with its
+      // real day or deliberately flag-only (markFirstQuestFlagOnly), stamping
+      // TODAY would wrongly make today read as the first quest day. Re-sync the
+      // local store to the server copy and write nothing.
+      const remoteFirstDay = remoteProgress?.dailyQuestFirstDayKey || "";
+      if (remoteFirstDay !== (localFirstDay || "")) {
+        try {
+          const store = useUserStore.getState?.();
+          if (store?.patchUser) {
+            const progress = {
+              ...(store.user?.progress || {}),
+              dailyQuestFirstSeen: true,
+            };
+            if (remoteFirstDay) progress.dailyQuestFirstDayKey = remoteFirstDay;
+            else delete progress.dailyQuestFirstDayKey;
+            store.patchUser({ progress });
+          }
+        } catch {
+          /* ignore — server copy is already correct */
+        }
+      }
+      return;
+    }
+    const existingFirstDay =
+      remoteProgress?.dailyQuestFirstDayKey || localFirstDay;
     await setDoc(
       doc(database, "users", npub),
       {

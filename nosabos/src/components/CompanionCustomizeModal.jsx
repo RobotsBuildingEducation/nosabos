@@ -53,7 +53,7 @@ function OptionCanvas({ stage, petType = "dog", drawCompanion }) {
       return undefined;
     }
     const interval = window.setInterval(() => {
-      setFrame((current) => (current + 1) % 6);
+      setFrame((current) => (current + 1) % 12);
     }, 180);
     return () => window.clearInterval(interval);
   }, [stage.key]);

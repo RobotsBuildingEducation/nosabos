@@ -7722,9 +7722,14 @@ export default function App({ onBootReady } = {}) {
       // returning user. Today's plate already exists, so they're past the intro
       // — set the flag (no first-day stamp) so the companion bubble isn't gated
       // off. (A genuine first-timer's trio election sets the flag itself below.)
+      // Only against a LOADED user: the boot-time null user reads as unflagged,
+      // which would set the flag for a first-timer reloading mid-intro-day.
+      const cachedPathUser = useUserStore.getState?.()?.user || user;
       if (
+        !isLoadingApp &&
+        cachedPathUser &&
         activeNpub &&
-        !hasSeenFirstQuest(useUserStore.getState?.()?.user || user)
+        !hasSeenFirstQuest(cachedPathUser)
       ) {
         void markFirstQuestFlagOnly(activeNpub);
       }
@@ -7732,9 +7737,14 @@ export default function App({ onBootReady } = {}) {
     }
 
     // Need a loaded user before electing/marking (the first-seen flag and the
-    // neglect weights both come from the user doc).
-    if (!activeNpub) return;
+    // neglect weights both come from the user doc). activeNpub resolves from
+    // localStorage at mount — long before the doc loads — and electing against
+    // that boot-time null user on a new day stamped TODAY as the first quest
+    // day (clobbering the real one, re-showing the welcome bubble on a repair
+    // day) and served the intro trio instead of an auto-elected plate.
+    if (!activeNpub || isLoadingApp) return;
     const currentUser = useUserStore.getState?.()?.user || user;
+    if (!currentUser) return;
 
     let kinds;
     if (!hasSeenFirstQuest(currentUser)) {
@@ -7767,12 +7777,15 @@ export default function App({ onBootReady } = {}) {
     );
     // `user` intentionally omitted — read fresh via getState so this doesn't
     // re-run on every XP patch (already-elected days early-return anyway).
+    // isLoadingApp IS a dep: it flips false right after setUser, re-running
+    // this against the loaded doc.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     plateSnapshot.langKey,
     plateSnapshot.dayKey,
     availableQuestKinds,
     activeNpub,
+    isLoadingApp,
   ]);
 
   // Companion brain: expire stale memory once per day. Notes live through the
@@ -8808,6 +8821,7 @@ export default function App({ onBootReady } = {}) {
               targetLang={resolvedTargetLang}
               npub={activeNpub}
               languageXp={userProgress?.totalXp || 0}
+              cefrLevel={repairLessonCefrLevel}
               pauseMs={user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS}
             />
           ) : (

@@ -263,17 +263,17 @@ const BUBBLE_LEAD_REPAIR = {
 };
 
 const BUBBLE_LEAD_REPAIR_MULTI = {
-  en: "I saved a few tricky bits from yesterday — we'll warm up “{concept}” first.",
-  es: "Guardé varias cositas difíciles de ayer; primero calentaremos con “{concept}”.",
-  pt: "Guardei algumas partes difíceis de ontem; primeiro vamos aquecer com “{concept}”.",
-  fr: "J'ai gardé quelques passages délicats d'hier — on échauffe « {concept} » d'abord.",
-  it: "Ho salvato un paio di punti ostici di ieri: prima scaldiamo con “{concept}”.",
-  de: "Ich habe ein paar knifflige Stellen von gestern gemerkt — wir wärmen mit „{concept}“ auf.",
-  ja: "昨日の難しかったところをいくつか保存したよ。まずは「{concept}」から温めよう。",
-  zh: "我存了昨天几个棘手的地方，先用“{concept}”热个身。",
-  ru: "Я сохранил пару сложных моментов со вчера — начнём с разминки «{concept}».",
-  ar: "حفظت كذا حاجة صعبة من إمبارح؛ هنسخّن بـ “{concept}” الأول.",
-  hi: "मैंने कल की कुछ मुश्किल चीज़ें सहेजीं — पहले “{concept}” से वार्मअप करेंगे।",
+  en: "I saved a few tricky bits from yesterday — a quick repair warms up “{concept}” first, then the rest of your quest moves you forward.",
+  es: "Guardé varias cositas difíciles de ayer; una reparación rápida calienta primero con “{concept}” y el resto de tu misión te hace avanzar.",
+  pt: "Guardei algumas partes difíceis de ontem; um reparo rápido aquece primeiro com “{concept}” e o resto da sua missão te faz avançar.",
+  fr: "J'ai gardé quelques passages délicats d'hier — une réparation rapide échauffe « {concept} » d'abord, puis le reste de ta quête te fait avancer.",
+  it: "Ho salvato un paio di punti ostici di ieri: un veloce ripasso scalda prima “{concept}”, poi il resto della missione ti porta avanti.",
+  de: "Ich habe ein paar knifflige Stellen von gestern gemerkt — eine kurze Auffrischung wärmt zuerst mit „{concept}“ auf, der Rest deiner Mission bringt dich voran.",
+  ja: "昨日の難しかったところをいくつか保存したよ。まずはクイックリペアで「{concept}」を温めて、残りのクエストで先へ進もう。",
+  zh: "我存了昨天几个棘手的地方——先用一个快速修复热身“{concept}”，任务的其余部分继续带你前进。",
+  ru: "Я сохранил пару сложных моментов со вчера — быстрый повтор сначала разомнёт «{concept}», а остальное задание поведёт тебя дальше.",
+  ar: "حفظت كذا حاجة صعبة من إمبارح؛ مراجعة سريعة تسخّن بـ “{concept}” الأول، وباقي المهمة يوديك لقدام.",
+  hi: "मैंने कल की कुछ मुश्किल चीज़ें सहेजीं — पहले एक त्वरित मरम्मत “{concept}” से वार्मअप कराएगी, फिर बाकी क्वेस्ट आपको आगे बढ़ाएगी।",
 };
 
 const BUBBLE_WELCOME = {
