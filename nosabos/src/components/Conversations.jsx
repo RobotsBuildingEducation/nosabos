@@ -19,11 +19,6 @@ import {
   ModalContent,
   ModalHeader,
   ModalOverlay,
-  Popover,
-  PopoverArrow,
-  PopoverBody,
-  PopoverContent,
-  PopoverTrigger,
   Text,
   VStack,
   Wrap,
@@ -39,7 +34,6 @@ import {
   FaCheckCircle,
   FaDice,
   FaRegCommentDots,
-  FaExclamation,
 } from "react-icons/fa";
 import { MdOutlineTranslate } from "react-icons/md";
 import { FiSettings } from "react-icons/fi";
@@ -1221,6 +1215,14 @@ export default function Conversations({
   const currentGoalRef = useRef(currentGoal);
   currentGoalRef.current = currentGoal;
 
+  // Keep the live session's instructions in sync with the active goal so the
+  // AI steers toward it instead of asking competing follow-up questions.
+  const currentGoalTextEn = currentGoal?.text?.en || "";
+  useEffect(() => {
+    if (!currentGoalTextEn) return;
+    pushInstructionsNow();
+  }, [currentGoalTextEn]);
+
   const handleRealtimeEventRef = useRef(null);
   handleRealtimeEventRef.current = handleRealtimeEvent;
   // Latest-instance ref so the quest listener below can hang up without a
@@ -2100,6 +2102,15 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       ? `CUSTOM CONTEXT: The user wants to practice conversations related to: "${customSubjects}". Try to incorporate relevant vocabulary and scenarios from this context when appropriate.`
       : "";
 
+    // The goal shown in the UI. Without this the AI's own follow-up questions
+    // and the goal pull the learner in two different directions.
+    const activeGoal = currentGoalRef.current;
+    const activeGoalText =
+      (!activeGoal?.completed && activeGoal?.text?.en) || "";
+    const goalContext = activeGoalText
+      ? `LEARNER'S CURRENT GOAL: "${activeGoalText}". Quietly steer the conversation so your reply gives the learner a natural opening to do this. Never announce the goal, read it aloud, or quiz the learner on it. Your follow-up questions must serve this goal, not compete with it; if the goal asks the learner to ASK about something, invite that topic briefly and do not ask an unrelated question of your own.`
+      : "";
+
     return [
       "Act as a friendly language practice partner for free-form conversation.",
       strict,
@@ -2107,6 +2118,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       adultBeginnerTone,
       pronunciationInstructions,
       customSubjectsContext,
+      goalContext,
       "IMPORTANT: Match your language complexity to the learner's proficiency level. Do not use vocabulary or grammar above their level.",
       "Keep replies very brief (≤25 words) and natural.",
       "Be supportive and help the learner practice speaking naturally.",
@@ -2207,6 +2219,24 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     } catch {}
   }
 
+  /** Re-send only the instructions (goal changed mid-session). Deliberately
+      narrow: touching turn_detection here could re-enable VAD while
+      disableVAD()/enableVAD() own that field during AI speech. */
+  function pushInstructionsNow() {
+    if (!dcRef.current || dcRef.current.readyState !== "open") return;
+    try {
+      dcRef.current.send(
+        JSON.stringify({
+          type: "session.update",
+          session: {
+            type: "realtime",
+            instructions: buildLanguageInstructions(),
+          },
+        }),
+      );
+    } catch {}
+  }
+
   /** Disable VAD and detach mic track so the user cannot interrupt AI speech. */
   function disableVAD() {
     if (pcRef.current) {
@@ -2278,11 +2308,13 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
      Goal-based XP system with AI evaluation
   --------------------------- */
 
-  // Evaluate if user's response satisfies the current goal
+  // Evaluate if user's response satisfies the current goal.
+  // Returns "completed" | "failed" | "skipped" so callers can gate rewards on
+  // the verdict ("skipped" = no verdict: nothing gradable or check not run).
   async function evaluateGoalCompletion(userMessage, aiResponse) {
     const goal = currentGoalRef.current;
-    if (goal.completed || goalCheckPendingRef.current) return;
-    if (!userMessage || userMessage.length < 3) return;
+    if (goal.completed || goalCheckPendingRef.current) return "skipped";
+    if (!userMessage || userMessage.length < 3) return "skipped";
 
     goalCheckPendingRef.current = true;
 
@@ -2364,7 +2396,7 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "..."}`;
 
       if (!r.ok) {
         goalCheckPendingRef.current = false;
-        return;
+        return "skipped";
       }
 
       const payload = await r.json();
@@ -2385,32 +2417,16 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "..."}`;
       // this result would show feedback about the wrong (previous) goal. Discard it.
       if (currentGoalRef.current !== goal) {
         goalCheckPendingRef.current = false;
-        return;
+        return "skipped";
       }
       if (parsed?.completed) {
-        // Set positive feedback
-        const defaultSuccess =
-          sLang === "es"
-            ? "Meta completada."
-            : sLang === "pt"
-              ? "Meta concluída."
-              : sLang === "ar"
-                ? "اكتمل الهدف."
-                : sLang === "it"
-                  ? "Obiettivo completato."
-                  : sLang === "fr"
-                    ? "Objectif atteint."
-                    : sLang === "de"
-                      ? "Ziel erreicht."
-                      : sLang === "ja"
-                        ? "目標を達成しました。"
-                        : sLang === "hi"
-                          ? "लक्ष्य पूरा हुआ।"
-                          : "Goal complete.";
-        setGoalFeedback(parsed?.reason || defaultSuccess);
+        // Success renders as a checkmark on the goal line, not as text —
+        // the next goal replaces this area too quickly for text to be read.
+        setGoalFeedback("");
         await awardGoalXp();
         // Generate contextual next goal
         setTimeout(() => generateContextualGoal(), 1500);
+        return "completed";
       } else {
         // Set guiding feedback for failed attempt
         const defaultGuidance =
@@ -2437,10 +2453,12 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "..."}`;
         // conversation goals are too unstructured to make useful repair
         // material — structured surfaces (flashcards, lessons, phonics,
         // tutor) are the companion's capture sources.
+        return "failed";
       }
     } catch (e) {
       goalCheckPendingRef.current = false;
     }
+    return "skipped";
   }
 
   // Generate next goal based on conversation context
@@ -2463,9 +2481,24 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "..."}`;
         )
         .join("\n");
 
+      // The AI's pending question/comment. The next goal must be completable
+      // by replying to it, so the goal UI and the live conversation never
+      // pull the learner in two different directions.
+      const lastAiMessage =
+        [...messagesRef.current]
+          .reverse()
+          .find((m) => m.role === "assistant" && (m.textFinal || "").trim())
+          ?.textFinal?.trim() || "";
+
       // Build custom subjects hint
       const customSubjectsHint = customSubjects
         ? `\nThe user is interested in practicing: "${customSubjects}". Consider incorporating relevant topics when appropriate.`
+        : "";
+
+      const goalAlignmentHint = lastAiMessage
+        ? `\n\nThe AI partner's latest message to the learner is: "${lastAiMessage}"
+
+CRITICAL: The learner must be able to complete the new goal simply by replying naturally to that latest AI message. If the AI asked a question, the goal is to answer it (optionally adding one small detail or question of their own). Never create a goal that ignores or competes with the AI's pending question.`
         : "";
 
       const prompt = `You are helping a ${selectedLevel} level language learner practice conversation.
@@ -2473,7 +2506,7 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "..."}`;
 Recent conversation:
 ${recentMessages || "Just started"}
 
-Previous goal was: "${currentGoal.text.en}"${customSubjectsHint}
+Previous goal was: "${currentGoal.text.en}"${customSubjectsHint}${goalAlignmentHint}
 
 Generate the NEXT natural conversation goal that follows the flow of the conversation.
 The goal should be appropriate for ${selectedLevel} level (${
@@ -2590,22 +2623,26 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
     const npub = currentNpub;
     if (!npub) return;
 
+    // Daily quest: the Conversation course asks for 4-7 user turns of practice
+    // (target is per-day; see getConversationTurnTarget), so each real user
+    // turn counts toward it — it measures practice volume, not correctness.
+    if (userMessage && userMessage.trim()) {
+      void recordPlateActivity(npub, "conversation", targetLangRef.current);
+    }
+
+    // Grade before paying out: a turn that fails the goal earns no XP.
+    // Neutral turns ("skipped": no active goal, reply too short to grade,
+    // grader unavailable) still earn turn XP as before.
+    let verdict = "skipped";
+    if (userMessage) {
+      verdict = await evaluateGoalCompletion(userMessage, aiResponse);
+    }
+    if (verdict === "failed") return;
+
     // Award 1-3 XP randomly per turn
     const xpGain = Math.floor(Math.random() * 3) + 1; // 1, 2, or 3
 
     setXp((v) => v + xpGain);
-
-    // Evaluate goal completion with AI
-    if (userMessage) {
-      evaluateGoalCompletion(userMessage, aiResponse);
-    }
-
-    // Daily quest: the Conversation course asks for 4-7 user turns of practice
-    // (target is per-day; see getConversationTurnTarget), so each real user
-    // turn counts toward it.
-    if (userMessage && userMessage.trim()) {
-      void recordPlateActivity(npub, "conversation", targetLangRef.current);
-    }
 
     try {
       await awardXp(npub, xpGain, targetLangRef.current);
@@ -3097,100 +3134,51 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
                             "ra_generating_topic",
                             "Generating new topic...",
                           )}
-                        {goalFeedback &&
-                          !isGeneratingGoal &&
-                          !currentGoal.completed && (
-                            <Popover placement="bottom-end" isLazy>
-                              <PopoverTrigger>
-                                <Box
-                                  as="button"
-                                  type="button"
-                                  aria-label={
-                                    uiText("ra_show_suggestion", "Show suggestion")
-                                  }
-                                  ml="6px"
-                                  width="12px"
-                                  height="12px"
-                                  display="inline-flex"
-                                  alignItems="center"
-                                  justifyContent="center"
-                                  borderRadius="full"
-                                  border="1px solid"
-                                  borderColor={
-                                    isLightTheme
-                                      ? "rgba(165, 89, 108, 0.38)"
-                                      : "red.300"
-                                  }
-                                  bg={
-                                    isLightTheme
-                                      ? "rgba(214, 96, 122, 0.16)"
-                                      : "rgba(239,68,68,0.9)"
-                                  }
-                                  color={isLightTheme ? "#8f4a5e" : "white"}
-                                  boxShadow={
-                                    isLightTheme
-                                      ? "0 1px 0 rgba(255,255,255,0.45)"
-                                      : undefined
-                                  }
-                                  verticalAlign="text-bottom"
-                                  transform="translateY(-1px)"
-                                  lineHeight={1}
-                                >
-                                  <FaExclamation size={7} />
-                                </Box>
-                              </PopoverTrigger>
-                              <PopoverContent
-                                bg={isLightTheme ? APP_SURFACE : "red.900"}
-                                color={isLightTheme ? APP_TEXT_PRIMARY : "red.100"}
-                                borderColor={
-                                  isLightTheme
-                                    ? "rgba(194, 103, 132, 0.24)"
-                                    : "red.500"
-                                }
-                                maxW="320px"
-                              >
-                                <PopoverArrow
-                                  bg={isLightTheme ? APP_SURFACE : "red.900"}
-                                />
-                                <PopoverBody fontSize="xs">
-                                  {goalFeedback}
-                                </PopoverBody>
-                              </PopoverContent>
-                            </Popover>
-                          )}
                       </Text>
                       {currentGoal.completed && (
                         <Box
                           as={FaCheckCircle}
                           color={isLightTheme ? "#5f9d8a" : "green.400"}
-                          boxSize="18px"
+                          boxSize="20px"
+                          sx={{
+                            "@keyframes conversationGoalCheckPop": {
+                              "0%": { transform: "scale(0.2)", opacity: 0 },
+                              "60%": { transform: "scale(1.25)", opacity: 1 },
+                              "100%": { transform: "scale(1)", opacity: 1 },
+                            },
+                            animation:
+                              "conversationGoalCheckPop 0.45s ease-out both",
+                          }}
                         />
                       )}
                     </>
                   )}
                 </HStack>
 
-                {/* Goal Feedback */}
-                {goalFeedback && !isGeneratingGoal && currentGoal.completed && (
-                  <Text
-                    fontSize="xs"
-                    textAlign="center"
-                    px={3}
-                    py={1.5}
-                    borderRadius="md"
-                    bg={
-                      isLightTheme ? "rgba(86, 168, 155, 0.12)" : "green.900"
-                    }
-                    color={isLightTheme ? APP_TEXT_SECONDARY : "green.200"}
-                    border="1px solid"
-                    borderColor={
-                      isLightTheme ? "rgba(86, 168, 155, 0.24)" : "green.600"
-                    }
-                    maxW="90%"
-                  >
-                    {goalFeedback}
-                  </Text>
-                )}
+                {/* Goal guidance — stays visible until the learner gets the
+                    goal right (success clears it and shows the checkmark) */}
+                {goalFeedback &&
+                  !isGeneratingGoal &&
+                  !currentGoal.completed && (
+                    <Text
+                      fontSize="xs"
+                      textAlign="center"
+                      px={3}
+                      py={1.5}
+                      borderRadius="md"
+                      bg={
+                        isLightTheme ? "rgba(214, 96, 122, 0.12)" : "red.900"
+                      }
+                      color={isLightTheme ? "#8f4a5e" : "red.200"}
+                      border="1px solid"
+                      borderColor={
+                        isLightTheme ? "rgba(194, 103, 132, 0.28)" : "red.600"
+                      }
+                      maxW="90%"
+                    >
+                      {goalFeedback}
+                    </Text>
+                  )}
               </VStack>
 
               {/* XP Progress Bar */}

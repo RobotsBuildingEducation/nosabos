@@ -5034,7 +5034,9 @@ export default function App({ onBootReady } = {}) {
               // library, so the first answer stores the card's definition
               // alongside its progress — that's what adds it to the main
               // deck (FlashcardSkillTree merges these into the queues).
-              ...(card.isRepair && card.concept && typeof card.concept === "object"
+              ...(card.isRepair &&
+              card.concept &&
+              typeof card.concept === "object"
                 ? {
                     card: {
                       id: card.id,
