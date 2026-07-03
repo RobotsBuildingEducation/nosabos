@@ -34,8 +34,6 @@ export function getPetUnlockLevel(value) {
 }
 
 export function isPetTypeUnlocked(value, companionLevel = 1) {
-  return true; // TODO: TESTING — all pets unlocked. Restore the block below when done.
-  // eslint-disable-next-line no-unreachable
   const numericLevel = Number(companionLevel);
   const safeLevel = Number.isFinite(numericLevel) ? Math.max(1, numericLevel) : 1;
   return safeLevel >= getPetUnlockLevel(value);

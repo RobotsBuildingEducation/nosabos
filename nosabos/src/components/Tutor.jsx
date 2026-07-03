@@ -78,8 +78,10 @@ import { recordPlateActivity } from "../utils/dailyPlate";
 import {
   captureCompanionMemory,
   completeRepairFocus,
+  completeRepairLesson,
   REPAIR_MAX_ITEMS,
 } from "../utils/companionMemory";
+import { REPAIR_COPY } from "../utils/companionMemoryCopy";
 import useRepairFocusStore from "../hooks/useRepairFocusStore";
 import RepairFocusBanner from "./RepairFocusBanner";
 import {
@@ -284,6 +286,8 @@ const TUTOR_STARTER_LESSON_XP_REQUIRED = 50;
 const TUTOR_LESSON_XP_REQUIRED_MIN = 60;
 const TUTOR_LESSON_XP_REQUIRED_MAX = 90;
 const TUTOR_TURN_XP_RANGE = { min: 3, max: 7 };
+// Ephemeral repair sessions are deliberately short: ~2-3 successful turns.
+const TUTOR_REPAIR_LESSON_XP_REQUIRED = 12;
 const TUTOR_TASK_VARIATIONS = [
   "Ask one tiny meaning-check question about the current lesson concept.",
   "Give a fill-in-the-blank prompt using a current lesson phrase.",
@@ -956,10 +960,60 @@ function getStableTutorLessonXpRequired(lesson) {
 }
 
 function getTutorLessonXpRequired(lesson) {
+  if (lesson?.isRepair) {
+    return Math.max(
+      0,
+      Number(lesson.xpRequired) || TUTOR_REPAIR_LESSON_XP_REQUIRED,
+    );
+  }
   const required = isTutorStarterAgendaLesson(lesson)
     ? TUTOR_STARTER_LESSON_XP_REQUIRED
     : getStableTutorLessonXpRequired(lesson);
   return Math.max(0, Number(required) || 0);
+}
+
+// Ephemeral tutor repair lesson: when a Daily Quest repair step routes here,
+// the session runs THIS custom lesson (agenda = the step's weak material)
+// instead of resuming the learner's regular tutor lesson. Like the ephemeral
+// skill-tree repair lesson, it never touches tutor-path progress: its id
+// isn't in any unit, every progress write is guarded by isRepair, and the
+// message log keys off the step-scoped id — so the regular lesson (and its
+// transcript) resume exactly where they were once the repair ends.
+function buildTutorRepairLessonFromFocus(focus) {
+  const items = Array.isArray(focus?.plan?.items) ? focus.plan.items : [];
+  const phrases = compactUnique(
+    items
+      .map((it) => String(it?.expectedAnswer || it?.concept || "").trim())
+      .filter(Boolean),
+  ).slice(0, REPAIR_MAX_ITEMS);
+  if (!phrases.length) return null;
+  const cefrLevel = items[0]?.cefrLevel || "Pre-A1";
+  const dayKey = focus?.plan?.dayKey || "today";
+  const stepIndex = Math.max(0, Number(focus?.stepIndex) || 0);
+  return {
+    id: `tutor-repair-${dayKey}-s${stepIndex}`,
+    isRepair: true,
+    title: { ...REPAIR_COPY.title },
+    description: { ...REPAIR_COPY.intro },
+    cefrLevel,
+    xpRequired: TUTOR_REPAIR_LESSON_XP_REQUIRED,
+    // The regular agenda plumbing (context, focus items, completed-agenda
+    // modal) reads content.*.focusPoints / topic.
+    content: {
+      repair: {
+        topic: phrases.join("; "),
+        focusPoints: phrases,
+        isRepair: true,
+      },
+    },
+    // Completion data embedded like the skill-tree repair lesson, so
+    // completeRepairLesson can bank the step even if the live focus is gone
+    // by completion time (e.g. skipped via the banner, then finished anyway).
+    repairTarget: 1,
+    repairMemoryIds: Array.isArray(focus?.plan?.memoryIds)
+      ? focus.plan.memoryIds
+      : [],
+  };
 }
 
 function getTutorTaskVariationInstruction(turnCount = 0) {
@@ -3798,6 +3852,15 @@ export default function Tutor({
   const [showTutorCompletedAgenda, setShowTutorCompletedAgenda] =
     useState(false);
   const tutorResumeAppliedRef = useRef("");
+  // Routed repair step (subscribed, so a focus set while the Tutor is already
+  // mounted still swaps the ephemeral repair session in). The tick forces the
+  // path-resume effect to re-apply the regular lesson after a repair ends —
+  // none of its other deps change when the focus clears.
+  const tutorRepairFocus = useRepairFocusStore((s) => s.focus);
+  const [tutorRepairRestoreTick, setTutorRepairRestoreTick] = useState(0);
+  // Focus cleared (skip) while the live session was still up: restore on stop
+  // instead of yanking the lesson out from under the conversation.
+  const pendingTutorRepairRestoreRef = useRef(false);
   const pendingFirstLessonCompletionFlowRef = useRef(false);
   const tutorFirstLessonCompleteNotifiedRef = useRef(false);
   const pendingTutorAgendaAfterDailyGoalRef = useRef(false);
@@ -3992,6 +4055,17 @@ export default function Tutor({
     setSelectedTutorUnit(null);
     setTutorLessonEarnedXp(0);
     setTutorStarterAgendaProgress({});
+    // A repair step routed for another language is stale here — drop it so
+    // the resume effect isn't blocked waiting on a repair that can't run.
+    const focusStore = useRepairFocusStore.getState();
+    const staleFocus = focusStore.focus;
+    if (
+      staleFocus?.surface === "tutor" &&
+      String(staleFocus.targetLang || "").toLowerCase() !==
+        String(targetLang || "").toLowerCase()
+    ) {
+      focusStore.clearFocus?.();
+    }
   }, [targetLang]);
 
   useEffect(() => {
@@ -4040,7 +4114,14 @@ export default function Tutor({
 
     let appliedResumeLesson = false;
 
-    if (resumeLesson) {
+    // A routed repair step owns the surface while its focus is set (the
+    // repair-focus effect below selects the ephemeral repair lesson): don't
+    // let path resume clobber it. The hydrating bookkeeping still runs.
+    const tutorRepairOwnsSurface =
+      useRepairFocusStore.getState().focus?.surface === "tutor" ||
+      selectedTutorLessonRef.current?.isRepair;
+
+    if (resumeLesson && !tutorRepairOwnsSurface) {
       const resumeKey = `${langKey}:${resumeLesson.lesson.id}`;
       if (
         tutorResumeAppliedRef.current !== resumeKey ||
@@ -4097,7 +4178,67 @@ export default function Tutor({
     tutorUserProgress.lessons,
     user?.progress?.currentTutorLesson,
     xp,
+    tutorRepairRestoreTick,
   ]);
+
+  // Hand the surface back to the regular lesson once an ephemeral repair
+  // session is over (step completed, skipped, or abandoned): clear the spent
+  // repair selection and let the path-resume effect above re-apply the stored
+  // lesson — untouched, exactly where it was.
+  function restoreTutorLessonAfterRepair() {
+    pendingTutorRepairRestoreRef.current = false;
+    if (!selectedTutorLessonRef.current?.isRepair) return;
+    // A new step took over in the meantime — nothing to restore yet.
+    if (useRepairFocusStore.getState().focus?.surface === "tutor") return;
+    tutorResumeAppliedRef.current = "";
+    selectedTutorLessonRef.current = null;
+    selectedTutorUnitRef.current = null;
+    setSelectedTutorLesson(null);
+    setSelectedTutorUnit(null);
+    setTutorLessonEarnedXp(0);
+    tutorLessonEarnedXpRef.current = 0;
+    tutorLessonCompletionTriggeredRef.current = false;
+    setTutorRepairRestoreTick((tick) => tick + 1);
+  }
+
+  // Repair step routed here → run it as a FRESH ephemeral session (see
+  // buildTutorRepairLessonFromFocus) instead of riding on the regular lesson;
+  // focus cleared → restore the regular lesson (deferred to stop() when the
+  // clear happened mid-conversation, e.g. the banner's skip button).
+  useEffect(() => {
+    if (tutorRepairFocus?.surface === "tutor") {
+      const lesson = buildTutorRepairLessonFromFocus(tutorRepairFocus);
+      if (!lesson || selectedTutorLessonRef.current?.id === lesson.id) return;
+      const level = TUTOR_CEFR_LEVELS.includes(lesson.cefrLevel)
+        ? lesson.cefrLevel
+        : "";
+      const pseudoUnit = level ? { cefrLevel: level } : {};
+      pendingTutorRepairRestoreRef.current = false;
+      setSelectedTutorLesson(lesson);
+      setSelectedTutorUnit(pseudoUnit);
+      selectedTutorLessonRef.current = lesson;
+      selectedTutorUnitRef.current = pseudoUnit;
+      setTutorLessonEarnedXp(0);
+      tutorLessonEarnedXpRef.current = 0;
+      tutorLessonCompletionTriggeredRef.current = false;
+      tutorStarterAgendaProgressRef.current = {};
+      setTutorStarterAgendaProgress({});
+      if (level) {
+        setConversationSettings((prev) => ({
+          ...prev,
+          proficiencyLevel: level,
+        }));
+      }
+      return;
+    }
+    if (selectedTutorLessonRef.current?.isRepair) {
+      if (aliveRef.current) {
+        pendingTutorRepairRestoreRef.current = true;
+      } else {
+        restoreTutorLessonAfterRepair();
+      }
+    }
+  }, [tutorRepairFocus]);
 
   // Inline coaching feedback for incomplete attempts
   const [inlineFeedback] = useState("");
@@ -4173,6 +4314,13 @@ export default function Tutor({
   async function handleTutorLessonSelect(lesson, unit, status) {
     if (!lesson || status === SKILL_STATUS.LOCKED) return;
 
+    // Hand-picking a lesson abandons any in-flight repair step — the
+    // ephemeral repair session must never complete against a picked lesson.
+    const focusStore = useRepairFocusStore.getState();
+    if (focusStore.focus?.surface === "tutor") {
+      focusStore.clearFocus?.();
+    }
+
     const lessonProgress = tutorUserProgress.lessons?.[lesson.id];
     const isCompleted = status === SKILL_STATUS.COMPLETED;
     const earned =
@@ -4226,6 +4374,8 @@ export default function Tutor({
   async function ensureSelectedTutorLessonStarted() {
     const lesson = selectedTutorLessonRef.current;
     if (!currentNpub || !lesson) return;
+    // Ephemeral repair sessions never enter tutor-path progress.
+    if (lesson.isRepair) return;
 
     const existingStatus = tutorUserProgress.lessons?.[lesson.id]?.status;
     if (
@@ -5047,6 +5197,12 @@ export default function Tutor({
     setStatus("disconnected");
     setUiState("idle");
     setMood("neutral");
+
+    // A repair skip mid-conversation deferred its lesson restore to here so
+    // the session wasn't yanked out from under the learner.
+    if (pendingTutorRepairRestoreRef.current) {
+      restoreTutorLessonAfterRepair();
+    }
   }
 
   /* ---------------------------
@@ -5286,6 +5442,17 @@ export default function Tutor({
     const targetLanguageName =
       getLanguagePromptName(targetLangRef.current || targetLang || "es") ||
       "the target language";
+    // Ephemeral repair session: the repair isn't a warm-up before a lesson —
+    // it IS the whole (short) session, generated fresh around the weak
+    // material, so the instruction keeps the tutor on it until the app ends
+    // the session.
+    if (selectedTutorLessonRef.current?.isRepair) {
+      return [
+        `REPAIR SESSION (this entire short session IS the repair — there is no other lesson topic): the companion saved this ${targetLanguageName} material the learner found tricky recently: ${phraseList}.`,
+        `Warm them up positively in ${supportLanguageName} framing — never say they got it wrong before; this is a fresh warm-up, not a test. Model a phrase, ask the learner to repeat or produce it, then use it in one tiny realistic exchange.`,
+        "Stay on this material only — vary how it's practiced instead of introducing new topics. The app owns session completion; keep practicing warmly until it ends the session.",
+      ].join(" ");
+    }
     return [
       `REPAIR AGENDA (priority — run this ${isKickoff ? "first, before the regular lesson topic" : "before returning to the regular lesson topic"}): the companion saved these ${targetLanguageName} phrases the learner found tricky recently: ${phraseList}.`,
       `Warm them up positively in ${supportLanguageName} framing — never say they got it wrong before; this is a fresh warm-up, not a test. Model one phrase, ask the learner to repeat or produce it, then use it in one tiny realistic exchange.`,
@@ -6551,6 +6718,95 @@ export default function Tutor({
     if (!npub) return;
     const xpRequired = getTutorLessonXpRequired(lesson);
 
+    if (lesson.isRepair) {
+      // Ephemeral repair step: no tutor-path writes (completeTutorLesson,
+      // next-lesson advance, stored-lesson pointer) and no "speak" plate
+      // count — finishing it banks ONE Repair-course increment via
+      // completeRepairFocus and reinforces the step's note. The completion
+      // modal is shown BEFORE the focus completes so the plate's step
+      // celebration queues behind it instead of racing it.
+      tutorLessonCompletionTriggeredRef.current = true;
+      dispatchTutorCompletionSequenceStart();
+      await stop();
+      try {
+        const settledAwards = await Promise.allSettled(
+          awardPromises.filter(Boolean),
+        );
+        settledAwards.forEach((settled) => {
+          if (settled.status === "fulfilled") {
+            rememberTutorDailyGoalCelebration(
+              settled.value,
+              "tutor_repair_final_turn",
+            );
+          }
+        });
+        localDailyGoalUpdates.forEach((update) => {
+          rememberTutorLocalDailyGoalCelebration(
+            update,
+            "tutor_repair_final_turn_local",
+          );
+        });
+        setCompletedTutorLessonData({
+          title: lesson.title,
+          xpEarned: xpRequired,
+          lessonId: lesson.id,
+          unitTitle: null,
+        });
+        setCompletedTutorAgendaData(
+          buildTutorCompletedAgendaData({
+            lesson,
+            unit,
+            targetLang: targetLangRef.current,
+            supportLang: resolvedSupportLang,
+            starterProgress: {},
+            xpEarned: xpRequired,
+            forceComplete: true,
+          }),
+        );
+        setShowTutorLessonComplete(true);
+        // Prefers the live focus (clears it → the restore effect hands the
+        // surface back); falls back to the lesson's embedded step data when
+        // the focus is already gone.
+        await completeRepairLesson({
+          lesson,
+          npub,
+          targetLang: targetLangRef.current,
+        });
+        if (xpRequired > 0) {
+          setXp((v) => v + xpRequired);
+          const repairDailyGoalUpdate = applyTutorDailyGoalXpOptimistic(
+            npub,
+            xpRequired,
+          );
+          // Untagged: repair steps fill the plate's Repair course (counted
+          // above), never the Tutor course.
+          const repairAwardResult = await awardXp(
+            npub,
+            xpRequired,
+            targetLangRef.current,
+          );
+          rememberTutorDailyGoalCelebration(
+            repairAwardResult,
+            "tutor_repair_completion_bonus",
+          );
+          rememberTutorLocalDailyGoalCelebration(
+            repairDailyGoalUpdate,
+            "tutor_repair_completion_bonus_local",
+          );
+          await syncTutorDailyGoalXpFromFirestore(npub);
+        }
+        logEvent(analytics, "tutor_repair_completed", {
+          lessonId: lesson.id,
+          xpRequired,
+        });
+      } catch (error) {
+        console.error("Failed to complete Tutor repair:", error);
+        tutorLessonCompletionTriggeredRef.current = false;
+        releaseQueuedDailyGoalCelebration();
+      }
+      return;
+    }
+
     tutorLessonCompletionTriggeredRef.current = true;
     dispatchTutorCompletionSequenceStart();
     const nextProgressLessons = {
@@ -6700,7 +6956,9 @@ export default function Tutor({
     );
     tutorLessonEarnedXpRef.current = nextEarned;
     setTutorLessonEarnedXp(nextEarned);
-    if (currentNpub) {
+    // Repair sessions are ephemeral — their in-lesson progress is never
+    // persisted, so the regular lesson's saved XP stays untouched.
+    if (currentNpub && !lesson.isRepair) {
       void saveTutorLessonEarnedXp(
         currentNpub,
         lesson.id,
@@ -6738,6 +6996,31 @@ export default function Tutor({
     }
 
     return false;
+  }
+
+  // One good rep of the weak phrase completes the ephemeral repair session.
+  // Mirrors trackTutorLessonXp's completion wrapper (idle wait + the same
+  // dedup refs) so this judge-driven path can't double-complete alongside the
+  // XP-goal path when both fire on the same turn.
+  function scheduleTutorRepairCompletion() {
+    const lesson = selectedTutorLessonRef.current;
+    const unit = selectedTutorUnitRef.current;
+    if (!lesson?.isRepair) return;
+    if (tutorLessonCompletionTriggeredRef.current) return;
+    if (pendingTutorLessonCompletionRef.current) return;
+    pendingTutorLessonCompletionRef.current = true;
+    void (async () => {
+      try {
+        if (!isIdleRef.current) {
+          await waitUntilIdle(45000);
+        }
+        if (tutorLessonCompletionTriggeredRef.current) return;
+        dispatchTutorCompletionSequenceStart();
+        await completeTutorLessonFromXp(lesson, unit, [], []);
+      } finally {
+        pendingTutorLessonCompletionRef.current = false;
+      }
+    })();
   }
 
   function persistTutorStarterAgendaProgress(lesson, progress) {
@@ -7000,12 +7283,19 @@ export default function Tutor({
 
       // Routed repair: the grader just confirmed the learner correctly produced
       // one of the repair-agenda phrases (see REPAIR WATCH in the prompt). One
-      // good rep clears today's repair — self-terminating, since the next
-      // grader call won't see a focus to ask about once it's cleared.
+      // good rep finishes the ephemeral repair session (stop + completion
+      // modal + one Repair-course increment). Self-terminating either way,
+      // since the next grader call won't see a focus once it's cleared.
       if (parsed.repairAdvanced === true) {
         const tutorFocusNow = useRepairFocusStore.getState().focus;
         if (tutorFocusNow?.surface === "tutor") {
-          void completeRepairFocus();
+          if (selectedTutorLessonRef.current?.isRepair) {
+            scheduleTutorRepairCompletion();
+          } else {
+            // Fallback: the focus rode on a regular lesson (no usable repair
+            // phrases to build a session from) — silently bank the step.
+            void completeRepairFocus();
+          }
         }
       }
 

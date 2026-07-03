@@ -25,6 +25,7 @@ import {
   isPastFirstQuest,
 } from "../utils/dailyPlate";
 import {
+  getNextRepairStep,
   getReusableMemory,
   getStoredBlueprint,
   getStoredRepairPlan,
@@ -83,6 +84,16 @@ const SUBTITLE_COPY = {
   ru: "Выполни задания и получи XP-бонус",
   ar: "أكمل مهامك واحصل على مكافأة XP",
   hi: "अपने कार्य पूरे करें और XP बोनस पाएं",
+};
+
+// Repair steps run in different practice modes; each mode borrows the
+// localized label of the course kind that best describes it, so the repair
+// row can show which kind of activity the next step is.
+const REPAIR_STEP_LABEL_KIND = {
+  lesson: "learn",
+  flashcards: "review",
+  tutor: "speak",
+  phonics: "phonics",
 };
 
 const RESET_COPY = {
@@ -192,6 +203,23 @@ export default function DailyPlateHome({
     () => getStoredRepairPlan(user, targetLang, snapshot.dayKey),
     [user, targetLang, snapshot.dayKey],
   );
+  // The repair task is a sequence of short steps in different modes (that's
+  // why it counts 0/N) — surface which mode the NEXT step runs in.
+  const repairCourse = snapshot.byKind?.repair;
+  const nextRepairStep = useMemo(
+    () =>
+      repairPlan && repairCourse && !repairCourse.done
+        ? getNextRepairStep(repairPlan, repairCourse.count)
+        : null,
+    [repairPlan, repairCourse],
+  );
+  const nextRepairStepLabel = nextRepairStep
+    ? plateUiCopy(
+        appLanguage,
+        PLATE_COURSE_META[REPAIR_STEP_LABEL_KIND[nextRepairStep.mode]]?.label ||
+          PLATE_COURSE_META.repair.label,
+      )
+    : "";
   // A repair plan for today can only derive from a previous day's captures, so
   // its presence proves the intro quest is behind the user even when the
   // first-quest-day stamp is wrong (e.g. clobbered by a raced new-day boot) —
@@ -522,7 +550,9 @@ export default function DailyPlateHome({
                                   )
                                 : 100
                             }%`
-                          : `${course.count}/${course.target}`}
+                          : kind === "repair" && nextRepairStepLabel
+                            ? `${course.count}/${course.target} · ${nextRepairStepLabel}`
+                            : `${course.count}/${course.target}`}
                       </Text>
                     </HStack>
                     <Box position="absolute" left={0} right={0} bottom="-3px">

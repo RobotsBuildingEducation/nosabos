@@ -78,7 +78,10 @@ const MODE_TO_ERROR_TYPE = {
 };
 
 // Deterministic-fallback mode per error type. Values must be valid REPAIR_MODES
-// so the floor never picks an unroutable mode.
+// so the floor never picks an unroutable mode. Conversation is deliberately
+// not a repair mode (free-form chat is neither captured nor offered anymore):
+// listening drills happen through flashcards (TTS reps) and conversational
+// production through the tutor.
 const ERROR_TYPE_TO_REPAIR_MODE = {
   vocabulary: "flashcards",
   grammar: "lesson", // structured → a generated mixed-question mini-lesson
@@ -86,8 +89,8 @@ const ERROR_TYPE_TO_REPAIR_MODE = {
   writing: "lesson",
   pronunciation: "phonics",
   phonics: "phonics",
-  listening: "conversation",
-  conversation_flow: "conversation",
+  listening: "flashcards",
+  conversation_flow: "tutor",
   confidence: "tutor",
   unknown: "flashcards",
 };
@@ -437,62 +440,6 @@ export async function captureCompanionMemory({
   return stored;
 }
 
-/**
- * Free-form conversation modes (Conversations, RealTime chat) have no
- * flashcard-style "wrong" event, so after each substantive learner turn we ask
- * the cheap model whether the utterance contained a real target-language slip
- * worth repairing. The model self-filters (slip:false for clean turns), then
- * captureCompanionMemory enriches + dedupes. Fire-and-forget. Shared by every
- * conversational surface so the prompt + gating stay identical.
- */
-export async function captureConversationSlip({
-  text,
-  targetLang,
-  supportLang,
-  sourceMode = "conversation",
-  cefrLevel,
-}) {
-  const trimmed = String(text || "").trim();
-  // Skip trivial turns (greetings, "yes", "ok") — they're not worth a call.
-  if (trimmed.split(/\s+/).filter(Boolean).length < 3) return;
-  const targetName = langName(targetLang);
-  const supportName = langName(supportLang);
-  const input = [
-    `A learner practicing ${targetName} just said this in a conversation:`,
-    `"${trimmed}"`,
-    `If it contains a clear ${targetName} mistake worth repairing later (grammar, conjugation, wrong word, gender/agreement, etc.), return ONLY strict minified JSON: {"slip":true,"concept":"a short skill label in ${supportName}","said":"the wrong fragment","correction":"the corrected ${targetName} form"}.`,
-    `If the turn is basically fine, or it's just a greeting/filler, return {"slip":false}. Never invent a mistake.`,
-  ].join("\n");
-
-  let raw = "";
-  try {
-    raw = await callResponses({ input });
-  } catch {
-    return;
-  }
-  const start = raw.indexOf("{");
-  const end = raw.lastIndexOf("}");
-  if (start < 0 || end <= start) return;
-  let parsed = null;
-  try {
-    parsed = JSON.parse(raw.slice(start, end + 1));
-  } catch {
-    return;
-  }
-  if (!parsed?.slip || !parsed.correction) return;
-
-  captureCompanionMemory({
-    targetLang,
-    supportLang,
-    sourceMode,
-    concept: String(parsed.concept || parsed.said || trimmed).slice(0, 240),
-    userAnswer: String(parsed.said || trimmed),
-    expectedAnswer: String(parsed.correction || ""),
-    cefrLevel,
-    sourceContext: sourceMode,
-  });
-}
-
 function repairLessonLevelGuard(cefrLevel) {
   const level = displayCEFRLevel(cefrLevel, "Pre-A1");
   if (level === "Pre-A1") {
@@ -542,6 +489,7 @@ export function buildEphemeralRepairLesson({
   cefrLevel = "Pre-A1",
   dayKey,
   recommendedMode = "lesson",
+  stepIndex = 0,
 }) {
   const items = Array.isArray(plan?.items) ? plan.items : [];
   const concepts = items.map((it) => it?.concept).filter(Boolean);
@@ -603,7 +551,10 @@ export function buildEphemeralRepairLesson({
   });
 
   return {
-    id: `repair-${normalizePlateLang(targetLang)}-${dayKey || getCompanionDayKey()}`,
+    // Step-scoped id: each repair step is its own ephemeral lesson, so a
+    // restored activeLesson from an earlier step can't be mistaken for the
+    // current one.
+    id: `repair-${normalizePlateLang(targetLang)}-${dayKey || getCompanionDayKey()}-s${Math.max(0, Number(stepIndex) || 0)}`,
     isRepair: true,
     title: { ...REPAIR_COPY.title },
     description: { ...REPAIR_COPY.intro },
@@ -623,10 +574,12 @@ export function buildEphemeralRepairLesson({
 }
 
 /**
- * Complete an ephemeral repair lesson from the data embedded in the lesson
- * object (see buildEphemeralRepairLesson). Prefers the live repair focus when
- * present (clears it too); otherwise falls back to the embedded target/ids so
- * a reload mid-lesson can't strand the repair course.
+ * Complete an ephemeral repair lesson (one step of the day's repair) from the
+ * data embedded in the lesson object (see buildEphemeralRepairLesson).
+ * Prefers the live repair focus when present (clears it too); otherwise falls
+ * back to the embedded target/ids so a reload mid-lesson can't strand the
+ * repair course. Step lessons carry target 1, so finishing one advances the
+ * repair course by exactly one step.
  */
 export async function completeRepairLesson({ lesson, npub, targetLang }) {
   const focus = useRepairFocusStore.getState?.()?.focus;
@@ -727,12 +680,14 @@ export async function markMemoryReinforced({
 }
 
 /**
- * Complete the active routed repair: the user practiced the weak concept in the
- * recommended live engine (phonics/conversation/tutor), so flip the repair
- * course to done and reinforce every note it covered, then clear the focus.
- * One routed session clears the whole repair (the engine seeds itself around the
- * weak concept rather than drilling card-by-card). Idempotent: a cleared focus
- * is a no-op, so a second call from the same session does nothing.
+ * Complete the active routed repair step: the user practiced the weak concept
+ * in the routed live engine (phonics/tutor), so bank that step's course
+ * increment(s), reinforce the note(s) it covered, and clear the focus. The
+ * focus holds a per-step mini-plan (target 1, one item — see getRepairSteps),
+ * so one routed session advances the repair course by exactly one step; the
+ * next tap on the repair task routes into the next step's mode. Idempotent: a
+ * cleared focus is a no-op, so a second call from the same session does
+ * nothing.
  */
 export async function completeRepairFocus() {
   const focusStore = useRepairFocusStore.getState?.();
@@ -835,6 +790,9 @@ function repairItemsFromNotes(ranked = []) {
     userAnswer: n.userAnswer || "",
     errorType: n.errorType,
     sourceMode: n.sourceMode,
+    // The practice mode this item's step should run in (getRepairSteps
+    // dedupes across items so a multi-item repair spans different modes).
+    mode: repairModeForError(n.errorType),
     // Carries a mode-specific pointer back to the exact source (e.g. the
     // phonics letter id) so a routed repair can deep-seed the right material
     // instead of just naming the concept. Free-form per sourceMode.
@@ -855,12 +813,9 @@ export function buildRepairPlan({
   if (!ranked.length) return null;
 
   const items = repairItemsFromNotes(ranked);
-  // recommendedRepairMode is chosen per the highest-severity error; the
-  // deterministic plan still presents flashcard-style, but the field drives
-  // copy and (with the AI batch) multi-mode routing.
-  const recommendedMode = items[0]
-    ? repairModeForError(items[0].errorType)
-    : "review";
+  // Legacy hint only — actual routing is per-item/per-step via getRepairSteps,
+  // which reads each item's own mode.
+  const recommendedMode = items[0]?.mode || "lesson";
 
   return {
     dayKey: dayKey || getCompanionDayKey(now),
@@ -971,18 +926,84 @@ export async function storeQuestExplanation({
    ===================================================================== */
 
 const BLUEPRINT_STALE_MS = 10 * 60 * 1000; // a "generating" marker older than this is retryable
-// Modes the AI batch may pick for a repair — every one seeds a real, interactive
-// surface with the weak material (no boring flashcard fallback):
-//   conversation/tutor/phonics → live engine (scenario / phrase agenda / target sound)
-//   flashcards → the real flashcard experience (TTS + speech), seeded with repair cards
-//   lesson     → a freshly generated mini skill-tree lesson (mixed question types)
-const REPAIR_MODES = [
-  "conversation",
-  "tutor",
-  "phonics",
-  "flashcards",
-  "lesson",
-];
+// Modes a repair step may run in — every one seeds a real, interactive
+// surface with the weak material:
+//   tutor/phonics → live engine (an ephemeral tutor session / target sound)
+//   flashcards    → the real flashcard experience (TTS + speech), seeded with repair cards
+//   lesson        → a freshly generated mini skill-tree lesson (mixed question types)
+// Conversation is deliberately NOT a repair mode: free-form chat is too
+// unstructured to verify a specific weak spot got repaired.
+const REPAIR_MODES = ["tutor", "phonics", "flashcards", "lesson"];
+
+// When two steps would land on the same mode, later duplicates take the next
+// unused mode from this list so a multi-item repair spans different modes.
+// Only generic modes belong here — phonics is excluded because it only makes
+// sense for sound/pronunciation material.
+const REPAIR_STEP_FALLBACK_MODES = ["lesson", "flashcards", "tutor"];
+
+// Valid mode, or "" — legacy stored plans may still say "conversation" (no
+// longer offered) or "speak" (old alias); both route to the tutor, the closest
+// spoken-production surface.
+export function normalizeRepairMode(mode) {
+  const m = String(mode || "")
+    .trim()
+    .toLowerCase();
+  if (REPAIR_MODES.includes(m)) return m;
+  if (m === "conversation" || m === "speak") return "tutor";
+  return "";
+}
+
+/**
+ * Split a day's repair plan into per-step mini-plans: one item per step, each
+ * with its own practice mode (per-item AI/heuristic pick, deduped across steps
+ * so a multi-item repair uses different modes). Each step's `plan` has the
+ * exact stored-plan shape with target 1 and just that item, so every existing
+ * consumer (the focus store, the ephemeral lesson builder, the completion
+ * paths) works on one step without knowing about steps — completing a step
+ * increments the plate's repair course by exactly 1, which is why the course
+ * counter reads 0/N for an N-item repair.
+ */
+export function getRepairSteps(plan) {
+  const items = Array.isArray(plan?.items) ? plan.items : [];
+  if (!items.length) return [];
+  const used = new Set();
+  return items.map((item, index) => {
+    const preferred =
+      normalizeRepairMode(item?.mode) ||
+      normalizeRepairMode(repairModeForError(item?.errorType)) ||
+      "lesson";
+    let mode = preferred;
+    if (used.has(mode)) {
+      mode = REPAIR_STEP_FALLBACK_MODES.find((m) => !used.has(m)) || preferred;
+    }
+    used.add(mode);
+    return {
+      index,
+      mode,
+      item,
+      plan: {
+        ...plan,
+        recommendedMode: mode,
+        target: 1,
+        items: [item],
+        memoryIds: item?.memoryId ? [item.memoryId] : [],
+      },
+    };
+  });
+}
+
+// The step the learner should do next, given how many repair increments
+// they've already banked today. Clamped so a stale count can't run past the
+// end. Null when the plan has no usable items.
+export function getNextRepairStep(plan, completedCount = 0) {
+  const steps = getRepairSteps(plan);
+  if (!steps.length) return null;
+  const idx = Math.min(
+    Math.max(0, Math.floor(Number(completedCount) || 0)),
+    steps.length - 1,
+  );
+  return { ...steps[idx], stepCount: steps.length };
+}
 
 // Submodules an ephemeral repair lesson may include — exactly the tabs the real
 // lesson view renders (each consumes lessonContent { topic, words, focusPoints }).
@@ -1157,17 +1178,16 @@ function buildBatchInput({
     carry,
     `The learner is at CEFR level ${level}. Keep every prompt, answer, and the overall difficulty appropriate for ${level} — simpler and more concrete for Pre-A1/A1, more nuanced for higher levels. Never exceed their level.`,
     levelGuard,
-    `Pick "recommendedMode" to match how the weak concept is best PRACTICED — every mode is a real interactive surface, so choose deliberately and the "summary" must explain WHY this mode fits:`,
-    `- "conversation": functional/communicative language the learner would say to another person — greetings, ordering, asking for things, small talk, directions. Great default for anything you'd actually say in dialogue.`,
-    `- "tutor": producing one specific target-language phrase or sentence correctly out loud, or focused grammar-in-speech coaching.`,
+    `The repair runs as a SEQUENCE of short activities — one per item — so pick each item's "mode" to match how THAT weak concept is best PRACTICED. Every mode is a real interactive surface, so choose deliberately:`,
+    `- "tutor": producing a specific target-language phrase or sentence correctly out loud, functional language you'd say to another person, or focused grammar-in-speech coaching.`,
     `- "phonics": pronunciation, specific sounds, letters, or minimal pairs.`,
-    `- "flashcards": fast recall of vocabulary words or short set phrases (meaning ⇄ form) — best when the weak spots are discrete items to memorize.`,
+    `- "flashcards": fast recall of vocabulary words or short set phrases (meaning ⇄ form) — best when the weak spot is a discrete item to memorize.`,
     `- "lesson": a richer concept that benefits from VARIED practice (a grammar pattern, conjugations, agreement, word order) — this generates a short mixed-question mini-lesson.`,
-    `Match the mode to the concept; do not default to one. Use "flashcards" for pure recall and "lesson" for anything with structure/rules.`,
+    `Match each mode to its concept; when there are multiple items, give them DIFFERENT modes whenever sensible so the repair sequence feels varied. Use "flashcards" for pure recall and "lesson" for anything with structure/rules.`,
     `Compose a short, game-like repair for their next session.`,
     `SCOPE: the repair is only ONE small task inside today's quest — the other quest tasks continue the learner's regular course progress with new material. When the message explains what you lined up and why, explicitly attribute it to the repair task (call it a "repair" or a quick warm-up before the rest of the quest). NEVER phrase it as if the whole day or the whole quest is about this material (not "today we are going to work on X" — say "our quick repair task today covers X, then we keep pushing ahead").`,
     `Return ONLY strict minified JSON (no markdown, no commentary) with EXACTLY this shape:`,
-    `{"message":{"short":"one playful sentence in a manga speech-bubble voice","long":"2-4 warm sentences naming what the repair task focuses on and why, explicitly scoped to the repair task with the rest of the quest framed as their normal progress; never say the learner got something wrong"},"repair":{"recommendedMode":"one of ${REPAIR_MODES.join("/")}","items":[{"memoryId":"an id copied from the notes above","prompt":"a FRESH ${level}-appropriate practice cue in ${targetName} that exercises the same concept (do not copy the original)","answer":"the correct answer in ${targetName}","tip":"a short encouraging memory tip in ${supportName}"}]},"summary":"one short line in ${supportName}: why this repair"}`,
+    `{"message":{"short":"one playful sentence in a manga speech-bubble voice","long":"2-4 warm sentences naming what the repair task focuses on and why, explicitly scoped to the repair task with the rest of the quest framed as their normal progress; never say the learner got something wrong"},"repair":{"items":[{"memoryId":"an id copied from the notes above","mode":"one of ${REPAIR_MODES.join("/")}","prompt":"a FRESH ${level}-appropriate practice cue in ${targetName} that exercises the same concept (do not copy the original)","answer":"the correct answer in ${targetName}","tip":"a short encouraging memory tip in ${supportName}"}]},"summary":"one short line in ${supportName}: why this repair"}`,
     `Use one item per weak spot, max ${REPAIR_MAX_ITEMS}, each memoryId from the list. Stay positive and encouraging.`,
   ]
     .filter(Boolean)
@@ -1212,9 +1232,7 @@ function buildDeterministicBlueprint({
     taskList: "",
     cleared: false,
   });
-  const recommendedMode = ranked[0]
-    ? repairModeForError(ranked[0].errorType)
-    : "review";
+  const recommendedMode = items[0]?.mode || "lesson";
   const memoryIds = items.map((i) => i.memoryId).filter(Boolean);
 
   return {
@@ -1266,6 +1284,7 @@ function assembleAiBlueprint({
       const note = noteById.get(it?.memoryId) || null;
       const concept = String(it?.prompt || it?.concept || note?.concept || "").trim();
       if (!concept) return null;
+      const errorType = note?.errorType || "unknown";
       return {
         memoryId: note?.id || it?.memoryId || "",
         concept,
@@ -1273,8 +1292,13 @@ function assembleAiBlueprint({
           it?.answer || it?.expectedAnswer || note?.expectedAnswer || "",
         ).trim(),
         userAnswer: note?.userAnswer || "",
-        errorType: note?.errorType || "unknown",
+        errorType,
         sourceMode: note?.sourceMode || "",
+        // The AI's per-item practice mode when valid, else the heuristic one.
+        mode:
+          normalizeRepairMode(it?.mode) ||
+          normalizeRepairMode(repairModeForError(errorType)) ||
+          "lesson",
         sourceContext: note?.sourceContext || "",
         cefrLevel: displayCEFRLevel(note?.cefrLevel, "Pre-A1"),
         summary: String(it?.tip || it?.summary || note?.companionSummary || "").trim(),
@@ -1285,10 +1309,9 @@ function assembleAiBlueprint({
 
   const useItems = items.length ? items : fallback.repair?.items || [];
   const memoryIds = useItems.map((i) => i.memoryId).filter(Boolean);
-  const aiMode = String(parsed?.repair?.recommendedMode || "").trim();
-  const recommendedMode = REPAIR_MODES.includes(aiMode)
-    ? aiMode
-    : fallback.repair?.recommendedMode || "review";
+  // Legacy hint (routing is per-item via getRepairSteps): the first step's mode.
+  const recommendedMode =
+    useItems[0]?.mode || fallback.repair?.recommendedMode || "lesson";
   const longMsg = String(parsed?.message?.long || "").trim();
   const shortMsg = String(parsed?.message?.short || "").trim();
 

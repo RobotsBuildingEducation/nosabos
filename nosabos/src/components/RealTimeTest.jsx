@@ -72,10 +72,7 @@ import {
   useArchiveTextStream,
 } from "./realtimeArchiveStream";
 import { awardXp } from "../utils/utils";
-import {
-  captureCompanionMemory,
-  captureConversationSlip,
-} from "../utils/companionMemory";
+import { captureCompanionMemory } from "../utils/companionMemory";
 import { getLanguageXp } from "../utils/progressTracking";
 import {
   SOFT_STOP_BUTTON_BG,
@@ -3281,14 +3278,6 @@ Return ONLY JSON:
         });
         await persistUserTurn(text, "en").catch(() => {});
         evaluateAndMaybeAdvanceGoal(text).catch(() => {});
-        // Companion brain: cheaply check this turn for a real slip to repair.
-        void captureConversationSlip({
-          text,
-          targetLang: targetLangRef.current,
-          supportLang: supportLangRef.current || "en",
-          sourceMode: "conversation",
-          cefrLevel: cefrLevelRef.current,
-        });
       }
       return;
     }

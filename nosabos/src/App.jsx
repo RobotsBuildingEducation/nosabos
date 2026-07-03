@@ -190,6 +190,7 @@ import {
   buildEphemeralRepairLesson,
   completeRepairLesson,
   getBlueprintCarryOverKinds,
+  getNextRepairStep,
   getReusableMemory,
   getStoredRepairPlan,
   getTodaysCapturedNotes,
@@ -382,13 +383,12 @@ const TEST_UNLOCK_NSEC =
 const DEFAULT_VOICE_PAUSE_MS = 600;
 const LOADING_ORB_STATES = ["idle", "listening", "speaking"];
 
-// Repair routing: which live-engine surface each recommendedMode opens. Only
-// modes whose engine is wired (banner + completion) belong here; everything else
-// falls back to the quick card modal — which is correct, not a degradation
-// (a flashcard is the right tool for recall/rule repairs).
+// Repair routing: which live-engine surface each repair-step mode opens. Only
+// modes whose engine is wired (banner + completion) belong here; flashcards /
+// lesson steps run as ephemeral lessons instead. Conversation is deliberately
+// NOT a repair surface — free-form chat can't verify a specific weak spot.
 const REPAIR_MODE_TO_SURFACE = {
   phonics: "alphabet",
-  conversation: "conversations",
   tutor: "tutor",
   speak: "tutor",
 };
@@ -7946,45 +7946,45 @@ export default function App({ onBootReady } = {}) {
   const navigateToPlateCourse = useCallback(
     (kind) => {
       if (kind === "repair") {
-        // Repair routes to the RIGHT kind of practice for the mistake. The
-        // blueprint picked a recommendedMode; for live-engine modes
-        // (phonics/conversation/speak) we stash the plan as a "repair focus" and
-        // route the user there so the engine can seed itself around the weak
-        // concept and mark the repair done once practiced. Recall-type modes
-        // (review/grammar/listening) stay as the quick card pass — a flashcard is
-        // the right tool for those.
-        const repairMode = repairPlanToday?.recommendedMode || "flashcards";
-        const repairSurface = REPAIR_MODE_TO_SURFACE[repairMode];
-        if (repairPlanToday && repairSurface) {
-          // Live-engine modes (conversation/tutor/phonics): stash the focus and
-          // route to the surface so the engine seeds itself.
-          useRepairFocusStore.getState().setFocus({
-            plan: repairPlanToday,
-            mode: repairMode,
-            surface: repairSurface,
-            targetLang: resolvedTargetLang,
-            supportLang: appLanguage,
-            npub: activeNpub,
-          });
-          goToSkillTreeMode(repairSurface);
-          return;
-        }
-        if (repairPlanToday) {
-          // flashcards / lesson → an EPHEMERAL lesson through the real lesson
-          // infrastructure: same view, same tabs, same XP bar and action bar,
-          // with each seeded engine generating strictly from the weak material.
+        // Repair is a SEQUENCE of short steps — one per curated weak spot,
+        // each in its own practice mode (that's why the course counts 0/N).
+        // The next step = however many increments are already banked today.
+        // Live-engine steps (tutor/phonics) stash the step's mini-plan as the
+        // "repair focus" and route there; flashcards/lesson steps run as an
+        // ephemeral lesson seeded strictly with that step's weak material.
+        const stepsDone = plateSnapshot.byKind?.repair?.count || 0;
+        const step = getNextRepairStep(repairPlanToday, stepsDone);
+        if (step) {
+          const repairSurface = REPAIR_MODE_TO_SURFACE[step.mode];
+          if (repairSurface) {
+            useRepairFocusStore.getState().setFocus({
+              plan: step.plan,
+              mode: step.mode,
+              surface: repairSurface,
+              stepIndex: step.index,
+              stepCount: step.stepCount,
+              targetLang: resolvedTargetLang,
+              supportLang: appLanguage,
+              npub: activeNpub,
+            });
+            goToSkillTreeMode(repairSurface);
+            return;
+          }
           const ephemeral = buildEphemeralRepairLesson({
-            plan: repairPlanToday,
+            plan: step.plan,
             targetLang: resolvedTargetLang,
             cefrLevel: repairLessonCefrLevel,
             dayKey: plateDayKey,
-            recommendedMode: repairMode,
+            recommendedMode: step.mode,
+            stepIndex: step.index,
           });
           if (ephemeral) {
             useRepairFocusStore.getState().setFocus({
-              plan: repairPlanToday,
-              mode: repairMode,
+              plan: step.plan,
+              mode: step.mode,
               surface: "lesson",
+              stepIndex: step.index,
+              stepCount: step.stepCount,
               targetLang: resolvedTargetLang,
               supportLang: appLanguage,
               npub: activeNpub,
@@ -7992,12 +7992,8 @@ export default function App({ onBootReady } = {}) {
             void handleStartLessonRef.current?.(ephemeral);
             return;
           }
-          // No usable items → the quick card fallback below.
-          goToSkillTreeMode("plate");
-          setRepairModalOpen(true);
-          return;
         }
-        // No plan at all → the quick card fallback.
+        // No plan / no usable items → the quick card fallback.
         goToSkillTreeMode("plate");
         setRepairModalOpen(true);
         return;
@@ -8025,6 +8021,7 @@ export default function App({ onBootReady } = {}) {
     [
       goToSkillTreeMode,
       repairPlanToday,
+      plateSnapshot,
       resolvedTargetLang,
       appLanguage,
       activeNpub,
@@ -8361,7 +8358,34 @@ export default function App({ onBootReady } = {}) {
       .find(
         (kind) => plateSnapshot.byKind[kind]?.done && !prev.byKind[kind]?.done,
       );
-    if (!justDone) return;
+    if (!justDone) {
+      // Repair advances one step (one increment) at a time, so intermediate
+      // steps never flip the course done — celebrate each banked step like a
+      // course completion. In a guided session the Continue button re-routes
+      // into "repair", which serves the NEXT step in its own mode; outside a
+      // session it's a plain acknowledgement (Continue leaves the spent step).
+      const prevRepair = prev.byKind?.repair;
+      const nowRepair = plateSnapshot.byKind?.repair;
+      const repairStepped =
+        nowRepair &&
+        prevRepair &&
+        !nowRepair.done &&
+        nowRepair.count > prevRepair.count;
+      if (!repairStepped) return;
+      requestPlateCelebration({
+        type: "course",
+        completed: "repair",
+        next: plateSessionActive ? getNextPlateCourse(plateSnapshot) : null,
+        expectsModal: false,
+        // Step progress ("1/3") so the celebration reads as one step of the
+        // multi-mode repair sequence, not the whole task.
+        progress: {
+          count: Math.min(nowRepair.count, nowRepair.target),
+          target: nowRepair.target,
+        },
+      });
+      return;
+    }
 
     const next = getNextPlateCourse(plateSnapshot);
     // Only surfaces that render their own completion modal need the
@@ -9756,7 +9780,10 @@ export default function App({ onBootReady } = {}) {
                       PLATE_COURSE_META[plateCelebration.completed]?.label || {
                         en: "",
                       },
-                    )}{" "}
+                    )}
+                    {plateCelebration.progress
+                      ? ` ${plateCelebration.progress.count}/${plateCelebration.progress.target}`
+                      : ""}{" "}
                     ✓
                   </Text>
                 </VStack>
