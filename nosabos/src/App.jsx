@@ -68,7 +68,7 @@ import {
   CloseIcon,
 } from "@chakra-ui/icons";
 import { CiUser, CiEdit } from "react-icons/ci";
-import { MdOutlineSupportAgent } from "react-icons/md";
+import { MdOutlineSupportAgent, MdShowChart } from "react-icons/md";
 import {
   RiSpeakLine,
   RiBook2Line,
@@ -96,6 +96,7 @@ import {
   PiSealQuestionDuotone,
 } from "react-icons/pi";
 import { FiClock, FiCompass, FiPause, FiPlay, FiTarget } from "react-icons/fi";
+import { FaCalendarAlt, FaCalendarCheck } from "react-icons/fa";
 
 import {
   collection,
@@ -131,7 +132,6 @@ import Vocabulary from "./components/Vocabulary";
 import StoryMode from "./components/Stories";
 import History from "./components/History";
 import HelpChatFab from "./components/HelpChatFab";
-import { WaveBar } from "./components/WaveBar";
 import DailyGoalModal from "./components/DailyGoalModal";
 import DailyGoalPetPanel from "./components/DailyGoalPetPanel.jsx";
 import { getCustomizeModalCopy } from "./components/companionCustomizeCopy";
@@ -239,7 +239,6 @@ import {
   inferCefrLevelFromLessonId,
 } from "./utils/gameReviewContext";
 import { LESSON_COUNTS, getLessonLevelFromId } from "./utils/cefrProgress";
-import { FaCalendarAlt, FaCalendarCheck, FaKey } from "react-icons/fa";
 import { BsCalendar2DateFill } from "react-icons/bs";
 import { TbLanguage } from "react-icons/tb";
 import sparkleSound from "./assets/sparkle.mp3";
@@ -1502,12 +1501,31 @@ function TopBar({
       );
   }, [activeNpub]);
 
-  const dailyPct =
+  const dailyRawPct =
     dailyGoalXp > 0
-      ? Math.min(100, Math.round((dailyXp / dailyGoalXp) * 100))
+      ? Math.max(0, Math.round((dailyXp / dailyGoalXp) * 100))
       : 0;
-  const dailyBarPct = dailyPct > 0 && dailyPct < 6 ? 6 : dailyPct;
   const dailyDone = dailyGoalXp > 0 && dailyXp >= dailyGoalXp;
+  const dailyGoalHudColor = dailyDone
+    ? themeMode === "light"
+      ? "#a15c00"
+      : "#fbbf24"
+    : themeMode === "light"
+      ? "#4b5563"
+      : "whiteAlpha.700";
+  const dailyGoalLabel = uiCopy(appLanguage, {
+    en: "Daily XP",
+    es: "XP diaria",
+    pt: "XP diária",
+    fr: "XP du jour",
+    it: "XP giornaliera",
+    de: "Tägliche XP",
+    ja: "今日のXP",
+    zh: "每日 XP",
+    ru: "Ежедневный XP",
+    ar: "XP اليومية",
+    hi: "दैनिक XP",
+  });
 
   const cefrTimestamp =
     cefrResult?.updatedAt &&
@@ -1593,9 +1611,9 @@ function TopBar({
             wrap="wrap"
             spacing={{ base: 2, md: 3 }}
           >
-            {/* LEFT: Daily Goal Button + WaveBar */}
+            {/* LEFT: Daily Goal button + Daily XP status */}
             <HStack
-              spacing={{ base: 2, md: 3 }}
+              spacing={{ base: 1, md: 1.5 }}
               minW={0}
               flex="1 1 auto"
               align="center"
@@ -1617,9 +1635,41 @@ function TopBar({
                 _active={{ transform: "none" }}
                 {...getTopBarPressProps("daily-goal", onOpenDailyGoalModal)}
               />
-              <Box w={{ base: "100px", sm: "130px", md: "160px" }}>
-                <WaveBar value={dailyBarPct} />
-              </Box>
+              <HStack
+                spacing={{ base: 0.5, md: 0.5 }}
+                h="34px"
+                minW={0}
+                px={0}
+                align="center"
+                color={dailyGoalHudColor}
+                title={`${dailyGoalLabel}: ${dailyRawPct}%`}
+              >
+                <Box
+                  as={MdShowChart}
+                  boxSize={{ base: 4, md: 4.5 }}
+                  flexShrink={0}
+                />
+                <Text
+                  fontSize={{ base: "xs", md: "xs" }}
+                  fontWeight="bold"
+                  lineHeight="1"
+                  whiteSpace="nowrap"
+                  maxW={{ base: "92px", sm: "140px", md: "none" }}
+                  overflow="hidden"
+                  textOverflow="ellipsis"
+                >
+                  {dailyGoalLabel}:
+                </Text>
+                <Text
+                  fontSize={{ base: "xs", md: "xs" }}
+                  fontWeight="bold"
+                  lineHeight="1"
+                  fontVariantNumeric="tabular-nums"
+                  whiteSpace="nowrap"
+                >
+                  {dailyRawPct}%
+                </Text>
+              </HStack>
             </HStack>
 
             <Spacer display={{ base: "none", md: "block" }} />
@@ -8149,13 +8199,13 @@ export default function App({ onBootReady } = {}) {
       const modalStore = useModalStore.getState?.() || {};
       return Boolean(
         lessonCompletionSequenceActiveRef.current ||
-          pendingLessonCompletionRef.current ||
-          pendingDailyGoalCelebrationRef.current ||
-          pendingTutorialBitcoinModalRef.current ||
-          modalStore.dailyGoalOpen ||
-          modalStore.timerModalOpen ||
-          Object.values(blockers).some(Boolean) ||
-          hasVisibleChakraModalSurface(),
+        pendingLessonCompletionRef.current ||
+        pendingDailyGoalCelebrationRef.current ||
+        pendingTutorialBitcoinModalRef.current ||
+        modalStore.dailyGoalOpen ||
+        modalStore.timerModalOpen ||
+        Object.values(blockers).some(Boolean) ||
+        hasVisibleChakraModalSurface(),
       );
     };
 
@@ -8681,7 +8731,6 @@ export default function App({ onBootReady } = {}) {
         npub={activeNpub}
         startIndex={plateSnapshot.byKind?.repair?.count || 0}
       />
-
 
       {!isGameFullScreen && (
         <BottomActionBar
@@ -10198,12 +10247,12 @@ function BottomActionBar({
   const notesBorderColor = notesIsLoading
     ? "cyan.400"
     : notesIsDone
-      ? "green.400"
+      ? "teal.400"
       : "gray.600";
   const notesBoxShadow = notesIsLoading
     ? "0 0 0 2px rgba(34,211,238,0.35), 0 0 14px rgba(34,211,238,0.65)"
     : notesIsDone
-      ? "0 0 0 2px rgba(74,222,128,0.35), 0 0 14px rgba(74,222,128,0.65)"
+      ? "0 0 0 2px rgba(56,178,172,0.35), 0 0 14px rgba(56,178,172,0.65)"
       : undefined;
   const notesAnimation = notesIsLoading
     ? "notesPulse 1.5s ease-in-out infinite"
@@ -10251,12 +10300,12 @@ function BottomActionBar({
 
   // Minimized bar highlight when a note is saved
   const minimizedHighlight = notesIsDone
-    ? "0 0 0 2px rgba(74,222,128,0.5), 0 0 16px rgba(74,222,128,0.7)"
+    ? "0 0 0 2px rgba(56,178,172,0.5), 0 0 16px rgba(56,178,172,0.7)"
     : notesIsLoading
       ? "0 0 0 2px rgba(34,211,238,0.5), 0 0 16px rgba(34,211,238,0.7)"
       : undefined;
   const minimizedBorderColor = notesIsDone
-    ? "green.400"
+    ? "teal.400"
     : notesIsLoading
       ? "cyan.400"
       : "var(--app-border)";
@@ -10332,7 +10381,7 @@ function BottomActionBar({
             "@keyframes notesDone": {
               "0%": {
                 boxShadow:
-                  "0 0 0 3px rgba(74,222,128,0.6), 0 0 20px rgba(74,222,128,0.8)",
+                  "0 0 0 3px rgba(56,178,172,0.6), 0 0 20px rgba(56,178,172,0.8)",
               },
               "100%": {
                 boxShadow: isLightTheme
@@ -10612,7 +10661,7 @@ function BottomActionBar({
                   "@keyframes notesDone": {
                     "0%": {
                       boxShadow:
-                        "0 0 0 3px rgba(74,222,128,0.6), 0 0 20px rgba(74,222,128,0.8)",
+                        "0 0 0 3px rgba(56,178,172,0.6), 0 0 20px rgba(56,178,172,0.8)",
                     },
                     "100%": { boxShadow: "none", borderColor: "gray.600" },
                   },
