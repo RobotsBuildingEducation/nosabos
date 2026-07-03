@@ -383,14 +383,17 @@ const TEST_UNLOCK_NSEC =
 const DEFAULT_VOICE_PAUSE_MS = 600;
 const LOADING_ORB_STATES = ["idle", "listening", "speaking"];
 
-// Repair routing: which live-engine surface each repair-step mode opens. Only
-// modes whose engine is wired (banner + completion) belong here; flashcards /
-// lesson steps run as ephemeral lessons instead. Conversation is deliberately
-// NOT a repair surface — free-form chat can't verify a specific weak spot.
+// Repair routing: which surface each repair-step mode opens. Only modes
+// whose surface is wired for repair (seeding + completion) belong here;
+// "lesson" steps run as ephemeral skill-tree lessons instead. Conversation is
+// deliberately NOT a repair surface — free-form chat can't verify a specific
+// weak spot. "flashcards" opens the real deck surface, which builds a small
+// generated repair deck from the step (see FlashcardSkillTree).
 const REPAIR_MODE_TO_SURFACE = {
   phonics: "alphabet",
   tutor: "tutor",
   speak: "tutor",
+  flashcards: "flashcards",
 };
 
 function hasVisibleChakraModalSurface() {
@@ -5027,6 +5030,22 @@ export default function App({ onBootReady } = {}) {
             {
               targetLang: resolvedTargetLang,
               cardId: card.id,
+              // Generated cards (repair decks) aren't in the predefined
+              // library, so the first answer stores the card's definition
+              // alongside its progress — that's what adds it to the main
+              // deck (FlashcardSkillTree merges these into the queues).
+              ...(card.isRepair && card.concept && typeof card.concept === "object"
+                ? {
+                    card: {
+                      id: card.id,
+                      concept: card.concept,
+                      cefrLevel: card.cefrLevel || "A1",
+                      category: card.category || "repair",
+                      type: card.type || "phrase",
+                      isRepair: true,
+                    },
+                  }
+                : {}),
               ...reviewPatch,
               updatedAt,
             },

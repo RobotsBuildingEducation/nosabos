@@ -1005,6 +1005,182 @@ export function getNextRepairStep(plan, completedCount = 0) {
   return { ...steps[idx], stepCount: steps.length };
 }
 
+/* -----------------------------------
+   Repair flashcard deck — a "flashcards" step runs in the REAL flashcard
+   surface with a small deck generated fresh around the weak spot (not the
+   predefined library). Card ids are stable per day+step and the deck is
+   cached in localStorage, so re-entering the step (or reloading mid-deck)
+   reuses the same cards and already-answered ones stay answered. Answering a
+   card persists its definition alongside its review progress (see
+   persistFlashcardReview in App), which is what adds it to the learner's
+   main deck with normal SRS scheduling from then on.
+----------------------------------- */
+export const REPAIR_DECK_SIZE = 3;
+
+function repairDeckStorageKey(langKey, dayKey, stepIndex) {
+  return `repairDeck:${langKey}:${dayKey}:s${stepIndex}`;
+}
+
+function readCachedRepairDeck(key) {
+  if (typeof window === "undefined" || !key) return null;
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    const cards = Array.isArray(parsed) ? parsed : null;
+    if (!cards?.length) return null;
+    return cards.filter((c) => c && c.id && c.concept) || null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedRepairDeck(key, cards) {
+  if (typeof window === "undefined" || !key) return;
+  try {
+    window.localStorage.setItem(key, JSON.stringify(cards));
+  } catch {
+    /* ignore quota errors — the deck just regenerates next time */
+  }
+}
+
+function buildRepairCard({
+  support,
+  target,
+  supportBase,
+  targetBase,
+  langKey,
+  dayKey,
+  stepIndex,
+  cardIndex,
+  level,
+}) {
+  const supportText = String(support || "").trim().slice(0, 160);
+  const targetText = String(target || "").trim().slice(0, 160);
+  if (!supportText && !targetText) return null;
+  const concept = {};
+  concept[supportBase] = supportText || targetText;
+  if (!concept.en) concept.en = supportText || targetText;
+  if (targetText) concept[targetBase] = targetText;
+  return {
+    id: `repair-${langKey}-${dayKey}-s${stepIndex}-c${cardIndex}`,
+    concept,
+    cefrLevel: level,
+    category: "repair",
+    type: (targetText || supportText).split(/\s+/).length > 1 ? "phrase" : "word",
+    isRepair: true,
+  };
+}
+
+// Ask the cheap model for a few tiny recall cards drilling exactly the weak
+// spot. Returns [{support, target}] or null on any failure.
+async function generateRepairDeckEntries({
+  item,
+  targetLang,
+  supportLang,
+  level,
+  count,
+}) {
+  const targetName = langName(targetLang);
+  const supportName = langName(supportLang);
+  const guard = repairLessonLevelGuard(level);
+  const input = [
+    `A learner studying ${targetName} (CEFR ${level}) recently struggled with this weak spot: "${item.concept}".`,
+    item.expectedAnswer ? `The correct ${targetName} form is: "${item.expectedAnswer}".` : "",
+    item.summary ? `Coach note: ${item.summary}` : "",
+    guard,
+    `Create ${count} tiny recall flashcards that drill EXACTLY this weak spot. The FIRST card must be the weak item itself; the others are minimal variations or directly supporting words/short phrases for the same concept — nothing unrelated.`,
+    `Each card: "support" is the cue shown to the learner, written in ${supportName}; "target" is the ${targetName} answer they must produce. Keep both short — a word or one short phrase, never a full sentence beyond ${level}.`,
+    `Return ONLY a strict minified JSON array with exactly ${count} items, no markdown: [{"support":"...","target":"..."}]`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  let raw = "";
+  try {
+    raw = await callResponses({ input });
+  } catch {
+    return null;
+  }
+  const text = String(raw || "");
+  const start = text.indexOf("[");
+  const end = text.lastIndexOf("]");
+  if (start < 0 || end <= start) return null;
+  try {
+    const parsed = JSON.parse(text.slice(start, end + 1));
+    if (!Array.isArray(parsed)) return null;
+    const entries = parsed
+      .map((e) => ({
+        support: String(e?.support || "").trim(),
+        target: String(e?.target || "").trim(),
+      }))
+      .filter((e) => e.support && e.target);
+    return entries.length ? entries : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Build (or restore from today's cache) the generated deck for a
+ * "flashcards" repair step. Always yields at least one deterministic card
+ * built straight from the weak item (the floor when the AI call fails), so
+ * the step is never empty.
+ */
+export async function getOrBuildRepairDeck({ focus, now = new Date() }) {
+  const plan = focus?.plan;
+  const item = Array.isArray(plan?.items) ? plan.items[0] : null;
+  if (!item) return [];
+  const langKey = normalizePlateLang(focus?.targetLang || plan?.targetLang);
+  const supportBase = String(focus?.supportLang || "en").toLowerCase() || "en";
+  const dayKey = plan?.dayKey || getCompanionDayKey(now);
+  const stepIndex = Math.max(0, Number(focus?.stepIndex) || 0);
+  const level = displayCEFRLevel(item?.cefrLevel, "Pre-A1");
+
+  const cacheKey = repairDeckStorageKey(langKey, dayKey, stepIndex);
+  const cached = readCachedRepairDeck(cacheKey);
+  if (cached?.length) return cached;
+
+  const common = {
+    supportBase,
+    targetBase: langKey,
+    langKey,
+    dayKey,
+    stepIndex,
+    level,
+  };
+  // The floor: the weak item itself, cue = its concept label (target-language
+  // practice cue for AI plans, support-language label for heuristic ones).
+  const floorCard = buildRepairCard({
+    ...common,
+    support: item.concept,
+    target: item.expectedAnswer || item.concept,
+    cardIndex: 0,
+  });
+  if (!floorCard) return [];
+
+  let cards = [floorCard];
+  const entries = await generateRepairDeckEntries({
+    item,
+    targetLang: langKey,
+    supportLang: supportBase,
+    level,
+    count: REPAIR_DECK_SIZE,
+  });
+  if (entries?.length) {
+    cards = entries
+      .slice(0, REPAIR_DECK_SIZE)
+      .map((entry, index) =>
+        buildRepairCard({ ...common, ...entry, cardIndex: index }),
+      )
+      .filter(Boolean);
+    if (!cards.length) cards = [floorCard];
+  }
+
+  writeCachedRepairDeck(cacheKey, cards);
+  return cards;
+}
+
 // Submodules an ephemeral repair lesson may include — exactly the tabs the real
 // lesson view renders (each consumes lessonContent { topic, words, focusPoints }).
 const REPAIR_LESSON_MODES = [

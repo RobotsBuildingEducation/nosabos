@@ -83,7 +83,6 @@ import {
 } from "../utils/companionMemory";
 import { REPAIR_COPY } from "../utils/companionMemoryCopy";
 import useRepairFocusStore from "../hooks/useRepairFocusStore";
-import RepairFocusBanner from "./RepairFocusBanner";
 import {
   completeTutorLesson,
   getLanguageXp,
@@ -8307,15 +8306,10 @@ export default function Tutor({
         isLightTheme={isLightTheme}
       />
       <Box color="gray.100" position="relative" pb="120px">
-        {/* Header area: lesson agenda separated from robot */}
+        {/* Header area: lesson agenda separated from robot. No repair-focus
+            banner here: a routed tutor repair runs as its own ephemeral
+            lesson, so the lesson header already IS the repair context. */}
         <VStack px={4} mt={0} spacing={1} align="center">
-          {/* Repair focus: only shown when the Daily Quest routed a tutor
-              repair here (returns null otherwise). */}
-          <RepairFocusBanner
-            surface="tutor"
-            appLanguage={uiLang}
-            maxWidth="400px"
-          />
           <Box
             p={2}
             rounded="2xl"

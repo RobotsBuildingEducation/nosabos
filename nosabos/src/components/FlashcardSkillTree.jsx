@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+} from "react";
 import {
   Box,
   VStack,
@@ -28,6 +34,12 @@ import FlashcardPractice from "./FlashcardPractice";
 import { WaveBar } from "./WaveBar";
 import { translations } from "../utils/translation";
 import { getLanguageXp } from "../utils/progressTracking";
+import {
+  completeRepairFocus,
+  getOrBuildRepairDeck,
+} from "../utils/companionMemory";
+import { repairCopy } from "../utils/companionMemoryCopy";
+import useRepairFocusStore from "../hooks/useRepairFocusStore";
 import useSoundSettings from "../hooks/useSoundSettings";
 import useModalStore from "../hooks/useModalStore";
 import selectSound from "../assets/select.mp3";
@@ -994,10 +1006,92 @@ export default function FlashcardSkillTree({
     };
   }, [userProgress, activeCEFRLevel]);
 
+  // Cards the learner earned outside the predefined library — their
+  // definitions ride on the progress docs (a repair-deck card stores itself
+  // on first answer; see persistFlashcardReview in App). Merged after the
+  // library so they join the queues with normal SRS scheduling.
+  const customDeckCards = useMemo(() => {
+    const knownIds = new Set(flashcardData.map((card) => card.id));
+    return Object.values(userProgress.flashcards || EMPTY_PROGRESS)
+      .map((progress) => progress?.card)
+      .filter(
+        (def) => def && def.id && def.concept && !knownIds.has(def.id),
+      );
+  }, [flashcardData, userProgress.flashcards]);
+
+  const deckData = useMemo(
+    () =>
+      customDeckCards.length
+        ? [...flashcardData, ...customDeckCards]
+        : flashcardData,
+    [customDeckCards, flashcardData],
+  );
+
+  // Daily Quest repair step routed here: build (or restore) the small
+  // generated deck around the weak spot. Answering every card banks the step.
+  const repairFocus = useRepairFocusStore((s) => s.focus);
+  const activeRepairFocus =
+    repairFocus?.surface === "flashcards" ? repairFocus : null;
+  const [repairDeck, setRepairDeck] = useState([]);
+  const [isLoadingRepairDeck, setIsLoadingRepairDeck] = useState(false);
+  useEffect(() => {
+    if (
+      !activeRepairFocus ||
+      // A step routed for another language is stale on this surface.
+      String(activeRepairFocus.targetLang || "").toLowerCase() !==
+        String(targetLang || "").toLowerCase()
+    ) {
+      setRepairDeck([]);
+      setIsLoadingRepairDeck(false);
+      return undefined;
+    }
+    let alive = true;
+    setIsLoadingRepairDeck(true);
+    getOrBuildRepairDeck({ focus: activeRepairFocus })
+      .then((cards) => {
+        if (alive) setRepairDeck(Array.isArray(cards) ? cards : []);
+      })
+      .catch(() => {
+        if (alive) setRepairDeck([]);
+      })
+      .finally(() => {
+        if (alive) setIsLoadingRepairDeck(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [activeRepairFocus, targetLang]);
+
+  // A repair card is answered once its progress exists (persisted doc, or the
+  // instant local override written on completion).
+  const isRepairCardAnswered = useCallback(
+    (card) =>
+      Boolean(userProgress.flashcards?.[card.id]) ||
+      Boolean(localProgressOverrides[card.id]),
+    [localProgressOverrides, userProgress.flashcards],
+  );
+  const repairAnsweredCount = useMemo(
+    () => repairDeck.filter(isRepairCardAnswered).length,
+    [isRepairCardAnswered, repairDeck],
+  );
+
+  // All cards answered → complete the repair step exactly once (the focus
+  // clears, which also hides the repair rail; the answered cards live on in
+  // the main deck via customDeckCards).
+  const repairDeckCompletedRef = useRef("");
+  useEffect(() => {
+    if (!activeRepairFocus || !repairDeck.length) return;
+    if (repairAnsweredCount < repairDeck.length) return;
+    const onceKey = repairDeck[0]?.id || "repair-deck";
+    if (repairDeckCompletedRef.current === onceKey) return;
+    repairDeckCompletedRef.current = onceKey;
+    void completeRepairFocus();
+  }, [activeRepairFocus, repairAnsweredCount, repairDeck]);
+
   const effectiveProgressMap = useMemo(() => {
     const map = {};
 
-    flashcardData.forEach((card) => {
+    deckData.forEach((card) => {
       map[card.id] = {
         ...(userProgress.flashcards?.[card.id] || EMPTY_PROGRESS),
         ...(localProgressOverrides[card.id] || EMPTY_PROGRESS),
@@ -1005,66 +1099,65 @@ export default function FlashcardSkillTree({
     });
 
     return map;
-  }, [flashcardData, localProgressOverrides, userProgress.flashcards]);
+  }, [deckData, localProgressOverrides, userProgress.flashcards]);
 
   const reviewSnapshotMap = useMemo(() => {
     const map = new Map();
-    flashcardData.forEach((card) => {
+    deckData.forEach((card) => {
       map.set(card.id, getFlashcardReviewSnapshot(effectiveProgressMap[card.id]));
     });
     return map;
-  }, [effectiveProgressMap, flashcardData]);
+  }, [effectiveProgressMap, deckData]);
 
   const completedCards = useMemo(
-    () =>
-      flashcardData.filter((card) => reviewSnapshotMap.get(card.id)?.completed),
-    [flashcardData, reviewSnapshotMap],
+    () => deckData.filter((card) => reviewSnapshotMap.get(card.id)?.completed),
+    [deckData, reviewSnapshotMap],
   );
 
   const dueCards = useMemo(
     () =>
-      flashcardData
+      deckData
         .filter(
           (card) =>
             reviewSnapshotMap.get(card.id)?.reviewState ===
             FLASHCARD_REVIEW_STATES.DUE,
         )
         .sort((a, b) => sortByReviewDate(a, b, reviewSnapshotMap)),
-    [flashcardData, reviewSnapshotMap],
+    [deckData, reviewSnapshotMap],
   );
 
   const newCards = useMemo(
     () =>
-      flashcardData.filter(
+      deckData.filter(
         (card) =>
           reviewSnapshotMap.get(card.id)?.schedulerState ===
           FLASHCARD_SCHEDULER_STATES.NEW,
       ),
-    [flashcardData, reviewSnapshotMap],
+    [deckData, reviewSnapshotMap],
   );
 
   const learningCards = useMemo(
     () =>
-      flashcardData
+      deckData
         .filter(
           (card) =>
             reviewSnapshotMap.get(card.id)?.reviewState ===
             FLASHCARD_REVIEW_STATES.LEARNING,
         )
         .sort((a, b) => sortByReviewDate(a, b, reviewSnapshotMap)),
-    [flashcardData, reviewSnapshotMap],
+    [deckData, reviewSnapshotMap],
   );
 
   const scheduledCards = useMemo(
     () =>
-      flashcardData
+      deckData
         .filter(
           (card) =>
             reviewSnapshotMap.get(card.id)?.reviewState ===
             FLASHCARD_REVIEW_STATES.SCHEDULED,
         )
         .sort((a, b) => sortByReviewDate(a, b, reviewSnapshotMap)),
-    [flashcardData, reviewSnapshotMap],
+    [deckData, reviewSnapshotMap],
   );
 
   const weakCards = useMemo(
@@ -1097,7 +1190,7 @@ export default function FlashcardSkillTree({
 
   const firstNewCard = newCards[0] || null;
   const firstNewCardIndex = firstNewCard
-    ? flashcardData.findIndex((card) => card.id === firstNewCard.id)
+    ? deckData.findIndex((card) => card.id === firstNewCard.id)
     : -1;
 
   const fallbackActivityMap = useMemo(
@@ -1186,7 +1279,7 @@ export default function FlashcardSkillTree({
       }
 
       if (!snapshot?.completed) {
-        const cardIndex = flashcardData.findIndex(
+        const cardIndex = deckData.findIndex(
           (entry) => entry.id === card.id,
         );
         return firstNewCardIndex !== -1 && cardIndex > firstNewCardIndex
@@ -1200,7 +1293,7 @@ export default function FlashcardSkillTree({
 
       return "scheduled";
     },
-    [firstNewCard, firstNewCardIndex, flashcardData, reviewSnapshotMap],
+    [firstNewCard, firstNewCardIndex, deckData, reviewSnapshotMap],
   );
 
   const openPracticeCard = useCallback(
@@ -1280,7 +1373,7 @@ export default function FlashcardSkillTree({
       resolveCardStatus={(card) => {
         if (card.id === firstNewCard?.id) return "active";
 
-        const cardIndex = flashcardData.findIndex(
+        const cardIndex = deckData.findIndex(
           (entry) => entry.id === card.id,
         );
         return firstNewCardIndex !== -1 && cardIndex > firstNewCardIndex
@@ -1319,6 +1412,28 @@ export default function FlashcardSkillTree({
       skipInitialAnimation={!isReady}
     />
   );
+
+  // Daily Quest repair step: a small deck generated fresh around the weak
+  // spot. Answered cards flip to "scheduled" (they've just joined the main
+  // deck); answering the whole rail completes the step and the rail hides.
+  const repairDeckSection =
+    activeRepairFocus && repairDeck.length ? (
+      <DeckSection
+        title={repairCopy(appLanguage, "title")}
+        subtitle={`${Math.min(repairAnsweredCount, repairDeck.length)}/${repairDeck.length} · ${repairCopy(appLanguage, "intro")}`}
+        cards={repairDeck}
+        reviewSnapshotMap={reviewSnapshotMap}
+        getCardStatus={getCardStatus}
+        resolveCardStatus={(card) =>
+          isRepairCardAnswered(card) ? "scheduled" : "active"
+        }
+        handleCardClick={(card, status) => {
+          if (status === "active") openPracticeCard(card, "learn", "active");
+        }}
+        supportLang={supportLang}
+        skipInitialAnimation={!isReady}
+      />
+    ) : null;
 
   return (
     <Box w="100%" minH="500px" position="relative">
@@ -1437,6 +1552,15 @@ export default function FlashcardSkillTree({
             </Text>
           </Box>
         ) : null}
+
+        {activeRepairFocus && isLoadingRepairDeck && !repairDeck.length ? (
+          <Box px={2}>
+            <Text fontSize="sm" color={APP_TEXT_SECONDARY}>
+              {getTranslation("flashcard_session_loading")}
+            </Text>
+          </Box>
+        ) : null}
+        {repairDeckSection}
 
         {dueCards.length > 0 ? (
           <>
