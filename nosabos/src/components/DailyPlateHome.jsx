@@ -529,8 +529,6 @@ export default function DailyPlateHome({
                       <WaveBar
                         value={course.percent}
                         height={8}
-                        start={course.done ? "#43e97b" : "#60A5FA"}
-                        end={course.done ? "#38f9d7" : "#2563EB"}
                         bg="rgba(255,255,255,0.05)"
                         border="rgba(255,255,255,0.1)"
                       />

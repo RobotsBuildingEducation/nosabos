@@ -197,6 +197,7 @@ import {
   getTomorrowKey,
   getYesterdayKey,
   pruneCompanionMemory,
+  resetTodayRepairArtifacts,
   runDailyBatch,
   shouldRunDailyBatch,
 } from "./utils/companionMemory";
@@ -1509,13 +1510,20 @@ function TopBar({
       ? Math.max(0, Math.round((dailyXp / dailyGoalXp) * 100))
       : 0;
   const dailyDone = dailyGoalXp > 0 && dailyXp >= dailyGoalXp;
-  const dailyGoalHudColor = dailyDone
-    ? themeMode === "light"
-      ? "#a15c00"
-      : "#fbbf24"
-    : themeMode === "light"
-      ? "#4b5563"
-      : "whiteAlpha.700";
+  // Daily XP HUD tiers: reward blue (light) / teal (dark) at 100%+,
+  // purple past 50%, neutral gray below.
+  const dailyGoalHudColor =
+    dailyRawPct >= 100
+      ? themeMode === "light"
+        ? "#39BFD1"
+        : "#2dd4bf"
+      : dailyRawPct > 50
+        ? themeMode === "light"
+          ? "#6d28d9"
+          : "#b794f4"
+        : themeMode === "light"
+          ? "#4b5563"
+          : "whiteAlpha.700";
   const dailyGoalLabel = uiCopy(appLanguage, {
     en: "Daily XP",
     es: "XP diaria",
@@ -8513,7 +8521,10 @@ export default function App({ onBootReady } = {}) {
 
   // Dev/testing: wipe today's course counters while preserving the current
   // quest composition, repair plan, and manga-bubble context so the exact flow
-  // can be replayed from the top.
+  // can be replayed from the top. Repair-step artifacts (cached decks + the
+  // answered repair cards' progress docs) are wiped too — their ids are
+  // deterministic per day, so leaving them would make a re-run flashcards
+  // step self-complete the moment it opens.
   const handleResetQuestPlate = useCallback(async () => {
     if (!activeNpub) return;
     if (plateCelebrationFlushTimerRef.current) {
@@ -8525,7 +8536,13 @@ export default function App({ onBootReady } = {}) {
     pendingPlateCelebrationRef.current = null;
     setPlateCelebration(null);
     endPlateSession();
-    await resetTodayPlate(activeNpub, resolvedTargetLang);
+    await Promise.all([
+      resetTodayPlate(activeNpub, resolvedTargetLang),
+      resetTodayRepairArtifacts({
+        npub: activeNpub,
+        targetLang: resolvedTargetLang,
+      }),
+    ]);
   }, [activeNpub, resolvedTargetLang, endPlateSession]);
 
   const handleBottomBarPathModeChange = useCallback(

@@ -15,7 +15,7 @@
 //   user.dailyQuestExplanations[langKey][dayKey] = QuestExplanation
 //   user.dailyQuestRepair[langKey][dayKey]       = RepairPlan
 //
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, deleteDoc } from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
 import useUserStore from "../hooks/useUserStore";
 import useNotesStore from "../hooks/useNotesStore";
@@ -1179,6 +1179,74 @@ export async function getOrBuildRepairDeck({ focus, now = new Date() }) {
 
   writeCachedRepairDeck(cacheKey, cards);
   return cards;
+}
+
+/**
+ * Dev/testing companion to resetTodayPlate: erase the artifacts that make a
+ * flashcards repair step look already-done on a re-run. Card ids and the
+ * cached deck are deterministic per (lang, day, step), so after a plate reset
+ * the restored deck would find every card's persisted progress doc and bank
+ * the step instantly on entry ("answered" = progress doc exists — that's what
+ * makes a mid-step reload resumable). Clears the live focus, today's cached
+ * decks, and today's repair-card progress docs; the languageFlashcards
+ * subscription mirrors the deletes back into the local store.
+ */
+export async function resetTodayRepairArtifacts({
+  npub,
+  targetLang,
+  now = new Date(),
+}) {
+  const langKey = normalizePlateLang(targetLang);
+  const dayKey = getCompanionDayKey(now);
+  if (!dayKey) return;
+
+  useRepairFocusStore.getState?.()?.clearFocus?.();
+
+  if (typeof window !== "undefined") {
+    try {
+      const prefix = `repairDeck:${langKey}:${dayKey}:`;
+      const stale = [];
+      for (let i = 0; i < window.localStorage.length; i += 1) {
+        const key = window.localStorage.key(i);
+        if (key && key.startsWith(prefix)) stale.push(key);
+      }
+      stale.forEach((key) => window.localStorage.removeItem(key));
+    } catch {
+      /* ignore — deck cache just regenerates with the same card ids */
+    }
+  }
+
+  if (!npub) return;
+
+  // Match today's repair cards in the local mirror of the subcollection so no
+  // Firestore query is needed; doc ids are `${targetLang}_${cardId}` (see
+  // persistFlashcardReview).
+  const cardPrefix = `repair-${langKey}-${dayKey}-s`;
+  const byLang =
+    useUserStore.getState?.()?.user?.progress?.languageFlashcards || {};
+  const docIds = [];
+  Object.values(byLang).forEach((cards) => {
+    Object.values(cards || {}).forEach((progress) => {
+      const cardId = progress?.cardId;
+      const lang = progress?.targetLang;
+      if (!cardId || !lang) return;
+      if (normalizePlateLang(lang) !== langKey) return;
+      if (String(cardId).startsWith(cardPrefix)) {
+        docIds.push(`${lang}_${cardId}`);
+      }
+    });
+  });
+  if (!docIds.length) return;
+
+  try {
+    await Promise.all(
+      docIds.map((id) =>
+        deleteDoc(doc(database, "users", npub, "languageFlashcards", id)),
+      ),
+    );
+  } catch (error) {
+    console.warn("Failed to reset repair card progress:", error);
+  }
 }
 
 // Submodules an ephemeral repair lesson may include — exactly the tabs the real

@@ -1247,6 +1247,12 @@ export default function Conversations({
   const [streamingText, setStreamingText] = useState("");
   const [goalFeedback, setGoalFeedback] = useState("");
   const goalCheckPendingRef = useRef(false);
+  // Failed attempts on the current goal; 2 misses re-anchor the goal so it
+  // can't nag forever. Reset whenever a new goal is generated.
+  const goalFailStreakRef = useRef(0);
+  // Set after a failed-but-still-fitting attempt; buildLanguageInstructions
+  // turns it into a "re-open the goal" nudge for the AI's next turn.
+  const goalShepherdRef = useRef("");
   const lastUserMessageRef = useRef("");
   const hasGeneratedInitialTopic = useRef(false);
   const streamingRef = useRef(false);
@@ -1258,6 +1264,8 @@ export default function Conversations({
 
     setIsGeneratingGoal(true);
     setGoalFeedback("");
+    goalFailStreakRef.current = 0;
+    goalShepherdRef.current = "";
     setStreamingText("");
     streamingRef.current = true;
 
@@ -2111,6 +2119,11 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       ? `LEARNER'S CURRENT GOAL: "${activeGoalText}". Quietly steer the conversation so your reply gives the learner a natural opening to do this. Never announce the goal, read it aloud, or quiz the learner on it. Your follow-up questions must serve this goal, not compete with it; if the goal asks the learner to ASK about something, invite that topic briefly and do not ask an unrelated question of your own.`
       : "";
 
+    const shepherdNote =
+      activeGoalText && goalShepherdRef.current
+        ? `GOAL NOT YET MET: the learner's last attempt missed the goal (${goalShepherdRef.current}). In your next turn, gently re-open the goal's topic so they get another natural chance — never scold them or mention any grading.`
+        : "";
+
     return [
       "Act as a friendly language practice partner for free-form conversation.",
       strict,
@@ -2119,6 +2132,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       pronunciationInstructions,
       customSubjectsContext,
       goalContext,
+      shepherdNote,
       "IMPORTANT: Match your language complexity to the learner's proficiency level. Do not use vocabulary or grammar above their level.",
       "Keep replies very brief (≤25 words) and natural.",
       "Be supportive and help the learner practice speaking naturally.",
@@ -2380,7 +2394,9 @@ Examples that are completed = false:
 
 Feedback in ${feedbackLanguage}, one short sentence: if true, give warm, specific praise; if false, briefly say what to try.
 
-Respond with ONLY a JSON object: {"completed": true/false, "reason": "..."}`;
+Also set goalStillFits (only meaningful when completed = false): true when the conversation is still in a place where the learner could naturally do the goal on their next turn — weak attempts, wrong language, or no real attempt leave the goal fitting. Set it to false when the learner's reply legitimately moved the conversation somewhere else: they rejected the goal's premise (e.g. "I don't watch TV" against a TV goal) or took a different direction that a real conversation would now follow. When completed = true, set goalStillFits = true.
+
+Respond with ONLY a JSON object: {"completed": true/false, "reason": "...", "goalStillFits": true/false}`;
 
       const body = {
         model: TRANSLATE_MODEL,
@@ -2423,11 +2439,27 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "..."}`;
         // Success renders as a checkmark on the goal line, not as text —
         // the next goal replaces this area too quickly for text to be read.
         setGoalFeedback("");
+        goalFailStreakRef.current = 0;
+        goalShepherdRef.current = "";
         await awardGoalXp();
         // Generate contextual next goal
         setTimeout(() => generateContextualGoal(), 1500);
         return "completed";
       } else {
+        goalFailStreakRef.current += 1;
+        // Two distinct failures: a weak attempt at a goal that still fits the
+        // conversation (shepherd the learner back to it) vs. a reply that
+        // legitimately moved the conversation elsewhere (re-anchor the goal to
+        // where it went). Also re-anchor after 2 misses so a stuck goal can't
+        // nag forever.
+        const drifted = parsed?.goalStillFits === false;
+        if (drifted || goalFailStreakRef.current >= 2) {
+          setGoalFeedback("");
+          goalShepherdRef.current = "";
+          goalCheckPendingRef.current = false;
+          void generateContextualGoal({ previousGoalAbandoned: true });
+          return "failed";
+        }
         // Set guiding feedback for failed attempt
         const defaultGuidance =
           sLang === "es"
@@ -2448,6 +2480,10 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "..."}`;
                     ? "लक्ष्य के बारे में बोलने की कोशिश करें।"
             : "Try addressing the goal.";
         setGoalFeedback(parsed?.reason || defaultGuidance);
+        // Have the AI actively re-open the goal on its next turn instead of
+        // letting the conversation flow away from it.
+        goalShepherdRef.current = parsed?.reason || defaultGuidance;
+        pushInstructionsNow();
         goalCheckPendingRef.current = false;
         // Deliberately NOT captured into companion memory: free-form
         // conversation goals are too unstructured to make useful repair
@@ -2462,9 +2498,11 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "..."}`;
   }
 
   // Generate next goal based on conversation context
-  async function generateContextualGoal() {
+  async function generateContextualGoal({ previousGoalAbandoned = false } = {}) {
     setIsGeneratingGoal(true);
     setGoalFeedback(""); // Clear previous feedback
+    goalFailStreakRef.current = 0;
+    goalShepherdRef.current = "";
 
     // Get current settings
     const currentSettings = conversationSettingsRef.current;
@@ -2501,12 +2539,16 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "..."}`;
 CRITICAL: The learner must be able to complete the new goal simply by replying naturally to that latest AI message. If the AI asked a question, the goal is to answer it (optionally adding one small detail or question of their own). Never create a goal that ignores or competes with the AI's pending question.`
         : "";
 
+      const previousGoalLine = previousGoalAbandoned
+        ? `Previous goal was: "${currentGoal.text.en}". The learner did NOT complete it — the conversation legitimately moved past it. The new goal must fit where the conversation is NOW; do not repeat or rephrase the abandoned goal.`
+        : `Previous goal was: "${currentGoal.text.en}"`;
+
       const prompt = `You are helping a ${selectedLevel} level language learner practice conversation.
 
 Recent conversation:
 ${recentMessages || "Just started"}
 
-Previous goal was: "${currentGoal.text.en}"${customSubjectsHint}${goalAlignmentHint}
+${previousGoalLine}${customSubjectsHint}${goalAlignmentHint}
 
 Generate the NEXT natural conversation goal that follows the flow of the conversation.
 The goal should be appropriate for ${selectedLevel} level (${
@@ -2761,10 +2803,18 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
           done: true,
           ts: userTs,
         });
-        // Award XP for user turn and store message for goal evaluation
+        // Award XP for user turn and store message for goal evaluation.
+        // Context for the grader is the tutor's line the user was answering:
+        // the latest COMPLETED assistant message (the one still streaming has
+        // an empty textFinal and is skipped).
         turnCountRef.current += 1;
         lastUserMessageRef.current = text;
-        awardTurnXp(text, "");
+        const answeredLine =
+          [...messagesRef.current]
+            .reverse()
+            .find((m) => m.role === "assistant" && (m.textFinal || "").trim())
+            ?.textFinal || "";
+        awardTurnXp(text, answeredLine);
       }
       return;
     }
@@ -2860,12 +2910,9 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
           action: "turn_completed",
         });
 
-        // Evaluate goal completion with the AI response
-        const aiMessage = messagesRef.current.find((m) => m.id === mid);
-        const aiResponseText = aiMessage?.textFinal || "";
-        if (lastUserMessageRef.current && aiResponseText) {
-          evaluateGoalCompletion(lastUserMessageRef.current, aiResponseText);
-        }
+        // No goal grading here: the turn is graded once, at transcript time
+        // (awardTurnXp). Re-grading with the AI's reply would double-count a
+        // miss against the goal fail streak.
 
         respToMsg.current.delete(rid);
       }
