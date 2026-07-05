@@ -323,6 +323,8 @@ export default function DailyPlateHome({
     onStartPractice?.();
   };
 
+  // Handler for the reset-plate button (currently commented out below).
+  // eslint-disable-next-line no-unused-vars
   const handleResetPlate = async () => {
     if (!onResetPlate || isResettingPlate) return;
     playSound(selectSound);
@@ -584,6 +586,7 @@ export default function DailyPlateHome({
           currentGoalXp={dailyGoalXp}
         />
 
+        {/* Reset-plate button hidden for now — re-enable by uncommenting.
         {onResetPlate ? (
           <Button
             size="sm"
@@ -597,6 +600,7 @@ export default function DailyPlateHome({
             {plateUiCopy(appLanguage, RESET_COPY)}
           </Button>
         ) : null}
+        */}
       </VStack>
     </Box>
   );
