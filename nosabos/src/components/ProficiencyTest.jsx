@@ -677,7 +677,9 @@ function queueTutorPlacementStart(targetLang, level) {
   if (typeof window === "undefined" || !CEFR_LEVELS.includes(level)) return;
   try {
     const langKey = String(targetLang || "es").toLowerCase();
-    window.localStorage.setItem("pathMode", "tutor");
+    // One-shot key consumed by App's pathMode initializer on the next mount —
+    // the app otherwise always boots to the Daily Quest home.
+    window.localStorage.setItem("pathModeHandoff", "tutor");
     window.localStorage.setItem(getTutorPathLevelStorageKey(langKey), level);
     window.localStorage.removeItem(getTutorPathLessonStorageKey(langKey));
     if (level !== "Pre-A1") {

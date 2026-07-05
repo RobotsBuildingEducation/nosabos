@@ -2893,13 +2893,21 @@ export default function App({ onBootReady } = {}) {
   ];
 
   // Path mode state (plate, path, flashcards, conversations, tutor, alphabet bootcamp)
-  // The last-used mode persists across refreshes/returns so users who live in
-  // one mode land back there; the Daily Plate home is the default for new
-  // users (and after onboarding or a language switch). Invalid stored values
-  // are sanitized to "plate" by the validation effect below.
+  // Every load starts on the Daily Quest home ("plate") — the last-used mode
+  // intentionally does not survive a refresh/return. The one exception is the
+  // one-shot "pathModeHandoff" key, written by flows on other routes that need
+  // to land somewhere specific on remount (the proficiency test queues
+  // "tutor"); it's consumed here so it can't leak into later loads. Invalid
+  // values are sanitized to "plate" by the validation effect below.
   const [pathMode, setPathMode] = useState(() => {
     if (typeof window !== "undefined") {
-      return localStorage.getItem("pathMode") || "plate";
+      try {
+        const handoff = localStorage.getItem("pathModeHandoff");
+        localStorage.removeItem("pathModeHandoff");
+        // Legacy key from when the last-used mode persisted across loads.
+        localStorage.removeItem("pathMode");
+        if (handoff) return handoff;
+      } catch {}
     }
     return "plate";
   });
@@ -2931,13 +2939,6 @@ export default function App({ onBootReady } = {}) {
 
   // Counter to trigger scroll to latest unlocked (increments on each scroll request)
   const [scrollToLatestTrigger, setScrollToLatestTrigger] = useState(0);
-
-  // Save pathMode to localStorage when it changes
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("pathMode", pathMode);
-    }
-  }, [pathMode]);
 
   // Reset to the Daily Plate home on language switch; also validate pathMode
   useEffect(() => {
@@ -4748,7 +4749,6 @@ export default function App({ onBootReady } = {}) {
 
       try {
         localStorage.setItem("appLanguage", uiLangForPersist);
-        localStorage.setItem("pathMode", "plate");
       } catch {}
       syncDocumentLanguage(uiLangForPersist);
       setAppLanguage(uiLangForPersist);
