@@ -88,12 +88,13 @@ const useNotesStore = create((set, get) => ({
   // Set done state (for success border animation)
   setDone: (done) => set({ isDone: done }),
 
-  // Trigger the done animation (automatically clears after 1.5s)
+  // Trigger the done animation. Clears after 2s — matches the notes button's
+  // two 1s glow pulses in App (notesDone 1s ease-in-out 2); keep in sync.
   triggerDoneAnimation: () => {
     set({ isLoading: false, isDone: true });
     setTimeout(() => {
       set({ isDone: false });
-    }, 1500);
+    }, 2000);
   },
 }));
 

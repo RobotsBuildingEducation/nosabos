@@ -10349,22 +10349,19 @@ function BottomActionBar({
       ja: "モード",
     });
 
-  // Determine notes button border styles based on loading/done state
-  const notesBorderWidth = notesIsLoading || notesIsDone ? "2px" : "1px";
-  const notesBorderColor = notesIsLoading
-    ? "cyan.400"
-    : notesIsDone
-      ? "teal.400"
-      : "gray.600";
-  const notesBoxShadow = notesIsLoading
-    ? "0 0 0 2px rgba(34,211,238,0.35), 0 0 14px rgba(34,211,238,0.65)"
-    : notesIsDone
-      ? "0 0 0 2px rgba(56,178,172,0.35), 0 0 14px rgba(56,178,172,0.65)"
-      : undefined;
+  // The notes button's resting "raised key" look is this hard bottom ledge.
+  // The glow keyframes must keep it in every frame: animating boxShadow
+  // replaces it wholesale, and losing the ledge reads as the button being
+  // pressed instead of glowing.
+  const notesLedgeShadow = isLightTheme
+    ? "0 4px 0 rgba(180, 164, 144, 0.9)"
+    : "0 4px 0 #313a4b";
   const notesAnimation = notesIsLoading
     ? "notesPulse 1.5s ease-in-out infinite"
     : notesIsDone
-      ? "notesDone 1.5s ease-out"
+      ? // Two gentle blooms back-to-back, filling the 2s isDone window
+        // (triggerDoneAnimation clears the flag after 2000ms — keep in sync).
+        "notesDone 1s ease-in-out 2"
       : undefined;
   // Collapse/minimize removed: the bottom action bar stays full everywhere —
   // no auto-minimize in lessons or voice modes, no collapse button, no minimized
@@ -10753,24 +10750,21 @@ function BottomActionBar({
                 sx={{
                   "@keyframes notesPulse": {
                     "0%": {
-                      boxShadow:
-                        "0 0 0 2px rgba(34,211,238,0.35), 0 0 8px rgba(34,211,238,0.4)",
+                      boxShadow: `${notesLedgeShadow}, 0 0 0 2px rgba(34,211,238,0.35), 0 0 8px rgba(34,211,238,0.4)`,
                     },
                     "50%": {
-                      boxShadow:
-                        "0 0 0 3px rgba(34,211,238,0.5), 0 0 20px rgba(34,211,238,0.7)",
+                      boxShadow: `${notesLedgeShadow}, 0 0 0 3px rgba(34,211,238,0.5), 0 0 20px rgba(34,211,238,0.7)`,
                     },
                     "100%": {
-                      boxShadow:
-                        "0 0 0 2px rgba(34,211,238,0.35), 0 0 8px rgba(34,211,238,0.4)",
+                      boxShadow: `${notesLedgeShadow}, 0 0 0 2px rgba(34,211,238,0.35), 0 0 8px rgba(34,211,238,0.4)`,
                     },
                   },
                   "@keyframes notesDone": {
-                    "0%": {
-                      boxShadow:
-                        "0 0 0 3px rgba(56,178,172,0.6), 0 0 20px rgba(56,178,172,0.8)",
+                    "0%": { boxShadow: notesLedgeShadow },
+                    "50%": {
+                      boxShadow: `${notesLedgeShadow}, 0 0 0 3px rgba(56,178,172,0.6), 0 0 20px rgba(56,178,172,0.8)`,
                     },
-                    "100%": { boxShadow: "none", borderColor: "gray.600" },
+                    "100%": { boxShadow: notesLedgeShadow },
                   },
                 }}
               />

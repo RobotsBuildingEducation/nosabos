@@ -591,13 +591,13 @@ export default function NotesDrawer({
           color={noteUi.primaryText}
           _hover={{ bg: noteUi.closeHoverBg }}
           top={4}
-          right={4}
+          right={6}
           onClick={onClose}
         />
         <DrawerHeader
           borderBottomWidth="1px"
           borderColor={noteUi.headerBorder}
-          pr={12}
+          pr={14}
         >
           <Box maxW="720px" mx="auto" w="100%">
             <HStack justify="space-between" align="center">

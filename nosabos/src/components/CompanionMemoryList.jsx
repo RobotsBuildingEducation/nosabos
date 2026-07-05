@@ -4,13 +4,15 @@
 // of what the companion saved to practice. Today's captures read "Saved for
 // tomorrow"; yesterday's survive as reinforcement context and show whether
 // they were used in today's quest, repaired, or are expiring tonight.
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Badge, Box, HStack, Text, VStack } from "@chakra-ui/react";
 
 import useUserStore from "../hooks/useUserStore";
 import {
+  getCachedMemorySummaryText,
   getCompanionNotes,
   getCompanionDayKey,
+  getOrBuildMemorySummary,
   getYesterdayKey,
   MEMORY_STATUS,
 } from "../utils/companionMemory";
@@ -280,6 +282,31 @@ export default function CompanionMemoryList({ targetLang = "es", lang = "en" }) 
 
   const hasAny = todays.length > 0 || yesterdays.length > 0;
 
+  // Plain-text AI digest of the whole log (Flash-Lite). Keyed to the log's
+  // content signature inside getOrBuildMemorySummary, so this effect is free
+  // when nothing changed; when it did, the last cached text paints first and
+  // the fresh one swaps in when generation lands.
+  const [summary, setSummary] = useState(() =>
+    getCachedMemorySummaryText(targetLang),
+  );
+  useEffect(() => {
+    const notes = [...todays, ...yesterdays];
+    if (!notes.length) {
+      setSummary("");
+      return undefined;
+    }
+    setSummary(getCachedMemorySummaryText(targetLang));
+    let cancelled = false;
+    getOrBuildMemorySummary({ notes, targetLang, supportLang: lang }).then(
+      (text) => {
+        if (!cancelled && text) setSummary(text);
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [todays, yesterdays, targetLang, lang]);
+
   // Pre-hydration guard: until the user doc has loaded, we can't tell "no
   // notes" from "notes not here yet" — showing the empty state would falsely
   // claim the log vanished (it reappears once Firestore answers). Show a quiet
@@ -314,6 +341,17 @@ export default function CompanionMemoryList({ targetLang = "es", lang = "en" }) 
       <Text fontSize="xs" color="var(--app-text-secondary)" mb={3}>
         {memoryCopy(lang, MEMORY_DRAWER_COPY.subtitle)}
       </Text>
+
+      {hasAny && summary ? (
+        <Text
+          fontSize="sm"
+          color="var(--app-text-primary)"
+          lineHeight="1.7"
+          mb={4}
+        >
+          {summary}
+        </Text>
+      ) : null}
 
       {!hasAny ? (
         <Box

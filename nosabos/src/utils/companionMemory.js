@@ -334,6 +334,133 @@ async function enrichAndPatchNote({ npub, langKey, noteId, fields }) {
   });
 }
 
+/* -----------------------------------
+   Drawer summary — one AI-written plain-text digest of the whole log
+----------------------------------- */
+// The Memory drawer opens with a short Flash-Lite paragraph summarizing the
+// current log in the support language. Cached per language in localStorage and
+// keyed to a content signature, so it regenerates only when the log actually
+// changes (a new capture, enrichment landing, a status flip, expiry).
+
+function memorySummaryStorageKey(langKey) {
+  return `companionMemorySummary:${langKey}`;
+}
+
+// Bump when the summary prompt changes so cached summaries regenerate even
+// though the log itself didn't change.
+const MEMORY_SUMMARY_PROMPT_VERSION = "v2";
+
+// Fields that would change what the summary says. Includes `enriched` so the
+// summary refreshes once the capture-time diagnosis lands.
+function memoryLogSignature(notes = [], supportLang = "en") {
+  return `${MEMORY_SUMMARY_PROMPT_VERSION}|${supportLang}|${notes
+    .map((n) => `${n.id}:${n.status}:${n.severity || 1}:${n.enriched ? 1 : 0}`)
+    .join("|")}`;
+}
+
+function readCachedMemorySummary(langKey) {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(memorySummaryStorageKey(langKey));
+    const parsed = raw ? JSON.parse(raw) : null;
+    return parsed && typeof parsed.text === "string" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+// Last generated summary for this language regardless of freshness — lets the
+// drawer paint something immediately while a refresh runs in the background.
+export function getCachedMemorySummaryText(targetLang) {
+  return readCachedMemorySummary(normalizePlateLang(targetLang))?.text || "";
+}
+
+async function generateMemorySummaryText({ notes, langKey, supportLang }) {
+  const targetName = langName(langKey);
+  const supportName = langName(supportLang);
+  const todayKey = getCompanionDayKey();
+  const yKey = getYesterdayKey();
+  const feed = notes.map((n) => ({
+    when:
+      n.createdDayKey === todayKey
+        ? "today"
+        : n.createdDayKey === yKey
+          ? "yesterday"
+          : n.createdDayKey,
+    concept: n.concept,
+    learnerAnswer: n.userAnswer || "",
+    correctAnswer: n.expectedAnswer || n.correction || "",
+    whatWentWrong: n.mistake || "",
+    activity: n.sourceMode || "",
+    status: n.status,
+    timesMissed: n.severity || 1,
+  }));
+  const input = [
+    `You write the digest line at the top of a mistake log for a ${targetName} course. Here is the current log (JSON):`,
+    JSON.stringify(feed),
+    `Statuses: "captured" = saved to practice tomorrow; "used_in_quest" = woven into today's quest; "reinforced" = already repaired; yesterday's unrepaired notes expire tonight.`,
+    `Write a compact plain-text digest of the log in ${supportName}: the dominant pattern across the slips, what was repaired, and what is still open. Name the actual concepts, quoting ${targetName} words verbatim.`,
+    `Dry, factual, matter-of-fact — like case notes. State only what the log shows. No greeting, no praise, no encouragement, no advice, no "we"/"let's", and do not address the learner. Terse fragments are fine. 1-3 short sentences, max 40 words, plain text only — no lists, no markdown, no emojis.`,
+  ].join("\n");
+
+  let raw = "";
+  try {
+    raw = await callResponses({ input });
+  } catch {
+    return "";
+  }
+  return String(raw || "")
+    .replace(/\s+/g, " ")
+    .replace(/^["'“”]+|["'“”]+$/g, "")
+    .trim()
+    .slice(0, 480);
+}
+
+const memorySummaryInflight = new Map();
+
+/**
+ * The AI summary for the current log: cached per (language, log signature) so
+ * repeated drawer opens are free and it only regenerates when the log changes.
+ * Concurrent callers share one in-flight generation. Returns "" when the log
+ * is empty or generation fails (the drawer simply shows nothing).
+ */
+export async function getOrBuildMemorySummary({
+  notes = [],
+  targetLang,
+  supportLang = "en",
+}) {
+  if (!notes.length) return "";
+  const langKey = normalizePlateLang(targetLang);
+  const signature = memoryLogSignature(notes, supportLang);
+
+  const cached = readCachedMemorySummary(langKey);
+  if (cached?.signature === signature && cached.text) return cached.text;
+
+  const flightKey = `${langKey}|${signature}`;
+  if (memorySummaryInflight.has(flightKey)) {
+    return memorySummaryInflight.get(flightKey);
+  }
+
+  const pending = generateMemorySummaryText({ notes, langKey, supportLang })
+    .then((text) => {
+      if (text && typeof window !== "undefined") {
+        try {
+          window.localStorage.setItem(
+            memorySummaryStorageKey(langKey),
+            JSON.stringify({ signature, text }),
+          );
+        } catch {
+          /* ignore quota errors — it just regenerates next open */
+        }
+      }
+      return text;
+    })
+    .finally(() => memorySummaryInflight.delete(flightKey));
+
+  memorySummaryInflight.set(flightKey, pending);
+  return pending;
+}
+
 /**
  * Capture one high-signal mistake into the companion brain. Only call this for
  * genuinely useful events (a wrong answer, repeated hints) — not every action.
