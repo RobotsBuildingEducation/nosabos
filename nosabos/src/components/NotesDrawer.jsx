@@ -146,7 +146,7 @@ const MEMORY_TAB_STYLE = {
     bottom: "-1px",
     height: "3px",
     borderRadius: "full",
-    bgGradient: "linear(to-r, cyan.300, blue.400, purple.400)",
+    bgGradient: "linear(to-r, cyan.300, teal.400)",
     opacity: 0,
     transform: "scaleX(0.7)",
     transformOrigin: "center",
