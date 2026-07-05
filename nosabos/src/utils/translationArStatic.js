@@ -100,6 +100,8 @@ export const TRANSLATION_AR_STATIC = {
   ra_show_suggestion: "اظهر اقتراح",
   ra_generating: "بنولّد...",
   ra_generating_topic: "بنولّد موضوع جديد...",
+  ra_starter_show: "ساعدني",
+  ra_starter_hide: "اخفي الجملة",
   ra_btn_start: "ابدأ",
   ra_btn_starting: "بيبدأ...",
   ra_btn_end: "انهِ",

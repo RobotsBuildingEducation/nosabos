@@ -490,6 +490,8 @@ export const TRANSLATION_PT_STATIC = {
   "ra_show_suggestion": "Mostrar sugestão",
   "ra_generating": "Gerando...",
   "ra_generating_topic": "Generando novo tema...",
+  "ra_starter_show": "Me ajude",
+  "ra_starter_hide": "Ocultar frase",
   "ra_btn_start": "Iniciar",
   "ra_btn_starting": "Iniciando...",
   "ra_btn_end": "Terminar",

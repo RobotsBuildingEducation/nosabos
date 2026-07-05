@@ -155,6 +155,8 @@ export const TRANSLATION_HI_STATIC = {
   ra_show_suggestion: "सुझाव दिखाएँ",
   ra_generating: "तैयार किया जा रहा है...",
   ra_generating_topic: "नया विषय तैयार किया जा रहा है...",
+  ra_starter_show: "मेरी मदद करें",
+  ra_starter_hide: "वाक्य छिपाएं",
   ra_btn_start: "शुरू करें",
   ra_btn_starting: "शुरू किया जा रहा है...",
   ra_btn_end: "समाप्त करें",

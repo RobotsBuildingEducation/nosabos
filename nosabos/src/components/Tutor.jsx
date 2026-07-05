@@ -4029,6 +4029,61 @@ export default function Tutor({
 
   const activeTutorLevelProgress =
     tutorLevelCompletionStatus[activeTutorLevel]?.progress || 0;
+
+  // Tutor-earned unlock: the level after the highest contiguous run of fully
+  // completed tutor levels (same walk App uses for currentLessonLevel). It is
+  // persisted to progress.tutorUnlockedLevels[lang] so surfaces App owns —
+  // the phonics generation ceiling and maxProficiencyLevel — can count
+  // tutor-only progress.
+  const tutorEarnedLevel = useMemo(() => {
+    let unlocked = TUTOR_CEFR_LEVELS[0];
+    for (let i = 0; i < TUTOR_CEFR_LEVELS.length - 1; i++) {
+      if (!tutorLevelCompletionStatus[TUTOR_CEFR_LEVELS[i]]?.isComplete) break;
+      unlocked = TUTOR_CEFR_LEVELS[i + 1];
+    }
+    return unlocked;
+  }, [tutorLevelCompletionStatus]);
+
+  const storedTutorUnlockedLevel =
+    user?.progress?.tutorUnlockedLevels?.[getTutorStorageLang(targetLang)];
+
+  useEffect(() => {
+    if (!currentNpub) return;
+    // While the path is loading, every level reads as incomplete — never
+    // write from that state.
+    if (isTutorPathLoading || !tutorPathUnits.length) return;
+    const earnedIdx = TUTOR_CEFR_LEVELS.indexOf(tutorEarnedLevel);
+    const storedIdx = TUTOR_CEFR_LEVELS.indexOf(storedTutorUnlockedLevel);
+    // Monotonic: only ever raise the stored level, and skip the Pre-A1 floor
+    // (consumers treat a missing entry as Pre-A1 already).
+    if (earnedIdx <= Math.max(storedIdx, 0)) return;
+    const langKey = getTutorStorageLang(targetLang);
+    setDoc(
+      doc(database, "users", currentNpub),
+      { progress: { tutorUnlockedLevels: { [langKey]: tutorEarnedLevel } } },
+      { merge: true },
+    ).catch((error) =>
+      console.error("Failed to save tutor unlocked level:", error),
+    );
+    // patchUser is a shallow top-level merge, so carry the rest of progress.
+    const storeUser = useUserStore.getState?.()?.user || {};
+    useUserStore.getState?.()?.patchUser?.({
+      progress: {
+        ...(storeUser.progress || {}),
+        tutorUnlockedLevels: {
+          ...(storeUser.progress?.tutorUnlockedLevels || {}),
+          [langKey]: tutorEarnedLevel,
+        },
+      },
+    });
+  }, [
+    currentNpub,
+    isTutorPathLoading,
+    tutorPathUnits,
+    tutorEarnedLevel,
+    storedTutorUnlockedLevel,
+    targetLang,
+  ]);
   const tutorInitialAgendaReadyRef = useRef(false);
   const [isTutorAgendaHydrating, setIsTutorAgendaHydrating] = useState(true);
   const isTutorAgendaHydratingRef = useRef(true);

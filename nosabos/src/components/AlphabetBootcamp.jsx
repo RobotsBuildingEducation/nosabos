@@ -118,6 +118,10 @@ import {
   LANGUAGE_PROMPT_LABELS,
   normalizeSupportLanguage,
 } from "../constants/languages";
+import {
+  getPhonicsBand,
+  getPhonicsGenerationLevel,
+} from "../utils/phonicsLevel";
 
 const MotionBox = motion(Box);
 const APP_SURFACE = "var(--app-surface)";
@@ -1259,7 +1263,9 @@ function pickGeneratedDisplayFields(source) {
 // Turn a raw generated unit into a card shaped like a base alphabet entry, with
 // the pronunciation guide + tip in BOTH English (base keys) and the learner's
 // support language (suffixed keys), so the card reveals the same details.
-function buildGeneratedCard(unit, uiLang, id) {
+// cefrLevel is the level the card was generated AT — a miss on this card years
+// of progress later still tags the companion memory with the card's own level.
+function buildGeneratedCard(unit, uiLang, id, cefrLevel = null) {
   const lang = normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE);
   const suffix = LOCALIZED_FIELD_SUFFIX[lang] || "";
   const card = {
@@ -1267,6 +1273,7 @@ function buildGeneratedCard(unit, uiLang, id) {
     letter: unit.grapheme,
     type: "sound",
     generated: true,
+    cefrLevel,
     name: unit.name || "",
     sound: unit.soundEn || "",
     tip: unit.tipEn || "",
@@ -1289,6 +1296,18 @@ function buildGeneratedCard(unit, uiLang, id) {
   return card;
 }
 
+// What each phonics band asks the model for. The band comes from the derived
+// phonics generation level (deck ladder + placement, capped by unlocked course
+// levels), so difficulty rises with real progress, not with browsed UI levels.
+const PHONICS_BAND_GUIDANCE = {
+  foundation:
+    "Stay foundational: digraphs, very common syllables, and simple high-frequency sounds. Example words must be short, everyday words a beginner already recognizes.",
+  intermediate:
+    "Go intermediate: consonant blends and clusters, stress/accent patterns, and common spelling-to-sound exceptions. Example words should be everyday vocabulary an intermediate learner knows.",
+  advanced:
+    "Go advanced: minimal pairs, reduced or fast-speech sounds, regional pronunciation variants, and subtle spelling-to-sound patterns that still trip up advanced learners. Example words may be less common.",
+};
+
 // Generate a fresh batch of NEW phonics units (digraphs, blends, syllables,
 // less-common sounds) that go beyond the base alphabet. Guidance comes back in
 // English + the learner's support language so cards read in the right language.
@@ -1297,6 +1316,7 @@ async function generateNewPhonicsUnits(
   uiLang,
   existingGraphemes = [],
   count = NEW_DECK_SIZE,
+  cefrLevel = "Pre-A1",
 ) {
   const lang = normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE);
   const languageName =
@@ -1307,11 +1327,15 @@ async function generateNewPhonicsUnits(
   const supportName =
     LANGUAGE_PROMPT_LABELS[lang] || LANGUAGE_FALLBACK_LABELS[lang] || "English";
   const avoid = existingGraphemes.filter(Boolean).slice(0, 200).join(", ");
+  const band = getPhonicsBand(cefrLevel);
+  const bandGuidance =
+    PHONICS_BAND_GUIDANCE[band] || PHONICS_BAND_GUIDANCE.foundation;
   const prompt = `You are creating phonics flashcards for a learner.
 - Target language being learned: ${languageName} (written in ${scriptName}).
 - The learner's OWN language, used for ALL explanations: ${supportName}.
+- The learner's CEFR level: ${cefrLevel}.
 
-Generate ${count} NEW beginner-friendly ${languageName} phonics units that go BEYOND the basic alphabet — for example digraphs, consonant blends, common syllables, or less-common sounds.
+Generate ${count} NEW ${languageName} phonics units that go BEYOND the basic alphabet, tuned to that level. ${bandGuidance}
 Avoid these already-covered units: ${avoid || "(none)"}.
 
 For each unit:
@@ -1323,7 +1347,7 @@ For each unit:
 
 Respond ONLY with a JSON array of exactly ${count} objects in this exact shape:
 [{"grapheme":"...","name":"...","sound_en":"...","sound_loc":"...","tip_en":"...","tip_loc":"...","exampleWord":"...","meaning_en":"...","meaning_loc":"..."}]
-- Keep each grapheme short and beginner-friendly.
+- Keep each grapheme short.
 - Do not repeat any avoided unit and do not duplicate within the list.
 - No extra text.`;
 
@@ -1375,6 +1399,7 @@ async function saveGeneratedPhonicsUnit(npub, targetLang, card) {
         letterId: card.id,
         targetLang,
         generated: true,
+        cefrLevel: card.cefrLevel || null,
         grapheme: card.letter || "",
         ...pickGeneratedDisplayFields(card),
         tts: card.tts || null,
@@ -1588,7 +1613,9 @@ function LetterCard({
           concept: practiceWord,
           userAnswer: answer,
           expectedAnswer: practiceWord,
-          cefrLevel,
+          // Generated cards carry the level they were generated at; base
+          // alphabet cards fall back to the learner-context prop.
+          cefrLevel: letter?.cefrLevel || cefrLevel,
           // The letter/sound card id, not a generic label — lets a routed
           // repair deep-seed the deck with this exact card instead of a
           // random one (see the repair-focus deck reorder on mount).
@@ -1845,10 +1872,20 @@ function LetterCard({
       const avoidClause = currentWord
         ? `\n- Do NOT use the word "${currentWord}" - generate a DIFFERENT word.`
         : "";
-      const prompt = `Generate one beginner-friendly ${languageName} word that starts with the ${languageName} letter/syllable "${letter.letter}" (${letterNameForPrompt}). Respond ONLY with JSON in this shape:
+      // Match word difficulty to the card's own generation band: base
+      // alphabet cards (no cefrLevel) stay beginner-friendly, generated
+      // cards keep the difficulty they were created at.
+      const wordBand = getPhonicsBand(letter?.cefrLevel || "Pre-A1");
+      const difficultyClause =
+        wordBand === "advanced"
+          ? "The word may be less common — pick vocabulary that exercises an advanced learner's pronunciation."
+          : wordBand === "intermediate"
+            ? "Keep the word common but not trivial — everyday vocabulary an intermediate learner should know."
+            : "Keep the word simple (2-4 syllables) and common.";
+      const prompt = `Generate one ${languageName} practice word that starts with the ${languageName} letter/syllable "${letter.letter}" (${letterNameForPrompt}). Respond ONLY with JSON in this shape:
 {"word":"<${languageName} word in native script>","meaning_en":"<short english meaning>","meaning_es":"<short spanish meaning>","meaning_it":"<short italian meaning>","meaning_fr":"<short french meaning>","meaning_ja":"<short Japanese meaning>","meaning_hi":"<short Hindi meaning>","meaning_ar":"<short Egyptian Arabic meaning>","meaning_zh":"<short Mandarin Chinese meaning>"}
 - Use ${scriptName}.
-- Keep the word simple (2-4 syllables) and common.${avoidClause}
+- ${difficultyClause}${avoidClause}
 - Do not add any extra text.`;
 
       try {
@@ -1885,6 +1922,7 @@ function LetterCard({
       letter.nameHi,
       letter.nameJa,
       letter.nameZh,
+      letter.cefrLevel,
       targetLang,
       uiLang,
     ],
@@ -2392,7 +2430,13 @@ export default function AlphabetBootcamp({
   targetLang,
   npub,
   languageXp = 0,
+  // Learner-context level used to tag companion-memory captures on BASE
+  // alphabet cards (generated cards carry their own generation level).
   cefrLevel = "Pre-A1",
+  // Bounds for generated-deck difficulty: placement seeds the deck ladder,
+  // the ceiling (highest UNLOCKED lesson/flashcard level) caps it.
+  placementLevel = null,
+  courseCeilingLevel = null,
   pauseMs = 2000,
 }) {
   const uiLang = normalizeSupportLanguage(appLanguage, DEFAULT_SUPPORT_LANGUAGE);
@@ -2438,11 +2482,24 @@ export default function AlphabetBootcamp({
       const existing = [...alphabet, ...generatedCards]
         .map((c) => c.letter)
         .filter(Boolean);
+      // A new round is only reachable once every card is collected, so at this
+      // moment generatedCards holds exactly the finished decks — count them to
+      // climb the phonics ladder (round, not floor, tolerates short decks when
+      // the model returned fewer than NEW_DECK_SIZE valid units).
+      const completedDeckCount = Math.round(
+        generatedCards.length / NEW_DECK_SIZE,
+      );
+      const generationLevel = getPhonicsGenerationLevel({
+        completedDeckCount,
+        placementLevel,
+        courseCeilingLevel,
+      });
       const units = await generateNewPhonicsUnits(
         targetLang,
         uiLang,
         existing,
         NEW_DECK_SIZE,
+        generationLevel,
       );
       if (!units.length) {
         toast({
@@ -2454,7 +2511,7 @@ export default function AlphabetBootcamp({
       }
       const stamp = Date.now();
       const newCards = units.map((u, i) =>
-        buildGeneratedCard(u, uiLang, `gen_${stamp}_${i}`),
+        buildGeneratedCard(u, uiLang, `gen_${stamp}_${i}`, generationLevel),
       );
       await Promise.all(
         newCards.map((c) => saveGeneratedPhonicsUnit(npub, targetLang, c)),
@@ -2489,9 +2546,11 @@ export default function AlphabetBootcamp({
     }
   }, [
     alphabet,
+    courseCeilingLevel,
     generatedCards,
     isGeneratingDeck,
     npub,
+    placementLevel,
     playSound,
     targetLang,
     toast,
@@ -2694,6 +2753,7 @@ export default function AlphabetBootcamp({
                 tts: data.tts || "",
                 type: "sound",
                 generated: true,
+                cefrLevel: data.cefrLevel || null,
                 ...pickGeneratedDisplayFields(data),
               });
             }

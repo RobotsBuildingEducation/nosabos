@@ -71,7 +71,12 @@ import {
   SOFT_STOP_BUTTON_GLOW,
   SOFT_STOP_BUTTON_HOVER_BG,
 } from "../utils/softStopButton";
-import { DEFAULT_TTS_VOICE, getPreferredTTSVoice } from "../utils/tts";
+import {
+  DEFAULT_TTS_VOICE,
+  TTS_LANG_TAG,
+  getPreferredTTSVoice,
+  getTTSPlayer,
+} from "../utils/tts";
 import { getCEFRPromptHint } from "../utils/cefrUtils";
 import { getAdultBeginnerToneRule } from "../utils/adultBeginnerTone";
 import {
@@ -380,6 +385,24 @@ function safeParseJson(text) {
   }
   return null;
 }
+
+// Levels where conversation goals need extra scaffolding: the learner can't
+// produce freely yet, so goals are sized to one utterance and a tap-to-reveal
+// starter phrase is offered under the goal.
+const isFoundationConversationLevel = (level) =>
+  level === "Pre-A1" || level === "A1";
+
+// At foundation levels an open-ended goal ("introduce yourself and describe
+// your family members") is a production cliff — the learner knows a few dozen
+// chunks. Constrain generated goals to ONE conversational move doable in a
+// single short utterance, while keeping the phrasing conversational (a natural
+// next thing to say in the chat, not a drill instruction).
+const foundationGoalRules = (level) =>
+  isFoundationConversationLevel(level)
+    ? `
+FOUNDATION GOAL RULES (${level}): The goal must be ONE small conversational move, completable with a SINGLE short utterance of about 3-8 words built from high-frequency beginner chunks (greetings, name, how you feel, family words, likes, numbers). Phrase it as the natural next thing to say in this conversation — warm and conversational, never a classroom drill. Do NOT stack tasks: never ask for two different things in one goal (e.g. "introduce yourself AND describe your family"), and never ask the learner to describe, list, or explain anything.
+Good foundation goals: "Say hello and your name" (one breath: "Hola, me llamo Ana"), "Answer with how you feel", "Say one thing you like", "Ask them how they are".`
+    : "";
 
 /* ---------------------------
    Phrase-highlighting helpers
@@ -1223,6 +1246,29 @@ export default function Conversations({
     pushInstructionsNow();
   }, [currentGoalTextEn]);
 
+  // Foundation starter phrase — a tap-to-reveal model utterance for the
+  // current goal so a Pre-A1/A1 learner is never frozen with no words to try.
+  // Fetched lazily on first reveal, cached until the goal changes.
+  const [starterPhrase, setStarterPhrase] = useState(null); // { target, support }
+  const [starterLoading, setStarterLoading] = useState(false);
+  const [starterVisible, setStarterVisible] = useState(false);
+  // Starter pronunciation via the shared realtime-TTS pipeline (same as every
+  // other speaker button). Request counter invalidates in-flight synthesis on
+  // stop/goal-change so a cancelled tap can't start late playback.
+  const [starterTts, setStarterTts] = useState("idle"); // "idle" | "loading" | "playing"
+  const starterTtsAudioRef = useRef(null);
+  const starterTtsCleanupRef = useRef(null);
+  const starterTtsRequestRef = useRef(0);
+  // Bumped on every reset so an in-flight starter fetch from before the reset
+  // (old goal or old language pair) is discarded instead of landing late.
+  const starterFetchRequestRef = useRef(0);
+  useEffect(() => {
+    // New goal → a revealed starter belongs to the old one.
+    resetStarterPhrase();
+  }, [currentGoalTextEn]);
+  // Don't leak a live TTS stream when the surface unmounts.
+  useEffect(() => () => stopStarterTts(), []);
+
   const handleRealtimeEventRef = useRef(null);
   handleRealtimeEventRef.current = handleRealtimeEvent;
   // Latest-instance ref so the quest listener below can hang up without a
@@ -1318,7 +1364,7 @@ Generate ONE clear, specific conversation topic that:
 4. Is specific enough to guide the conversation (not generic like "practice speaking")
 5. Is CONCISE: Maximum 10-15 words. For advanced levels (C1/C2), use sophisticated vocabulary, NOT longer sentences.
 6. For Pre-A1/A1, simple does not mean childish: prefer adult-realistic situations over kid-coded topics.
-
+${foundationGoalRules(selectedLevel)}
 Examples of good topics:
 - "Describe your morning routine" (A1)
 - "Explain your favorite hobby and why" (B1)
@@ -1392,6 +1438,16 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     generateConversationTopic();
   };
 
+  // Tap-to-reveal starter phrase for the current goal (foundation levels).
+  const handleToggleStarter = () => {
+    if (starterVisible) {
+      setStarterVisible(false);
+      return;
+    }
+    setStarterVisible(true);
+    if (!starterPhrase && !starterLoading) void fetchStarterPhrase();
+  };
+
   // Turn counter for XP awarding
   const turnCountRef = useRef(0);
 
@@ -1426,6 +1482,33 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     persistedSupportLang: user?.progress?.supportLang,
     storedUiLang,
   });
+
+  // Target/support language switch → the goal and any revealed starter are in
+  // the old languages. AI topics only carry text for en + the support language
+  // they were written in, so after a switch goalTextForUI returns "" and the
+  // UI shows "Generating new topic…" forever — and no other code path
+  // regenerates it. Reset the starter and regenerate the topic in the new
+  // pair; if a generation is already in flight (its closure holds the OLD
+  // language), queue the regen to run as soon as it settles.
+  const langPairRef = useRef(`${targetLang}|${resolvedSupportLang}`);
+  const pendingLangRegenRef = useRef(false);
+  useEffect(() => {
+    const pair = `${targetLang}|${resolvedSupportLang}`;
+    if (langPairRef.current === pair) return;
+    langPairRef.current = pair;
+    resetStarterPhrase();
+    if (streamingRef.current || isGeneratingGoal) {
+      pendingLangRegenRef.current = true;
+      return;
+    }
+    generateConversationTopic();
+  }, [targetLang, resolvedSupportLang]);
+  useEffect(() => {
+    if (isGeneratingGoal || streamingRef.current) return;
+    if (!pendingLangRegenRef.current) return;
+    pendingLangRegenRef.current = false;
+    generateConversationTopic();
+  }, [isGeneratingGoal]);
 
   const uiLang = resolvedSupportLang;
   const ui = translations[uiLang] || translations.en;
@@ -2569,7 +2652,7 @@ The goal should be appropriate for ${selectedLevel} level (${
 
 IMPORTANT: Keep the goal CONCISE (max 10-15 words). For advanced levels, use sophisticated vocabulary, NOT longer sentences.
 For Pre-A1/A1, simple does not mean childish: use adult-realistic goals and neutral adult wording.
-
+${foundationGoalRules(selectedLevel)}
 Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": "goal in Spanish (max 15 words)", "pt": "goal in Portuguese (max 15 words)", "it": "goal in Italian (max 15 words)", "fr": "goal in French (max 15 words)", "de": "goal in German (max 15 words)", "ja": "goal in Japanese (max 15 words)", "hi": "goal in Hindi (max 15 words)", "ar": "goal in Egyptian Arabic (max 15 words)", "zh": "goal in Mandarin Chinese (max 15 words)"}`;
 
       const body = {
@@ -2635,6 +2718,177 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
 
     setIsGeneratingGoal(false);
     goalCheckPendingRef.current = false;
+  }
+
+  /**
+   * One model utterance for the active goal (foundation levels' "Need a
+   * phrase?" reveal). Anchored to the AI's pending message so the phrase works
+   * as a real reply, not a canned frame. Cached until the goal changes.
+   */
+  async function fetchStarterPhrase() {
+    const goal = currentGoalRef.current;
+    const goalText = goal?.text?.en || "";
+    if (!goalText || goal?.completed) return;
+    const requestId = starterFetchRequestRef.current;
+    setStarterLoading(true);
+
+    const currentSettings = conversationSettingsRef.current;
+    const selectedLevel =
+      currentSettings.proficiencyLevel || maxProficiencyLevel || "A1";
+    const targetName =
+      getLanguagePromptName(targetLangRef.current) || "Spanish";
+    const supportName = getLanguagePromptName(resolvedSupportLang) || "English";
+
+    try {
+      const lastAiMessage =
+        [...messagesRef.current]
+          .reverse()
+          .find((m) => m.role === "assistant" && (m.textFinal || "").trim())
+          ?.textFinal?.trim() || "";
+
+      const prompt = `A ${selectedLevel} beginner is practicing spoken ${targetName} conversation. Their current goal: "${goalText}".${
+        lastAiMessage
+          ? `\nThe conversation partner just said: "${lastAiMessage}". The phrase must work as a natural spoken reply to that.`
+          : ""
+      }
+Write ONE starter phrase in ${targetName} the learner can say out loud to complete the goal: about 3-8 words, ${selectedLevel}-appropriate high-frequency chunks only, natural and friendly. If a personal detail belongs in it (their name, a family member, a thing they like), put "___" in that spot — at most one blank. Also give its ${supportName} translation (keep "___" as "___").
+Respond with ONLY a JSON object: {"target":"phrase in ${targetName}","support":"translation in ${supportName}"}`;
+
+      const r = await appCheckFetch(RESPONSES_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: TRANSLATE_MODEL,
+          text: { format: { type: "text" } },
+          input: prompt,
+        }),
+      });
+      const payload = r.ok ? await r.json() : null;
+      const responseText =
+        payload?.output_text ||
+        (Array.isArray(payload?.output) &&
+          payload.output
+            .map((it) =>
+              (it?.content || []).map((seg) => seg?.text || "").join(""),
+            )
+            .join(" ")
+            .trim()) ||
+        "";
+      const parsed = safeParseJson(responseText);
+
+      // The goal may have advanced or the languages switched while we
+      // fetched — a stale phrase would be the wrong reply or wrong language.
+      if (
+        requestId !== starterFetchRequestRef.current ||
+        currentGoalRef.current?.text?.en !== goalText
+      ) {
+        return;
+      }
+      if (parsed?.target) {
+        setStarterPhrase({
+          target: String(parsed.target).trim(),
+          support: String(parsed.support || "").trim(),
+        });
+      } else {
+        setStarterVisible(false);
+      }
+    } catch {
+      if (
+        requestId === starterFetchRequestRef.current &&
+        currentGoalRef.current?.text?.en === goalText
+      ) {
+        setStarterVisible(false);
+      }
+    } finally {
+      if (requestId === starterFetchRequestRef.current) {
+        setStarterLoading(false);
+      }
+    }
+  }
+
+  /** Full starter reset (goal advanced, language switched, or teardown):
+      invalidates any in-flight fetch, stops audio, clears the reveal. */
+  function resetStarterPhrase() {
+    starterFetchRequestRef.current += 1;
+    stopStarterTts();
+    setStarterPhrase(null);
+    setStarterVisible(false);
+    setStarterLoading(false);
+  }
+
+  function stopStarterTts() {
+    starterTtsRequestRef.current += 1;
+    const audio = starterTtsAudioRef.current;
+    const cleanup = starterTtsCleanupRef.current;
+    starterTtsAudioRef.current = null;
+    starterTtsCleanupRef.current = null;
+    if (audio) {
+      try {
+        // Detach handlers first: the player's teardown dispatches a synthetic
+        // "ended" for realtime streams, which would re-enter this function.
+        audio.onended = null;
+        audio.onerror = null;
+        audio.pause?.();
+      } catch {
+        // Best-effort media teardown.
+      }
+    }
+    try {
+      cleanup?.();
+    } catch {
+      // Best-effort player teardown.
+    }
+    setStarterTts("idle");
+  }
+
+  /** Pronounce the starter phrase (gpt-realtime-mini narration, cached like
+      every other speaker button). Tap toggles: playing/loading → stop. */
+  async function playStarterTts() {
+    if (starterTts !== "idle") {
+      stopStarterTts();
+      return;
+    }
+    // Blanks stand for the learner's own detail — don't read them aloud.
+    const text = String(starterPhrase?.target || "")
+      .replace(/_+/g, " ")
+      .replace(/\s{2,}/g, " ")
+      .replace(/\s+([.,!?;:])/g, "$1")
+      .trim();
+    if (!text) return;
+    const requestId = ++starterTtsRequestRef.current;
+    setStarterTts("loading");
+    try {
+      const player = await getTTSPlayer({
+        text,
+        voice: getPreferredTTSVoice(voiceRef.current),
+        langTag: TTS_LANG_TAG[targetLangRef.current] || TTS_LANG_TAG.es,
+      });
+      if (requestId !== starterTtsRequestRef.current) {
+        player.cleanup?.();
+        return;
+      }
+      const audio = player.audio;
+      starterTtsAudioRef.current = audio;
+      starterTtsCleanupRef.current = player.cleanup;
+      const finish = () => {
+        if (starterTtsAudioRef.current !== audio) return;
+        stopStarterTts();
+      };
+      audio.onended = finish;
+      audio.onerror = finish;
+      await player.ready;
+      if (requestId !== starterTtsRequestRef.current) {
+        player.cleanup?.();
+        return;
+      }
+      setStarterTts("playing");
+      await audio.play();
+    } catch (error) {
+      console.error("Starter phrase TTS failed:", error);
+      if (requestId === starterTtsRequestRef.current) {
+        stopStarterTts();
+      }
+    }
   }
 
   async function awardGoalXp() {
@@ -3201,6 +3455,110 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
                     </>
                   )}
                 </HStack>
+
+                {/* Foundation "Need a phrase?" — reveals one model utterance
+                    for the current goal so a Pre-A1/A1 learner always has
+                    words to try out loud. */}
+                {isFoundationConversationLevel(
+                  conversationSettings.proficiencyLevel || maxProficiencyLevel,
+                ) &&
+                  !isGeneratingGoal &&
+                  !currentGoal.completed &&
+                  Boolean(goalTextForUI(currentGoal)) && (
+                    <VStack spacing={1.5} width="100%">
+                      <Button
+                        size="xs"
+                        variant="outline"
+                        onClick={handleToggleStarter}
+                        color={
+                          isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"
+                        }
+                        borderColor={
+                          isLightTheme
+                            ? "rgba(0, 0, 0, 0.18)"
+                            : "whiteAlpha.300"
+                        }
+                        bg={isLightTheme ? APP_SURFACE : "whiteAlpha.50"}
+                        fontWeight="medium"
+                        _hover={{
+                          bg: isLightTheme
+                            ? APP_SURFACE_MUTED
+                            : "whiteAlpha.100",
+                        }}
+                      >
+                        {starterVisible
+                          ? uiText("ra_starter_hide", "Hide phrase")
+                          : uiText("ra_starter_show", "Help me")}
+                      </Button>
+                      {starterVisible && (
+                        <Box
+                          px={3}
+                          py={2}
+                          borderRadius="md"
+                          bg={isLightTheme ? APP_SURFACE : "whiteAlpha.100"}
+                          border="1px solid"
+                          borderColor={
+                            isLightTheme
+                              ? "rgba(0, 0, 0, 0.08)"
+                              : "whiteAlpha.200"
+                          }
+                          maxW="90%"
+                          textAlign="center"
+                        >
+                          {starterLoading ? (
+                            <Spinner size="xs" />
+                          ) : starterPhrase ? (
+                            <>
+                              <HStack spacing={1.5} justify="center">
+                                <IconButton
+                                  icon={
+                                    starterTts === "loading" ? (
+                                      <Spinner size="xs" />
+                                    ) : (
+                                      <RiVolumeUpLine size={14} />
+                                    )
+                                  }
+                                  size="xs"
+                                  variant="ghost"
+                                  onClick={playStarterTts}
+                                  aria-label={uiText("story_listen", "Listen")}
+                                  color={
+                                    isLightTheme
+                                      ? APP_TEXT_SECONDARY
+                                      : "whiteAlpha.800"
+                                  }
+                                  opacity={starterTts === "playing" ? 1 : 0.75}
+                                  _hover={{ opacity: 1 }}
+                                />
+                                <Text
+                                  fontSize="sm"
+                                  fontWeight="semibold"
+                                  color={
+                                    isLightTheme ? APP_TEXT_PRIMARY : "white"
+                                  }
+                                >
+                                  {starterPhrase.target}
+                                </Text>
+                              </HStack>
+                              {starterPhrase.support && (
+                                <Text
+                                  fontSize="xs"
+                                  opacity={0.7}
+                                  color={
+                                    isLightTheme
+                                      ? APP_TEXT_SECONDARY
+                                      : "whiteAlpha.800"
+                                  }
+                                >
+                                  {starterPhrase.support}
+                                </Text>
+                              )}
+                            </>
+                          ) : null}
+                        </Box>
+                      )}
+                    </VStack>
+                  )}
 
                 {/* Goal guidance — stays visible until the learner gets the
                     goal right (success clears it and shows the checkmark) */}

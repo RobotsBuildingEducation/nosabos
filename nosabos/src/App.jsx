@@ -128,6 +128,7 @@ import VoicePreferenceField from "./components/VoicePreferenceField";
 
 import { translations } from "./utils/translation";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "./utils/llm";
+import { clampCefrLevel, maxCefrLevel } from "./utils/phonicsLevel";
 import Vocabulary from "./components/Vocabulary";
 import StoryMode from "./components/Stories";
 import History from "./components/History";
@@ -7707,6 +7708,30 @@ export default function App({ onBootReady } = {}) {
     currentCEFRLevel ||
     "Pre-A1";
 
+  // Tutor-earned unlock, persisted by Tutor.jsx when every tutor lesson in a
+  // CEFR level is complete — lets tutor-only progress raise ceilings here and
+  // in SkillTree's maxProficiencyLevel.
+  const tutorUnlockedLevel = clampCefrLevel(
+    user?.progress?.tutorUnlockedLevels?.[
+      String(resolvedTargetLang || "es").toLowerCase()
+    ] ?? user?.progress?.tutorUnlockedLevels?.[resolvedTargetLang],
+  );
+
+  // Phonics deck generation bounds. Placement seeds the bootcamp's own deck
+  // ladder (the way it pre-unlocks levels elsewhere); the ceiling is built
+  // from UNLOCKED levels only — never display/active browse state, so viewing
+  // a B2 tab can't inflate generated phonics difficulty. Placement can be the
+  // literal string "skipped", which clampCefrLevel filters out.
+  const phonicsPlacementLevel = clampCefrLevel(
+    user?.proficiencyPlacements?.[resolvedTargetLang],
+  );
+  const phonicsCourseCeilingLevel =
+    maxCefrLevel(
+      currentLessonLevel,
+      currentFlashcardLevel,
+      tutorUnlockedLevel,
+    ) || "Pre-A1";
+
   // Option A: kinds the learner left unfinished on an incomplete previous day,
   // carried into today by the batch blueprint. Derived (never elected), like
   // repair, so they can't fight the elector.
@@ -8884,6 +8909,8 @@ export default function App({ onBootReady } = {}) {
               npub={activeNpub}
               languageXp={userProgress?.totalXp || 0}
               cefrLevel={repairLessonCefrLevel}
+              placementLevel={phonicsPlacementLevel}
+              courseCeilingLevel={phonicsCourseCeilingLevel}
               pauseMs={user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS}
             />
           ) : (
@@ -8910,6 +8937,7 @@ export default function App({ onBootReady } = {}) {
                 activeFlashcardLevel={displayActiveFlashcardLevel}
                 currentLessonLevel={currentLessonLevel}
                 currentFlashcardLevel={currentFlashcardLevel}
+                tutorUnlockedLevel={tutorUnlockedLevel}
                 onLessonLevelChange={handleLessonLevelChange}
                 onFlashcardLevelChange={handleFlashcardLevelChange}
                 lessonLevelCompletionStatus={lessonLevelCompletionStatus}

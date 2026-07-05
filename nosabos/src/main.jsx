@@ -27,6 +27,9 @@ import { MiniKitContextProvider } from "./provider/MinitKitProvider.jsx";
 const App = lazy(() => import("./App.jsx"));
 const LinksPage = lazy(() => import("./components/LinksPage.jsx"));
 const ProficiencyTest = lazy(() => import("./components/ProficiencyTest.jsx"));
+const SquirclePlayground = lazy(
+  () => import("./components/SquirclePlayground.jsx"),
+);
 const CitizenshipGuide = lazy(
   () => import("./components/CitizenshipGuide.jsx"),
 );
@@ -206,6 +209,14 @@ createRoot(document.getElementById("root")).render(
                 element={
                   <BootReadyBoundary>
                     <LinksPage />
+                  </BootReadyBoundary>
+                }
+              />
+              <Route
+                path="/squircle"
+                element={
+                  <BootReadyBoundary>
+                    <SquirclePlayground />
                   </BootReadyBoundary>
                 }
               />
