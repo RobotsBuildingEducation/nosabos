@@ -449,6 +449,8 @@ export default function TutorialActionBarPopovers({
                     : "Previous"
                 }
                 size="sm"
+                flex="1"
+                h="40px"
                 {...navButtonStyles}
                 _disabled={{ opacity: 0.3, cursor: "not-allowed" }}
               />
@@ -466,6 +468,8 @@ export default function TutorialActionBarPopovers({
                 <Button
                   size="sm"
                   onClick={handleFinish}
+                  flex="1"
+                  h="40px"
                   px={4}
                   {...doneButtonStyles}
                 >
@@ -521,6 +525,8 @@ export default function TutorialActionBarPopovers({
                       : "Next"
                   }
                   size="sm"
+                  flex="1"
+                  h="40px"
                   {...navButtonStyles}
                 />
               )}

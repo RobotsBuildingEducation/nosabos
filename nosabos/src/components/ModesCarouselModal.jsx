@@ -31,6 +31,9 @@ import {
   nativeModalMotionProps,
 } from "../utils/modalMotion";
 import { plateUiCopy } from "../utils/dailyPlateCopy";
+import useSoundSettings from "../hooks/useSoundSettings";
+import selectSound from "../assets/select.mp3";
+import submitActionSound from "../assets/submitaction.mp3";
 
 const MotionBox = motion(Box);
 
@@ -280,6 +283,7 @@ export default function ModesCarouselModal({
 }) {
   const slides = useMemo(() => buildSlides(includePhonics), [includePhonics]);
   const [index, setIndex] = useState(0);
+  const playSound = useSoundSettings((s) => s.playSound);
 
   const isLast = index === slides.length - 1;
   const slide = slides[Math.min(index, slides.length - 1)];
@@ -298,10 +302,17 @@ export default function ModesCarouselModal({
 
   const handleNext = () => {
     if (isLast) {
+      playSound(submitActionSound);
       handleClose();
       return;
     }
+    playSound(selectSound);
     paginate(1);
+  };
+
+  const handleBack = () => {
+    playSound(selectSound);
+    paginate(-1);
   };
 
   const handleDragEnd = (_event, info) => {
@@ -390,7 +401,10 @@ export default function ModesCarouselModal({
                   as="button"
                   type="button"
                   aria-label={plateUiCopy(lang, s.title)}
-                  onClick={() => setIndex(i)}
+                  onClick={() => {
+                    if (i !== index) playSound(selectSound);
+                    setIndex(i);
+                  }}
                   w={i === index ? "18px" : "8px"}
                   h="8px"
                   borderRadius="full"
@@ -424,7 +438,7 @@ export default function ModesCarouselModal({
                   cursor: "not-allowed",
                   boxShadow: "none",
                 }}
-                onClick={() => paginate(-1)}
+                onClick={handleBack}
               />
               <IconButton
                 aria-label={plateUiCopy(lang, isLast ? DONE_LABEL : NEXT_LABEL)}

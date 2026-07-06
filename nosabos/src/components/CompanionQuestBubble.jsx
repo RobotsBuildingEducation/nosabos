@@ -8,6 +8,8 @@
 // down-left toward the companion it's anchored to (see PlatePetPanel).
 import React, { useLayoutEffect, useRef, useState } from "react";
 import { Box, Button, Text } from "@chakra-ui/react";
+import useSoundSettings from "../hooks/useSoundSettings";
+import submitActionSound from "../assets/submitaction.mp3";
 
 // Tiny deterministic PRNG (Lehmer) so each message gets a stable hand-drawn
 // wobble instead of re-jittering every render.
@@ -89,6 +91,7 @@ export default function CompanionQuestBubble({
 }) {
   const contentRef = useRef(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
+  const playSound = useSoundSettings((s) => s.playSound);
 
   useLayoutEffect(() => {
     const el = contentRef.current;
@@ -172,7 +175,10 @@ export default function CompanionQuestBubble({
             borderWidth="2px"
             borderColor="var(--app-text-primary)"
             color="var(--app-text-primary)"
-            onClick={onDismiss}
+            onClick={() => {
+              playSound(submitActionSound);
+              onDismiss();
+            }}
           >
             Continue
           </Button>
