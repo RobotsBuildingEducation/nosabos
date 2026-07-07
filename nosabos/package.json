@@ -21,6 +21,7 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@firebase/vertexai": "^1.2.4",
+    "@fontsource/dm-sans": "^5.2.8",
     "@google/genai": "^1.15.0",
     "@hello-pangea/dnd": "^18.0.1",
     "@liquidglass/react": "^0.1.3",

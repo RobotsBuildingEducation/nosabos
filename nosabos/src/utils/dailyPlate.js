@@ -9,7 +9,13 @@
 //   progress.<field>[langKey][YYYY-MM-DD] = number
 // `flashcardDailyActivity` was already written by the flashcard review flow;
 // the other two are bumped by awardXp() when callers tag a source.
-import { doc, increment, runTransaction, setDoc } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  increment,
+  runTransaction,
+  setDoc,
+} from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
 import useUserStore from "../hooks/useUserStore";
 import { FLASHCARD_DAILY_TARGET, getLocalDayKey } from "./flashcardReview";
@@ -27,6 +33,7 @@ export const DAILY_PLATE_TARGETS = {
   speak: 1, // Tutor lessons completed
   conversation: 4, // fallback only — overridden per-day to 4-7 user turns
   phonics: 3, // Alphabet/phonics letters practiced
+  repair: 1, // fallback only — overridden per-day by the repair plan's item count
 };
 
 // The Conversation quest asks for a short back-and-forth. Instead of a flat
@@ -48,6 +55,10 @@ export function getConversationTurnTarget(dayKey = "", langKey = "") {
 // display order. (phonics is reserved for Phase 3 once the bootcamp is
 // repeatable.)
 export const QUEST_CANONICAL_ORDER = [
+  // Repair leads the plate when present — yesterday's weak spot gets warmed up
+  // before forward progress. It is never auto-elected; the app prepends it for
+  // the day when the companion brain has a repair plan.
+  "repair",
   "speak",
   "learn",
   "review",
@@ -63,6 +74,7 @@ export const DAILY_PLATE_ACTIVITY_FIELDS = {
   speak: "speakDailyActivity",
   conversation: "conversationDailyActivity",
   phonics: "phonicsDailyActivity",
+  repair: "repairDailyActivity",
 };
 
 // Every per-day activity field touched by the plate, used when resetting a
@@ -73,6 +85,7 @@ export const DAILY_PLATE_ALL_ACTIVITY_FIELDS = [
   "speakDailyActivity",
   "conversationDailyActivity",
   "phonicsDailyActivity",
+  "repairDailyActivity",
 ];
 
 // awardXp() accepts these as its optional `source` argument. "review" is
@@ -122,7 +135,14 @@ export function getDailyPlateSnapshot(
     const target =
       kind === "conversation"
         ? getConversationTurnTarget(dayKey, langKey)
-        : DAILY_PLATE_TARGETS[kind] || 1;
+        : kind === "repair"
+          ? // Repair's "done" target is however many items the companion
+            // curated into today's repair plan (default 1).
+            Math.max(
+              1,
+              Number(user?.dailyQuestRepair?.[langKey]?.[dayKey]?.target) || 1,
+            )
+          : DAILY_PLATE_TARGETS[kind] || 1;
     const count = readDayCount(
       progress,
       DAILY_PLATE_ACTIVITY_FIELDS[kind],
@@ -328,12 +348,35 @@ export function hasSeenFirstQuest(user) {
   return Boolean(user?.progress?.dailyQuestFirstSeen);
 }
 
-export async function markFirstQuestSeen(npub) {
-  // Patch the local store first so the election effect sees it immediately.
+// The day the user's introductory (first) quest was elected. Companion-memory
+// personalization (the quest bubble + repair task) is suppressed on this day so
+// the introductory plate keeps its intended tone — it only kicks in afterward.
+export function getFirstQuestDayKey(user) {
+  const key = user?.progress?.dailyQuestFirstDayKey;
+  return typeof key === "string" ? key : "";
+}
+
+// True once the introductory plate is behind the user: they've seen a quest and
+// today isn't that very first quest day. Existing users (who predate the
+// first-day-key field) read as past their intro, which is correct.
+export function isPastFirstQuest(user, dayKey) {
+  if (!hasSeenFirstQuest(user)) return false;
+  const firstDay = getFirstQuestDayKey(user);
+  return !firstDay || firstDay !== dayKey;
+}
+
+// Set ONLY the "seen a quest" flag — no first-quest-day stamp. Used when we
+// detect a returning user via a plate that older code cached without ever
+// setting the flag: they're past their intro, so we must not stamp today as
+// their first quest day (which would wrongly suppress the companion bubble).
+export async function markFirstQuestFlagOnly(npub) {
   try {
     const store = useUserStore.getState?.();
     const currentUser = store?.user;
-    if (store?.patchUser && currentUser?.progress?.dailyQuestFirstSeen !== true) {
+    if (
+      store?.patchUser &&
+      currentUser?.progress?.dailyQuestFirstSeen !== true
+    ) {
       store.patchUser({
         progress: {
           ...(currentUser.progress || {}),
@@ -350,6 +393,82 @@ export async function markFirstQuestSeen(npub) {
     await setDoc(
       doc(database, "users", npub),
       { progress: { dailyQuestFirstSeen: true } },
+      { merge: true },
+    );
+  } catch (error) {
+    console.error("Failed to persist first-quest flag:", error);
+  }
+}
+
+export async function markFirstQuestSeen(npub) {
+  const dayKey = getDailyPlateDayKey();
+  // Patch the local store first so the election effect sees it immediately.
+  try {
+    const store = useUserStore.getState?.();
+    const currentUser = store?.user;
+    if (store?.patchUser && currentUser?.progress?.dailyQuestFirstSeen !== true) {
+      store.patchUser({
+        progress: {
+          ...(currentUser.progress || {}),
+          dailyQuestFirstSeen: true,
+          dailyQuestFirstDayKey:
+            currentUser.progress?.dailyQuestFirstDayKey || dayKey,
+        },
+      });
+    }
+  } catch (error) {
+    console.warn("Failed to sync first-quest flag locally:", error);
+  }
+
+  if (!npub) return;
+  try {
+    // The first quest day is written once, ever. The local store may not have
+    // loaded yet when this runs (a raced new-day boot), so trusting it alone
+    // clobbered the real stamp with today — check the server copy first and
+    // preserve it, re-syncing the local store if it had raced ahead.
+    let remoteProgress = null;
+    try {
+      const snap = await getDoc(doc(database, "users", npub));
+      remoteProgress = snap.exists() ? snap.data()?.progress || null : null;
+    } catch {
+      /* offline/read failure — fall through with local knowledge only */
+    }
+    const localFirstDay =
+      useUserStore.getState?.()?.user?.progress?.dailyQuestFirstDayKey;
+    if (remoteProgress?.dailyQuestFirstSeen) {
+      // The server already knows the intro happened — whether stamped with its
+      // real day or deliberately flag-only (markFirstQuestFlagOnly), stamping
+      // TODAY would wrongly make today read as the first quest day. Re-sync the
+      // local store to the server copy and write nothing.
+      const remoteFirstDay = remoteProgress?.dailyQuestFirstDayKey || "";
+      if (remoteFirstDay !== (localFirstDay || "")) {
+        try {
+          const store = useUserStore.getState?.();
+          if (store?.patchUser) {
+            const progress = {
+              ...(store.user?.progress || {}),
+              dailyQuestFirstSeen: true,
+            };
+            if (remoteFirstDay) progress.dailyQuestFirstDayKey = remoteFirstDay;
+            else delete progress.dailyQuestFirstDayKey;
+            store.patchUser({ progress });
+          }
+        } catch {
+          /* ignore — server copy is already correct */
+        }
+      }
+      return;
+    }
+    const existingFirstDay =
+      remoteProgress?.dailyQuestFirstDayKey || localFirstDay;
+    await setDoc(
+      doc(database, "users", npub),
+      {
+        progress: {
+          dailyQuestFirstSeen: true,
+          dailyQuestFirstDayKey: existingFirstDay || dayKey,
+        },
+      },
       { merge: true },
     );
   } catch (error) {

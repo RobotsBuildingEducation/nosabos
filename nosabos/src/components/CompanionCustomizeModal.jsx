@@ -53,7 +53,7 @@ function OptionCanvas({ stage, petType = "dog", drawCompanion }) {
       return undefined;
     }
     const interval = window.setInterval(() => {
-      setFrame((current) => (current + 1) % 6);
+      setFrame((current) => (current + 1) % 12);
     }, 180);
     return () => window.clearInterval(interval);
   }, [stage.key]);
@@ -103,7 +103,6 @@ export default function CompanionCustomizeModal({
   const copy = getCustomizeModalCopy(lang);
   const trimmedName = typeof petName === "string" ? petName.trim() : "";
   const resolvedPetType = getEffectivePetType(petType, companionLevel);
-  const nameInputRef = useRef(null);
   const [draftName, setDraftName] = useState(trimmedName);
   const [draftPetType, setDraftPetType] = useState(resolvedPetType);
 
@@ -130,7 +129,7 @@ export default function CompanionCustomizeModal({
       onClose={onClose}
       isCentered
       size="sm"
-      initialFocusRef={nameInputRef}
+      autoFocus={false}
       motionPreset="scale"
     >
       <ModalOverlay bg="var(--app-overlay)" />
@@ -157,7 +156,6 @@ export default function CompanionCustomizeModal({
                 {copy.name}
               </Text>
               <Input
-                ref={nameInputRef}
                 value={draftName}
                 onChange={(e) =>
                   setDraftName(e.target.value.slice(0, NAME_MAX_LENGTH))

@@ -2491,6 +2491,7 @@ export default function SkillTree({
   activeFlashcardLevel = "Pre-A1", // Currently active/visible level in flashcard mode
   currentLessonLevel = "Pre-A1", // User's current progress level in lesson mode
   currentFlashcardLevel = "Pre-A1", // User's current progress level in flashcard mode
+  tutorUnlockedLevel = null, // Level earned by completing tutor lessons (persisted by Tutor)
   onLessonLevelChange, // Callback when user navigates to different level in lesson mode
   onFlashcardLevelChange, // Callback when user navigates to different level in flashcard mode
   lessonLevelCompletionStatus = {}, // Status of all levels in lesson mode
@@ -2642,7 +2643,8 @@ export default function SkillTree({
   }, [units, effectiveActiveLevel]);
 
   // Calculate max unlocked proficiency level for conversations
-  // Uses the highest unlocked level between skill tree and flashcards
+  // Uses the highest unlocked level between skill tree, flashcards, and
+  // tutor-earned progress (so tutor-only learners aren't stuck at Pre-A1)
   const maxProficiencyLevel = useMemo(() => {
     const levelsOrder = ["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"];
     const lessonIndex = Math.max(0, levelsOrder.indexOf(currentLessonLevel));
@@ -2650,9 +2652,10 @@ export default function SkillTree({
       0,
       levelsOrder.indexOf(currentFlashcardLevel),
     );
-    const maxIndex = Math.max(lessonIndex, flashcardIndex);
+    const tutorIndex = levelsOrder.indexOf(tutorUnlockedLevel); // -1 when absent
+    const maxIndex = Math.max(lessonIndex, flashcardIndex, tutorIndex);
     return levelsOrder[maxIndex] || "Pre-A1";
-  }, [currentLessonLevel, currentFlashcardLevel]);
+  }, [currentLessonLevel, currentFlashcardLevel, tutorUnlockedLevel]);
 
   const bgColor = "gray.950";
   const shouldKeepAliveModes = SHOULD_KEEP_ALIVE_MODES;

@@ -9,6 +9,11 @@ import {
 } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
+// Self-hosted DM Sans (the landing-page hero font) — bundled by Vite so it
+// renders reliably without an external request. Used by the companion's
+// speech balloon (and available app-wide).
+import "@fontsource/dm-sans/400.css";
+import "@fontsource/dm-sans/700.css";
 import "./useThemeStore";
 import { ChakraProvider } from "@chakra-ui/react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
@@ -22,6 +27,9 @@ import { MiniKitContextProvider } from "./provider/MinitKitProvider.jsx";
 const App = lazy(() => import("./App.jsx"));
 const LinksPage = lazy(() => import("./components/LinksPage.jsx"));
 const ProficiencyTest = lazy(() => import("./components/ProficiencyTest.jsx"));
+const SquirclePlayground = lazy(
+  () => import("./components/SquirclePlayground.jsx"),
+);
 const CitizenshipGuide = lazy(
   () => import("./components/CitizenshipGuide.jsx"),
 );
@@ -201,6 +209,14 @@ createRoot(document.getElementById("root")).render(
                 element={
                   <BootReadyBoundary>
                     <LinksPage />
+                  </BootReadyBoundary>
+                }
+              />
+              <Route
+                path="/squircle"
+                element={
+                  <BootReadyBoundary>
+                    <SquirclePlayground />
                   </BootReadyBoundary>
                 }
               />

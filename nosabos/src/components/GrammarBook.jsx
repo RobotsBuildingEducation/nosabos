@@ -62,6 +62,7 @@ import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import { shuffle } from "./quiz/utils";
 import useNotesStore from "../hooks/useNotesStore";
 import { generateNoteContent, buildNoteObject } from "../utils/noteGeneration";
+import { captureCompanionMemory } from "../utils/companionMemory";
 import VirtualKeyboard from "./VirtualKeyboard";
 import { MdKeyboard } from "react-icons/md";
 import useSoundSettings from "../hooks/useSoundSettings";
@@ -332,6 +333,7 @@ function buildFillStreamPrompt({
     ? `- TUTORIAL MODE: Create a VERY SIMPLE sentence about basic greetings only. The blank should be for a simple greeting word in ${TARGET}. Keep everything at absolute beginner level.`
     : lessonContent?.topic || lessonContent?.focusPoints
       ? [
+          lessonContent.levelGuard ? `- ${lessonContent.levelGuard}` : null,
           lessonContent.topic
             ? `- STRICT REQUIREMENT: Focus EXCLUSIVELY on grammar topic: ${lessonContent.topic}. Do NOT test any other grammar concepts. This is lesson-specific content and you MUST NOT diverge.`
             : null,
@@ -483,6 +485,7 @@ function buildMCStreamPrompt({
     ? `- TUTORIAL MODE: Create a VERY SIMPLE multiple-choice about basic greetings only. The correct answer MUST be a simple greeting in ${TARGET}. Keep everything at absolute beginner level.`
     : lessonContent?.topic || lessonContent?.focusPoints
       ? [
+          lessonContent.levelGuard ? `- ${lessonContent.levelGuard}` : null,
           lessonContent.topic
             ? `- STRICT REQUIREMENT: Focus EXCLUSIVELY on grammar topic: ${lessonContent.topic}. Do NOT test any other grammar concepts. This is lesson-specific content and you MUST NOT diverge.`
             : null,
@@ -586,6 +589,7 @@ function buildMAStreamPrompt({
     ? `- TUTORIAL MODE: Create a VERY SIMPLE multiple-answer about basic greetings only. The correct answers MUST be simple greetings in ${TARGET}. Keep everything at absolute beginner level.`
     : lessonContent?.topic || lessonContent?.focusPoints
       ? [
+          lessonContent.levelGuard ? `- ${lessonContent.levelGuard}` : null,
           lessonContent.topic
             ? `- STRICT REQUIREMENT: Focus EXCLUSIVELY on grammar topic: ${lessonContent.topic}. Do NOT test any other grammar concepts. This is lesson-specific content and you MUST NOT diverge.`
             : null,
@@ -659,6 +663,7 @@ function buildSpeakGrammarStreamPrompt({
     ? `- TUTORIAL MODE: Create a VERY SIMPLE speaking exercise about basic greetings only. The sentence MUST be a simple greeting like "Hello!", "¡Hola!", "Good morning!", "¡Buenos días!". Keep everything at absolute beginner level.`
     : lessonContent?.topic || lessonContent?.focusPoints
       ? [
+          lessonContent.levelGuard ? `- ${lessonContent.levelGuard}` : null,
           lessonContent.topic
             ? `- STRICT REQUIREMENT: Focus EXCLUSIVELY on grammar topic: ${lessonContent.topic}. Do NOT test any other grammar concepts. This is lesson-specific content and you MUST NOT diverge.`
             : null,
@@ -756,6 +761,7 @@ function buildTranslateStreamPrompt({
     ? `- TUTORIAL MODE: Create a VERY SIMPLE sentence about basic greetings only. Use only common greeting words. Keep everything at absolute beginner level.`
     : lessonContent?.topic || lessonContent?.focusPoints
       ? [
+          lessonContent.levelGuard ? `- ${lessonContent.levelGuard}` : null,
           lessonContent.topic
             ? `- STRICT REQUIREMENT: Focus EXCLUSIVELY on grammar topic: ${lessonContent.topic}. This is lesson-specific content.`
             : null,
@@ -943,8 +949,12 @@ export default function GrammarBook({
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, []);
 
-  // Extract CEFR level from lesson ID
-  const cefrLevel = lesson?.id ? extractCEFRLevel(lesson.id) : "A1";
+  // Repair/ephemeral lessons carry an explicit CEFR level; regular path lessons
+  // can still derive it from their level-coded id.
+  const cefrLevel =
+    lesson?.cefrLevel ||
+    lessonContent?.cefrLevel ||
+    (lesson?.id ? extractCEFRLevel(lesson.id) : "A1");
 
   // Quiz mode state
   const [quizQuestionsAnswered, setQuizQuestionsAnswered] = useState(0);
@@ -1121,6 +1131,45 @@ export default function GrammarBook({
   const setNotesLoading = useNotesStore((s) => s.setLoading);
   const triggerDoneAnimation = useNotesStore((s) => s.triggerDoneAnimation);
 
+  // Companion brain: auto-save a missed grammar item as a high-signal weak spot
+  // for tomorrow's quest. Fires on the wrong-answer transition (lastOk === false)
+  // and dedupes by question so a single miss is captured once.
+  const companionCapturedRef = useRef(null);
+  useEffect(() => {
+    if (lastOk === null) {
+      companionCapturedRef.current = null;
+      return;
+    }
+    if (lastOk !== false || !currentQuestionData) return;
+    const sig = `${currentQuestionData.question || ""}|${currentQuestionData.userAnswer || ""}`;
+    if (companionCapturedRef.current === sig) return;
+    companionCapturedRef.current = sig;
+    captureCompanionMemory({
+      npub,
+      targetLang,
+      supportLang: supportCode,
+      sourceMode: "grammar",
+      concept:
+        currentQuestionData.question || currentQuestionData.correctAnswer || "",
+      userAnswer: currentQuestionData.userAnswer || "",
+      expectedAnswer: currentQuestionData.correctAnswer || "",
+      cefrLevel,
+      sourceContext: "grammar",
+    });
+    triggerDoneAnimation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastOk, currentQuestionData]);
+
+  // Keep the AI explanation strictly opt-in. It was only cleared on a CORRECT
+  // answer, so once generated it lingered and re-appeared automatically on every
+  // later wrong grade (FeedbackRail shows it whenever !ok && explanationText).
+  // currentQuestionData is a fresh object per graded answer, so clearing on it
+  // wipes any prior explanation the moment a new answer is graded — the panel
+  // now shows only right after the user taps "Explain the answer".
+  useEffect(() => {
+    setExplanationText("");
+  }, [currentQuestionData]);
+
   // inline assistant support feature (replaces modal)
   const [assistantSupportText, setAssistantSupportText] = useState("");
   const [isLoadingAssistantSupport, setIsLoadingAssistantSupport] =
@@ -1252,8 +1301,12 @@ export default function GrammarBook({
   }
 
   // Quiz mode helper function
-  function handleQuizAnswer(isCorrect) {
+  function handleQuizAnswer(isCorrect, questionSnapshot = null) {
     setQuizCurrentQuestionAttempted(true);
+    // Quiz grading branches early-return before the normal setCurrentQuestionData,
+    // so record the snapshot here — otherwise the companion capture effect (which
+    // keys on currentQuestionData) never fires for final-quiz mistakes.
+    if (questionSnapshot) setCurrentQuestionData(questionSnapshot);
 
     const newQuestionsAnswered = quizQuestionsAnswered + 1;
     const newCorrectAnswers = isCorrect
@@ -3637,7 +3690,12 @@ Return JSON ONLY:
     const delta = ok ? 6 : 0; // ✅ normalized to 4-7 XP range
 
     if (isFinalQuiz) {
-      handleQuizAnswer(ok);
+      handleQuizAnswer(ok, {
+        question,
+        userAnswer: input,
+        correctAnswer: hint,
+        questionType: "fill",
+      });
       setLastOk(ok);
       setRecentXp(0);
       const nextFn =
@@ -3710,7 +3768,12 @@ Return JSON ONLY:
     const delta = ok ? 5 : 0; // ✅ normalized to 4-7 XP range
 
     if (isFinalQuiz) {
-      handleQuizAnswer(ok);
+      handleQuizAnswer(ok, {
+        question: mcQ,
+        userAnswer: mcPick,
+        correctAnswer: mcAnswer || mcHint,
+        questionType: "mc",
+      });
       setMcResult(ok ? "correct" : "try_again");
       setLastOk(ok);
       setRecentXp(0);
@@ -3786,7 +3849,12 @@ Return JSON ONLY:
     const delta = ok ? 6 : 0; // ✅ normalized to 4-7 XP range
 
     if (isFinalQuiz) {
-      handleQuizAnswer(ok);
+      handleQuizAnswer(ok, {
+        question: maQ,
+        userAnswer: selectedStrings.join(", "),
+        correctAnswer: maAnswers?.join(", ") || maHint,
+        questionType: "ma",
+      });
       setMaResult(ok ? "correct" : "try_again");
       setLastOk(ok);
       setRecentXp(0);
@@ -3856,7 +3924,12 @@ Return JSON ONLY:
     setMResult(ok ? "correct" : "try_again"); // for logs only
 
     if (isFinalQuiz) {
-      handleQuizAnswer(ok);
+      handleQuizAnswer(ok, {
+        question: mStem || "Match the items:",
+        userAnswer: userMappings,
+        correctAnswer: mHint || "Check the correct pairings",
+        questionType: "match",
+      });
       setLastOk(ok);
       setRecentXp(0);
       const nextFn =
@@ -3945,7 +4018,12 @@ Return JSON ONLY:
     const delta = ok ? 6 : 0;
 
     if (isFinalQuiz) {
-      handleQuizAnswer(ok);
+      handleQuizAnswer(ok, {
+        question: tSentence,
+        userAnswer: userWords.join(" "),
+        correctAnswer: tCorrectWords.join(" "),
+        questionType: "translate",
+      });
       setLastOk(ok);
       setRecentXp(0);
       const nextFn =
@@ -4021,7 +4099,12 @@ Return JSON ONLY:
       const delta = ok ? 6 : 0; // ✅ normalized to 4-7 XP range
 
       if (isFinalQuiz) {
-        handleQuizAnswer(ok);
+        handleQuizAnswer(ok, {
+          question: sPrompt || sTarget,
+          userAnswer: recognizedText || "",
+          correctAnswer: sTarget,
+          questionType: "speak",
+        });
         setLastOk(ok);
         setRecentXp(0);
         const nextFn =

@@ -49,6 +49,7 @@ import useUserStore from "../hooks/useUserStore";
 import { t, translations } from "../utils/translation";
 import { WaveBar } from "./WaveBar";
 import { awardXp } from "../utils/utils";
+import { captureCompanionMemory } from "../utils/companionMemory";
 import { getLanguageXp } from "../utils/progressTracking";
 import {
   SOFT_STOP_BUTTON_BG,
@@ -397,10 +398,14 @@ export default function StoryMode({
 
   const targetLang = progress.targetLang;
 
-  // Use CEFR level from the current lesson, or user's proficiency level as fallback
-  const cefrLevel = lesson?.id
-    ? extractCEFRLevel(lesson.id)
-    : getUserProficiencyLevel(progress, targetLang);
+  // Repair/ephemeral lessons carry an explicit CEFR level; regular path lessons
+  // can still derive it from their level-coded id.
+  const cefrLevel =
+    lesson?.cefrLevel ||
+    lessonContent?.cefrLevel ||
+    (lesson?.id
+      ? extractCEFRLevel(lesson.id)
+      : getUserProficiencyLevel(progress, targetLang));
 
   // APP UI language (drives all UI copy)
   const uiLang = getAppUILang();
@@ -1551,6 +1556,7 @@ export default function StoryMode({
           description: t(uiLang, "story_audio_eval_error_desc"),
           status: "error",
           duration: 2500,
+          position: "top",
         });
         return;
       }
@@ -1570,6 +1576,21 @@ export default function StoryMode({
           description: tips.join(" "),
           status: "warning",
           duration: 3800,
+          position: "top",
+        });
+
+        // Companion brain: a missed sentence-practice attempt (pronunciation) is
+        // a high-signal weak spot — bank it for tomorrow's repair.
+        captureCompanionMemory({
+          npub: npubLive,
+          targetLang,
+          supportLang,
+          sourceMode: "story",
+          concept: target,
+          userAnswer: recognizedText || "",
+          expectedAnswer: target,
+          cefrLevel,
+          sourceContext: "story",
         });
 
         // log failed attempt (0 XP)

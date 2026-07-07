@@ -68,7 +68,7 @@ import {
   CloseIcon,
 } from "@chakra-ui/icons";
 import { CiUser, CiEdit } from "react-icons/ci";
-import { MdOutlineSupportAgent } from "react-icons/md";
+import { MdOutlineSupportAgent, MdShowChart } from "react-icons/md";
 import {
   RiSpeakLine,
   RiBook2Line,
@@ -96,6 +96,7 @@ import {
   PiSealQuestionDuotone,
 } from "react-icons/pi";
 import { FiClock, FiCompass, FiPause, FiPlay, FiTarget } from "react-icons/fi";
+import { FaCalendarAlt, FaCalendarCheck } from "react-icons/fa";
 
 import {
   collection,
@@ -127,11 +128,11 @@ import VoicePreferenceField from "./components/VoicePreferenceField";
 
 import { translations } from "./utils/translation";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "./utils/llm";
+import { clampCefrLevel, maxCefrLevel } from "./utils/phonicsLevel";
 import Vocabulary from "./components/Vocabulary";
 import StoryMode from "./components/Stories";
 import History from "./components/History";
 import HelpChatFab from "./components/HelpChatFab";
-import { WaveBar } from "./components/WaveBar";
 import DailyGoalModal from "./components/DailyGoalModal";
 import DailyGoalPetPanel from "./components/DailyGoalPetPanel.jsx";
 import { getCustomizeModalCopy } from "./components/companionCustomizeCopy";
@@ -146,6 +147,7 @@ import RealWorldTasksModal, {
   REAL_WORLD_TASKS_REFRESH_MS,
 } from "./components/RealWorldTasksModal";
 import useNotesStore from "./hooks/useNotesStore";
+import useRepairFocusStore from "./hooks/useRepairFocusStore";
 import { subscribeToTeamInvites } from "./utils/teams";
 import SkillTree from "./components/SkillTree";
 import DailyPlateHome from "./components/DailyPlateHome";
@@ -157,6 +159,7 @@ import {
   PLATE_COURSE_META,
   PLATE_EXERCISE_COMPLETE_COPY,
   PLATE_NEXT_COPY,
+  PLATE_VIEW_NOTES_COPY,
   PLATE_TITLE_COPY,
   plateUiCopy,
 } from "./utils/dailyPlateCopy";
@@ -167,12 +170,16 @@ import {
   claimDailyPlateBonus,
   clearPlateSession,
   electDailyQuestCourses,
+  getDailyPlateDayKey,
   getDailyPlateSnapshot,
   getNextPlateCourse,
   getQuestNeglectWeights,
   hasSeenFirstQuest,
+  isPastFirstQuest,
   isPlateSessionFor,
+  markFirstQuestFlagOnly,
   markFirstQuestSeen,
+  normalizePlateLang,
   readPlateSession,
   readQuestPlate,
   readQuestPlateKinds,
@@ -180,6 +187,22 @@ import {
   startPlateSession,
   writeQuestPlate,
 } from "./utils/dailyPlate";
+import {
+  buildEphemeralRepairLesson,
+  completeRepairLesson,
+  getBlueprintCarryOverKinds,
+  getNextRepairStep,
+  getReusableMemory,
+  getStoredRepairPlan,
+  getTodaysCapturedNotes,
+  getTomorrowKey,
+  getYesterdayKey,
+  pruneCompanionMemory,
+  resetTodayRepairArtifacts,
+  runDailyBatch,
+  shouldRunDailyBatch,
+} from "./utils/companionMemory";
+import CompanionRepairModal from "./components/CompanionRepairModal";
 import {
   startLesson,
   completeLesson,
@@ -219,7 +242,6 @@ import {
   inferCefrLevelFromLessonId,
 } from "./utils/gameReviewContext";
 import { LESSON_COUNTS, getLessonLevelFromId } from "./utils/cefrProgress";
-import { FaCalendarAlt, FaCalendarCheck, FaKey } from "react-icons/fa";
 import { BsCalendar2DateFill } from "react-icons/bs";
 import { TbLanguage } from "react-icons/tb";
 import sparkleSound from "./assets/sparkle.mp3";
@@ -362,6 +384,37 @@ const TEST_UNLOCK_NSEC =
 
 const DEFAULT_VOICE_PAUSE_MS = 600;
 const LOADING_ORB_STATES = ["idle", "listening", "speaking"];
+
+// Repair routing: which surface each repair-step mode opens. Only modes
+// whose surface is wired for repair (seeding + completion) belong here;
+// "lesson" steps run as ephemeral skill-tree lessons instead. Conversation is
+// deliberately NOT a repair surface — free-form chat can't verify a specific
+// weak spot. "flashcards" opens the real deck surface, which builds a small
+// generated repair deck from the step (see FlashcardSkillTree).
+const REPAIR_MODE_TO_SURFACE = {
+  phonics: "alphabet",
+  tutor: "tutor",
+  speak: "tutor",
+  flashcards: "flashcards",
+};
+
+function hasVisibleChakraModalSurface() {
+  if (typeof document === "undefined" || typeof window === "undefined") {
+    return false;
+  }
+  return Array.from(
+    document.querySelectorAll(
+      ".chakra-modal__content-container, .chakra-modal__overlay",
+    ),
+  ).some((element) => {
+    const style = window.getComputedStyle(element);
+    return (
+      style.display !== "none" &&
+      style.visibility !== "hidden" &&
+      element.getAttribute("aria-hidden") !== "true"
+    );
+  });
+}
 
 function getRandomLoadingOrbState() {
   return LOADING_ORB_STATES[
@@ -1307,6 +1360,34 @@ function TopBar({
     const ref = doc(database, "users", activeNpub);
     const unsub = onSnapshot(ref, async (snap) => {
       const data = snap.exists() ? snap.data() : {};
+
+      // Keep the companion-brain fields live in the store. connectDID's
+      // one-shot read can lag or fail on a refresh, which used to strand the
+      // plate without its Repair course and show the Memory drawer empty until
+      // the next full reload ("sometimes it vanishes"). This listener retries
+      // until Firestore answers — and latency compensation means our own
+      // local writes are reflected immediately, so it can't clobber a capture
+      // that's still in flight.
+      try {
+        const companionPatch = {};
+        if (data?.companionMemory)
+          companionPatch.companionMemory = data.companionMemory;
+        if (data?.dailyQuestRepair)
+          companionPatch.dailyQuestRepair = data.dailyQuestRepair;
+        if (data?.dailyQuestBlueprint)
+          companionPatch.dailyQuestBlueprint = data.dailyQuestBlueprint;
+        if (data?.dailyQuestExplanations)
+          companionPatch.dailyQuestExplanations = data.dailyQuestExplanations;
+        if (data?.companionUnlocksCelebrated)
+          companionPatch.companionUnlocksCelebrated =
+            data.companionUnlocksCelebrated;
+        if (Object.keys(companionPatch).length) {
+          useUserStore.getState().patchUser?.(companionPatch);
+        }
+      } catch {
+        /* non-fatal: the plate re-derives on the next snapshot */
+      }
+
       const goal = getEffectiveDailyGoalXp(data);
       let resetISO = data?.dailyResetAt || null;
       const completedDates = Array.isArray(data?.completedGoalDates)
@@ -1425,12 +1506,38 @@ function TopBar({
       );
   }, [activeNpub]);
 
-  const dailyPct =
+  const dailyRawPct =
     dailyGoalXp > 0
-      ? Math.min(100, Math.round((dailyXp / dailyGoalXp) * 100))
+      ? Math.max(0, Math.round((dailyXp / dailyGoalXp) * 100))
       : 0;
-  const dailyBarPct = dailyPct > 0 && dailyPct < 6 ? 6 : dailyPct;
   const dailyDone = dailyGoalXp > 0 && dailyXp >= dailyGoalXp;
+  // Daily XP HUD tiers: reward blue (light) / teal (dark) at 100%+,
+  // purple past 50%, neutral gray below.
+  const dailyGoalHudColor =
+    dailyRawPct >= 100
+      ? themeMode === "light"
+        ? "#39BFD1"
+        : "#2dd4bf"
+      : dailyRawPct > 50
+        ? themeMode === "light"
+          ? "#6d28d9"
+          : "#b794f4"
+        : themeMode === "light"
+          ? "#4b5563"
+          : "whiteAlpha.700";
+  const dailyGoalLabel = uiCopy(appLanguage, {
+    en: "Daily XP",
+    es: "XP diaria",
+    pt: "XP diária",
+    fr: "XP du jour",
+    it: "XP giornaliera",
+    de: "Tägliche XP",
+    ja: "今日のXP",
+    zh: "每日 XP",
+    ru: "Ежедневный XP",
+    ar: "XP اليومية",
+    hi: "दैनिक XP",
+  });
 
   const cefrTimestamp =
     cefrResult?.updatedAt &&
@@ -1516,9 +1623,9 @@ function TopBar({
             wrap="wrap"
             spacing={{ base: 2, md: 3 }}
           >
-            {/* LEFT: Daily Goal Button + WaveBar */}
+            {/* LEFT: Daily Goal button + Daily XP status */}
             <HStack
-              spacing={{ base: 2, md: 3 }}
+              spacing={{ base: 1, md: 1.5 }}
               minW={0}
               flex="1 1 auto"
               align="center"
@@ -1540,9 +1647,41 @@ function TopBar({
                 _active={{ transform: "none" }}
                 {...getTopBarPressProps("daily-goal", onOpenDailyGoalModal)}
               />
-              <Box w={{ base: "100px", sm: "130px", md: "160px" }}>
-                <WaveBar value={dailyBarPct} />
-              </Box>
+              <HStack
+                spacing={{ base: 0.5, md: 0.5 }}
+                h="34px"
+                minW={0}
+                px={0}
+                align="center"
+                color={dailyGoalHudColor}
+                title={`${dailyGoalLabel}: ${dailyRawPct}%`}
+              >
+                <Box
+                  as={MdShowChart}
+                  boxSize={{ base: 4, md: 4.5 }}
+                  flexShrink={0}
+                />
+                <Text
+                  fontSize={{ base: "xs", md: "xs" }}
+                  fontWeight="bold"
+                  lineHeight="1"
+                  whiteSpace="nowrap"
+                  maxW={{ base: "92px", sm: "140px", md: "none" }}
+                  overflow="hidden"
+                  textOverflow="ellipsis"
+                >
+                  {dailyGoalLabel}:
+                </Text>
+                <Text
+                  fontSize={{ base: "xs", md: "xs" }}
+                  fontWeight="bold"
+                  lineHeight="1"
+                  fontVariantNumeric="tabular-nums"
+                  whiteSpace="nowrap"
+                >
+                  {dailyRawPct}%
+                </Text>
+              </HStack>
             </HStack>
 
             <Spacer display={{ base: "none", md: "block" }} />
@@ -1728,7 +1867,7 @@ function TopBar({
                         height: "3px",
                         borderRadius: "full",
                         bgGradient:
-                          "linear(to-r, cyan.300, blue.400, purple.400)",
+                          "linear(to-r, cyan.300, teal.400)",
                         opacity: 0,
                         transform: "scaleX(0.7)",
                         transformOrigin: "center",
@@ -1803,7 +1942,7 @@ function TopBar({
                         height: "3px",
                         borderRadius: "full",
                         bgGradient:
-                          "linear(to-r, cyan.300, blue.400, purple.400)",
+                          "linear(to-r, cyan.300, teal.400)",
                         opacity: 0,
                         transform: "scaleX(0.7)",
                         transformOrigin: "center",
@@ -2727,6 +2866,11 @@ export default function App({ onBootReady } = {}) {
     return "skillTree";
   });
   const [activeLesson, setActiveLesson] = useState(null);
+  // Bumped when "next" is pressed in a single-module lesson (e.g. the repair
+  // flashcards lesson, modes=["vocabulary"]): there's no other module to hop
+  // to, so we remount the current one to regenerate a fresh question — the
+  // same effect a tab-hop has in multi-module lessons.
+  const [lessonModuleNonce, setLessonModuleNonce] = useState(0);
   const [preGeneratedGameScenario, setPreGeneratedGameScenario] =
     useState(null);
   const [tutorialGameScenario, setTutorialGameScenario] = useState(null);
@@ -2749,13 +2893,21 @@ export default function App({ onBootReady } = {}) {
   ];
 
   // Path mode state (plate, path, flashcards, conversations, tutor, alphabet bootcamp)
-  // The last-used mode persists across refreshes/returns so users who live in
-  // one mode land back there; the Daily Plate home is the default for new
-  // users (and after onboarding or a language switch). Invalid stored values
-  // are sanitized to "plate" by the validation effect below.
+  // Every load starts on the Daily Quest home ("plate") — the last-used mode
+  // intentionally does not survive a refresh/return. The one exception is the
+  // one-shot "pathModeHandoff" key, written by flows on other routes that need
+  // to land somewhere specific on remount (the proficiency test queues
+  // "tutor"); it's consumed here so it can't leak into later loads. Invalid
+  // values are sanitized to "plate" by the validation effect below.
   const [pathMode, setPathMode] = useState(() => {
     if (typeof window !== "undefined") {
-      return localStorage.getItem("pathMode") || "plate";
+      try {
+        const handoff = localStorage.getItem("pathModeHandoff");
+        localStorage.removeItem("pathModeHandoff");
+        // Legacy key from when the last-used mode persisted across loads.
+        localStorage.removeItem("pathMode");
+        if (handoff) return handoff;
+      } catch {}
     }
     return "plate";
   });
@@ -2787,13 +2939,6 @@ export default function App({ onBootReady } = {}) {
 
   // Counter to trigger scroll to latest unlocked (increments on each scroll request)
   const [scrollToLatestTrigger, setScrollToLatestTrigger] = useState(0);
-
-  // Save pathMode to localStorage when it changes
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("pathMode", pathMode);
-    }
-  }, [pathMode]);
 
   // Reset to the Daily Plate home on language switch; also validate pathMode
   useEffect(() => {
@@ -2885,6 +3030,58 @@ export default function App({ onBootReady } = {}) {
   const companionUnlockFlushTimerRef = useRef(null);
   const companionUnlockSeenRef = useRef(new Set());
 
+  // Once-per-account guard for the unlock celebration. The in-memory seen-set
+  // only dedupes within a session; boot can re-derive a level transition (XP
+  // hydrates in steps), which used to replay "Alien unlocked!" on refresh.
+  // Two persisted layers because the level transition can fire BEFORE the user
+  // doc hydrates into the store: localStorage is synchronous (never races) and
+  // the Firestore field covers other devices / cleared storage.
+  const isCompanionUnlockCelebrated = useCallback(
+    (petType) => {
+      const type = normalizePetType(petType);
+      const celebrated =
+        useUserStore.getState()?.user?.companionUnlocksCelebrated || {};
+      if (celebrated[type]) return true;
+      try {
+        return (
+          window.localStorage.getItem(
+            `companionUnlockCelebrated:${activeNpub || "local"}:${type}`,
+          ) === "1"
+        );
+      } catch {
+        return false;
+      }
+    },
+    [activeNpub],
+  );
+  const markCompanionUnlockCelebrated = useCallback(
+    (petType) => {
+      const type = normalizePetType(petType);
+      try {
+        window.localStorage.setItem(
+          `companionUnlockCelebrated:${activeNpub || "local"}:${type}`,
+          "1",
+        );
+      } catch {
+        /* ignore quota/availability */
+      }
+      const store = useUserStore.getState();
+      const existing = store?.user?.companionUnlocksCelebrated || {};
+      if (!existing[type]) {
+        store.patchUser?.({
+          companionUnlocksCelebrated: { ...existing, [type]: true },
+        });
+      }
+      if (!activeNpub) return;
+      setDoc(
+        doc(database, "users", activeNpub),
+        { companionUnlocksCelebrated: { [type]: true } },
+        { merge: true },
+      ).catch(() => {});
+    },
+    [activeNpub],
+  );
+
   const queueCompanionUnlocks = useCallback(
     (types, reachedLevel, options = {}) => {
       const unlockTypes = Array.isArray(types) ? types : [];
@@ -2895,6 +3092,8 @@ export default function App({ onBootReady } = {}) {
         .map((type) => {
           const normalizedType = normalizePetType(type);
           const unlockLevel = getPetUnlockLevel(normalizedType);
+          // Already celebrated on some earlier session/device → never replay.
+          if (isCompanionUnlockCelebrated(normalizedType)) return null;
           const key = `${activeNpub || "local"}:${normalizedType}`;
           if (companionUnlockSeenRef.current.has(key)) return null;
           companionUnlockSeenRef.current.add(key);
@@ -2912,7 +3111,7 @@ export default function App({ onBootReady } = {}) {
       companionUnlockQueueRef.current.push(...nextUnlocks);
       setCompanionUnlockQueueTick((tick) => tick + 1);
     },
-    [activeNpub, appLanguage],
+    [activeNpub, appLanguage, isCompanionUnlockCelebrated],
   );
 
   useEffect(() => {
@@ -3004,6 +3203,19 @@ export default function App({ onBootReady } = {}) {
 
     if (!activeNpub) return;
 
+    // Synchronous local flag too: the Firestore field can lag behind a refresh
+    // (user doc loads after the show-effect runs), which would briefly re-trigger
+    // onboarding. localStorage is read synchronously on the next mount, so the
+    // tutorial never re-shows once completed on this device.
+    try {
+      window.localStorage.setItem(
+        `skillTreeTutorialCompleted:${activeNpub}`,
+        "1",
+      );
+    } catch {
+      /* ignore quota/availability */
+    }
+
     try {
       setDoc(
         doc(database, "users", activeNpub),
@@ -3043,6 +3255,7 @@ export default function App({ onBootReady } = {}) {
   const activeLessonLanguageRef = useRef(resolvedTargetLang);
   const lastTargetLangRef = useRef(resolvedTargetLang);
   const pendingLessonCompletionRef = useRef(null);
+  const lessonCompletionSequenceActiveRef = useRef(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -3414,8 +3627,21 @@ export default function App({ onBootReady } = {}) {
 
     skillTreeTutorialCheckedRef.current = true;
 
+    // Treat the tutorial as done if EITHER the synced user flag or the local
+    // device flag is set. The local flag guards the refresh race where the user
+    // doc (with skillTreeTutorialCompleted) hasn't loaded yet when this runs.
+    let locallyCompleted = false;
+    try {
+      locallyCompleted =
+        window.localStorage.getItem(
+          `skillTreeTutorialCompleted:${activeNpub}`,
+        ) === "1";
+    } catch {
+      locallyCompleted = false;
+    }
+
     // Show tutorial if not completed
-    if (!user.skillTreeTutorialCompleted) {
+    if (!user.skillTreeTutorialCompleted && !locallyCompleted) {
       // Small delay to let UI settle
       setTimeout(() => {
         setShowSkillTreeTutorial(true);
@@ -4523,7 +4749,6 @@ export default function App({ onBootReady } = {}) {
 
       try {
         localStorage.setItem("appLanguage", uiLangForPersist);
-        localStorage.setItem("pathMode", "plate");
       } catch {}
       syncDocumentLanguage(uiLangForPersist);
       setAppLanguage(uiLangForPersist);
@@ -4624,7 +4849,11 @@ export default function App({ onBootReady } = {}) {
   // Handle starting a lesson from the skill tree
   const handleStartLesson = async (lesson, preGeneratedScenario = null) => {
     if (!lesson) return false;
-    const enrichedLesson = await enrichLessonForGameReview(lesson);
+    // Ephemeral repair lessons aren't part of the learning path: no game-review
+    // enrichment (their id isn't in any unit) and no lesson-progress writes.
+    const enrichedLesson = lesson.isRepair
+      ? lesson
+      : await enrichLessonForGameReview(lesson);
 
     // Store pre-generated scenario for game lessons
     setPreGeneratedGameScenario(preGeneratedScenario || null);
@@ -4642,7 +4871,7 @@ export default function App({ onBootReady } = {}) {
       const preProgressSource = user?.progress || { totalXp: fallbackTotalXp };
       const currentXp = getLanguageXp(preProgressSource, lessonLang);
 
-      if (npub) {
+      if (npub && !enrichedLesson.isRepair) {
         // Pass current user progress so startLesson can preserve COMPLETED/IN_PROGRESS status
         await startLesson(
           npub,
@@ -4748,6 +4977,10 @@ export default function App({ onBootReady } = {}) {
       return false;
     }
   };
+  // Latest-instance ref so stable callbacks (e.g. the plate's repair routing)
+  // can launch a lesson without depending on this per-render function.
+  const handleStartLessonRef = useRef(handleStartLesson);
+  handleStartLessonRef.current = handleStartLesson;
 
   const persistFlashcardReview = useCallback(
     async (card) => {
@@ -4806,6 +5039,24 @@ export default function App({ onBootReady } = {}) {
             {
               targetLang: resolvedTargetLang,
               cardId: card.id,
+              // Generated cards (repair decks) aren't in the predefined
+              // library, so the first answer stores the card's definition
+              // alongside its progress — that's what adds it to the main
+              // deck (FlashcardSkillTree merges these into the queues).
+              ...(card.isRepair &&
+              card.concept &&
+              typeof card.concept === "object"
+                ? {
+                    card: {
+                      id: card.id,
+                      concept: card.concept,
+                      cefrLevel: card.cefrLevel || "A1",
+                      category: card.category || "repair",
+                      type: card.type || "phrase",
+                      isRepair: true,
+                    },
+                  }
+                : {}),
               ...reviewPatch,
               updatedAt,
             },
@@ -4884,16 +5135,49 @@ export default function App({ onBootReady } = {}) {
 
       console.log("[Lesson Completion] Triggered", { reason, activeLesson });
       lessonCompletionTriggeredRef.current = true;
+      lessonCompletionSequenceActiveRef.current = true;
 
       const npub = resolveNpub();
       if (!npub) {
         lessonCompletionTriggeredRef.current = false;
+        lessonCompletionSequenceActiveRef.current = false;
         return;
       }
 
       const lessonLang = activeLessonLanguageRef.current || resolvedTargetLang;
 
       try {
+        if (activeLesson.isRepair) {
+          // Repair flow: stay put — no lesson-completion modal and NO
+          // navigation here. completeRepairLesson flips the plate's repair
+          // course, the "task complete" celebration renders over this view,
+          // and ITS Continue button moves the learner onward
+          // (handlePlateCelebrationContinue → next task / plate home).
+          //
+          // Release the celebration blockers BEFORE any network waits: there
+          // is no lesson-modal chain here, and the course flips via local
+          // store patches inside completeRepairLesson — the modal should
+          // appear the moment the objective completes, not after the writes
+          // and the profile reload settle.
+          lessonCompletionSequenceActiveRef.current = false;
+          // Repair XP is tagged "repairLesson" so it doesn't also advance the
+          // separate Learn task; the plate count comes from
+          // completeRepairLesson (uses the live focus, or the data embedded
+          // in the lesson if the app reloaded mid-lesson).
+          deferDailyGoalCelebrationRef.current = true;
+          await Promise.all([
+            completeRepairLesson({
+              lesson: activeLesson,
+              npub,
+              targetLang: lessonLang,
+            }),
+            awardXp(npub, activeLesson.xpReward, lessonLang, "repairLesson"),
+          ]);
+          const freshRepair = await loadUserObjectFromDB(database, npub);
+          if (freshRepair) setUser?.(freshRepair);
+          return;
+        }
+
         // completeLesson marks the lesson complete (status tracking only, no XP)
         await completeLesson(
           npub,
@@ -4902,7 +5186,6 @@ export default function App({ onBootReady } = {}) {
           lessonLang,
         );
 
-        // awardXp handles all XP awarding with proper daily goal checking and celebration events
         deferDailyGoalCelebrationRef.current = true;
         await awardXp(npub, activeLesson.xpReward, lessonLang, "lesson");
 
@@ -4936,6 +5219,7 @@ export default function App({ onBootReady } = {}) {
       } catch (err) {
         console.error("Failed to complete lesson:", err);
         lessonCompletionTriggeredRef.current = false;
+        lessonCompletionSequenceActiveRef.current = false;
       }
     },
     [
@@ -5003,16 +5287,17 @@ export default function App({ onBootReady } = {}) {
 
     // NORMAL MODE: Random switching
     if (availableModes.length <= 1) {
-      console.log(
-        "[switchToRandomLessonMode] Only one mode available, not switching",
-      );
+      // Single-module lesson (e.g. the repair flashcards lesson): no module to
+      // hop to, so remount the current one for a fresh question instead of
+      // silently doing nothing (which left "Next question" frozen).
+      setLessonModuleNonce((n) => n + 1);
       return;
     }
 
     // Filter out current mode to ensure we switch to a different one
     const otherModes = availableModes.filter((mode) => mode !== currentTab);
     if (otherModes.length === 0) {
-      console.log("[switchToRandomLessonMode] No other modes to switch to");
+      setLessonModuleNonce((n) => n + 1);
       return;
     }
 
@@ -5044,6 +5329,7 @@ export default function App({ onBootReady } = {}) {
   const handleCloseCompletionModal = useCallback(() => {
     setShowCompletionModal(false);
     setCompletedLessonData(null);
+    lessonCompletionSequenceActiveRef.current = false;
 
     const openedDailyGoalCelebration = openPendingDailyGoalCelebration();
 
@@ -5938,7 +6224,12 @@ export default function App({ onBootReady } = {}) {
         queueCompanionUnlocks(
           getNewlyUnlockedPetTypes(previousCompanionLevel, nextCompanionLevel),
           nextCompanionLevel,
-          { expectsModal: source === "lesson" || source === "speak" },
+          {
+            expectsModal:
+              source === "lesson" ||
+              source === "repairLesson" ||
+              source === "speak",
+          },
         );
       }
 
@@ -7400,15 +7691,70 @@ export default function App({ onBootReady } = {}) {
     resolvedTargetLang,
   ]);
 
+  // Stable per-day language/day keys (independent of the elected kinds), used
+  // by the repair + prune effects so they don't depend on the snapshot they
+  // help shape.
+  const plateLangKey = normalizePlateLang(resolvedTargetLang);
+  const plateDayKey = getDailyPlateDayKey();
+
+  // Today's repair plan (curated from yesterday's companion memory), if any.
+  const repairPlanToday = useMemo(
+    () => getStoredRepairPlan(user, resolvedTargetLang, plateDayKey),
+    [user, resolvedTargetLang, plateDayKey],
+  );
+  const repairLessonCefrLevel =
+    displayActiveLessonLevel ||
+    currentLessonLevel ||
+    currentCEFRLevel ||
+    "Pre-A1";
+
+  // Tutor-earned unlock, persisted by Tutor.jsx when every tutor lesson in a
+  // CEFR level is complete — lets tutor-only progress raise ceilings here and
+  // in SkillTree's maxProficiencyLevel.
+  const tutorUnlockedLevel = clampCefrLevel(
+    user?.progress?.tutorUnlockedLevels?.[
+      String(resolvedTargetLang || "es").toLowerCase()
+    ] ?? user?.progress?.tutorUnlockedLevels?.[resolvedTargetLang],
+  );
+
+  // Phonics deck generation bounds. Placement seeds the bootcamp's own deck
+  // ladder (the way it pre-unlocks levels elsewhere); the ceiling is built
+  // from UNLOCKED levels only — never display/active browse state, so viewing
+  // a B2 tab can't inflate generated phonics difficulty. Placement can be the
+  // literal string "skipped", which clampCefrLevel filters out.
+  const phonicsPlacementLevel = clampCefrLevel(
+    user?.proficiencyPlacements?.[resolvedTargetLang],
+  );
+  const phonicsCourseCeilingLevel =
+    maxCefrLevel(
+      currentLessonLevel,
+      currentFlashcardLevel,
+      tutorUnlockedLevel,
+    ) || "Pre-A1";
+
+  // Option A: kinds the learner left unfinished on an incomplete previous day,
+  // carried into today by the batch blueprint. Derived (never elected), like
+  // repair, so they can't fight the elector.
+  const carryOverKinds = useMemo(
+    () => getBlueprintCarryOverKinds(user, resolvedTargetLang, plateDayKey),
+    [user, resolvedTargetLang, plateDayKey],
+  );
+
+  // The plate's display kinds = elected base, with carried-over unfinished
+  // kinds and "repair" prepended (deduped). The elected base (persisted) never
+  // contains either, so this stays purely derived and can't fight the elector.
+  const questKinds = useMemo(() => {
+    const base = electedQuestKinds.filter((k) => k !== "repair");
+    const withRepair = repairPlanToday ? ["repair", ...base] : base;
+    if (!carryOverKinds.length) return withRepair;
+    const carry = carryOverKinds.filter((k) => !withRepair.includes(k));
+    return [...carry, ...withRepair];
+  }, [repairPlanToday, electedQuestKinds, carryOverKinds]);
+
   const plateSnapshot = useMemo(
     () =>
-      getDailyPlateSnapshot(
-        user,
-        resolvedTargetLang,
-        undefined,
-        electedQuestKinds,
-      ),
-    [user, resolvedTargetLang, electedQuestKinds],
+      getDailyPlateSnapshot(user, resolvedTargetLang, undefined, questKinds),
+    [user, resolvedTargetLang, questKinds],
   );
 
   // Resolve today's quest composition:
@@ -7426,13 +7772,33 @@ export default function App({ onBootReady } = {}) {
       setElectedQuestKinds((prev) =>
         prev.join("|") === todays.join("|") ? prev : todays,
       );
+      // A plate cached by older code may have skipped the first-seen flag for a
+      // returning user. Today's plate already exists, so they're past the intro
+      // — set the flag (no first-day stamp) so the companion bubble isn't gated
+      // off. (A genuine first-timer's trio election sets the flag itself below.)
+      // Only against a LOADED user: the boot-time null user reads as unflagged,
+      // which would set the flag for a first-timer reloading mid-intro-day.
+      const cachedPathUser = useUserStore.getState?.()?.user || user;
+      if (
+        !isLoadingApp &&
+        cachedPathUser &&
+        activeNpub &&
+        !hasSeenFirstQuest(cachedPathUser)
+      ) {
+        void markFirstQuestFlagOnly(activeNpub);
+      }
       return;
     }
 
     // Need a loaded user before electing/marking (the first-seen flag and the
-    // neglect weights both come from the user doc).
-    if (!activeNpub) return;
+    // neglect weights both come from the user doc). activeNpub resolves from
+    // localStorage at mount — long before the doc loads — and electing against
+    // that boot-time null user on a new day stamped TODAY as the first quest
+    // day (clobbering the real one, re-showing the welcome bubble on a repair
+    // day) and served the intro trio instead of an auto-elected plate.
+    if (!activeNpub || isLoadingApp) return;
     const currentUser = useUserStore.getState?.()?.user || user;
+    if (!currentUser) return;
 
     let kinds;
     if (!hasSeenFirstQuest(currentUser)) {
@@ -7465,13 +7831,134 @@ export default function App({ onBootReady } = {}) {
     );
     // `user` intentionally omitted — read fresh via getState so this doesn't
     // re-run on every XP patch (already-elected days early-return anyway).
+    // isLoadingApp IS a dep: it flips false right after setUser, re-running
+    // this against the loaded doc.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     plateSnapshot.langKey,
     plateSnapshot.dayKey,
     availableQuestKinds,
     activeNpub,
+    isLoadingApp,
   ]);
+
+  // Companion brain: expire stale memory once per day. Notes live through the
+  // day after capture (Day T+1 reinforcement), then this prunes them (Day T+2).
+  // Gated on a loaded user so it never runs against an empty store, and prune
+  // itself only writes when it actually removed notes.
+  const memoryPrunedRef = useRef("");
+  useEffect(() => {
+    if (isLoadingApp || !user || !activeNpub || !plateLangKey || !plateDayKey)
+      return;
+    const onceKey = `${plateLangKey}:${plateDayKey}`;
+    if (memoryPrunedRef.current === onceKey) return;
+    memoryPrunedRef.current = onceKey;
+    void pruneCompanionMemory({ npub: activeNpub, targetLang: plateLangKey });
+  }, [isLoadingApp, user, activeNpub, plateLangKey, plateDayKey]);
+
+  // Companion batch — primary trigger. When today's quest clears, compose
+  // TOMORROW's blueprint (manga message + AI repair) from today's captured
+  // notes, so the next session is instant. Marker-first via shouldRunDailyBatch
+  // (skips if already generated, even across devices) + a ref for same-tick.
+  // No first-quest gate here: Day-1 completion legitimately seeds Day-2, which
+  // is past-intro; the caveat is enforced at consumption, not generation.
+  const blueprintCompletionRef = useRef("");
+  useEffect(() => {
+    if (isLoadingApp || !user || !activeNpub || !plateLangKey || !plateDayKey)
+      return;
+    if (!plateSnapshot.isCleared) return;
+    const tomorrowKey = getTomorrowKey();
+    if (!tomorrowKey) return;
+    const currentUser = useUserStore.getState?.()?.user || user;
+    if (!shouldRunDailyBatch(currentUser, plateLangKey, tomorrowKey)) return;
+    const sourceNotes = getTodaysCapturedNotes(currentUser, plateLangKey);
+    if (!sourceNotes.length) return;
+    const onceKey = `${plateLangKey}:${tomorrowKey}`;
+    if (blueprintCompletionRef.current === onceKey) return;
+    blueprintCompletionRef.current = onceKey;
+    void runDailyBatch({
+      npub: activeNpub,
+      targetLang: plateLangKey,
+      appLanguage,
+      sourceNotes,
+      targetDayKey: tomorrowKey,
+      todayCleared: true,
+      carryOverKinds: [],
+      cefrLevel: repairLessonCefrLevel,
+    });
+  }, [
+    isLoadingApp,
+    user,
+    activeNpub,
+    plateLangKey,
+    plateDayKey,
+    plateSnapshot.isCleared,
+    appLanguage,
+    repairLessonCefrLevel,
+  ]);
+
+  // Companion batch — fallback. On open, if today has no blueprint yet (the
+  // completion trigger never fired — yesterday's quest went unfinished, or the
+  // tab closed before it ran) and yesterday left reusable notes, compose
+  // today's blueprint now. Reads yesterday's snapshot to carry over unfinished
+  // kinds and flag the incomplete day (Option A). Gated past the intro quest.
+  const blueprintFallbackRef = useRef("");
+  useEffect(() => {
+    if (isLoadingApp || !user || !activeNpub || !plateLangKey || !plateDayKey)
+      return;
+    const currentUser = useUserStore.getState?.()?.user || user;
+    if (!isPastFirstQuest(currentUser, plateDayKey)) return;
+    if (!shouldRunDailyBatch(currentUser, plateLangKey, plateDayKey)) return;
+    const sourceNotes = getReusableMemory(currentUser, plateLangKey);
+    if (!sourceNotes.length) return;
+    const onceKey = `${plateLangKey}:${plateDayKey}`;
+    if (blueprintFallbackRef.current === onceKey) return;
+    blueprintFallbackRef.current = onceKey;
+
+    // Did yesterday's quest get finished, and what was left unfinished?
+    const yKey = getYesterdayKey();
+    const yKinds = readQuestPlateKinds(plateLangKey, yKey) || [];
+    const ySnap = yKinds.length
+      ? getDailyPlateSnapshot(
+          currentUser,
+          plateLangKey,
+          new Date(Date.now() - 86_400_000),
+          yKinds,
+        )
+      : null;
+    const yesterdayComplete = ySnap ? ySnap.isCleared : true;
+    const carryOverKinds =
+      !yesterdayComplete && ySnap
+        ? ySnap.courses
+            .filter((c) => !c.done && c.kind !== "repair")
+            .map((c) => c.kind)
+            .slice(0, 2)
+        : [];
+
+    void runDailyBatch({
+      npub: activeNpub,
+      targetLang: plateLangKey,
+      appLanguage,
+      sourceNotes,
+      targetDayKey: plateDayKey,
+      todayCleared: yesterdayComplete,
+      carryOverKinds,
+      cefrLevel: repairLessonCefrLevel,
+    });
+  }, [
+    isLoadingApp,
+    user,
+    activeNpub,
+    plateLangKey,
+    plateDayKey,
+    appLanguage,
+    repairLessonCefrLevel,
+  ]);
+
+  // Repair surface (a short ephemeral flashcard pass) opens over the plate —
+  // last-resort fallback only; flashcards/lesson repairs launch a real
+  // ephemeral lesson instead.
+  const [repairModalOpen, setRepairModalOpen] = useState(false);
 
   const [plateSessionActive, setPlateSessionActive] = useState(false);
 
@@ -7512,6 +7999,59 @@ export default function App({ onBootReady } = {}) {
   // the quest never auto-starts a session or picks the activity for them.
   const navigateToPlateCourse = useCallback(
     (kind) => {
+      if (kind === "repair") {
+        // Repair is a SEQUENCE of short steps — one per curated weak spot,
+        // each in its own practice mode (that's why the course counts 0/N).
+        // The next step = however many increments are already banked today.
+        // Live-engine steps (tutor/phonics) stash the step's mini-plan as the
+        // "repair focus" and route there; flashcards/lesson steps run as an
+        // ephemeral lesson seeded strictly with that step's weak material.
+        const stepsDone = plateSnapshot.byKind?.repair?.count || 0;
+        const step = getNextRepairStep(repairPlanToday, stepsDone);
+        if (step) {
+          const repairSurface = REPAIR_MODE_TO_SURFACE[step.mode];
+          if (repairSurface) {
+            useRepairFocusStore.getState().setFocus({
+              plan: step.plan,
+              mode: step.mode,
+              surface: repairSurface,
+              stepIndex: step.index,
+              stepCount: step.stepCount,
+              targetLang: resolvedTargetLang,
+              supportLang: appLanguage,
+              npub: activeNpub,
+            });
+            goToSkillTreeMode(repairSurface);
+            return;
+          }
+          const ephemeral = buildEphemeralRepairLesson({
+            plan: step.plan,
+            targetLang: resolvedTargetLang,
+            cefrLevel: repairLessonCefrLevel,
+            dayKey: plateDayKey,
+            recommendedMode: step.mode,
+            stepIndex: step.index,
+          });
+          if (ephemeral) {
+            useRepairFocusStore.getState().setFocus({
+              plan: step.plan,
+              mode: step.mode,
+              surface: "lesson",
+              stepIndex: step.index,
+              stepCount: step.stepCount,
+              targetLang: resolvedTargetLang,
+              supportLang: appLanguage,
+              npub: activeNpub,
+            });
+            void handleStartLessonRef.current?.(ephemeral);
+            return;
+          }
+        }
+        // No plan / no usable items → the quick card fallback.
+        goToSkillTreeMode("plate");
+        setRepairModalOpen(true);
+        return;
+      }
       if (kind === "speak") {
         goToSkillTreeMode("tutor");
         return;
@@ -7532,7 +8072,16 @@ export default function App({ onBootReady } = {}) {
       goToSkillTreeMode("path");
       setScrollToLatestTrigger((prev) => prev + 1);
     },
-    [goToSkillTreeMode],
+    [
+      goToSkillTreeMode,
+      repairPlanToday,
+      plateSnapshot,
+      resolvedTargetLang,
+      appLanguage,
+      activeNpub,
+      repairLessonCefrLevel,
+      plateDayKey,
+    ],
   );
 
   const handleStartDailyPractice = () => {
@@ -7558,6 +8107,22 @@ export default function App({ onBootReady } = {}) {
   const pendingPlateCelebrationRef = useRef(null);
   const plateCelebrationFlushTimerRef = useRef(null);
   const plateClearedCelebratedKeyRef = useRef("");
+  const plateCelebrationBlockersRef = useRef({});
+  plateCelebrationBlockersRef.current = {
+    celebrateOpen,
+    companionUnlockModalOpen: Boolean(companionUnlockModal),
+    gettingStartedOpen,
+    modesIntroOpen,
+    pendingInstallModalAfterTutorial,
+    pendingTutorialBitcoinModal,
+    plateCelebrationOpen: Boolean(plateCelebration),
+    proficiencyTestOpen,
+    repairModalOpen,
+    showCompletionModal,
+    showProficiencyCompletionModal,
+    showTutorialBitcoinModal,
+    timeUpOpen,
+  };
 
   const flushCompanionUnlockWhenQuiet = useCallback(() => {
     if (companionUnlockFlushTimerRef.current) {
@@ -7601,9 +8166,22 @@ export default function App({ onBootReady } = {}) {
     };
 
     const showQueued = () => {
-      const nextUnlock = companionUnlockQueueRef.current.shift() || null;
+      // Final gate at show time: the queue may hold items that snuck in before
+      // the user doc hydrated (the boot level-transition race). By now the
+      // persisted celebrated-map is loaded, so drop anything already shown.
+      let nextUnlock = null;
+      while (companionUnlockQueueRef.current.length) {
+        const candidate = companionUnlockQueueRef.current.shift();
+        if (candidate && !isCompanionUnlockCelebrated(candidate.type)) {
+          nextUnlock = candidate;
+          break;
+        }
+      }
       if (!nextUnlock) return;
       setCompanionUnlockModal((prev) => prev || nextUnlock);
+      // Persist once-per-account the moment it renders, so a refresh (even
+      // mid-modal) never replays this unlock celebration.
+      markCompanionUnlockCelebrated(nextUnlock.type);
     };
 
     const tick = () => {
@@ -7639,7 +8217,11 @@ export default function App({ onBootReady } = {}) {
       tick,
       expectsModal ? 90 : 0,
     );
-  }, [companionUnlockModal]);
+  }, [
+    companionUnlockModal,
+    markCompanionUnlockCelebrated,
+    isCompanionUnlockCelebrated,
+  ]);
 
   useEffect(() => {
     if (!companionUnlockQueueRef.current.length || companionUnlockModal) return;
@@ -7656,9 +8238,9 @@ export default function App({ onBootReady } = {}) {
       plateCelebrationFlushTimerRef.current = null;
     }
     const startedAt = Date.now();
-    // Only lessons / Tutor lessons render their own completion-modal chain that
-    // we must wait behind. Flashcards / phonics / conversation don't, so they
-    // shouldn't pay the grace-window wait — show their celebration promptly.
+    // `expectsModal` only controls the initial grace window for completion
+    // chains that may mount a beat late. The poll below still waits behind any
+    // modal or pending modal state that actually exists.
     const expectsModal = Boolean(
       pendingPlateCelebrationRef.current?.expectsModal,
     );
@@ -7676,19 +8258,32 @@ export default function App({ onBootReady } = {}) {
       playSound(queued.type === "cleared" ? "questCleared" : "questComplete");
     };
 
+    const hasBlockingModalSurface = () => {
+      const blockers = plateCelebrationBlockersRef.current || {};
+      const modalStore = useModalStore.getState?.() || {};
+      return Boolean(
+        lessonCompletionSequenceActiveRef.current ||
+        pendingLessonCompletionRef.current ||
+        pendingDailyGoalCelebrationRef.current ||
+        pendingTutorialBitcoinModalRef.current ||
+        modalStore.dailyGoalOpen ||
+        modalStore.timerModalOpen ||
+        Object.values(blockers).some(Boolean) ||
+        hasVisibleChakraModalSurface(),
+      );
+    };
+
     const tick = () => {
       plateCelebrationFlushTimerRef.current = null;
       if (!pendingPlateCelebrationRef.current) return;
-      if (typeof document === "undefined") {
+      if (typeof document === "undefined" || typeof window === "undefined") {
         showQueued();
         return;
       }
-      const modalOpen =
-        document.querySelectorAll(".chakra-modal__overlay").length > 0;
-      if (modalOpen) {
+      if (hasBlockingModalSurface()) {
         chain.sawModal = true;
         chain.quietChecks = 0;
-        plateCelebrationFlushTimerRef.current = setTimeout(tick, 300);
+        plateCelebrationFlushTimerRef.current = setTimeout(tick, 120);
         return;
       }
       // Wait for a not-yet-mounted completion chain only when one is expected
@@ -7741,9 +8336,18 @@ export default function App({ onBootReady } = {}) {
   const handlePlateCelebrationContinue = () => {
     const celebration = plateCelebration;
     setPlateCelebration(null);
+    // A finished ephemeral repair lesson stays on screen behind the
+    // celebration (its completion deliberately doesn't navigate) — so when
+    // there's no next course to move to, Continue must still leave the spent
+    // lesson rather than strand the learner on it.
+    const finishedRepairLesson =
+      viewMode === "lesson" && Boolean(activeLesson?.isRepair);
     if (celebration?.type === "course" && celebration.next) {
       navigateToPlateCourse(celebration.next);
-    } else if (celebration?.type === "cleared" && celebration.navigateHome) {
+    } else if (
+      (celebration?.type === "cleared" && celebration.navigateHome) ||
+      finishedRepairLesson
+    ) {
       goToSkillTreeMode("plate");
     }
   };
@@ -7808,12 +8412,55 @@ export default function App({ onBootReady } = {}) {
       .find(
         (kind) => plateSnapshot.byKind[kind]?.done && !prev.byKind[kind]?.done,
       );
-    if (!justDone) return;
+    if (!justDone) {
+      // Repair advances one step (one increment) at a time, so intermediate
+      // steps never flip the course done — celebrate each banked step like a
+      // course completion. In a guided session the Continue button re-routes
+      // into "repair", which serves the NEXT step in its own mode; outside a
+      // session it's a plain acknowledgement (Continue leaves the spent step).
+      const prevRepair = prev.byKind?.repair;
+      const nowRepair = plateSnapshot.byKind?.repair;
+      const repairStepped =
+        nowRepair &&
+        prevRepair &&
+        !nowRepair.done &&
+        nowRepair.count > prevRepair.count;
+      if (!repairStepped) return;
+      requestPlateCelebration({
+        type: "course",
+        completed: "repair",
+        next: plateSessionActive ? getNextPlateCourse(plateSnapshot) : null,
+        expectsModal: false,
+        // Step progress ("1/3") so the celebration reads as one step of the
+        // multi-mode repair sequence, not the whole task.
+        progress: {
+          count: Math.min(nowRepair.count, nowRepair.target),
+          target: nowRepair.target,
+        },
+      });
+      return;
+    }
 
     const next = getNextPlateCourse(plateSnapshot);
-    // Only lessons / Tutor lessons render their own completion modal that the
-    // celebration must wait behind; the rest show promptly.
+    // Only surfaces that render their own completion modal need the
+    // celebration to wait behind them: lessons and Tutor lessons. Repair
+    // deliberately shows NO lesson-completion modal (triggerLessonCompletion
+    // early-returns for isRepair), so its "task complete" celebration is the
+    // one and only modal — show it promptly over the finished repair view.
     const expectsModal = justDone === "learn" || justDone === "speak";
+
+    // Live voice surfaces are keep-alive across mode switches, so finishing
+    // the Conversation course would otherwise leave the session talking under
+    // the task-complete modal and even after Continue navigates onward. In a
+    // guided session, tell the surface its course is done so it can hang up
+    // before the celebration lands.
+    if (plateSessionActive && typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("plate:courseComplete", {
+          detail: { kind: justDone },
+        }),
+      );
+    }
 
     if (!plateSessionActive) {
       // Standalone acknowledgement for any course finished outside a guided
@@ -7897,42 +8544,31 @@ export default function App({ onBootReady } = {}) {
     })();
   }, [activeNpub, plateSnapshot, playSound, requestPlateCelebration]);
 
-  // Dev/testing: re-roll the quest composition (elect a fresh set of course
-  // types, avoiding the current one) and wipe today's progress so the new
-  // plate can be run from scratch. Also resets the in-memory celebration
-  // guards and any active guided session.
-  const handleRegenerateQuestPlate = useCallback(async () => {
-    // No seed → a fresh random roll each press; weights still apply so it
-    // previews the real (neglect-weighted) behavior.
-    const elected = electDailyQuestCourses({
-      available: availableQuestKinds,
-      avoid: electedQuestKinds,
-      weights: getQuestNeglectWeights(
-        useUserStore.getState?.()?.user,
-        plateSnapshot.langKey,
-        availableQuestKinds,
-      ),
-    });
-    if (elected.length) {
-      void markFirstQuestSeen(activeNpub);
-      writeQuestPlate(plateSnapshot.langKey, plateSnapshot.dayKey, elected);
-      setElectedQuestKinds(elected);
+  // Dev/testing: wipe today's course counters while preserving the current
+  // quest composition, repair plan, and manga-bubble context so the exact flow
+  // can be replayed from the top. Repair-step artifacts (cached decks + the
+  // answered repair cards' progress docs) are wiped too — their ids are
+  // deterministic per day, so leaving them would make a re-run flashcards
+  // step self-complete the moment it opens.
+  const handleResetQuestPlate = useCallback(async () => {
+    if (!activeNpub) return;
+    if (plateCelebrationFlushTimerRef.current) {
+      clearTimeout(plateCelebrationFlushTimerRef.current);
+      plateCelebrationFlushTimerRef.current = null;
     }
     plateClearedCelebratedKeyRef.current = "";
     platePrevSnapshotRef.current = null;
     pendingPlateCelebrationRef.current = null;
     setPlateCelebration(null);
     endPlateSession();
-    await resetTodayPlate(activeNpub, resolvedTargetLang);
-  }, [
-    availableQuestKinds,
-    electedQuestKinds,
-    plateSnapshot.langKey,
-    plateSnapshot.dayKey,
-    activeNpub,
-    resolvedTargetLang,
-    endPlateSession,
-  ]);
+    await Promise.all([
+      resetTodayPlate(activeNpub, resolvedTargetLang),
+      resetTodayRepairArtifacts({
+        npub: activeNpub,
+        targetLang: resolvedTargetLang,
+      }),
+    ]);
+  }, [activeNpub, resolvedTargetLang, endPlateSession]);
 
   const handleBottomBarPathModeChange = useCallback(
     (newMode) => {
@@ -8058,10 +8694,6 @@ export default function App({ onBootReady } = {}) {
     pathMode === "conversations" || pathMode === "tutor"
       ? voiceConnectionStatuses[pathMode]
       : "disconnected";
-  const shouldCollapseBottomActionBar =
-    isVoiceSurfaceMode &&
-    (activeVoiceConnectionStatus === "connecting" ||
-      activeVoiceConnectionStatus === "connected");
   const skillTreeSceneBottomPadding = isVoiceSurfaceMode
     ? 0
     : { base: 32, md: 24 };
@@ -8190,6 +8822,16 @@ export default function App({ onBootReady } = {}) {
         targetLang={resolvedTargetLang}
       />
 
+      <CompanionRepairModal
+        isOpen={repairModalOpen}
+        onClose={() => setRepairModalOpen(false)}
+        plan={repairPlanToday}
+        targetLang={resolvedTargetLang}
+        appLanguage={appLanguage}
+        npub={activeNpub}
+        startIndex={plateSnapshot.byKind?.repair?.count || 0}
+      />
+
       {!isGameFullScreen && (
         <BottomActionBar
           t={t}
@@ -8212,7 +8854,6 @@ export default function App({ onBootReady } = {}) {
           notesIsLoading={notesIsLoading}
           notesIsDone={notesIsDone}
           pathMode={pathMode}
-          shouldAutoMinimize={shouldCollapseBottomActionBar}
           onMinimizedChange={handleBottomActionBarMinimizedChange}
           onPathModeChange={handleBottomBarPathModeChange}
           onScrollToLatest={() => {
@@ -8249,8 +8890,8 @@ export default function App({ onBootReady } = {}) {
               dailyGoalXp={dailyGoalTarget}
               sessionActive={plateSessionActive}
               onStartPractice={handleStartDailyPractice}
-              onRegenerate={handleRegenerateQuestPlate}
-              questKinds={electedQuestKinds}
+              onResetPlate={handleResetQuestPlate}
+              questKinds={questKinds}
               ctaDisabled={showSkillTreeTutorial}
               petHealth={dailyGoalPetHealth}
               petName={user?.dailyGoalPetName || ""}
@@ -8267,6 +8908,9 @@ export default function App({ onBootReady } = {}) {
               targetLang={resolvedTargetLang}
               npub={activeNpub}
               languageXp={userProgress?.totalXp || 0}
+              cefrLevel={repairLessonCefrLevel}
+              placementLevel={phonicsPlacementLevel}
+              courseCeilingLevel={phonicsCourseCeilingLevel}
               pauseMs={user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS}
             />
           ) : (
@@ -8293,6 +8937,7 @@ export default function App({ onBootReady } = {}) {
                 activeFlashcardLevel={displayActiveFlashcardLevel}
                 currentLessonLevel={currentLessonLevel}
                 currentFlashcardLevel={currentFlashcardLevel}
+                tutorUnlockedLevel={tutorUnlockedLevel}
                 onLessonLevelChange={handleLessonLevelChange}
                 onFlashcardLevelChange={handleFlashcardLevelChange}
                 lessonLevelCompletionStatus={lessonLevelCompletionStatus}
@@ -8383,6 +9028,7 @@ export default function App({ onBootReady } = {}) {
                     return (
                       <TabPanel key="realtime" px={0}>
                         <RealTimeTest
+                          key={`realtime-${lessonModuleNonce}`}
                           auth={auth}
                           activeNpub={activeNpub}
                           activeNsec={activeNsec}
@@ -8409,6 +9055,7 @@ export default function App({ onBootReady } = {}) {
                     return (
                       <TabPanel key="stories" px={0}>
                         <StoryMode
+                          key={`stories-${lessonModuleNonce}`}
                           userLanguage={appLanguage}
                           activeNpub={activeNpub}
                           activeNsec={activeNsec}
@@ -8425,6 +9072,7 @@ export default function App({ onBootReady } = {}) {
                     return (
                       <TabPanel key="reading" px={0}>
                         <History
+                          key={`reading-${lessonModuleNonce}`}
                           userLanguage={appLanguage}
                           lesson={activeLesson}
                           lessonContent={activeLesson?.content?.reading}
@@ -8437,6 +9085,7 @@ export default function App({ onBootReady } = {}) {
                     return (
                       <TabPanel key="grammar" px={0}>
                         <GrammarBook
+                          key={`grammar-${lessonModuleNonce}`}
                           userLanguage={appLanguage}
                           activeNpub={activeNpub}
                           activeNsec={activeNsec}
@@ -8462,6 +9111,7 @@ export default function App({ onBootReady } = {}) {
                     return (
                       <TabPanel key="vocabulary" px={0}>
                         <Vocabulary
+                          key={`vocabulary-${lessonModuleNonce}`}
                           userLanguage={appLanguage}
                           activeNpub={activeNpub}
                           activeNsec={activeNsec}
@@ -9148,6 +9798,25 @@ export default function App({ onBootReady } = {}) {
                 >
                   {plateUiCopy(appLanguage, PLATE_CLOSE_COPY)}
                 </Button>
+                <Button
+                  variant="ghost"
+                  size="md"
+                  width="100%"
+                  mt={-2}
+                  color="white"
+                  fontWeight="semibold"
+                  _hover={{ bg: "rgba(255, 255, 255, 0.14)" }}
+                  _active={{ bg: "rgba(255, 255, 255, 0.22)" }}
+                  onClick={() => {
+                    // Close the celebration through the normal path (returns
+                    // home when navigateHome is set), with the Memory drawer
+                    // opening on top of wherever that lands.
+                    handlePlateCelebrationContinue();
+                    setNotesOpen(true);
+                  }}
+                >
+                  {plateUiCopy(appLanguage, PLATE_VIEW_NOTES_COPY)}
+                </Button>
               </VStack>
             ) : plateCelebration ? (
               <VStack spacing={6} textAlign="center">
@@ -9177,7 +9846,10 @@ export default function App({ onBootReady } = {}) {
                       PLATE_COURSE_META[plateCelebration.completed]?.label || {
                         en: "",
                       },
-                    )}{" "}
+                    )}
+                    {plateCelebration.progress
+                      ? ` ${plateCelebration.progress.count}/${plateCelebration.progress.target}`
+                      : ""}{" "}
                     ✓
                   </Text>
                 </VStack>
@@ -9677,25 +10349,26 @@ function BottomActionBar({
       ja: "モード",
     });
 
-  // Determine notes button border styles based on loading/done state
-  const notesBorderWidth = notesIsLoading || notesIsDone ? "2px" : "1px";
-  const notesBorderColor = notesIsLoading
-    ? "cyan.400"
-    : notesIsDone
-      ? "green.400"
-      : "gray.600";
-  const notesBoxShadow = notesIsLoading
-    ? "0 0 0 2px rgba(34,211,238,0.35), 0 0 14px rgba(34,211,238,0.65)"
-    : notesIsDone
-      ? "0 0 0 2px rgba(74,222,128,0.35), 0 0 14px rgba(74,222,128,0.65)"
-      : undefined;
+  // The notes button's resting "raised key" look is this hard bottom ledge.
+  // The glow keyframes must keep it in every frame: animating boxShadow
+  // replaces it wholesale, and losing the ledge reads as the button being
+  // pressed instead of glowing.
+  const notesLedgeShadow = isLightTheme
+    ? "0 4px 0 rgba(180, 164, 144, 0.9)"
+    : "0 4px 0 #313a4b";
   const notesAnimation = notesIsLoading
     ? "notesPulse 1.5s ease-in-out infinite"
     : notesIsDone
-      ? "notesDone 1.5s ease-out"
+      ? // Two gentle blooms back-to-back, filling the 2s isDone window
+        // (triggerDoneAnimation clears the flag after 2000ms — keep in sync).
+        "notesDone 1s ease-in-out 2"
       : undefined;
-  const shouldShowMinimizeControls =
-    viewMode === "lesson" || shouldAutoMinimize;
+  // Collapse/minimize removed: the bottom action bar stays full everywhere —
+  // no auto-minimize in lessons or voice modes, no collapse button, no minimized
+  // pill. Forcing this false neutralizes all of it (effectiveIsMinimized can
+  // never become true, the collapse control is gated off, and children receive
+  // bottomActionBarMinimized=false via onMinimizedChange, i.e. the full layout).
+  const shouldShowMinimizeControls = false;
   // Auto-minimize when entering a lesson, switching modules, or starting voice.
   const [isMinimized, setIsMinimized] = useState(shouldShowMinimizeControls);
   const prevShouldShowMinimizeControls = useRef(shouldShowMinimizeControls);
@@ -9731,12 +10404,12 @@ function BottomActionBar({
 
   // Minimized bar highlight when a note is saved
   const minimizedHighlight = notesIsDone
-    ? "0 0 0 2px rgba(74,222,128,0.5), 0 0 16px rgba(74,222,128,0.7)"
+    ? "0 0 0 2px rgba(56,178,172,0.5), 0 0 16px rgba(56,178,172,0.7)"
     : notesIsLoading
       ? "0 0 0 2px rgba(34,211,238,0.5), 0 0 16px rgba(34,211,238,0.7)"
       : undefined;
   const minimizedBorderColor = notesIsDone
-    ? "green.400"
+    ? "teal.400"
     : notesIsLoading
       ? "cyan.400"
       : "var(--app-border)";
@@ -9812,7 +10485,7 @@ function BottomActionBar({
             "@keyframes notesDone": {
               "0%": {
                 boxShadow:
-                  "0 0 0 3px rgba(74,222,128,0.6), 0 0 20px rgba(74,222,128,0.8)",
+                  "0 0 0 3px rgba(56,178,172,0.6), 0 0 20px rgba(56,178,172,0.8)",
               },
               "100%": {
                 boxShadow: isLightTheme
@@ -10077,24 +10750,21 @@ function BottomActionBar({
                 sx={{
                   "@keyframes notesPulse": {
                     "0%": {
-                      boxShadow:
-                        "0 0 0 2px rgba(34,211,238,0.35), 0 0 8px rgba(34,211,238,0.4)",
+                      boxShadow: `${notesLedgeShadow}, 0 0 0 2px rgba(34,211,238,0.35), 0 0 8px rgba(34,211,238,0.4)`,
                     },
                     "50%": {
-                      boxShadow:
-                        "0 0 0 3px rgba(34,211,238,0.5), 0 0 20px rgba(34,211,238,0.7)",
+                      boxShadow: `${notesLedgeShadow}, 0 0 0 3px rgba(34,211,238,0.5), 0 0 20px rgba(34,211,238,0.7)`,
                     },
                     "100%": {
-                      boxShadow:
-                        "0 0 0 2px rgba(34,211,238,0.35), 0 0 8px rgba(34,211,238,0.4)",
+                      boxShadow: `${notesLedgeShadow}, 0 0 0 2px rgba(34,211,238,0.35), 0 0 8px rgba(34,211,238,0.4)`,
                     },
                   },
                   "@keyframes notesDone": {
-                    "0%": {
-                      boxShadow:
-                        "0 0 0 3px rgba(74,222,128,0.6), 0 0 20px rgba(74,222,128,0.8)",
+                    "0%": { boxShadow: notesLedgeShadow },
+                    "50%": {
+                      boxShadow: `${notesLedgeShadow}, 0 0 0 3px rgba(56,178,172,0.6), 0 0 20px rgba(56,178,172,0.8)`,
                     },
-                    "100%": { boxShadow: "none", borderColor: "gray.600" },
+                    "100%": { boxShadow: notesLedgeShadow },
                   },
                 }}
               />

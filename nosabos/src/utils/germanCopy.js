@@ -73,7 +73,7 @@ const GERMAN_COPY = {
   "Creating tasks...": "Aufgaben werden erstellt...",
   "Try again": "Erneut versuchen",
   "No tasks yet.": "Noch keine Aufgaben.",
-  "Claim +50 XP": "+50 XP abholen",
+  "Claim +15 XP": "+15 XP abholen",
   Claiming: "Wird abgeholt",
   Claimed: "Abgeholt",
   "Failed to award reward": "Belohnung konnte nicht vergeben werden",

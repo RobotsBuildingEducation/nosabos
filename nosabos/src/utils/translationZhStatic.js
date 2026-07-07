@@ -101,6 +101,8 @@ export const TRANSLATION_ZH_STATIC = {
   ra_show_suggestion: "显示建议",
   ra_generating: "正在生成...",
   ra_generating_topic: "正在生成新主题...",
+  ra_starter_show: "帮帮我",
+  ra_starter_hide: "隐藏句子",
   ra_btn_start: "开始",
   ra_btn_starting: "正在开始...",
   ra_btn_end: "结束",

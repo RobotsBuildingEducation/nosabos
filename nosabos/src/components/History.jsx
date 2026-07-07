@@ -40,6 +40,7 @@ import VirtualKeyboard from "./VirtualKeyboard";
 import translations from "../utils/translation";
 import { getGermanCopy } from "../utils/germanCopy";
 import { awardXp } from "../utils/utils";
+import { captureCompanionMemory } from "../utils/companionMemory";
 import { getLanguageXp } from "../utils/progressTracking";
 import {
   appCheckFetch,
@@ -916,10 +917,14 @@ export default function History({
     DEFAULT_TARGET_LANGUAGE,
   );
 
-  // Use CEFR level from the current lesson, or user's proficiency level as fallback
-  const cefrLevel = lesson?.id
-    ? extractCEFRLevel(lesson.id)
-    : getUserProficiencyLevel(progress, targetLang);
+  // Repair/ephemeral lessons carry an explicit CEFR level; regular path lessons
+  // can still derive it from their level-coded id.
+  const cefrLevel =
+    lesson?.cefrLevel ||
+    lessonContent?.cefrLevel ||
+    (lesson?.id
+      ? extractCEFRLevel(lesson.id)
+      : getUserProficiencyLevel(progress, targetLang));
 
   // Track lesson content changes to auto-trigger generation
   const lessonContentKey = useMemo(
@@ -1780,6 +1785,23 @@ export default function History({
     setReviewCorrect(isCorrect);
     setReviewSubmitted(isCorrect);
     playSound(isCorrect ? deliciousSound : clickSound);
+
+    // Companion brain: a missed reading-comprehension question is a high-signal
+    // weak spot — bank it for tomorrow's repair (it enriches itself via the
+    // cheap model). Fire-and-forget so grading UI stays snappy.
+    if (!isCorrect) {
+      captureCompanionMemory({
+        npub,
+        targetLang,
+        supportLang,
+        sourceMode: "reading",
+        concept: reviewQuestion.question || "",
+        userAnswer: reviewAnswer || "",
+        expectedAnswer: reviewQuestion.answer || "",
+        cefrLevel,
+        sourceContext: "reading",
+      });
+    }
 
     // Award XP immediately on correct answer
     if (isCorrect && activeLecture && !activeLecture.awarded) {

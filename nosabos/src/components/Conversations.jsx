@@ -19,11 +19,6 @@ import {
   ModalContent,
   ModalHeader,
   ModalOverlay,
-  Popover,
-  PopoverArrow,
-  PopoverBody,
-  PopoverContent,
-  PopoverTrigger,
   Text,
   VStack,
   Wrap,
@@ -39,7 +34,6 @@ import {
   FaCheckCircle,
   FaDice,
   FaRegCommentDots,
-  FaExclamation,
 } from "react-icons/fa";
 import { MdOutlineTranslate } from "react-icons/md";
 import { FiSettings } from "react-icons/fi";
@@ -77,7 +71,12 @@ import {
   SOFT_STOP_BUTTON_GLOW,
   SOFT_STOP_BUTTON_HOVER_BG,
 } from "../utils/softStopButton";
-import { DEFAULT_TTS_VOICE, getPreferredTTSVoice } from "../utils/tts";
+import {
+  DEFAULT_TTS_VOICE,
+  TTS_LANG_TAG,
+  getPreferredTTSVoice,
+  getTTSPlayer,
+} from "../utils/tts";
 import { getCEFRPromptHint } from "../utils/cefrUtils";
 import { getAdultBeginnerToneRule } from "../utils/adultBeginnerTone";
 import {
@@ -386,6 +385,24 @@ function safeParseJson(text) {
   }
   return null;
 }
+
+// Levels where conversation goals need extra scaffolding: the learner can't
+// produce freely yet, so goals are sized to one utterance and a tap-to-reveal
+// starter phrase is offered under the goal.
+const isFoundationConversationLevel = (level) =>
+  level === "Pre-A1" || level === "A1";
+
+// At foundation levels an open-ended goal ("introduce yourself and describe
+// your family members") is a production cliff — the learner knows a few dozen
+// chunks. Constrain generated goals to ONE conversational move doable in a
+// single short utterance, while keeping the phrasing conversational (a natural
+// next thing to say in the chat, not a drill instruction).
+const foundationGoalRules = (level) =>
+  isFoundationConversationLevel(level)
+    ? `
+FOUNDATION GOAL RULES (${level}): The goal must be ONE small conversational move, completable with a SINGLE short utterance of about 3-8 words built from high-frequency beginner chunks (greetings, name, how you feel, family words, likes, numbers). Phrase it as the natural next thing to say in this conversation — warm and conversational, never a classroom drill. Do NOT stack tasks: never ask for two different things in one goal (e.g. "introduce yourself AND describe your family"), and never ask the learner to describe, list, or explain anything.
+Good foundation goals: "Say hello and your name" (one breath: "Hola, me llamo Ana"), "Answer with how you feel", "Say one thing you like", "Ask them how they are".`
+    : "";
 
 /* ---------------------------
    Phrase-highlighting helpers
@@ -998,6 +1015,7 @@ async function idbGetClip(id) {
   });
 }
 
+
 /* ---------------------------
    Component
 --------------------------- */
@@ -1220,13 +1238,67 @@ export default function Conversations({
   const currentGoalRef = useRef(currentGoal);
   currentGoalRef.current = currentGoal;
 
+  // Keep the live session's instructions in sync with the active goal so the
+  // AI steers toward it instead of asking competing follow-up questions.
+  const currentGoalTextEn = currentGoal?.text?.en || "";
+  useEffect(() => {
+    if (!currentGoalTextEn) return;
+    pushInstructionsNow();
+  }, [currentGoalTextEn]);
+
+  // Foundation starter phrase — a tap-to-reveal model utterance for the
+  // current goal so a Pre-A1/A1 learner is never frozen with no words to try.
+  // Fetched lazily on first reveal, cached until the goal changes.
+  const [starterPhrase, setStarterPhrase] = useState(null); // { target, support }
+  const [starterLoading, setStarterLoading] = useState(false);
+  const [starterVisible, setStarterVisible] = useState(false);
+  // Starter pronunciation via the shared realtime-TTS pipeline (same as every
+  // other speaker button). Request counter invalidates in-flight synthesis on
+  // stop/goal-change so a cancelled tap can't start late playback.
+  const [starterTts, setStarterTts] = useState("idle"); // "idle" | "loading" | "playing"
+  const starterTtsAudioRef = useRef(null);
+  const starterTtsCleanupRef = useRef(null);
+  const starterTtsRequestRef = useRef(0);
+  // Bumped on every reset so an in-flight starter fetch from before the reset
+  // (old goal or old language pair) is discarded instead of landing late.
+  const starterFetchRequestRef = useRef(0);
+  useEffect(() => {
+    // New goal → a revealed starter belongs to the old one.
+    resetStarterPhrase();
+  }, [currentGoalTextEn]);
+  // Don't leak a live TTS stream when the surface unmounts.
+  useEffect(() => () => stopStarterTts(), []);
+
   const handleRealtimeEventRef = useRef(null);
   handleRealtimeEventRef.current = handleRealtimeEvent;
+  // Latest-instance ref so the quest listener below can hang up without a
+  // stale closure (stop is re-created every render; function decls hoist).
+  const stopSessionRef = useRef(null);
+  stopSessionRef.current = stop;
+  // Guided quest: when the plate's Conversation course completes, App
+  // dispatches this event — end the live session gracefully so the
+  // task-complete modal isn't talking over it, and navigation to the next
+  // task starts clean. (Voice surfaces are keep-alive across mode switches,
+  // so nothing else would ever stop it.)
+  useEffect(() => {
+    const handler = (event) => {
+      if (event?.detail?.kind !== "conversation") return;
+      void stopSessionRef.current?.();
+    };
+    window.addEventListener("plate:courseComplete", handler);
+    return () => window.removeEventListener("plate:courseComplete", handler);
+  }, []);
   const [goalsCompleted, setGoalsCompleted] = useState(0);
   const [isGeneratingGoal, setIsGeneratingGoal] = useState(false);
   const [streamingText, setStreamingText] = useState("");
   const [goalFeedback, setGoalFeedback] = useState("");
   const goalCheckPendingRef = useRef(false);
+  // Failed attempts on the current goal; 2 misses re-anchor the goal so it
+  // can't nag forever. Reset whenever a new goal is generated.
+  const goalFailStreakRef = useRef(0);
+  // Set after a failed-but-still-fitting attempt; buildLanguageInstructions
+  // turns it into a "re-open the goal" nudge for the AI's next turn.
+  const goalShepherdRef = useRef("");
   const lastUserMessageRef = useRef("");
   const hasGeneratedInitialTopic = useRef(false);
   const streamingRef = useRef(false);
@@ -1238,6 +1310,8 @@ export default function Conversations({
 
     setIsGeneratingGoal(true);
     setGoalFeedback("");
+    goalFailStreakRef.current = 0;
+    goalShepherdRef.current = "";
     setStreamingText("");
     streamingRef.current = true;
 
@@ -1290,7 +1364,7 @@ Generate ONE clear, specific conversation topic that:
 4. Is specific enough to guide the conversation (not generic like "practice speaking")
 5. Is CONCISE: Maximum 10-15 words. For advanced levels (C1/C2), use sophisticated vocabulary, NOT longer sentences.
 6. For Pre-A1/A1, simple does not mean childish: prefer adult-realistic situations over kid-coded topics.
-
+${foundationGoalRules(selectedLevel)}
 Examples of good topics:
 - "Describe your morning routine" (A1)
 - "Explain your favorite hobby and why" (B1)
@@ -1354,15 +1428,24 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
 
   // Generate initial topic on mount
   useEffect(() => {
-    if (!hasGeneratedInitialTopic.current) {
-      hasGeneratedInitialTopic.current = true;
-      generateConversationTopic();
-    }
+    if (hasGeneratedInitialTopic.current) return;
+    hasGeneratedInitialTopic.current = true;
+    generateConversationTopic();
   }, []);
 
   // Handler to get a new AI-generated topic
   const handleShuffleTopic = () => {
     generateConversationTopic();
+  };
+
+  // Tap-to-reveal starter phrase for the current goal (foundation levels).
+  const handleToggleStarter = () => {
+    if (starterVisible) {
+      setStarterVisible(false);
+      return;
+    }
+    setStarterVisible(true);
+    if (!starterPhrase && !starterLoading) void fetchStarterPhrase();
   };
 
   // Turn counter for XP awarding
@@ -1399,6 +1482,33 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     persistedSupportLang: user?.progress?.supportLang,
     storedUiLang,
   });
+
+  // Target/support language switch → the goal and any revealed starter are in
+  // the old languages. AI topics only carry text for en + the support language
+  // they were written in, so after a switch goalTextForUI returns "" and the
+  // UI shows "Generating new topic…" forever — and no other code path
+  // regenerates it. Reset the starter and regenerate the topic in the new
+  // pair; if a generation is already in flight (its closure holds the OLD
+  // language), queue the regen to run as soon as it settles.
+  const langPairRef = useRef(`${targetLang}|${resolvedSupportLang}`);
+  const pendingLangRegenRef = useRef(false);
+  useEffect(() => {
+    const pair = `${targetLang}|${resolvedSupportLang}`;
+    if (langPairRef.current === pair) return;
+    langPairRef.current = pair;
+    resetStarterPhrase();
+    if (streamingRef.current || isGeneratingGoal) {
+      pendingLangRegenRef.current = true;
+      return;
+    }
+    generateConversationTopic();
+  }, [targetLang, resolvedSupportLang]);
+  useEffect(() => {
+    if (isGeneratingGoal || streamingRef.current) return;
+    if (!pendingLangRegenRef.current) return;
+    pendingLangRegenRef.current = false;
+    generateConversationTopic();
+  }, [isGeneratingGoal]);
 
   const uiLang = resolvedSupportLang;
   const ui = translations[uiLang] || translations.en;
@@ -2083,6 +2193,20 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       ? `CUSTOM CONTEXT: The user wants to practice conversations related to: "${customSubjects}". Try to incorporate relevant vocabulary and scenarios from this context when appropriate.`
       : "";
 
+    // The goal shown in the UI. Without this the AI's own follow-up questions
+    // and the goal pull the learner in two different directions.
+    const activeGoal = currentGoalRef.current;
+    const activeGoalText =
+      (!activeGoal?.completed && activeGoal?.text?.en) || "";
+    const goalContext = activeGoalText
+      ? `LEARNER'S CURRENT GOAL: "${activeGoalText}". Quietly steer the conversation so your reply gives the learner a natural opening to do this. Never announce the goal, read it aloud, or quiz the learner on it. Your follow-up questions must serve this goal, not compete with it; if the goal asks the learner to ASK about something, invite that topic briefly and do not ask an unrelated question of your own.`
+      : "";
+
+    const shepherdNote =
+      activeGoalText && goalShepherdRef.current
+        ? `GOAL NOT YET MET: the learner's last attempt missed the goal (${goalShepherdRef.current}). In your next turn, gently re-open the goal's topic so they get another natural chance — never scold them or mention any grading.`
+        : "";
+
     return [
       "Act as a friendly language practice partner for free-form conversation.",
       strict,
@@ -2090,6 +2214,8 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       adultBeginnerTone,
       pronunciationInstructions,
       customSubjectsContext,
+      goalContext,
+      shepherdNote,
       "IMPORTANT: Match your language complexity to the learner's proficiency level. Do not use vocabulary or grammar above their level.",
       "Keep replies very brief (≤25 words) and natural.",
       "Be supportive and help the learner practice speaking naturally.",
@@ -2190,6 +2316,24 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     } catch {}
   }
 
+  /** Re-send only the instructions (goal changed mid-session). Deliberately
+      narrow: touching turn_detection here could re-enable VAD while
+      disableVAD()/enableVAD() own that field during AI speech. */
+  function pushInstructionsNow() {
+    if (!dcRef.current || dcRef.current.readyState !== "open") return;
+    try {
+      dcRef.current.send(
+        JSON.stringify({
+          type: "session.update",
+          session: {
+            type: "realtime",
+            instructions: buildLanguageInstructions(),
+          },
+        }),
+      );
+    } catch {}
+  }
+
   /** Disable VAD and detach mic track so the user cannot interrupt AI speech. */
   function disableVAD() {
     if (pcRef.current) {
@@ -2261,11 +2405,13 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
      Goal-based XP system with AI evaluation
   --------------------------- */
 
-  // Evaluate if user's response satisfies the current goal
+  // Evaluate if user's response satisfies the current goal.
+  // Returns "completed" | "failed" | "skipped" so callers can gate rewards on
+  // the verdict ("skipped" = no verdict: nothing gradable or check not run).
   async function evaluateGoalCompletion(userMessage, aiResponse) {
     const goal = currentGoalRef.current;
-    if (goal.completed || goalCheckPendingRef.current) return;
-    if (!userMessage || userMessage.length < 3) return;
+    if (goal.completed || goalCheckPendingRef.current) return "skipped";
+    if (!userMessage || userMessage.length < 3) return "skipped";
 
     goalCheckPendingRef.current = true;
 
@@ -2331,7 +2477,9 @@ Examples that are completed = false:
 
 Feedback in ${feedbackLanguage}, one short sentence: if true, give warm, specific praise; if false, briefly say what to try.
 
-Respond with ONLY a JSON object: {"completed": true/false, "reason": "..."}`;
+Also set goalStillFits (only meaningful when completed = false): true when the conversation is still in a place where the learner could naturally do the goal on their next turn — weak attempts, wrong language, or no real attempt leave the goal fitting. Set it to false when the learner's reply legitimately moved the conversation somewhere else: they rejected the goal's premise (e.g. "I don't watch TV" against a TV goal) or took a different direction that a real conversation would now follow. When completed = true, set goalStillFits = true.
+
+Respond with ONLY a JSON object: {"completed": true/false, "reason": "...", "goalStillFits": true/false}`;
 
       const body = {
         model: TRANSLATE_MODEL,
@@ -2347,7 +2495,7 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "..."}`;
 
       if (!r.ok) {
         goalCheckPendingRef.current = false;
-        return;
+        return "skipped";
       }
 
       const payload = await r.json();
@@ -2368,33 +2516,33 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "..."}`;
       // this result would show feedback about the wrong (previous) goal. Discard it.
       if (currentGoalRef.current !== goal) {
         goalCheckPendingRef.current = false;
-        return;
+        return "skipped";
       }
       if (parsed?.completed) {
-        // Set positive feedback
-        const defaultSuccess =
-          sLang === "es"
-            ? "Meta completada."
-            : sLang === "pt"
-              ? "Meta concluída."
-              : sLang === "ar"
-                ? "اكتمل الهدف."
-                : sLang === "it"
-                  ? "Obiettivo completato."
-                  : sLang === "fr"
-                    ? "Objectif atteint."
-                    : sLang === "de"
-                      ? "Ziel erreicht."
-                      : sLang === "ja"
-                        ? "目標を達成しました。"
-                        : sLang === "hi"
-                          ? "लक्ष्य पूरा हुआ।"
-                          : "Goal complete.";
-        setGoalFeedback(parsed?.reason || defaultSuccess);
+        // Success renders as a checkmark on the goal line, not as text —
+        // the next goal replaces this area too quickly for text to be read.
+        setGoalFeedback("");
+        goalFailStreakRef.current = 0;
+        goalShepherdRef.current = "";
         await awardGoalXp();
         // Generate contextual next goal
         setTimeout(() => generateContextualGoal(), 1500);
+        return "completed";
       } else {
+        goalFailStreakRef.current += 1;
+        // Two distinct failures: a weak attempt at a goal that still fits the
+        // conversation (shepherd the learner back to it) vs. a reply that
+        // legitimately moved the conversation elsewhere (re-anchor the goal to
+        // where it went). Also re-anchor after 2 misses so a stuck goal can't
+        // nag forever.
+        const drifted = parsed?.goalStillFits === false;
+        if (drifted || goalFailStreakRef.current >= 2) {
+          setGoalFeedback("");
+          goalShepherdRef.current = "";
+          goalCheckPendingRef.current = false;
+          void generateContextualGoal({ previousGoalAbandoned: true });
+          return "failed";
+        }
         // Set guiding feedback for failed attempt
         const defaultGuidance =
           sLang === "es"
@@ -2415,17 +2563,29 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "..."}`;
                     ? "लक्ष्य के बारे में बोलने की कोशिश करें।"
             : "Try addressing the goal.";
         setGoalFeedback(parsed?.reason || defaultGuidance);
+        // Have the AI actively re-open the goal on its next turn instead of
+        // letting the conversation flow away from it.
+        goalShepherdRef.current = parsed?.reason || defaultGuidance;
+        pushInstructionsNow();
         goalCheckPendingRef.current = false;
+        // Deliberately NOT captured into companion memory: free-form
+        // conversation goals are too unstructured to make useful repair
+        // material — structured surfaces (flashcards, lessons, phonics,
+        // tutor) are the companion's capture sources.
+        return "failed";
       }
     } catch (e) {
       goalCheckPendingRef.current = false;
     }
+    return "skipped";
   }
 
   // Generate next goal based on conversation context
-  async function generateContextualGoal() {
+  async function generateContextualGoal({ previousGoalAbandoned = false } = {}) {
     setIsGeneratingGoal(true);
     setGoalFeedback(""); // Clear previous feedback
+    goalFailStreakRef.current = 0;
+    goalShepherdRef.current = "";
 
     // Get current settings
     const currentSettings = conversationSettingsRef.current;
@@ -2442,17 +2602,36 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "..."}`;
         )
         .join("\n");
 
+      // The AI's pending question/comment. The next goal must be completable
+      // by replying to it, so the goal UI and the live conversation never
+      // pull the learner in two different directions.
+      const lastAiMessage =
+        [...messagesRef.current]
+          .reverse()
+          .find((m) => m.role === "assistant" && (m.textFinal || "").trim())
+          ?.textFinal?.trim() || "";
+
       // Build custom subjects hint
       const customSubjectsHint = customSubjects
         ? `\nThe user is interested in practicing: "${customSubjects}". Consider incorporating relevant topics when appropriate.`
         : "";
+
+      const goalAlignmentHint = lastAiMessage
+        ? `\n\nThe AI partner's latest message to the learner is: "${lastAiMessage}"
+
+CRITICAL: The learner must be able to complete the new goal simply by replying naturally to that latest AI message. If the AI asked a question, the goal is to answer it (optionally adding one small detail or question of their own). Never create a goal that ignores or competes with the AI's pending question.`
+        : "";
+
+      const previousGoalLine = previousGoalAbandoned
+        ? `Previous goal was: "${currentGoal.text.en}". The learner did NOT complete it — the conversation legitimately moved past it. The new goal must fit where the conversation is NOW; do not repeat or rephrase the abandoned goal.`
+        : `Previous goal was: "${currentGoal.text.en}"`;
 
       const prompt = `You are helping a ${selectedLevel} level language learner practice conversation.
 
 Recent conversation:
 ${recentMessages || "Just started"}
 
-Previous goal was: "${currentGoal.text.en}"${customSubjectsHint}
+${previousGoalLine}${customSubjectsHint}${goalAlignmentHint}
 
 Generate the NEXT natural conversation goal that follows the flow of the conversation.
 The goal should be appropriate for ${selectedLevel} level (${
@@ -2473,7 +2652,7 @@ The goal should be appropriate for ${selectedLevel} level (${
 
 IMPORTANT: Keep the goal CONCISE (max 10-15 words). For advanced levels, use sophisticated vocabulary, NOT longer sentences.
 For Pre-A1/A1, simple does not mean childish: use adult-realistic goals and neutral adult wording.
-
+${foundationGoalRules(selectedLevel)}
 Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": "goal in Spanish (max 15 words)", "pt": "goal in Portuguese (max 15 words)", "it": "goal in Italian (max 15 words)", "fr": "goal in French (max 15 words)", "de": "goal in German (max 15 words)", "ja": "goal in Japanese (max 15 words)", "hi": "goal in Hindi (max 15 words)", "ar": "goal in Egyptian Arabic (max 15 words)", "zh": "goal in Mandarin Chinese (max 15 words)"}`;
 
       const body = {
@@ -2541,6 +2720,177 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
     goalCheckPendingRef.current = false;
   }
 
+  /**
+   * One model utterance for the active goal (foundation levels' "Need a
+   * phrase?" reveal). Anchored to the AI's pending message so the phrase works
+   * as a real reply, not a canned frame. Cached until the goal changes.
+   */
+  async function fetchStarterPhrase() {
+    const goal = currentGoalRef.current;
+    const goalText = goal?.text?.en || "";
+    if (!goalText || goal?.completed) return;
+    const requestId = starterFetchRequestRef.current;
+    setStarterLoading(true);
+
+    const currentSettings = conversationSettingsRef.current;
+    const selectedLevel =
+      currentSettings.proficiencyLevel || maxProficiencyLevel || "A1";
+    const targetName =
+      getLanguagePromptName(targetLangRef.current) || "Spanish";
+    const supportName = getLanguagePromptName(resolvedSupportLang) || "English";
+
+    try {
+      const lastAiMessage =
+        [...messagesRef.current]
+          .reverse()
+          .find((m) => m.role === "assistant" && (m.textFinal || "").trim())
+          ?.textFinal?.trim() || "";
+
+      const prompt = `A ${selectedLevel} beginner is practicing spoken ${targetName} conversation. Their current goal: "${goalText}".${
+        lastAiMessage
+          ? `\nThe conversation partner just said: "${lastAiMessage}". The phrase must work as a natural spoken reply to that.`
+          : ""
+      }
+Write ONE starter phrase in ${targetName} the learner can say out loud to complete the goal: about 3-8 words, ${selectedLevel}-appropriate high-frequency chunks only, natural and friendly. If a personal detail belongs in it (their name, a family member, a thing they like), put "___" in that spot — at most one blank. Also give its ${supportName} translation (keep "___" as "___").
+Respond with ONLY a JSON object: {"target":"phrase in ${targetName}","support":"translation in ${supportName}"}`;
+
+      const r = await appCheckFetch(RESPONSES_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: TRANSLATE_MODEL,
+          text: { format: { type: "text" } },
+          input: prompt,
+        }),
+      });
+      const payload = r.ok ? await r.json() : null;
+      const responseText =
+        payload?.output_text ||
+        (Array.isArray(payload?.output) &&
+          payload.output
+            .map((it) =>
+              (it?.content || []).map((seg) => seg?.text || "").join(""),
+            )
+            .join(" ")
+            .trim()) ||
+        "";
+      const parsed = safeParseJson(responseText);
+
+      // The goal may have advanced or the languages switched while we
+      // fetched — a stale phrase would be the wrong reply or wrong language.
+      if (
+        requestId !== starterFetchRequestRef.current ||
+        currentGoalRef.current?.text?.en !== goalText
+      ) {
+        return;
+      }
+      if (parsed?.target) {
+        setStarterPhrase({
+          target: String(parsed.target).trim(),
+          support: String(parsed.support || "").trim(),
+        });
+      } else {
+        setStarterVisible(false);
+      }
+    } catch {
+      if (
+        requestId === starterFetchRequestRef.current &&
+        currentGoalRef.current?.text?.en === goalText
+      ) {
+        setStarterVisible(false);
+      }
+    } finally {
+      if (requestId === starterFetchRequestRef.current) {
+        setStarterLoading(false);
+      }
+    }
+  }
+
+  /** Full starter reset (goal advanced, language switched, or teardown):
+      invalidates any in-flight fetch, stops audio, clears the reveal. */
+  function resetStarterPhrase() {
+    starterFetchRequestRef.current += 1;
+    stopStarterTts();
+    setStarterPhrase(null);
+    setStarterVisible(false);
+    setStarterLoading(false);
+  }
+
+  function stopStarterTts() {
+    starterTtsRequestRef.current += 1;
+    const audio = starterTtsAudioRef.current;
+    const cleanup = starterTtsCleanupRef.current;
+    starterTtsAudioRef.current = null;
+    starterTtsCleanupRef.current = null;
+    if (audio) {
+      try {
+        // Detach handlers first: the player's teardown dispatches a synthetic
+        // "ended" for realtime streams, which would re-enter this function.
+        audio.onended = null;
+        audio.onerror = null;
+        audio.pause?.();
+      } catch {
+        // Best-effort media teardown.
+      }
+    }
+    try {
+      cleanup?.();
+    } catch {
+      // Best-effort player teardown.
+    }
+    setStarterTts("idle");
+  }
+
+  /** Pronounce the starter phrase (gpt-realtime-mini narration, cached like
+      every other speaker button). Tap toggles: playing/loading → stop. */
+  async function playStarterTts() {
+    if (starterTts !== "idle") {
+      stopStarterTts();
+      return;
+    }
+    // Blanks stand for the learner's own detail — don't read them aloud.
+    const text = String(starterPhrase?.target || "")
+      .replace(/_+/g, " ")
+      .replace(/\s{2,}/g, " ")
+      .replace(/\s+([.,!?;:])/g, "$1")
+      .trim();
+    if (!text) return;
+    const requestId = ++starterTtsRequestRef.current;
+    setStarterTts("loading");
+    try {
+      const player = await getTTSPlayer({
+        text,
+        voice: getPreferredTTSVoice(voiceRef.current),
+        langTag: TTS_LANG_TAG[targetLangRef.current] || TTS_LANG_TAG.es,
+      });
+      if (requestId !== starterTtsRequestRef.current) {
+        player.cleanup?.();
+        return;
+      }
+      const audio = player.audio;
+      starterTtsAudioRef.current = audio;
+      starterTtsCleanupRef.current = player.cleanup;
+      const finish = () => {
+        if (starterTtsAudioRef.current !== audio) return;
+        stopStarterTts();
+      };
+      audio.onended = finish;
+      audio.onerror = finish;
+      await player.ready;
+      if (requestId !== starterTtsRequestRef.current) {
+        player.cleanup?.();
+        return;
+      }
+      setStarterTts("playing");
+      await audio.play();
+    } catch (error) {
+      console.error("Starter phrase TTS failed:", error);
+      if (requestId === starterTtsRequestRef.current) {
+        stopStarterTts();
+      }
+    }
+  }
+
   async function awardGoalXp() {
     const npub = currentNpub;
     if (!npub) return;
@@ -2569,22 +2919,26 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
     const npub = currentNpub;
     if (!npub) return;
 
+    // Daily quest: the Conversation course asks for 4-7 user turns of practice
+    // (target is per-day; see getConversationTurnTarget), so each real user
+    // turn counts toward it — it measures practice volume, not correctness.
+    if (userMessage && userMessage.trim()) {
+      void recordPlateActivity(npub, "conversation", targetLangRef.current);
+    }
+
+    // Grade before paying out: a turn that fails the goal earns no XP.
+    // Neutral turns ("skipped": no active goal, reply too short to grade,
+    // grader unavailable) still earn turn XP as before.
+    let verdict = "skipped";
+    if (userMessage) {
+      verdict = await evaluateGoalCompletion(userMessage, aiResponse);
+    }
+    if (verdict === "failed") return;
+
     // Award 1-3 XP randomly per turn
     const xpGain = Math.floor(Math.random() * 3) + 1; // 1, 2, or 3
 
     setXp((v) => v + xpGain);
-
-    // Evaluate goal completion with AI
-    if (userMessage) {
-      evaluateGoalCompletion(userMessage, aiResponse);
-    }
-
-    // Daily quest: the Conversation course asks for 4-7 user turns of practice
-    // (target is per-day; see getConversationTurnTarget), so each real user
-    // turn counts toward it.
-    if (userMessage && userMessage.trim()) {
-      void recordPlateActivity(npub, "conversation", targetLangRef.current);
-    }
 
     try {
       await awardXp(npub, xpGain, targetLangRef.current);
@@ -2703,10 +3057,18 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
           done: true,
           ts: userTs,
         });
-        // Award XP for user turn and store message for goal evaluation
+        // Award XP for user turn and store message for goal evaluation.
+        // Context for the grader is the tutor's line the user was answering:
+        // the latest COMPLETED assistant message (the one still streaming has
+        // an empty textFinal and is skipped).
         turnCountRef.current += 1;
         lastUserMessageRef.current = text;
-        awardTurnXp(text, "");
+        const answeredLine =
+          [...messagesRef.current]
+            .reverse()
+            .find((m) => m.role === "assistant" && (m.textFinal || "").trim())
+            ?.textFinal || "";
+        awardTurnXp(text, answeredLine);
       }
       return;
     }
@@ -2802,12 +3164,9 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
           action: "turn_completed",
         });
 
-        // Evaluate goal completion with the AI response
-        const aiMessage = messagesRef.current.find((m) => m.id === mid);
-        const aiResponseText = aiMessage?.textFinal || "";
-        if (lastUserMessageRef.current && aiResponseText) {
-          evaluateGoalCompletion(lastUserMessageRef.current, aiResponseText);
-        }
+        // No goal grading here: the turn is graded once, at transcript time
+        // (awardTurnXp). Re-grading with the AI's reply would double-count a
+        // miss against the goal fail streak.
 
         respToMsg.current.delete(rid);
       }
@@ -3076,100 +3435,155 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
                             "ra_generating_topic",
                             "Generating new topic...",
                           )}
-                        {goalFeedback &&
-                          !isGeneratingGoal &&
-                          !currentGoal.completed && (
-                            <Popover placement="bottom-end" isLazy>
-                              <PopoverTrigger>
-                                <Box
-                                  as="button"
-                                  type="button"
-                                  aria-label={
-                                    uiText("ra_show_suggestion", "Show suggestion")
-                                  }
-                                  ml="6px"
-                                  width="12px"
-                                  height="12px"
-                                  display="inline-flex"
-                                  alignItems="center"
-                                  justifyContent="center"
-                                  borderRadius="full"
-                                  border="1px solid"
-                                  borderColor={
-                                    isLightTheme
-                                      ? "rgba(165, 89, 108, 0.38)"
-                                      : "red.300"
-                                  }
-                                  bg={
-                                    isLightTheme
-                                      ? "rgba(214, 96, 122, 0.16)"
-                                      : "rgba(239,68,68,0.9)"
-                                  }
-                                  color={isLightTheme ? "#8f4a5e" : "white"}
-                                  boxShadow={
-                                    isLightTheme
-                                      ? "0 1px 0 rgba(255,255,255,0.45)"
-                                      : undefined
-                                  }
-                                  verticalAlign="text-bottom"
-                                  transform="translateY(-1px)"
-                                  lineHeight={1}
-                                >
-                                  <FaExclamation size={7} />
-                                </Box>
-                              </PopoverTrigger>
-                              <PopoverContent
-                                bg={isLightTheme ? APP_SURFACE : "red.900"}
-                                color={isLightTheme ? APP_TEXT_PRIMARY : "red.100"}
-                                borderColor={
-                                  isLightTheme
-                                    ? "rgba(194, 103, 132, 0.24)"
-                                    : "red.500"
-                                }
-                                maxW="320px"
-                              >
-                                <PopoverArrow
-                                  bg={isLightTheme ? APP_SURFACE : "red.900"}
-                                />
-                                <PopoverBody fontSize="xs">
-                                  {goalFeedback}
-                                </PopoverBody>
-                              </PopoverContent>
-                            </Popover>
-                          )}
                       </Text>
                       {currentGoal.completed && (
                         <Box
                           as={FaCheckCircle}
                           color={isLightTheme ? "#5f9d8a" : "green.400"}
-                          boxSize="18px"
+                          boxSize="20px"
+                          sx={{
+                            "@keyframes conversationGoalCheckPop": {
+                              "0%": { transform: "scale(0.2)", opacity: 0 },
+                              "60%": { transform: "scale(1.25)", opacity: 1 },
+                              "100%": { transform: "scale(1)", opacity: 1 },
+                            },
+                            animation:
+                              "conversationGoalCheckPop 0.45s ease-out both",
+                          }}
                         />
                       )}
                     </>
                   )}
                 </HStack>
 
-                {/* Goal Feedback */}
-                {goalFeedback && !isGeneratingGoal && currentGoal.completed && (
-                  <Text
-                    fontSize="xs"
-                    textAlign="center"
-                    px={3}
-                    py={1.5}
-                    borderRadius="md"
-                    bg={
-                      isLightTheme ? "rgba(86, 168, 155, 0.12)" : "green.900"
-                    }
-                    color={isLightTheme ? APP_TEXT_SECONDARY : "green.200"}
-                    border="1px solid"
-                    borderColor={
-                      isLightTheme ? "rgba(86, 168, 155, 0.24)" : "green.600"
-                    }
-                    maxW="90%"
-                  >
-                    {goalFeedback}
-                  </Text>
-                )}
+                {/* Foundation "Need a phrase?" — reveals one model utterance
+                    for the current goal so a Pre-A1/A1 learner always has
+                    words to try out loud. */}
+                {isFoundationConversationLevel(
+                  conversationSettings.proficiencyLevel || maxProficiencyLevel,
+                ) &&
+                  !isGeneratingGoal &&
+                  !currentGoal.completed &&
+                  Boolean(goalTextForUI(currentGoal)) && (
+                    <VStack spacing={1.5} width="100%">
+                      <Button
+                        size="xs"
+                        variant="outline"
+                        onClick={handleToggleStarter}
+                        color={
+                          isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"
+                        }
+                        borderColor={
+                          isLightTheme
+                            ? "rgba(0, 0, 0, 0.18)"
+                            : "whiteAlpha.300"
+                        }
+                        bg={isLightTheme ? APP_SURFACE : "whiteAlpha.50"}
+                        fontWeight="medium"
+                        _hover={{
+                          bg: isLightTheme
+                            ? APP_SURFACE_MUTED
+                            : "whiteAlpha.100",
+                        }}
+                      >
+                        {starterVisible
+                          ? uiText("ra_starter_hide", "Hide phrase")
+                          : uiText("ra_starter_show", "Help me")}
+                      </Button>
+                      {starterVisible && (
+                        <Box
+                          px={3}
+                          py={2}
+                          borderRadius="md"
+                          bg={isLightTheme ? APP_SURFACE : "whiteAlpha.100"}
+                          border="1px solid"
+                          borderColor={
+                            isLightTheme
+                              ? "rgba(0, 0, 0, 0.08)"
+                              : "whiteAlpha.200"
+                          }
+                          maxW="90%"
+                          textAlign="center"
+                        >
+                          {starterLoading ? (
+                            <Spinner size="xs" />
+                          ) : starterPhrase ? (
+                            <>
+                              <HStack spacing={1.5} justify="center">
+                                <IconButton
+                                  icon={
+                                    starterTts === "loading" ? (
+                                      <Spinner size="xs" />
+                                    ) : (
+                                      <RiVolumeUpLine size={14} />
+                                    )
+                                  }
+                                  size="xs"
+                                  variant="ghost"
+                                  onClick={playStarterTts}
+                                  aria-label={uiText("story_listen", "Listen")}
+                                  color={
+                                    isLightTheme
+                                      ? APP_TEXT_SECONDARY
+                                      : "whiteAlpha.800"
+                                  }
+                                  opacity={starterTts === "playing" ? 1 : 0.75}
+                                  _hover={{ opacity: 1 }}
+                                />
+                                <Text
+                                  fontSize="sm"
+                                  fontWeight="semibold"
+                                  color={
+                                    isLightTheme ? APP_TEXT_PRIMARY : "white"
+                                  }
+                                >
+                                  {starterPhrase.target}
+                                </Text>
+                              </HStack>
+                              {starterPhrase.support && (
+                                <Text
+                                  fontSize="xs"
+                                  opacity={0.7}
+                                  color={
+                                    isLightTheme
+                                      ? APP_TEXT_SECONDARY
+                                      : "whiteAlpha.800"
+                                  }
+                                >
+                                  {starterPhrase.support}
+                                </Text>
+                              )}
+                            </>
+                          ) : null}
+                        </Box>
+                      )}
+                    </VStack>
+                  )}
+
+                {/* Goal guidance — stays visible until the learner gets the
+                    goal right (success clears it and shows the checkmark) */}
+                {goalFeedback &&
+                  !isGeneratingGoal &&
+                  !currentGoal.completed && (
+                    <Text
+                      fontSize="xs"
+                      textAlign="center"
+                      px={3}
+                      py={1.5}
+                      borderRadius="md"
+                      bg={
+                        isLightTheme ? "rgba(214, 96, 122, 0.12)" : "red.900"
+                      }
+                      color={isLightTheme ? "#8f4a5e" : "red.200"}
+                      border="1px solid"
+                      borderColor={
+                        isLightTheme ? "rgba(194, 103, 132, 0.28)" : "red.600"
+                      }
+                      maxW="90%"
+                    >
+                      {goalFeedback}
+                    </Text>
+                  )}
               </VStack>
 
               {/* XP Progress Bar */}

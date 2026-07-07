@@ -83,6 +83,12 @@ import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
 import { awardXp } from "../utils/utils";
 import { recordPlateActivity } from "../utils/dailyPlate";
 import {
+  captureCompanionMemory,
+  completeRepairFocus,
+} from "../utils/companionMemory";
+import useRepairFocusStore from "../hooks/useRepairFocusStore";
+import RepairFocusBanner from "./RepairFocusBanner";
+import {
   SOFT_STOP_BUTTON_BG,
   SOFT_STOP_BUTTON_HOVER_BG,
 } from "../utils/softStopButton";
@@ -112,6 +118,10 @@ import {
   LANGUAGE_PROMPT_LABELS,
   normalizeSupportLanguage,
 } from "../constants/languages";
+import {
+  getPhonicsBand,
+  getPhonicsGenerationLevel,
+} from "../utils/phonicsLevel";
 
 const MotionBox = motion(Box);
 const APP_SURFACE = "var(--app-surface)";
@@ -1253,7 +1263,9 @@ function pickGeneratedDisplayFields(source) {
 // Turn a raw generated unit into a card shaped like a base alphabet entry, with
 // the pronunciation guide + tip in BOTH English (base keys) and the learner's
 // support language (suffixed keys), so the card reveals the same details.
-function buildGeneratedCard(unit, uiLang, id) {
+// cefrLevel is the level the card was generated AT — a miss on this card years
+// of progress later still tags the companion memory with the card's own level.
+function buildGeneratedCard(unit, uiLang, id, cefrLevel = null) {
   const lang = normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE);
   const suffix = LOCALIZED_FIELD_SUFFIX[lang] || "";
   const card = {
@@ -1261,6 +1273,7 @@ function buildGeneratedCard(unit, uiLang, id) {
     letter: unit.grapheme,
     type: "sound",
     generated: true,
+    cefrLevel,
     name: unit.name || "",
     sound: unit.soundEn || "",
     tip: unit.tipEn || "",
@@ -1283,6 +1296,18 @@ function buildGeneratedCard(unit, uiLang, id) {
   return card;
 }
 
+// What each phonics band asks the model for. The band comes from the derived
+// phonics generation level (deck ladder + placement, capped by unlocked course
+// levels), so difficulty rises with real progress, not with browsed UI levels.
+const PHONICS_BAND_GUIDANCE = {
+  foundation:
+    "Stay foundational: digraphs, very common syllables, and simple high-frequency sounds. Example words must be short, everyday words a beginner already recognizes.",
+  intermediate:
+    "Go intermediate: consonant blends and clusters, stress/accent patterns, and common spelling-to-sound exceptions. Example words should be everyday vocabulary an intermediate learner knows.",
+  advanced:
+    "Go advanced: minimal pairs, reduced or fast-speech sounds, regional pronunciation variants, and subtle spelling-to-sound patterns that still trip up advanced learners. Example words may be less common.",
+};
+
 // Generate a fresh batch of NEW phonics units (digraphs, blends, syllables,
 // less-common sounds) that go beyond the base alphabet. Guidance comes back in
 // English + the learner's support language so cards read in the right language.
@@ -1291,6 +1316,7 @@ async function generateNewPhonicsUnits(
   uiLang,
   existingGraphemes = [],
   count = NEW_DECK_SIZE,
+  cefrLevel = "Pre-A1",
 ) {
   const lang = normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE);
   const languageName =
@@ -1301,11 +1327,15 @@ async function generateNewPhonicsUnits(
   const supportName =
     LANGUAGE_PROMPT_LABELS[lang] || LANGUAGE_FALLBACK_LABELS[lang] || "English";
   const avoid = existingGraphemes.filter(Boolean).slice(0, 200).join(", ");
+  const band = getPhonicsBand(cefrLevel);
+  const bandGuidance =
+    PHONICS_BAND_GUIDANCE[band] || PHONICS_BAND_GUIDANCE.foundation;
   const prompt = `You are creating phonics flashcards for a learner.
 - Target language being learned: ${languageName} (written in ${scriptName}).
 - The learner's OWN language, used for ALL explanations: ${supportName}.
+- The learner's CEFR level: ${cefrLevel}.
 
-Generate ${count} NEW beginner-friendly ${languageName} phonics units that go BEYOND the basic alphabet — for example digraphs, consonant blends, common syllables, or less-common sounds.
+Generate ${count} NEW ${languageName} phonics units that go BEYOND the basic alphabet, tuned to that level. ${bandGuidance}
 Avoid these already-covered units: ${avoid || "(none)"}.
 
 For each unit:
@@ -1317,7 +1347,7 @@ For each unit:
 
 Respond ONLY with a JSON array of exactly ${count} objects in this exact shape:
 [{"grapheme":"...","name":"...","sound_en":"...","sound_loc":"...","tip_en":"...","tip_loc":"...","exampleWord":"...","meaning_en":"...","meaning_loc":"..."}]
-- Keep each grapheme short and beginner-friendly.
+- Keep each grapheme short.
 - Do not repeat any avoided unit and do not duplicate within the list.
 - No extra text.`;
 
@@ -1369,6 +1399,7 @@ async function saveGeneratedPhonicsUnit(npub, targetLang, card) {
         letterId: card.id,
         targetLang,
         generated: true,
+        cefrLevel: card.cefrLevel || null,
         grapheme: card.letter || "",
         ...pickGeneratedDisplayFields(card),
         tts: card.tts || null,
@@ -1428,6 +1459,7 @@ function LetterCard({
   appLanguage,
   targetLang,
   npub,
+  cefrLevel = "Pre-A1",
   onXpAwarded,
   initialPracticeWord,
   initialPracticeWordMeaning,
@@ -1569,6 +1601,28 @@ function LetterCard({
         void recordPlateActivity(npub, "phonics", targetLang);
       }
 
+      // Companion brain: a missed pronunciation is a high-signal phonics slip —
+      // bank it for tomorrow's repair quest (it enriches itself via the cheap
+      // model). Fire-and-forget so grading UI stays snappy.
+      if (!isYes) {
+        captureCompanionMemory({
+          npub,
+          targetLang,
+          supportLang: uiLang,
+          sourceMode: "phonics",
+          concept: practiceWord,
+          userAnswer: answer,
+          expectedAnswer: practiceWord,
+          // Generated cards carry the level they were generated at; base
+          // alphabet cards fall back to the learner-context prop.
+          cefrLevel: letter?.cefrLevel || cefrLevel,
+          // The letter/sound card id, not a generic label — lets a routed
+          // repair deep-seed the deck with this exact card instead of a
+          // random one (see the repair-focus deck reorder on mount).
+          sourceContext: letter?.id || "",
+        });
+      }
+
       let nextPracticeWord = practiceWord;
       let nextPracticeMeaning = practiceWordMeaningData;
 
@@ -1577,6 +1631,11 @@ function LetterCard({
         // Auditory cue that the answer was correct.
         playSound("correct");
         setCorrectCount((c) => c + 1);
+        // Routed repair: a correct pronunciation here clears today's repair if
+        // the companion sent the learner to phonics to fix a weak sound.
+        if (useRepairFocusStore.getState().focus?.surface === "alphabet") {
+          void completeRepairFocus();
+        }
         if (npub) {
           await awardXp(npub, xp, targetLang);
           onXpAwarded?.(xp);
@@ -1813,10 +1872,20 @@ function LetterCard({
       const avoidClause = currentWord
         ? `\n- Do NOT use the word "${currentWord}" - generate a DIFFERENT word.`
         : "";
-      const prompt = `Generate one beginner-friendly ${languageName} word that starts with the ${languageName} letter/syllable "${letter.letter}" (${letterNameForPrompt}). Respond ONLY with JSON in this shape:
+      // Match word difficulty to the card's own generation band: base
+      // alphabet cards (no cefrLevel) stay beginner-friendly, generated
+      // cards keep the difficulty they were created at.
+      const wordBand = getPhonicsBand(letter?.cefrLevel || "Pre-A1");
+      const difficultyClause =
+        wordBand === "advanced"
+          ? "The word may be less common — pick vocabulary that exercises an advanced learner's pronunciation."
+          : wordBand === "intermediate"
+            ? "Keep the word common but not trivial — everyday vocabulary an intermediate learner should know."
+            : "Keep the word simple (2-4 syllables) and common.";
+      const prompt = `Generate one ${languageName} practice word that starts with the ${languageName} letter/syllable "${letter.letter}" (${letterNameForPrompt}). Respond ONLY with JSON in this shape:
 {"word":"<${languageName} word in native script>","meaning_en":"<short english meaning>","meaning_es":"<short spanish meaning>","meaning_it":"<short italian meaning>","meaning_fr":"<short french meaning>","meaning_ja":"<short Japanese meaning>","meaning_hi":"<short Hindi meaning>","meaning_ar":"<short Egyptian Arabic meaning>","meaning_zh":"<short Mandarin Chinese meaning>"}
 - Use ${scriptName}.
-- Keep the word simple (2-4 syllables) and common.${avoidClause}
+- ${difficultyClause}${avoidClause}
 - Do not add any extra text.`;
 
       try {
@@ -1853,6 +1922,7 @@ function LetterCard({
       letter.nameHi,
       letter.nameJa,
       letter.nameZh,
+      letter.cefrLevel,
       targetLang,
       uiLang,
     ],
@@ -2336,11 +2406,37 @@ function watchRealtimeAudioCompletion(audio, onDone) {
   return detach;
 }
 
+// Routed repair (deep-seed): when the Daily Quest sends a phonics repair here,
+// move the exact weak letter/sound card (matched by the id captured at
+// mistake-time, see captureCompanionMemory's sourceContext above) to the front
+// of the deck so the very first card practiced IS the repair, instead of a
+// random one. No match (e.g. the card was a generated round that's since
+// expired) → deck order is left untouched, a safe no-op.
+function reorderDeckForRepairFocus(cards) {
+  const focus = useRepairFocusStore.getState().focus;
+  if (focus?.surface !== "alphabet") return cards;
+  const targetIds = new Set(
+    (focus.plan?.items || []).map((it) => it.sourceContext).filter(Boolean),
+  );
+  if (!targetIds.size) return cards;
+  const matched = cards.filter((c) => targetIds.has(c.id));
+  if (!matched.length) return cards;
+  const rest = cards.filter((c) => !targetIds.has(c.id));
+  return [...matched, ...rest];
+}
+
 export default function AlphabetBootcamp({
   appLanguage = "en",
   targetLang,
   npub,
   languageXp = 0,
+  // Learner-context level used to tag companion-memory captures on BASE
+  // alphabet cards (generated cards carry their own generation level).
+  cefrLevel = "Pre-A1",
+  // Bounds for generated-deck difficulty: placement seeds the deck ladder,
+  // the ceiling (highest UNLOCKED lesson/flashcard level) caps it.
+  placementLevel = null,
+  courseCeilingLevel = null,
   pauseMs = 2000,
 }) {
   const uiLang = normalizeSupportLanguage(appLanguage, DEFAULT_SUPPORT_LANGUAGE);
@@ -2386,11 +2482,24 @@ export default function AlphabetBootcamp({
       const existing = [...alphabet, ...generatedCards]
         .map((c) => c.letter)
         .filter(Boolean);
+      // A new round is only reachable once every card is collected, so at this
+      // moment generatedCards holds exactly the finished decks — count them to
+      // climb the phonics ladder (round, not floor, tolerates short decks when
+      // the model returned fewer than NEW_DECK_SIZE valid units).
+      const completedDeckCount = Math.round(
+        generatedCards.length / NEW_DECK_SIZE,
+      );
+      const generationLevel = getPhonicsGenerationLevel({
+        completedDeckCount,
+        placementLevel,
+        courseCeilingLevel,
+      });
       const units = await generateNewPhonicsUnits(
         targetLang,
         uiLang,
         existing,
         NEW_DECK_SIZE,
+        generationLevel,
       );
       if (!units.length) {
         toast({
@@ -2402,7 +2511,7 @@ export default function AlphabetBootcamp({
       }
       const stamp = Date.now();
       const newCards = units.map((u, i) =>
-        buildGeneratedCard(u, uiLang, `gen_${stamp}_${i}`),
+        buildGeneratedCard(u, uiLang, `gen_${stamp}_${i}`, generationLevel),
       );
       await Promise.all(
         newCards.map((c) => saveGeneratedPhonicsUnit(npub, targetLang, c)),
@@ -2437,9 +2546,11 @@ export default function AlphabetBootcamp({
     }
   }, [
     alphabet,
+    courseCeilingLevel,
     generatedCards,
     isGeneratingDeck,
     npub,
+    placementLevel,
     playSound,
     targetLang,
     toast,
@@ -2642,6 +2753,7 @@ export default function AlphabetBootcamp({
                 tts: data.tts || "",
                 type: "sound",
                 generated: true,
+                cefrLevel: data.cefrLevel || null,
                 ...pickGeneratedDisplayFields(data),
               });
             }
@@ -2660,7 +2772,7 @@ export default function AlphabetBootcamp({
           const uncollected = allCards.filter((c) => !collectedIds.has(c.id));
           const collected = allCards.filter((c) => collectedIds.has(c.id));
 
-          setDeck(shuffleArray(uncollected));
+          setDeck(reorderDeckForRepairFocus(shuffleArray(uncollected)));
           setCollectedLetters(collected);
           setIsInitialized(true);
         }
@@ -2671,7 +2783,7 @@ export default function AlphabetBootcamp({
           setSavedPracticeWords({});
           setSavedCorrectCounts({});
           // Fallback: all letters in deck
-          setDeck(shuffleArray(alphabet));
+          setDeck(reorderDeckForRepairFocus(shuffleArray(alphabet)));
           setCollectedLetters([]);
           setIsInitialized(true);
         }
@@ -2694,6 +2806,14 @@ export default function AlphabetBootcamp({
 
   return (
     <VStack align="stretch" spacing={4} w="100%" color={APP_TEXT_PRIMARY} px={6}>
+      {/* Repair focus: shown only when the Daily Quest routed a phonics repair
+          here (returns null otherwise, so it adds no gap on a normal visit). */}
+      <RepairFocusBanner
+        surface="alphabet"
+        appLanguage={appLanguage}
+        maxW="400px"
+        mt={12}
+      />
       {/* XP Progress Bar */}
       <Box maxW="400px" mx="auto" w="100%" zIndex={10} mt={12}>
         <XpProgressHeader
@@ -2767,6 +2887,7 @@ export default function AlphabetBootcamp({
                     appLanguage={appLanguage}
                     targetLang={targetLang}
                     npub={npub}
+                    cefrLevel={cefrLevel}
                     pauseMs={pauseMs}
                     onXpAwarded={handleXpAwarded}
                     initialPracticeWord={
@@ -2876,6 +2997,7 @@ export default function AlphabetBootcamp({
                     appLanguage={appLanguage}
                     targetLang={targetLang}
                     npub={npub}
+                    cefrLevel={cefrLevel}
                     pauseMs={pauseMs}
                     onXpAwarded={handleXpAwarded}
                     initialPracticeWord={

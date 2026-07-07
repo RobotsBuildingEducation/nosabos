@@ -112,13 +112,27 @@ export const CEFR_DESCRIPTIONS = {
   },
 };
 
+export function normalizeCEFRLevel(level, fallback = "A1") {
+  const raw = typeof level === "string" ? level.trim() : "";
+  if (!raw) return normalizeCEFRLevel(fallback, "A1");
+
+  const compact = raw.replace(/[\s_]+/g, "-").toUpperCase();
+  if (compact === "A0" || compact === "PRE-A1" || compact === "PREA1") {
+    return "PRE-A1";
+  }
+  if (["A1", "A2", "B1", "B2", "C1", "C2"].includes(compact)) {
+    return compact;
+  }
+  return normalizeCEFRLevel(fallback, "A1");
+}
+
 /**
  * Get a CEFR level description
  * @param {string} level - CEFR level (e.g., "A1", "B2")
  * @returns {object} - Description object with interaction, production, vocabulary, grammar, etc.
  */
 export function getCEFRDescription(level) {
-  const normalizedLevel = level?.toUpperCase() || "A1";
+  const normalizedLevel = normalizeCEFRLevel(level, "A1");
   return CEFR_DESCRIPTIONS[normalizedLevel] || CEFR_DESCRIPTIONS["A1"];
 }
 
@@ -128,12 +142,13 @@ export function getCEFRDescription(level) {
  * @returns {string} - Difficulty description for AI prompts
  */
 export function getCEFRPromptHint(cefrLevel) {
-  const level = cefrLevel?.toUpperCase() || "A1";
+  const level = normalizeCEFRLevel(cefrLevel, "A1");
   const desc = getCEFRDescription(level);
+  const displayLevel = level === "PRE-A1" ? "Pre-A1" : level;
 
   const goalHint = desc.goalComplexity
     ? ` Goals: ${desc.goalComplexity}.`
     : "";
 
-  return `CEFR ${level} (${desc.name}): ${desc.sentenceComplexity}. Vocabulary: ${desc.vocabulary}. Grammar: ${desc.grammar}.${goalHint}`;
+  return `CEFR ${displayLevel} (${desc.name}): ${desc.sentenceComplexity}. Vocabulary: ${desc.vocabulary}. Grammar: ${desc.grammar}.${goalHint}`;
 }

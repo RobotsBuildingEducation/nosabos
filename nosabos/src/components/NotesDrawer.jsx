@@ -1,5 +1,5 @@
 // src/components/NotesDrawer.jsx
-import React, { useMemo, useState, useRef } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import {
   Accordion,
   AccordionButton,
@@ -11,12 +11,18 @@ import {
   Button,
   Drawer,
   DrawerBody,
+  DrawerCloseButton,
   DrawerContent,
   DrawerHeader,
   DrawerOverlay,
   Flex,
   HStack,
   IconButton,
+  Tab,
+  TabList,
+  TabPanel,
+  TabPanels,
+  Tabs,
   Text,
   VStack,
 } from "@chakra-ui/react";
@@ -32,10 +38,13 @@ import {
   getLanguageLocale,
   normalizeSupportLanguage,
 } from "../constants/languages";
+import { nativeAnchoredDrawerMotionProps } from "../utils/modalMotion";
+import CompanionMemoryList from "./CompanionMemoryList";
 import {
-  nativeAnchoredDrawerMotionProps,
-  nativeOverlayMotionProps,
-} from "../utils/modalMotion";
+  MEMORY_DRAWER_COPY,
+  memoryCopy,
+  repairCopy,
+} from "../utils/companionMemoryCopy";
 
 const APP_SURFACE = "var(--app-surface)";
 const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
@@ -107,6 +116,48 @@ const MODULE_LABELS = {
   },
 };
 
+// Tab styling copied from the Settings drawer's Settings/Account tabs: quiet
+// label, animated gradient underline on the active tab.
+const MEMORY_TAB_STYLE = {
+  px: 0,
+  pt: 1,
+  pb: 3,
+  position: "relative",
+  fontWeight: "semibold",
+  color: "var(--app-text-muted)",
+  borderRadius: "0",
+  bg: "transparent",
+  border: "none",
+  boxShadow: "none",
+  outline: "none",
+  _active: { bg: "transparent" },
+  _hover: { color: "var(--app-text-primary)", borderColor: "transparent" },
+  _focus: { boxShadow: "none", outline: "none", borderColor: "transparent" },
+  _focusVisible: {
+    boxShadow: "none",
+    outline: "none",
+    borderColor: "transparent",
+  },
+  _after: {
+    content: '""',
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: "-1px",
+    height: "3px",
+    borderRadius: "full",
+    bgGradient: "linear(to-r, cyan.300, teal.400)",
+    opacity: 0,
+    transform: "scaleX(0.7)",
+    transformOrigin: "center",
+    transition: "all 0.2s ease",
+  },
+  _selected: {
+    color: "var(--app-text-primary)",
+    _after: { opacity: 1, transform: "scaleX(1)" },
+  },
+};
+
 export default function NotesDrawer({
   isOpen,
   onClose,
@@ -116,6 +167,12 @@ export default function NotesDrawer({
   const { notes, removeNote, clearNotesForLanguage } = useNotesStore();
   const [playingNoteId, setPlayingNoteId] = useState(null);
   const [loadingTts, setLoadingTts] = useState(null);
+  // 0 = Repair (companion memory), 1 = Saved notes. Repair is the landing
+  // view every time the drawer opens.
+  const [tabIndex, setTabIndex] = useState(0);
+  useEffect(() => {
+    if (isOpen) setTabIndex(0);
+  }, [isOpen]);
   const audioRef = useRef(null);
   const pcRef = useRef(null);
   const swipeDismiss = useBottomDrawerSwipeDismiss({ isOpen, onClose });
@@ -130,46 +187,11 @@ export default function NotesDrawer({
     return notes.filter((note) => note.targetLang === targetLang);
   }, [notes, targetLang]);
 
-  const drawerTitle =
-    lang === "ja"
-      ? "マイメモ"
-      : lang === "zh"
-        ? "我的笔记"
-        : lang === "ar"
-          ? "ملاحظاتي"
-          : lang === "fr"
-            ? "Mes notes"
-            : lang === "pt"
-              ? "Minhas notas"
-              : lang === "it"
-                ? "Le mie note"
-                : lang === "de"
-                  ? "Meine Notizen"
-                  : lang === "hi"
-                    ? "मेरे नोट्स"
-                    : lang === "es"
-                      ? "Mis Notas"
-                      : "My Notes";
-  const emptyMessage =
-    lang === "ja"
-      ? "まだメモがありません。フラッシュカード、語彙、文法を完了すると自動でメモが作成されます。"
-      : lang === "zh"
-        ? "还没有笔记。完成闪卡、词汇或语法练习后会自动创建笔记。"
-        : lang === "fr"
-          ? "Aucune note pour l'instant. Termine des cartes, du vocabulaire ou de la grammaire pour creer des notes automatiquement."
-          : lang === "pt"
-            ? "Voce ainda nao tem notas. Conclua cartoes, vocabulario ou gramatica para criar notas automaticamente."
-            : lang === "it"
-              ? "Ancora nessuna nota. Completa schede, vocabolario o grammatica per creare note automaticamente."
-              : lang === "de"
-                ? "Noch keine Notizen. Schließe Karten, Wortschatz oder Grammatik ab, um automatisch Notizen zu erstellen."
-                : lang === "hi"
-                  ? "अभी आपके पास कोई नोट नहीं है। फ्लैशकार्ड, शब्दावली या व्याकरण पूरा करें ताकि नोट अपने आप बन सकें।"
-                  : lang === "ar"
-                    ? "لسه ماعندكش ملاحظات. كمّل البطاقات أو المفردات أو القواعد علشان تتعمل ملاحظات تلقائيًا."
-                    : lang === "es"
-                      ? "Aún no tienes notas. Completa tarjetas, vocabulario o gramática para crear notas automáticamente."
-                      : "No notes yet. Complete flashcards, vocabulary or grammar to automatically create notes.";
+  // The notes drawer is now the companion's "Memory". Manual saved notes live
+  // on as a secondary section below the companion-brain list.
+  const drawerTitle = memoryCopy(lang, MEMORY_DRAWER_COPY.title);
+  const savedNotesHeading = memoryCopy(lang, MEMORY_DRAWER_COPY.savedNotesHeading);
+  const repairTabLabel = repairCopy(lang, "courseLabel");
   const clearAllLabel =
     lang === "ja"
       ? "すべて削除"
@@ -623,17 +645,24 @@ export default function NotesDrawer({
         }}
       >
         <BottomDrawerDragHandle isDragging={swipeDismiss.isDragging} />
+        <DrawerCloseButton
+          color={noteUi.primaryText}
+          _hover={{ bg: noteUi.closeHoverBg }}
+          top={4}
+          right={6}
+          onClick={onClose}
+        />
         <DrawerHeader
           borderBottomWidth="1px"
           borderColor={noteUi.headerBorder}
-          pr={12}
+          pr={14}
         >
           <Box maxW="720px" mx="auto" w="100%">
             <HStack justify="space-between" align="center">
               <Text color={noteUi.primaryText} fontWeight="semibold">
                 {drawerTitle}
               </Text>
-              {filteredNotes.length > 0 && (
+              {tabIndex === 1 && filteredNotes.length > 0 && (
                 <Button
                   size="xs"
                   variant="ghost"
@@ -654,105 +683,130 @@ export default function NotesDrawer({
 
         <DrawerBody overflowY="auto" flex="1" py={4}>
           <Box maxW="720px" mx="auto" w="100%">
-            {filteredNotes.length === 0 ? (
-              <Flex
-                direction="column"
-                align="center"
-                justify="center"
-                h="200px"
-                textAlign="center"
-              >
-                <Text color={noteUi.secondaryText} fontSize="sm" maxW="520px">
-                  {emptyMessage}
-                </Text>
-              </Flex>
-            ) : (
-              <Accordion allowToggle>
-                {CEFR_LEVELS.map((level) => {
-                  const levelNotes = notesByCefr[level];
-                  const hasNotes = levelNotes.length > 0;
+            <Tabs
+              index={tabIndex}
+              onChange={setTabIndex}
+              variant="unstyled"
+              isLazy
+              lazyBehavior="keepMounted"
+            >
+              <TabList mb={4} gap={6} justifyContent="center">
+                <Tab {...MEMORY_TAB_STYLE}>{repairTabLabel}</Tab>
+                <Tab {...MEMORY_TAB_STYLE}>{savedNotesHeading}</Tab>
+              </TabList>
+              <TabPanels>
+                <TabPanel px={0} pt={0} pb={0}>
+                  <CompanionMemoryList targetLang={targetLang} lang={lang} />
+                </TabPanel>
+                <TabPanel px={0} pt={0} pb={0}>
+                  {filteredNotes.length > 0 ? (
+                    <Accordion allowToggle>
+                      {CEFR_LEVELS.map((level) => {
+                        const levelNotes = notesByCefr[level];
+                        const hasNotes = levelNotes.length > 0;
 
-                  return (
-                    <AccordionItem
-                      key={level}
-                      border="none"
-                      mb={3}
-                      isDisabled={!hasNotes}
-                    >
-                      {({ isExpanded }) => (
-                        <>
-                          <AccordionButton
-                            py={3}
-                            px={4}
-                            bg={
-                              hasNotes ? noteUi.sectionBg : noteUi.notePanelBg
-                            }
-                            border="1px solid"
-                            borderColor={
-                              hasNotes
-                                ? noteUi.sectionBorder
-                                : noteUi.noteBorder
-                            }
-                            borderRadius="lg"
-                            borderBottomRadius={isExpanded ? 0 : "lg"}
-                            opacity={hasNotes ? 1 : noteUi.emptyOpacity}
-                            cursor={hasNotes ? "pointer" : "not-allowed"}
-                            _hover={{
-                              bg: hasNotes
-                                ? noteUi.sectionBgHover
-                                : noteUi.notePanelBg,
-                            }}
-                            _expanded={{ bg: noteUi.sectionBgExpanded }}
+                        return (
+                          <AccordionItem
+                            key={level}
+                            border="none"
+                            mb={3}
+                            isDisabled={!hasNotes}
                           >
-                            <HStack flex="1" spacing={3}>
-                              <Badge
-                                bg={CEFR_COLORS[level]}
-                                color={CEFR_TEXT_COLORS[level] || "white"}
-                                fontSize="sm"
-                                fontWeight="bold"
-                                px={3}
-                                py={1}
-                                borderRadius="md"
-                              >
-                                {level}
-                              </Badge>
-                              <Text
-                                fontSize="sm"
-                                color={
-                                  hasNotes
-                                    ? noteUi.primaryText
-                                    : noteUi.mutedText
-                                }
-                                fontWeight="medium"
-                              >
-                                {hasNotes
-                                  ? formatNoteCountLabel(levelNotes.length)
-                                  : noNotesLabel}
-                              </Text>
-                            </HStack>
-                            {hasNotes && <AccordionIcon color={noteUi.icon} />}
-                          </AccordionButton>
+                            {({ isExpanded }) => (
+                              <>
+                                <AccordionButton
+                                  py={3}
+                                  px={4}
+                                  bg={
+                                    hasNotes
+                                      ? noteUi.sectionBg
+                                      : noteUi.notePanelBg
+                                  }
+                                  border="1px solid"
+                                  borderColor={
+                                    hasNotes
+                                      ? noteUi.sectionBorder
+                                      : noteUi.noteBorder
+                                  }
+                                  borderRadius="lg"
+                                  borderBottomRadius={isExpanded ? 0 : "lg"}
+                                  opacity={hasNotes ? 1 : noteUi.emptyOpacity}
+                                  cursor={hasNotes ? "pointer" : "not-allowed"}
+                                  _hover={{
+                                    bg: hasNotes
+                                      ? noteUi.sectionBgHover
+                                      : noteUi.notePanelBg,
+                                  }}
+                                  _expanded={{ bg: noteUi.sectionBgExpanded }}
+                                >
+                                  <HStack flex="1" spacing={3}>
+                                    <Badge
+                                      bg={CEFR_COLORS[level]}
+                                      color={CEFR_TEXT_COLORS[level] || "white"}
+                                      fontSize="sm"
+                                      fontWeight="bold"
+                                      px={3}
+                                      py={1}
+                                      borderRadius="md"
+                                    >
+                                      {level}
+                                    </Badge>
+                                    <Text
+                                      fontSize="sm"
+                                      color={
+                                        hasNotes
+                                          ? noteUi.primaryText
+                                          : noteUi.mutedText
+                                      }
+                                      fontWeight="medium"
+                                    >
+                                      {hasNotes
+                                        ? formatNoteCountLabel(
+                                            levelNotes.length,
+                                          )
+                                        : noNotesLabel}
+                                    </Text>
+                                  </HStack>
+                                  {hasNotes && (
+                                    <AccordionIcon color={noteUi.icon} />
+                                  )}
+                                </AccordionButton>
 
-                          {hasNotes && (
-                            <AccordionPanel
-                              pb={4}
-                              px={2}
-                              pt={2}
-                              bg={noteUi.notePanelBg}
-                              borderBottomRadius="lg"
-                            >
-                              <Accordion allowMultiple>
-                                {levelNotes.map(renderNoteItem)}
-                              </Accordion>
-                            </AccordionPanel>
-                          )}
-                        </>
-                      )}
-                    </AccordionItem>
-                  );
-                })}
-              </Accordion>
-            )}
+                                {hasNotes && (
+                                  <AccordionPanel
+                                    pb={4}
+                                    px={2}
+                                    pt={2}
+                                    bg={noteUi.notePanelBg}
+                                    borderBottomRadius="lg"
+                                  >
+                                    <Accordion allowMultiple>
+                                      {levelNotes.map(renderNoteItem)}
+                                    </Accordion>
+                                  </AccordionPanel>
+                                )}
+                              </>
+                            )}
+                          </AccordionItem>
+                        );
+                      })}
+                    </Accordion>
+                  ) : (
+                    <Box
+                      border="1px dashed"
+                      borderColor="var(--app-border)"
+                      borderRadius="12px"
+                      px={3}
+                      py={4}
+                    >
+                      <Text fontSize="sm" color={noteUi.secondaryText}>
+                        {noNotesLabel}
+                      </Text>
+                    </Box>
+                  )}
+                </TabPanel>
+              </TabPanels>
+            </Tabs>
           </Box>
         </DrawerBody>
       </DrawerContent>

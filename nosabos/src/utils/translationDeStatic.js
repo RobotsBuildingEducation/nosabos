@@ -500,6 +500,8 @@ export const TRANSLATION_DE_STATIC = {
   ra_show_suggestion: "Vorschlag anzeigen",
   ra_generating: "Wird erstellt...",
   ra_generating_topic: "Neues Thema wird erstellt...",
+  ra_starter_show: "Hilf mir",
+  ra_starter_hide: "Satz ausblenden",
   ra_btn_start: "Starten",
   ra_btn_starting: "Wird gestartet...",
   ra_btn_end: "Beenden",

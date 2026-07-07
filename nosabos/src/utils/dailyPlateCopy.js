@@ -4,7 +4,7 @@
 // (DailyPlate card, DailyPlateHome, and App's session conductor). Lives
 // outside the component files so Fast Refresh keeps working.
 import { PiCardsBold, PiPath } from "react-icons/pi";
-import { RiBook2Line, RiChat3Line } from "react-icons/ri";
+import { RiBook2Line, RiChat3Line, RiMagicLine } from "react-icons/ri";
 import { LuLanguages } from "react-icons/lu";
 
 import {
@@ -21,6 +21,22 @@ export const plateUiCopy = (lang, copy) => {
 };
 
 export const PLATE_COURSE_META = {
+  repair: {
+    icon: RiMagicLine,
+    label: {
+      en: "Repair",
+      es: "Reparar",
+      pt: "Reparar",
+      fr: "Réparer",
+      it: "Ripasso",
+      de: "Auffrischen",
+      ja: "リペア",
+      zh: "修复",
+      ru: "Повтор",
+      ar: "مراجعة",
+      hi: "मरम्मत",
+    },
+  },
   review: {
     icon: PiCardsBold,
     label: {
@@ -185,6 +201,21 @@ export const PLATE_CLOSE_COPY = {
   ru: "Отлично!",
   ar: "رائع!",
   hi: "बढ़िया!",
+};
+
+// Quests-complete modal: secondary action to open the companion's Memory log.
+export const PLATE_VIEW_NOTES_COPY = {
+  en: "View notes",
+  es: "Ver notas",
+  pt: "Ver notas",
+  fr: "Voir les notes",
+  it: "Vedi le note",
+  de: "Notizen ansehen",
+  ja: "ノートを見る",
+  zh: "查看笔记",
+  ru: "Посмотреть заметки",
+  ar: "شوف الملاحظات",
+  hi: "नोट्स देखें",
 };
 
 export const PLATE_NEXT_COPY = {

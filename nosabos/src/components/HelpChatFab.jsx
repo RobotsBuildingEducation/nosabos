@@ -2264,6 +2264,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                       border="1px solid white"
                       padding={2}
                       borderRadius="50%"
+                      mr={2}
                     />
                   </HStack>
                 </HStack>
