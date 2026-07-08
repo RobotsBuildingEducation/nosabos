@@ -14,10 +14,21 @@ import {
 const CONTROL_CONFIG = [
   { key: "width", label: "Width", min: 160, max: 420, step: 4, unit: "px" },
   { key: "height", label: "Height", min: 140, max: 360, step: 4, unit: "px" },
-  { key: "radius", label: "Radius", min: 0, max: 120, step: 2, unit: "px" },
+  { key: "radius", label: "Radius", min: 0, max: 140, step: 2, unit: "px" },
+  {
+    key: "superellipse",
+    label: "Superellipse",
+    min: 0.5,
+    max: 5,
+    step: 0.01,
+    unit: "",
+    precision: 2,
+  },
 ];
 
-function SquircleControl({ label, value, min, max, step, unit, onChange }) {
+function SquircleControl({ label, value, min, max, step, unit, precision, onChange }) {
+  const displayValue = typeof precision === "number" ? value.toFixed(precision) : value;
+
   return (
     <Box w="100%">
       <Flex align="baseline" justify="space-between" gap={4} mb={2}>
@@ -25,7 +36,7 @@ function SquircleControl({ label, value, min, max, step, unit, onChange }) {
           {label}
         </Text>
         <Text color="#5c6f8f" fontSize="sm" fontVariantNumeric="tabular-nums">
-          {value}
+          {displayValue}
           {unit}
         </Text>
       </Flex>
@@ -56,6 +67,7 @@ export default function SquirclePlayground() {
     width: 280,
     height: 220,
     radius: 56,
+    superellipse: 2.77,
   });
 
   const previewStyle = useMemo(
@@ -63,6 +75,7 @@ export default function SquirclePlayground() {
       width: `${settings.width}px`,
       height: `${settings.height}px`,
       borderRadius: `${settings.radius}px`,
+      cornerShape: `superellipse(${settings.superellipse})`,
     }),
     [settings],
   );
@@ -94,7 +107,7 @@ export default function SquirclePlayground() {
               Squircle
             </Heading>
             <Text color="#5c6f8f" fontSize="md">
-              Shape a simple card with live radius and dimension controls.
+              Shape a simple card with live superellipse and dimension controls.
             </Text>
           </Box>
 
@@ -131,7 +144,7 @@ export default function SquirclePlayground() {
           p={{ base: 6, md: 10 }}
         >
           <Flex
-            {...previewStyle}
+            style={previewStyle}
             maxW="100%"
             align="center"
             justify="center"
@@ -139,14 +152,15 @@ export default function SquirclePlayground() {
             border="1px solid rgba(255, 255, 255, 0.88)"
             boxShadow="0 24px 64px rgba(36, 50, 74, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.92)"
             overflow="hidden"
-            transition="width 160ms ease, height 160ms ease, border-radius 160ms ease"
+            transition="width 160ms ease, height 160ms ease, border-radius 160ms ease, corner-shape 160ms ease"
           >
             <VStack spacing={1}>
               <Text color="#24324a" fontSize="lg" fontWeight="800">
                 Card
               </Text>
               <Text color="#6a7b96" fontSize="sm" fontVariantNumeric="tabular-nums">
-                {settings.width} x {settings.height} / {settings.radius}px
+                {settings.width} x {settings.height} / {settings.radius}px /{" "}
+                superellipse({settings.superellipse.toFixed(2)})
               </Text>
             </VStack>
           </Flex>

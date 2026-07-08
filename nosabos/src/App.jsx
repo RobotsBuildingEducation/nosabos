@@ -8990,6 +8990,11 @@ export default function App({ onBootReady } = {}) {
               targetLang={resolvedTargetLang}
               supportLang={resolvedSupportLang}
               onComplete={() => handleReturnToSkillTree()}
+              onGameComplete={
+                activeLesson?.isGame && !activeLesson?.isTutorial
+                  ? () => triggerLessonCompletion("game_complete")
+                  : undefined
+              }
               onSkip={switchToRandomLessonMode}
             />
           </Suspense>

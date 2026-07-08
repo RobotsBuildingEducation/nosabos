@@ -2786,6 +2786,7 @@ function AnimatedText({ text, charDelayMs = 18, ...textProps }) {
 export default function RPGGame({
   lessonContext = null,
   onComplete = null,
+  onGameComplete = null,
   initialScenario = null,
   onSkip = null,
   onScenarioReady = null,
@@ -6914,6 +6915,23 @@ export default function RPGGame({
       onSkip();
     }
   }, [gameComplete, isTutorialGame, onSkip]);
+
+  // Fires once per session when the quest is actually finished — unlike
+  // onComplete, which also runs on early exits. Tutorial games are excluded:
+  // they advance (and get their XP) through the tutorial sequence above.
+  const gameCompleteNotifiedRef = useRef(false);
+  useEffect(() => {
+    if (
+      !gameComplete ||
+      gameCompleteNotifiedRef.current ||
+      lessonContext?.isTutorial ||
+      typeof onGameComplete !== "function"
+    ) {
+      return;
+    }
+    gameCompleteNotifiedRef.current = true;
+    onGameComplete();
+  }, [gameComplete, lessonContext?.isTutorial, onGameComplete]);
 
   const handleSkipStep = useCallback(() => {
     if (typeof onSkip === "function") {
