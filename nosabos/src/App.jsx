@@ -8992,7 +8992,14 @@ export default function App({ onBootReady } = {}) {
               onComplete={() => handleReturnToSkillTree()}
               onGameComplete={
                 activeLesson?.isGame && !activeLesson?.isTutorial
-                  ? () => triggerLessonCompletion("game_complete")
+                  ? () =>
+                      // The completion overlay shows no buttons in this flow,
+                      // so if the completion write fails, still exit back to
+                      // the skill tree rather than stranding the player (a
+                      // repeat call after success is a no-op).
+                      triggerLessonCompletion("game_complete").finally(() =>
+                        handleReturnToSkillTree(),
+                      )
                   : undefined
               }
               onSkip={switchToRandomLessonMode}

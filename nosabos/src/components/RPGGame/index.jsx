@@ -6919,19 +6919,25 @@ export default function RPGGame({
   // Fires once per session when the quest is actually finished — unlike
   // onComplete, which also runs on early exits. Tutorial games are excluded:
   // they advance (and get their XP) through the tutorial sequence above.
+  const notifiesOnGameComplete =
+    typeof onGameComplete === "function" && !lessonContext?.isTutorial;
+  // Both handoffs (game-review via onGameComplete, tutorial via onSkip) exit
+  // the game automatically, so the completion overlay drops its Play Again /
+  // New World buttons whenever one is wired.
+  const hasAutoCompletionExit =
+    notifiesOnGameComplete || (isTutorialGame && typeof onSkip === "function");
   const gameCompleteNotifiedRef = useRef(false);
   useEffect(() => {
     if (
       !gameComplete ||
       gameCompleteNotifiedRef.current ||
-      lessonContext?.isTutorial ||
-      typeof onGameComplete !== "function"
+      !notifiesOnGameComplete
     ) {
       return;
     }
     gameCompleteNotifiedRef.current = true;
     onGameComplete();
-  }, [gameComplete, lessonContext?.isTutorial, onGameComplete]);
+  }, [gameComplete, notifiesOnGameComplete, onGameComplete]);
 
   const handleSkipStep = useCallback(() => {
     if (typeof onSkip === "function") {
@@ -8441,22 +8447,24 @@ export default function RPGGame({
             >
               {ui.completed}
             </Text>
-            <HStack spacing={3}>
-              <Button colorScheme="yellow" onClick={resetGame}>
-                {ui.playAgain}
-              </Button>
-              <Button
-                variant={isLightTheme ? "solid" : "outline"}
-                colorScheme={isLightTheme ? undefined : "whiteAlpha"}
-                bg={isLightTheme ? rpgChoiceBg : undefined}
-                color={isLightTheme ? rpgTextPrimary : "white"}
-                borderColor={isLightTheme ? rpgChoiceBorder : undefined}
-                _hover={isLightTheme ? { bg: rpgChoiceHoverBg } : undefined}
-                onClick={goToScenarioSelect}
-              >
-                {isTutorialGame ? ui.scenario : ui.newWorld}
-              </Button>
-            </HStack>
+            {!hasAutoCompletionExit && (
+              <HStack spacing={3}>
+                <Button colorScheme="yellow" onClick={resetGame}>
+                  {ui.playAgain}
+                </Button>
+                <Button
+                  variant={isLightTheme ? "solid" : "outline"}
+                  colorScheme={isLightTheme ? undefined : "whiteAlpha"}
+                  bg={isLightTheme ? rpgChoiceBg : undefined}
+                  color={isLightTheme ? rpgTextPrimary : "white"}
+                  borderColor={isLightTheme ? rpgChoiceBorder : undefined}
+                  _hover={isLightTheme ? { bg: rpgChoiceHoverBg } : undefined}
+                  onClick={goToScenarioSelect}
+                >
+                  {isTutorialGame ? ui.scenario : ui.newWorld}
+                </Button>
+              </HStack>
+            )}
           </VStack>
         </Box>
       )}
