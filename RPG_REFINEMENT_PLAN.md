@@ -430,6 +430,27 @@ pattern). Pre-A1–A1 runs are fully tier-1.
   chose the bonus.
 - Keep `GAME_SPEECH_VAD_MS` / stop-delay tuning from the current module.
 
+> **Amendment (2026-07-11) — the story IS the product.** Playtesting showed the
+> local-only say-aloud + canned reactions made runs feel binary and chore-like,
+> losing the original game's spirit. Direction: keep the authored engine, bring
+> back the free-form soul. Shipped:
+> - The prepared-story call (`episodes/legacyScenario.js`, schema
+>   `v4-story-personas`, cached per unit × episode × lang × level) returns a
+>   story `title`, bilingual `intro`/`epilogue`, one persona per NPC, and a
+>   support-language `sceneLine` storybook caption per beat. Speech beats are
+>   OPEN role-play invitations (`speechGoal` + `speechExample`) — never
+>   repeat-after-me.
+> - Speech turns are free-form again: at runtime ONE call
+>   (`buildAuthoredSpeechTurnPrompt` in `index.jsx`) grades full/partial/miss
+>   (100/50/25 pts, misses recorded in `authoredMisses`) AND replies in the
+>   NPC's persona to whatever the player actually said — jokes, refusals, and
+>   opinions included. Speech never blocks progression; the local matcher vs
+>   `speechExample` is only the offline/error fallback.
+> - Revised per-run LLM budget: 1 cached story call + one small call per speech
+>   beat (2–3 per run). Choice beats remain zero-call, with persona-voiced
+>   authored reactions. Do not optimize the speech-turn calls away — they are
+>   the point of the speech exercise.
+
 ---
 
 ## Scoring, XP, recap, capture
