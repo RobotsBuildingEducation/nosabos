@@ -61,6 +61,35 @@ function collectRelevantLessons(lesson, unit) {
   return [lesson].filter(Boolean);
 }
 
+function buildReviewLesson(entry) {
+  const modes = Object.entries(entry?.content || {})
+    .filter(([, modeData]) => modeData && typeof modeData === "object")
+    .map(([mode, modeData]) => ({
+      mode,
+      topic: cleanString(modeData.topic || modeData.scenario),
+      focusPoints: uniqueStrings([
+        ...(Array.isArray(modeData.focusPoints) ? modeData.focusPoints : []),
+        ...(Array.isArray(modeData.topics) ? modeData.topics : []),
+      ]),
+      prompt: cleanString(modeData.prompt),
+      successCriteria: cleanString(modeData.successCriteria),
+    }))
+    .filter(
+      (mode) =>
+        mode.topic ||
+        mode.focusPoints.length ||
+        mode.prompt ||
+        mode.successCriteria,
+    );
+
+  return {
+    id: entry?.id || "",
+    title: getLocalizedText(entry?.title, "en"),
+    description: getLocalizedText(entry?.description, "en"),
+    modes,
+  };
+}
+
 export function buildGameReviewContext({
   lesson,
   unit = null,
@@ -69,6 +98,7 @@ export function buildGameReviewContext({
   if (!lesson) return null;
 
   const relevantLessons = collectRelevantLessons(lesson, unit);
+  const reviewLessons = relevantLessons.map(buildReviewLesson);
   const lessonTitles = uniqueStrings(
     relevantLessons.map((entry) => getLocalizedText(entry?.title, "en")),
   );
@@ -130,6 +160,7 @@ export function buildGameReviewContext({
     lessonId: lesson?.id || "",
     lessonTitle,
     lessonTitles,
+    reviewLessons,
     reviewTerms: finalTerms,
     reviewObjectives: reviewObjectives.slice(0, 16),
     curriculumSummary,

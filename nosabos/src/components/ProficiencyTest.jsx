@@ -75,7 +75,7 @@ import {
 } from "../utils/modalMotion";
 
 const REALTIME_MODEL =
-  (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
+  (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-2.1-mini") + "";
 
 const REALTIME_URL = import.meta.env.VITE_REALTIME_URL
   ? `${import.meta.env.VITE_REALTIME_URL}?model=${encodeURIComponent(

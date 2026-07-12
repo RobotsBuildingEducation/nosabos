@@ -21,6 +21,7 @@ import { withPortugueseSkillTreeText } from "./skillTree/portugueseLocalizer.js"
 import { withArabicSkillTreeText } from "./skillTree/arabicLocalizer.js";
 import { withChineseSkillTreeText } from "./skillTree/chineseLocalizer.js";
 import { withGermanSkillTreeText } from "./skillTree/germanLocalizer.js";
+import { tagGameLessonContent } from "../components/RPGGame/content/buckets.js";
 
 const withLocalizedSkillTreeText = (skillTree) =>
   withArabicSkillTreeText(
@@ -13140,31 +13141,18 @@ function applyCEFRScaffolding(path) {
       // Append a Game Review lesson at the end of every non-tutorial unit
       if (!unit.isTutorial) {
         const unitTitle = unit.title?.en || "Unit";
-        const maxXp = Math.max(
-          ...scheduledLessons.map((l) => l.xpRequired || 0),
-          0,
-        );
-
-        // Collect topics from the unit's lessons for richer game context
+        const maxXp = Math.max(...scheduledLessons.map((l) => l.xpRequired || 0), 0);
         const unitTopics = scheduledLessons
           .filter((l) => !l.isGame)
-          .map(
-            (l) =>
-              l.content?.vocabulary?.topic ||
-              l.content?.grammar?.topic ||
-              l.content?.realtime?.scenario ||
-              l.content?.reading?.topic ||
-              l.title?.en ||
-              "",
+          .map((l) =>
+            l.content?.vocabulary?.topic || l.content?.grammar?.topic ||
+            l.content?.realtime?.scenario || l.content?.reading?.topic ||
+            l.title?.en || "",
           )
           .filter(Boolean);
-
         scheduledLessons.push({
           id: `${unit.id}-game`,
-          title: {
-            en: "Game Review",
-            es: "Repaso de Juego",
-          },
+          title: { en: "Game Review", es: "Repaso de Juego" },
           description: {
             en: `Review ${unitTitle} by playing an interactive game`,
             es: `Repasa ${unit.title?.es || unitTitle} jugando un juego interactivo`,
@@ -13175,11 +13163,9 @@ function applyCEFRScaffolding(path) {
           modes: ["game"],
           content: {
             game: {
-              topic: `${unitTitle} game review`,
-              unitTitle,
-              cefrLevel: level,
-              unitTopics,
-              focusPoints: ["comprehensive review"],
+              topic: `${unitTitle} game review`, unitTitle, cefrLevel: level,
+              unitTopics, focusPoints: ["comprehensive review"],
+              ...tagGameLessonContent(unitTopics),
             },
           },
         });

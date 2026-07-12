@@ -1933,6 +1933,44 @@ function LessonDetailModal({
   const handleStartGame = async () => {
     if (gameLoading || lessonLoading) return;
 
+    // Prepare authored Game Reviews behind the existing companion mini-map
+    // transition. Only content is prepared here; the original RPG renderer
+    // still owns the actual game screen.
+    if (!lesson.isTutorial) {
+      captureModalSize();
+      const requestToken = generationTokenRef.current + 1;
+      generationTokenRef.current = requestToken;
+      setGameLoading(true);
+      setLoadingMsgIdx(0);
+      try {
+        const [{ prepareLegacyEpisodeScenario }] = await Promise.all([
+          import("./RPGGame/episodes/legacyScenario.js"),
+          // Prime the RPG client chunk while the companion mini-map is still
+          // visible so App's pre-flip await of the game component resolves
+          // instantly and the mini-map hands off straight to the game.
+          import("./RPGGame/GameRouter.jsx"),
+        ]);
+        const scenario = await prepareLegacyEpisodeScenario({
+          lesson: lessonWithReviewContext,
+          targetLang: targetLang || "es",
+          supportLang: supportLang || "en",
+        });
+        if (requestToken !== generationTokenRef.current) return;
+        const didStartLesson = await onStartLesson?.(
+          lessonWithReviewContext,
+          scenario,
+        );
+        if (requestToken !== generationTokenRef.current) return;
+        if (!didStartLesson) setGameLoading(false);
+      } catch (error) {
+        console.error("Failed to start episode game:", error);
+        if (requestToken === generationTokenRef.current) {
+          setGameLoading(false);
+        }
+      }
+      return;
+    }
+
     captureModalSize();
     const requestToken = generationTokenRef.current + 1;
     generationTokenRef.current = requestToken;

@@ -574,6 +574,13 @@ class GeminiLiveRealtimeBridge {
     this.session = await this.connectLiveSession();
     await this.setupAudio();
     this.readyState = "open";
+    // Billing visibility: which model/backend this session bills against.
+    console.info(
+      "[gemini-live] connected — model:",
+      GEMINI_LIVE_MODEL,
+      "backend:",
+      GEMINI_LIVE_USES_VERTEX ? "vertex" : "google-ai",
+    );
     this.emit({ type: "session.updated" });
     this.receiveLoopPromise = this.receiveLoop();
   }
@@ -843,7 +850,70 @@ class GeminiLiveRealtimeBridge {
     }
   }
 
+  // Live usage accounting: the Live API reports usageMetadata per generation —
+  // prompt tokens INCLUDE the accumulated session context (all prior audio +
+  // text re-processed each turn), which is the compounding cost driver on long
+  // sessions. Logs a per-turn breakdown plus a running cost estimate at the
+  // google-ai gemini-3.1-flash-live-preview sheet ($/1M: audio-in 3, text-in
+  // 0.75, audio-out 12, text-out/thoughts 4.50).
+  recordUsageMetadata(usage) {
+    if (!usage || typeof usage !== "object") return;
+    if (!this.sessionUsage) {
+      this.sessionUsage = {
+        turns: 0,
+        promptAudio: 0,
+        promptText: 0,
+        promptOther: 0,
+        outputAudio: 0,
+        outputText: 0,
+        thoughts: 0,
+      };
+    }
+    const modalitySum = (details, modality) =>
+      (Array.isArray(details) ? details : [])
+        .filter(
+          (entry) =>
+            String(entry?.modality || "").toUpperCase() === modality,
+        )
+        .reduce((sum, entry) => sum + (Number(entry?.tokenCount) || 0), 0);
+    const promptDetails =
+      usage.promptTokensDetails || usage.promptTokenDetails || [];
+    const outputDetails =
+      usage.candidatesTokensDetails ||
+      usage.responseTokensDetails ||
+      usage.candidatesTokenDetails ||
+      [];
+    const promptAudio = modalitySum(promptDetails, "AUDIO");
+    const promptText = modalitySum(promptDetails, "TEXT");
+    const outputAudio = modalitySum(outputDetails, "AUDIO");
+    const outputText = modalitySum(outputDetails, "TEXT");
+    const thoughts = Number(usage.thoughtsTokenCount) || 0;
+    const promptTotal =
+      Number(usage.promptTokenCount) || promptAudio + promptText;
+    const promptOther = Math.max(0, promptTotal - promptAudio - promptText);
+
+    const totals = this.sessionUsage;
+    totals.turns += 1;
+    totals.promptAudio += promptAudio;
+    totals.promptText += promptText;
+    totals.promptOther += promptOther;
+    totals.outputAudio += outputAudio;
+    totals.outputText += outputText;
+    totals.thoughts += thoughts;
+
+    const estUsd =
+      (totals.promptAudio * 3 +
+        (totals.promptText + totals.promptOther) * 0.75 +
+        totals.outputAudio * 12 +
+        (totals.outputText + totals.thoughts) * 4.5) /
+      1e6;
+    console.info(
+      `[gemini-live] usage turn ${totals.turns}: prompt ${promptTotal} (audio ${promptAudio}, text ${promptText}), output audio ${outputAudio} / text ${outputText} / thoughts ${thoughts} | session ≈ $${estUsd.toFixed(4)}`,
+    );
+  }
+
   async handleServerMessage(message) {
+    if (message?.usageMetadata) this.recordUsageMetadata(message.usageMetadata);
     // Tutor no longer applies learner-pause output buffering. Manual responses
     // should surface as soon as Gemini emits them; input gating still controls what
     // mic audio is sent upstream.

@@ -102,6 +102,7 @@ import {
   getTTSPlayer,
 } from "../utils/tts";
 import { createGeminiLiveRealtimeBridge } from "../utils/geminiLiveBridge";
+import { createOpenAIRealtimeBridge } from "../utils/openaiRealtimeBridge";
 import { normalizeGeminiLiveVoice } from "../utils/geminiLiveVoices";
 import { getCEFRPromptHint } from "../utils/cefrUtils";
 import {
@@ -694,9 +695,16 @@ function buildTutorLessonContext(
 function buildTutorCodeSwitchingAudioInstruction(
   targetLanguageName = "",
   supportLanguageName = "",
+  { isolateAccentSwitches = false } = {},
 ) {
   return [
     TUTOR_CODE_SWITCHING_AUDIO_INSTRUCTION,
+    // OpenAI-only emphasis: keep the accent demand, but invisibly — an earlier
+    // prescriptive version ("always say 'La palabra es: …' first") made the
+    // tutor robotic because the model followed the example formula verbatim.
+    isolateAccentSwitches && targetLanguageName && supportLanguageName
+      ? `Accent priority: any ${targetLanguageName} word — even a single word inside ${supportLanguageName} speech — must be pronounced with fully native ${targetLanguageName} phonology (silent letters stay silent; native consonants and vowels). Do this invisibly: never announce the language switch, and never fall into a fixed introduction formula — vary your phrasing the way a natural bilingual teacher would.`
+      : "",
     targetLanguageName
       ? `When you include ${targetLanguageName} words or phrases, pronounce those words with native-like ${targetLanguageName} sounds, rhythm, stress, and intonation even if the surrounding tutoring language is different.`
       : "",
@@ -839,6 +847,47 @@ function getTutorStarterAgendaTitleText() {
 // The transcript grader and the closing-act judge stay as fallbacks.
 const TUTOR_TOOL_GRADING_ENABLED =
   import.meta.env.VITE_GEMINI_LIVE_TOOL_GRADING === "true";
+
+// Realtime provider swap. Both bridges expose the same surface (send /
+// readyState / mediaStream / getSenders / close / onEvent…), so the Tutor's
+// session logic is provider-agnostic. Default is Gemini Live; set
+// VITE_TUTOR_REALTIME_PROVIDER=openai to flip builds, or append
+// ?tutorRealtime=openai|gemini to the URL for a session-time A/B without
+// rebuilding. Tool-call grading is Gemini-only and is skipped on OpenAI.
+const TUTOR_REALTIME_PROVIDER_ENV = (
+  import.meta.env.VITE_TUTOR_REALTIME_PROVIDER || "gemini"
+).toLowerCase();
+
+const TUTOR_REALTIME_PROVIDER_STORAGE_KEY = "tutorRealtimeProvider";
+
+function resolveTutorRealtimeProvider() {
+  // The SPA strips the search string on internal navigation long before the
+  // Tutor connects, so a query override must STICK: ?tutorRealtime=openai or
+  // =gemini persists to localStorage; any other value (e.g. =reset) clears
+  // the stored override and returns to the env default.
+  try {
+    const fromQuery = new URLSearchParams(window.location.search).get(
+      "tutorRealtime",
+    );
+    if (fromQuery === "openai" || fromQuery === "gemini") {
+      window.localStorage.setItem(
+        TUTOR_REALTIME_PROVIDER_STORAGE_KEY,
+        fromQuery,
+      );
+      return fromQuery;
+    }
+    if (fromQuery) {
+      window.localStorage.removeItem(TUTOR_REALTIME_PROVIDER_STORAGE_KEY);
+    }
+    const stored = window.localStorage.getItem(
+      TUTOR_REALTIME_PROVIDER_STORAGE_KEY,
+    );
+    if (stored === "openai" || stored === "gemini") return stored;
+  } catch {
+    // no window/storage — fall through to env
+  }
+  return TUTOR_REALTIME_PROVIDER_ENV === "openai" ? "openai" : "gemini";
+}
 
 // Safety cap: gemini-2.5 native audio can loop a tool call and never complete the
 // turn. If more than this many tool calls arrive in one learner turn, the handler
@@ -3696,6 +3745,10 @@ export default function Tutor({
   // learner's next reply is treated as a greeting (no XP, no agenda progress)
   // and triggers the real lesson kickoff.
   const tutorWelcomePendingReplyRef = useRef(false);
+  // Which realtime provider the CURRENT session connected with (set in start).
+  // Unlock pacing depends on it: Gemini's audio-done fires after playback has
+  // drained; OpenAI's fires while the <audio> element is still playing.
+  const realtimeProviderRef = useRef("gemini");
   // Response ids whose assistant message is the tutorial welcome (so it renders
   // in the support language rather than the target language).
   const tutorWelcomeRidSetRef = useRef(new Set());
@@ -5098,32 +5151,65 @@ export default function Tutor({
         LANGUAGE_LOCALES[targetBaseForHint],
         LANGUAGE_LOCALES[supportBaseForHint],
       ].filter((locale, index, all) => locale && all.indexOf(locale) === index);
-      // TEMP debug (remove after verifying the input-language hint): confirms this
-      // code path runs and what locales it resolved for target + support.
+      const realtimeProvider = resolveTutorRealtimeProvider();
+      realtimeProviderRef.current = realtimeProvider;
       console.info(
-        "[gemini-live] connecting Tutor — targetLang:",
+        `[tutor-realtime] connecting via ${realtimeProvider} — targetLang:`,
         targetBaseForHint,
         "supportLang:",
         supportBaseForHint,
         "→ inputLanguageCodes:",
         inputLanguageCodes,
       );
-      const bridge = await createGeminiLiveRealtimeBridge({
-        audioElement: audioRef.current,
-        initialInstructions: buildLanguageInstructions(),
-        voice: normalizeGeminiLiveVoice(voiceRef.current),
-        inputLanguageCodes: inputLanguageCodes.length ? inputLanguageCodes : null,
-        tools: TUTOR_TOOL_GRADING_ENABLED ? [TUTOR_LIVE_TOOLS] : undefined,
-        onEvent: handleRealtimeEvent,
-        onError: (message) => setErr((prev) => prev || message),
-        onAudioGraph: ({ audioContext, analyser, floatBuffer, stream }) => {
-          audioCtxRef.current = audioContext;
-          analyserRef.current = analyser;
-          floatBufRef.current = floatBuffer;
-          captureOutRef.current = stream;
-          audioGraphReadyRef.current = true;
-        },
-      });
+      const handleTutorAudioGraph = ({
+        audioContext,
+        analyser,
+        floatBuffer,
+        stream,
+      }) => {
+        audioCtxRef.current = audioContext;
+        analyserRef.current = analyser;
+        floatBufRef.current = floatBuffer;
+        captureOutRef.current = stream;
+        audioGraphReadyRef.current = true;
+      };
+      // marin is OpenAI's strongest multilingual GA voice — noticeably better
+      // accent switching than the legacy default. Use it whenever the learner
+      // has no explicit OpenAI-compatible voice preference (Gemini-era voice
+      // names all resolve to the default).
+      const openaiPreferredVoice = getPreferredTTSVoice(voiceRef.current);
+      const openaiVoice =
+        openaiPreferredVoice === DEFAULT_TTS_VOICE
+          ? "marin"
+          : openaiPreferredVoice;
+      if (realtimeProvider === "openai") {
+        console.info("[tutor-realtime] openai voice:", openaiVoice);
+      }
+      const bridge =
+        realtimeProvider === "openai"
+          ? await createOpenAIRealtimeBridge({
+              audioElement: audioRef.current,
+              initialInstructions: buildLanguageInstructions(),
+              voice: openaiVoice,
+              inputLanguageCodes: inputLanguageCodes.length
+                ? inputLanguageCodes
+                : null,
+              onEvent: handleRealtimeEvent,
+              onError: (message) => setErr((prev) => prev || message),
+              onAudioGraph: handleTutorAudioGraph,
+            })
+          : await createGeminiLiveRealtimeBridge({
+              audioElement: audioRef.current,
+              initialInstructions: buildLanguageInstructions(),
+              voice: normalizeGeminiLiveVoice(voiceRef.current),
+              inputLanguageCodes: inputLanguageCodes.length
+                ? inputLanguageCodes
+                : null,
+              tools: TUTOR_TOOL_GRADING_ENABLED ? [TUTOR_LIVE_TOOLS] : undefined,
+              onEvent: handleRealtimeEvent,
+              onError: (message) => setErr((prev) => prev || message),
+              onAudioGraph: handleTutorAudioGraph,
+            });
       dcRef.current = bridge;
       pcRef.current = bridge;
       localRef.current = bridge.mediaStream;
@@ -5290,6 +5376,10 @@ export default function Tutor({
       buildTutorCodeSwitchingAudioInstruction(
         targetLanguageName,
         supportLanguageName,
+        // OpenAI realtime voices bleed the support-language accent into
+        // embedded target words; Gemini native-audio doesn't need the
+        // stronger isolation rules.
+        { isolateAccentSwitches: realtimeProviderRef.current === "openai" },
       );
     const targetLanguageBoundaryInstruction =
       buildTutorTargetLanguageBoundaryInstruction({
@@ -5528,6 +5618,10 @@ export default function Tutor({
       buildTutorCodeSwitchingAudioInstruction(
         targetLanguageName,
         supportLanguageName,
+        // OpenAI realtime voices bleed the support-language accent into
+        // embedded target words; Gemini native-audio doesn't need the
+        // stronger isolation rules.
+        { isolateAccentSwitches: realtimeProviderRef.current === "openai" },
       );
     const targetLanguageBoundaryInstruction =
       buildTutorTargetLanguageBoundaryInstruction({
@@ -5677,6 +5771,10 @@ export default function Tutor({
       buildTutorCodeSwitchingAudioInstruction(
         targetLanguageName,
         supportLanguageName,
+        // OpenAI realtime voices bleed the support-language accent into
+        // embedded target words; Gemini native-audio doesn't need the
+        // stronger isolation rules.
+        { isolateAccentSwitches: realtimeProviderRef.current === "openai" },
       );
     const targetLanguageBoundaryInstruction =
       buildTutorTargetLanguageBoundaryInstruction({
@@ -5982,6 +6080,10 @@ export default function Tutor({
       buildTutorCodeSwitchingAudioInstruction(
         targetLanguageName,
         supportLanguageName,
+        // OpenAI realtime voices bleed the support-language accent into
+        // embedded target words; Gemini native-audio doesn't need the
+        // stronger isolation rules.
+        { isolateAccentSwitches: realtimeProviderRef.current === "openai" },
       );
     const targetLanguageBoundaryInstruction =
       buildTutorTargetLanguageBoundaryInstruction({
@@ -6179,15 +6281,16 @@ export default function Tutor({
     const startedAt = Date.now();
     let heardAudio = false;
     let lastLoudAt = Date.now();
-    // The Gemini bridge only emits response.output_audio.done AFTER playback has fully
-    // drained (it waits for scheduledSources to empty), so by the time this runs the
-    // audio is already silent. The RMS poll therefore never "hears" audio and used to
-    // sit on the 1800ms no-audio fallback — that was the ~1.5-2s dead gap before
-    // "listening". Audio is confirmed finished here, so we only add a small natural
-    // beat. (The poll is kept purely as a safety net for any residual decay.)
-    const quietMs = 350;
-    const minWaitMs = 150;
-    const noAudioFallbackMs = 250;
+    // Provider-tuned: the Gemini bridge only emits response.output_audio.done AFTER
+    // playback has fully drained (it waits for scheduledSources to empty), so by the
+    // time this runs the audio is already silent — only a small natural beat is
+    // added. OpenAI's done fires while the <audio> element is still playing, so the
+    // RMS poll must genuinely hold: long quiet window (sentence pauses must not
+    // unlock mid-turn) and a generous no-audio fallback (pre-Gemini tuning).
+    const isOpenAIProvider = realtimeProviderRef.current === "openai";
+    const quietMs = isOpenAIProvider ? 1100 : 350;
+    const minWaitMs = isOpenAIProvider ? 600 : 150;
+    const noAudioFallbackMs = isOpenAIProvider ? 1800 : 250;
     const maxWaitMs = 30000;
 
     assistantUnlockTimerRef.current = setInterval(() => {
