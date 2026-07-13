@@ -7,6 +7,7 @@
     "dev": "vite",
     "dev:direct": "vite --mode dev-direct",
     "build": "vite build",
+    "test": "node --test src/**/*.test.js",
     "lint": "eslint .",
     "preview": "vite preview"
   },

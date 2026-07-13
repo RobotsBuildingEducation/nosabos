@@ -56,10 +56,11 @@ import {
   nativeOverlayMotionProps,
 } from "../utils/modalMotion";
 import {
-  GEMINI_LIVE_VOICE_OPTIONS,
-  getGeminiLiveVoiceOption,
-  normalizeGeminiLiveVoice,
-} from "../utils/geminiLiveVoices";
+  getTutorVoiceOption,
+  getTutorVoiceOptions,
+  getTutorVoicePreviewProvider,
+  normalizeTutorVoice,
+} from "../utils/tutorRealtime";
 
 const BASE_PATH = "/onboarding";
 const DEFAULT_VOICE_PAUSE_MS = 600;
@@ -160,7 +161,7 @@ export default function Onboarding({
         initialDraft.targetLang,
         getDefaultTargetForSupport(initialSupportLang),
       ),
-      tutorVoice: normalizeGeminiLiveVoice(
+      tutorVoice: normalizeTutorVoice(
         initialDraft.tutorVoice || initialDraft.voice,
       ),
       voicePersona:
@@ -707,15 +708,15 @@ export default function Onboarding({
                     <>
                       <VoicePreferenceField
                         t={ui}
-        voice={tutorVoice}
-        voicePersona={voicePersona}
+                        voice={tutorVoice}
+                        voicePersona={voicePersona}
                         targetLang={targetLang}
                         supportLang={supportLang}
-        voiceOptions={GEMINI_LIVE_VOICE_OPTIONS}
-        normalizeVoice={normalizeGeminiLiveVoice}
-        getVoiceOption={getGeminiLiveVoiceOption}
-        previewProvider="gemini-live"
-        onVoiceChange={setTutorVoice}
+                        voiceOptions={getTutorVoiceOptions()}
+                        normalizeVoice={normalizeTutorVoice}
+                        getVoiceOption={getTutorVoiceOption}
+                        previewProvider={getTutorVoicePreviewProvider()}
+                        onVoiceChange={setTutorVoice}
                         onVoicePersonaChange={setVoicePersona}
                         onSelectSound={() => playOnboardingSound(selectSound)}
                         heading={ui.onboarding_section_voice_persona}

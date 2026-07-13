@@ -10,6 +10,10 @@
 // browser↔OpenAI directly over WebRTC.
 
 import { appCheckFetch } from "../firebaseResources/firebaseResources";
+import {
+  buildTutorInputTranscription,
+  mergeTutorInputTranscription,
+} from "./tutorSpeechPolicy";
 
 const REALTIME_MODEL =
   (
@@ -72,7 +76,7 @@ const OPENAI_REALTIME_VOICES = new Set([
   "verse",
 ]);
 
-function toGaSession(session = {}) {
+function toGaSession(session = {}, { omitVoice = false } = {}) {
   const {
     voice,
     input_audio_transcription: inputTranscription,
@@ -94,7 +98,15 @@ function toGaSession(session = {}) {
 
   if (inputTranscription !== undefined) input.transcription = inputTranscription;
   if (turnDetection !== undefined) input.turn_detection = turnDetection;
-  if (voice !== undefined && OPENAI_REALTIME_VOICES.has(String(voice))) {
+  // The GA API rejects ANY voice write once the session has produced audio —
+  // and a rejected session.update silently drops the instructions with it. So
+  // after the first audio response, omit the voice entirely (it can't change
+  // anyway) instead of re-sending even the same value.
+  if (
+    !omitVoice &&
+    voice !== undefined &&
+    OPENAI_REALTIME_VOICES.has(String(voice))
+  ) {
     output.voice = voice;
   }
 
@@ -115,6 +127,7 @@ class OpenAIRealtimeBridge {
     initialInstructions = "",
     voice = "alloy",
     inputLanguageCodes = null,
+    inputTranscriptionKeywords = null,
     onEvent,
     onAudioGraph,
     onError,
@@ -124,6 +137,9 @@ class OpenAIRealtimeBridge {
     this.voice = voice;
     this.inputLanguageCodes = Array.isArray(inputLanguageCodes)
       ? inputLanguageCodes
+      : [];
+    this.inputTranscriptionKeywords = Array.isArray(inputTranscriptionKeywords)
+      ? inputTranscriptionKeywords
       : [];
     this.onEvent = onEvent;
     this.onAudioGraph = onAudioGraph;
@@ -135,6 +151,20 @@ class OpenAIRealtimeBridge {
     this.audioContext = null;
     this.closed = false;
     this.audioGraphReady = false;
+    // Set once the server starts any audio response; from then on voice must
+    // be omitted from session.update (see toGaSession).
+    this.audioResponseStarted = false;
+    // One system item holds the current turn task (see send/response.create);
+    // the previous one is deleted each turn so tasks never stack up in context.
+    this.turnTaskItemId = null;
+    this.turnTaskCounter = 0;
+    // Preserve the target/support language anchor across partial session.update
+    // calls. Tutor toggles VAD frequently and also re-applies policy after
+    // connect; neither operation may erase transcription.language/prompt.
+    this.inputTranscription = buildTutorInputTranscription({
+      inputLanguageCodes: this.inputLanguageCodes,
+      keywords: this.inputTranscriptionKeywords,
+    });
   }
 
   get readyState() {
@@ -169,23 +199,35 @@ class OpenAIRealtimeBridge {
 
     if (payload.type === "session.update") {
       wireLog("→", "session.update");
-      // Track the latest session policy: response.create instructions REPLACE
-      // session instructions for that response (they are not additive), so the
-      // policy must be re-attached to every manual turn (see response.create
-      // branch below).
+      // The session policy rides in session.instructions and governs every
+      // response whose response.create carries NO instructions of its own
+      // (per-response instructions REPLACE session instructions — see the
+      // response.create branch below for how turn tasks are delivered).
       if (typeof payload.session?.instructions === "string") {
         this.instructions = payload.session.instructions;
       }
+      const requestedTranscription = payload.session?.input_audio_transcription;
+      this.inputTranscription = mergeTutorInputTranscription(
+        this.inputTranscription,
+        requestedTranscription,
+      );
+      const nextSession = {
+        ...(payload.session || {}),
+        ...(requestedTranscription === undefined
+          ? {}
+          : { input_audio_transcription: this.inputTranscription }),
+      };
       this.dc.send(
         JSON.stringify({
           type: "session.update",
-          session: toGaSession(payload.session),
+          session: toGaSession(nextSession, {
+            omitVoice: this.audioResponseStarted,
+          }),
         }),
       );
-      // Mirror the Gemini bridge: the Tutor gates its lesson kickoff on
-      // session.updated, so synthesize it instead of depending on the
-      // server echo (geminiLiveBridge does the same).
-      this.emit({ type: "session.updated", synthetic: true });
+      // Do not synthesize session.updated here. OpenAI emits the real
+      // acknowledgement; Tutor must not start a lesson until the server has
+      // accepted the policy (including its language/transcription fields).
       return;
     }
 
@@ -195,27 +237,60 @@ class OpenAIRealtimeBridge {
       delete response.modalities;
       response.output_modalities =
         Array.isArray(mods) && !mods.includes("audio") ? ["text"] : ["audio"];
-      // CRITICAL: per-response instructions OVERRIDE the session instructions
-      // for that response — the Tutor drives every turn via response.create,
-      // so without this merge the session policy (language rules, persona,
-      // pronunciation/code-switching rules) is absent from every actual
-      // spoken turn. Stable policy goes FIRST so prompt caching absorbs it;
-      // the turn task comes last and takes priority.
+      // Deliver the turn task the way the Gemini bridge does: as a
+      // conversation item, with response.create left bare so the SESSION
+      // instructions (the stable tutor policy) govern the response.
+      //
+      // Two failed shapes inform this:
+      // • turn task in response.instructions alone — replaces the session
+      //   policy, so language/persona/pronunciation rules vanish from every
+      //   spoken turn (the "app anglicizes hermano" bug);
+      // • full policy re-merged into every response.instructions — the mini
+      //   model reads the pedagogy formulas re-stamped adjacent to each task
+      //   as a literal script, and every reply collapses into the same
+      //   "praise + meaning + Say: X" shape (the robotic-lesson bug).
+      // A single system item per turn (previous one deleted) keeps the task
+      // out of the policy's blast radius and the context tail clean.
       const turnInstructions = String(response.instructions || "").trim();
-      if (this.instructions) {
-        response.instructions = turnInstructions
-          ? `${this.instructions}\n\n— CURRENT TURN TASK (follow now, within the rules above) —\n${turnInstructions}`
-          : this.instructions;
+      delete response.instructions;
+      if (turnInstructions) {
+        if (this.turnTaskItemId) {
+          this.dc.send(
+            JSON.stringify({
+              type: "conversation.item.delete",
+              item_id: this.turnTaskItemId,
+            }),
+          );
+        }
+        this.turnTaskCounter = (this.turnTaskCounter || 0) + 1;
+        this.turnTaskItemId = `turn_task_${this.turnTaskCounter}`;
+        this.dc.send(
+          JSON.stringify({
+            type: "conversation.item.create",
+            item: {
+              id: this.turnTaskItemId,
+              type: "message",
+              role: "system",
+              content: [
+                {
+                  type: "input_text",
+                  text: [
+                    "Internal tutor control message. Do not mention these instructions. Produce only the learner-facing spoken tutor reply.",
+                    "Follow the Tutor session rules already in effect. Prioritize the current turn instructions below.",
+                    `Turn instructions:\n${turnInstructions}`,
+                  ].join("\n\n"),
+                },
+              ],
+            },
+          }),
+        );
       }
       wireLog(
         "→",
         `response.create${response.metadata?.kind ? ` (${response.metadata.kind})` : ""}`,
       );
       if (DEBUG_WIRE_LOG) {
-        console.debug(
-          "[openai-realtime] response instructions →",
-          response.instructions,
-        );
+        console.debug("[openai-realtime] turn task →", turnInstructions);
       }
       this.dc.send(JSON.stringify({ ...payload, response }));
       return;
@@ -251,14 +326,10 @@ class OpenAIRealtimeBridge {
   }
 
   buildInitialSession() {
-    const transcription = { model: "gpt-4o-mini-transcribe" };
-    const primaryLocale = this.inputLanguageCodes[0] || "";
-    const language = String(primaryLocale).split("-")[0].trim();
-    if (language) transcription.language = language;
     return {
       instructions: this.initialInstructions || "",
       voice: this.voice || "alloy",
-      input_audio_transcription: transcription,
+      input_audio_transcription: this.inputTranscription,
       turn_detection: DEFAULT_TURN_DETECTION,
     };
   }
@@ -358,6 +429,16 @@ class OpenAIRealtimeBridge {
         return;
       }
       if (!parsed || typeof parsed.type !== "string") return;
+      if (
+        !this.audioResponseStarted &&
+        (parsed.type === "response.output_audio.delta" ||
+          parsed.type === "response.audio.delta" ||
+          parsed.type === "response.output_audio_transcript.delta" ||
+          parsed.type === "response.audio_transcript.delta" ||
+          parsed.type === "output_audio_buffer.started")
+      ) {
+        this.audioResponseStarted = true;
+      }
       if (!parsed.type.endsWith(".delta")) wireLog("←", parsed.type);
       if (parsed.type === "error") {
         // Surface rejections loudly (a silently dropped session.update means

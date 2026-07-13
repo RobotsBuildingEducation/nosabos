@@ -291,10 +291,11 @@ import {
 } from "./utils/modalMotion";
 import { scheduleAfterNextPaint } from "./utils/afterPaint";
 import {
-  GEMINI_LIVE_VOICE_OPTIONS,
-  getGeminiLiveVoiceOption,
-  normalizeGeminiLiveVoice,
-} from "./utils/geminiLiveVoices";
+  getTutorVoiceOption,
+  getTutorVoiceOptions,
+  getTutorVoicePreviewProvider,
+  normalizeTutorVoice,
+} from "./utils/tutorRealtime";
 
 // The game client is resolved ahead of the view flip instead of going through
 // React.lazy: handleStartLesson awaits this and stores the component in state
@@ -1168,7 +1169,7 @@ function TopBar({
     normalizeSupportLanguage(p.supportLang, DEFAULT_SUPPORT_LANGUAGE),
   );
   const [tutorVoice, setTutorVoice] = useState(
-    normalizeGeminiLiveVoice(p.tutorVoice || p.voice),
+    normalizeTutorVoice(p.tutorVoice || p.voice),
   );
   const defaultPersonaSupportLang = p.supportLang || supportLang || appLanguage;
   const defaultPersona =
@@ -1291,7 +1292,7 @@ function TopBar({
     if (!pendingLangRef.current || incomingLang === pendingLangRef.current) {
       setSupportLang(incomingLang);
     }
-    setTutorVoice(normalizeGeminiLiveVoice(q.tutorVoice || q.voice));
+    setTutorVoice(normalizeTutorVoice(q.tutorVoice || q.voice));
     const draftSupportLang =
       pendingLangRef.current || incomingLang || supportLang || appLanguage;
     const nextVoicePersona =
@@ -2329,13 +2330,12 @@ function TopBar({
                           voicePersona={voicePersona}
                           targetLang={targetLang}
                           supportLang={supportLang}
-                          voiceOptions={GEMINI_LIVE_VOICE_OPTIONS}
-                          normalizeVoice={normalizeGeminiLiveVoice}
-                          getVoiceOption={getGeminiLiveVoiceOption}
-                          previewProvider="gemini-live"
+                          voiceOptions={getTutorVoiceOptions()}
+                          normalizeVoice={normalizeTutorVoice}
+                          getVoiceOption={getTutorVoiceOption}
+                          previewProvider={getTutorVoicePreviewProvider()}
                           onVoiceChange={(nextVoice, nextPersona) => {
-                            const normalized =
-                              normalizeGeminiLiveVoice(nextVoice);
+                            const normalized = normalizeTutorVoice(nextVoice);
                             const persona = String(
                               nextPersona ?? voicePersona ?? "",
                             ).slice(0, 240);
@@ -3499,7 +3499,7 @@ export default function App({ onBootReady } = {}) {
     level: "Pre-A1",
     supportLang: appLanguage, // Use detected/selected app language
     voice: "marin",
-    tutorVoice: normalizeGeminiLiveVoice(),
+    tutorVoice: normalizeTutorVoice(),
     tutorVoicePersona:
       translations?.[appLanguage]?.onboarding_persona_default_example ||
       translations?.en?.onboarding_persona_default_example ||
@@ -4665,7 +4665,7 @@ export default function App({ onBootReady } = {}) {
       level: "Pre-A1",
       supportLang: "en",
       voice: "marin",
-      tutorVoice: normalizeGeminiLiveVoice(),
+      tutorVoice: normalizeTutorVoice(),
       tutorVoicePersona:
         translations?.en?.onboarding_persona_default_example || "",
       targetLang: "es",
@@ -4691,9 +4691,13 @@ export default function App({ onBootReady } = {}) {
       ...prev, // Preserve all existing progress data including XP
       level: migrateToCEFRLevel(partial.level ?? prev.level) ?? "Pre-A1",
       supportLang: nextSupportLang,
-      tutorVoice: normalizeGeminiLiveVoice(
-        partial.tutorVoice ?? prev.tutorVoice ?? prev.voice,
-      ),
+      // Only normalize an EXPLICIT voice change. Unrelated settings saves must
+      // not rewrite the stored voice, or flipping the realtime provider would
+      // clobber the other provider's saved pick on the next save.
+      tutorVoice:
+        partial.tutorVoice !== undefined
+          ? normalizeTutorVoice(partial.tutorVoice)
+          : (prev.tutorVoice ?? normalizeTutorVoice(prev.voice)),
       tutorVoicePersona: nextVoicePersona.slice(0, 240),
       targetLang: normalizePracticeLanguage(
         partial.targetLang ?? prev.targetLang,
@@ -4833,9 +4837,7 @@ export default function App({ onBootReady } = {}) {
         level: migrateToCEFRLevel(safe(payload.level, "Pre-A1")),
         supportLang: normalizedSupportLang,
         voice: "marin",
-        tutorVoice: normalizeGeminiLiveVoice(
-          payload.tutorVoice ?? payload.voice,
-        ),
+        tutorVoice: normalizeTutorVoice(payload.tutorVoice ?? payload.voice),
         tutorVoicePersona:
           personaForSupportLanguage(incomingPersona, normalizedSupportLang) ??
           personaDefaultFor(normalizedSupportLang),
