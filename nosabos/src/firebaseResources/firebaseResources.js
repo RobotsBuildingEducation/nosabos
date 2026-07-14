@@ -26,7 +26,12 @@ const firebaseConfig = {
 
 export const app = initializeApp(firebaseConfig);
 
-if (window.location.hostname === "localhost") {
+const APP_CHECK_DEBUG_HOSTNAMES = new Set(["localhost", "127.0.0.1", "::1"]);
+
+if (
+  typeof window !== "undefined" &&
+  APP_CHECK_DEBUG_HOSTNAMES.has(window.location.hostname)
+) {
   self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
 }
 

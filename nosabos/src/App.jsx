@@ -325,11 +325,7 @@ function loadRPGGameComponent() {
   return rpgGameComponentPromise;
 }
 
-async function warmUpcomingGameReview(
-  lesson,
-  targetLang,
-  supportLang = "en",
-) {
+async function warmUpcomingGameReview(lesson, targetLang, supportLang = "en") {
   try {
     const level =
       lesson?.content?.game?.cefrLevel ||
@@ -351,9 +347,8 @@ async function warmUpcomingGameReview(
       unit,
       fallbackLevel: level,
     });
-    const { prepareLegacyEpisodeScenario } = await import(
-      "./components/RPGGame/episodes/legacyScenario.js"
-    );
+    const { prepareLegacyEpisodeScenario } =
+      await import("./components/RPGGame/episodes/legacyScenario.js");
     await prepareLegacyEpisodeScenario({
       lesson: {
         ...gameLesson,
@@ -1026,7 +1021,10 @@ async function loadUserObjectFromDB(db, id) {
   try {
     userData = (await migrateUserToSchemaV2(db, id, userData)) || userData;
   } catch (error) {
-    console.warn("User data migration failed; using the compatible legacy shape:", error);
+    console.warn(
+      "User data migration failed; using the compatible legacy shape:",
+      error,
+    );
   }
 
   if (!userData.progress || typeof userData.progress !== "object") {
@@ -1578,7 +1576,7 @@ function TopBar({
           ? data.dailyXpRecent
           : data?.dailyXpHistory && typeof data.dailyXpHistory === "object"
             ? data.dailyXpHistory
-          : {};
+            : {};
       let dxp = getEffectiveDailyXpToday({
         ...data,
         dailyXpRecent: xpHistory,
@@ -2049,8 +2047,7 @@ function TopBar({
                         bottom: "-1px",
                         height: "3px",
                         borderRadius: "full",
-                        bgGradient:
-                          "linear(to-r, cyan.300, teal.400)",
+                        bgGradient: "linear(to-r, cyan.300, teal.400)",
                         opacity: 0,
                         transform: "scaleX(0.7)",
                         transformOrigin: "center",
@@ -2124,8 +2121,7 @@ function TopBar({
                         bottom: "-1px",
                         height: "3px",
                         borderRadius: "full",
-                        bgGradient:
-                          "linear(to-r, cyan.300, teal.400)",
+                        bgGradient: "linear(to-r, cyan.300, teal.400)",
                         opacity: 0,
                         transform: "scaleX(0.7)",
                         transformOrigin: "center",
@@ -2790,7 +2786,7 @@ export default function App({ onBootReady } = {}) {
         ? user.dailyXpRecent
         : user?.dailyXpHistory && typeof user.dailyXpHistory === "object"
           ? user.dailyXpHistory
-        : {},
+          : {},
     [user?.dailyXpHistory, user?.dailyXpRecent],
   );
 
@@ -5130,8 +5126,7 @@ export default function App({ onBootReady } = {}) {
         })
         .catch((error) => {
           if (
-            tutorialPreparationToken !==
-            tutorialGamePreparationTokenRef.current
+            tutorialPreparationToken !== tutorialGamePreparationTokenRef.current
           ) {
             return;
           }
@@ -5265,8 +5260,7 @@ export default function App({ onBootReady } = {}) {
       return true;
     } catch (e) {
       if (
-        tutorialPreparationToken ===
-        tutorialGamePreparationTokenRef.current
+        tutorialPreparationToken === tutorialGamePreparationTokenRef.current
       ) {
         tutorialGamePreparationTokenRef.current += 1;
       }
@@ -5497,12 +5491,7 @@ export default function App({ onBootReady } = {}) {
         }
 
         // completeLesson marks the lesson complete (status tracking only, no XP)
-        await completeLesson(
-          npub,
-          activeLesson.id,
-          earnedXp,
-          lessonLang,
-        );
+        await completeLesson(npub, activeLesson.id, earnedXp, lessonLang);
 
         deferDailyGoalCelebrationRef.current = true;
         await awardXp(npub, earnedXp, lessonLang, "lesson");
@@ -9022,9 +9011,7 @@ export default function App({ onBootReady } = {}) {
       : null;
 
   const isTutorialGameStep =
-    viewMode === "lesson" &&
-    activeLesson?.isTutorial &&
-    currentTab === "game";
+    viewMode === "lesson" && activeLesson?.isTutorial && currentTab === "game";
 
   const episodeHarnessRequested =
     typeof window !== "undefined" &&
