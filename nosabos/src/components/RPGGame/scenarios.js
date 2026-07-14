@@ -1074,7 +1074,7 @@ function generateQuestPlan(npcCount, options = {}) {
   const gatherChance = isTutorial
     ? 0
     : levelKey === "Pre-A1"
-      ? 0.1
+      ? 0.25
       : levelKey === "A1"
         ? 0.25
         : 0.6;
