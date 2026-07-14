@@ -18,6 +18,15 @@ export const LANDING_PAGE_AR_STATIC = {
   feature_tutor: "مدرّس",
   feature_tutor_desc:
     "مدرّس لحظي كامل من البداية للنهاية، بيتكيّف مع مستواك ويساعدك تتعلّم.",
+  feature_memory: "نظام الذاكرة",
+  feature_memory_desc:
+    "بيفتكر أخطاءك وتقدمك ويحوّلهم لمراجعة مركزة.",
+  feature_daily_quests: "مهام يومية",
+  feature_daily_quests_desc:
+    "خد كل يوم مزيج شخصي من التدريب والمراجعة والمكافآت.",
+  feature_companion: "رفيق التعلّم",
+  feature_companion_desc:
+    "ربّي رفيق يقوى كل ما تتعلّم.",
   feature_conversations: "محادثات قابلة للتخصيص",
   feature_conversations_desc:
     "اختار السيناريو، الدور، مستوى الصعوبة، والأهداف علشان كل تدريب كلام يناسب اللي عايز تتمرن عليه.",

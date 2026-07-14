@@ -102,6 +102,9 @@ export function countMissedDailyGoalWindows(data = {}, now = new Date()) {
   const reached = new Set(
     Array.isArray(data?.completedGoalDates) ? data.completedGoalDates : [],
   );
+  if (typeof data?.lastGoalDayKey === "string" && data.lastGoalDayKey) {
+    reached.add(data.lastGoalDayKey);
+  }
 
   let missed = 0;
   for (let day = throughIndex + 1; day <= yesterdayIndex; day += 1) {

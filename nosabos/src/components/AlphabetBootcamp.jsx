@@ -98,6 +98,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  limit,
   query,
   serverTimestamp,
   setDoc,
@@ -2719,6 +2720,7 @@ export default function AlphabetBootcamp({
           query(
             collection(database, "users", npub, "alphabetPractice"),
             where("targetLang", "==", targetLang),
+            limit(250),
           ),
         );
 

@@ -103,11 +103,12 @@ import {
   doc,
   getDoc,
   getDocs,
-  increment,
   setDoc,
   updateDoc,
   onSnapshot,
+  query,
   runTransaction,
+  where,
 } from "firebase/firestore";
 import { database, simplemodel } from "./firebaseResources/firebaseResources";
 
@@ -149,7 +150,7 @@ import RealWorldTasksModal, {
 import useNotesStore from "./hooks/useNotesStore";
 import useRepairFocusStore from "./hooks/useRepairFocusStore";
 import { subscribeToTeamInvites } from "./utils/teams";
-import SkillTree from "./components/SkillTree";
+import SkillTree, { GAME_LOADING_MESSAGES } from "./components/SkillTree";
 import DailyPlateHome from "./components/DailyPlateHome";
 import {
   PLATE_BONUS_TOAST_COPY,
@@ -183,6 +184,7 @@ import {
   readPlateSession,
   readQuestPlate,
   readQuestPlateKinds,
+  recordPlateActivity,
   resetTodayPlate,
   startPlateSession,
   writeQuestPlate,
@@ -193,6 +195,8 @@ import {
   getBlueprintCarryOverKinds,
   getNextRepairStep,
   getReusableMemory,
+  hydrateCompanionBucket,
+  hydrateQuestDays,
   getStoredRepairPlan,
   getTodaysCapturedNotes,
   getTomorrowKey,
@@ -202,6 +206,7 @@ import {
   runDailyBatch,
   shouldRunDailyBatch,
 } from "./utils/companionMemory";
+import { migrateUserToSchemaV2 } from "./utils/userDataSchema";
 import CompanionRepairModal from "./components/CompanionRepairModal";
 import {
   startLesson,
@@ -241,6 +246,8 @@ import {
   buildGameReviewContext,
   inferCefrLevelFromLessonId,
 } from "./utils/gameReviewContext";
+import { prepareTutorialGameScenario } from "./utils/tutorialGameLoader";
+import { waitForGameLoaderExploration } from "./utils/gameLoaderTiming";
 import { LESSON_COUNTS, getLessonLevelFromId } from "./utils/cefrProgress";
 import { BsCalendar2DateFill } from "react-icons/bs";
 import { TbLanguage } from "react-icons/tb";
@@ -293,12 +300,67 @@ import {
 } from "./utils/modalMotion";
 import { scheduleAfterNextPaint } from "./utils/afterPaint";
 import {
-  GEMINI_LIVE_VOICE_OPTIONS,
-  getGeminiLiveVoiceOption,
-  normalizeGeminiLiveVoice,
-} from "./utils/geminiLiveVoices";
+  getTutorVoiceOption,
+  getTutorVoiceOptions,
+  getTutorVoicePreviewProvider,
+  normalizeTutorVoice,
+} from "./utils/tutorRealtime";
 
-const RPGGame = lazy(() => import("./components/RPGGame/index.jsx"));
+// The game client is resolved ahead of the view flip instead of going through
+// React.lazy: handleStartLesson awaits this and stores the component in state
+// before viewMode switches, so the lesson modal's mini-map loader stays on
+// screen until the game can paint directly — no Suspense fallback commits in
+// between. The cached promise resets on failure so a later attempt can retry.
+let rpgGameComponentPromise = null;
+const LoadingMiniGame = lazy(() => import("./components/LoadingMiniGame.jsx"));
+function loadRPGGameComponent() {
+  if (!rpgGameComponentPromise) {
+    rpgGameComponentPromise = import("./components/RPGGame/GameRouter.jsx")
+      .then((mod) => mod.default)
+      .catch((error) => {
+        rpgGameComponentPromise = null;
+        throw error;
+      });
+  }
+  return rpgGameComponentPromise;
+}
+
+async function warmUpcomingGameReview(lesson, targetLang, supportLang = "en") {
+  try {
+    const level =
+      lesson?.content?.game?.cefrLevel ||
+      inferCefrLevelFromLessonId(lesson?.id) ||
+      "Pre-A1";
+    const units = await loadLearningPath(targetLang, level);
+    const unit = units.find((entry) =>
+      entry?.lessons?.some((candidate) => candidate?.id === lesson?.id),
+    );
+    if (!unit) return;
+    const lessonIndex = unit.lessons.findIndex(
+      (candidate) => candidate?.id === lesson?.id,
+    );
+    const gameLesson = unit.lessons[lessonIndex + 1];
+    if (!gameLesson?.isGame) return;
+
+    const reviewContext = buildGameReviewContext({
+      lesson: gameLesson,
+      unit,
+      fallbackLevel: level,
+    });
+    const { prepareLegacyEpisodeScenario } =
+      await import("./components/RPGGame/episodes/legacyScenario.js");
+    await prepareLegacyEpisodeScenario({
+      lesson: {
+        ...gameLesson,
+        gameReviewContext: reviewContext,
+      },
+      targetLang,
+      supportLang,
+    });
+  } catch {
+    // Warming is opportunistic; tier-1 is always complete.
+  }
+}
 
 /* ---------------------------
    Small helpers
@@ -440,8 +502,93 @@ function LoadingOrbFallback({ minH = "420px", bg }) {
   );
 }
 
-function GameLoadingFallback() {
-  return <LoadingOrbFallback />;
+// Quiet placeholder for the rare paths that reach the game view before the
+// client chunk is resolved (e.g. the ?episode= dev harness). The launch flow
+// never shows this: the component is awaited before the view flips. Uses
+// pulsing dots rather than the voice orb so it reads as the game loading, not
+// a voice surface.
+function GameLoadingFallback({ minH = "420px" }) {
+  return (
+    <Flex
+      minH={minH}
+      h="100%"
+      w="100%"
+      alignItems="center"
+      justifyContent="center"
+      gap={2}
+      role="status"
+    >
+      {[0, 1, 2].map((dot) => (
+        <Box
+          key={dot}
+          w="10px"
+          h="10px"
+          borderRadius="full"
+          bg="blue.200"
+          sx={{
+            animation: `gameLoadingPulse 1.1s ease-in-out ${dot * 0.16}s infinite`,
+            "@keyframes gameLoadingPulse": {
+              "0%, 100%": { opacity: 0.3, transform: "translateY(0)" },
+              "50%": { opacity: 1, transform: "translateY(-4px)" },
+            },
+          }}
+        />
+      ))}
+    </Flex>
+  );
+}
+
+// Same interactive mini-map and rotating progress copy shown while optimized
+// RPG review lessons prepare. The tutorial uses it only when its background
+// preparation has not finished by the time the learner reaches the game step.
+function TutorialGameLoadingFallback({ supportLang = "en" }) {
+  const messages =
+    GAME_LOADING_MESSAGES[supportLang] || GAME_LOADING_MESSAGES.en;
+  const [messageIndex, setMessageIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setMessageIndex((current) => (current + 1) % messages.length);
+    }, 1500);
+    return () => window.clearInterval(interval);
+  }, [messages]);
+
+  return (
+    <Box display="flex" flexDirection="column" h="100%" overflow="hidden">
+      <Box
+        position="absolute"
+        top={0}
+        left={0}
+        right={0}
+        zIndex={2}
+        px={{ base: 3, md: 4 }}
+        py={{ base: 3, md: 4 }}
+        bgGradient="linear(to-b, rgba(10, 13, 27, 0.96), rgba(10, 13, 27, 0.72), transparent)"
+      >
+        <Text
+          fontSize={{ base: "sm", md: "md" }}
+          color="blue.100"
+          minH="24px"
+          key={messageIndex}
+          fontFamily="monospace"
+          sx={{
+            animation: "fadeIn 0.4s ease-in-out",
+            "@keyframes fadeIn": {
+              "0%": { opacity: 0, transform: "translateY(-4px)" },
+              "100%": { opacity: 1, transform: "translateY(0)" },
+            },
+          }}
+        >
+          {messages[messageIndex]}
+        </Text>
+      </Box>
+      <Box flex="1" overflow="hidden" position="relative">
+        <Suspense fallback={<GameLoadingFallback minH="100dvh" />}>
+          <LoadingMiniGame supportLang={supportLang} />
+        </Suspense>
+      </Box>
+    </Box>
+  );
 }
 
 const personaDefaultFor = (lang) =>
@@ -793,7 +940,10 @@ async function ensureOnboardingField(db, id, data) {
           data.completedGoalDates.length > 0) ||
         (data?.dailyXpHistory &&
           typeof data.dailyXpHistory === "object" &&
-          Object.keys(data.dailyXpHistory).length > 0),
+          Object.keys(data.dailyXpHistory).length > 0) ||
+        (data?.dailyXpRecent &&
+          typeof data.dailyXpRecent === "object" &&
+          Object.keys(data.dailyXpRecent).length > 0),
       );
       if (!looksUsed) {
         console.warn(
@@ -863,24 +1013,51 @@ async function loadUserObjectFromDB(db, id) {
   // A confirmed missing root document is the only case that may return null.
   // Bootstrap uses null to create a new user, so optional hydration failures
   // must not be allowed to reset an existing user's onboarding state.
-  const userData = await ensureOnboardingField(db, id, {
+  let userData = await ensureOnboardingField(db, id, {
     id: snap.id,
     ...snap.data(),
   });
+
+  try {
+    userData = (await migrateUserToSchemaV2(db, id, userData)) || userData;
+  } catch (error) {
+    console.warn(
+      "User data migration failed; using the compatible legacy shape:",
+      error,
+    );
+  }
 
   if (!userData.progress || typeof userData.progress !== "object") {
     userData.progress = {};
   }
 
   try {
+    const activeTargetLang = String(
+      userData?.progress?.targetLang || userData?.targetLang || "es",
+    ).toLowerCase();
     const [
       languageLessonsSnapshot,
       tutorLanguageLessonsSnapshot,
       languageFlashcardsSnapshot,
     ] = await Promise.all([
-      getDocs(collection(db, "users", id, "languageLessons")),
-      getDocs(collection(db, "users", id, "tutorLanguageLessons")),
-      getDocs(collection(db, "users", id, "languageFlashcards")),
+      getDocs(
+        query(
+          collection(db, "users", id, "languageLessons"),
+          where("targetLang", "==", activeTargetLang),
+        ),
+      ),
+      getDocs(
+        query(
+          collection(db, "users", id, "tutorLanguageLessons"),
+          where("targetLang", "==", activeTargetLang),
+        ),
+      ),
+      getDocs(
+        query(
+          collection(db, "users", id, "languageFlashcards"),
+          where("targetLang", "==", activeTargetLang),
+        ),
+      ),
     ]);
 
     const languageLessons = {};
@@ -969,7 +1146,9 @@ function getEffectiveDailyXpToday(data = {}) {
     data?.dailyXp ?? data?.stats?.dailyXp ?? data?.progress?.dailyXp;
   const parsedXp = Number(rawXp);
   const directXp = Number.isFinite(parsedXp) ? parsedXp : 0;
-  const historyXp = getTodayDailyXpFromHistory(data?.dailyXpHistory);
+  const historyXp = getTodayDailyXpFromHistory(
+    data?.dailyXpRecent || data?.dailyXpHistory,
+  );
   return Math.max(directXp, historyXp);
 }
 
@@ -1080,7 +1259,7 @@ function TopBar({
     normalizeSupportLanguage(p.supportLang, DEFAULT_SUPPORT_LANGUAGE),
   );
   const [tutorVoice, setTutorVoice] = useState(
-    normalizeGeminiLiveVoice(p.tutorVoice || p.voice),
+    normalizeTutorVoice(p.tutorVoice || p.voice),
   );
   const defaultPersonaSupportLang = p.supportLang || supportLang || appLanguage;
   const defaultPersona =
@@ -1203,7 +1382,7 @@ function TopBar({
     if (!pendingLangRef.current || incomingLang === pendingLangRef.current) {
       setSupportLang(incomingLang);
     }
-    setTutorVoice(normalizeGeminiLiveVoice(q.tutorVoice || q.voice));
+    setTutorVoice(normalizeTutorVoice(q.tutorVoice || q.voice));
     const draftSupportLang =
       pendingLangRef.current || incomingLang || supportLang || appLanguage;
     const nextVoicePersona =
@@ -1361,23 +1540,22 @@ function TopBar({
     const unsub = onSnapshot(ref, async (snap) => {
       const data = snap.exists() ? snap.data() : {};
 
-      // Keep the companion-brain fields live in the store. connectDID's
-      // one-shot read can lag or fail on a refresh, which used to strand the
-      // plate without its Repair course and show the Memory drawer empty until
-      // the next full reload ("sometimes it vanishes"). This listener retries
-      // until Firestore answers — and latency compensation means our own
-      // local writes are reflected immediately, so it can't clobber a capture
-      // that's still in flight.
+      if (
+        Number(data?.schemaVersion || 1) < 2 ||
+        data?.dailyQuestBlueprint ||
+        data?.dailyQuestRepair ||
+        data?.dailyQuestExplanations ||
+        data?.dailyXpHistory ||
+        data?.completedGoalDates ||
+        data?.companionMemory
+      ) {
+        void migrateUserToSchemaV2(database, activeNpub).catch((error) => {
+          console.warn("Deferred user data cleanup failed:", error);
+        });
+      }
+
       try {
         const companionPatch = {};
-        if (data?.companionMemory)
-          companionPatch.companionMemory = data.companionMemory;
-        if (data?.dailyQuestRepair)
-          companionPatch.dailyQuestRepair = data.dailyQuestRepair;
-        if (data?.dailyQuestBlueprint)
-          companionPatch.dailyQuestBlueprint = data.dailyQuestBlueprint;
-        if (data?.dailyQuestExplanations)
-          companionPatch.dailyQuestExplanations = data.dailyQuestExplanations;
         if (data?.companionUnlocksCelebrated)
           companionPatch.companionUnlocksCelebrated =
             data.companionUnlocksCelebrated;
@@ -1394,12 +1572,14 @@ function TopBar({
         ? data.completedGoalDates
         : [];
       const xpHistory =
-        data?.dailyXpHistory && typeof data.dailyXpHistory === "object"
-          ? data.dailyXpHistory
-          : {};
+        data?.dailyXpRecent && typeof data.dailyXpRecent === "object"
+          ? data.dailyXpRecent
+          : data?.dailyXpHistory && typeof data.dailyXpHistory === "object"
+            ? data.dailyXpHistory
+            : {};
       let dxp = getEffectiveDailyXpToday({
         ...data,
-        dailyXpHistory: xpHistory,
+        dailyXpRecent: xpHistory,
       });
 
       const expired = hasDailyGoalResetExpired(resetISO);
@@ -1466,6 +1646,7 @@ function TopBar({
   }, [
     user?.dailyXp,
     user?.dailyGoalXp,
+    user?.dailyXpRecent,
     user?.dailyXpHistory,
     user?.progress?.dailyGoalXp,
     user?.progress?.dailyXp,
@@ -1866,8 +2047,7 @@ function TopBar({
                         bottom: "-1px",
                         height: "3px",
                         borderRadius: "full",
-                        bgGradient:
-                          "linear(to-r, cyan.300, teal.400)",
+                        bgGradient: "linear(to-r, cyan.300, teal.400)",
                         opacity: 0,
                         transform: "scaleX(0.7)",
                         transformOrigin: "center",
@@ -1941,8 +2121,7 @@ function TopBar({
                         bottom: "-1px",
                         height: "3px",
                         borderRadius: "full",
-                        bgGradient:
-                          "linear(to-r, cyan.300, teal.400)",
+                        bgGradient: "linear(to-r, cyan.300, teal.400)",
                         opacity: 0,
                         transform: "scaleX(0.7)",
                         transformOrigin: "center",
@@ -2241,13 +2420,12 @@ function TopBar({
                           voicePersona={voicePersona}
                           targetLang={targetLang}
                           supportLang={supportLang}
-                          voiceOptions={GEMINI_LIVE_VOICE_OPTIONS}
-                          normalizeVoice={normalizeGeminiLiveVoice}
-                          getVoiceOption={getGeminiLiveVoiceOption}
-                          previewProvider="gemini-live"
+                          voiceOptions={getTutorVoiceOptions()}
+                          normalizeVoice={normalizeTutorVoice}
+                          getVoiceOption={getTutorVoiceOption}
+                          previewProvider={getTutorVoicePreviewProvider()}
                           onVoiceChange={(nextVoice, nextPersona) => {
-                            const normalized =
-                              normalizeGeminiLiveVoice(nextVoice);
+                            const normalized = normalizeTutorVoice(nextVoice);
                             const persona = String(
                               nextPersona ?? voicePersona ?? "",
                             ).slice(0, 240);
@@ -2604,10 +2782,12 @@ export default function App({ onBootReady } = {}) {
 
   const dailyGoalXpHistory = useMemo(
     () =>
-      user?.dailyXpHistory && typeof user.dailyXpHistory === "object"
-        ? user.dailyXpHistory
-        : {},
-    [user?.dailyXpHistory],
+      user?.dailyXpRecent && typeof user.dailyXpRecent === "object"
+        ? user.dailyXpRecent
+        : user?.dailyXpHistory && typeof user.dailyXpHistory === "object"
+          ? user.dailyXpHistory
+          : {},
+    [user?.dailyXpHistory, user?.dailyXpRecent],
   );
 
   const companionXp = useMemo(() => {
@@ -2874,6 +3054,67 @@ export default function App({ onBootReady } = {}) {
   const [preGeneratedGameScenario, setPreGeneratedGameScenario] =
     useState(null);
   const [tutorialGameScenario, setTutorialGameScenario] = useState(null);
+  const [tutorialGamePreparationFailed, setTutorialGamePreparationFailed] =
+    useState(false);
+  const [tutorialGameRevealReady, setTutorialGameRevealReady] = useState(false);
+  const tutorialGamePreparationTokenRef = useRef(0);
+  // Resolved GameRouter component. handleStartLesson fills this in before the
+  // view flips so the game's first commit renders the game itself; the effect
+  // below covers paths that reach the game view without the launch flow
+  // (currently the ?episode= dev harness — refreshes reset viewMode above).
+  const [GameRouterComponent, setGameRouterComponent] = useState(null);
+  useEffect(() => {
+    if (GameRouterComponent) return undefined;
+    const harnessRequested =
+      typeof window !== "undefined" &&
+      new URLSearchParams(window.location.search).has("episode");
+    const lessonUsesGame =
+      viewMode === "lesson" &&
+      !!(activeLesson?.isGame || activeLesson?.modes?.includes("game"));
+    if (!harnessRequested && !lessonUsesGame) return undefined;
+    let cancelled = false;
+    loadRPGGameComponent()
+      .then((component) => {
+        if (!cancelled) setGameRouterComponent(() => component);
+      })
+      .catch((error) => {
+        console.error("Failed to load game client:", error);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [GameRouterComponent, viewMode, activeLesson]);
+
+  // The tutorial scenario is usually ready before the learner reaches its
+  // final game step. Start the artificial exploration window only once that
+  // loader is actually visible; timing it during earlier modules would make
+  // the intended 6-10 seconds invisible.
+  useEffect(() => {
+    const shouldHoldTutorialGame =
+      viewMode === "lesson" &&
+      activeLesson?.isTutorial &&
+      currentTab === "game" &&
+      !!tutorialGameScenario &&
+      !preGeneratedGameScenario;
+
+    setTutorialGameRevealReady(false);
+    if (!shouldHoldTutorialGame) return undefined;
+
+    let cancelled = false;
+    void waitForGameLoaderExploration().then(() => {
+      if (!cancelled) setTutorialGameRevealReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    activeLesson?.id,
+    activeLesson?.isTutorial,
+    currentTab,
+    preGeneratedGameScenario,
+    tutorialGameScenario,
+    viewMode,
+  ]);
 
   const ALPHABET_LANGS = [
     "ru",
@@ -3385,7 +3626,7 @@ export default function App({ onBootReady } = {}) {
     level: "Pre-A1",
     supportLang: appLanguage, // Use detected/selected app language
     voice: "marin",
-    tutorVoice: normalizeGeminiLiveVoice(),
+    tutorVoice: normalizeTutorVoice(),
     tutorVoicePersona:
       translations?.[appLanguage]?.onboarding_persona_default_example ||
       translations?.en?.onboarding_persona_default_example ||
@@ -4551,7 +4792,7 @@ export default function App({ onBootReady } = {}) {
       level: "Pre-A1",
       supportLang: "en",
       voice: "marin",
-      tutorVoice: normalizeGeminiLiveVoice(),
+      tutorVoice: normalizeTutorVoice(),
       tutorVoicePersona:
         translations?.en?.onboarding_persona_default_example || "",
       targetLang: "es",
@@ -4577,9 +4818,13 @@ export default function App({ onBootReady } = {}) {
       ...prev, // Preserve all existing progress data including XP
       level: migrateToCEFRLevel(partial.level ?? prev.level) ?? "Pre-A1",
       supportLang: nextSupportLang,
-      tutorVoice: normalizeGeminiLiveVoice(
-        partial.tutorVoice ?? prev.tutorVoice ?? prev.voice,
-      ),
+      // Only normalize an EXPLICIT voice change. Unrelated settings saves must
+      // not rewrite the stored voice, or flipping the realtime provider would
+      // clobber the other provider's saved pick on the next save.
+      tutorVoice:
+        partial.tutorVoice !== undefined
+          ? normalizeTutorVoice(partial.tutorVoice)
+          : (prev.tutorVoice ?? normalizeTutorVoice(prev.voice)),
       tutorVoicePersona: nextVoicePersona.slice(0, 240),
       targetLang: normalizePracticeLanguage(
         partial.targetLang ?? prev.targetLang,
@@ -4719,9 +4964,7 @@ export default function App({ onBootReady } = {}) {
         level: migrateToCEFRLevel(safe(payload.level, "Pre-A1")),
         supportLang: normalizedSupportLang,
         voice: "marin",
-        tutorVoice: normalizeGeminiLiveVoice(
-          payload.tutorVoice ?? payload.voice,
-        ),
+        tutorVoice: normalizeTutorVoice(payload.tutorVoice ?? payload.voice),
         tutorVoicePersona:
           personaForSupportLanguage(incomingPersona, normalizedSupportLang) ??
           personaDefaultFor(normalizedSupportLang),
@@ -4855,9 +5098,65 @@ export default function App({ onBootReady } = {}) {
       ? lesson
       : await enrichLessonForGameReview(lesson);
 
-    // Store pre-generated scenario for game lessons
+    // Store pre-generated scenario for game lessons. Start the multi-module
+    // tutorial's Greeting Plaza preparation before awaiting the client chunk,
+    // so both pieces warm concurrently while the learner is still entering
+    // the tutorial and completing its earlier activities.
+    const tutorialPreparationToken =
+      tutorialGamePreparationTokenRef.current + 1;
+    tutorialGamePreparationTokenRef.current = tutorialPreparationToken;
     setPreGeneratedGameScenario(preGeneratedScenario || null);
     setTutorialGameScenario(null);
+    setTutorialGamePreparationFailed(false);
+    setTutorialGameRevealReady(false);
+    if (enrichedLesson.isTutorial && enrichedLesson.modes?.includes("game")) {
+      void prepareTutorialGameScenario({
+        lesson: enrichedLesson,
+        targetLang: resolvedTargetLang,
+        supportLang: resolvedSupportLang,
+      })
+        .then((scenario) => {
+          if (
+            tutorialPreparationToken ===
+              tutorialGamePreparationTokenRef.current &&
+            scenario
+          ) {
+            setTutorialGameScenario(scenario);
+          }
+        })
+        .catch((error) => {
+          if (
+            tutorialPreparationToken !== tutorialGamePreparationTokenRef.current
+          ) {
+            return;
+          }
+          console.error("Failed to pre-generate tutorial game:", error);
+          setTutorialGamePreparationFailed(true);
+        });
+    }
+
+    // Standalone games resolve the client before their immediate view flip.
+    // The multi-module tutorial warms it without blocking the first tutorial
+    // activity because its game step comes last.
+    if (enrichedLesson.isGame || enrichedLesson.modes?.includes("game")) {
+      const componentPromise = loadRPGGameComponent();
+      if (enrichedLesson.isTutorial && !enrichedLesson.isGame) {
+        void componentPromise
+          .then((component) => setGameRouterComponent(() => component))
+          .catch((error) => {
+            console.error("Failed to warm tutorial game client:", error);
+          });
+      } else {
+        try {
+          const component = await componentPromise;
+          setGameRouterComponent(() => component);
+        } catch (error) {
+          // Non-fatal: the game view falls back to its quiet loader and the
+          // component-load effect retries.
+          console.error("Failed to preload game client:", error);
+        }
+      }
+    }
 
     try {
       // Mark lesson as in progress in Firestore
@@ -4960,6 +5259,11 @@ export default function App({ onBootReady } = {}) {
 
       return true;
     } catch (e) {
+      if (
+        tutorialPreparationToken === tutorialGamePreparationTokenRef.current
+      ) {
+        tutorialGamePreparationTokenRef.current += 1;
+      }
       console.error("Failed to start lesson:", e);
       toast({
         title: "Error",
@@ -5021,19 +5325,20 @@ export default function App({ onBootReady } = {}) {
               updatedAt,
               progress: {
                 lastActiveAt: updatedAt,
-                ...(flashcardActivityKey
-                  ? {
-                      flashcardDailyActivity: {
-                        [activityLanguageKey]: {
-                          [flashcardActivityKey]: increment(1),
-                        },
-                      },
-                    }
-                  : {}),
               },
             },
             { merge: true },
           ),
+          ...(flashcardActivityKey
+            ? [
+                recordPlateActivity(
+                  npub,
+                  "review",
+                  activityLanguageKey,
+                  new Date(updatedAt),
+                ),
+              ]
+            : []),
           setDoc(
             flashcardProgressRef,
             {
@@ -5106,10 +5411,13 @@ export default function App({ onBootReady } = {}) {
 
   // Handle returning to skill tree
   const handleReturnToSkillTree = useCallback(() => {
+    tutorialGamePreparationTokenRef.current += 1;
     setViewMode("skillTree");
     setActiveLesson(null);
     setPreGeneratedGameScenario(null);
     setTutorialGameScenario(null);
+    setTutorialGamePreparationFailed(false);
+    setTutorialGameRevealReady(false);
     setLessonStartXp(null);
     previousXpRef.current = null;
     lessonCompletionTriggeredRef.current = false;
@@ -5130,7 +5438,7 @@ export default function App({ onBootReady } = {}) {
   }, [resolvedTargetLang]);
 
   const triggerLessonCompletion = useCallback(
-    async (reason = "manual") => {
+    async (reason = "manual", completion = null) => {
       if (!activeLesson || lessonCompletionTriggeredRef.current) return;
 
       console.log("[Lesson Completion] Triggered", { reason, activeLesson });
@@ -5145,6 +5453,10 @@ export default function App({ onBootReady } = {}) {
       }
 
       const lessonLang = activeLessonLanguageRef.current || resolvedTargetLang;
+      const earnedXp = Math.max(
+        0,
+        Number(completion?.xpEarned ?? activeLesson.xpReward) || 0,
+      );
 
       try {
         if (activeLesson.isRepair) {
@@ -5179,22 +5491,25 @@ export default function App({ onBootReady } = {}) {
         }
 
         // completeLesson marks the lesson complete (status tracking only, no XP)
-        await completeLesson(
-          npub,
-          activeLesson.id,
-          activeLesson.xpReward,
-          lessonLang,
-        );
+        await completeLesson(npub, activeLesson.id, earnedXp, lessonLang);
 
         deferDailyGoalCelebrationRef.current = true;
-        await awardXp(npub, activeLesson.xpReward, lessonLang, "lesson");
+        await awardXp(npub, earnedXp, lessonLang, "lesson");
 
         const fresh = await loadUserObjectFromDB(database, npub);
         if (fresh) setUser?.(fresh);
 
+        if (!activeLesson.isGame && !activeLesson.isTutorial) {
+          void warmUpcomingGameReview(
+            activeLesson,
+            lessonLang,
+            resolvedSupportLang,
+          );
+        }
+
         const lessonData = {
           title: activeLesson.title,
-          xpEarned: activeLesson.xpReward,
+          xpEarned: earnedXp,
           lessonId: activeLesson.id,
         };
         setCompletedLessonData(lessonData);
@@ -5226,6 +5541,7 @@ export default function App({ onBootReady } = {}) {
       activeLesson,
       handleReturnToSkillTree,
       resolveNpub,
+      resolvedSupportLang,
       resolvedTargetLang,
       setUser,
       user?.tutorialBitcoinModalShown,
@@ -6195,8 +6511,8 @@ export default function App({ onBootReady } = {}) {
       }
       if (todayKey && Number.isFinite(nextDailyXp)) {
         const latestUser = useUserStore.getState()?.user || {};
-        dailyPatch.dailyXpHistory = {
-          ...(latestUser.dailyXpHistory || {}),
+        dailyPatch.dailyXpRecent = {
+          ...(latestUser.dailyXpRecent || latestUser.dailyXpHistory || {}),
           [todayKey]: nextDailyXp,
         };
       }
@@ -6263,23 +6579,18 @@ export default function App({ onBootReady } = {}) {
   useEffect(() => {
     if (!activeNpub) return;
 
-    const lessonProgressRef = collection(
-      database,
-      "users",
-      activeNpub,
-      "languageLessons",
+    const targetLang = String(resolvedTargetLang || "es").toLowerCase();
+    const lessonProgressRef = query(
+      collection(database, "users", activeNpub, "languageLessons"),
+      where("targetLang", "==", targetLang),
     );
-    const flashcardProgressRef = collection(
-      database,
-      "users",
-      activeNpub,
-      "languageFlashcards",
+    const flashcardProgressRef = query(
+      collection(database, "users", activeNpub, "languageFlashcards"),
+      where("targetLang", "==", targetLang),
     );
-    const tutorLessonProgressRef = collection(
-      database,
-      "users",
-      activeNpub,
-      "tutorLanguageLessons",
+    const tutorLessonProgressRef = query(
+      collection(database, "users", activeNpub, "tutorLanguageLessons"),
+      where("targetLang", "==", targetLang),
     );
 
     const unsubLessons = onSnapshot(lessonProgressRef, (snapshot) => {
@@ -6366,7 +6677,7 @@ export default function App({ onBootReady } = {}) {
       unsubTutorLessons();
       unsubFlashcards();
     };
-  }, [activeNpub, patchUser]);
+  }, [activeNpub, patchUser, resolvedTargetLang]);
 
   // ✅ Listen to XP changes; random tab adds toast + auto-pick next
   useEffect(() => {
@@ -6432,10 +6743,12 @@ export default function App({ onBootReady } = {}) {
         patch.dailyGoalPetLastOutcome = data.dailyGoalPetLastOutcome;
       if (data?.dailyGoalPetLastUpdatedAt)
         patch.dailyGoalPetLastUpdatedAt = data.dailyGoalPetLastUpdatedAt;
-      if (Array.isArray(data?.completedGoalDates))
-        patch.completedGoalDates = data.completedGoalDates;
-      if (data?.dailyXpHistory && typeof data.dailyXpHistory === "object")
-        patch.dailyXpHistory = data.dailyXpHistory;
+      if (typeof data?.goalStreakCount === "number")
+        patch.goalStreakCount = data.goalStreakCount;
+      if (typeof data?.lastGoalDayKey === "string")
+        patch.lastGoalDayKey = data.lastGoalDayKey;
+      if (data?.dailyXpRecent && typeof data.dailyXpRecent === "object")
+        patch.dailyXpRecent = data.dailyXpRecent;
       if (data?.stats) patch.stats = data.stats;
       if (data?.updatedAt) patch.updatedAt = data.updatedAt;
       if (data?.appLanguage) patch.appLanguage = data.appLanguage;
@@ -7697,6 +8010,22 @@ export default function App({ onBootReady } = {}) {
   const plateLangKey = normalizePlateLang(resolvedTargetLang);
   const plateDayKey = getDailyPlateDayKey();
 
+  const companionHydrationRef = useRef("");
+  useEffect(() => {
+    if (isLoadingApp || !activeNpub || !plateLangKey || !plateDayKey) return;
+    const hydrationKey = `${activeNpub}:${plateLangKey}:${plateDayKey}`;
+    if (companionHydrationRef.current === hydrationKey) return;
+    companionHydrationRef.current = hydrationKey;
+    void Promise.all([
+      hydrateCompanionBucket({ npub: activeNpub, targetLang: plateLangKey }),
+      hydrateQuestDays({
+        npub: activeNpub,
+        targetLang: plateLangKey,
+        dayKeys: [getYesterdayKey(), plateDayKey, getTomorrowKey()],
+      }),
+    ]);
+  }, [activeNpub, isLoadingApp, plateDayKey, plateLangKey]);
+
   // Today's repair plan (curated from yesterday's companion memory), if any.
   const repairPlanToday = useMemo(
     () => getStoredRepairPlan(user, resolvedTargetLang, plateDayKey),
@@ -8681,12 +9010,20 @@ export default function App({ onBootReady } = {}) {
       ? tutorialGameScenario
       : null;
 
+  const isTutorialGameStep =
+    viewMode === "lesson" && activeLesson?.isTutorial && currentTab === "game";
+
+  const episodeHarnessRequested =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).has("episode");
+
   const isGameFullScreen =
-    viewMode === "lesson" &&
-    (activeLesson?.isGame ||
-      (activeLesson?.isTutorial &&
-        currentTab === "game" &&
-        !!tutorialGameInitialScenario));
+    episodeHarnessRequested ||
+    (viewMode === "lesson" &&
+      (activeLesson?.isGame ||
+        (isTutorialGameStep &&
+          (!!preGeneratedGameScenario ||
+            (!!tutorialGameInitialScenario && tutorialGameRevealReady)))));
   const isVoiceSurfaceMode =
     viewMode === "skillTree" &&
     (pathMode === "conversations" || pathMode === "tutor");
@@ -8971,7 +9308,7 @@ export default function App({ onBootReady } = {}) {
       )}
 
       {/* Learning Modules Scene */}
-      {viewMode === "lesson" && isGameFullScreen && (
+      {isGameFullScreen && (
         <Box
           w="100%"
           h="100dvh"
@@ -8981,30 +9318,33 @@ export default function App({ onBootReady } = {}) {
           zIndex={1000}
           bg="gray.900"
         >
-          <Suspense fallback={<GameLoadingFallback />}>
-            <RPGGame
+          {GameRouterComponent ? (
+            <GameRouterComponent
               lessonContext={activeLesson}
               initialScenario={
                 preGeneratedGameScenario || tutorialGameInitialScenario
               }
               targetLang={resolvedTargetLang}
               supportLang={resolvedSupportLang}
+              npub={activeNpub}
               onComplete={() => handleReturnToSkillTree()}
               onGameComplete={
                 activeLesson?.isGame && !activeLesson?.isTutorial
-                  ? () =>
+                  ? (result) =>
                       // The completion overlay shows no buttons in this flow,
                       // so if the completion write fails, still exit back to
                       // the skill tree rather than stranding the player (a
                       // repeat call after success is a no-op).
-                      triggerLessonCompletion("game_complete").finally(() =>
-                        handleReturnToSkillTree(),
-                      )
+                      triggerLessonCompletion("game_complete", {
+                        xpEarned: result?.xp,
+                      }).finally(() => handleReturnToSkillTree())
                   : undefined
               }
               onSkip={switchToRandomLessonMode}
             />
-          </Suspense>
+          ) : (
+            <GameLoadingFallback minH="100dvh" />
+          )}
         </Box>
       )}
 
@@ -9065,7 +9405,11 @@ export default function App({ onBootReady } = {}) {
                     );
                   case "stories":
                     return (
-                      <TabPanel key="stories" px={0}>
+                      <TabPanel
+                        key="stories"
+                        px={0}
+                        pt={isTutorialMode ? 0 : 4}
+                      >
                         <StoryMode
                           key={`stories-${lessonModuleNonce}`}
                           userLanguage={appLanguage}
@@ -9149,8 +9493,27 @@ export default function App({ onBootReady } = {}) {
                   case "game":
                     return (
                       <TabPanel key="game" px={0}>
-                        <Suspense fallback={<GameLoadingFallback />}>
-                          <RPGGame
+                        {activeLesson?.isTutorial &&
+                        !preGeneratedGameScenario &&
+                        !tutorialGamePreparationFailed ? (
+                          <Box
+                            w="100%"
+                            h={{
+                              base: "min(62vh, calc(100dvh - 220px))",
+                              md: "min(70vh, calc(100dvh - 170px))",
+                            }}
+                            minH={{ base: "300px", md: "320px" }}
+                            maxH="720px"
+                            borderRadius="xl"
+                            overflow="hidden"
+                            mt={-2}
+                          >
+                            <TutorialGameLoadingFallback
+                              supportLang={resolvedSupportLang}
+                            />
+                          </Box>
+                        ) : GameRouterComponent ? (
+                          <GameRouterComponent
                             lessonContext={activeLesson}
                             initialScenario={
                               preGeneratedGameScenario ||
@@ -9158,6 +9521,7 @@ export default function App({ onBootReady } = {}) {
                             }
                             targetLang={resolvedTargetLang}
                             supportLang={resolvedSupportLang}
+                            npub={activeNpub}
                             onSkip={switchToRandomLessonMode}
                             onScenarioReady={(scenario) => {
                               if (activeLesson?.isTutorial && scenario) {
@@ -9165,7 +9529,9 @@ export default function App({ onBootReady } = {}) {
                               }
                             }}
                           />
-                        </Suspense>
+                        ) : (
+                          <GameLoadingFallback />
+                        )}
                       </TabPanel>
                     );
                   case "random":

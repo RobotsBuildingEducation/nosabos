@@ -6,23 +6,32 @@ import {
 } from "firebase/app-check";
 import { getAnalytics } from "firebase/analytics";
 
-import { getFirestore } from "firebase/firestore";
+import {
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+} from "firebase/firestore";
 import { getMessaging, isSupported } from "firebase/messaging";
 import { getGenerativeModel, getVertexAI, Schema } from "@firebase/vertexai";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_PUBLIC_API_KEY,
-  authDomain: "nosabo-30dcb.firebaseapp.com",
-  projectId: "nosabo-30dcb",
-  storageBucket: "nosabo-30dcb.firebasestorage.app",
-  messagingSenderId: "323662475274",
-  appId: "1:323662475274:web:570aa2eb1beaf87810aff3",
-  measurementId: "G-FX7CB1K22B",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
 export const app = initializeApp(firebaseConfig);
 
-if (window.location.hostname === "localhost") {
+const APP_CHECK_DEBUG_HOSTNAMES = new Set(["localhost", "127.0.0.1", "::1"]);
+
+if (
+  typeof window !== "undefined" &&
+  APP_CHECK_DEBUG_HOSTNAMES.has(window.location.hostname)
+) {
   self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
 }
 
@@ -52,7 +61,11 @@ export async function appCheckFetch(input, init = {}) {
   return fetch(input, { ...init, headers });
 }
 
-const database = getFirestore(app);
+const database = initializeFirestore(app, {
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager(),
+  }),
+});
 const analytics = getAnalytics(app);
 
 // ✅ IMPORTANT: Gemini 3 Flash Preview is "global", not us-central1

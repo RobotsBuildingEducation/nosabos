@@ -100,7 +100,7 @@ import {
 } from "../utils/modalMotion";
 
 const REALTIME_MODEL =
-  (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
+  (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-2.1-mini") + "";
 
 const REALTIME_URL = import.meta.env.VITE_REALTIME_URL
   ? `${import.meta.env.VITE_REALTIME_URL}?model=${encodeURIComponent(
@@ -2841,8 +2841,8 @@ Respond with ONLY a JSON object: {"target":"phrase in ${targetName}","support":"
     setStarterTts("idle");
   }
 
-  /** Pronounce the starter phrase (gpt-realtime-mini narration, cached like
-      every other speaker button). Tap toggles: playing/loading → stop. */
+  /** Pronounce the starter phrase (realtime-TTS narration via REALTIME_MODEL,
+      cached like every other speaker button). Tap toggles: playing/loading → stop. */
   async function playStarterTts() {
     if (starterTts !== "idle") {
       stopStarterTts();

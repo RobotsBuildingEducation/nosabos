@@ -23,6 +23,9 @@ import {
   FaVolumeUp,
   FaGamepad,
   FaMicrophone,
+  FaBrain,
+  FaCalendarCheck,
+  FaPaw,
 } from "react-icons/fa";
 import { LuBookAudio, LuSun } from "react-icons/lu";
 import { RiMoonClearFill } from "react-icons/ri";
@@ -132,6 +135,15 @@ const translations = {
     feature_tutor: "Tutor",
     feature_tutor_desc:
       "A complete end-to-end real-time tutor that adapts to your level and helps you learn.",
+    feature_memory: "Memory System",
+    feature_memory_desc:
+      "Remembers your mistakes and progress, then turns them into focused review.",
+    feature_daily_quests: "Daily Quests",
+    feature_daily_quests_desc:
+      "Get a personalized daily mix of practice, review, and rewards.",
+    feature_companion: "Learning Companion",
+    feature_companion_desc:
+      "Raise a companion that grows stronger as you learn.",
     feature_conversations: "Customizable Conversations",
     feature_conversations_desc:
       "Choose the scenario, role, difficulty, and goals so every speaking session fits what you want to practice.",
@@ -264,6 +276,15 @@ const translations = {
     feature_tutor: "Tutor",
     feature_tutor_desc:
       "Un tutor completo en tiempo real, de principio a fin, que se adapta a tu nivel y te ayuda a aprender.",
+    feature_memory: "Sistema de Memoria",
+    feature_memory_desc:
+      "Recuerda tus errores y avances para convertirlos en repasos enfocados.",
+    feature_daily_quests: "Misiones Diarias",
+    feature_daily_quests_desc:
+      "Recibe cada día una mezcla personalizada de práctica, repaso y recompensas.",
+    feature_companion: "Compañero de Aprendizaje",
+    feature_companion_desc:
+      "Cuida un compañero que se fortalece mientras aprendes.",
     feature_conversations: "Conversaciones Personalizables",
     feature_conversations_desc:
       "Elige el escenario, el rol, la dificultad y los objetivos para que cada sesión de habla se ajuste a lo que quieres practicar.",
@@ -398,6 +419,15 @@ const translations = {
     feature_tutor: "Tutor",
     feature_tutor_desc:
       "Un tutor completo in tempo reale, dall'inizio alla fine, che si adatta al tuo livello e ti aiuta a imparare.",
+    feature_memory: "Sistema di Memoria",
+    feature_memory_desc:
+      "Ricorda errori e progressi e li trasforma in ripassi mirati.",
+    feature_daily_quests: "Missioni Giornaliere",
+    feature_daily_quests_desc:
+      "Ricevi ogni giorno pratica, ripasso e ricompense su misura.",
+    feature_companion: "Compagno di Apprendimento",
+    feature_companion_desc:
+      "Fai crescere un compagno che diventa più forte mentre impari.",
     feature_conversations: "Conversazioni Personalizzabili",
     feature_conversations_desc:
       "Scegli scenario, ruolo, difficoltà e obiettivi, così ogni sessione orale si adatta a ciò che vuoi praticare.",
@@ -542,6 +572,15 @@ translations.fr = {
   feature_tutor: "Tuteur",
   feature_tutor_desc:
     "Un tuteur complet en temps reel, de bout en bout, qui s'adapte a ton niveau et t'aide a apprendre.",
+  feature_memory: "Systeme de Memoire",
+  feature_memory_desc:
+    "Memorise tes erreurs et tes progres pour creer des revisions ciblees.",
+  feature_daily_quests: "Quetes Quotidiennes",
+  feature_daily_quests_desc:
+    "Reçois chaque jour un programme personnalise de pratique, revision et recompenses.",
+  feature_companion: "Compagnon d'Apprentissage",
+  feature_companion_desc:
+    "Fais grandir un compagnon qui devient plus fort a mesure que tu apprends.",
   feature_conversations: "Conversations Personnalisables",
   feature_conversations_desc:
     "Choisis le scenario, le role, la difficulte et les objectifs pour que chaque session orale corresponde a ce que tu veux pratiquer.",
@@ -674,6 +713,14 @@ translations.ja = {
   feature_tutor: "チューター",
   feature_tutor_desc:
     "あなたのレベルに適応し、学習を支える完全なエンドツーエンドのリアルタイムチューターです。",
+  feature_memory: "記憶システム",
+  feature_memory_desc: "間違いや進捗を記憶し、必要な復習に変えます。",
+  feature_daily_quests: "デイリークエスト",
+  feature_daily_quests_desc:
+    "練習・復習・報酬を組み合わせた毎日のプランを届けます。",
+  feature_companion: "学習コンパニオン",
+  feature_companion_desc:
+    "学ぶほど強く育つコンパニオンと一緒に進みます。",
   feature_conversations: "カスタマイズ会話",
   feature_conversations_desc:
     "場面、役割、難易度、目標を選び、練習したい内容に合ったスピーキングセッションを作れます。",
@@ -1979,6 +2026,21 @@ const LandingPage = ({ onAuthenticated }) => {
       icon: <LuBookAudio />,
       title: copy.feature_tutor,
       desc: copy.feature_tutor_desc,
+    },
+    {
+      icon: <FaBrain />,
+      title: copy.feature_memory,
+      desc: copy.feature_memory_desc,
+    },
+    {
+      icon: <FaCalendarCheck />,
+      title: copy.feature_daily_quests,
+      desc: copy.feature_daily_quests_desc,
+    },
+    {
+      icon: <FaPaw />,
+      title: copy.feature_companion,
+      desc: copy.feature_companion_desc,
     },
     {
       icon: <FaComments />,

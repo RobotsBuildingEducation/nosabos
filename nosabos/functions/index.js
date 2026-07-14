@@ -37,7 +37,7 @@ const CORS_ORIGINS = [
 
 // Only permit the models you actually use with /proxyResponses
 const ALLOWED_RESPONSE_MODELS = new Set(["gpt-5-nano"]);
-const DEFAULT_REALTIME_MODEL = "gpt-realtime-mini";
+const DEFAULT_REALTIME_MODEL = "gpt-realtime-2.1-mini";
 
 // Enable after the web client is deployed with App Check initialized.
 const REQUIRE_APPCHECK = process.env.REQUIRE_APPCHECK === "true";

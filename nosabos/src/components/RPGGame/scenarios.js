@@ -65,24 +65,24 @@ const TILE_LIBRARY_BY_MAP = {
     0: {
       name: "ground",
       solid: false,
-      colors: [[0xc89b6d, 0xb78456, 0xd4aa7b]],
+      colors: [[0xd69a58, 0xc2854a, 0xe2aa68]],
       detail: "wood_floor",
     },
     1: {
       name: "path",
       solid: false,
-      colors: [[0xa86f43, 0x9b643b]],
+      colors: [[0xc75b45, 0xb04a3a]],
       detail: "rug",
     },
     2: {
       name: "wall",
       solid: true,
-      colors: [[0xcab9a5, 0xb7a38d]],
+      colors: [[0xe8d4b0, 0xd9bf94]],
       detail: "wall",
     },
     3: { name: "tree", solid: true, colors: [[0x5a9e3e]], sprite: "shelf" },
     4: { name: "bench", solid: true, colors: [[0x8b7355]], sprite: "bench" },
-    5: { name: "flower", solid: false, colors: [[0xb66aa1]], detail: "rug" },
+    5: { name: "flower", solid: false, colors: [[0x53948c]], detail: "rug" },
     6: {
       name: "counter",
       solid: true,
@@ -94,43 +94,43 @@ const TILE_LIBRARY_BY_MAP = {
     0: {
       name: "ground",
       solid: false,
-      colors: [[0x6da84d, 0x5e9a42, 0x7bb55a]],
+      colors: [[0x4a9c30, 0x58ab3a, 0x69ba4a]],
       detail: "grass",
     },
     1: {
       name: "path",
       solid: false,
-      colors: [[0xc8a96e, 0xbf9d63]],
+      colors: [[0xdca763, 0xcf9754]],
       detail: "dirt",
     },
     2: {
       name: "wall",
       solid: true,
-      colors: [[0x7e6a53, 0x6b5946]],
+      colors: [[0x86694a, 0x715741]],
       detail: "wall",
     },
     3: { name: "tree", solid: true, colors: [[0x4b8f38]], sprite: "tree" },
     4: { name: "bench", solid: true, colors: [[0x8b7355]], sprite: "bench" },
-    5: { name: "flower", solid: false, colors: [[0x6da84d]], detail: "flower" },
+    5: { name: "flower", solid: false, colors: [[0x54a637]], detail: "flower" },
     6: { name: "counter", solid: true, colors: [[0x8b7355]], sprite: "fence" },
   },
   airport: {
     0: {
       name: "ground",
       solid: false,
-      colors: [[0xd5dde5, 0xc9d3dd]],
+      colors: [[0xe2e8ee, 0xd4dde6]],
       detail: "tile_floor",
     },
     1: {
       name: "path",
       solid: false,
-      colors: [[0x7c8b99, 0x6f7d8a]],
+      colors: [[0x50688e, 0x44597c]],
       detail: "runway",
     },
     2: {
       name: "wall",
       solid: true,
-      colors: [[0xaeb9c4, 0x9caab7]],
+      colors: [[0xb9c5d1, 0xa7b6c4]],
       detail: "wall",
     },
     3: { name: "tree", solid: true, colors: [[0x9fb3c7]], sprite: "freezer" },
@@ -138,7 +138,7 @@ const TILE_LIBRARY_BY_MAP = {
     5: {
       name: "flower",
       solid: false,
-      colors: [[0xd5dde5]],
+      colors: [[0xf3f7fb, 0xe4edf5]],
       detail: "linoleum",
     },
     6: {
@@ -152,13 +152,13 @@ const TILE_LIBRARY_BY_MAP = {
     0: {
       name: "ground",
       solid: false,
-      colors: [[0xffe8a3, 0xf8dc8c, 0xfbe7aa]],
+      colors: [[0xffdf8e, 0xf7d17a, 0xffe9a8]],
       detail: "sunny_plaza",
     },
     1: {
       name: "path",
       solid: false,
-      colors: [[0xffc978, 0xf0b867]],
+      colors: [[0xf5b660, 0xe8a851]],
       detail: "stone_path",
     },
     2: {
@@ -1074,7 +1074,7 @@ function generateQuestPlan(npcCount, options = {}) {
   const gatherChance = isTutorial
     ? 0
     : levelKey === "Pre-A1"
-      ? 0.1
+      ? 0.25
       : levelKey === "A1"
         ? 0.25
         : 0.6;

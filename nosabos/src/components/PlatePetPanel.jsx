@@ -1846,7 +1846,8 @@ function drawAxolotlCharacter(ctx, frame, stage) {
   ctx.restore();
 }
 
-function drawCompanionCharacter(ctx, frame, stage, petType) {
+// eslint-disable-next-line react-refresh/only-export-components
+export function drawCompanionCharacter(ctx, frame, stage, petType) {
   if (petType === "axolotl") {
     drawAxolotlCharacter(ctx, frame, stage);
     return;
@@ -1868,6 +1869,13 @@ function drawCompanionCharacter(ctx, frame, stage, petType) {
     return;
   }
   drawDogCharacter(ctx, frame, stage);
+}
+
+// RPG uses its own companion selection and never inherits the app companion's
+// health. Keep this healthy stage available to other game surfaces.
+// eslint-disable-next-line react-refresh/only-export-components
+export function getHealthyCompanionStage() {
+  return getPetStage(100, { happy: "Happy" }, true);
 }
 
 // Per-pet manga-bubble nudge (px). Each procedural pet sits at a slightly

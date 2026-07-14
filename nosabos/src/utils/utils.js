@@ -1,5 +1,5 @@
 // src/utils/xp.js
-import { doc, runTransaction, serverTimestamp, arrayUnion } from "firebase/firestore";
+import { doc, runTransaction, serverTimestamp } from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
 import useUserStore from "../hooks/useUserStore";
 import {
@@ -10,6 +10,13 @@ import {
   hasDailyGoalResetExpired,
 } from "./dailyGoalPet";
 import { PLATE_XP_SOURCE_FIELDS } from "./dailyPlate";
+import {
+  buildDailyXpRecent,
+  getLocalCalendarDayKey,
+  getNextGoalSummary,
+  monthKeyFromDayKey,
+  pruneDayEntries,
+} from "./userDataSchema";
 
 function getStoredLocalNpub() {
   if (typeof window === "undefined") return "";
@@ -53,7 +60,10 @@ function syncAwardedXpToLocalStore({
     const nextDailyGoalXp = Number(dailyGoalXp);
     const nextPetHealth = Number(petHealth);
     const currentXp = Number(currentUser?.xp || 0);
-    const currentTodayXp = Number(currentUser?.dailyXpHistory?.[todayKey]);
+    const currentTodayXp = Number(
+      currentUser?.dailyXpRecent?.[todayKey] ??
+        currentUser?.dailyXpHistory?.[todayKey],
+    );
     const langKey =
       typeof targetLang === "string" && targetLang.trim()
         ? targetLang.trim().toLowerCase()
@@ -83,8 +93,10 @@ function syncAwardedXpToLocalStore({
         },
       };
       if (activityField && Number.isFinite(activityCount) && todayKey) {
-        const currentLangActivity =
-          currentProgress?.[activityField]?.[langKey] || {};
+        const currentLangActivity = pruneDayEntries(
+          currentProgress?.[activityField]?.[langKey] || {},
+          todayKey,
+        );
         const currentCount = Number(currentLangActivity?.[todayKey]) || 0;
         patch.progress[activityField] = {
           ...(currentProgress?.[activityField] || {}),
@@ -99,10 +111,13 @@ function syncAwardedXpToLocalStore({
     if (Number.isFinite(nextDailyGoalXp)) patch.dailyGoalXp = nextDailyGoalXp;
     if (Number.isFinite(nextPetHealth)) patch.dailyGoalPetHealth = nextPetHealth;
     if (todayKey && Number.isFinite(syncedDailyXp)) {
-      patch.dailyXpHistory = {
-        ...(currentUser.dailyXpHistory || {}),
-        [todayKey]: syncedDailyXp,
-      };
+      patch.dailyXpRecent = buildDailyXpRecent(
+        {
+          ...(currentUser.dailyXpRecent || currentUser.dailyXpHistory || {}),
+          [todayKey]: syncedDailyXp,
+        },
+        todayKey,
+      );
     }
 
     if (Object.keys(patch).length) store.patchUser(patch);
@@ -116,11 +131,12 @@ export async function awardXp(npub, amount, targetLang = "es", source = "") {
   const ref = doc(database, "users", npub);
   const delta = Math.max(1, Math.round(amount));
   const now = new Date();
-  // Format today's date as YYYY-MM-DD for calendar + daily-plate tracking
-  const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const todayKey = getLocalCalendarDayKey(now);
   // Tagged sources ("lesson"/"speak") also count one action toward the
   // matching daily-plate course; untagged awards only move XP.
   const activityField = PLATE_XP_SOURCE_FIELDS[source] || null;
+  const monthKey = monthKeyFromDayKey(todayKey);
+  const monthRef = doc(database, "users", npub, "xpHistory", monthKey);
   let shouldCelebrateGoal = false;
   let celebrationPetHealth = null;
   let awardedDailyXp = null;
@@ -132,8 +148,9 @@ export async function awardXp(npub, amount, targetLang = "es", source = "") {
   let awardedActivityCount = null;
 
   await runTransaction(database, async (tx) => {
-    const snap = await tx.get(ref);
+    const [snap, monthSnap] = await Promise.all([tx.get(ref), tx.get(monthRef)]);
     const data = snap.exists() ? snap.data() : {};
+    const monthData = monthSnap.exists() ? monthSnap.data() : {};
     const langKey =
       typeof targetLang === "string" && targetLang.trim()
         ? targetLang.trim().toLowerCase()
@@ -171,7 +188,10 @@ export async function awardXp(npub, amount, targetLang = "es", source = "") {
     };
 
     if (activityField) {
-      const langActivity = existingProgress?.[activityField]?.[langKey] || {};
+      const langActivity = pruneDayEntries(
+        existingProgress?.[activityField]?.[langKey] || {},
+        todayKey,
+      );
       const nextActivityCount = (Number(langActivity?.[todayKey]) || 0) + 1;
       nextProgress[activityField] = {
         ...(existingProgress?.[activityField] || {}),
@@ -198,10 +218,34 @@ export async function awardXp(npub, amount, targetLang = "es", source = "") {
     awardedDailyXp = nextDaily;
     awardedDailyGoalXp = goal;
     awardedTodayKey = todayKey;
-    const existingDailyXpHistory =
-      data?.dailyXpHistory && typeof data.dailyXpHistory === "object"
-        ? data.dailyXpHistory
-        : {};
+    const existingDailyXpRecent =
+      data?.dailyXpRecent && typeof data.dailyXpRecent === "object"
+        ? data.dailyXpRecent
+        : data?.dailyXpHistory && typeof data.dailyXpHistory === "object"
+          ? data.dailyXpHistory
+          : {};
+    const nextDailyXpRecent = buildDailyXpRecent(
+      { ...existingDailyXpRecent, [todayKey]: nextDaily },
+      todayKey,
+    );
+    const existingGoalDays = Array.isArray(monthData?.goalDays)
+      ? monthData.goalDays
+      : [];
+    const nextGoalDays = reached
+      ? Array.from(new Set([...existingGoalDays, todayKey])).sort()
+      : existingGoalDays;
+    const goalSummary = reached ? getNextGoalSummary(data, todayKey) : null;
+
+    tx.set(
+      monthRef,
+      {
+        monthKey,
+        days: { ...(monthData?.days || {}), [todayKey]: nextDaily },
+        goalDays: nextGoalDays,
+        updatedAt: now.toISOString(),
+      },
+      { merge: true },
+    );
 
     tx.set(
       ref,
@@ -212,15 +256,12 @@ export async function awardXp(npub, amount, targetLang = "es", source = "") {
         updatedAt: now.toISOString(),
         progress: nextProgress,
         dailyGoalPetHealth: nextPetHealth,
-        dailyXpHistory: {
-          ...existingDailyXpHistory,
-          [todayKey]: nextDaily,
-        },
+        dailyXpRecent: nextDailyXpRecent,
         ...(reached
           ? {
               dailyHasCelebrated: true,
               lastDailyGoalHitAt: serverTimestamp(),
-              completedGoalDates: arrayUnion(todayKey),
+              ...goalSummary,
               dailyGoalPetLastOutcome: "achieved",
               dailyGoalPetLastDelta: DAILY_GOAL_PET_HEALTH_GAIN,
               dailyGoalPetLastUpdatedAt: now.toISOString(),

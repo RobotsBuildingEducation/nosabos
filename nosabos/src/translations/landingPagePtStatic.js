@@ -18,6 +18,15 @@ export const LANDING_PAGE_PT_STATIC = {
   feature_tutor: "Tutor",
   feature_tutor_desc:
     "Um tutor completo em tempo real, de ponta a ponta, que se adapta ao seu nível e ajuda você a aprender.",
+  feature_memory: "Sistema de memória",
+  feature_memory_desc:
+    "Lembra seus erros e avanços e os transforma em revisões focadas.",
+  feature_daily_quests: "Missões diárias",
+  feature_daily_quests_desc:
+    "Receba diariamente uma combinação personalizada de prática, revisão e recompensas.",
+  feature_companion: "Companheiro de aprendizagem",
+  feature_companion_desc:
+    "Cuide de um companheiro que fica mais forte enquanto você aprende.",
   feature_conversations: "Conversas personalizáveis",
   feature_conversations_desc:
     "Escolha o cenário, o papel, a dificuldade e os objetivos para que cada sessão de fala combine com o que você quer praticar.",
