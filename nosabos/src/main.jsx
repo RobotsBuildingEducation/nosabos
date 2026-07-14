@@ -21,9 +21,6 @@ import { theme } from "./theme";
 import LandingPage from "./components/LandingPage.jsx";
 import VoiceOrb from "./components/VoiceOrb.jsx";
 
-import "@coinbase/onchainkit/styles.css";
-import { MiniKitContextProvider } from "./provider/MinitKitProvider.jsx";
-
 const App = lazy(() => import("./App.jsx"));
 const LinksPage = lazy(() => import("./components/LinksPage.jsx"));
 const ProficiencyTest = lazy(() => import("./components/ProficiencyTest.jsx"));
@@ -195,43 +192,41 @@ function ProficiencyContainer() {
 
 createRoot(document.getElementById("root")).render(
   <ChakraProvider theme={theme}>
-    <MiniKitContextProvider>
-      <div className="app-shell">
-        <Router>
-          <Suspense fallback={<RouteFallback />}>
-            <Routes>
-              <Route path="/" element={<AppContainer />} />
-              <Route path="/onboarding/*" element={<AppContainer />} />
-              <Route path="/subscribe" element={<AppContainer />} />
-              <Route path="/proficiency" element={<ProficiencyContainer />} />
-              <Route
-                path="/links"
-                element={
-                  <BootReadyBoundary>
-                    <LinksPage />
-                  </BootReadyBoundary>
-                }
-              />
-              <Route
-                path="/squircle"
-                element={
-                  <BootReadyBoundary>
-                    <SquirclePlayground />
-                  </BootReadyBoundary>
-                }
-              />
-              <Route
-                path="/citizenship"
-                element={
-                  <BootReadyBoundary>
-                    <CitizenshipGuide />
-                  </BootReadyBoundary>
-                }
-              />
-            </Routes>
-          </Suspense>
-        </Router>
-      </div>
-    </MiniKitContextProvider>
+    <div className="app-shell">
+      <Router>
+        <Suspense fallback={<RouteFallback />}>
+          <Routes>
+            <Route path="/" element={<AppContainer />} />
+            <Route path="/onboarding/*" element={<AppContainer />} />
+            <Route path="/subscribe" element={<AppContainer />} />
+            <Route path="/proficiency" element={<ProficiencyContainer />} />
+            <Route
+              path="/links"
+              element={
+                <BootReadyBoundary>
+                  <LinksPage />
+                </BootReadyBoundary>
+              }
+            />
+            <Route
+              path="/squircle"
+              element={
+                <BootReadyBoundary>
+                  <SquirclePlayground />
+                </BootReadyBoundary>
+              }
+            />
+            <Route
+              path="/citizenship"
+              element={
+                <BootReadyBoundary>
+                  <CitizenshipGuide />
+                </BootReadyBoundary>
+              }
+            />
+          </Routes>
+        </Suspense>
+      </Router>
+    </div>
   </ChakraProvider>,
 );
