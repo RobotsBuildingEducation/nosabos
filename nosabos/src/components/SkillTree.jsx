@@ -246,6 +246,8 @@ import useModalStore from "../hooks/useModalStore";
 import selectSound from "../assets/select.mp3";
 import VoiceOrb from "./VoiceOrb";
 import { buildGameReviewContext } from "../utils/gameReviewContext";
+import { prepareTutorialGameScenario } from "../utils/tutorialGameLoader";
+import { waitForGameLoaderExploration } from "../utils/gameLoaderTiming";
 import {
   nativeModalMotionProps,
   nativeOverlayMotionProps,
@@ -1728,7 +1730,7 @@ const UnitSection = React.memo(function UnitSection({
  * Lesson Detail Modal
  * Shows detailed information about a lesson
  */
-const GAME_LOADING_MESSAGES = {
+export const GAME_LOADING_MESSAGES = {
   en: [
     "Building your world...",
     "Placing NPCs...",
@@ -1956,6 +1958,10 @@ function LessonDetailModal({
           supportLang: supportLang || "en",
         });
         if (requestToken !== generationTokenRef.current) return;
+        // Scenario preparation is complete. Keep the interactive mini-map up
+        // for another randomized exploration window before handing off.
+        await waitForGameLoaderExploration();
+        if (requestToken !== generationTokenRef.current) return;
         const didStartLesson = await onStartLesson?.(
           lessonWithReviewContext,
           scenario,
@@ -1978,27 +1984,15 @@ function LessonDetailModal({
     setLoadingMsgIdx(0);
 
     try {
-      const gameContent = lesson.content?.game;
-      const overrideTerms = [
-        ...(gameContent?.focusPoints || []),
-        ...(gameContent?.unitTopics || []),
-        gameContent?.topic,
-        gameContent?.unitTitle,
-      ].filter(Boolean);
-      const { REVIEW_WORLD_ID, generateScenarioWithAI } =
-        await import("./RPGGame/scenarios");
+      const scenario = await prepareTutorialGameScenario({
+        lesson: lessonWithReviewContext,
+        targetLang: targetLang || "es",
+        supportLang: supportLang || "en",
+      });
 
-      const scenario = await generateScenarioWithAI(
-        REVIEW_WORLD_ID,
-        targetLang || "es",
-        supportLang || "en",
-        overrideTerms.length
-          ? [...(reviewContext?.reviewTerms || []), ...overrideTerms]
-          : reviewContext?.reviewTerms || null,
-        reviewContext?.cefrLevel || gameContent?.cefrLevel || null,
-        reviewContext,
-      );
+      if (requestToken !== generationTokenRef.current) return;
 
+      await waitForGameLoaderExploration();
       if (requestToken !== generationTokenRef.current) return;
 
       const didStartLesson = await onStartLesson?.(

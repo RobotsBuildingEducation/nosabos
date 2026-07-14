@@ -17,6 +17,15 @@ export const LANDING_PAGE_DE_STATIC = {
   feature_tutor: "Tutor",
   feature_tutor_desc:
     "Ein vollständiger Echtzeit-Tutor von Anfang bis Ende, der sich deinem Niveau anpasst und dir beim Lernen hilft.",
+  feature_memory: "Erinnerungssystem",
+  feature_memory_desc:
+    "Merkt sich Fehler und Fortschritte und macht daraus gezielte Wiederholungen.",
+  feature_daily_quests: "Tägliche Quests",
+  feature_daily_quests_desc:
+    "Erhalte täglich einen persönlichen Mix aus Übung, Wiederholung und Belohnungen.",
+  feature_companion: "Lernbegleiter",
+  feature_companion_desc:
+    "Ziehe einen Begleiter groß, der beim Lernen stärker wird.",
   feature_conversations: "Anpassbare Gespräche",
   feature_conversations_desc:
     "Wähle Szenario, Rolle, Schwierigkeit und Ziele, damit jede Sprechübung genau zu dem passt, was du üben willst.",

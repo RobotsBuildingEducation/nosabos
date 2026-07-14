@@ -17,6 +17,14 @@ export const LANDING_PAGE_ZH_STATIC = {
   feature_tutor: "导师",
   feature_tutor_desc:
     "完整的端到端实时导师，会根据你的水平调整并帮助你学习。",
+  feature_memory: "记忆系统",
+  feature_memory_desc: "记住你的错误和进度，并转化为有针对性的复习。",
+  feature_daily_quests: "每日任务",
+  feature_daily_quests_desc:
+    "每天获得个性化的练习、复习和奖励组合。",
+  feature_companion: "学习伙伴",
+  feature_companion_desc:
+    "培养一位会随着你的学习不断成长的伙伴。",
   feature_conversations: "可自定义对话",
   feature_conversations_desc:
     "选择场景、角色、难度和目标，让每次口语练习都符合你想练的内容。",

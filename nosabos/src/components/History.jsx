@@ -458,6 +458,20 @@ function difficultyHint(cefrLevel) {
   return getCEFRPromptHint(cefrLevel);
 }
 
+function tutorialReadingDirective(targetLanguage) {
+  return `
+TUTORIAL READING - FIXED ABSOLUTE-BEGINNER WELCOME:
+- Write exactly four short sentences with these meanings, in this order:
+  1. "Hello, good morning."
+  2. "My name is Piyali."
+  3. "How are you?"
+  4. "Excited to learn how to speak ${targetLanguage}?"
+- Translate and phrase them naturally in ${targetLanguage}; do not leave any English or a <language> placeholder
+- Keep the name "Piyali" unchanged
+- Do not add a dialogue, farewell, explanation, cultural context, or extra sentence
+- This is for a learner before A1`;
+}
+
 // Seed: FIRST lecture based on lesson content
 function buildSeedLecturePrompt({
   targetLang,
@@ -469,25 +483,19 @@ function buildSeedLecturePrompt({
   const SUPPORT = LANG_NAME(supportLang);
   const diff = difficultyHint(cefrLevel);
 
-  // Special handling for tutorial mode - use very simple "hello" content only
+  // Tutorial reading is a fixed four-sentence welcome so model variance cannot
+  // turn the first reading activity into a normal lecture.
   const isTutorial = lessonContent?.topic === "tutorial";
   const topicText = isTutorial
-    ? "basic greetings and saying hello"
+    ? "a first welcome for a language learner"
     : lessonContent?.topic ||
       lessonContent?.scenario ||
       "general cultural and linguistic concepts";
   const promptText = isTutorial
-    ? "Focus ONLY on the word 'hello' and simple greetings. This is for absolute beginners."
+    ? lessonContent?.prompt || ""
     : lessonContent?.prompt || "";
   const tutorialDirective = isTutorial
-    ? `
-TUTORIAL MODE - ABSOLUTE BEGINNER CONTENT:
-- This is a tutorial for complete beginners
-- Focus ONLY on the greeting "hello" and its equivalents
-- Use extremely simple vocabulary (hello, hi, good morning, goodbye)
-- Keep sentences very short (3-5 words maximum)
-- Length should be only 20-40 words total
-- Make it feel welcoming and encouraging`
+    ? tutorialReadingDirective(TARGET)
     : "";
 
   return `
@@ -496,7 +504,7 @@ Write ONE short educational lecture about ${topicText}. ${promptText}. Difficult
   }.${tutorialDirective}
 
 CRITICAL LANGUAGE REQUIREMENTS - YOU MUST FOLLOW THESE EXACTLY:
-1. Most importantly, the lecture generated is suitable for a ${cefrLevel} level reader.
+1. Most importantly, the lecture generated is suitable for a ${isTutorial ? "pre-A1 absolute beginner" : cefrLevel + " level reader"}.
 2. The target language for learning is: ${TARGET} (language code: ${targetLang})
 3. Write the title and lecture body in ${TARGET} ONLY
 4. Write all takeaways in ${SUPPORT} ONLY
@@ -506,10 +514,10 @@ CRITICAL LANGUAGE REQUIREMENTS - YOU MUST FOLLOW THESE EXACTLY:
 IMPORTANT: Ignore any language references in the topic description. Your output language is determined by the target language (${TARGET}) for title/body and ${SUPPORT} for takeaways.
 
 Content requirements:
-${isTutorial ? "- Length: 20–40 words total" : "- Length: ≈180–260 words"}
-${isTutorial ? "- 2–4 very short sentences (3–5 words each)" : "- Make it relevant and practical for language learners"}
-${isTutorial ? "- Use ONLY greetings; no other topics" : "- Include cultural context and common vocabulary related to " + topicText}
-${isTutorial ? "- Keep it welcoming and ultra-simple" : "- Use examples and situations that learners might encounter"}
+${isTutorial ? "- Exactly the four sentences specified above" : "- Length: ≈180–260 words"}
+${isTutorial ? "- Preserve their meaning and order" : "- Make it relevant and practical for language learners"}
+${isTutorial ? "- No additional content" : "- Include cultural context and common vocabulary related to " + topicText}
+${isTutorial ? "- Keep it welcoming and pre-A1" : "- Use examples and situations that learners might encounter"}
 ${isTutorial ? "" : "- Keep it engaging, clear, and accessible"}
 
 Include:
@@ -542,23 +550,18 @@ function buildLecturePrompt({
       ? previousTitles.map((t) => `- ${t}`).join("\n")
       : "(none yet)";
 
-  // Special handling for tutorial mode - use very simple "hello" content only
+  // Keep any regenerated tutorial reading on the same fixed beginner welcome.
   const isTutorial = lessonContent?.topic === "tutorial";
   const topicText = isTutorial
-    ? "basic greetings and saying hello"
+    ? "a first welcome for a language learner"
     : lessonContent?.topic ||
       lessonContent?.scenario ||
       "general cultural and linguistic concepts";
   const promptText = isTutorial
-    ? "Focus ONLY on the word 'hello' and simple greetings. This is for absolute beginners."
+    ? lessonContent?.prompt || ""
     : lessonContent?.prompt || "";
   const tutorialDirective = isTutorial
-    ? `
-TUTORIAL MODE - ABSOLUTE BEGINNER CONTENT:
-- Focus ONLY on the greeting "hello" and its equivalents
-- Use extremely simple vocabulary (hello, hi, good morning, goodbye)
-- Keep sentences very short (3-5 words maximum)
-- Length should be only 20-40 words total`
+    ? tutorialReadingDirective(TARGET)
     : "";
 
   return `
@@ -579,10 +582,10 @@ CRITICAL LANGUAGE REQUIREMENTS - YOU MUST FOLLOW THESE EXACTLY:
 IMPORTANT: Ignore any language references in the topic description. Your output language is determined by the target language (${TARGET}) for title/body and ${SUPPORT} for takeaways.
 
 Content requirements:
-${isTutorial ? "- Length: 20–40 words total" : "- Length: ≈180–260 words, suitable for a " + cefrLevel + " learner"}
-${isTutorial ? "- 2–4 very short sentences (3–5 words each)" : "- Difficulty: " + diff}
-${isTutorial ? "- Use ONLY greetings; no other topics" : "- Include cultural context and practical vocabulary for language learners"}
-${isTutorial ? "- Keep it ultra-simple and welcoming" : "- Use examples and situations that learners might encounter"}
+${isTutorial ? "- Exactly the four sentences specified above" : "- Length: ≈180–260 words, suitable for a " + cefrLevel + " learner"}
+${isTutorial ? "- Preserve their meaning and order" : "- Difficulty: " + diff}
+${isTutorial ? "- No additional content" : "- Include cultural context and practical vocabulary for language learners"}
+${isTutorial ? "- Keep it welcoming and pre-A1" : "- Use examples and situations that learners might encounter"}
 
 Include:
 - A concise title (<= 60 chars) related to ${topicText} in ${TARGET}
@@ -782,6 +785,28 @@ function buildStreamingPrompt({
     lessonContent?.scenario ||
     "general cultural and linguistic concepts";
   const promptText = lessonContent?.prompt || "";
+
+  const isTutorial = lessonContent?.topic === "tutorial";
+  if (isTutorial) {
+    return [
+      `You are creating the first reading activity for an absolute-beginner ${TARGET} learner.`,
+      tutorialReadingDirective(TARGET),
+      promptText,
+      "",
+      "CRITICAL LANGUAGE REQUIREMENTS:",
+      `- Write the title and four target sentences in ${TARGET} ONLY.`,
+      `- Write takeaways in ${SUPPORT} ONLY.`,
+      "- Use no other language.",
+      "",
+      "OUTPUT PROTOCOL — NDJSON (one compact JSON object per line):",
+      `1) {"type":"title","text":"<a simple welcome title in ${TARGET}>"}`,
+      `2) Emit exactly four {"type":"target","text":"<one specified sentence in ${TARGET}>"} lines.`,
+      `3) Emit exactly three {"type":"takeaway","text":"<a very short beginner takeaway in ${SUPPORT}>"} lines.`,
+      '4) Finally emit {"type":"done"}',
+      "",
+      "No support lines, markdown, commentary, or additional target sentences.",
+    ].join("\n");
+  }
 
   const baseTopic = isFirst
     ? `Topic: ${topicText}. ${promptText}\nFocus on practical cultural context and vocabulary for language learners.`

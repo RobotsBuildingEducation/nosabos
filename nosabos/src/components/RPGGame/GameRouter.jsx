@@ -7,9 +7,8 @@ import { buildLegacyEpisodeScenario } from "./episodes/legacyScenario.js";
 /**
  * Cutover boundary for the authored episode engine.
  *
- * The multi-mode onboarding lesson intentionally keeps the original plaza
- * tutorial. Every synthesized Game Review uses the local episode engine. The
- * query-string overrides are the plan's dev harness:
+ * Game Reviews and pre-generated tutorial scenarios use the authored local
+ * episode engine. The query-string overrides are the plan's dev harness:
  *   ?episode=detective&level=B2&unit=unit-a2-3
  */
 export default function GameRouter(props) {
@@ -24,7 +23,10 @@ export default function GameRouter(props) {
     };
   }, []);
 
-  const useEpisodes = !!harness.episodeId || (!!lesson?.isGame && !lesson?.isTutorial);
+  const useEpisodes =
+    !!harness.episodeId ||
+    !!props.initialScenario?.authoredEpisode ||
+    (!!lesson?.isGame && !lesson?.isTutorial);
   const episodeLesson = useMemo(
     () => {
       const gameContent = lesson?.content?.game || {};

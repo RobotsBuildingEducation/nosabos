@@ -1,5 +1,7 @@
 // src/App.jsx
 import React, {
+  Suspense,
+  lazy,
   useCallback,
   useEffect,
   useMemo,
@@ -147,7 +149,7 @@ import RealWorldTasksModal, {
 import useNotesStore from "./hooks/useNotesStore";
 import useRepairFocusStore from "./hooks/useRepairFocusStore";
 import { subscribeToTeamInvites } from "./utils/teams";
-import SkillTree from "./components/SkillTree";
+import SkillTree, { GAME_LOADING_MESSAGES } from "./components/SkillTree";
 import DailyPlateHome from "./components/DailyPlateHome";
 import {
   PLATE_BONUS_TOAST_COPY,
@@ -239,6 +241,8 @@ import {
   buildGameReviewContext,
   inferCefrLevelFromLessonId,
 } from "./utils/gameReviewContext";
+import { prepareTutorialGameScenario } from "./utils/tutorialGameLoader";
+import { waitForGameLoaderExploration } from "./utils/gameLoaderTiming";
 import { LESSON_COUNTS, getLessonLevelFromId } from "./utils/cefrProgress";
 import { BsCalendar2DateFill } from "react-icons/bs";
 import { TbLanguage } from "react-icons/tb";
@@ -303,6 +307,7 @@ import {
 // screen until the game can paint directly — no Suspense fallback commits in
 // between. The cached promise resets on failure so a later attempt can retry.
 let rpgGameComponentPromise = null;
+const LoadingMiniGame = lazy(() => import("./components/LoadingMiniGame.jsx"));
 function loadRPGGameComponent() {
   if (!rpgGameComponentPromise) {
     rpgGameComponentPromise = import("./components/RPGGame/GameRouter.jsx")
@@ -530,6 +535,59 @@ function GameLoadingFallback({ minH = "420px" }) {
         />
       ))}
     </Flex>
+  );
+}
+
+// Same interactive mini-map and rotating progress copy shown while optimized
+// RPG review lessons prepare. The tutorial uses it only when its background
+// preparation has not finished by the time the learner reaches the game step.
+function TutorialGameLoadingFallback({ supportLang = "en" }) {
+  const messages =
+    GAME_LOADING_MESSAGES[supportLang] || GAME_LOADING_MESSAGES.en;
+  const [messageIndex, setMessageIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setMessageIndex((current) => (current + 1) % messages.length);
+    }, 1500);
+    return () => window.clearInterval(interval);
+  }, [messages]);
+
+  return (
+    <Box display="flex" flexDirection="column" h="100%" overflow="hidden">
+      <Box
+        position="absolute"
+        top={0}
+        left={0}
+        right={0}
+        zIndex={2}
+        px={{ base: 3, md: 4 }}
+        py={{ base: 3, md: 4 }}
+        bgGradient="linear(to-b, rgba(10, 13, 27, 0.96), rgba(10, 13, 27, 0.72), transparent)"
+      >
+        <Text
+          fontSize={{ base: "sm", md: "md" }}
+          color="blue.100"
+          minH="24px"
+          key={messageIndex}
+          fontFamily="monospace"
+          sx={{
+            animation: "fadeIn 0.4s ease-in-out",
+            "@keyframes fadeIn": {
+              "0%": { opacity: 0, transform: "translateY(-4px)" },
+              "100%": { opacity: 1, transform: "translateY(0)" },
+            },
+          }}
+        >
+          {messages[messageIndex]}
+        </Text>
+      </Box>
+      <Box flex="1" overflow="hidden" position="relative">
+        <Suspense fallback={<GameLoadingFallback minH="100dvh" />}>
+          <LoadingMiniGame supportLang={supportLang} />
+        </Suspense>
+      </Box>
+    </Box>
   );
 }
 
@@ -2962,6 +3020,10 @@ export default function App({ onBootReady } = {}) {
   const [preGeneratedGameScenario, setPreGeneratedGameScenario] =
     useState(null);
   const [tutorialGameScenario, setTutorialGameScenario] = useState(null);
+  const [tutorialGamePreparationFailed, setTutorialGamePreparationFailed] =
+    useState(false);
+  const [tutorialGameRevealReady, setTutorialGameRevealReady] = useState(false);
+  const tutorialGamePreparationTokenRef = useRef(0);
   // Resolved GameRouter component. handleStartLesson fills this in before the
   // view flips so the game's first commit renders the game itself; the effect
   // below covers paths that reach the game view without the launch flow
@@ -2988,6 +3050,37 @@ export default function App({ onBootReady } = {}) {
       cancelled = true;
     };
   }, [GameRouterComponent, viewMode, activeLesson]);
+
+  // The tutorial scenario is usually ready before the learner reaches its
+  // final game step. Start the artificial exploration window only once that
+  // loader is actually visible; timing it during earlier modules would make
+  // the intended 6-10 seconds invisible.
+  useEffect(() => {
+    const shouldHoldTutorialGame =
+      viewMode === "lesson" &&
+      activeLesson?.isTutorial &&
+      currentTab === "game" &&
+      !!tutorialGameScenario &&
+      !preGeneratedGameScenario;
+
+    setTutorialGameRevealReady(false);
+    if (!shouldHoldTutorialGame) return undefined;
+
+    let cancelled = false;
+    void waitForGameLoaderExploration().then(() => {
+      if (!cancelled) setTutorialGameRevealReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    activeLesson?.id,
+    activeLesson?.isTutorial,
+    currentTab,
+    preGeneratedGameScenario,
+    tutorialGameScenario,
+    viewMode,
+  ]);
 
   const ALPHABET_LANGS = [
     "ru",
@@ -4971,25 +5064,66 @@ export default function App({ onBootReady } = {}) {
       ? lesson
       : await enrichLessonForGameReview(lesson);
 
-    // Resolve the game client while the lesson modal's loader is still up so
-    // the view flip below commits the game directly — otherwise the first
-    // game-view commit would paint a loading fallback for a few frames
-    // between the modal and the game. The chunk is usually already primed by
-    // the modal, so this await is near-instant.
-    if (enrichedLesson.isGame || enrichedLesson.modes?.includes("game")) {
-      try {
-        const component = await loadRPGGameComponent();
-        setGameRouterComponent(() => component);
-      } catch (error) {
-        // Non-fatal: the game view falls back to its quiet loader and the
-        // component-load effect retries.
-        console.error("Failed to preload game client:", error);
-      }
-    }
-
-    // Store pre-generated scenario for game lessons
+    // Store pre-generated scenario for game lessons. Start the multi-module
+    // tutorial's Greeting Plaza preparation before awaiting the client chunk,
+    // so both pieces warm concurrently while the learner is still entering
+    // the tutorial and completing its earlier activities.
+    const tutorialPreparationToken =
+      tutorialGamePreparationTokenRef.current + 1;
+    tutorialGamePreparationTokenRef.current = tutorialPreparationToken;
     setPreGeneratedGameScenario(preGeneratedScenario || null);
     setTutorialGameScenario(null);
+    setTutorialGamePreparationFailed(false);
+    setTutorialGameRevealReady(false);
+    if (enrichedLesson.isTutorial && enrichedLesson.modes?.includes("game")) {
+      void prepareTutorialGameScenario({
+        lesson: enrichedLesson,
+        targetLang: resolvedTargetLang,
+        supportLang: resolvedSupportLang,
+      })
+        .then((scenario) => {
+          if (
+            tutorialPreparationToken ===
+              tutorialGamePreparationTokenRef.current &&
+            scenario
+          ) {
+            setTutorialGameScenario(scenario);
+          }
+        })
+        .catch((error) => {
+          if (
+            tutorialPreparationToken !==
+            tutorialGamePreparationTokenRef.current
+          ) {
+            return;
+          }
+          console.error("Failed to pre-generate tutorial game:", error);
+          setTutorialGamePreparationFailed(true);
+        });
+    }
+
+    // Standalone games resolve the client before their immediate view flip.
+    // The multi-module tutorial warms it without blocking the first tutorial
+    // activity because its game step comes last.
+    if (enrichedLesson.isGame || enrichedLesson.modes?.includes("game")) {
+      const componentPromise = loadRPGGameComponent();
+      if (enrichedLesson.isTutorial && !enrichedLesson.isGame) {
+        void componentPromise
+          .then((component) => setGameRouterComponent(() => component))
+          .catch((error) => {
+            console.error("Failed to warm tutorial game client:", error);
+          });
+      } else {
+        try {
+          const component = await componentPromise;
+          setGameRouterComponent(() => component);
+        } catch (error) {
+          // Non-fatal: the game view falls back to its quiet loader and the
+          // component-load effect retries.
+          console.error("Failed to preload game client:", error);
+        }
+      }
+    }
 
     try {
       // Mark lesson as in progress in Firestore
@@ -5092,6 +5226,12 @@ export default function App({ onBootReady } = {}) {
 
       return true;
     } catch (e) {
+      if (
+        tutorialPreparationToken ===
+        tutorialGamePreparationTokenRef.current
+      ) {
+        tutorialGamePreparationTokenRef.current += 1;
+      }
       console.error("Failed to start lesson:", e);
       toast({
         title: "Error",
@@ -5238,10 +5378,13 @@ export default function App({ onBootReady } = {}) {
 
   // Handle returning to skill tree
   const handleReturnToSkillTree = useCallback(() => {
+    tutorialGamePreparationTokenRef.current += 1;
     setViewMode("skillTree");
     setActiveLesson(null);
     setPreGeneratedGameScenario(null);
     setTutorialGameScenario(null);
+    setTutorialGamePreparationFailed(false);
+    setTutorialGameRevealReady(false);
     setLessonStartXp(null);
     previousXpRef.current = null;
     lessonCompletionTriggeredRef.current = false;
@@ -8826,6 +8969,11 @@ export default function App({ onBootReady } = {}) {
       ? tutorialGameScenario
       : null;
 
+  const isTutorialGameStep =
+    viewMode === "lesson" &&
+    activeLesson?.isTutorial &&
+    currentTab === "game";
+
   const episodeHarnessRequested =
     typeof window !== "undefined" &&
     new URLSearchParams(window.location.search).has("episode");
@@ -8834,9 +8982,9 @@ export default function App({ onBootReady } = {}) {
     episodeHarnessRequested ||
     (viewMode === "lesson" &&
       (activeLesson?.isGame ||
-        (activeLesson?.isTutorial &&
-          currentTab === "game" &&
-          !!tutorialGameInitialScenario)));
+        (isTutorialGameStep &&
+          (!!preGeneratedGameScenario ||
+            (!!tutorialGameInitialScenario && tutorialGameRevealReady)))));
   const isVoiceSurfaceMode =
     viewMode === "skillTree" &&
     (pathMode === "conversations" || pathMode === "tutor");
@@ -9218,7 +9366,11 @@ export default function App({ onBootReady } = {}) {
                     );
                   case "stories":
                     return (
-                      <TabPanel key="stories" px={0}>
+                      <TabPanel
+                        key="stories"
+                        px={0}
+                        pt={isTutorialMode ? 0 : 4}
+                      >
                         <StoryMode
                           key={`stories-${lessonModuleNonce}`}
                           userLanguage={appLanguage}
@@ -9302,7 +9454,26 @@ export default function App({ onBootReady } = {}) {
                   case "game":
                     return (
                       <TabPanel key="game" px={0}>
-                        {GameRouterComponent ? (
+                        {activeLesson?.isTutorial &&
+                        !preGeneratedGameScenario &&
+                        !tutorialGamePreparationFailed ? (
+                          <Box
+                            w="100%"
+                            h={{
+                              base: "min(62vh, calc(100dvh - 220px))",
+                              md: "min(70vh, calc(100dvh - 170px))",
+                            }}
+                            minH={{ base: "300px", md: "320px" }}
+                            maxH="720px"
+                            borderRadius="xl"
+                            overflow="hidden"
+                            mt={-2}
+                          >
+                            <TutorialGameLoadingFallback
+                              supportLang={resolvedSupportLang}
+                            />
+                          </Box>
+                        ) : GameRouterComponent ? (
                           <GameRouterComponent
                             lessonContext={activeLesson}
                             initialScenario={

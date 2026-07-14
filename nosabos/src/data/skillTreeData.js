@@ -126,11 +126,8 @@ const baseLearningPath = withLocalizedSkillTreeText({
             },
             reading: {
               topic: "tutorial",
-              prompt: "Read a simple introduction and goodbye exchange",
-              tutorialDescription: {
-                en: "Read a short exchange with basic introductions and goodbyes.",
-                es: "Lee un intercambio corto con introducciones y despedidas básicas.",
-              },
+              prompt:
+                'Use only this short welcome: "Hello, good morning. My name is Piyali. How are you? Excited to learn how to speak <target language>?"',
             },
             stories: {
               topic: "tutorial",
