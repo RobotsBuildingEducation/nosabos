@@ -579,6 +579,7 @@ export default function DailyPlateHome({
           }
         />
         <PlateActivityHeatmap
+          npub={user?.id || user?.local_npub || ""}
           lang={appLanguage}
           completedGoalDates={completedGoalDates}
           dailyXpHistory={dailyXpHistory}

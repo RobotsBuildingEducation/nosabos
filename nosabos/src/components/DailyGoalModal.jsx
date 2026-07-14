@@ -37,6 +37,7 @@ import {
 import DailyGoalPetPanel from "./DailyGoalPetPanel.jsx";
 import useSoundSettings from "../hooks/useSoundSettings";
 import useEscapeToClose from "../hooks/useEscapeToClose";
+import useXpHistoryYear from "../hooks/useXpHistoryYear";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
 import {
@@ -205,6 +206,8 @@ function buildGoalHeatmapWeeks(
 }
 
 const DailyGoalHeatmap = React.memo(function DailyGoalHeatmap({
+  npub,
+  enabled = true,
   lang = "en",
   completedGoalDates = [],
   dailyXpHistory = {},
@@ -213,22 +216,28 @@ const DailyGoalHeatmap = React.memo(function DailyGoalHeatmap({
   labels,
   isLightTheme = false,
 }) {
+  const loadedHistory = useXpHistoryYear({
+    npub,
+    legacyDays: dailyXpHistory,
+    legacyGoalDays: completedGoalDates,
+    enabled,
+  });
   const effectiveHistory = useMemo(() => {
     const todayKey = getLocalDayKey(new Date());
-    if (!todayKey) return dailyXpHistory;
+    if (!todayKey) return loadedHistory.days;
 
     return {
-      ...dailyXpHistory,
+      ...loadedHistory.days,
       [todayKey]: Math.max(
-        Number(dailyXpHistory?.[todayKey]) || 0,
+        Number(loadedHistory.days?.[todayKey]) || 0,
         Number(currentDailyXp) || 0,
       ),
     };
-  }, [currentDailyXp, dailyXpHistory]);
+  }, [currentDailyXp, loadedHistory.days]);
 
   const effectiveCompletedDates = useMemo(() => {
     const todayKey = getLocalDayKey(new Date());
-    const completedSet = new Set(completedGoalDates);
+    const completedSet = new Set(loadedHistory.goalDays);
 
     if (
       todayKey &&
@@ -239,7 +248,7 @@ const DailyGoalHeatmap = React.memo(function DailyGoalHeatmap({
     }
 
     return Array.from(completedSet);
-  }, [completedGoalDates, currentDailyXp, currentGoalXp]);
+  }, [currentDailyXp, currentGoalXp, loadedHistory.goalDays]);
 
   const weeks = useMemo(
     () =>
@@ -783,6 +792,8 @@ export default function DailyGoalModal({
               </FormControl>
 
               <DailyGoalHeatmap
+                npub={npub}
+                enabled={isOpen}
                 lang={resolvedLang}
                 completedGoalDates={completedGoalDates}
                 dailyXpHistory={dailyXpHistory}

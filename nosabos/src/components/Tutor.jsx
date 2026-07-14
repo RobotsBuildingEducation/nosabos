@@ -1998,7 +1998,10 @@ function applyTutorDailyGoalXpOptimistic(npub, amount) {
     const todayKey = getTutorTodayKey();
     const currentDailyXp = Math.max(
       Number(currentUser.dailyXp) || 0,
-      Number(currentUser.dailyXpHistory?.[todayKey]) || 0,
+      Number(
+        currentUser.dailyXpRecent?.[todayKey] ??
+          currentUser.dailyXpHistory?.[todayKey],
+      ) || 0,
     );
     const nextDailyXp = currentDailyXp + amount;
     const dailyGoalXp = Number(
@@ -2008,8 +2011,8 @@ function applyTutorDailyGoalXpOptimistic(npub, amount) {
     );
     const patch = {
       dailyXp: nextDailyXp,
-      dailyXpHistory: {
-        ...(currentUser.dailyXpHistory || {}),
+      dailyXpRecent: {
+        ...(currentUser.dailyXpRecent || currentUser.dailyXpHistory || {}),
         [todayKey]: nextDailyXp,
       },
     };
@@ -2056,7 +2059,10 @@ async function syncTutorDailyGoalXpFromFirestore(npub) {
     const dailyXp = Number(data.dailyXp);
     const dailyGoalXp = Number(data.dailyGoalXp);
     const currentUser = useUserStore.getState?.()?.user || {};
-    const currentTodayXp = Number(currentUser.dailyXpHistory?.[todayKey]);
+    const currentTodayXp = Number(
+      currentUser.dailyXpRecent?.[todayKey] ??
+        currentUser.dailyXpHistory?.[todayKey],
+    );
     const syncedDailyXp =
       todayKey && Number.isFinite(currentTodayXp)
         ? Math.max(currentTodayXp, dailyXp)
@@ -2065,9 +2071,10 @@ async function syncTutorDailyGoalXpFromFirestore(npub) {
 
     if (Number.isFinite(syncedDailyXp)) patch.dailyXp = syncedDailyXp;
     if (Number.isFinite(dailyGoalXp)) patch.dailyGoalXp = dailyGoalXp;
-    if (data.dailyXpHistory && typeof data.dailyXpHistory === "object") {
-      patch.dailyXpHistory = {
-        ...data.dailyXpHistory,
+    const recentHistory = data.dailyXpRecent || data.dailyXpHistory;
+    if (recentHistory && typeof recentHistory === "object") {
+      patch.dailyXpRecent = {
+        ...recentHistory,
         ...(Number.isFinite(syncedDailyXp)
           ? { [todayKey]: syncedDailyXp }
           : {}),

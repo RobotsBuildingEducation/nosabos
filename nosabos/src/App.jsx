@@ -103,11 +103,12 @@ import {
   doc,
   getDoc,
   getDocs,
-  increment,
   setDoc,
   updateDoc,
   onSnapshot,
+  query,
   runTransaction,
+  where,
 } from "firebase/firestore";
 import { database, simplemodel } from "./firebaseResources/firebaseResources";
 
@@ -183,6 +184,7 @@ import {
   readPlateSession,
   readQuestPlate,
   readQuestPlateKinds,
+  recordPlateActivity,
   resetTodayPlate,
   startPlateSession,
   writeQuestPlate,
@@ -193,6 +195,8 @@ import {
   getBlueprintCarryOverKinds,
   getNextRepairStep,
   getReusableMemory,
+  hydrateCompanionBucket,
+  hydrateQuestDays,
   getStoredRepairPlan,
   getTodaysCapturedNotes,
   getTomorrowKey,
@@ -202,6 +206,7 @@ import {
   runDailyBatch,
   shouldRunDailyBatch,
 } from "./utils/companionMemory";
+import { migrateUserToSchemaV2 } from "./utils/userDataSchema";
 import CompanionRepairModal from "./components/CompanionRepairModal";
 import {
   startLesson,
@@ -940,7 +945,10 @@ async function ensureOnboardingField(db, id, data) {
           data.completedGoalDates.length > 0) ||
         (data?.dailyXpHistory &&
           typeof data.dailyXpHistory === "object" &&
-          Object.keys(data.dailyXpHistory).length > 0),
+          Object.keys(data.dailyXpHistory).length > 0) ||
+        (data?.dailyXpRecent &&
+          typeof data.dailyXpRecent === "object" &&
+          Object.keys(data.dailyXpRecent).length > 0),
       );
       if (!looksUsed) {
         console.warn(
@@ -1010,24 +1018,48 @@ async function loadUserObjectFromDB(db, id) {
   // A confirmed missing root document is the only case that may return null.
   // Bootstrap uses null to create a new user, so optional hydration failures
   // must not be allowed to reset an existing user's onboarding state.
-  const userData = await ensureOnboardingField(db, id, {
+  let userData = await ensureOnboardingField(db, id, {
     id: snap.id,
     ...snap.data(),
   });
+
+  try {
+    userData = (await migrateUserToSchemaV2(db, id, userData)) || userData;
+  } catch (error) {
+    console.warn("User data migration failed; using the compatible legacy shape:", error);
+  }
 
   if (!userData.progress || typeof userData.progress !== "object") {
     userData.progress = {};
   }
 
   try {
+    const activeTargetLang = String(
+      userData?.progress?.targetLang || userData?.targetLang || "es",
+    ).toLowerCase();
     const [
       languageLessonsSnapshot,
       tutorLanguageLessonsSnapshot,
       languageFlashcardsSnapshot,
     ] = await Promise.all([
-      getDocs(collection(db, "users", id, "languageLessons")),
-      getDocs(collection(db, "users", id, "tutorLanguageLessons")),
-      getDocs(collection(db, "users", id, "languageFlashcards")),
+      getDocs(
+        query(
+          collection(db, "users", id, "languageLessons"),
+          where("targetLang", "==", activeTargetLang),
+        ),
+      ),
+      getDocs(
+        query(
+          collection(db, "users", id, "tutorLanguageLessons"),
+          where("targetLang", "==", activeTargetLang),
+        ),
+      ),
+      getDocs(
+        query(
+          collection(db, "users", id, "languageFlashcards"),
+          where("targetLang", "==", activeTargetLang),
+        ),
+      ),
     ]);
 
     const languageLessons = {};
@@ -1116,7 +1148,9 @@ function getEffectiveDailyXpToday(data = {}) {
     data?.dailyXp ?? data?.stats?.dailyXp ?? data?.progress?.dailyXp;
   const parsedXp = Number(rawXp);
   const directXp = Number.isFinite(parsedXp) ? parsedXp : 0;
-  const historyXp = getTodayDailyXpFromHistory(data?.dailyXpHistory);
+  const historyXp = getTodayDailyXpFromHistory(
+    data?.dailyXpRecent || data?.dailyXpHistory,
+  );
   return Math.max(directXp, historyXp);
 }
 
@@ -1508,23 +1542,22 @@ function TopBar({
     const unsub = onSnapshot(ref, async (snap) => {
       const data = snap.exists() ? snap.data() : {};
 
-      // Keep the companion-brain fields live in the store. connectDID's
-      // one-shot read can lag or fail on a refresh, which used to strand the
-      // plate without its Repair course and show the Memory drawer empty until
-      // the next full reload ("sometimes it vanishes"). This listener retries
-      // until Firestore answers — and latency compensation means our own
-      // local writes are reflected immediately, so it can't clobber a capture
-      // that's still in flight.
+      if (
+        Number(data?.schemaVersion || 1) < 2 ||
+        data?.dailyQuestBlueprint ||
+        data?.dailyQuestRepair ||
+        data?.dailyQuestExplanations ||
+        data?.dailyXpHistory ||
+        data?.completedGoalDates ||
+        data?.companionMemory
+      ) {
+        void migrateUserToSchemaV2(database, activeNpub).catch((error) => {
+          console.warn("Deferred user data cleanup failed:", error);
+        });
+      }
+
       try {
         const companionPatch = {};
-        if (data?.companionMemory)
-          companionPatch.companionMemory = data.companionMemory;
-        if (data?.dailyQuestRepair)
-          companionPatch.dailyQuestRepair = data.dailyQuestRepair;
-        if (data?.dailyQuestBlueprint)
-          companionPatch.dailyQuestBlueprint = data.dailyQuestBlueprint;
-        if (data?.dailyQuestExplanations)
-          companionPatch.dailyQuestExplanations = data.dailyQuestExplanations;
         if (data?.companionUnlocksCelebrated)
           companionPatch.companionUnlocksCelebrated =
             data.companionUnlocksCelebrated;
@@ -1541,12 +1574,14 @@ function TopBar({
         ? data.completedGoalDates
         : [];
       const xpHistory =
-        data?.dailyXpHistory && typeof data.dailyXpHistory === "object"
-          ? data.dailyXpHistory
+        data?.dailyXpRecent && typeof data.dailyXpRecent === "object"
+          ? data.dailyXpRecent
+          : data?.dailyXpHistory && typeof data.dailyXpHistory === "object"
+            ? data.dailyXpHistory
           : {};
       let dxp = getEffectiveDailyXpToday({
         ...data,
-        dailyXpHistory: xpHistory,
+        dailyXpRecent: xpHistory,
       });
 
       const expired = hasDailyGoalResetExpired(resetISO);
@@ -1613,6 +1648,7 @@ function TopBar({
   }, [
     user?.dailyXp,
     user?.dailyGoalXp,
+    user?.dailyXpRecent,
     user?.dailyXpHistory,
     user?.progress?.dailyGoalXp,
     user?.progress?.dailyXp,
@@ -2750,10 +2786,12 @@ export default function App({ onBootReady } = {}) {
 
   const dailyGoalXpHistory = useMemo(
     () =>
-      user?.dailyXpHistory && typeof user.dailyXpHistory === "object"
-        ? user.dailyXpHistory
+      user?.dailyXpRecent && typeof user.dailyXpRecent === "object"
+        ? user.dailyXpRecent
+        : user?.dailyXpHistory && typeof user.dailyXpHistory === "object"
+          ? user.dailyXpHistory
         : {},
-    [user?.dailyXpHistory],
+    [user?.dailyXpHistory, user?.dailyXpRecent],
   );
 
   const companionXp = useMemo(() => {
@@ -5293,19 +5331,20 @@ export default function App({ onBootReady } = {}) {
               updatedAt,
               progress: {
                 lastActiveAt: updatedAt,
-                ...(flashcardActivityKey
-                  ? {
-                      flashcardDailyActivity: {
-                        [activityLanguageKey]: {
-                          [flashcardActivityKey]: increment(1),
-                        },
-                      },
-                    }
-                  : {}),
               },
             },
             { merge: true },
           ),
+          ...(flashcardActivityKey
+            ? [
+                recordPlateActivity(
+                  npub,
+                  "review",
+                  activityLanguageKey,
+                  new Date(updatedAt),
+                ),
+              ]
+            : []),
           setDoc(
             flashcardProgressRef,
             {
@@ -6483,8 +6522,8 @@ export default function App({ onBootReady } = {}) {
       }
       if (todayKey && Number.isFinite(nextDailyXp)) {
         const latestUser = useUserStore.getState()?.user || {};
-        dailyPatch.dailyXpHistory = {
-          ...(latestUser.dailyXpHistory || {}),
+        dailyPatch.dailyXpRecent = {
+          ...(latestUser.dailyXpRecent || latestUser.dailyXpHistory || {}),
           [todayKey]: nextDailyXp,
         };
       }
@@ -6551,23 +6590,18 @@ export default function App({ onBootReady } = {}) {
   useEffect(() => {
     if (!activeNpub) return;
 
-    const lessonProgressRef = collection(
-      database,
-      "users",
-      activeNpub,
-      "languageLessons",
+    const targetLang = String(resolvedTargetLang || "es").toLowerCase();
+    const lessonProgressRef = query(
+      collection(database, "users", activeNpub, "languageLessons"),
+      where("targetLang", "==", targetLang),
     );
-    const flashcardProgressRef = collection(
-      database,
-      "users",
-      activeNpub,
-      "languageFlashcards",
+    const flashcardProgressRef = query(
+      collection(database, "users", activeNpub, "languageFlashcards"),
+      where("targetLang", "==", targetLang),
     );
-    const tutorLessonProgressRef = collection(
-      database,
-      "users",
-      activeNpub,
-      "tutorLanguageLessons",
+    const tutorLessonProgressRef = query(
+      collection(database, "users", activeNpub, "tutorLanguageLessons"),
+      where("targetLang", "==", targetLang),
     );
 
     const unsubLessons = onSnapshot(lessonProgressRef, (snapshot) => {
@@ -6654,7 +6688,7 @@ export default function App({ onBootReady } = {}) {
       unsubTutorLessons();
       unsubFlashcards();
     };
-  }, [activeNpub, patchUser]);
+  }, [activeNpub, patchUser, resolvedTargetLang]);
 
   // ✅ Listen to XP changes; random tab adds toast + auto-pick next
   useEffect(() => {
@@ -6720,10 +6754,12 @@ export default function App({ onBootReady } = {}) {
         patch.dailyGoalPetLastOutcome = data.dailyGoalPetLastOutcome;
       if (data?.dailyGoalPetLastUpdatedAt)
         patch.dailyGoalPetLastUpdatedAt = data.dailyGoalPetLastUpdatedAt;
-      if (Array.isArray(data?.completedGoalDates))
-        patch.completedGoalDates = data.completedGoalDates;
-      if (data?.dailyXpHistory && typeof data.dailyXpHistory === "object")
-        patch.dailyXpHistory = data.dailyXpHistory;
+      if (typeof data?.goalStreakCount === "number")
+        patch.goalStreakCount = data.goalStreakCount;
+      if (typeof data?.lastGoalDayKey === "string")
+        patch.lastGoalDayKey = data.lastGoalDayKey;
+      if (data?.dailyXpRecent && typeof data.dailyXpRecent === "object")
+        patch.dailyXpRecent = data.dailyXpRecent;
       if (data?.stats) patch.stats = data.stats;
       if (data?.updatedAt) patch.updatedAt = data.updatedAt;
       if (data?.appLanguage) patch.appLanguage = data.appLanguage;
@@ -7984,6 +8020,22 @@ export default function App({ onBootReady } = {}) {
   // help shape.
   const plateLangKey = normalizePlateLang(resolvedTargetLang);
   const plateDayKey = getDailyPlateDayKey();
+
+  const companionHydrationRef = useRef("");
+  useEffect(() => {
+    if (isLoadingApp || !activeNpub || !plateLangKey || !plateDayKey) return;
+    const hydrationKey = `${activeNpub}:${plateLangKey}:${plateDayKey}`;
+    if (companionHydrationRef.current === hydrationKey) return;
+    companionHydrationRef.current = hydrationKey;
+    void Promise.all([
+      hydrateCompanionBucket({ npub: activeNpub, targetLang: plateLangKey }),
+      hydrateQuestDays({
+        npub: activeNpub,
+        targetLang: plateLangKey,
+        dayKeys: [getYesterdayKey(), plateDayKey, getTomorrowKey()],
+      }),
+    ]);
+  }, [activeNpub, isLoadingApp, plateDayKey, plateLangKey]);
 
   // Today's repair plan (curated from yesterday's companion memory), if any.
   const repairPlanToday = useMemo(

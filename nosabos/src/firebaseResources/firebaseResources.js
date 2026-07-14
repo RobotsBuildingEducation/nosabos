@@ -6,7 +6,11 @@ import {
 } from "firebase/app-check";
 import { getAnalytics } from "firebase/analytics";
 
-import { getFirestore } from "firebase/firestore";
+import {
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+} from "firebase/firestore";
 import { getMessaging, isSupported } from "firebase/messaging";
 import { getGenerativeModel, getVertexAI, Schema } from "@firebase/vertexai";
 
@@ -52,7 +56,11 @@ export async function appCheckFetch(input, init = {}) {
   return fetch(input, { ...init, headers });
 }
 
-const database = getFirestore(app);
+const database = initializeFirestore(app, {
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager(),
+  }),
+});
 const analytics = getAnalytics(app);
 
 // ✅ IMPORTANT: Gemini 3 Flash Preview is "global", not us-central1

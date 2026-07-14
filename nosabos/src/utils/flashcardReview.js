@@ -3,6 +3,7 @@ import {
   getLanguageLocale,
   normalizeSupportLanguage,
 } from "../constants/languages";
+import { getLocalCalendarDayKey } from "./userDataSchema.js";
 
 const MINUTE_MS = 60 * 1000;
 const HOUR_MS = 60 * MINUTE_MS;
@@ -185,11 +186,7 @@ function buildLearningDelayMinutes({
 export function getLocalDayKey(value) {
   const date = coerceDate(value);
   if (!date) return null;
-
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  return getLocalCalendarDayKey(date) || null;
 }
 
 export function getFlashcardReviewSnapshot(progress = {}, now = new Date()) {

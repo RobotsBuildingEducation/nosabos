@@ -13,6 +13,7 @@ import {
 } from "../constants/languages";
 import { t as translate } from "../utils/translation";
 import { useThemeStore } from "../useThemeStore";
+import useXpHistoryYear from "../hooks/useXpHistoryYear";
 
 const APP_SURFACE_MUTED = "var(--app-surface-muted)";
 const APP_BORDER = "var(--app-border)";
@@ -164,6 +165,7 @@ function buildGoalHeatmapWeeks(
 }
 
 export default function PlateActivityHeatmap({
+  npub,
   lang = "en",
   completedGoalDates = [],
   dailyXpHistory = {},
@@ -172,6 +174,11 @@ export default function PlateActivityHeatmap({
 }) {
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
+  const loadedHistory = useXpHistoryYear({
+    npub,
+    legacyDays: dailyXpHistory,
+    legacyGoalDays: completedGoalDates,
+  });
 
   const labels = useMemo(() => {
     const getLabel = (key, fallback) =>
@@ -187,20 +194,20 @@ export default function PlateActivityHeatmap({
 
   const effectiveHistory = useMemo(() => {
     const todayKey = getLocalDayKey(new Date());
-    if (!todayKey) return dailyXpHistory;
+    if (!todayKey) return loadedHistory.days;
 
     return {
-      ...dailyXpHistory,
+      ...loadedHistory.days,
       [todayKey]: Math.max(
-        Number(dailyXpHistory?.[todayKey]) || 0,
+        Number(loadedHistory.days?.[todayKey]) || 0,
         Number(currentDailyXp) || 0,
       ),
     };
-  }, [currentDailyXp, dailyXpHistory]);
+  }, [currentDailyXp, loadedHistory.days]);
 
   const effectiveCompletedDates = useMemo(() => {
     const todayKey = getLocalDayKey(new Date());
-    const completedSet = new Set(completedGoalDates);
+    const completedSet = new Set(loadedHistory.goalDays);
 
     if (
       todayKey &&
@@ -211,7 +218,7 @@ export default function PlateActivityHeatmap({
     }
 
     return Array.from(completedSet);
-  }, [completedGoalDates, currentDailyXp, currentGoalXp]);
+  }, [currentDailyXp, currentGoalXp, loadedHistory.goalDays]);
 
   const weeks = useMemo(
     () =>

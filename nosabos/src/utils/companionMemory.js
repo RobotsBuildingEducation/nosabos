@@ -5,17 +5,14 @@
 // session (Day T), reuses them to flavor and repair tomorrow's Daily Quest
 // (Day T+1), then expires them (Day T+2). See COMPANION_MEMORY_QUEST_PLAN.md.
 //
-// Storage lives on the user doc so quest generation can read it at boot and it
-// stays consistent across devices. It's deliberately tiny (high-signal capture
-// + aggressive expiry), so the whole per-language log is a small array we
-// read-modify-write through the user store (the source of truth) and mirror to
-// Firestore with a merge write:
+// Storage lives in bounded per-language companion docs and per-day quest docs.
+// The active records are hydrated into the same legacy-shaped local store maps
+// so the rest of the UI remains synchronous:
 //
-//   user.companionMemory[langKey] = { notes: MemoryNote[], lastPrunedDayKey }
-//   user.dailyQuestExplanations[langKey][dayKey] = QuestExplanation
-//   user.dailyQuestRepair[langKey][dayKey]       = RepairPlan
+//   users/{npub}/companion/{langKey}
+//   users/{npub}/questDays/{langKey_dayKey}
 //
-import { doc, setDoc, deleteDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
 import useUserStore from "../hooks/useUserStore";
 import useNotesStore from "../hooks/useNotesStore";
@@ -29,6 +26,7 @@ import {
 } from "./companionMemoryCopy";
 import { callResponses } from "./llm";
 import { normalizeCEFRLevel } from "./cefrUtils";
+import { questDayDocumentId } from "./userDataSchema";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -185,11 +183,172 @@ function resolveNpub(npub) {
   return "";
 }
 
+function mergeMemoryNotes(remoteNotes = [], localNotes = []) {
+  const notesById = new Map();
+  [...remoteNotes, ...localNotes].forEach((note) =>
+    notesById.set(note?.id || JSON.stringify(note), note),
+  );
+  return Array.from(notesById.values())
+    .sort((a, b) => (Number(b?.createdAt) || 0) - (Number(a?.createdAt) || 0))
+    .slice(0, 40);
+}
+
+function patchQuestDayIntoStore(langKey, dayKey, data = {}) {
+  try {
+    const store = useUserStore.getState?.();
+    const user = store?.user || {};
+    if (!store?.patchUser) return;
+    const patch = {
+      questDaysLoaded: {
+        ...(user.questDaysLoaded || {}),
+        [questDayDocumentId(langKey, dayKey)]: true,
+      },
+    };
+    if (data.blueprint !== undefined) {
+      patch.dailyQuestBlueprint = mergeDayField(
+        user.dailyQuestBlueprint,
+        langKey,
+        dayKey,
+        data.blueprint,
+      );
+    }
+    if (data.repair !== undefined) {
+      patch.dailyQuestRepair = mergeDayField(
+        user.dailyQuestRepair,
+        langKey,
+        dayKey,
+        data.repair,
+      );
+    }
+    if (data.explanation !== undefined) {
+      patch.dailyQuestExplanations = mergeDayField(
+        user.dailyQuestExplanations,
+        langKey,
+        dayKey,
+        data.explanation,
+      );
+    }
+    store.patchUser(patch);
+  } catch (error) {
+    console.warn("Failed to hydrate quest day locally:", error);
+  }
+}
+
+export async function hydrateQuestDays({
+  npub: rawNpub,
+  targetLang,
+  dayKeys = [],
+}) {
+  const npub = resolveNpub(rawNpub);
+  const langKey = normalizePlateLang(targetLang);
+  const uniqueKeys = Array.from(new Set(dayKeys.filter(Boolean)));
+  if (!npub || !uniqueKeys.length) return;
+  await Promise.all(
+    uniqueKeys.map(async (dayKey) => {
+      try {
+        const snap = await getDoc(
+          doc(
+            database,
+            "users",
+            npub,
+            "questDays",
+            questDayDocumentId(langKey, dayKey),
+          ),
+        );
+        patchQuestDayIntoStore(langKey, dayKey, snap.exists() ? snap.data() : {});
+      } catch (error) {
+        console.warn(`Failed to load quest day ${dayKey}:`, error);
+      }
+    }),
+  );
+}
+
+export async function hydrateCompanionBucket({ npub: rawNpub, targetLang }) {
+  const npub = resolveNpub(rawNpub);
+  const langKey = normalizePlateLang(targetLang);
+  if (!npub) return;
+  try {
+    const snap = await getDoc(
+      doc(database, "users", npub, "companion", langKey),
+    );
+    const remoteBucket = snap.exists()
+      ? {
+          notes: Array.isArray(snap.data()?.notes) ? snap.data().notes : [],
+          lastPrunedDayKey: String(snap.data()?.lastPrunedDayKey || ""),
+        }
+      : { notes: [], lastPrunedDayKey: "" };
+    const store = useUserStore.getState?.();
+    if (store?.patchUser) {
+      const currentBucket = readBucket(store.user || {}, langKey);
+      const bucket = {
+        notes: mergeMemoryNotes(remoteBucket.notes, currentBucket.notes),
+        lastPrunedDayKey: [
+          currentBucket.lastPrunedDayKey,
+          remoteBucket.lastPrunedDayKey,
+        ].sort().at(-1) || "",
+      };
+      store.patchUser({
+        companionMemory: {
+          ...(store.user?.companionMemory || {}),
+          [langKey]: bucket,
+        },
+        companionBucketsLoaded: {
+          ...(store.user?.companionBucketsLoaded || {}),
+          [langKey]: true,
+        },
+      });
+    }
+  } catch (error) {
+    console.warn(`Failed to load companion memory for ${langKey}:`, error);
+  }
+}
+
 /* -----------------------------------
    Persistence (store first, then mirror to Firestore)
 ----------------------------------- */
-function persistBucket(rawNpub, langKey, bucket) {
+async function persistBucket(rawNpub, langKey, bucket) {
   const npub = resolveNpub(rawNpub);
+  let nextBucket = bucket;
+  let remoteReady = true;
+  const initialUser = useUserStore.getState?.()?.user || {};
+  try {
+    useUserStore.getState?.()?.patchUser?.({
+      companionMemory: {
+        ...(initialUser.companionMemory || {}),
+        [langKey]: bucket,
+      },
+    });
+  } catch {
+    /* the Firestore write below remains the durable fallback */
+  }
+
+  // A capture can race boot hydration. Merge with the remote bucket before
+  // the first write so an empty local store can never erase another device's
+  // notes.
+  if (npub && !initialUser?.companionBucketsLoaded?.[langKey]) {
+    try {
+      const remoteSnap = await getDoc(
+        doc(database, "users", npub, "companion", langKey),
+      );
+      if (remoteSnap.exists()) {
+        const remote = remoteSnap.data() || {};
+        nextBucket = {
+          ...remote,
+          ...bucket,
+          notes: mergeMemoryNotes(remote.notes, bucket?.notes),
+          lastPrunedDayKey:
+            [remote.lastPrunedDayKey, bucket?.lastPrunedDayKey]
+              .filter(Boolean)
+              .sort()
+              .at(-1) || "",
+        };
+      }
+    } catch (error) {
+      remoteReady = false;
+      console.warn("Failed to merge companion memory before first write:", error);
+    }
+  }
+
   // Local store is the source of truth so the drawer + quest react instantly.
   try {
     const store = useUserStore.getState?.();
@@ -198,7 +357,13 @@ function persistBucket(rawNpub, langKey, bucket) {
       store.patchUser({
         companionMemory: {
           ...(currentUser?.companionMemory || {}),
-          [langKey]: bucket,
+          [langKey]: nextBucket,
+        },
+        companionBucketsLoaded: {
+          ...(currentUser?.companionBucketsLoaded || {}),
+          [langKey]: Boolean(
+            initialUser?.companionBucketsLoaded?.[langKey] || remoteReady,
+          ),
         },
       });
     }
@@ -206,12 +371,10 @@ function persistBucket(rawNpub, langKey, bucket) {
     console.warn("Failed to sync companion memory locally:", error);
   }
 
-  if (!npub) return Promise.resolve();
-  // merge:true deep-merges the map, so other languages survive; the notes
-  // array is replaced wholesale (which is what we want).
-  return setDoc(
-    doc(database, "users", npub),
-    { companionMemory: { [langKey]: bucket } },
+  if (!npub || !remoteReady) return;
+  await setDoc(
+    doc(database, "users", npub, "companion", langKey),
+    { ...nextBucket, lang: langKey },
     { merge: true },
   ).catch((error) => {
     console.error("Failed to persist companion memory:", error);
@@ -973,6 +1136,10 @@ export async function storeRepairPlan({ npub: rawNpub, targetLang, dayKey, plan 
     if (store?.patchUser) {
       const existing = currentUser?.dailyQuestRepair || {};
       store.patchUser({
+        questDaysLoaded: {
+          ...(currentUser?.questDaysLoaded || {}),
+          [questDayDocumentId(langKey, dayKey)]: true,
+        },
         dailyQuestRepair: {
           ...existing,
           [langKey]: { ...(existing[langKey] || {}), [dayKey]: plan },
@@ -985,8 +1152,14 @@ export async function storeRepairPlan({ npub: rawNpub, targetLang, dayKey, plan 
 
   if (!npub) return;
   await setDoc(
-    doc(database, "users", npub),
-    { dailyQuestRepair: { [langKey]: { [dayKey]: plan } } },
+    doc(
+      database,
+      "users",
+      npub,
+      "questDays",
+      questDayDocumentId(langKey, dayKey),
+    ),
+    { repair: plan, lang: langKey, dayKey, updatedAt: new Date().toISOString() },
     { merge: true },
   ).catch((error) => {
     console.error("Failed to persist repair plan:", error);
@@ -1017,6 +1190,10 @@ export async function storeQuestExplanation({
     if (store?.patchUser) {
       const existing = currentUser?.dailyQuestExplanations || {};
       store.patchUser({
+        questDaysLoaded: {
+          ...(currentUser?.questDaysLoaded || {}),
+          [questDayDocumentId(langKey, dayKey)]: true,
+        },
         dailyQuestExplanations: {
           ...existing,
           [langKey]: { ...(existing[langKey] || {}), [dayKey]: explanation },
@@ -1029,8 +1206,19 @@ export async function storeQuestExplanation({
 
   if (!npub) return;
   await setDoc(
-    doc(database, "users", npub),
-    { dailyQuestExplanations: { [langKey]: { [dayKey]: explanation } } },
+    doc(
+      database,
+      "users",
+      npub,
+      "questDays",
+      questDayDocumentId(langKey, dayKey),
+    ),
+    {
+      explanation,
+      lang: langKey,
+      dayKey,
+      updatedAt: new Date().toISOString(),
+    },
     { merge: true },
   ).catch((error) => {
     console.error("Failed to persist quest explanation:", error);
@@ -1424,6 +1612,13 @@ export function getBlueprintCarryOverKinds(user, targetLang, dayKey) {
 // recently-failed) blueprint already exists; retries a stale "generating"
 // marker (e.g. a tab that closed mid-call).
 export function shouldRunDailyBatch(user, targetLang, dayKey, now = new Date()) {
+  const langKey = normalizePlateLang(targetLang);
+  if (
+    Number(user?.schemaVersion || 1) >= 2 &&
+    !user?.questDaysLoaded?.[questDayDocumentId(langKey, dayKey)]
+  ) {
+    return false;
+  }
   const bp = getStoredBlueprint(user, targetLang, dayKey);
   if (!bp) return true;
   if (bp.status === "ready" || bp.status === "failed") return false;
@@ -1458,6 +1653,10 @@ async function persistBlueprint(rawNpub, langKey, dayKey, blueprint) {
     const u = store?.user;
     if (store?.patchUser) {
       const patch = {
+        questDaysLoaded: {
+          ...(u?.questDaysLoaded || {}),
+          [questDayDocumentId(langKey, dayKey)]: true,
+        },
         dailyQuestBlueprint: mergeDayField(
           u?.dailyQuestBlueprint,
           langKey,
@@ -1489,13 +1688,24 @@ async function persistBlueprint(rawNpub, langKey, dayKey, blueprint) {
 
   if (!npub) return;
   const docPatch = {
-    dailyQuestBlueprint: { [langKey]: { [dayKey]: blueprint } },
+    blueprint,
+    lang: langKey,
+    dayKey,
+    updatedAt: new Date().toISOString(),
   };
-  if (repair) docPatch.dailyQuestRepair = { [langKey]: { [dayKey]: repair } };
-  if (explanation) {
-    docPatch.dailyQuestExplanations = { [langKey]: { [dayKey]: explanation } };
-  }
-  await setDoc(doc(database, "users", npub), docPatch, { merge: true }).catch(
+  if (repair) docPatch.repair = repair;
+  if (explanation) docPatch.explanation = explanation;
+  await setDoc(
+    doc(
+      database,
+      "users",
+      npub,
+      "questDays",
+      questDayDocumentId(langKey, dayKey),
+    ),
+    docPatch,
+    { merge: true },
+  ).catch(
     (error) => {
       console.error("Failed to persist blueprint:", error);
     },

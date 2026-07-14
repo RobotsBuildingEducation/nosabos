@@ -12,13 +12,13 @@
 import {
   doc,
   getDoc,
-  increment,
   runTransaction,
   setDoc,
 } from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
 import useUserStore from "../hooks/useUserStore";
 import { FLASHCARD_DAILY_TARGET, getLocalDayKey } from "./flashcardReview";
+import { pruneDayEntries } from "./userDataSchema";
 
 export const DAILY_PLATE_KINDS = ["review", "learn", "speak"];
 
@@ -548,7 +548,10 @@ export async function recordPlateActivity(
     const currentUser = store?.user;
     if (store?.patchUser && currentUser) {
       const progress = currentUser.progress || {};
-      const langMap = progress?.[field]?.[langKey] || {};
+      const langMap = pruneDayEntries(
+        progress?.[field]?.[langKey] || {},
+        dayKey,
+      );
       const nextCount = (Number(langMap?.[dayKey]) || 0) + 1;
       store.patchUser({
         progress: {
@@ -565,15 +568,22 @@ export async function recordPlateActivity(
   }
 
   try {
-    await setDoc(
-      doc(database, "users", npub),
-      {
-        progress: {
-          [field]: { [langKey]: { [dayKey]: increment(1) } },
+    const userRef = doc(database, "users", npub);
+    await runTransaction(database, async (tx) => {
+      const snap = await tx.get(userRef);
+      const data = snap.exists() ? snap.data() : {};
+      const langMap = pruneDayEntries(
+        data?.progress?.[field]?.[langKey] || {},
+        dayKey,
+      );
+      tx.update(userRef, {
+        [`progress.${field}.${langKey}`]: {
+          ...langMap,
+          [dayKey]: (Number(langMap[dayKey]) || 0) + 1,
         },
-      },
-      { merge: true },
-    );
+        updatedAt: now.toISOString(),
+      });
+    });
   } catch (error) {
     console.error("Failed to record plate activity:", error);
   }
@@ -617,16 +627,26 @@ export async function resetTodayPlate(npub, targetLang, now = new Date()) {
   }
 
   try {
-    const progressUpdate = {};
-    DAILY_PLATE_ALL_ACTIVITY_FIELDS.forEach((field) => {
-      progressUpdate[field] = { [langKey]: { [dayKey]: 0 } };
+    const userRef = doc(database, "users", npub);
+    await runTransaction(database, async (tx) => {
+      const snap = await tx.get(userRef);
+      const data = snap.exists() ? snap.data() : {};
+      const update = { updatedAt: now.toISOString() };
+      DAILY_PLATE_ALL_ACTIVITY_FIELDS.forEach((field) => {
+        update[`progress.${field}.${langKey}`] = {
+          ...pruneDayEntries(data?.progress?.[field]?.[langKey] || {}, dayKey),
+          [dayKey]: 0,
+        };
+      });
+      update[`progress.${PLATE_BONUS_FIELD}.${langKey}`] = {
+        ...pruneDayEntries(
+          data?.progress?.[PLATE_BONUS_FIELD]?.[langKey] || {},
+          dayKey,
+        ),
+        [dayKey]: false,
+      };
+      tx.update(userRef, update);
     });
-    progressUpdate[PLATE_BONUS_FIELD] = { [langKey]: { [dayKey]: false } };
-    await setDoc(
-      doc(database, "users", npub),
-      { progress: progressUpdate },
-      { merge: true },
-    );
   } catch (error) {
     console.error("Failed to reset plate:", error);
   }
@@ -648,7 +668,10 @@ export function applyPlateBonusMarker(
     [PLATE_BONUS_FIELD]: {
       ...(progress?.[PLATE_BONUS_FIELD] || {}),
       [langKey]: {
-        ...(progress?.[PLATE_BONUS_FIELD]?.[langKey] || {}),
+        ...pruneDayEntries(
+          progress?.[PLATE_BONUS_FIELD]?.[langKey] || {},
+          dayKey,
+        ),
         [dayKey]: at,
       },
     },
@@ -677,17 +700,16 @@ export async function claimDailyPlateBonus(npub, targetLang, now = new Date()) {
       claimed = false;
       return;
     }
-    tx.set(
-      ref,
-      {
-        progress: {
-          [PLATE_BONUS_FIELD]: {
-            [langKey]: { [dayKey]: now.toISOString() },
-          },
-        },
+    tx.update(ref, {
+      [`progress.${PLATE_BONUS_FIELD}.${langKey}`]: {
+        ...pruneDayEntries(
+          data?.progress?.[PLATE_BONUS_FIELD]?.[langKey] || {},
+          dayKey,
+        ),
+        [dayKey]: now.toISOString(),
       },
-      { merge: true },
-    );
+      updatedAt: now.toISOString(),
+    });
     claimed = true;
   });
 
