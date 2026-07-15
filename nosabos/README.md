@@ -60,7 +60,14 @@ Node version 20+ is required.
 12. `VITE_GEMINI_LIVE_TOOL_GRADING=true`
 13. `VITE_GEMINI_LIVE_PROVIDER=google-ai`
 
-> if you don't want to set up a gemini developer account, change this value to "openai" to use your openAI api key instead 14. `VITE_TUTOR_REALTIME_PROVIDER=gemini` || `VITE_TUTOR_REALTIME_PROVIDER=gemini`
+> if you don't want to set up a gemini developer account, change this value to "openai" to use your openAI api key instead
+
+14. `VITE_TUTOR_REALTIME_PROVIDER=gemini` || `VITE_TUTOR_REALTIME_PROVIDER=openai`
+
+##### .env.local
+
+> like step 14 in .env, configure this to change the UI and tutor API for openai or gemini realtime speech
+> `VITE_TUTOR_REALTIME_PROVIDER=gemini` || `VITE_TUTOR_REALTIME_PROVIDER=openai`
 
 ##### /functions/.env
 
