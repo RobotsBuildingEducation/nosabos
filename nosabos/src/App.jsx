@@ -72,6 +72,7 @@ import { MdOutlineSupportAgent, MdShowChart } from "react-icons/md";
 import {
   RiSpeakLine,
   RiBook2Line,
+  RiBookmarkFill,
   RiBookmarkLine,
   RiRoadMapLine,
   RiFileList3Line,
@@ -10569,6 +10570,260 @@ function GettingStartedModalSharedBackdropWrapper({
   );
 }
 
+const MEMORY_CRYSTAL_SHARDS = [
+  { x: 0, y: -32, size: 6.5, color: "#fde68a", delay: 0 },
+  { x: 16, y: -28, size: 6.5, color: "#99f6e4", delay: 0 },
+  { x: 28, y: -16, size: 6.5, color: "#fef3c7", delay: 0 },
+  { x: 32, y: 0, size: 6.5, color: "#67e8f9", delay: 0 },
+  { x: 28, y: 16, size: 6.5, color: "#fde68a", delay: 0 },
+  { x: 16, y: 28, size: 6.5, color: "#5eead4", delay: 0 },
+  { x: 0, y: 32, size: 6.5, color: "#fef3c7", delay: 0 },
+  { x: -16, y: 28, size: 6.5, color: "#67e8f9", delay: 0 },
+  { x: -28, y: 16, size: 6.5, color: "#fde68a", delay: 0 },
+  { x: -32, y: 0, size: 6.5, color: "#99f6e4", delay: 0 },
+  { x: -28, y: -16, size: 6.5, color: "#fef3c7", delay: 0 },
+  { x: -16, y: -28, size: 6.5, color: "#fde68a", delay: 0 },
+];
+
+const MEMORY_CRYSTAL_SHAPES = [
+  "polygon(50% 0%, 100% 45%, 62% 100%, 5% 60%)",
+  "polygon(35% 0%, 100% 28%, 72% 100%, 0% 68%)",
+  "polygon(62% 0%, 100% 62%, 42% 100%, 0% 35%)",
+];
+
+function NoteCaptureCrystalShards() {
+  return (
+    <Box
+      position="absolute"
+      inset={0}
+      pointerEvents="none"
+      aria-hidden="true"
+      zIndex={51}
+      overflow="visible"
+      sx={{
+        "@keyframes memoryCrystalGather": {
+          "0%": {
+            opacity: 0,
+            transform:
+              "translate(-50%, -50%) translate3d(var(--shard-x), var(--shard-y), 0) scale(0.25) rotate(var(--shard-start-rotate))",
+          },
+          "12%": { opacity: 0.75 },
+          "38%": {
+            opacity: 1,
+            transform:
+              "translate(-50%, -50%) translate3d(var(--shard-wander-x), var(--shard-wander-y), 0) scale(1.15) rotate(var(--shard-wander-rotate))",
+          },
+          "52%": { opacity: 0.5 },
+          "68%": {
+            opacity: 1,
+            transform:
+              "translate(-50%, -50%) translate3d(var(--shard-near-x), var(--shard-near-y), 0) scale(0.85) rotate(var(--shard-near-rotate))",
+          },
+          "88%": {
+            opacity: 0.9,
+            transform:
+              "translate(-50%, -50%) translate3d(0, 0, 0) scale(0.4) rotate(var(--shard-end-rotate))",
+          },
+          "100%": {
+            opacity: 0,
+            transform:
+              "translate(-50%, -50%) translate3d(0, 0, 0) scale(0.08) rotate(var(--shard-end-rotate))",
+          },
+        },
+        "@keyframes memoryCrystalCatch": {
+          "0%, 64%": {
+            opacity: 0,
+            transform: "translate(-50%, -50%) scale(0.25)",
+          },
+          "80%": {
+            opacity: 0.9,
+            transform: "translate(-50%, -50%) scale(1.2)",
+          },
+          "100%": {
+            opacity: 0,
+            transform: "translate(-50%, -50%) scale(0.35)",
+          },
+        },
+        "@keyframes crystalShardGlint": {
+          "0%, 18%, 100%": {
+            opacity: 0,
+            transform: "scale(0.35) rotate(0deg)",
+          },
+          "38%": {
+            opacity: 1,
+            transform: "scale(1.35) rotate(45deg)",
+          },
+          "58%": {
+            opacity: 0.18,
+            transform: "scale(0.65) rotate(82deg)",
+          },
+        },
+        "@media (prefers-reduced-motion: reduce)": {
+          "& [data-memory-crystal], & [data-crystal-catch]": {
+            animation: "none",
+            opacity: 0,
+          },
+        },
+      }}
+    >
+      {MEMORY_CRYSTAL_SHARDS.map((shard, index) => {
+        const direction = index % 2 === 0 ? 1 : -1;
+        const wanderX = Math.round(shard.x * 0.72);
+        const wanderY = Math.round(shard.y * 0.72);
+        const nearX = Math.round(shard.x * 0.24);
+        const nearY = Math.round(shard.y * 0.24);
+        const startRotate = (index * 37) % 120 - 60;
+        const mainShape =
+          MEMORY_CRYSTAL_SHAPES[index % MEMORY_CRYSTAL_SHAPES.length];
+        return (
+          <Box
+            key={`${shard.x}-${shard.y}`}
+            data-memory-crystal
+            position="absolute"
+            top="50%"
+            left="50%"
+            width={`${shard.size * 2.2}px`}
+            height={`${shard.size * 2.2}px`}
+            opacity={0}
+            animation="memoryCrystalGather 2550ms ease-in-out both"
+            animationDelay={`${shard.delay}ms`}
+            willChange="transform, opacity"
+            style={{
+              "--shard-x": `${shard.x}px`,
+              "--shard-y": `${shard.y}px`,
+              "--shard-wander-x": `${wanderX}px`,
+              "--shard-wander-y": `${wanderY}px`,
+              "--shard-near-x": `${nearX}px`,
+              "--shard-near-y": `${nearY}px`,
+              "--shard-start-rotate": `${startRotate}deg`,
+              "--shard-wander-rotate": `${startRotate + direction * 65}deg`,
+              "--shard-near-rotate": `${startRotate + direction * 125}deg`,
+              "--shard-end-rotate": `${startRotate + direction * 195}deg`,
+            }}
+          >
+            <Box
+              position="absolute"
+              top="8%"
+              left="29%"
+              width="46%"
+              height={`${62 + (index % 3) * 5}%`}
+              background={`linear-gradient(135deg, rgba(255,255,255,0.98) 0%, ${shard.color} 42%, ${shard.color} 100%)`}
+              clipPath={mainShape}
+              filter={`drop-shadow(0 0 ${shard.size + 2}px ${shard.color})`}
+              _after={{
+                content: '""',
+                position: "absolute",
+                top: "11%",
+                left: "23%",
+                width: "34%",
+                height: "48%",
+                bg: "rgba(255,255,255,0.76)",
+                clipPath: "polygon(50% 0%, 100% 100%, 0% 78%)",
+              }}
+            />
+            <Box
+              position="absolute"
+              top={`${13 + (index % 2) * 12}%`}
+              left="1%"
+              width="31%"
+              height="37%"
+              background={`linear-gradient(145deg, rgba(255,255,255,0.9), ${shard.color})`}
+              clipPath={
+                MEMORY_CRYSTAL_SHAPES[
+                  (index + 1) % MEMORY_CRYSTAL_SHAPES.length
+                ]
+              }
+              filter={`drop-shadow(0 0 ${shard.size}px ${shard.color})`}
+              transform={`rotate(${direction * -24}deg)`}
+            />
+            <Box
+              position="absolute"
+              right="2%"
+              bottom={`${5 + (index % 3) * 5}%`}
+              width="24%"
+              height="31%"
+              background={`linear-gradient(145deg, rgba(255,255,255,0.86), ${shard.color})`}
+              clipPath={
+                MEMORY_CRYSTAL_SHAPES[
+                  (index + 2) % MEMORY_CRYSTAL_SHAPES.length
+                ]
+              }
+              filter={`drop-shadow(0 0 ${shard.size}px ${shard.color})`}
+              transform={`rotate(${direction * 31}deg)`}
+            />
+            <Box
+              position="absolute"
+              top={`${18 + (index % 3) * 12}%`}
+              left={`${48 + (index % 2) * 8}%`}
+              width="32%"
+              height="32%"
+              bg="rgba(255,255,255,0.98)"
+              clipPath="polygon(50% 0%, 59% 39%, 100% 50%, 59% 61%, 50% 100%, 41% 61%, 0% 50%, 41% 39%)"
+              opacity={0}
+              animation="crystalShardGlint 900ms ease-in-out 2 both"
+              animationDelay={`${320 + shard.delay + index * 35}ms`}
+              filter="drop-shadow(0 0 3px rgba(255,255,255,0.95))"
+            />
+          </Box>
+        );
+      })}
+      <Box
+        data-crystal-catch
+        position="absolute"
+        top="50%"
+        left="50%"
+        width="28px"
+        height="28px"
+        opacity={0}
+        animation="memoryCrystalCatch 2740ms ease-out both"
+        willChange="transform, opacity"
+      >
+        {[0, 1, 2].map((layer) => (
+          <Box
+            key={layer}
+            position="absolute"
+            inset={`${layer * 21}%`}
+            background={
+              layer === 0
+                ? "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(103,232,249,0.72))"
+                : layer === 1
+                  ? "rgba(94,234,212,0.9)"
+                  : "white"
+            }
+            clipPath="polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)"
+            filter={
+              layer === 0
+                ? "drop-shadow(0 0 8px rgba(103,232,249,0.9))"
+                : undefined
+            }
+            transform={`rotate(${layer * 45}deg)`}
+          />
+        ))}
+        <Box
+          position="absolute"
+          top="-12%"
+          right="-8%"
+          width="28%"
+          height="34%"
+          bg="white"
+          clipPath={MEMORY_CRYSTAL_SHAPES[1]}
+          transform="rotate(24deg)"
+        />
+        <Box
+          position="absolute"
+          bottom="-8%"
+          left="2%"
+          width="22%"
+          height="29%"
+          bg="#99f6e4"
+          clipPath={MEMORY_CRYSTAL_SHAPES[2]}
+          transform="rotate(-31deg)"
+        />
+      </Box>
+    </Box>
+  );
+}
+
 function BottomActionBar({
   t,
   onOpenSettings,
@@ -10728,18 +10983,15 @@ function BottomActionBar({
     });
 
   // The notes button's resting "raised key" look is this hard bottom ledge.
-  // The glow keyframes must keep it in every frame: animating boxShadow
-  // replaces it wholesale, and losing the ledge reads as the button being
-  // pressed instead of glowing.
+  // Loading keeps the old quiet pulse; a captured memory gathers a tumbling
+  // swarm of crystal fragments into the bookmark instead of using a glow.
   const notesLedgeShadow = isLightTheme
     ? "0 4px 0 rgba(180, 164, 144, 0.9)"
     : "0 4px 0 #313a4b";
   const notesAnimation = notesIsLoading
     ? "notesPulse 1.5s ease-in-out infinite"
     : notesIsDone
-      ? // Two gentle blooms back-to-back, filling the 2s isDone window
-        // (triggerDoneAnimation clears the flag after 2000ms — keep in sync).
-        "notesDone 1s ease-in-out 2"
+      ? "notesCrystalCatch 2760ms linear both"
       : undefined;
   // Collapse/minimize removed: the bottom action bar stays full everywhere —
   // no auto-minimize in lessons or voice modes, no collapse button, no minimized
@@ -11105,47 +11357,79 @@ function BottomActionBar({
                 }
               />
 
-              <IconButton
-                data-tutorial-id="notes"
-                touchAction="manipulation"
-                icon={<RiBookmarkLine size={16} />}
-                aria-label={notesLabel}
-                onClick={() => handleActionClick(onOpenNotes)}
-                isLoading={notesIsLoading}
-                colorScheme="gray"
-                bg="gray.800"
-                boxShadow={
-                  isLightTheme
-                    ? "0 4px 0 rgba(180, 164, 144, 0.9)"
-                    : "0 4px 0 #313a4b"
-                }
-                color="gray.100"
-                size="sm"
-                zIndex={50}
-                rounded="xl"
-                transition="all 0.3s ease"
-                animation={notesAnimation}
-                sx={{
-                  "@keyframes notesPulse": {
-                    "0%": {
-                      boxShadow: `${notesLedgeShadow}, 0 0 0 2px rgba(34,211,238,0.35), 0 0 8px rgba(34,211,238,0.4)`,
+              <Box position="relative" flexShrink={0} overflow="visible">
+                {notesIsDone && <NoteCaptureCrystalShards />}
+                <IconButton
+                  data-tutorial-id="notes"
+                  touchAction="manipulation"
+                  icon={
+                    notesIsDone ? (
+                      <RiBookmarkFill size={16} />
+                    ) : (
+                      <RiBookmarkLine size={16} />
+                    )
+                  }
+                  aria-label={notesLabel}
+                  onClick={() => handleActionClick(onOpenNotes)}
+                  isLoading={notesIsLoading}
+                  colorScheme="gray"
+                  bg={notesIsDone ? "teal.400" : "gray.800"}
+                  boxShadow={notesLedgeShadow}
+                  color={notesIsDone ? "white" : "gray.100"}
+                  size="sm"
+                  position="relative"
+                  zIndex={50}
+                  rounded="xl"
+                  transition="color 0.2s ease"
+                  animation={notesAnimation}
+                  sx={{
+                    "@keyframes notesPulse": {
+                      "0%": {
+                        boxShadow: `${notesLedgeShadow}, 0 0 0 2px rgba(34,211,238,0.35), 0 0 8px rgba(34,211,238,0.4)`,
+                      },
+                      "50%": {
+                        boxShadow: `${notesLedgeShadow}, 0 0 0 3px rgba(34,211,238,0.5), 0 0 20px rgba(34,211,238,0.7)`,
+                      },
+                      "100%": {
+                        boxShadow: `${notesLedgeShadow}, 0 0 0 2px rgba(34,211,238,0.35), 0 0 8px rgba(34,211,238,0.4)`,
+                      },
                     },
-                    "50%": {
-                      boxShadow: `${notesLedgeShadow}, 0 0 0 3px rgba(34,211,238,0.5), 0 0 20px rgba(34,211,238,0.7)`,
+                    "@keyframes notesCrystalCatch": {
+                      "0%": {
+                        transform: "translateY(0) scale(1)",
+                        backgroundColor: "#38b2ac",
+                        animationTimingFunction:
+                          "cubic-bezier(0.45, 0, 0.55, 1)",
+                      },
+                      "36%": {
+                        transform: "translateY(-0.5px) scale(1.015)",
+                        backgroundColor: "#2dd4bf",
+                        animationTimingFunction:
+                          "cubic-bezier(0.45, 0, 0.55, 1)",
+                      },
+                      "66%": {
+                        transform: "translateY(1px) scale(0.965)",
+                        backgroundColor: "#14b8a6",
+                        animationTimingFunction:
+                          "cubic-bezier(0.16, 1, 0.3, 1)",
+                      },
+                      "84%": {
+                        transform: "translateY(-2px) scale(1.075)",
+                        backgroundColor: "#22d3ee",
+                        animationTimingFunction:
+                          "cubic-bezier(0.34, 1.18, 0.64, 1)",
+                      },
+                      "100%": {
+                        transform: "translateY(0) scale(1)",
+                        backgroundColor: "#38b2ac",
+                      },
                     },
-                    "100%": {
-                      boxShadow: `${notesLedgeShadow}, 0 0 0 2px rgba(34,211,238,0.35), 0 0 8px rgba(34,211,238,0.4)`,
+                    "@media (prefers-reduced-motion: reduce)": {
+                      animation: "none",
                     },
-                  },
-                  "@keyframes notesDone": {
-                    "0%": { boxShadow: notesLedgeShadow },
-                    "50%": {
-                      boxShadow: `${notesLedgeShadow}, 0 0 0 3px rgba(56,178,172,0.6), 0 0 20px rgba(56,178,172,0.8)`,
-                    },
-                    "100%": { boxShadow: notesLedgeShadow },
-                  },
-                }}
-              />
+                  }}
+                />
+              </Box>
 
               <IconButton
                 data-tutorial-id="help"

@@ -113,6 +113,15 @@ import {
   buildTutorInputTranscription,
   hasUnexpectedTutorTranscriptScript,
 } from "../utils/tutorSpeechPolicy";
+import {
+  resolveTutorTurnVerdict,
+  TUTOR_TURN_VERDICT,
+} from "../utils/tutorTurnVerdict";
+import {
+  advanceTutorAgendaProgress,
+  getTutorAgendaSnapshot,
+  normalizeTutorAgendaProgress,
+} from "../utils/tutorAgendaFlow";
 import { getCEFRPromptHint } from "../utils/cefrUtils";
 import {
   loadMultiLevelLearningPath,
@@ -710,15 +719,19 @@ function buildTutorLessonContext(
 function buildTutorCodeSwitchingAudioInstruction(
   targetLanguageName = "",
   supportLanguageName = "",
-  { isolateAccentSwitches = false } = {},
+  { isolateAccentSwitches = false, referencePhrases = [] } = {},
 ) {
+  const pronunciationReferences = compactUnique(referencePhrases).slice(0, 12);
   return [
     TUTOR_CODE_SWITCHING_AUDIO_INSTRUCTION,
     // OpenAI-only emphasis: keep the accent demand, but invisibly — an earlier
     // prescriptive version ("always say 'La palabra es: …' first") made the
     // tutor robotic because the model followed the example formula verbatim.
     isolateAccentSwitches && targetLanguageName && supportLanguageName
-      ? `Accent priority: any ${targetLanguageName} word — even a single word inside ${supportLanguageName} speech — must be pronounced with fully native ${targetLanguageName} phonology (silent letters stay silent; native consonants and vowels). Do this invisibly: never announce the language switch, and never fall into a fixed introduction formula — vary your phrasing the way a natural bilingual teacher would.`
+      ? `## SPOKEN CODE SWITCHING\n- Treat each ${targetLanguageName} model word or phrase as a real switch of speaking language, not as a ${supportLanguageName} word with foreign spelling. Use fully native ${targetLanguageName} phonology, syllable boundaries, lexical stress, rhythm, and intonation.\n- Put the exact ${targetLanguageName} model text in its own short spoken sentence, with normal punctuation before and after it. Do not embed the target word inside a ${supportLanguageName} clause where the surrounding accent can bleed into it.\n- Keep every written word intact as one lexical word. Never insert a space, syllable break, hyphen, or extra vowel inside it; for example, say and write "hermana", never "herman a".\n- Switch back to ${supportLanguageName} only after the complete target phrase ends. Do this naturally without announcing the language switch or using a fixed introduction formula.`
+      : "",
+    isolateAccentSwitches && pronunciationReferences.length
+      ? `REFERENCE PRONUNCIATIONS: Preserve the exact spelling and native ${targetLanguageName} pronunciation of these curriculum forms whenever spoken: ${pronunciationReferences.map((phrase) => `"${phrase}"`).join(", ")}. These are pronunciation anchors, not a list to recite.`
       : "",
     targetLanguageName
       ? `When you include ${targetLanguageName} words or phrases, pronounce those words with native-like ${targetLanguageName} sounds, rhythm, stress, and intonation even if the surrounding tutoring language is different.`
@@ -737,6 +750,25 @@ function buildTutorCodeSwitchingAudioInstruction(
   ]
     .filter(Boolean)
     .join(" ");
+}
+
+function getTutorPronunciationReferencePhrases(lesson, targetLang = "es") {
+  if (!lesson) return [];
+  if (isTutorStarterAgendaLesson(lesson)) {
+    return TUTOR_STARTER_AGENDA_ITEMS.map((item) =>
+      getTutorStarterItemModelPhrase(item, targetLang),
+    ).filter(Boolean);
+  }
+
+  const vocabularyFocus = lesson?.content?.vocabulary?.focusPoints;
+  const focusPoints = Array.isArray(vocabularyFocus)
+    ? vocabularyFocus
+    : getTutorLessonFocusAgendaItems(lesson).map(
+        (item) => item.phrase || item.label,
+      );
+  return compactUnique(focusPoints).filter((phrase) =>
+    isTutorPracticePhraseAllowedForTarget(phrase, targetLang),
+  );
 }
 
 const SPANISH_SOURCE_TOKENS = new Set([
@@ -1348,6 +1380,13 @@ function normalizeTutorStarterAgendaProgress(progress = {}) {
 
 function getSavedTutorStarterAgendaProgress(lessonProgress) {
   return normalizeTutorStarterAgendaProgress(
+    lessonProgress?.tutorAgendaProgress?.items,
+  );
+}
+
+function getSavedTutorRegularAgendaProgress(lessonProgress, lesson) {
+  return normalizeTutorAgendaProgress(
+    getTutorLessonFocusAgendaItems(lesson),
     lessonProgress?.tutorAgendaProgress?.items,
   );
 }
@@ -3756,6 +3795,9 @@ export default function Tutor({
   // Unlock pacing depends on it: Gemini's audio-done fires after playback has
   // drained; OpenAI's fires while the <audio> element is still playing.
   const realtimeProviderRef = useRef("gemini");
+  // OpenAI transcription context is refreshed as the active practice phrase
+  // changes. Dedupe identical updates; Gemini never reads or writes this ref.
+  const openaiTranscriptionSignatureRef = useRef("");
   // Tool-call grading rides the Gemini Live tool channel; the OpenAI realtime
   // session registers no tools, so grading must fall back to the transcript
   // judges there even with the env flag on. Every flag check goes through this
@@ -3908,6 +3950,11 @@ export default function Tutor({
     {},
   );
   const tutorStarterAgendaProgressRef = useRef({});
+  // Regular lessons previously left agenda coverage entirely to the model.
+  // OpenAI now gets an app-owned cursor just like the deterministic tutorial:
+  // correct advances one item, a miss stays put, then review begins.
+  const openAIRegularAgendaRef = useRef({ lessonId: "", progress: {} });
+  const openAIRegularAgendaAdvancedTurnRef = useRef(null);
   const tutorLessonCompletionTriggeredRef = useRef(false);
   const pendingTutorLessonCompletionRef = useRef(false);
   const [completedTutorLessonData, setCompletedTutorLessonData] =
@@ -4171,6 +4218,7 @@ export default function Tutor({
     tutorLessonEarnedXpRef.current = 0;
     tutorLessonCompletionTriggeredRef.current = false;
     tutorStarterAgendaProgressRef.current = {};
+    setOpenAIRegularTutorAgendaProgress(null, {});
     setIsTutorAgendaHydrating(true);
     setSelectedTutorLesson(null);
     setSelectedTutorUnit(null);
@@ -4265,6 +4313,14 @@ export default function Tutor({
               progressLessons?.[resumeLesson.lesson.id],
             )
           : {};
+        const savedRegularProgress = isTutorStarterAgendaLesson(
+          resumeLesson.lesson,
+        )
+          ? {}
+          : getSavedTutorRegularAgendaProgress(
+              progressLessons?.[resumeLesson.lesson.id],
+              resumeLesson.lesson,
+            );
 
         setSelectedTutorLesson(resumeLesson.lesson);
         setSelectedTutorUnit(resumeLesson.unit);
@@ -4274,6 +4330,10 @@ export default function Tutor({
         tutorLessonEarnedXpRef.current = earned;
         setTutorStarterAgendaProgress(savedStarterProgress);
         tutorStarterAgendaProgressRef.current = savedStarterProgress;
+        setOpenAIRegularTutorAgendaProgress(
+          resumeLesson.lesson,
+          savedRegularProgress,
+        );
         tutorLessonCompletionTriggeredRef.current = false;
         setConversationSettings((prev) => ({
           ...prev,
@@ -4319,6 +4379,7 @@ export default function Tutor({
     setTutorLessonEarnedXp(0);
     tutorLessonEarnedXpRef.current = 0;
     tutorLessonCompletionTriggeredRef.current = false;
+    setOpenAIRegularTutorAgendaProgress(null, {});
     setTutorRepairRestoreTick((tick) => tick + 1);
   }
 
@@ -4344,6 +4405,7 @@ export default function Tutor({
       tutorLessonCompletionTriggeredRef.current = false;
       tutorStarterAgendaProgressRef.current = {};
       setTutorStarterAgendaProgress({});
+      setOpenAIRegularTutorAgendaProgress(lesson, {});
       if (level) {
         setConversationSettings((prev) => ({
           ...prev,
@@ -4451,6 +4513,9 @@ export default function Tutor({
     const savedStarterProgress = isTutorStarterAgendaLesson(lesson)
       ? getSavedTutorStarterAgendaProgress(lessonProgress)
       : {};
+    const savedRegularProgress = isTutorStarterAgendaLesson(lesson)
+      ? {}
+      : getSavedTutorRegularAgendaProgress(lessonProgress, lesson);
 
     setSelectedTutorLesson(lesson);
     setSelectedTutorUnit(unit);
@@ -4464,6 +4529,7 @@ export default function Tutor({
     );
     tutorStarterAgendaProgressRef.current = savedStarterProgress;
     setTutorStarterAgendaProgress(savedStarterProgress);
+    setOpenAIRegularTutorAgendaProgress(lesson, savedRegularProgress);
     tutorLessonCompletionTriggeredRef.current = isCompleted;
     setConversationSettings((prev) => ({
       ...prev,
@@ -5128,6 +5194,114 @@ export default function Tutor({
     }
   }
 
+  function setOpenAIRegularTutorAgendaProgress(lesson, progress = {}) {
+    const items = getTutorLessonFocusAgendaItems(lesson);
+    const lessonId = lesson?.id || "";
+    const sameLesson = openAIRegularAgendaRef.current.lessonId === lessonId;
+    const mergedProgress = sameLesson
+      ? { ...progress, ...openAIRegularAgendaRef.current.progress }
+      : progress;
+    openAIRegularAgendaRef.current = {
+      lessonId,
+      progress: normalizeTutorAgendaProgress(items, mergedProgress),
+    };
+    if (!sameLesson) openAIRegularAgendaAdvancedTurnRef.current = null;
+  }
+
+  function getOpenAIRegularTutorAgendaSnapshot({ requireOpenAI = true } = {}) {
+    if (requireOpenAI && realtimeProviderRef.current !== "openai") return null;
+    const lesson = selectedTutorLessonRef.current;
+    if (!lesson || lesson.isRepair || isTutorStarterAgendaLesson(lesson)) {
+      return null;
+    }
+
+    const items = getTutorLessonFocusAgendaItems(lesson);
+    if (!items.length) return null;
+    if (openAIRegularAgendaRef.current.lessonId !== lesson.id) {
+      setOpenAIRegularTutorAgendaProgress(lesson, {});
+    }
+
+    return {
+      lesson,
+      items,
+      ...getTutorAgendaSnapshot(
+        items,
+        openAIRegularAgendaRef.current.progress,
+      ),
+    };
+  }
+
+  function isOpenAIRegularTutorAgendaIncomplete() {
+    const snapshot = getOpenAIRegularTutorAgendaSnapshot();
+    return !!snapshot && !snapshot.isComplete;
+  }
+
+  function advanceOpenAIRegularTutorAgenda() {
+    const snapshot = getOpenAIRegularTutorAgendaSnapshot();
+    if (!snapshot?.currentItem) return null;
+    if (
+      openAIRegularAgendaAdvancedTurnRef.current === turnCountRef.current
+    ) {
+      return null;
+    }
+
+    const next = advanceTutorAgendaProgress(
+      snapshot.items,
+      snapshot.progress,
+    );
+    openAIRegularAgendaRef.current = {
+      lessonId: snapshot.lesson.id,
+      progress: next.progress,
+    };
+    openAIRegularAgendaAdvancedTurnRef.current = turnCountRef.current;
+
+    if (currentNpub) {
+      void saveTutorAgendaProgress(
+        currentNpub,
+        snapshot.lesson.id,
+        targetLangRef.current,
+        next.progress,
+      ).catch((error) => {
+        console.error("Failed to save OpenAI Tutor agenda progress:", error);
+      });
+    }
+
+    return next.advancedItem;
+  }
+
+  function buildOpenAIRegularTutorAgendaInstruction() {
+    const snapshot = getOpenAIRegularTutorAgendaSnapshot();
+    if (!snapshot) return "";
+
+    const orderedAgenda = snapshot.items
+      .map((item, index) => `${index + 1}. ${item.phrase || item.label}`)
+      .join(" | ");
+    const completed = snapshot.completedItems
+      .map((item) => item.phrase || item.label)
+      .join(", ");
+
+    if (snapshot.phase === "review") {
+      return [
+        "## APP-OWNED LESSON FLOW",
+        "PHASE: REVIEW. The app has confirmed that every ordered agenda item was taught and accepted once.",
+        `Covered agenda, in order: ${orderedAgenda}.`,
+        "Now review only covered material, one purposeful prompt at a time. Mix or contextualize covered items when appropriate for the level, but do not introduce a new curriculum concept or restart the teaching sequence.",
+        "The app still owns lesson completion; continue review until it transitions away.",
+      ].join("\n");
+    }
+
+    const current = snapshot.currentItem?.phrase || snapshot.currentItem?.label;
+    return [
+      "## APP-OWNED LESSON FLOW",
+      "PHASE: TEACH THE AGENDA IN ORDER.",
+      `Full ordered agenda: ${orderedAgenda}.`,
+      completed ? `Already accepted: ${completed}.` : "Already accepted: none.",
+      `CURRENT ITEM: ${current}. Teach and elicit only this curriculum concept now. If it is a grammar concept, choose one tiny target-language example that demonstrates it.`,
+      "Do not review an accepted item, ask an extra recall question about it, or jump ahead. A correct learner answer causes the app to send a new CURRENT ITEM on the next turn. An incorrect or uncertain answer leaves CURRENT ITEM unchanged so you can clarify and retry it naturally.",
+      "Do not enter review until PHASE changes to REVIEW. These app-owned state lines override any general suggestion to vary or review the lesson early.",
+    ].join("\n");
+  }
+
   function getCurrentTutorInputLanguageCodes() {
     const targetBase = normalizePracticeLanguage(
       targetLangRef.current || targetLang,
@@ -5151,7 +5325,44 @@ export default function Tutor({
         ? [getTutorStarterItemModelPhrase(currentItem, tLang)].filter(Boolean)
         : [];
     }
+    const regularAgenda = getOpenAIRegularTutorAgendaSnapshot();
+    if (regularAgenda?.currentItem) {
+      const phrase =
+        regularAgenda.currentItem.phrase || regularAgenda.currentItem.label;
+      if (isTutorPracticePhraseAllowedForTarget(phrase, tLang)) {
+        return [phrase];
+      }
+    }
     return getRegularTutorAcceptedPhrases().slice(0, 16);
+  }
+
+  function refreshOpenAITutorTranscriptionContext({
+    keywords = getCurrentTutorTranscriptionKeywords(),
+    force = false,
+  } = {}) {
+    if (realtimeProviderRef.current !== "openai") return;
+    if (!dcRef.current || dcRef.current.readyState !== "open") return;
+
+    const inputAudioTranscription = buildTutorInputTranscription({
+      inputLanguageCodes: getCurrentTutorInputLanguageCodes(),
+      keywords,
+    });
+    const signature = JSON.stringify(inputAudioTranscription);
+    if (!force && signature === openaiTranscriptionSignatureRef.current) return;
+
+    try {
+      dcRef.current.send(
+        JSON.stringify({
+          type: "session.update",
+          session: {
+            input_audio_transcription: inputAudioTranscription,
+          },
+        }),
+      );
+      openaiTranscriptionSignatureRef.current = signature;
+    } catch {
+      // The next response completion or policy refresh retries this context.
+    }
   }
 
   /* ---------------------------
@@ -5190,6 +5401,7 @@ export default function Tutor({
       const inputLanguageCodes = getCurrentTutorInputLanguageCodes();
       const realtimeProvider = resolveTutorRealtimeProvider();
       realtimeProviderRef.current = realtimeProvider;
+      openaiTranscriptionSignatureRef.current = "";
       console.info(
         `[tutor-realtime] connecting via ${realtimeProvider} — targetLang:`,
         targetBaseForHint,
@@ -5414,7 +5626,13 @@ export default function Tutor({
         // OpenAI realtime voices bleed the support-language accent into
         // embedded target words; Gemini native-audio doesn't need the
         // stronger isolation rules.
-        { isolateAccentSwitches: realtimeProviderRef.current === "openai" },
+        {
+          isolateAccentSwitches: realtimeProviderRef.current === "openai",
+          referencePhrases: getTutorPronunciationReferencePhrases(
+            selectedTutorLessonRef.current,
+            tLang,
+          ),
+        },
       );
     const learnerAudioInstruction = buildTutorLearnerAudioInstruction({
       targetLanguageName,
@@ -5478,29 +5696,43 @@ export default function Tutor({
             "- Never introduce vocabulary merely to add variety.",
           ].join("\n")
         : "";
-    const tutorPedagogyInstructions = isEarlyTutorLevel
-      ? [
-          "TUTORING STYLE: Be an active tutor, not a passive chat partner.",
-          `For each reply, use this rhythm: brief ${supportLanguageName} guidance, one exact ${targetLanguageName} model phrase, then ask the learner to try, choose, or complete that phrase once.`,
-          `Before asking the learner to say a ${targetLanguageName} phrase, briefly tell them what it means in ${supportLanguageName}.`,
-          "When the learner answers, accept it only when it matches the requested target-language phrase or clearly expresses the requested meaning. If the words are unrelated or clearly wrong, correct briefly and keep the learner on that same tiny step.",
-          "Do not repeat a phrase after it has been accepted. If the learner misses the phrase, keep the same agenda item but make the prompt simpler. Avoid bare two-word acknowledgements that do not teach the next step.",
-          `Use fill-in-the-blank prompts, brief repetition, and simple choices. The surrounding instruction must be in ${supportLanguageName}; only the model phrase itself is in ${targetLanguageName}.`,
-          "Allow support-language questions and answer them briefly, then guide the learner back to producing the target-language phrase.",
-        ].join(" ")
-      : selectedLevel === "A2" || selectedLevel === "B1"
+    const tutorPedagogyInstructions =
+      realtimeProviderRef.current === "openai"
         ? [
-            "TUTORING STYLE: Coach through short target-language exchanges.",
-            `Use mostly ${targetLanguageName} for instructions and prompts. Keep sentences simple enough for ${selectedLevel}.`,
-            `Use ${supportLanguageName} only for a very short clarification after confusion, then return to ${targetLanguageName}.`,
-            "Ask one focused follow-up question and give a short model answer when the learner hesitates.",
-          ].join(" ")
-        : [
-            "TUTORING STYLE: Use conversational immersion, not beginner drills.",
-            `Keep the dialogue in ${targetLanguageName} and make it feel like a natural conversation tied to the selected lesson agenda.`,
-            "Ask open-ended follow-ups, respond to the learner's ideas, and weave corrections into the conversation.",
-            "Only pause for explicit teaching or support-language clarification when the learner asks or is clearly stuck.",
-          ].join(" ");
+            "## NATURAL TUTORING FLOW",
+            "- Listen first and react specifically to the learner's meaning, question, or attempt.",
+            "- Do not follow a fixed acknowledgement-explanation-model-prompt formula. Choose the teaching move that fits this turn: acknowledge, clarify, correct, model, review, or extend.",
+            "- Use praise only when it is earned and make it specific; never fill the turn with generic encouragement.",
+            "- After an accepted answer, move forward without re-teaching it. After a genuine mistake, correct only the important issue and offer one natural retry. If the learner asks for help, answer before returning to practice.",
+            isEarlyTutorLevel
+              ? `- Keep the learner's next action tiny. Use ${supportLanguageName} for teacher talk and ${targetLanguageName} for the exact practice language, but model a phrase only when it helps the learner take the next step.`
+              : isAdvancedTutorLevel
+                ? `- Let the learner's ideas shape a natural ${targetLanguageName} conversation while staying faithful to the lesson agenda; weave corrections into the exchange.`
+                : `- Coach through short ${targetLanguageName} exchanges tied to the agenda. Use ${supportLanguageName} only for a brief rescue clarification.`,
+          ].join("\n")
+        : isEarlyTutorLevel
+          ? [
+              "TUTORING STYLE: Be an active tutor, not a passive chat partner.",
+              `For each reply, use this rhythm: brief ${supportLanguageName} guidance, one exact ${targetLanguageName} model phrase, then ask the learner to try, choose, or complete that phrase once.`,
+              `Before asking the learner to say a ${targetLanguageName} phrase, briefly tell them what it means in ${supportLanguageName}.`,
+              "When the learner answers, accept it only when it matches the requested target-language phrase or clearly expresses the requested meaning. If the words are unrelated or clearly wrong, correct briefly and keep the learner on that same tiny step.",
+              "Do not repeat a phrase after it has been accepted. If the learner misses the phrase, keep the same agenda item but make the prompt simpler. Avoid bare two-word acknowledgements that do not teach the next step.",
+              `Use fill-in-the-blank prompts, brief repetition, and simple choices. The surrounding instruction must be in ${supportLanguageName}; only the model phrase itself is in ${targetLanguageName}.`,
+              "Allow support-language questions and answer them briefly, then guide the learner back to producing the target-language phrase.",
+            ].join(" ")
+          : selectedLevel === "A2" || selectedLevel === "B1"
+            ? [
+                "TUTORING STYLE: Coach through short target-language exchanges.",
+                `Use mostly ${targetLanguageName} for instructions and prompts. Keep sentences simple enough for ${selectedLevel}.`,
+                `Use ${supportLanguageName} only for a very short clarification after confusion, then return to ${targetLanguageName}.`,
+                "Ask one focused follow-up question and give a short model answer when the learner hesitates.",
+              ].join(" ")
+            : [
+                "TUTORING STYLE: Use conversational immersion, not beginner drills.",
+                `Keep the dialogue in ${targetLanguageName} and make it feel like a natural conversation tied to the selected lesson agenda.`,
+                "Ask open-ended follow-ups, respond to the learner's ideas, and weave corrections into the conversation.",
+                "Only pause for explicit teaching or support-language clarification when the learner asks or is clearly stuck.",
+              ].join(" ");
     // Tutor speech is the dominant Gemini Live cost, so these length limits are
     // cost guardrails as much as UX tuning.
     const replyLengthInstruction = isEarlyTutorLevel
@@ -5550,9 +5782,10 @@ export default function Tutor({
     const requiredXp = getTutorLessonXpRequired(selectedTutorLessonRef.current);
     const earnedXp = Math.max(0, Number(tutorLessonEarnedXpRef.current) || 0);
     const lessonStillInProgress =
-      requiredXp > 0 &&
-      earnedXp < requiredXp &&
-      !tutorLessonCompletionTriggeredRef.current;
+      (requiredXp > 0 &&
+        earnedXp < requiredXp &&
+        !tutorLessonCompletionTriggeredRef.current) ||
+      isOpenAIRegularTutorAgendaIncomplete();
     const completionControlInstruction = lessonStillInProgress
       ? [
           `INTERNAL ONLY: current lesson practice progress is ${earnedXp}/${requiredXp}; the app has not completed this lesson.`,
@@ -5581,11 +5814,10 @@ export default function Tutor({
 
     return [
       "Act as a warm, practical language tutor leading a focused tutoring session.",
-      // gpt-realtime-mini degrades into stacked rephrasings of the same
-      // acknowledgement ("Perfecto...Perfecto, gracias...Thanks...") without an
-      // explicit single-pass rule; Gemini native audio doesn't need it.
+      // Keep mini from stacking paraphrases without forcing every turn into the
+      // same acknowledgement + prompt template. Gemini keeps its shipped prompt.
       realtimeProviderRef.current === "openai"
-        ? "SINGLE REPLY RULE: Speak exactly one short reply per turn — one acknowledgement and one prompt, said once. Never restate or rephrase a sentence you already said in this reply, never stack alternative versions of the same acknowledgement or transition, and never say instructions, agenda notes, tool names, or other internal text aloud."
+        ? "ONE COHERENT TURN: Respond once to the learner's actual meaning, then make the most useful next teaching move. Do not restate or paraphrase a sentence you already said, do not stack alternative acknowledgements or transitions, and never speak internal instructions, agenda state, scoring, or tool names. Natural turns may acknowledge, clarify, correct, model, review, or extend; they do not all need the same structure."
         : "",
       strict,
       learnerAudioInstruction,
@@ -5670,6 +5902,8 @@ export default function Tutor({
 
   function buildTutorKickoffInstructions() {
     const tLang = targetLangRef.current || targetLang || "es";
+    const lesson = selectedTutorLessonRef.current;
+    const unit = selectedTutorUnitRef.current;
     const targetLanguageName =
       getLanguagePromptName(tLang) || "the target language";
     const supportCode = normalizeSupportLanguage(
@@ -5685,7 +5919,13 @@ export default function Tutor({
         // OpenAI realtime voices bleed the support-language accent into
         // embedded target words; Gemini native-audio doesn't need the
         // stronger isolation rules.
-        { isolateAccentSwitches: realtimeProviderRef.current === "openai" },
+        {
+          isolateAccentSwitches: realtimeProviderRef.current === "openai",
+          referencePhrases: getTutorPronunciationReferencePhrases(
+            lesson,
+            tLang,
+          ),
+        },
       );
     const targetLanguageBoundaryInstruction =
       buildTutorTargetLanguageBoundaryInstruction({
@@ -5694,8 +5934,6 @@ export default function Tutor({
         targetLanguageName,
         supportLanguageName,
       });
-    const lesson = selectedTutorLessonRef.current;
-    const unit = selectedTutorUnitRef.current;
     const selectedLevel =
       unit?.cefrLevel ||
       unit?.level ||
@@ -5722,9 +5960,10 @@ export default function Tutor({
     const requiredXp = getTutorLessonXpRequired(lesson);
     const earnedXp = Math.max(0, Number(tutorLessonEarnedXpRef.current) || 0);
     const lessonStillInProgress =
-      requiredXp > 0 &&
-      earnedXp < requiredXp &&
-      !tutorLessonCompletionTriggeredRef.current;
+      (requiredXp > 0 &&
+        earnedXp < requiredXp &&
+        !tutorLessonCompletionTriggeredRef.current) ||
+      isOpenAIRegularTutorAgendaIncomplete();
     const noWrapInstruction = lessonStillInProgress
       ? "LESSON_STATE: IN_PROGRESS. Do not perform a closing act in any language or wording. The app will close the conversation and show the lesson-complete modal when the threshold is reached."
       : "";
@@ -5759,6 +5998,7 @@ export default function Tutor({
     return [
       "Kick off the Tutor lesson now. Do not wait for the learner to speak first.",
       buildTutorRepairAgendaInstruction({ isKickoff: true }),
+      buildOpenAIRegularTutorAgendaInstruction(),
       targetLanguageBoundaryInstruction,
       teacherTalkLanguageInstruction,
       codeSwitchingAudioInstruction,
@@ -5823,6 +6063,9 @@ export default function Tutor({
     targetLang = "es",
     userMessage = "",
     acceptedItemIds = [],
+    turnVerdict = acceptedItemIds.length
+      ? TUTOR_TURN_VERDICT.ACCEPTED
+      : TUTOR_TURN_VERDICT.REJECTED,
     kind = "tutor_followup",
   } = {}) {
     const supportCode = normalizeSupportLanguage(
@@ -5840,7 +6083,13 @@ export default function Tutor({
         // OpenAI realtime voices bleed the support-language accent into
         // embedded target words; Gemini native-audio doesn't need the
         // stronger isolation rules.
-        { isolateAccentSwitches: realtimeProviderRef.current === "openai" },
+        {
+          isolateAccentSwitches: realtimeProviderRef.current === "openai",
+          referencePhrases: getTutorPronunciationReferencePhrases(
+            selectedTutorLessonRef.current,
+            targetLang,
+          ),
+        },
       );
     const targetLanguageBoundaryInstruction =
       buildTutorTargetLanguageBoundaryInstruction({
@@ -5888,7 +6137,13 @@ export default function Tutor({
       .join(", ");
     const latestTranscript = String(userMessage || "").trim();
     const currentPhrase = phrase || "";
-    const latestTurnWasAccepted = acceptedItemIds.length > 0;
+    const latestTurnWasAccepted =
+      turnVerdict === TUTOR_TURN_VERDICT.ACCEPTED ||
+      acceptedItemIds.length > 0;
+    const latestTurnWasRejected =
+      turnVerdict === TUTOR_TURN_VERDICT.REJECTED;
+    const latestTurnIsUncertain =
+      turnVerdict === TUTOR_TURN_VERDICT.UNCERTAIN;
     const completedPhrases = TUTOR_STARTER_AGENDA_ITEMS.filter(
       (agendaItem) => progress[agendaItem.id] && agendaItem.id !== item?.id,
     )
@@ -5995,8 +6250,11 @@ export default function Tutor({
       acceptedItems
         ? `The app accepted the learner's last attempt for: ${acceptedItems}. Briefly praise it in ${supportLanguageName}, then move to the current agenda item. Do not mention internal completion state to the learner.`
         : "",
-      latestTranscript && !latestTurnWasAccepted && !isKickoff
+      latestTranscript && latestTurnWasRejected && !isKickoff
         ? `The learner has not produced the phrase correctly yet, so do not say "nice work"/"great" or imply they got it right. FIRST fully respond to what they actually said: if they asked for help, a breakdown, the meaning, a repetition, or any question, give exactly that — about the SAME phrase you just asked them to try — in ${supportLanguageName} (e.g. break it into syllables). Then invite them to try that SAME phrase again. Stay on that phrase: do NOT switch to a different phrase, say you've "moved on", or change the agenda item, even if they ask for help several times — keep helping until they produce it.`
+        : "",
+      latestTranscript && latestTurnIsUncertain && !isKickoff
+        ? `The app could not confidently grade the learner's last turn. Do not claim it was correct or incorrect, do not praise or correct it as fact, and do not record a mistake. Respond naturally to what was understandable, then ask one brief clarification or give one fresh opportunity to use the current phrase.`
         : "",
       latestTranscript
         ? `Latest learner transcript: "${latestTranscript}".`
@@ -6005,7 +6263,9 @@ export default function Tutor({
         ? "Start the lesson and introduce only this first agenda item."
         : latestTurnWasAccepted
           ? "Briefly acknowledge the accepted attempt, then introduce only the current agenda item. Do not apologize and do not mention internal completion state."
-          : "First fully address what the learner asked or said, then keep practicing the SAME phrase you just asked them to try — do not move to a different phrase or agenda item until they produce it correctly.",
+          : latestTurnWasRejected
+            ? "First fully address what the learner asked or said, then keep practicing the SAME phrase you just asked them to try — do not move to a different phrase or agenda item until they produce it correctly."
+            : "Stay on the current agenda item without judging the uncertain attempt; ask one natural clarification or offer another way to respond.",
       currentPhrase && (isKickoff || latestTurnWasAccepted)
         ? `Your next practice prompt MUST be for the current model phrase: "${currentPhrase}".`
         : "",
@@ -6029,9 +6289,19 @@ export default function Tutor({
     targetLang = "es",
     userMessage = "",
     acceptedItemIds = [],
+    turnVerdict,
   } = {}) {
     if (!aliveRef.current) return;
     if (!dcRef.current || dcRef.current.readyState !== "open") return;
+
+    const nextPracticePhrase = item
+      ? getTutorStarterItemModelPhrase(item, targetLang)
+      : "";
+    refreshOpenAITutorTranscriptionContext({
+      keywords: nextPracticePhrase
+        ? [nextPracticePhrase]
+        : getCurrentTutorTranscriptionKeywords(),
+    });
 
     clearAutoStopTimer();
     setUiState("thinking");
@@ -6051,6 +6321,7 @@ export default function Tutor({
               targetLang,
               userMessage,
               acceptedItemIds,
+              turnVerdict,
               kind,
             }),
             metadata: { kind },
@@ -6148,6 +6419,9 @@ export default function Tutor({
   function buildTutorFollowupInstructions(
     userMessage = "",
     acceptedItemIds = [],
+    turnVerdict = acceptedItemIds.length
+      ? TUTOR_TURN_VERDICT.ACCEPTED
+      : TUTOR_TURN_VERDICT.REJECTED,
   ) {
     const lesson = selectedTutorLessonRef.current;
     const unit = selectedTutorUnitRef.current;
@@ -6167,7 +6441,13 @@ export default function Tutor({
         // OpenAI realtime voices bleed the support-language accent into
         // embedded target words; Gemini native-audio doesn't need the
         // stronger isolation rules.
-        { isolateAccentSwitches: realtimeProviderRef.current === "openai" },
+        {
+          isolateAccentSwitches: realtimeProviderRef.current === "openai",
+          referencePhrases: getTutorPronunciationReferencePhrases(
+            lesson,
+            tLang,
+          ),
+        },
       );
     const targetLanguageBoundaryInstruction =
       buildTutorTargetLanguageBoundaryInstruction({
@@ -6197,9 +6477,10 @@ export default function Tutor({
     const earnedXp = Math.max(0, Number(tutorLessonEarnedXpRef.current) || 0);
     const remainingXp = Math.max(0, requiredXp - earnedXp);
     const lessonStillInProgress =
-      requiredXp > 0 &&
-      earnedXp < requiredXp &&
-      !tutorLessonCompletionTriggeredRef.current;
+      (requiredXp > 0 &&
+        earnedXp < requiredXp &&
+        !tutorLessonCompletionTriggeredRef.current) ||
+      isOpenAIRegularTutorAgendaIncomplete();
     const noWrapInstruction = lessonStillInProgress
       ? [
           `INTERNAL LESSON PROGRESS: ${earnedXp}/${requiredXp} app-tracked lesson XP; ${remainingXp} XP remains.`,
@@ -6207,9 +6488,11 @@ export default function Tutor({
           "Do not perform a closing act in any language or wording.",
           "A closing act includes any farewell, completion announcement, end-of-session summary, offer to stop, or suggestion that the lesson is over.",
           "The app, not you, ends the lesson. When the threshold is reached, the app will close the conversation and show the lesson-complete modal.",
-          selectedLevel === "Pre-A1"
-            ? "Until then, continue with one tiny review using one selected-lesson word or 1-3 word phrase."
-            : "Until then, continue with one review, combination, or comprehension task from the selected lesson.",
+          isOpenAIRegularTutorAgendaIncomplete()
+            ? "Until then, continue only the CURRENT ITEM from the app-owned lesson flow. Do not review early."
+            : selectedLevel === "Pre-A1"
+              ? "Until then, continue with one tiny review using one selected-lesson word or 1-3 word phrase."
+              : "Until then, continue with one review, combination, or comprehension task from the selected lesson.",
         ].join(" ")
       : "";
     const varietyInstruction = [
@@ -6226,6 +6509,14 @@ export default function Tutor({
         turnCount: turnCountRef.current,
         isStarterLesson: isTutorStarterAgendaLesson(lesson),
       });
+    const openAITurnVerdictInstruction =
+      realtimeProviderRef.current !== "openai"
+        ? ""
+        : turnVerdict === TUTOR_TURN_VERDICT.ACCEPTED
+          ? "TURN VERDICT: ACCEPTED. React specifically to what the learner said, acknowledge it without overpraising, and move the agenda forward with a natural next teaching move."
+          : turnVerdict === TUTOR_TURN_VERDICT.REJECTED
+            ? `TURN VERDICT: NOT ACCEPTED FOR PROGRESS. First respond to the learner's actual intent. If they asked for help, meaning, clarification, or repetition, answer that without treating it as a mistake. Otherwise give one concise correction and another natural opportunity to complete the current task.`
+            : "TURN VERDICT: UNCERTAIN. Do not claim the answer was correct or incorrect and do not invent a correction. Respond to what was clear, then ask one brief clarification or offer a fresh way to answer the current task.";
 
     if (isTutorStarterAgendaLesson(lesson)) {
       return [
@@ -6250,10 +6541,12 @@ export default function Tutor({
     return [
       "Respond to the learner's latest turn as their tutor.",
       buildTutorRepairAgendaInstruction(),
+      buildOpenAIRegularTutorAgendaInstruction(),
       targetLanguageBoundaryInstruction,
       teacherTalkLanguageInstruction,
       codeSwitchingAudioInstruction,
       userMessage ? `Latest learner transcript: "${userMessage}".` : "",
+      openAITurnVerdictInstruction,
       buildRecentOnScreenContextInstruction(),
       noWrapInstruction,
       varietyInstruction,
@@ -6460,6 +6753,11 @@ export default function Tutor({
           },
         }),
       );
+      if (realtimeProviderRef.current === "openai") {
+        openaiTranscriptionSignatureRef.current = JSON.stringify(
+          inputAudioTranscription,
+        );
+      }
     } catch {}
     pendingGuardrailTextRef.current = "";
   }
@@ -6586,7 +6884,12 @@ export default function Tutor({
   function requestTutorTurnFollowup(
     userMessage = "",
     acceptedItemIds = [],
-    { kind = "tutor_followup" } = {},
+    {
+      kind = "tutor_followup",
+      turnVerdict = acceptedItemIds.length
+        ? TUTOR_TURN_VERDICT.ACCEPTED
+        : TUTOR_TURN_VERDICT.REJECTED,
+    } = {},
   ) {
     if (!aliveRef.current) return;
     if (!dcRef.current || dcRef.current.readyState !== "open") return;
@@ -6608,6 +6911,7 @@ export default function Tutor({
         targetLang: tLang,
         userMessage,
         acceptedItemIds,
+        turnVerdict,
         kind,
       });
       return;
@@ -6616,6 +6920,7 @@ export default function Tutor({
     const instructions = buildTutorFollowupInstructions(
       userMessage,
       acceptedItemIds,
+      turnVerdict,
     );
 
     clearAutoStopTimer();
@@ -6783,7 +7088,11 @@ export default function Tutor({
     const starterAgendaIncomplete =
       isTutorStarterAgendaLesson(lesson) &&
       !isTutorStarterAgendaComplete(tutorStarterAgendaProgressRef.current);
-    return xpIncomplete || starterAgendaIncomplete;
+    return (
+      xpIncomplete ||
+      starterAgendaIncomplete ||
+      isOpenAIRegularTutorAgendaIncomplete()
+    );
   }
 
   function getTutorAssistantOutputText(mid) {
@@ -6918,6 +7227,7 @@ export default function Tutor({
       removeMessage(mid);
       requestTutorTurnFollowup(getLatestTutorUserText(), [], {
         kind: "tutor_semantic_review_retry",
+        turnVerdict: TUTOR_TURN_VERDICT.UNCERTAIN,
       });
     } finally {
       tutorClosingActRecoveryInFlightRef.current = false;
@@ -7214,6 +7524,13 @@ export default function Tutor({
         tutorLessonCompletionTriggeredRef.current = false;
         tutorStarterAgendaProgressRef.current = {};
         setTutorStarterAgendaProgress({});
+        setOpenAIRegularTutorAgendaProgress(
+          nextTutorLesson.lesson,
+          getSavedTutorRegularAgendaProgress(
+            nextProgress,
+            nextTutorLesson.lesson,
+          ),
+        );
         setConversationSettings((prev) => ({
           ...prev,
           proficiencyLevel:
@@ -7276,9 +7593,9 @@ export default function Tutor({
       });
     }
 
-    const canCompleteLesson =
-      !isTutorStarterAgendaLesson(lesson) ||
-      isTutorStarterAgendaComplete(tutorStarterAgendaProgressRef.current);
+    const canCompleteLesson = isTutorStarterAgendaLesson(lesson)
+      ? isTutorStarterAgendaComplete(tutorStarterAgendaProgressRef.current)
+      : !isOpenAIRegularTutorAgendaIncomplete();
     if (nextEarned >= xpRequired && canCompleteLesson) {
       if (pendingTutorLessonCompletionRef.current) return true;
       pendingTutorLessonCompletionRef.current = true;
@@ -7394,6 +7711,18 @@ export default function Tutor({
       isTutorPracticePhraseAllowedForTarget(phrase, currentTargetLang),
     );
     if (promptedPhrases.length) return promptedPhrases;
+
+    const openAIAgenda = getOpenAIRegularTutorAgendaSnapshot();
+    if (openAIAgenda?.currentItem) {
+      const currentPhrase =
+        openAIAgenda.currentItem.phrase || openAIAgenda.currentItem.label;
+      return isTutorPracticePhraseAllowedForTarget(
+        currentPhrase,
+        currentTargetLang,
+      )
+        ? [currentPhrase]
+        : [];
+    }
 
     if (targetBase !== "es") return [];
 
@@ -7571,7 +7900,9 @@ export default function Tutor({
       // This reuses the grader's own verdict (no extra call) and runs whether the
       // turn went through the gate judge or background validation. Capture dedupes
       // by concept per day and enriches itself via the cheap model.
-      if (parsed.mistake === true) {
+      const hasConfidentOpenAIVerdict =
+        realtimeProviderRef.current !== "openai" || confidence >= 0.55;
+      if (parsed.mistake === true && hasConfidentOpenAIVerdict) {
         const slipConcept = String(parsed.concept || "").trim();
         const slipCorrection = String(parsed.correction || "").trim();
         if (slipConcept || slipCorrection) {
@@ -7610,6 +7941,7 @@ export default function Tutor({
         successful: successful && confidence >= 0.55,
         confidence,
         reason: String(parsed.reason || "").slice(0, 180),
+        mistake: parsed.mistake === true && confidence >= 0.55,
       };
     } catch (error) {
       console.warn("Tutor XP success judge failed:", error);
@@ -7671,6 +8003,9 @@ export default function Tutor({
       isStarterLesson && starterCandidateItemIds.length
         ? commitTutorStarterAgendaProgress(starterCandidateItemIds)
         : [];
+    const acceptedRegularAgendaItem = !isStarterLesson
+      ? advanceOpenAIRegularTutorAgenda()
+      : null;
     const starterAgendaComplete =
       isStarterLesson &&
       isTutorStarterAgendaComplete(tutorStarterAgendaProgressRef.current);
@@ -7688,7 +8023,11 @@ export default function Tutor({
         false;
     }
 
-    return { acceptedItemIds, lessonCompletionTriggered };
+    return {
+      acceptedItemIds,
+      acceptedRegularAgendaItem,
+      lessonCompletionTriggered,
+    };
   }
 
   function validateTutorTurnForXpInBackground({
@@ -8267,6 +8606,10 @@ export default function Tutor({
         regularTurnAccepted,
         directPhraseAnswer,
       });
+      const isOpenAIProvider = realtimeProviderRef.current === "openai";
+      let turnVerdict = resolveTutorTurnVerdict({
+        localSuccessful: localTurnSuccessful,
+      });
       // In tool-grading mode the markTurnSuccessful tool is the grader, so the
       // transcript flash judges (the lesson-completion gate and the background
       // re-check) are disabled entirely — no separate flash calls. The free local
@@ -8286,7 +8629,35 @@ export default function Tutor({
           successful: localTurnSuccessful,
         });
 
-      if (shouldGateEndOfLesson) {
+      if (isOpenAIProvider && !localTurnSuccessful) {
+        // Unlike Gemini tool grading, OpenAI grading is transcript-based. Wait
+        // for ambiguous turns before constructing the spoken follow-up so the
+        // tutor is never told "not accepted" moments before the judge awards XP.
+        const turnSuccess = await judgeTutorTurnSuccessfulForXp(text, {
+          starterCandidateItemIds,
+          exactStarterMatches,
+          regularPhraseMatch: regularTurnAccepted,
+          directPhraseAnswer,
+          acceptedPhrases: regularAcceptedPhrases,
+        });
+        if (!aliveRef.current) return;
+        if (currentLesson?.id !== selectedTutorLessonRef.current?.id) return;
+        turnVerdict = resolveTutorTurnVerdict({
+          semanticAttempted: true,
+          semanticSuccessful: turnSuccess.successful,
+          semanticConfidence: turnSuccess.confidence,
+        });
+        if (turnVerdict === TUTOR_TURN_VERDICT.ACCEPTED) {
+          const progressResult = applySuccessfulTutorTurnProgress({
+            isStarterLesson,
+            starterCandidateItemIds,
+            successful: true,
+          });
+          acceptedItemIds = progressResult.acceptedItemIds;
+          lessonCompletionTriggered =
+            progressResult.lessonCompletionTriggered;
+        }
+      } else if (shouldGateEndOfLesson) {
         const turnSuccess = await judgeTutorTurnSuccessfulForXp(text, {
           starterCandidateItemIds,
           exactStarterMatches,
@@ -8316,9 +8687,14 @@ export default function Tutor({
       }
 
       // Keep the voice loop hot: semantic grading may still update XP/progress
-      // behind the scenes, but the tutor response should not wait for it.
+      // behind the scenes on Gemini fallback mode. OpenAI resolves ambiguous
+      // turns above so its spoken response and XP state stay synchronized.
       if (!lessonCompletionTriggered) {
-        requestTutorTurnFollowup(text, acceptedItemIds);
+        requestTutorTurnFollowup(
+          text,
+          acceptedItemIds,
+          isOpenAIProvider ? { turnVerdict } : undefined,
+        );
       }
       return;
     }
@@ -8451,6 +8827,12 @@ export default function Tutor({
           }));
         }
         updateMessage(mid, (m) => ({ ...m, done: true }));
+        if (t !== "response.canceled") {
+          // The just-finished tutor reply defines what the learner will practice
+          // next. Refresh OpenAI ASR with those exact phrases before reopening
+          // the mic; the helper is a no-op for Gemini.
+          refreshOpenAITutorTranscriptionContext();
+        }
         void recoverFromSemanticTutorClosingAct(rid, mid);
         logEvent(analytics, "conversation_turn", {
           action: "turn_completed",

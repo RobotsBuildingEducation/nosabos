@@ -701,9 +701,9 @@ export async function captureCompanionMemory({
     lastPrunedDayKey: bucket.lastPrunedDayKey,
   });
 
-  // Pulse the notes/memory action-bar button so the capture is visible the same
-  // way lessons/skill-tree saves are — centralized here so EVERY capture source
-  // (flashcards, vocab, grammar, tutor, phonics, conversation) lights it up,
+  // Celebrate the notes/memory action-bar button so the capture is visible —
+  // centralized here so EVERY capture source (flashcards, vocab, grammar,
+  // tutor, phonics, conversation) gets the same crystal-shard animation,
   // including the realtime modes that capture asynchronously.
   try {
     useNotesStore.getState?.().triggerDoneAnimation?.();
