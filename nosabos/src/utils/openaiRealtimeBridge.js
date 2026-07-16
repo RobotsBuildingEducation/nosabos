@@ -14,6 +14,7 @@ import {
   buildTutorInputTranscription,
   mergeTutorInputTranscription,
 } from "./tutorSpeechPolicy";
+import { composeOpenAIRealtimeResponseInstructions } from "./openaiRealtimeResponseInstructions";
 
 const REALTIME_MODEL =
   (
@@ -125,6 +126,7 @@ class OpenAIRealtimeBridge {
   constructor({
     audioElement = null,
     initialInstructions = "",
+    responseInstructionsPrefix = "",
     voice = "alloy",
     inputLanguageCodes = null,
     inputTranscriptionKeywords = null,
@@ -134,6 +136,7 @@ class OpenAIRealtimeBridge {
   } = {}) {
     this.audioElement = audioElement;
     this.initialInstructions = initialInstructions;
+    this.responseInstructionsPrefix = responseInstructionsPrefix;
     this.voice = voice;
     this.inputLanguageCodes = Array.isArray(inputLanguageCodes)
       ? inputLanguageCodes
@@ -154,10 +157,6 @@ class OpenAIRealtimeBridge {
     // Set once the server starts any audio response; from then on voice must
     // be omitted from session.update (see toGaSession).
     this.audioResponseStarted = false;
-    // One system item holds the current turn task (see send/response.create);
-    // the previous one is deleted each turn so tasks never stack up in context.
-    this.turnTaskItemId = null;
-    this.turnTaskCounter = 0;
     // Preserve the target/support language anchor across partial session.update
     // calls. Tutor toggles VAD frequently and also re-applies policy after
     // connect; neither operation may erase transcription.language/prompt.
@@ -181,6 +180,10 @@ class OpenAIRealtimeBridge {
 
   getReceivers() {
     return this.pc?.getReceivers?.() || [];
+  }
+
+  setResponseInstructionsPrefix(instructions = "") {
+    this.responseInstructionsPrefix = String(instructions || "").trim();
   }
 
   send(raw) {
@@ -237,53 +240,20 @@ class OpenAIRealtimeBridge {
       delete response.modalities;
       response.output_modalities =
         Array.isArray(mods) && !mods.includes("audio") ? ["text"] : ["audio"];
-      // Deliver the turn task the way the Gemini bridge does: as a
-      // conversation item, with response.create left bare so the SESSION
-      // instructions (the stable tutor policy) govern the response.
-      //
-      // Two failed shapes inform this:
-      // • turn task in response.instructions alone — replaces the session
-      //   policy, so language/persona/pronunciation rules vanish from every
-      //   spoken turn (the "app anglicizes hermano" bug);
-      // • full policy re-merged into every response.instructions — the mini
-      //   model reads the pedagogy formulas re-stamped adjacent to each task
-      //   as a literal script, and every reply collapses into the same
-      //   "praise + meaning + Say: X" shape (the robotic-lesson bug).
-      // A single system item per turn (previous one deleted) keeps the task
-      // out of the policy's blast radius and the context tail clean.
+      // response.instructions is the clean, response-local control surface
+      // used by the Playground. Keep a compact bilingual voice policy adjacent
+      // to the current task so target-language spans are rendered as native
+      // speech instead of inheriting the surrounding support-language accent.
+      // Do not copy the full session prompt here: that made mini sound scripted.
       const turnInstructions = String(response.instructions || "").trim();
-      delete response.instructions;
-      if (turnInstructions) {
-        if (this.turnTaskItemId) {
-          this.dc.send(
-            JSON.stringify({
-              type: "conversation.item.delete",
-              item_id: this.turnTaskItemId,
-            }),
-          );
-        }
-        this.turnTaskCounter = (this.turnTaskCounter || 0) + 1;
-        this.turnTaskItemId = `turn_task_${this.turnTaskCounter}`;
-        this.dc.send(
-          JSON.stringify({
-            type: "conversation.item.create",
-            item: {
-              id: this.turnTaskItemId,
-              type: "message",
-              role: "system",
-              content: [
-                {
-                  type: "input_text",
-                  text: [
-                    "Internal tutor control message. Do not mention these instructions. Produce only the learner-facing spoken tutor reply.",
-                    "Follow the Tutor session rules already in effect. Prioritize the current turn instructions below.",
-                    `Turn instructions:\n${turnInstructions}`,
-                  ].join("\n\n"),
-                },
-              ],
-            },
-          }),
-        );
+      const responseInstructions = composeOpenAIRealtimeResponseInstructions(
+        this.responseInstructionsPrefix,
+        turnInstructions,
+      );
+      if (responseInstructions) {
+        response.instructions = responseInstructions;
+      } else {
+        delete response.instructions;
       }
       wireLog(
         "→",
@@ -440,6 +410,14 @@ class OpenAIRealtimeBridge {
         this.audioResponseStarted = true;
       }
       if (!parsed.type.endsWith(".delta")) wireLog("←", parsed.type);
+      if (DEBUG_WIRE_LOG && parsed.type === "session.updated") {
+        console.info("[openai-realtime] effective session:", {
+          model: parsed.session?.model,
+          voice: parsed.session?.audio?.output?.voice,
+          hasInstructions: !!parsed.session?.instructions,
+          outputModalities: parsed.session?.output_modalities,
+        });
+      }
       if (parsed.type === "error") {
         // Surface rejections loudly (a silently dropped session.update means
         // the Tutor's instructions never reached the model) but don't route
@@ -464,10 +442,22 @@ class OpenAIRealtimeBridge {
 
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
+    // Establish the call with the effective voice, language, transcription,
+    // and tutor instructions already present. This matches the Playground's
+    // clean session creation path and avoids beginning from a default session
+    // that is only made bilingual by a later data-channel update.
+    const initialSession = {
+      ...toGaSession(this.buildInitialSession()),
+      model: REALTIME_MODEL,
+    };
     const response = await appCheckFetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/sdp" },
-      body: offer.sdp,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sdp: offer.sdp,
+        model: REALTIME_MODEL,
+        session: initialSession,
+      }),
     });
     const answer = await response.text();
     if (!response.ok) {

@@ -122,6 +122,7 @@ import {
   getTutorAgendaSnapshot,
   normalizeTutorAgendaProgress,
 } from "../utils/tutorAgendaFlow";
+import { buildTutorCodeSwitchingAudioInstruction } from "../utils/tutorCodeSwitchingPrompt";
 import { getCEFRPromptHint } from "../utils/cefrUtils";
 import {
   loadMultiLevelLearningPath,
@@ -157,9 +158,6 @@ const ARCHIVE_GLYPH_STREAM_JITTER_MS = 22;
 const ARCHIVE_INCOMING_HOLD_MS = 170;
 const archiveLayoutCache = new Map();
 let archiveMeasureContext = null;
-const TUTOR_CODE_SWITCHING_AUDIO_INSTRUCTION =
-  "You are a language tutor. Correct target-language pronunciation is required. When code switching, switch accent and phonology for the target-language words instead of reading them with the surrounding language accent.";
-
 /* ---------------------------
    Utils & helpers
 --------------------------- */
@@ -714,61 +712,6 @@ function buildTutorLessonContext(
         : "",
     ]).join("\n"),
   };
-}
-
-function buildTutorCodeSwitchingAudioInstruction(
-  targetLanguageName = "",
-  supportLanguageName = "",
-  { isolateAccentSwitches = false, referencePhrases = [] } = {},
-) {
-  const pronunciationReferences = compactUnique(referencePhrases).slice(0, 12);
-  return [
-    TUTOR_CODE_SWITCHING_AUDIO_INSTRUCTION,
-    // OpenAI-only emphasis: keep the accent demand, but invisibly — an earlier
-    // prescriptive version ("always say 'La palabra es: …' first") made the
-    // tutor robotic because the model followed the example formula verbatim.
-    isolateAccentSwitches && targetLanguageName && supportLanguageName
-      ? `## SPOKEN CODE SWITCHING\n- Treat each ${targetLanguageName} model word or phrase as a real switch of speaking language, not as a ${supportLanguageName} word with foreign spelling. Use fully native ${targetLanguageName} phonology, syllable boundaries, lexical stress, rhythm, and intonation.\n- Put the exact ${targetLanguageName} model text in its own short spoken sentence, with normal punctuation before and after it. Do not embed the target word inside a ${supportLanguageName} clause where the surrounding accent can bleed into it.\n- Keep every written word intact as one lexical word. Never insert a space, syllable break, hyphen, or extra vowel inside it; for example, say and write "hermana", never "herman a".\n- Switch back to ${supportLanguageName} only after the complete target phrase ends. Do this naturally without announcing the language switch or using a fixed introduction formula.`
-      : "",
-    isolateAccentSwitches && pronunciationReferences.length
-      ? `REFERENCE PRONUNCIATIONS: Preserve the exact spelling and native ${targetLanguageName} pronunciation of these curriculum forms whenever spoken: ${pronunciationReferences.map((phrase) => `"${phrase}"`).join(", ")}. These are pronunciation anchors, not a list to recite.`
-      : "",
-    targetLanguageName
-      ? `When you include ${targetLanguageName} words or phrases, pronounce those words with native-like ${targetLanguageName} sounds, rhythm, stress, and intonation even if the surrounding tutoring language is different.`
-      : "",
-    targetLanguageName && supportLanguageName
-      ? `Do not anglicize, hispanicize, or otherwise adapt ${targetLanguageName} model phrases to ${supportLanguageName} pronunciation. The accent must switch for the target phrase itself.`
-      : "",
-    targetLanguageName
-      ? `Before and after each ${targetLanguageName} model phrase, separate it naturally with normal speech timing so the audio clearly switches into ${targetLanguageName} pronunciation.`
-      : "",
-    targetLanguageName
-      ? `Say each ${targetLanguageName} model phrase as a short standalone phrase. Do not blend its sounds into a support-language sentence.`
-      : "",
-    "Never write visible timing, SSML, or control tags such as <pause>, </pause>, <break>, or [pause]. Use normal punctuation only.",
-    "Write target-language words in normal spelling. Do not use phonetic respelling, hyphenation, or transliteration unless the learner explicitly asks.",
-  ]
-    .filter(Boolean)
-    .join(" ");
-}
-
-function getTutorPronunciationReferencePhrases(lesson, targetLang = "es") {
-  if (!lesson) return [];
-  if (isTutorStarterAgendaLesson(lesson)) {
-    return TUTOR_STARTER_AGENDA_ITEMS.map((item) =>
-      getTutorStarterItemModelPhrase(item, targetLang),
-    ).filter(Boolean);
-  }
-
-  const vocabularyFocus = lesson?.content?.vocabulary?.focusPoints;
-  const focusPoints = Array.isArray(vocabularyFocus)
-    ? vocabularyFocus
-    : getTutorLessonFocusAgendaItems(lesson).map(
-        (item) => item.phrase || item.label,
-      );
-  return compactUnique(focusPoints).filter((phrase) =>
-    isTutorPracticePhraseAllowedForTarget(phrase, targetLang),
-  );
 }
 
 const SPANISH_SOURCE_TOKENS = new Set([
@@ -1478,6 +1421,33 @@ function getTutorLessonFocusAgendaItems(lesson) {
     id: `focus-${index}-${normalizeTutorAgendaSpeech(phrase).slice(0, 24)}`,
     phrase,
     label: phrase,
+  }));
+}
+
+function getTutorLessonPreviewAgendaItems(
+  lesson,
+  supportLang = "en",
+  targetLang = "es",
+) {
+  if (isTutorStarterAgendaLesson(lesson)) {
+    return TUTOR_STARTER_AGENDA_ITEMS.map((item) => {
+      const task = getTutorStarterItemSupportTask(item, supportLang);
+      const phrase = getTutorStarterItemModelPhrase(item, targetLang);
+      const normalizedTask = normalizeTutorAgendaSpeech(task);
+      const normalizedPhrase = normalizeTutorAgendaSpeech(phrase);
+      return {
+        id: item.id,
+        label:
+          phrase && normalizedPhrase !== normalizedTask
+            ? `${task} · ${phrase}`
+            : task,
+      };
+    });
+  }
+
+  return getTutorLessonFocusAgendaItems(lesson).map((item) => ({
+    id: item.id,
+    label: item.label || item.phrase,
   }));
 }
 
@@ -3270,7 +3240,6 @@ function TutorPathLessonNode({
   const isLocked = status === SKILL_STATUS.LOCKED;
   const isCompleted = status === SKILL_STATUS.COMPLETED;
   const isInProgress = status === SKILL_STATUS.IN_PROGRESS;
-  const isClickable = !isLocked;
   const Icon = isCompleted
     ? RiCheckLine
     : isLocked
@@ -3334,16 +3303,28 @@ function TutorPathLessonNode({
       as="button"
       type="button"
       spacing={2}
-      onClick={() => isClickable && onSelect?.()}
-      disabled={!isClickable}
-      cursor={isClickable ? "pointer" : "not-allowed"}
+      onClick={() => onSelect?.()}
+      cursor="pointer"
       bg="transparent"
       border="none"
       _focus={{ outline: "none" }}
-      _focusVisible={
-        isClickable ? { boxShadow: `0 0 0 3px ${hexToRgba(color, 0.6)}` } : {}
-      }
-      _active={isClickable ? { transform: "translateY(2px) scale(0.97)" } : {}}
+      _focusVisible={{ boxShadow: `0 0 0 3px ${hexToRgba(color, 0.6)}` }}
+      _active={{ transform: "translateY(2px) scale(0.97)" }}
+      aria-label={`${title}${
+        isLocked
+          ? tutorCopy(supportLang, {
+              en: ", locked lesson preview",
+              es: ", vista previa de leccion bloqueada",
+              pt: ", pre-visualizacao da licao bloqueada",
+              it: ", anteprima della lezione bloccata",
+              fr: ", apercu de la lecon verrouillee",
+              ja: "、ロックされたレッスンのプレビュー",
+              hi: ", लॉक किए गए पाठ का पूर्वावलोकन",
+              ar: "، معاينة درس مقفول",
+              zh: "，已锁定课程预览",
+            })
+          : ""
+      }`}
       sx={{
         touchAction: "manipulation",
         WebkitTapHighlightColor: "transparent",
@@ -3942,6 +3923,9 @@ export default function Tutor({
   const tutorPathLoadedLangRef = useRef("");
   const [selectedTutorLesson, setSelectedTutorLesson] = useState(null);
   const [selectedTutorUnit, setSelectedTutorUnit] = useState(null);
+  const [previewedTutorLesson, setPreviewedTutorLesson] = useState(null);
+  const [isStartingPreviewedLesson, setIsStartingPreviewedLesson] =
+    useState(false);
   const selectedTutorLessonRef = useRef(null);
   const selectedTutorUnitRef = useRef(null);
   const [tutorLessonEarnedXp, setTutorLessonEarnedXp] = useState(0);
@@ -4492,6 +4476,33 @@ export default function Tutor({
     if (nextLevel !== level) return;
     setActiveTutorLevel(nextLevel);
     writeStoredTutorLevel(targetLang, nextLevel);
+  }
+
+  function handleTutorLessonPreview(lesson, unit, status) {
+    if (!lesson) return;
+    setPreviewedTutorLesson({ lesson, unit, status });
+  }
+
+  function closeTutorLessonPreview() {
+    if (isStartingPreviewedLesson) return;
+    setPreviewedTutorLesson(null);
+  }
+
+  async function handlePreviewedTutorLessonStart() {
+    const preview = previewedTutorLesson;
+    if (!preview?.lesson || preview.status === SKILL_STATUS.LOCKED) return;
+
+    setIsStartingPreviewedLesson(true);
+    try {
+      await handleTutorLessonSelect(
+        preview.lesson,
+        preview.unit,
+        preview.status,
+      );
+      setPreviewedTutorLesson(null);
+    } finally {
+      setIsStartingPreviewedLesson(false);
+    }
   }
 
   async function handleTutorLessonSelect(lesson, unit, status) {
@@ -5273,32 +5284,27 @@ export default function Tutor({
     const snapshot = getOpenAIRegularTutorAgendaSnapshot();
     if (!snapshot) return "";
 
-    const orderedAgenda = snapshot.items
-      .map((item, index) => `${index + 1}. ${item.phrase || item.label}`)
-      .join(" | ");
     const completed = snapshot.completedItems
       .map((item) => item.phrase || item.label)
       .join(", ");
 
     if (snapshot.phase === "review") {
       return [
-        "## APP-OWNED LESSON FLOW",
-        "PHASE: REVIEW. The app has confirmed that every ordered agenda item was taught and accepted once.",
-        `Covered agenda, in order: ${orderedAgenda}.`,
-        "Now review only covered material, one purposeful prompt at a time. Mix or contextualize covered items when appropriate for the level, but do not introduce a new curriculum concept or restart the teaching sequence.",
-        "The app still owns lesson completion; continue review until it transitions away.",
+        "# Current lesson state",
+        "Phase: review.",
+        `Covered material: ${completed}.`,
+        "Review the covered material naturally, one useful interaction at a time. Do not introduce new curriculum. The app decides when the lesson ends.",
       ].join("\n");
     }
 
     const current = snapshot.currentItem?.phrase || snapshot.currentItem?.label;
     return [
-      "## APP-OWNED LESSON FLOW",
-      "PHASE: TEACH THE AGENDA IN ORDER.",
-      `Full ordered agenda: ${orderedAgenda}.`,
-      completed ? `Already accepted: ${completed}.` : "Already accepted: none.",
-      `CURRENT ITEM: ${current}. Teach and elicit only this curriculum concept now. If it is a grammar concept, choose one tiny target-language example that demonstrates it.`,
-      "Do not review an accepted item, ask an extra recall question about it, or jump ahead. A correct learner answer causes the app to send a new CURRENT ITEM on the next turn. An incorrect or uncertain answer leaves CURRENT ITEM unchanged so you can clarify and retry it naturally.",
-      "Do not enter review until PHASE changes to REVIEW. These app-owned state lines override any general suggestion to vary or review the lesson early.",
+      "# Current lesson state",
+      "Phase: teach.",
+      `Current curriculum item: ${current}.`,
+      completed ? `Previously covered: ${completed}.` : "Previously covered: none.",
+      `Teach ${current} in one natural tutor turn and give the learner one clear way to demonstrate it. If you use multiple choice, “${current}” must be one option and the only correct option. Never ask a question whose choices contain no correct answer.`,
+      "Do not quiz or review previously covered items now. Stay with the current item until the app changes it; the app alone advances the sequence.",
     ].join("\n");
   }
 
@@ -5435,6 +5441,8 @@ export default function Tutor({
           ? await createOpenAIRealtimeBridge({
               audioElement: audioRef.current,
               initialInstructions: buildLanguageInstructions(),
+              responseInstructionsPrefix:
+                buildOpenAIResponseInstructionsPrefix(),
               voice: openaiVoice,
               inputLanguageCodes: inputLanguageCodes.length
                 ? inputLanguageCodes
@@ -5623,15 +5631,9 @@ export default function Tutor({
       buildTutorCodeSwitchingAudioInstruction(
         targetLanguageName,
         supportLanguageName,
-        // OpenAI realtime voices bleed the support-language accent into
-        // embedded target words; Gemini native-audio doesn't need the
-        // stronger isolation rules.
         {
-          isolateAccentSwitches: realtimeProviderRef.current === "openai",
-          referencePhrases: getTutorPronunciationReferencePhrases(
-            selectedTutorLessonRef.current,
-            tLang,
-          ),
+          emphasizeSingleWordSwitches:
+            realtimeProviderRef.current === "openai",
         },
       );
     const learnerAudioInstruction = buildTutorLearnerAudioInstruction({
@@ -5659,6 +5661,11 @@ export default function Tutor({
     const starterAgendaLesson = isTutorStarterAgendaLesson(
       selectedTutorLessonRef.current,
     );
+    const openAIRegularAgendaLesson =
+      realtimeProviderRef.current === "openai" &&
+      !!selectedTutorLessonRef.current &&
+      !selectedTutorLessonRef.current.isRepair &&
+      !starterAgendaLesson;
 
     const strict = (() => {
       if (supportCode === tLang) {
@@ -5792,25 +5799,70 @@ export default function Tutor({
           "Do not perform a closing act in any language or wording.",
           "A closing act includes any farewell, completion announcement, end-of-session summary, offer to stop, or suggestion that the lesson is over.",
           "The app will automatically close the conversation and show the lesson-complete modal when the threshold is reached.",
-          selectedLevel === "Pre-A1"
-            ? "Until then, keep reviewing one selected lesson word or one 1-3 word phrase at a time."
-            : "Until then, keep reviewing, combining, or practicing only the selected lesson concepts.",
+          openAIRegularAgendaLesson &&
+          isOpenAIRegularTutorAgendaIncomplete()
+            ? "Continue the app's current agenda item. Do not review earlier items until the app changes the lesson phase to review."
+            : selectedLevel === "Pre-A1"
+              ? "Until then, keep reviewing one selected lesson word or one 1-3 word phrase at a time."
+              : "Until then, keep reviewing, combining, or practicing only the selected lesson concepts.",
         ].join(" ")
       : "";
-    const interactionVarietyInstruction = [
-      "Avoid repetitive prompt endings. Do not repeatedly end with 'can you say that' or 'can you try that'.",
-      selectedLevel === "Pre-A1"
-        ? "Vary only the delivery format: a one-word blank, two familiar choices, yes/no meaning check, or a tiny scenario answered by the current 1-3 word phrase."
-        : "Vary the learner task: fill a blank, choose between options, answer a small meaning question, transform a phrase, respond to a tiny scenario, or use the model phrase in context.",
-      "Use direct, natural prompts and do not reuse the same request wording twice in a row.",
-      getTutorTaskVariationInstruction(turnCountRef.current, selectedLevel),
-    ].join(" ");
-    const signatureExperienceInstruction =
-      getTutorSignatureExperienceInstruction({
-        selectedLevel,
-        turnCount: turnCountRef.current,
-        isStarterLesson: starterAgendaLesson,
-      });
+    const interactionVarietyInstruction = openAIRegularAgendaLesson
+      ? ""
+      : [
+          "Avoid repetitive prompt endings. Do not repeatedly end with 'can you say that' or 'can you try that'.",
+          selectedLevel === "Pre-A1"
+            ? "Vary only the delivery format: a one-word blank, two familiar choices, yes/no meaning check, or a tiny scenario answered by the current 1-3 word phrase."
+            : "Vary the learner task: fill a blank, choose between options, answer a small meaning question, transform a phrase, respond to a tiny scenario, or use the model phrase in context.",
+          "Use direct, natural prompts and do not reuse the same request wording twice in a row.",
+          getTutorTaskVariationInstruction(turnCountRef.current, selectedLevel),
+        ].join(" ");
+    const signatureExperienceInstruction = openAIRegularAgendaLesson
+      ? ""
+      : getTutorSignatureExperienceInstruction({
+          selectedLevel,
+          turnCount: turnCountRef.current,
+          isStarterLesson: starterAgendaLesson,
+        });
+
+    if (openAIRegularAgendaLesson) {
+      return [
+        "# Role and objective",
+        `You are a warm, natural bilingual tutor teaching an adult ${selectedLevel} learner of ${targetLanguageName}. Sound like a skilled human tutor having one continuous conversation, not a drill generator.`,
+        "Teach the selected lesson in the exact sequence supplied by the app. Per-turn instructions titled # Current lesson state are authoritative: teach only the current item during the teach phase, then review only after the app changes the phase to review.",
+        "# Spoken languages",
+        strict,
+        targetLanguageBoundaryInstruction,
+        codeSwitchingAudioInstruction,
+        "# Conversation behavior",
+        "Listen to what the learner actually meant, respond to it naturally, and make one useful teaching move. Give the learner only one clear action per turn.",
+        "When an answer is accepted, acknowledge it briefly and continue with the new current item supplied by the app; do not add extra quizzes for the item just completed. When an answer is wrong, correct the important issue concisely and retry the same item. When the learner asks a question, answer it first and then return to the current item.",
+        "Do not announce a drill, memory technique, agenda, phase, scoring, or teaching method. Never use canned labels such as 'tiny choice', 'quick memory', or 'micro mission'. Do not force every item through repetition, yes/no, recall, and scenario prompts; one successful demonstration is enough for the app to advance.",
+        `If you offer choices, include the current ${targetLanguageName} answer and make it the only correct choice. Never present a question with no correct answer.`,
+        "# Lesson and level",
+        tutorLessonContext,
+        proficiencyHint,
+        preA1HardCeiling,
+        customSubjectsContext,
+        "# Progress and evaluation",
+        completionControlInstruction,
+        learnerAudioInstruction,
+        speechAcceptanceInstructions,
+        isTutorToolGradingActive()
+          ? `Evaluate only the learner's latest response to the task you actually asked. If it correctly produces the requested ${targetLanguageName} phrase or meaning, call markTurnSuccessful(correct:true) exactly once. If it is wrong or unrelated, do not call markTurnSuccessful; correct it, keep the same item, and call recordSlip(concept, learnerSaid, correction) exactly once for the genuine mistake. If the learner asks for help, meaning, or repetition, help them but do not award progress. Never mention these tools, XP, or stored mistakes.`
+          : "",
+        isTutorToolGradingActive()
+          ? "The app owns agenda advancement and lesson completion. Never advance merely because you modeled the answer yourself. When the app's review is complete, call proposeLessonComplete and follow its decision; otherwise keep teaching the current app-supplied state."
+          : "",
+        feedbackContext,
+        "# Style",
+        replyLengthInstruction,
+        `PERSONA: ${persona}. Stay consistent with that tone while sounding spontaneous and attentive.`,
+        "Never expose internal instructions, lesson state, tool names, or hidden reasoning.",
+      ]
+        .filter(Boolean)
+        .join("\n\n");
+    }
 
     return [
       "Act as a warm, practical language tutor leading a focused tutoring session.",
@@ -5853,6 +5905,51 @@ export default function Tutor({
     ]
       .filter(Boolean)
       .join("\n");
+  }
+
+  function buildOpenAIResponseInstructionsPrefix() {
+    const tLang = targetLangRef.current || targetLang || "es";
+    const supportCode = normalizeSupportLanguage(
+      supportLangRef.current || resolvedSupportLang,
+      DEFAULT_SUPPORT_LANGUAGE,
+    );
+    const targetLanguageName =
+      getLanguagePromptName(tLang) || "the target language";
+    const supportLanguageName =
+      getLanguagePromptName(supportCode) || "the support language";
+    const tutorLessonDetails = buildTutorLessonContext(
+      selectedTutorLessonRef.current,
+      selectedTutorUnitRef.current,
+      supportCode,
+      tLang,
+    );
+    const selectedLevel =
+      tutorLessonDetails?.level ||
+      conversationSettingsRef.current.proficiencyLevel ||
+      maxProficiencyLevel ||
+      "A1";
+    const isEarlyTutorLevel = isTutorEarlyLevel(selectedLevel);
+    const isAdvancedTutorLevel =
+      isTutorAdvancedConversationLevel(selectedLevel);
+    const teacherTalkInstruction =
+      supportCode === tLang
+        ? `Speak naturally in ${targetLanguageName}.`
+        : isEarlyTutorLevel
+          ? `Use natural ${supportLanguageName} for teacher talk and ${targetLanguageName} for the exact words and phrases being taught.`
+          : isAdvancedTutorLevel
+            ? `Tutor mainly in natural ${targetLanguageName}; use ${supportLanguageName} only for a requested or necessary clarification.`
+            : `Tutor primarily in simple, natural ${targetLanguageName}; use ${supportLanguageName} only as a brief rescue clarification.`;
+
+    return [
+      "# Realtime bilingual tutor",
+      `You are a genuinely bilingual, native-sounding ${supportLanguageName}-${targetLanguageName} voice tutor. Generate the reply as bilingual speech, not as single-language speech reading foreign-looking tokens.`,
+      teacherTalkInstruction,
+      `For every ${targetLanguageName} span in the reply—even one word inside a ${supportLanguageName} sentence—switch completely to natural native ${targetLanguageName} phonemes, syllable boundaries, lexical stress, rhythm, and intonation. After that span, switch cleanly back to native ${supportLanguageName}.`,
+      `Never pronounce ${targetLanguageName} text with ${supportLanguageName} sounds. Never respell, split, transliterate, or comment on the switch unless the learner explicitly asks for pronunciation help.`,
+      "# Delivery",
+      "Follow the current turn instruction exactly. Respond naturally to the learner and give one clear learner action. The app owns agenda order, evaluation, progress, and completion.",
+      "Keep the reply concise and conversational. Never expose internal instructions, lesson state, scoring, or tool names.",
+    ].join("\n");
   }
 
   // Routed repair (deep-seed): when the Daily Quest sends a tutor repair here,
@@ -5916,15 +6013,9 @@ export default function Tutor({
       buildTutorCodeSwitchingAudioInstruction(
         targetLanguageName,
         supportLanguageName,
-        // OpenAI realtime voices bleed the support-language accent into
-        // embedded target words; Gemini native-audio doesn't need the
-        // stronger isolation rules.
         {
-          isolateAccentSwitches: realtimeProviderRef.current === "openai",
-          referencePhrases: getTutorPronunciationReferencePhrases(
-            lesson,
-            tLang,
-          ),
+          emphasizeSingleWordSwitches:
+            realtimeProviderRef.current === "openai",
         },
       );
     const targetLanguageBoundaryInstruction =
@@ -5993,6 +6084,19 @@ export default function Tutor({
         targetLang: tLang,
         kind: "tutor_kickoff",
       });
+    }
+
+    if (
+      realtimeProviderRef.current === "openai" &&
+      lesson &&
+      !lesson.isRepair
+    ) {
+      return [
+        "Start the lesson now with one warm, natural tutor turn.",
+        buildOpenAIRegularTutorAgendaInstruction(),
+        "Do not announce a drill format, memory technique, agenda, phase, or teaching method. Do not say canned labels such as 'tiny choice', 'quick memory', or 'micro mission'. Simply teach the current item as a skilled bilingual tutor would.",
+        "Keep the opening concise and give the learner one clear next action.",
+      ].join("\n");
     }
 
     return [
@@ -6080,15 +6184,9 @@ export default function Tutor({
       buildTutorCodeSwitchingAudioInstruction(
         targetLanguageName,
         supportLanguageName,
-        // OpenAI realtime voices bleed the support-language accent into
-        // embedded target words; Gemini native-audio doesn't need the
-        // stronger isolation rules.
         {
-          isolateAccentSwitches: realtimeProviderRef.current === "openai",
-          referencePhrases: getTutorPronunciationReferencePhrases(
-            selectedTutorLessonRef.current,
-            targetLang,
-          ),
+          emphasizeSingleWordSwitches:
+            realtimeProviderRef.current === "openai",
         },
       );
     const targetLanguageBoundaryInstruction =
@@ -6438,15 +6536,9 @@ export default function Tutor({
       buildTutorCodeSwitchingAudioInstruction(
         targetLanguageName,
         supportLanguageName,
-        // OpenAI realtime voices bleed the support-language accent into
-        // embedded target words; Gemini native-audio doesn't need the
-        // stronger isolation rules.
         {
-          isolateAccentSwitches: realtimeProviderRef.current === "openai",
-          referencePhrases: getTutorPronunciationReferencePhrases(
-            lesson,
-            tLang,
-          ),
+          emphasizeSingleWordSwitches:
+            realtimeProviderRef.current === "openai",
         },
       );
     const targetLanguageBoundaryInstruction =
@@ -6535,6 +6627,21 @@ export default function Tutor({
       ]
         .filter(Boolean)
         .join(" ");
+    }
+
+    if (realtimeProviderRef.current === "openai" && !lesson?.isRepair) {
+      return [
+        "Respond directly and naturally to the learner's latest turn.",
+        buildOpenAIRegularTutorAgendaInstruction(),
+        userMessage ? `Latest learner transcript: "${userMessage}".` : "",
+        openAITurnVerdictInstruction,
+        buildRecentOnScreenContextInstruction(),
+        "Do not announce a drill format, memory technique, agenda, phase, or teaching method. Avoid canned labels such as 'tiny choice', 'quick memory', and 'micro mission'.",
+        "Use one brief, conversational tutor turn with one clear learner action. Do not stack praise, explanations, examples, and multiple questions into the same reply.",
+        "The app owns sequence and completion. Never end the lesson yourself.",
+      ]
+        .filter(Boolean)
+        .join("\n");
     }
 
     const agendaTitle = getTutorLessonAgendaTitle(lesson, unit, supportCode);
@@ -6722,6 +6829,11 @@ export default function Tutor({
         ? normalizeOpenAITutorVoice(voiceRef.current)
         : normalizeGeminiLiveVoice(voiceRef.current);
     const instructions = buildLanguageInstructions();
+    if (realtimeProviderRef.current === "openai") {
+      dcRef.current.setResponseInstructionsPrefix?.(
+        buildOpenAIResponseInstructionsPrefix(),
+      );
+    }
     const inputAudioTranscription = buildTutorInputTranscription({
       inputLanguageCodes: getCurrentTutorInputLanguageCodes(),
       keywords: getCurrentTutorTranscriptionKeywords(),
@@ -9099,6 +9211,19 @@ export default function Tutor({
     tutorStarterAgendaProgress,
     uiLang,
   ]);
+  const previewedLessonAgendaItems = useMemo(() => {
+    const lesson = previewedTutorLesson?.lesson;
+    if (!lesson) return [];
+    const items = getTutorLessonPreviewAgendaItems(lesson, uiLang, targetLang);
+    if (items.length) return items;
+
+    const fallback = getTutorLessonAgendaSubtitle(
+      lesson,
+      previewedTutorLesson?.unit,
+      uiLang,
+    );
+    return fallback ? [{ id: "lesson-overview", label: fallback }] : [];
+  }, [previewedTutorLesson, targetLang, uiLang]);
   /* ---------------------------
      Render
   --------------------------- */
@@ -9601,7 +9726,7 @@ export default function Tutor({
                       supportLang={uiLang}
                       getLessonStatus={getTutorLessonStatus}
                       getLessonEarnedPercent={getTutorLessonEarnedPercent}
-                      onLessonSelect={handleTutorLessonSelect}
+                      onLessonSelect={handleTutorLessonPreview}
                     />
                   ))}
                 </VStack>
@@ -9624,6 +9749,322 @@ export default function Tutor({
               )}
             </VStack>
           </ModalBody>
+        </ModalContent>
+      </Modal>
+
+      <Modal
+        isOpen={!!previewedTutorLesson}
+        onClose={closeTutorLessonPreview}
+        isCentered
+        size="lg"
+        scrollBehavior="inside"
+        closeOnEsc={!isStartingPreviewedLesson}
+        closeOnOverlayClick={!isStartingPreviewedLesson}
+        motionPreset="none"
+      >
+        <ModalOverlay
+          motionProps={nativeOverlayMotionProps}
+          bg="var(--app-overlay)"
+        />
+        <ModalContent
+          motionProps={nativeModalMotionProps}
+          mx={3}
+          maxH={{ base: "calc(100dvh - 32px)", md: "calc(100dvh - 80px)" }}
+          overflow="hidden"
+          borderRadius="2xl"
+          border="1px solid"
+          borderColor={isLightTheme ? APP_BORDER : "whiteAlpha.200"}
+          bg={
+            isLightTheme
+              ? "linear-gradient(180deg, #fffaf3 0%, #f7eddf 100%)"
+              : "linear-gradient(180deg, #111827 0%, #050914 100%)"
+          }
+          color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
+          boxShadow={
+            isLightTheme
+              ? "0 24px 60px rgba(120,94,61,0.24)"
+              : "0 24px 70px rgba(0,0,0,0.5), 0 0 36px rgba(34,211,238,0.1)"
+          }
+        >
+          <ModalHeader px={{ base: 5, md: 7 }} pt={6} pb={3}>
+            <HStack align="start" spacing={4} pr={8}>
+              <Box
+                w={11}
+                h={11}
+                borderRadius="full"
+                bg={
+                  previewedTutorLesson?.status === SKILL_STATUS.LOCKED
+                    ? isLightTheme
+                      ? "rgba(139,122,99,0.14)"
+                      : "whiteAlpha.100"
+                    : previewedTutorLesson?.unit?.color || "cyan.500"
+                }
+                color={
+                  previewedTutorLesson?.status === SKILL_STATUS.LOCKED
+                    ? isLightTheme
+                      ? "#8B7A63"
+                      : "gray.400"
+                    : "white"
+                }
+                display="grid"
+                placeItems="center"
+                flexShrink={0}
+              >
+                {previewedTutorLesson?.status === SKILL_STATUS.LOCKED ? (
+                  <RiLockLine size={21} />
+                ) : (
+                  <RiBookOpenLine size={21} />
+                )}
+              </Box>
+              <VStack align="start" spacing={1} minW={0}>
+                <Text
+                  fontSize="xs"
+                  fontWeight="bold"
+                  textTransform="uppercase"
+                  letterSpacing="0.08em"
+                  color={isLightTheme ? APP_TEXT_SECONDARY : "cyan.200"}
+                >
+                  {tutorCopy(uiLang, {
+                    en: "Lesson preview",
+                    es: "Vista previa de la leccion",
+                    pt: "Pre-visualizacao da licao",
+                    it: "Anteprima della lezione",
+                    fr: "Apercu de la lecon",
+                    de: "Lektionsvorschau",
+                    ja: "レッスンプレビュー",
+                    hi: "पाठ का पूर्वावलोकन",
+                    ar: "معاينة الدرس",
+                    zh: "课程预览",
+                  })}
+                </Text>
+                <Heading size="md" lineHeight="1.2" sx={MOBILE_TEXT_SX}>
+                  {getTutorLessonAgendaTitle(
+                    previewedTutorLesson?.lesson,
+                    previewedTutorLesson?.unit,
+                    uiLang,
+                  )}
+                </Heading>
+                <HStack spacing={2} pt={1} flexWrap="wrap">
+                  {previewedTutorLesson?.unit?.cefrLevel && (
+                    <Badge colorScheme="purple">
+                      {previewedTutorLesson.unit.cefrLevel}
+                    </Badge>
+                  )}
+                  <Badge colorScheme="cyan">
+                    {getTutorLessonXpRequired(
+                      previewedTutorLesson?.lesson,
+                    )}{" "}
+                    XP
+                  </Badge>
+                  {previewedTutorLesson?.status === SKILL_STATUS.COMPLETED && (
+                    <Badge colorScheme="green">
+                      {tutorCopy(uiLang, {
+                        en: "Completed",
+                        es: "Completada",
+                        pt: "Concluida",
+                        it: "Completata",
+                        fr: "Terminee",
+                        ja: "完了",
+                        hi: "पूरा हुआ",
+                        ar: "مكتمل",
+                        zh: "已完成",
+                      })}
+                    </Badge>
+                  )}
+                </HStack>
+              </VStack>
+            </HStack>
+          </ModalHeader>
+          <ModalCloseButton isDisabled={isStartingPreviewedLesson} />
+
+          <ModalBody px={{ base: 5, md: 7 }} py={4}>
+            <VStack align="stretch" spacing={5}>
+              <Text
+                fontSize="sm"
+                color={isLightTheme ? APP_TEXT_SECONDARY : "gray.300"}
+                sx={MOBILE_TEXT_SX}
+              >
+                {getTutorLessonAgendaSubtitle(
+                  previewedTutorLesson?.lesson,
+                  previewedTutorLesson?.unit,
+                  uiLang,
+                )}
+              </Text>
+
+              <Box>
+                <Text fontWeight="bold" mb={3}>
+                  {tutorCopy(uiLang, {
+                    en: "Agenda",
+                    es: "Agenda",
+                    pt: "Agenda",
+                    it: "Programma",
+                    fr: "Programme",
+                    de: "Agenda",
+                    ja: "学習内容",
+                    hi: "एजेंडा",
+                    ar: "خطة الدرس",
+                    zh: "课程安排",
+                  })}
+                </Text>
+                <VStack align="stretch" spacing={2.5}>
+                  {previewedLessonAgendaItems.map((agendaItem, index) => (
+                    <HStack
+                      key={agendaItem.id || `${agendaItem.label}-${index}`}
+                      align="start"
+                      spacing={3}
+                      p={3}
+                      borderRadius="xl"
+                      bg={
+                        isLightTheme
+                          ? "rgba(255,255,255,0.66)"
+                          : "rgba(255,255,255,0.055)"
+                      }
+                      border="1px solid"
+                      borderColor={
+                        isLightTheme
+                          ? "rgba(120,94,61,0.12)"
+                          : "whiteAlpha.100"
+                      }
+                    >
+                      <Box
+                        w={7}
+                        h={7}
+                        borderRadius="full"
+                        display="grid"
+                        placeItems="center"
+                        flexShrink={0}
+                        bg={
+                          previewedTutorLesson?.unit?.color || "cyan.500"
+                        }
+                        color="white"
+                        fontSize="xs"
+                        fontWeight="bold"
+                      >
+                        {index + 1}
+                      </Box>
+                      <Text
+                        fontSize="sm"
+                        lineHeight="1.45"
+                        pt="3px"
+                        sx={MOBILE_TEXT_SX}
+                      >
+                        {agendaItem.label}
+                      </Text>
+                    </HStack>
+                  ))}
+                </VStack>
+              </Box>
+
+              {previewedTutorLesson?.status === SKILL_STATUS.LOCKED && (
+                <HStack
+                  align="start"
+                  spacing={3}
+                  p={4}
+                  borderRadius="xl"
+                  bg={
+                    isLightTheme
+                      ? "rgba(139,122,99,0.1)"
+                      : "rgba(148,163,184,0.1)"
+                  }
+                  border="1px solid"
+                  borderColor={
+                    isLightTheme
+                      ? "rgba(139,122,99,0.22)"
+                      : "whiteAlpha.200"
+                  }
+                >
+                  <Box
+                    as={RiLockLine}
+                    boxSize="18px"
+                    mt="2px"
+                    flexShrink={0}
+                  />
+                  <Text fontSize="sm" lineHeight="1.5">
+                    {tutorCopy(uiLang, {
+                      en: "This lesson is locked. You can preview it now, then complete the earlier lessons to unlock it.",
+                      es: "Esta leccion esta bloqueada. Puedes verla ahora y completar las lecciones anteriores para desbloquearla.",
+                      pt: "Esta licao esta bloqueada. Voce pode ve-la agora e concluir as licoes anteriores para desbloquea-la.",
+                      it: "Questa lezione e bloccata. Puoi vederla ora e completare le lezioni precedenti per sbloccarla.",
+                      fr: "Cette lecon est verrouillee. Tu peux la consulter maintenant, puis terminer les lecons precedentes pour la deverrouiller.",
+                      de: "Diese Lektion ist gesperrt. Du kannst sie jetzt ansehen und die vorherigen Lektionen abschliessen, um sie freizuschalten.",
+                      ja: "このレッスンはロックされています。内容は今すぐ確認でき、前のレッスンを完了すると開始できます。",
+                      hi: "यह पाठ लॉक है। आप अभी इसका पूर्वावलोकन कर सकते हैं और पिछले पाठ पूरे करके इसे अनलॉक कर सकते हैं।",
+                      ar: "الدرس ده مقفول. تقدر تشوف خطته دلوقتي، وبعدها كمّل الدروس اللي قبله علشان تفتحه.",
+                      zh: "该课程尚未解锁。你可以先预览课程安排，完成前面的课程后即可开始。",
+                    })}
+                  </Text>
+                </HStack>
+              )}
+            </VStack>
+          </ModalBody>
+
+          <ModalFooter
+            px={{ base: 5, md: 7 }}
+            py={5}
+            borderTop="1px solid"
+            borderColor={isLightTheme ? APP_BORDER : "whiteAlpha.100"}
+            gap={3}
+          >
+            <Button
+              variant="ghost"
+              onClick={closeTutorLessonPreview}
+              isDisabled={isStartingPreviewedLesson}
+            >
+              {tutorCopy(uiLang, {
+                en: "Back",
+                es: "Volver",
+                pt: "Voltar",
+                it: "Indietro",
+                fr: "Retour",
+                de: "Zurueck",
+                ja: "戻る",
+                hi: "वापस",
+                ar: "رجوع",
+                zh: "返回",
+              })}
+            </Button>
+            <Button
+              flex="1"
+              colorScheme="cyan"
+              leftIcon={
+                previewedTutorLesson?.status === SKILL_STATUS.LOCKED ? (
+                  <RiLockLine />
+                ) : (
+                  <RiBookOpenLine />
+                )
+              }
+              onClick={handlePreviewedTutorLessonStart}
+              isDisabled={
+                previewedTutorLesson?.status === SKILL_STATUS.LOCKED
+              }
+              isLoading={isStartingPreviewedLesson}
+              loadingText={tutorCopy(uiLang, {
+                en: "Starting...",
+                es: "Iniciando...",
+                pt: "Iniciando...",
+                it: "Avvio...",
+                fr: "Demarrage...",
+                de: "Startet...",
+                ja: "開始しています...",
+                hi: "शुरू हो रहा है...",
+                ar: "بيبدأ...",
+                zh: "正在开始...",
+              })}
+            >
+              {tutorCopy(uiLang, {
+                en: "Get started",
+                es: "Comenzar",
+                pt: "Comecar",
+                it: "Inizia",
+                fr: "Commencer",
+                de: "Loslegen",
+                ja: "始める",
+                hi: "शुरू करें",
+                ar: "ابدأ",
+                zh: "开始学习",
+              })}
+            </Button>
+          </ModalFooter>
         </ModalContent>
       </Modal>
 

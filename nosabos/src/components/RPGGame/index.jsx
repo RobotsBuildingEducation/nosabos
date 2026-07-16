@@ -9512,11 +9512,11 @@ export default function RPGGame({
                       <Button
                         size="sm"
                         variant="ghost"
-                        color={isLightTheme ? rpgTextPrimary : "white"}
+                        color={rpgTextPrimary}
                         bg="transparent"
                         border="1px solid"
-                        borderColor={isLightTheme ? rpgTextPrimary : "white"}
-                        _hover={{ bg: "whiteAlpha.200" }}
+                        borderColor={rpgPanelBorder}
+                        _hover={{ bg: rpgChoiceHoverBg }}
                         onClick={() => completeNPCChapter(dialogue.npcIdx)}
                         w="100%"
                       >
@@ -9617,11 +9617,11 @@ export default function RPGGame({
                       <Button
                         size="sm"
                         variant="ghost"
-                        color={isLightTheme ? rpgTextPrimary : "white"}
+                        color={rpgTextPrimary}
                         bg="transparent"
                         border="1px solid"
-                        borderColor={isLightTheme ? rpgTextPrimary : "white"}
-                        _hover={{ bg: "whiteAlpha.200" }}
+                        borderColor={rpgPanelBorder}
+                        _hover={{ bg: rpgChoiceHoverBg }}
                         onClick={() => completeNPCChapter(dialogue.npcIdx)}
                         w="100%"
                       >
@@ -9702,11 +9702,11 @@ export default function RPGGame({
                       <Button
                         size="sm"
                         variant="ghost"
-                        color={isLightTheme ? rpgTextPrimary : "white"}
+                        color={rpgTextPrimary}
                         bg="transparent"
                         border="1px solid"
-                        borderColor={isLightTheme ? rpgTextPrimary : "white"}
-                        _hover={{ bg: "whiteAlpha.200" }}
+                        borderColor={rpgPanelBorder}
+                        _hover={{ bg: rpgChoiceHoverBg }}
                         onClick={closeDialogue}
                         w="100%"
                         h="auto"
@@ -9743,11 +9743,11 @@ export default function RPGGame({
                     <Button
                       size="sm"
                       variant="ghost"
-                      color={isLightTheme ? rpgTextPrimary : "white"}
+                      color={rpgTextPrimary}
                       bg="transparent"
                       border="1px solid"
-                      borderColor={isLightTheme ? rpgTextPrimary : "white"}
-                      _hover={{ bg: "whiteAlpha.200" }}
+                      borderColor={rpgPanelBorder}
+                      _hover={{ bg: rpgChoiceHoverBg }}
                       onClick={() => completeNPCChapter(dialogue.npcIdx)}
                       h="auto"
                       py={2}
