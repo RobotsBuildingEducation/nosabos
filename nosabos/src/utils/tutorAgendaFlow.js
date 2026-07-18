@@ -2,6 +2,19 @@ function getAgendaItemId(item, index) {
   return String(item?.id || `agenda-item-${index}`).trim();
 }
 
+export function isLegacyTutorAgendaProgress(
+  schemaVersion,
+  currentSchemaVersion,
+) {
+  const savedVersion = Number(schemaVersion);
+  const currentVersion = Number(currentSchemaVersion);
+  return (
+    Number.isFinite(currentVersion) &&
+    currentVersion > 0 &&
+    (!Number.isFinite(savedVersion) || savedVersion < currentVersion)
+  );
+}
+
 export function normalizeTutorAgendaProgress(items = [], progress = {}) {
   const allowedIds = new Set(
     (Array.isArray(items) ? items : []).map(getAgendaItemId).filter(Boolean),

@@ -347,6 +347,7 @@ async function warmUpcomingGameReview(lesson, targetLang, supportLang = "en") {
       lesson: gameLesson,
       unit,
       fallbackLevel: level,
+      targetLang,
     });
     const { prepareLegacyEpisodeScenario } =
       await import("./components/RPGGame/episodes/legacyScenario.js");
@@ -3489,6 +3490,19 @@ export default function App({ onBootReady } = {}) {
     viewMode === "lesson" && activeLesson?.modes?.length > 0
       ? TAB_KEYS.filter((key) => activeLesson.modes.includes(key))
       : TAB_KEYS;
+  const activeLessonContent = useMemo(() => {
+    const content = activeLesson?.content || {};
+    const curriculumContext = activeLesson?.gameReviewContext || null;
+    if (!curriculumContext) return content;
+    return Object.fromEntries(
+      Object.entries(content).map(([mode, block]) => [
+        mode,
+        block && typeof block === "object"
+          ? { ...block, curriculumContext }
+          : block,
+      ]),
+    );
+  }, [activeLesson]);
 
   // Track XP at lesson start for completion detection
   const [lessonStartXp, setLessonStartXp] = useState(null);
@@ -5081,6 +5095,7 @@ export default function App({ onBootReady } = {}) {
         lesson,
         unit,
         fallbackLevel: inferredLevel,
+        targetLang: resolvedTargetLang,
       });
 
       return reviewContext
@@ -9397,7 +9412,7 @@ export default function App({ onBootReady } = {}) {
                             user?.progress?.practicePronunciation
                           }
                           lesson={activeLesson}
-                          lessonContent={activeLesson?.content?.realtime}
+                          lessonContent={activeLessonContent?.realtime}
                           onSkip={switchToRandomLessonMode}
                           bottomActionBarMinimized={isBottomActionBarMinimized}
                           onSwitchedAccount={handleSwitchedAccount}
@@ -9420,7 +9435,7 @@ export default function App({ onBootReady } = {}) {
                             user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS
                           }
                           lesson={activeLesson}
-                          lessonContent={activeLesson?.content?.stories}
+                          lessonContent={activeLessonContent?.stories}
                           onSkip={switchToRandomLessonMode}
                         />
                       </TabPanel>
@@ -9432,7 +9447,7 @@ export default function App({ onBootReady } = {}) {
                           key={`reading-${lessonModuleNonce}`}
                           userLanguage={appLanguage}
                           lesson={activeLesson}
-                          lessonContent={activeLesson?.content?.reading}
+                          lessonContent={activeLessonContent?.reading}
                           onSkip={switchToRandomLessonMode}
                           lessonStartXp={lessonStartXp}
                         />
@@ -9450,7 +9465,7 @@ export default function App({ onBootReady } = {}) {
                             user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS
                           }
                           lesson={activeLesson}
-                          lessonContent={activeLesson?.content?.grammar}
+                          lessonContent={activeLessonContent?.grammar}
                           isFinalQuiz={activeLesson?.isFinalQuiz || false}
                           quizConfig={
                             activeLesson?.quizConfig || {
@@ -9476,7 +9491,7 @@ export default function App({ onBootReady } = {}) {
                             user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS
                           }
                           lesson={activeLesson}
-                          lessonContent={activeLesson?.content?.vocabulary}
+                          lessonContent={activeLessonContent?.vocabulary}
                           isFinalQuiz={activeLesson?.isFinalQuiz || false}
                           quizConfig={
                             activeLesson?.quizConfig || {

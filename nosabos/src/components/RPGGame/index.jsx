@@ -3071,8 +3071,11 @@ export default function RPGGame({
   const reviewContext = useMemo(
     () =>
       lessonContext?.gameReviewContext ||
-      buildGameReviewContext({ lesson: lessonContext }),
-    [lessonContext],
+      buildGameReviewContext({
+        lesson: lessonContext,
+        targetLang: targetLangProp || lessonContext?.targetLang || "",
+      }),
+    [lessonContext, targetLangProp],
   );
 
   // CEFR proficiency level from lesson context - controls dialogue complexity

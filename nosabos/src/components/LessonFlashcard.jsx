@@ -62,6 +62,7 @@ import {
   questionToneText,
 } from "./questionUiStyles";
 import { translations } from "../utils/translation";
+import { buildCurriculumPromptContext } from "../utils/lessonCurriculum";
 
 const MotionBox = motion(Box);
 const APP_SURFACE = "var(--app-surface)";
@@ -545,6 +546,10 @@ export function buildLessonFlashcardPrompt({
   const avoidLine = collectedConcepts.length
     ? `Avoid repeating these already-collected concepts: ${collectedConcepts.join(", ")}`
     : "";
+  const curriculumLine = buildCurriculumPromptContext(
+    lessonContent?.curriculumContext,
+    { mode: moduleType },
+  );
 
   const moduleHint =
     moduleType === "grammar"
@@ -557,6 +562,7 @@ export function buildLessonFlashcardPrompt({
     topicLine,
     focusLine,
     wordsLine,
+    curriculumLine,
     avoidLine,
     "",
     `Reply as a single JSON object (no markdown fences):`,

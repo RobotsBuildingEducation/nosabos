@@ -8,6 +8,11 @@ import React, {
   useMemo,
 } from "react";
 import {
+  Accordion,
+  AccordionButton,
+  AccordionIcon,
+  AccordionItem,
+  AccordionPanel,
   Badge,
   Box,
   Button,
@@ -42,6 +47,7 @@ import {
   RiCheckLine,
   RiLockLine,
   RiRoadMapLine,
+  RiStarFill,
   RiTrophyLine,
   RiVolumeUpLine,
 } from "react-icons/ri";
@@ -89,6 +95,7 @@ import {
   saveTutorAgendaProgress,
   saveTutorLessonEarnedXp,
   startTutorLesson,
+  TUTOR_AGENDA_PROGRESS_SCHEMA_VERSION,
 } from "../utils/progressTracking";
 import {
   SOFT_STOP_BUTTON_BG,
@@ -120,9 +127,19 @@ import {
 import {
   advanceTutorAgendaProgress,
   getTutorAgendaSnapshot,
+  isLegacyTutorAgendaProgress,
   normalizeTutorAgendaProgress,
 } from "../utils/tutorAgendaFlow";
 import { buildTutorCodeSwitchingAudioInstruction } from "../utils/tutorCodeSwitchingPrompt";
+import {
+  buildOpenAITutorResponsePolicy,
+  buildOpenAIStarterAgendaTurnInstructions,
+  buildOpenAIRepairTurnInstructions,
+} from "../utils/openaiTutorPrompts";
+import {
+  getLessonAgenda,
+  getLocalizedAgendaLabel,
+} from "../utils/lessonCurriculum";
 import { getCEFRPromptHint } from "../utils/cefrUtils";
 import {
   loadMultiLevelLearningPath,
@@ -756,6 +773,33 @@ function isTutorPracticePhraseAllowedForTarget(phrase, targetLang = "es") {
   return !isLikelySpanishSourcePhrase(phrase);
 }
 
+// Raw (un-adapted) source curriculum concepts for a lesson, normalized whole
+// and comma-split, so "dijo que, comentó que" also blocks a prompted "dijo
+// que". The starter-token heuristic above only knows Pre-A1 vocabulary; this
+// catches every Spanish source concept of the current lesson exactly.
+function getTutorRawSourceConceptKeys(lesson) {
+  const keys = new Set();
+  getLessonAgenda(lesson).forEach((item) => {
+    const concept = String(item.targetConcept || "");
+    [concept, ...concept.split(/[,;/·]|\bvs\.?\b/i)].forEach((part) => {
+      const normalized = normalizeTutorAgendaSpeech(
+        part.replace(/\([^)]*\)/g, " "),
+      );
+      if (normalized) keys.add(normalized);
+    });
+  });
+  return keys;
+}
+
+// True when a phrase echoes the Spanish-authored source curriculum. Only
+// meaningful when the practice language is not Spanish: such a phrase must
+// never become a practice phrase or an ASR keyword there.
+function isTutorRawSourceConceptPhrase(lesson, phrase) {
+  const normalized = normalizeTutorAgendaSpeech(String(phrase || ""));
+  if (!normalized) return false;
+  return getTutorRawSourceConceptKeys(lesson).has(normalized);
+}
+
 function buildTutorTargetLanguageBoundaryInstruction({
   targetLang = "es",
   supportLang = "en",
@@ -1327,9 +1371,14 @@ function getSavedTutorStarterAgendaProgress(lessonProgress) {
   );
 }
 
-function getSavedTutorRegularAgendaProgress(lessonProgress, lesson) {
+function getSavedTutorRegularAgendaProgress(
+  lessonProgress,
+  lesson,
+  targetLang = "",
+  unit = null,
+) {
   return normalizeTutorAgendaProgress(
-    getTutorLessonFocusAgendaItems(lesson),
+    getTutorLessonFocusAgendaItems(lesson, "en", targetLang, unit),
     lessonProgress?.tutorAgendaProgress?.items,
   );
 }
@@ -1404,23 +1453,24 @@ function getTutorLessonAgendaSubtitle(lesson, unit, lang = "en") {
   );
 }
 
-function getTutorLessonFocusAgendaItems(lesson) {
-  const content = lesson?.content || {};
-  const focusPoints = [];
-  Object.values(content).forEach((block) => {
-    if (!block || typeof block !== "object") return;
-    if (!Array.isArray(block.focusPoints)) return;
-    block.focusPoints.forEach((point) => {
-      const phrase = String(point || "").trim();
-      if (!phrase) return;
-      focusPoints.push(phrase);
-    });
-  });
-
-  return compactUnique(focusPoints).map((phrase, index) => ({
-    id: `focus-${index}-${normalizeTutorAgendaSpeech(phrase).slice(0, 24)}`,
-    phrase,
-    label: phrase,
+function getTutorLessonFocusAgendaItems(
+  lesson,
+  supportLang = "en",
+  targetLang = "",
+  unit = null,
+) {
+  return getLessonAgenda(lesson, { unit, targetLang }).map((item) => ({
+    id: item.id,
+    phrase: item.targetConcept || getLocalizedAgendaLabel(item, "en"),
+    label: getLocalizedAgendaLabel(item, supportLang),
+    evidence: item.evidence,
+    kind: item.kind,
+    modes: item.modes,
+    examples: Array.isArray(item.targetExamples) ? item.targetExamples : [],
+    // Generic adapter items describe the objective in English instead of
+    // carrying a target-language phrase; phrase matching and ASR keywords
+    // must skip those (authored per-language items are real phrases).
+    isGenericAdapterItem: item.source === "target-language-adapter",
   }));
 }
 
@@ -1428,6 +1478,7 @@ function getTutorLessonPreviewAgendaItems(
   lesson,
   supportLang = "en",
   targetLang = "es",
+  unit = null,
 ) {
   if (isTutorStarterAgendaLesson(lesson)) {
     return TUTOR_STARTER_AGENDA_ITEMS.map((item) => {
@@ -1445,7 +1496,12 @@ function getTutorLessonPreviewAgendaItems(
     });
   }
 
-  return getTutorLessonFocusAgendaItems(lesson).map((item) => ({
+  return getTutorLessonFocusAgendaItems(
+    lesson,
+    supportLang,
+    targetLang,
+    unit,
+  ).map((item) => ({
     id: item.id,
     label: item.label || item.phrase,
   }));
@@ -1473,10 +1529,15 @@ function buildTutorCompletedAgendaData({
         meaning: getTutorStarterItemSupportMeaning(item, normalizedSupport),
         completed: forceComplete || !!starterProgress?.[item.id],
       }))
-    : getTutorLessonFocusAgendaItems(lesson).map((item) => ({
+    : getTutorLessonFocusAgendaItems(
+        lesson,
+        normalizedSupport,
+        targetLang,
+        unit,
+      ).map((item) => ({
         id: item.id,
-        task: getTutorLessonAgendaTitle(lesson, unit, normalizedSupport),
-        phrase: item.phrase || item.label,
+        task: item.label,
+        phrase: item.phrase,
         meaning: getTutorLessonAgendaSubtitle(lesson, unit, normalizedSupport),
         completed: forceComplete,
       }));
@@ -3924,8 +3985,41 @@ export default function Tutor({
   const [selectedTutorLesson, setSelectedTutorLesson] = useState(null);
   const [selectedTutorUnit, setSelectedTutorUnit] = useState(null);
   const [previewedTutorLesson, setPreviewedTutorLesson] = useState(null);
+  const [previewedTutorObjectivesExpanded, setPreviewedTutorObjectivesExpanded] =
+    useState(false);
+  const previewedTutorObjectivesScrollRef = useRef(null);
   const [isStartingPreviewedLesson, setIsStartingPreviewedLesson] =
     useState(false);
+  useEffect(() => {
+    if (!previewedTutorObjectivesExpanded) return undefined;
+    const scroller = previewedTutorObjectivesScrollRef.current;
+    if (!scroller) return undefined;
+
+    const handleWheel = (event) => {
+      const multiplier =
+        event.deltaMode === 1
+          ? 16
+          : event.deltaMode === 2
+            ? scroller.clientHeight
+            : 1;
+      const delta = event.deltaY * multiplier;
+      const maxScroll = scroller.scrollHeight - scroller.clientHeight;
+      const nextScroll = Math.max(
+        0,
+        Math.min(maxScroll, scroller.scrollTop + delta),
+      );
+
+      // Keep wheel/trackpad input inside the objectives while it can scroll.
+      // At either edge, leave the event alone so the modal can keep moving.
+      if (nextScroll === scroller.scrollTop) return;
+      event.preventDefault();
+      event.stopPropagation();
+      scroller.scrollTop = nextScroll;
+    };
+
+    scroller.addEventListener("wheel", handleWheel, { passive: false });
+    return () => scroller.removeEventListener("wheel", handleWheel);
+  }, [previewedTutorObjectivesExpanded]);
   const selectedTutorLessonRef = useRef(null);
   const selectedTutorUnitRef = useRef(null);
   const [tutorLessonEarnedXp, setTutorLessonEarnedXp] = useState(0);
@@ -3937,8 +4031,16 @@ export default function Tutor({
   // Regular lessons previously left agenda coverage entirely to the model.
   // OpenAI now gets an app-owned cursor just like the deterministic tutorial:
   // correct advances one item, a miss stays put, then review begins.
-  const openAIRegularAgendaRef = useRef({ lessonId: "", progress: {} });
+  const openAIRegularAgendaRef = useRef({
+    lessonId: "",
+    progress: {},
+    schemaVersion: null,
+  });
   const openAIRegularAgendaAdvancedTurnRef = useRef(null);
+  // Render-side mirror of openAIRegularAgendaRef mutations, so UI that gates
+  // on regular-agenda completeness (the header completion ring) re-computes
+  // when progress changes. Only ever bumped from handlers/effects.
+  const [tutorRegularAgendaTick, setTutorRegularAgendaTick] = useState(0);
   const tutorLessonCompletionTriggeredRef = useRef(false);
   const pendingTutorLessonCompletionRef = useRef(false);
   const [completedTutorLessonData, setCompletedTutorLessonData] =
@@ -4304,6 +4406,8 @@ export default function Tutor({
           : getSavedTutorRegularAgendaProgress(
               progressLessons?.[resumeLesson.lesson.id],
               resumeLesson.lesson,
+              targetLang,
+              resumeLesson.unit,
             );
 
         setSelectedTutorLesson(resumeLesson.lesson);
@@ -4317,6 +4421,8 @@ export default function Tutor({
         setOpenAIRegularTutorAgendaProgress(
           resumeLesson.lesson,
           savedRegularProgress,
+          progressLessons?.[resumeLesson.lesson.id]?.tutorAgendaProgress
+            ?.schemaVersion,
         );
         tutorLessonCompletionTriggeredRef.current = false;
         setConversationSettings((prev) => ({
@@ -4480,11 +4586,13 @@ export default function Tutor({
 
   function handleTutorLessonPreview(lesson, unit, status) {
     if (!lesson) return;
+    setPreviewedTutorObjectivesExpanded(false);
     setPreviewedTutorLesson({ lesson, unit, status });
   }
 
   function closeTutorLessonPreview() {
     if (isStartingPreviewedLesson) return;
+    setPreviewedTutorObjectivesExpanded(false);
     setPreviewedTutorLesson(null);
   }
 
@@ -4499,6 +4607,7 @@ export default function Tutor({
         preview.unit,
         preview.status,
       );
+      setPreviewedTutorObjectivesExpanded(false);
       setPreviewedTutorLesson(null);
     } finally {
       setIsStartingPreviewedLesson(false);
@@ -4526,7 +4635,12 @@ export default function Tutor({
       : {};
     const savedRegularProgress = isTutorStarterAgendaLesson(lesson)
       ? {}
-      : getSavedTutorRegularAgendaProgress(lessonProgress, lesson);
+      : getSavedTutorRegularAgendaProgress(
+          lessonProgress,
+          lesson,
+          targetLangRef.current || targetLang,
+          unit,
+        );
 
     setSelectedTutorLesson(lesson);
     setSelectedTutorUnit(unit);
@@ -4540,7 +4654,11 @@ export default function Tutor({
     );
     tutorStarterAgendaProgressRef.current = savedStarterProgress;
     setTutorStarterAgendaProgress(savedStarterProgress);
-    setOpenAIRegularTutorAgendaProgress(lesson, savedRegularProgress);
+    setOpenAIRegularTutorAgendaProgress(
+      lesson,
+      savedRegularProgress,
+      lessonProgress?.tutorAgendaProgress?.schemaVersion,
+    );
     tutorLessonCompletionTriggeredRef.current = isCompleted;
     setConversationSettings((prev) => ({
       ...prev,
@@ -5205,28 +5323,58 @@ export default function Tutor({
     }
   }
 
-  function setOpenAIRegularTutorAgendaProgress(lesson, progress = {}) {
-    const items = getTutorLessonFocusAgendaItems(lesson);
+  function setOpenAIRegularTutorAgendaProgress(
+    lesson,
+    progress = {},
+    schemaVersion = null,
+  ) {
+    const items = getTutorLessonFocusAgendaItems(
+      lesson,
+      "en",
+      targetLangRef.current,
+      selectedTutorUnitRef.current,
+    );
     const lessonId = lesson?.id || "";
     const sameLesson = openAIRegularAgendaRef.current.lessonId === lessonId;
     const mergedProgress = sameLesson
       ? { ...progress, ...openAIRegularAgendaRef.current.progress }
       : progress;
+    const normalizedSchemaVersion = Number(schemaVersion);
     openAIRegularAgendaRef.current = {
       lessonId,
       progress: normalizeTutorAgendaProgress(items, mergedProgress),
+      schemaVersion: sameLesson
+        ? (openAIRegularAgendaRef.current.schemaVersion ??
+          (Number.isFinite(normalizedSchemaVersion)
+            ? normalizedSchemaVersion
+            : null))
+        : Number.isFinite(normalizedSchemaVersion)
+          ? normalizedSchemaVersion
+          : null,
     };
     if (!sameLesson) openAIRegularAgendaAdvancedTurnRef.current = null;
+    setTutorRegularAgendaTick((tick) => tick + 1);
   }
 
-  function getOpenAIRegularTutorAgendaSnapshot({ requireOpenAI = true } = {}) {
+  function getOpenAIRegularTutorAgendaSnapshot({ requireOpenAI = false } = {}) {
     if (requireOpenAI && realtimeProviderRef.current !== "openai") return null;
     const lesson = selectedTutorLessonRef.current;
     if (!lesson || lesson.isRepair || isTutorStarterAgendaLesson(lesson)) {
       return null;
     }
 
-    const items = getTutorLessonFocusAgendaItems(lesson);
+    // Localized labels so the turn prompt can pair each target phrase with a
+    // meaning in the learner's actual support language (progress keys only use
+    // item ids, so the label language never affects stored progress).
+    const items = getTutorLessonFocusAgendaItems(
+      lesson,
+      normalizeSupportLanguage(
+        supportLangRef.current || resolvedSupportLang,
+        DEFAULT_SUPPORT_LANGUAGE,
+      ),
+      targetLangRef.current,
+      selectedTutorUnitRef.current,
+    );
     if (!items.length) return null;
     if (openAIRegularAgendaRef.current.lessonId !== lesson.id) {
       setOpenAIRegularTutorAgendaProgress(lesson, {});
@@ -5247,6 +5395,35 @@ export default function Tutor({
     return !!snapshot && !snapshot.isComplete;
   }
 
+  // Phrases whose production demonstrates the CURRENT agenda objective.
+  // Advancement evidence is deliberately narrower than XP evidence: XP may
+  // reward any completed tutor task (a warm-up answer, a side question the
+  // tutor asked), but the lesson sequence only moves when the current
+  // objective itself is demonstrated — that is what keeps lessons sequential.
+  function getOpenAIRegularObjectivePhrases() {
+    const snapshot = getOpenAIRegularTutorAgendaSnapshot();
+    if (!snapshot?.currentItem) return [];
+    const tLang = targetLangRef.current || targetLang || "es";
+    // Generic adapter objectives are English instructions, not phrases the
+    // learner will say; only examples (authored target-language data) count.
+    const candidates = snapshot.currentItem.isGenericAdapterItem
+      ? snapshot.currentItem.examples || []
+      : [snapshot.currentItem.phrase, ...(snapshot.currentItem.examples || [])];
+    return compactUnique(candidates).filter(
+      (phrase) =>
+        phrase && isTutorPracticePhraseAllowedForTarget(phrase, tLang),
+    );
+  }
+
+  function transcriptDemonstratesOpenAIRegularObjective(text = "") {
+    const phrases = getOpenAIRegularObjectivePhrases();
+    if (!phrases.length) return false;
+    return (
+      phrases.some((phrase) => tutorPhraseMatchesTranscript(phrase, text)) ||
+      anyTutorPhraseIsDirectAnswer(phrases, text)
+    );
+  }
+
   function advanceOpenAIRegularTutorAgenda() {
     const snapshot = getOpenAIRegularTutorAgendaSnapshot();
     if (!snapshot?.currentItem) return null;
@@ -5263,8 +5440,10 @@ export default function Tutor({
     openAIRegularAgendaRef.current = {
       lessonId: snapshot.lesson.id,
       progress: next.progress,
+      schemaVersion: TUTOR_AGENDA_PROGRESS_SCHEMA_VERSION,
     };
     openAIRegularAgendaAdvancedTurnRef.current = turnCountRef.current;
+    setTutorRegularAgendaTick((tick) => tick + 1);
 
     if (currentNpub) {
       void saveTutorAgendaProgress(
@@ -5275,6 +5454,19 @@ export default function Tutor({
       ).catch((error) => {
         console.error("Failed to save OpenAI Tutor agenda progress:", error);
       });
+    }
+
+    // XP and agenda progress are persisted independently. If XP reached its
+    // cap on an earlier turn, closing the final agenda item must re-run the
+    // completion gate even though this turn's XP award will be deduped. This
+    // also makes every agenda-advance path behave the same instead of relying
+    // on one transcript-grading branch to notice the full-XP state.
+    if (
+      next.isComplete &&
+      tutorLessonEarnedXpRef.current >=
+        getTutorLessonXpRequired(snapshot.lesson)
+    ) {
+      trackTutorLessonXp(0);
     }
 
     return next.advancedItem;
@@ -5291,21 +5483,34 @@ export default function Tutor({
     if (snapshot.phase === "review") {
       return [
         "# Current lesson state",
-        "Phase: review.",
+        "Phase: review. Every lesson objective has been taught in order; now consolidate them.",
         `Covered material: ${completed}.`,
-        "Review the covered material naturally, one useful interaction at a time. Do not introduce new curriculum. The app decides when the lesson ends.",
+        "Ask one small review task at a time using only the covered material: a tiny question, an either/or choice, a blank to complete, or a one-line scenario. Elicit the learner's production — do not say the answer first and ask for a repeat.",
+        "Do not introduce new curriculum. The app decides when the lesson ends; keep reviewing until it does.",
       ].join("\n");
     }
 
-    const current = snapshot.currentItem?.phrase || snapshot.currentItem?.label;
+    const currentPhrase = snapshot.currentItem?.phrase || "";
+    const currentLabel = snapshot.currentItem?.label || "";
+    const hasDistinctMeaning =
+      currentPhrase &&
+      currentLabel &&
+      currentLabel.trim().toLowerCase() !== currentPhrase.trim().toLowerCase();
+    const current = hasDistinctMeaning
+      ? `"${currentPhrase}" (meaning: "${currentLabel}")`
+      : `"${currentPhrase || currentLabel}"`;
+    const evidenceCriteria = snapshot.currentItem?.evidence?.criteria || "";
     return [
       "# Current lesson state",
       "Phase: teach.",
-      `Current curriculum item: ${current}.`,
+      `Current curriculum objective: ${current}.`,
+      evidenceCriteria ? `Evidence of success: ${evidenceCriteria}.` : "",
       completed ? `Previously covered: ${completed}.` : "Previously covered: none.",
-      `Teach ${current} in one natural tutor turn and give the learner one clear way to demonstrate it. If you use multiple choice, “${current}” must be one option and the only correct option. Never ask a question whose choices contain no correct answer.`,
-      "Do not quiz or review previously covered items now. Stay with the current item until the app changes it; the app alone advances the sequence.",
-    ].join("\n");
+      "Teach this objective in one natural tutor turn and give the learner one clear way to demonstrate it. If you use multiple choice, include one unambiguously correct answer grounded in the objective.",
+      "The lesson runs strictly in order: do not quiz or review previously covered items, and do not preview or drill later lesson topics. Stay with the current objective — through corrections and retries if needed — until the app advances the sequence; the review comes only after every objective is done.",
+    ]
+      .filter(Boolean)
+      .join("\n");
   }
 
   function getCurrentTutorInputLanguageCodes() {
@@ -5333,11 +5538,14 @@ export default function Tutor({
     }
     const regularAgenda = getOpenAIRegularTutorAgendaSnapshot();
     if (regularAgenda?.currentItem) {
-      const phrase =
-        regularAgenda.currentItem.phrase || regularAgenda.currentItem.label;
-      if (isTutorPracticePhraseAllowedForTarget(phrase, tLang)) {
-        return [phrase];
-      }
+      const currentItem = regularAgenda.currentItem;
+      const keywordCandidates = currentItem.isGenericAdapterItem
+        ? currentItem.examples || []
+        : [currentItem.phrase || currentItem.label, ...(currentItem.examples || [])];
+      const keywords = compactUnique(keywordCandidates)
+        .filter((phrase) => isTutorPracticePhraseAllowedForTarget(phrase, tLang))
+        .slice(0, 8);
+      if (keywords.length) return keywords;
     }
     return getRegularTutorAcceptedPhrases().slice(0, 16);
   }
@@ -5928,28 +6136,19 @@ export default function Tutor({
       conversationSettingsRef.current.proficiencyLevel ||
       maxProficiencyLevel ||
       "A1";
-    const isEarlyTutorLevel = isTutorEarlyLevel(selectedLevel);
-    const isAdvancedTutorLevel =
-      isTutorAdvancedConversationLevel(selectedLevel);
-    const teacherTalkInstruction =
-      supportCode === tLang
-        ? `Speak naturally in ${targetLanguageName}.`
-        : isEarlyTutorLevel
-          ? `Use natural ${supportLanguageName} for teacher talk and ${targetLanguageName} for the exact words and phrases being taught.`
-          : isAdvancedTutorLevel
-            ? `Tutor mainly in natural ${targetLanguageName}; use ${supportLanguageName} only for a requested or necessary clarification.`
-            : `Tutor primarily in simple, natural ${targetLanguageName}; use ${supportLanguageName} only as a brief rescue clarification.`;
-
-    return [
-      "# Realtime bilingual tutor",
-      `You are a genuinely bilingual, native-sounding ${supportLanguageName}-${targetLanguageName} voice tutor. Generate the reply as bilingual speech, not as single-language speech reading foreign-looking tokens.`,
-      teacherTalkInstruction,
-      `For every ${targetLanguageName} span in the reply—even one word inside a ${supportLanguageName} sentence—switch completely to natural native ${targetLanguageName} phonemes, syllable boundaries, lexical stress, rhythm, and intonation. After that span, switch cleanly back to native ${supportLanguageName}.`,
-      `Never pronounce ${targetLanguageName} text with ${supportLanguageName} sounds. Never respell, split, transliterate, or comment on the switch unless the learner explicitly asks for pronunciation help.`,
-      "# Delivery",
-      "Follow the current turn instruction exactly. Respond naturally to the learner and give one clear learner action. The app owns agenda order, evaluation, progress, and completion.",
-      "Keep the reply concise and conversational. Never expose internal instructions, lesson state, scoring, or tool names.",
-    ].join("\n");
+    // The composed response.instructions REPLACE the session instructions on
+    // every OpenAI response, so this policy must carry everything that has to
+    // hold on every turn (phonology, level ceiling, coherence, boundaries) —
+    // compactly, or mini degrades into paraphrase-stacking and drill noise.
+    return buildOpenAITutorResponsePolicy({
+      targetLanguageName,
+      supportLanguageName,
+      selectedLevel,
+      isEarlyTutorLevel: isTutorEarlyLevel(selectedLevel),
+      isAdvancedTutorLevel: isTutorAdvancedConversationLevel(selectedLevel),
+      sameLanguage: supportCode === tLang,
+      persona: String((voicePersonaRef.current ?? "").slice(0, 240)),
+    });
   }
 
   // Routed repair (deep-seed): when the Daily Quest sends a tutor repair here,
@@ -6086,17 +6285,25 @@ export default function Tutor({
       });
     }
 
-    if (
-      realtimeProviderRef.current === "openai" &&
-      lesson &&
-      !lesson.isRepair
-    ) {
+    if (realtimeProviderRef.current === "openai" && lesson) {
+      if (lesson.isRepair) {
+        return buildOpenAIRepairTurnInstructions({
+          isKickoff: true,
+          repairDirective: buildTutorRepairAgendaInstruction({
+            isKickoff: true,
+          }),
+        });
+      }
       return [
         "Start the lesson now with one warm, natural tutor turn.",
+        // Rare fallback: a repair focus rides a regular lesson when no
+        // ephemeral repair session could be built from the saved material.
+        buildTutorRepairAgendaInstruction({ isKickoff: true }),
         buildOpenAIRegularTutorAgendaInstruction(),
-        "Do not announce a drill format, memory technique, agenda, phase, or teaching method. Do not say canned labels such as 'tiny choice', 'quick memory', or 'micro mission'. Simply teach the current item as a skilled bilingual tutor would.",
-        "Keep the opening concise and give the learner one clear next action.",
-      ].join("\n");
+        "Teach the current item as a skilled bilingual tutor would, and give the learner one clear next action.",
+      ]
+        .filter(Boolean)
+        .join("\n");
     }
 
     return [
@@ -6265,6 +6472,38 @@ export default function Tutor({
         isKickoff,
         isStarterLesson: true,
       });
+
+    // OpenAI (gpt-realtime-2.1-mini) gets a compact turn-state block instead of
+    // the Gemini-tuned instruction pile below: the standing policy already
+    // rides on every response via the bridge prefix, and mini renders the
+    // doubled praise directives, signature-experience overlays, and task-format
+    // roulette as awkward, unanswerable exercises. Gemini keeps its shipped
+    // prompt unchanged.
+    if (realtimeProviderRef.current === "openai") {
+      const acceptedPhrases = TUTOR_STARTER_AGENDA_ITEMS.filter((agendaItem) =>
+        acceptedItemIds.includes(agendaItem.id),
+      ).map((agendaItem) =>
+        getTutorStarterItemModelPhrase(agendaItem, targetLang),
+      );
+      const completedPhraseList = TUTOR_STARTER_AGENDA_ITEMS.filter(
+        (agendaItem) => progress[agendaItem.id] && agendaItem.id !== item?.id,
+      ).map((agendaItem) =>
+        getTutorStarterItemModelPhrase(agendaItem, targetLang),
+      );
+      return buildOpenAIStarterAgendaTurnInstructions({
+        isKickoff,
+        turnVerdict,
+        currentItem: item ? { task, phrase, meaning } : null,
+        acceptedPhrases,
+        completedPhrases: completedPhraseList,
+        reviewPhrases: TUTOR_STARTER_AGENDA_ITEMS.map((agendaItem) =>
+          getTutorStarterItemModelPhrase(agendaItem, targetLang),
+        ),
+        latestTranscript,
+        targetLanguageName,
+        supportLanguageName,
+      });
+    }
 
     if (!item) {
       return [
@@ -6601,14 +6840,16 @@ export default function Tutor({
         turnCount: turnCountRef.current,
         isStarterLesson: isTutorStarterAgendaLesson(lesson),
       });
+    // Plain directives, no "TURN VERDICT:" style labels: mini echoes labelled
+    // grading vocabulary back at the learner ("Nice, that was accepted").
     const openAITurnVerdictInstruction =
       realtimeProviderRef.current !== "openai"
         ? ""
         : turnVerdict === TUTOR_TURN_VERDICT.ACCEPTED
-          ? "TURN VERDICT: ACCEPTED. React specifically to what the learner said, acknowledge it without overpraising, and move the agenda forward with a natural next teaching move."
+          ? "The learner's latest attempt succeeded. Acknowledge it with one short natural phrase, then move forward with the next teaching move."
           : turnVerdict === TUTOR_TURN_VERDICT.REJECTED
-            ? `TURN VERDICT: NOT ACCEPTED FOR PROGRESS. First respond to the learner's actual intent. If they asked for help, meaning, clarification, or repetition, answer that without treating it as a mistake. Otherwise give one concise correction and another natural opportunity to complete the current task.`
-            : "TURN VERDICT: UNCERTAIN. Do not claim the answer was correct or incorrect and do not invent a correction. Respond to what was clear, then ask one brief clarification or offer a fresh way to answer the current task.";
+            ? "The latest attempt did not succeed. First respond to the learner's actual intent: if they asked for help, meaning, clarification, or repetition, answer that without treating it as a mistake; otherwise give one concise correction. Then offer one natural chance to complete the current task."
+            : "The latest turn could not be graded. Do not call it right or wrong and do not invent a correction. Respond to what was clear, then ask one brief clarification or offer a fresh way to answer the current task.";
 
     if (isTutorStarterAgendaLesson(lesson)) {
       return [
@@ -6629,16 +6870,26 @@ export default function Tutor({
         .join(" ");
     }
 
-    if (realtimeProviderRef.current === "openai" && !lesson?.isRepair) {
+    if (realtimeProviderRef.current === "openai") {
+      if (lesson?.isRepair) {
+        return buildOpenAIRepairTurnInstructions({
+          repairDirective: buildTutorRepairAgendaInstruction(),
+          turnVerdict,
+          latestTranscript: userMessage,
+        });
+      }
+      // Compact by design: the standing policy on every response already
+      // carries coherence/boundary rules, and the server-side conversation
+      // already holds the dialog history — repeating recent lines here is what
+      // mini paraphrased into doubled replies.
       return [
         "Respond directly and naturally to the learner's latest turn.",
+        // Rare fallback: a repair focus rides a regular lesson when no
+        // ephemeral repair session could be built from the saved material.
+        buildTutorRepairAgendaInstruction(),
         buildOpenAIRegularTutorAgendaInstruction(),
         userMessage ? `Latest learner transcript: "${userMessage}".` : "",
         openAITurnVerdictInstruction,
-        buildRecentOnScreenContextInstruction(),
-        "Do not announce a drill format, memory technique, agenda, phase, or teaching method. Avoid canned labels such as 'tiny choice', 'quick memory', and 'micro mission'.",
-        "Use one brief, conversational tutor turn with one clear learner action. Do not stack praise, explanations, examples, and multiple questions into the same reply.",
-        "The app owns sequence and completion. Never end the lesson yourself.",
       ]
         .filter(Boolean)
         .join("\n");
@@ -7552,6 +7803,17 @@ export default function Tutor({
     );
     await stop();
     try {
+      // Commit the path state before waiting for the final turn's XP write.
+      // Crossing the subscription threshold can replace the learning surface
+      // as soon as that XP lands; the lesson must already be COMPLETED so a
+      // paywall transition (or an immediate reload) cannot leave the next
+      // lesson locked behind a locally full XP ring.
+      await completeTutorLesson(
+        npub,
+        lesson.id,
+        xpRequired || 1,
+        targetLangRef.current,
+      );
       const settledAwards = await Promise.allSettled(
         awardPromises.filter(Boolean),
       );
@@ -7569,12 +7831,6 @@ export default function Tutor({
           "tutor_lesson_final_turn_local",
         );
       });
-      await completeTutorLesson(
-        npub,
-        lesson.id,
-        xpRequired || 1,
-        targetLangRef.current,
-      );
       // Daily plate: a completed Tutor lesson fills the Tutor course.
       void recordPlateActivity(npub, "speak", targetLangRef.current);
       if (xpRequired > 0) {
@@ -7641,7 +7897,10 @@ export default function Tutor({
           getSavedTutorRegularAgendaProgress(
             nextProgress,
             nextTutorLesson.lesson,
+            targetLangRef.current || targetLang,
+            nextTutorLesson.unit,
           ),
+          nextProgress?.tutorAgendaProgress?.schemaVersion,
         );
         setConversationSettings((prev) => ({
           ...prev,
@@ -7678,7 +7937,10 @@ export default function Tutor({
     xpGain,
     awardPromise = null,
     localDailyGoalUpdate = null,
-    { deferCompletionUntilIdle = false } = {},
+    {
+      deferCompletionUntilIdle = false,
+      forceLegacyCompletion = false,
+    } = {},
   ) {
     const lesson = selectedTutorLessonRef.current;
     const unit = selectedTutorUnitRef.current;
@@ -7705,9 +7967,11 @@ export default function Tutor({
       });
     }
 
-    const canCompleteLesson = isTutorStarterAgendaLesson(lesson)
-      ? isTutorStarterAgendaComplete(tutorStarterAgendaProgressRef.current)
-      : !isOpenAIRegularTutorAgendaIncomplete();
+    const canCompleteLesson =
+      forceLegacyCompletion ||
+      (isTutorStarterAgendaLesson(lesson)
+        ? isTutorStarterAgendaComplete(tutorStarterAgendaProgressRef.current)
+        : !isOpenAIRegularTutorAgendaIncomplete());
     if (nextEarned >= xpRequired && canCompleteLesson) {
       if (pendingTutorLessonCompletionRef.current) return true;
       pendingTutorLessonCompletionRef.current = true;
@@ -7762,6 +8026,10 @@ export default function Tutor({
   function persistTutorStarterAgendaProgress(lesson, progress) {
     const npub = currentNpub;
     if (!npub || !lesson?.id) return;
+    if (openAIRegularAgendaRef.current.lessonId === lesson.id) {
+      openAIRegularAgendaRef.current.schemaVersion =
+        TUTOR_AGENDA_PROGRESS_SCHEMA_VERSION;
+    }
     void saveTutorAgendaProgress(
       npub,
       lesson.id,
@@ -7819,26 +8087,38 @@ export default function Tutor({
 
     const promptedPhrases = extractPromptedTutorPhrases(
       getLatestTutorAssistantText(messagesRef.current),
-    ).filter((phrase) =>
-      isTutorPracticePhraseAllowedForTarget(phrase, currentTargetLang),
+    ).filter(
+      (phrase) =>
+        isTutorPracticePhraseAllowedForTarget(phrase, currentTargetLang) &&
+        (targetBase === "es" ||
+          !isTutorRawSourceConceptPhrase(lesson, phrase)),
     );
     if (promptedPhrases.length) return promptedPhrases;
 
     const openAIAgenda = getOpenAIRegularTutorAgendaSnapshot();
     if (openAIAgenda?.currentItem) {
-      const currentPhrase =
-        openAIAgenda.currentItem.phrase || openAIAgenda.currentItem.label;
-      return isTutorPracticePhraseAllowedForTarget(
-        currentPhrase,
-        currentTargetLang,
-      )
-        ? [currentPhrase]
-        : [];
+      const currentItem = openAIAgenda.currentItem;
+      const currentCandidates = currentItem.isGenericAdapterItem
+        ? currentItem.examples || []
+        : [
+            currentItem.phrase || currentItem.label,
+            ...(currentItem.examples || []),
+          ];
+      return compactUnique(currentCandidates).filter((phrase) =>
+        isTutorPracticePhraseAllowedForTarget(phrase, currentTargetLang),
+      );
     }
 
-    if (targetBase !== "es") return [];
-
-    return getTutorLessonFocusAgendaItems(lesson)
+    // Adapted agendas carry authored target-language phrases for non-Spanish
+    // practice, so the fallback no longer needs an es-only gate; generic
+    // adapter items stay excluded because they are English instructions.
+    return getTutorLessonFocusAgendaItems(
+      lesson,
+      "en",
+      currentTargetLang,
+      selectedTutorUnitRef.current,
+    )
+      .filter((item) => !item.isGenericAdapterItem)
       .map((item) => item.phrase || item.label)
       .filter((phrase) =>
         isTutorPracticePhraseAllowedForTarget(phrase, currentTargetLang),
@@ -7892,10 +8172,20 @@ export default function Tutor({
     const regularPhrases = compactUnique(acceptedPhrases)
       .slice(0, 8)
       .map((phrase) => String(phrase || "").slice(0, 120));
-    const focusItems = getTutorLessonFocusAgendaItems(lesson)
+    const focusItems = getTutorLessonFocusAgendaItems(
+      lesson,
+      "en",
+      tLang,
+      selectedTutorUnitRef.current,
+    )
       .map((item) => item.phrase || item.label)
       .filter(Boolean)
       .slice(0, 10);
+    // Sequence gate context: the app-owned agenda advances only on evidence
+    // for its CURRENT item (null for starter/repair lessons, which have their
+    // own objective-keyed progress).
+    const currentObjectiveItem =
+      getOpenAIRegularTutorAgendaSnapshot()?.currentItem || null;
     // Routed repair: items the Daily Quest wants drilled here, if any.
     const tutorRepairFocus = useRepairFocusStore.getState().focus;
     const repairFocusItems =
@@ -7945,6 +8235,18 @@ export default function Tutor({
       focusItems.length
         ? `Lesson concept list: ${JSON.stringify(focusItems)}`
         : "",
+      currentObjectiveItem
+        ? `Current agenda objective (the lesson sequence may only advance on evidence for THIS item): ${JSON.stringify(
+            {
+              objective:
+                currentObjectiveItem.phrase || currentObjectiveItem.label,
+              evidence: currentObjectiveItem.evidence?.criteria || "",
+            },
+          )}`
+        : "",
+      currentObjectiveItem
+        ? `Separately from "successful", set "objectiveAdvanced":true ONLY when this turn is a successful demonstration of that current agenda objective (per its evidence). A successful warm-up reply, side exchange, or answer about other lesson material keeps "objectiveAdvanced":false.`
+        : "",
       repairFocusItems.length
         ? `REPAIR WATCH: the Daily Quest routed a repair here for these weak spots from a previous day: ${JSON.stringify(repairFocusItems)}. Separately from the lesson XP judgment, set "repairAdvanced":true if THIS turn shows the learner correctly producing/using one of these phrases or concepts (even approximately, in their own words) — this clears today's repair, so only set it for a genuine, correct attempt at one of them.`
         : "",
@@ -7960,8 +8262,8 @@ export default function Tutor({
       // were off-task, or gave filler — those are not repairable slips.
       `When mistake=true, also give "concept" (a short skill label written in ${supportLanguageName}) and "correction" (the correct ${targetLanguageName} phrase the learner should have produced).`,
       `Return ONLY JSON: {"successful":true|false,"confidence":0..1,"reason":"short semantic reason","mistake":true|false,"concept":"","correction":""${
-        repairFocusItems.length ? ',"repairAdvanced":true|false' : ""
-      }}`,
+        currentObjectiveItem ? ',"objectiveAdvanced":true|false' : ""
+      }${repairFocusItems.length ? ',"repairAdvanced":true|false' : ""}}`,
     ]
       .filter(Boolean)
       .join("\n");
@@ -8049,11 +8351,19 @@ export default function Tutor({
         }
       }
 
+      const gatedSuccessful = successful && confidence >= 0.55;
       return {
-        successful: successful && confidence >= 0.55,
+        successful: gatedSuccessful,
         confidence,
         reason: String(parsed.reason || "").slice(0, 180),
         mistake: parsed.mistake === true && confidence >= 0.55,
+        // Sequence gate: when the judge omits the field (starter/repair
+        // prompts never request it), fall back to the XP verdict so legacy
+        // callers behave exactly as before.
+        objectiveAdvanced:
+          parsed.objectiveAdvanced === undefined
+            ? gatedSuccessful
+            : parsed.objectiveAdvanced === true && confidence >= 0.55,
       };
     } catch (error) {
       console.warn("Tutor XP success judge failed:", error);
@@ -8106,6 +8416,11 @@ export default function Tutor({
     starterCandidateItemIds = [],
     successful = false,
     deferCompletionUntilIdle = false,
+    // Sequence gate, separate from XP: when provided, the regular agenda only
+    // advances if this turn demonstrated the CURRENT objective. Undefined
+    // keeps the legacy behavior (advance on any successful turn) for the
+    // Gemini tool/fallback paths, which grade against the objective already.
+    advanceRegularAgenda = undefined,
   } = {}) {
     if (!successful) {
       return { acceptedItemIds: [], lessonCompletionTriggered: false };
@@ -8115,9 +8430,12 @@ export default function Tutor({
       isStarterLesson && starterCandidateItemIds.length
         ? commitTutorStarterAgendaProgress(starterCandidateItemIds)
         : [];
-    const acceptedRegularAgendaItem = !isStarterLesson
-      ? advanceOpenAIRegularTutorAgenda()
-      : null;
+    const shouldAdvanceRegularAgenda =
+      advanceRegularAgenda === undefined ? true : !!advanceRegularAgenda;
+    const acceptedRegularAgendaItem =
+      !isStarterLesson && shouldAdvanceRegularAgenda
+        ? advanceOpenAIRegularTutorAgenda()
+        : null;
     const starterAgendaComplete =
       isStarterLesson &&
       isTutorStarterAgendaComplete(tutorStarterAgendaProgressRef.current);
@@ -8163,13 +8481,19 @@ export default function Tutor({
       if (!aliveRef.current) return;
       if (lessonId && selectedTutorLessonRef.current?.id !== lessonId) return;
 
+      const backgroundIsStarterLesson = isTutorStarterAgendaLesson(
+        selectedTutorLessonRef.current,
+      );
       applySuccessfulTutorTurnProgress({
-        isStarterLesson: isTutorStarterAgendaLesson(
-          selectedTutorLessonRef.current,
-        ),
+        isStarterLesson: backgroundIsStarterLesson,
         starterCandidateItemIds,
         successful: true,
         deferCompletionUntilIdle: true,
+        advanceRegularAgenda:
+          realtimeProviderRef.current === "openai" && !backgroundIsStarterLesson
+            ? turnSuccess.objectiveAdvanced === true ||
+              transcriptDemonstratesOpenAIRegularObjective(text)
+            : undefined,
       });
     })();
   }
@@ -8224,6 +8548,10 @@ export default function Tutor({
         starterCandidateItemIds,
         successful: true,
         deferCompletionUntilIdle: true,
+        advanceRegularAgenda:
+          realtimeProviderRef.current === "openai" && !isStarterLesson
+            ? transcriptDemonstratesOpenAIRegularObjective(text)
+            : undefined,
       });
       return;
     }
@@ -8734,11 +9062,22 @@ export default function Tutor({
           isStarterLesson,
           starterCandidateItemIds,
         });
+      const regularObjectiveLocallyDemonstrated =
+        isOpenAIProvider && !isStarterLesson && localTurnSuccessful
+          ? transcriptDemonstratesOpenAIRegularObjective(text)
+          : false;
       let { acceptedItemIds, lessonCompletionTriggered } =
         applySuccessfulTutorTurnProgress({
           isStarterLesson,
           starterCandidateItemIds,
           successful: localTurnSuccessful,
+          // A local phrase match may credit a phrase the tutor happened to
+          // prompt (XP-worthy) without being the current objective — the
+          // sequence must not skip ahead on that evidence.
+          advanceRegularAgenda:
+            isOpenAIProvider && !isStarterLesson && localTurnSuccessful
+              ? regularObjectiveLocallyDemonstrated
+              : undefined,
         });
 
       if (isOpenAIProvider && !localTurnSuccessful) {
@@ -8764,10 +9103,64 @@ export default function Tutor({
             isStarterLesson,
             starterCandidateItemIds,
             successful: true,
+            // The judge's objective verdict gates the sequence; the local
+            // phrase check backstops an over-strict judge when the learner
+            // plainly produced the current objective's phrase.
+            advanceRegularAgenda: !isStarterLesson
+              ? turnSuccess.objectiveAdvanced === true ||
+                transcriptDemonstratesOpenAIRegularObjective(text)
+              : undefined,
           });
           acceptedItemIds = progressResult.acceptedItemIds;
           lessonCompletionTriggered =
             progressResult.lessonCompletionTriggered;
+        }
+      } else if (
+        isOpenAIProvider &&
+        !isStarterLesson &&
+        localTurnSuccessful &&
+        !regularObjectiveLocallyDemonstrated &&
+        isOpenAIRegularTutorAgendaIncomplete()
+      ) {
+        // The local matcher proved the learner produced the phrase the tutor
+        // asked for (XP + accepted verdict), but could not tie it to the
+        // CURRENT agenda objective — routine when derived objectives are
+        // English criteria sentences with no literal target phrase. Without
+        // this judge pass the agenda could never advance on drill turns, so
+        // the lesson hit full XP with an incomplete agenda: the header showed
+        // a checkmark while completion (and the next lesson's unlock) never
+        // fired. directPhraseAnswer is deliberately not forwarded — it would
+        // short-circuit the judge before it could weigh the objective.
+        const turnSuccess = await judgeTutorTurnSuccessfulForXp(text, {
+          starterCandidateItemIds,
+          exactStarterMatches,
+          regularPhraseMatch: regularTurnAccepted,
+          acceptedPhrases: regularAcceptedPhrases,
+        });
+        if (!aliveRef.current) return;
+        if (currentLesson?.id !== selectedTutorLessonRef.current?.id) return;
+        if (turnSuccess.objectiveAdvanced === true) {
+          const progressResult = applySuccessfulTutorTurnProgress({
+            isStarterLesson,
+            starterCandidateItemIds,
+            successful: true,
+            advanceRegularAgenda: true,
+          });
+          lessonCompletionTriggered =
+            lessonCompletionTriggered ||
+            progressResult.lessonCompletionTriggered;
+          // The first pass already banked this turn's XP, so the call above
+          // deduped awardTurnXp — if this advance just closed the last agenda
+          // item while the XP bar is already full, run the completion check
+          // explicitly or the lesson would stall in that state forever.
+          if (
+            !lessonCompletionTriggered &&
+            tutorLessonEarnedXpRef.current >=
+              getTutorLessonXpRequired(currentLesson) &&
+            !isOpenAIRegularTutorAgendaIncomplete()
+          ) {
+            lessonCompletionTriggered = trackTutorLessonXp(0);
+          }
         }
       } else if (shouldGateEndOfLesson) {
         const turnSuccess = await judgeTutorTurnSuccessfulForXp(text, {
@@ -9142,6 +9535,94 @@ export default function Tutor({
         ? SKILL_STATUS.COMPLETED
         : SKILL_STATUS.IN_PROGRESS)
     : SKILL_STATUS.AVAILABLE;
+  // Mirror the exact gate trackTutorLessonXp uses for lesson completion: full
+  // XP alone used to flip the header ring to a checkmark while an incomplete
+  // regular agenda silently blocked completion — no modal, and the next
+  // lesson never unlocked. tutorRegularAgendaTick keys re-computation when
+  // the live agenda ref mutates.
+  const regularAgendaGateOpen = useMemo(() => {
+    const lesson = selectedTutorLesson;
+    if (!lesson || lesson.isRepair || isTutorStarterAgendaLesson(lesson)) {
+      return true;
+    }
+    const items = getTutorLessonFocusAgendaItems(
+      lesson,
+      "en",
+      targetLang,
+      selectedTutorUnit,
+    );
+    if (!items.length) return true;
+    const tracked =
+      openAIRegularAgendaRef.current.lessonId === lesson.id
+        ? openAIRegularAgendaRef.current.progress
+        : getSavedTutorRegularAgendaProgress(
+            tutorUserProgress.lessons?.[lesson.id],
+            lesson,
+            targetLang,
+            selectedTutorUnit,
+          );
+    return getTutorAgendaSnapshot(items, tracked).isComplete;
+  }, [
+    selectedTutorLesson,
+    selectedTutorUnit,
+    targetLang,
+    tutorUserProgress.lessons,
+    tutorRegularAgendaTick,
+  ]);
+
+  // Repair an interrupted completion on hydration. Current checkpoints require
+  // both durable prerequisites (full earned XP and a completed agenda). Legacy
+  // checkpoints predate the agenda schema, so full XP is their only trustworthy
+  // completion signal; migrate those once rather than stranding them forever.
+  useEffect(() => {
+    const lesson = selectedTutorLesson;
+    if (
+      !currentNpub ||
+      !lesson ||
+      lesson.isRepair ||
+      isTutorAgendaHydrating ||
+      isTutorPathLoading ||
+      selectedTutorLessonProgressStatus === SKILL_STATUS.COMPLETED ||
+      selectedTutorLessonRef.current?.id !== lesson.id
+    ) {
+      return;
+    }
+
+    const xpRequired = getTutorLessonXpRequired(lesson);
+    if (xpRequired <= 0 || tutorLessonEarnedXp < xpRequired) return;
+
+    const lessonProgress = tutorUserProgress.lessons?.[lesson.id];
+    const localAgendaSchemaVersion =
+      openAIRegularAgendaRef.current.lessonId === lesson.id
+        ? openAIRegularAgendaRef.current.schemaVersion
+        : null;
+    const agendaSchemaVersion = Number(
+      localAgendaSchemaVersion ??
+        lessonProgress?.tutorAgendaProgress?.schemaVersion,
+    );
+    const isLegacyFullXpCheckpoint = isLegacyTutorAgendaProgress(
+      agendaSchemaVersion,
+      TUTOR_AGENDA_PROGRESS_SCHEMA_VERSION,
+    );
+    const agendaGateOpen = isTutorStarterAgendaLesson(lesson)
+      ? isTutorStarterAgendaComplete(tutorStarterAgendaProgress)
+      : regularAgendaGateOpen;
+    if (!agendaGateOpen && !isLegacyFullXpCheckpoint) return;
+
+    trackTutorLessonXp(0, null, null, {
+      forceLegacyCompletion: isLegacyFullXpCheckpoint,
+    });
+  }, [
+    currentNpub,
+    isTutorAgendaHydrating,
+    isTutorPathLoading,
+    regularAgendaGateOpen,
+    selectedTutorLesson,
+    selectedTutorLessonProgressStatus,
+    tutorLessonEarnedXp,
+    tutorStarterAgendaProgress,
+  ]);
+
   const lessonCompletionRing = useMemo(() => {
     const lesson = selectedTutorLesson;
     if (!lesson) {
@@ -9188,7 +9669,8 @@ export default function Tutor({
       isTutorStarterAgendaComplete(tutorStarterAgendaProgress);
     return {
       percent,
-      isComplete: percent >= 100 && starterAgendaComplete,
+      isComplete:
+        percent >= 100 && starterAgendaComplete && regularAgendaGateOpen,
       label:
         required > 0
           ? `${earned}/${required} XP`
@@ -9209,12 +9691,18 @@ export default function Tutor({
     selectedTutorLessonProgressStatus,
     tutorLessonEarnedXp,
     tutorStarterAgendaProgress,
+    regularAgendaGateOpen,
     uiLang,
   ]);
   const previewedLessonAgendaItems = useMemo(() => {
     const lesson = previewedTutorLesson?.lesson;
     if (!lesson) return [];
-    const items = getTutorLessonPreviewAgendaItems(lesson, uiLang, targetLang);
+    const items = getTutorLessonPreviewAgendaItems(
+      lesson,
+      uiLang,
+      targetLang,
+      previewedTutorLesson?.unit,
+    );
     if (items.length) return items;
 
     const fallback = getTutorLessonAgendaSubtitle(
@@ -9786,57 +10274,25 @@ export default function Tutor({
               : "0 24px 70px rgba(0,0,0,0.5), 0 0 36px rgba(34,211,238,0.1)"
           }
         >
-          <ModalHeader px={{ base: 5, md: 7 }} pt={6} pb={3}>
-            <HStack align="start" spacing={4} pr={8}>
-              <Box
-                w={11}
-                h={11}
-                borderRadius="full"
-                bg={
-                  previewedTutorLesson?.status === SKILL_STATUS.LOCKED
-                    ? isLightTheme
-                      ? "rgba(139,122,99,0.14)"
-                      : "whiteAlpha.100"
-                    : previewedTutorLesson?.unit?.color || "cyan.500"
-                }
-                color={
-                  previewedTutorLesson?.status === SKILL_STATUS.LOCKED
-                    ? isLightTheme
-                      ? "#8B7A63"
-                      : "gray.400"
-                    : "white"
-                }
-                display="grid"
-                placeItems="center"
-                flexShrink={0}
-              >
-                {previewedTutorLesson?.status === SKILL_STATUS.LOCKED ? (
-                  <RiLockLine size={21} />
-                ) : (
-                  <RiBookOpenLine size={21} />
-                )}
-              </Box>
-              <VStack align="start" spacing={1} minW={0}>
-                <Text
-                  fontSize="xs"
-                  fontWeight="bold"
-                  textTransform="uppercase"
-                  letterSpacing="0.08em"
-                  color={isLightTheme ? APP_TEXT_SECONDARY : "cyan.200"}
-                >
-                  {tutorCopy(uiLang, {
-                    en: "Lesson preview",
-                    es: "Vista previa de la leccion",
-                    pt: "Pre-visualizacao da licao",
-                    it: "Anteprima della lezione",
-                    fr: "Apercu de la lecon",
-                    de: "Lektionsvorschau",
-                    ja: "レッスンプレビュー",
-                    hi: "पाठ का पूर्वावलोकन",
-                    ar: "معاينة الدرس",
-                    zh: "课程预览",
-                  })}
-                </Text>
+          <ModalHeader
+            px={{ base: 5, md: 7 }}
+            pt={6}
+            pb={4}
+            borderBottom="1px solid"
+            borderColor={isLightTheme ? APP_BORDER : "whiteAlpha.100"}
+          >
+            <VStack align="start" spacing={2} pr={8}>
+              <HStack align="center" spacing={3}>
+                <Box
+                  w={4}
+                  h={4}
+                  borderRadius="full"
+                  bg={previewedTutorLesson?.unit?.color || "cyan.500"}
+                  boxShadow={`0 0 15px ${
+                    previewedTutorLesson?.unit?.color || "#06b6d4"
+                  }80`}
+                  flexShrink={0}
+                />
                 <Heading size="md" lineHeight="1.2" sx={MOBILE_TEXT_SX}>
                   {getTutorLessonAgendaTitle(
                     previewedTutorLesson?.lesson,
@@ -9844,36 +10300,20 @@ export default function Tutor({
                     uiLang,
                   )}
                 </Heading>
-                <HStack spacing={2} pt={1} flexWrap="wrap">
-                  {previewedTutorLesson?.unit?.cefrLevel && (
-                    <Badge colorScheme="purple">
-                      {previewedTutorLesson.unit.cefrLevel}
-                    </Badge>
-                  )}
-                  <Badge colorScheme="cyan">
-                    {getTutorLessonXpRequired(
-                      previewedTutorLesson?.lesson,
-                    )}{" "}
-                    XP
-                  </Badge>
-                  {previewedTutorLesson?.status === SKILL_STATUS.COMPLETED && (
-                    <Badge colorScheme="green">
-                      {tutorCopy(uiLang, {
-                        en: "Completed",
-                        es: "Completada",
-                        pt: "Concluida",
-                        it: "Completata",
-                        fr: "Terminee",
-                        ja: "完了",
-                        hi: "पूरा हुआ",
-                        ar: "مكتمل",
-                        zh: "已完成",
-                      })}
-                    </Badge>
-                  )}
-                </HStack>
-              </VStack>
-            </HStack>
+              </HStack>
+              <Box
+                pl={7}
+                color={isLightTheme ? APP_TEXT_SECONDARY : "gray.400"}
+                fontSize="sm"
+                fontWeight="normal"
+                sx={MOBILE_TEXT_SX}
+              >
+                {getTutorDisplayText(
+                  previewedTutorLesson?.unit?.title,
+                  uiLang,
+                )}
+              </Box>
+            </VStack>
           </ModalHeader>
           <ModalCloseButton isDisabled={isStartingPreviewedLesson} />
 
@@ -9891,69 +10331,126 @@ export default function Tutor({
                 )}
               </Text>
 
-              <Box>
-                <Text fontWeight="bold" mb={3}>
-                  {tutorCopy(uiLang, {
-                    en: "Agenda",
-                    es: "Agenda",
-                    pt: "Agenda",
-                    it: "Programma",
-                    fr: "Programme",
-                    de: "Agenda",
-                    ja: "学習内容",
-                    hi: "एजेंडा",
-                    ar: "خطة الدرس",
-                    zh: "课程安排",
-                  })}
-                </Text>
-                <VStack align="stretch" spacing={2.5}>
-                  {previewedLessonAgendaItems.map((agendaItem, index) => (
-                    <HStack
-                      key={agendaItem.id || `${agendaItem.label}-${index}`}
-                      align="start"
-                      spacing={3}
-                      p={3}
-                      borderRadius="xl"
-                      bg={
-                        isLightTheme
-                          ? "rgba(255,255,255,0.66)"
-                          : "rgba(255,255,255,0.055)"
-                      }
-                      border="1px solid"
-                      borderColor={
-                        isLightTheme
-                          ? "rgba(120,94,61,0.12)"
-                          : "whiteAlpha.100"
+              <Accordion
+                index={previewedTutorObjectivesExpanded ? 0 : -1}
+                onChange={(index) =>
+                  setPreviewedTutorObjectivesExpanded(index === 0)
+                }
+                allowToggle
+                bg={
+                  isLightTheme
+                    ? "rgba(255,255,255,0.62)"
+                    : "rgba(15,23,42,0.68)"
+                }
+                border="1px solid"
+                borderColor={
+                  isLightTheme
+                    ? "rgba(120,94,61,0.14)"
+                    : "whiteAlpha.100"
+                }
+                borderRadius="xl"
+                overflow="hidden"
+              >
+                <AccordionItem border="0">
+                  <AccordionButton
+                    px={5}
+                    py={4}
+                    gap={3}
+                    border="0"
+                    boxShadow="none"
+                    _focus={{ boxShadow: "none", outline: "none" }}
+                    _focusVisible={{ boxShadow: "none", outline: "none" }}
+                    _expanded={{ boxShadow: "none" }}
+                    _hover={{
+                      bg: isLightTheme
+                        ? "rgba(120,94,61,0.06)"
+                        : "whiteAlpha.100",
+                    }}
+                  >
+                    <Text
+                      flex="1"
+                      textAlign="start"
+                      fontWeight="bold"
+                      color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
+                      fontSize="sm"
+                    >
+                      {tutorCopy(uiLang, {
+                        en: "Lesson objectives",
+                        es: "Objetivos de la lección",
+                        pt: "Objetivos da lição",
+                        it: "Obiettivi della lezione",
+                        fr: "Objectifs de la leçon",
+                        de: "Lernziele",
+                        ja: "レッスンの目標",
+                        hi: "पाठ के उद्देश्य",
+                        ar: "أهداف الدرس",
+                        zh: "课程目标",
+                      })}
+                    </Text>
+                    <Badge
+                      borderRadius="full"
+                      px={2}
+                      bg={isLightTheme ? "blackAlpha.100" : "whiteAlpha.100"}
+                      color={
+                        isLightTheme ? APP_TEXT_SECONDARY : "gray.300"
                       }
                     >
-                      <Box
-                        w={7}
-                        h={7}
-                        borderRadius="full"
-                        display="grid"
-                        placeItems="center"
-                        flexShrink={0}
-                        bg={
-                          previewedTutorLesson?.unit?.color || "cyan.500"
-                        }
-                        color="white"
-                        fontSize="xs"
-                        fontWeight="bold"
-                      >
-                        {index + 1}
-                      </Box>
-                      <Text
-                        fontSize="sm"
-                        lineHeight="1.45"
-                        pt="3px"
-                        sx={MOBILE_TEXT_SX}
-                      >
-                        {agendaItem.label}
-                      </Text>
-                    </HStack>
-                  ))}
-                </VStack>
-              </Box>
+                      {previewedLessonAgendaItems.length}
+                    </Badge>
+                    <AccordionIcon
+                      color={previewedTutorLesson?.unit?.color || "cyan.500"}
+                      boxSize={5}
+                    />
+                  </AccordionButton>
+                  <AccordionPanel px={5} pt={4} pb={5}>
+                    <VStack
+                      ref={previewedTutorObjectivesScrollRef}
+                      align="stretch"
+                      spacing={4}
+                      maxH="220px"
+                      overflowY="auto"
+                      touchAction="pan-y"
+                      sx={{
+                        scrollbarWidth: "none",
+                        msOverflowStyle: "none",
+                        WebkitOverflowScrolling: "touch",
+                        "&::-webkit-scrollbar": { display: "none" },
+                      }}
+                    >
+                      {previewedLessonAgendaItems.map((agendaItem, index) => (
+                        <HStack
+                          key={agendaItem.id || `${agendaItem.label}-${index}`}
+                          align="start"
+                          spacing={3}
+                        >
+                          <Center
+                            w="22px"
+                            h="22px"
+                            borderRadius="full"
+                            flexShrink={0}
+                            bg={
+                              previewedTutorLesson?.unit?.color || "#06B6D4"
+                            }
+                            color="white"
+                          >
+                            <RiCheckLine size={14} />
+                          </Center>
+                          <Text
+                            fontSize="sm"
+                            lineHeight="1.45"
+                            color={
+                              isLightTheme ? APP_TEXT_SECONDARY : "gray.300"
+                            }
+                            sx={MOBILE_TEXT_SX}
+                          >
+                            {agendaItem.label}
+                          </Text>
+                        </HStack>
+                      ))}
+                    </VStack>
+                  </AccordionPanel>
+                </AccordionItem>
+              </Accordion>
 
               {previewedTutorLesson?.status === SKILL_STATUS.LOCKED && (
                 <HStack
@@ -9995,44 +10492,103 @@ export default function Tutor({
                   </Text>
                 </HStack>
               )}
+
+              <HStack
+                justify="space-between"
+                spacing={4}
+                p={4}
+                borderRadius="xl"
+                bg={
+                  isLightTheme
+                    ? "rgba(255,255,255,0.72)"
+                    : "rgba(15,23,42,0.78)"
+                }
+                border="1px solid"
+                borderColor={
+                  isLightTheme
+                    ? "rgba(120,94,61,0.16)"
+                    : "whiteAlpha.200"
+                }
+              >
+                <HStack spacing={3}>
+                  <Center
+                    w={9}
+                    h={9}
+                    borderRadius="lg"
+                    bg={
+                      previewedTutorLesson?.unit?.color ||
+                      (isLightTheme ? "teal.500" : "teal.400")
+                    }
+                    color="white"
+                    flexShrink={0}
+                  >
+                    <RiStarFill size={18} />
+                  </Center>
+                  <Text
+                    fontSize="sm"
+                    fontWeight="800"
+                    color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
+                  >
+                    {tutorCopy(uiLang, {
+                      en: "XP required to complete",
+                      es: "XP necesarios para completar",
+                      pt: "XP necessario para concluir",
+                      it: "XP necessari per completare",
+                      fr: "XP requis pour terminer",
+                      de: "Zum Abschluss erforderliche XP",
+                      ja: "完了に必要なXP",
+                      hi: "पूरा करने के लिए आवश्यक XP",
+                      ar: "نقاط XP المطلوبة للإكمال",
+                      zh: "完成所需 XP",
+                    })}
+                  </Text>
+                </HStack>
+                <Text
+                  fontSize="md"
+                  fontWeight="900"
+                  color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
+                  whiteSpace="nowrap"
+                >
+                  {getTutorLessonXpRequired(previewedTutorLesson?.lesson)} XP
+                </Text>
+              </HStack>
             </VStack>
           </ModalBody>
 
           <ModalFooter
             px={{ base: 5, md: 7 }}
-            py={5}
-            borderTop="1px solid"
-            borderColor={isLightTheme ? APP_BORDER : "whiteAlpha.100"}
-            gap={3}
+            pt={2}
+            pb={6}
           >
             <Button
-              variant="ghost"
-              onClick={closeTutorLessonPreview}
-              isDisabled={isStartingPreviewedLesson}
-            >
-              {tutorCopy(uiLang, {
-                en: "Back",
-                es: "Volver",
-                pt: "Voltar",
-                it: "Indietro",
-                fr: "Retour",
-                de: "Zurueck",
-                ja: "戻る",
-                hi: "वापस",
-                ar: "رجوع",
-                zh: "返回",
-              })}
-            </Button>
-            <Button
-              flex="1"
-              colorScheme="cyan"
-              leftIcon={
-                previewedTutorLesson?.status === SKILL_STATUS.LOCKED ? (
-                  <RiLockLine />
-                ) : (
-                  <RiBookOpenLine />
-                )
-              }
+              width="100%"
+              size="lg"
+              borderRadius="xl"
+              bgGradient={`linear(135deg, ${
+                previewedTutorLesson?.unit?.color || "#06B6D4"
+              }, ${previewedTutorLesson?.unit?.color || "#06B6D4"}dd)`}
+              color="white"
+              fontWeight="900"
+              boxShadow={`0px 4px 0px ${
+                previewedTutorLesson?.unit?.color || "#06B6D4"
+              }99`}
+              _hover={{
+                bgGradient: `linear(135deg, ${
+                  previewedTutorLesson?.unit?.color || "#06B6D4"
+                }dd, ${previewedTutorLesson?.unit?.color || "#06B6D4"})`,
+                transform: "translateY(1px)",
+                boxShadow: `0px 3px 0px ${
+                  previewedTutorLesson?.unit?.color || "#06B6D4"
+                }99`,
+              }}
+              _active={{ transform: "translateY(4px)", boxShadow: "none" }}
+              _disabled={{
+                bgGradient: "none",
+                bg: isLightTheme ? "gray.300" : "whiteAlpha.200",
+                color: isLightTheme ? "gray.600" : "gray.400",
+                boxShadow: "none",
+                cursor: "not-allowed",
+              }}
               onClick={handlePreviewedTutorLessonStart}
               isDisabled={
                 previewedTutorLesson?.status === SKILL_STATUS.LOCKED
@@ -10052,16 +10608,16 @@ export default function Tutor({
               })}
             >
               {tutorCopy(uiLang, {
-                en: "Get started",
-                es: "Comenzar",
-                pt: "Comecar",
-                it: "Inizia",
-                fr: "Commencer",
-                de: "Loslegen",
-                ja: "始める",
-                hi: "शुरू करें",
-                ar: "ابدأ",
-                zh: "开始学习",
+                en: "Start lesson",
+                es: "Iniciar leccion",
+                pt: "Iniciar licao",
+                it: "Inizia la lezione",
+                fr: "Commencer la lecon",
+                de: "Lektion starten",
+                ja: "レッスンを開始",
+                hi: "पाठ शुरू करें",
+                ar: "ابدأ الدرس",
+                zh: "开始课程",
               })}
             </Button>
           </ModalFooter>

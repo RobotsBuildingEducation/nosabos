@@ -28,6 +28,11 @@ import {
   ModalCloseButton,
   Flex,
   useBreakpointValue,
+  Accordion,
+  AccordionItem,
+  AccordionButton,
+  AccordionPanel,
+  AccordionIcon,
 } from "@chakra-ui/react";
 import { CloseIcon } from "@chakra-ui/icons";
 import { LuBlocks, LuSparkles } from "react-icons/lu";
@@ -246,6 +251,10 @@ import useModalStore from "../hooks/useModalStore";
 import selectSound from "../assets/select.mp3";
 import VoiceOrb from "./VoiceOrb";
 import { buildGameReviewContext } from "../utils/gameReviewContext";
+import {
+  getLessonAgenda,
+  getLocalizedAgendaLabel,
+} from "../utils/lessonCurriculum";
 import { prepareTutorialGameScenario } from "../utils/tutorialGameLoader";
 import { waitForGameLoaderExploration } from "../utils/gameLoaderTiming";
 import {
@@ -257,6 +266,18 @@ const LoadingMiniGame = lazy(() => import("./LoadingMiniGame"));
 const KeepAliveConversations = memo(Conversations);
 const KeepAliveFlashcardSkillTree = memo(FlashcardSkillTree);
 const KeepAliveTutor = memo(Tutor);
+const LESSON_OBJECTIVES_LABELS = {
+  en: "Lesson objectives",
+  es: "Objetivos de la lección",
+  pt: "Objetivos da lição",
+  it: "Obiettivi della lezione",
+  fr: "Objectifs de la leçon",
+  de: "Lernziele",
+  ja: "レッスンの目標",
+  hi: "पाठ के उद्देश्य",
+  ar: "أهداف الدرس",
+  zh: "课程目标",
+};
 
 const hexToRgb = (hex) => {
   if (typeof hex !== "string") return null;
@@ -1846,6 +1867,7 @@ function LessonDetailModal({
   const isLightTheme = themeMode === "light";
   const [gameLoading, setGameLoading] = useState(false);
   const [lessonLoading, setLessonLoading] = useState(false);
+  const [objectivesExpanded, setObjectivesExpanded] = useState(false);
   const [loadingMsgIdx, setLoadingMsgIdx] = useState(0);
   const [loadingModalSize, setLoadingModalSize] = useState(null);
   const isDesktop = useBreakpointValue({ base: false, md: true }) ?? false;
@@ -1890,8 +1912,13 @@ function LessonDetailModal({
       setLessonLoading(false);
       setLoadingMsgIdx(0);
       setLoadingModalSize(null);
+      setObjectivesExpanded(false);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    setObjectivesExpanded(false);
+  }, [lesson?.id]);
 
   useEffect(() => {
     if (!isOpen || gameLoading) return;
@@ -1910,7 +1937,8 @@ function LessonDetailModal({
   const lessonTitle = getUIDisplayText(lesson.title);
   const unitTitle = getUIDisplayText(unit.title);
   const lessonDescription = getUIDisplayText(lesson.description);
-  const reviewContext = buildGameReviewContext({ lesson, unit });
+  const lessonAgendaItems = getLessonAgenda(lesson, { unit, targetLang });
+  const reviewContext = buildGameReviewContext({ lesson, unit, targetLang });
   const lessonWithReviewContext = reviewContext
     ? { ...lesson, gameReviewContext: reviewContext }
     : lesson;
@@ -2240,72 +2268,153 @@ function LessonDetailModal({
                   {lessonDescription}
                 </Text>
 
-                {/* Lesson modes */}
-                <Box
-                  bg={
-                    isLightTheme ? "var(--app-surface-muted)" : "whiteAlpha.50"
-                  }
-                  p={5}
-                  borderRadius="xl"
-                  border="1px solid"
-                  borderColor={
-                    isLightTheme ? "var(--app-border)" : "whiteAlpha.100"
-                  }
-                >
-                  <Text
-                    fontWeight="bold"
-                    mb={3}
-                    color={isLightTheme ? "var(--app-text-primary)" : "white"}
-                    fontSize="sm"
-                  >
-                    {t("skill_tree_learning_activities")}
-                  </Text>
-                  <Flex gap={2} flexWrap="wrap">
-                    {lesson.modes.map((mode) => {
-                      const Icon = MODE_ICONS[mode] || RiStarLine;
-                      const modeKey = `mode_${mode}`;
-                      const modeName =
-                        t(modeKey) !== modeKey ? t(modeKey) : mode;
-                      return (
-                        <Badge
-                          key={mode}
-                          px={4}
-                          py={2}
-                          borderRadius="full"
-                          display="flex"
-                          alignItems="center"
-                          gap={2}
-                          bg={unit.color}
-                          color="white"
-                          fontWeight="bold"
-                          fontSize="sm"
-                          border="2px solid"
-                          borderColor={
-                            isLightTheme
-                              ? "rgba(255,255,255,0.58)"
-                              : "whiteAlpha.300"
-                          }
-                          boxShadow={
-                            isLightTheme
-                              ? "0 8px 18px rgba(99, 102, 241, 0.14)"
-                              : "0 2px 8px rgba(0, 0, 0, 0.3)"
+                <Flex gap={2} flexWrap="wrap">
+                  {lesson.modes.map((mode) => {
+                    const Icon = MODE_ICONS[mode] || RiStarLine;
+                    const modeKey = `mode_${mode}`;
+                    const modeName =
+                      t(modeKey) !== modeKey ? t(modeKey) : mode;
+                    return (
+                      <Badge
+                        key={mode}
+                        px={3}
+                        py={1.5}
+                        borderRadius="full"
+                        display="flex"
+                        alignItems="center"
+                        gap={1.5}
+                        bg={unit.color}
+                        color="white"
+                        fontWeight="bold"
+                        fontSize="xs"
+                        border="1px solid"
+                        borderColor={
+                          isLightTheme
+                            ? "rgba(255,255,255,0.58)"
+                            : "whiteAlpha.300"
+                        }
+                        boxShadow={
+                          isLightTheme
+                            ? "0 6px 14px rgba(99, 102, 241, 0.12)"
+                            : "0 2px 6px rgba(0, 0, 0, 0.25)"
+                        }
+                      >
+                        <Icon size={14} />
+                        <Text
+                          textTransform={
+                            resolvedSupportLang === "ar"
+                              ? "none"
+                              : "capitalize"
                           }
                         >
-                          <Icon size={16} />
-                          <Text
-                            textTransform={
-                              resolvedSupportLang === "ar"
-                                ? "none"
-                                : "capitalize"
-                            }
-                          >
-                            {modeName}
-                          </Text>
+                          {modeName}
+                        </Text>
+                      </Badge>
+                    );
+                  })}
+                </Flex>
+
+                {lessonAgendaItems.length > 0 && (
+                  <Accordion
+                    index={objectivesExpanded ? 0 : -1}
+                    onChange={(index) => setObjectivesExpanded(index === 0)}
+                    allowToggle
+                    bg={
+                      isLightTheme ? "var(--app-surface-muted)" : "whiteAlpha.50"
+                    }
+                    borderRadius="xl"
+                    border="1px solid"
+                    borderColor={
+                      isLightTheme ? "var(--app-border)" : "whiteAlpha.100"
+                    }
+                    overflow="hidden"
+                  >
+                    <AccordionItem border="0">
+                      <AccordionButton
+                        px={5}
+                        py={4}
+                        gap={3}
+                        border="0"
+                        boxShadow="none"
+                        _focus={{ boxShadow: "none", outline: "none" }}
+                        _focusVisible={{ boxShadow: "none", outline: "none" }}
+                        _expanded={{ boxShadow: "none" }}
+                        _hover={{
+                          bg: isLightTheme
+                            ? "var(--app-glass-bg-soft)"
+                            : "whiteAlpha.100",
+                        }}
+                      >
+                        <Text
+                          flex="1"
+                          textAlign={isRtl ? "right" : "left"}
+                          fontWeight="bold"
+                          color={
+                            isLightTheme ? "var(--app-text-primary)" : "white"
+                          }
+                          fontSize="sm"
+                        >
+                          {LESSON_OBJECTIVES_LABELS[resolvedSupportLang] ||
+                            LESSON_OBJECTIVES_LABELS.en}
+                        </Text>
+                        <Badge
+                          borderRadius="full"
+                          px={2}
+                          bg={
+                            isLightTheme ? "blackAlpha.100" : "whiteAlpha.100"
+                          }
+                          color={
+                            isLightTheme
+                              ? "var(--app-text-secondary)"
+                              : "gray.300"
+                          }
+                        >
+                          {lessonAgendaItems.length}
                         </Badge>
-                      );
-                    })}
-                  </Flex>
-                </Box>
+                        <AccordionIcon color={unit.color} boxSize={5} />
+                      </AccordionButton>
+                      <AccordionPanel px={5} pt={4} pb={5}>
+                        <VStack
+                          align="stretch"
+                          spacing={4}
+                          maxH="220px"
+                          overflowY="auto"
+                          sx={{
+                            scrollbarWidth: "none",
+                            msOverflowStyle: "none",
+                            "&::-webkit-scrollbar": { display: "none" },
+                          }}
+                        >
+                          {lessonAgendaItems.map((item) => (
+                            <HStack key={item.id} align="start" spacing={3}>
+                              <Box
+                                as={RiCheckboxCircleLine}
+                                boxSize="18px"
+                                color={unit.color}
+                                mt="2px"
+                                flexShrink={0}
+                              />
+                              <Text
+                                fontSize="sm"
+                                lineHeight="1.45"
+                                color={
+                                  isLightTheme
+                                    ? "var(--app-text-secondary)"
+                                    : "gray.300"
+                                }
+                              >
+                                {getLocalizedAgendaLabel(
+                                  item,
+                                  resolvedSupportLang,
+                                )}
+                              </Text>
+                            </HStack>
+                          ))}
+                        </VStack>
+                      </AccordionPanel>
+                    </AccordionItem>
+                  </Accordion>
+                )}
 
                 {/* XP Goal / Passing Score / Tutorial / Game */}
                 <Box

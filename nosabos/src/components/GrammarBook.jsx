@@ -92,6 +92,7 @@ import {
   getQuestionToolButtonProps,
   questionAssistantText,
 } from "./questionUiStyles";
+import { buildCurriculumPromptContext } from "../utils/lessonCurriculum";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -364,6 +365,9 @@ function buildFillStreamPrompt({
     }`,
     `- No meta like "(to go)" in the stem; ≤120 chars.`,
     topicDirective,
+    buildCurriculumPromptContext(lessonContent?.curriculumContext, {
+      mode: "grammar",
+    }),
     `- Hint in ${SUPPORT} (≤8 words).`,
     languageGuard,
     wantTranslation
@@ -523,6 +527,9 @@ function buildMCStreamPrompt({
       : `- Empty translation "".`,
     languageGuard,
     topicDirective,
+    buildCurriculumPromptContext(lessonContent?.curriculumContext, {
+      mode: "grammar",
+    }),
     "",
     "Stream as NDJSON:",
     `{"type":"mc","phase":"q","question":"<stem in ${TARGET}>"}  // first`,
@@ -630,6 +637,9 @@ function buildMAStreamPrompt({
       ? `- ${SUPPORT} translation of the complete sentence.`
       : `- Empty translation "".`,
     topicDirective,
+    buildCurriculumPromptContext(lessonContent?.curriculumContext, {
+      mode: "grammar",
+    }),
     "",
     "Stream as NDJSON:",
     `{"type":"ma","phase":"q","question":"<${TARGET} sentence with EXACTLY ${numBlanks} ___ blanks>"}  // first`,
@@ -689,6 +699,9 @@ function buildSpeakGrammarStreamPrompt({
       ? `- Include a ${SUPPORT} translation of the sentence.`
       : `- Use empty translation "".`,
     topicDirective,
+    buildCurriculumPromptContext(lessonContent?.curriculumContext, {
+      mode: "grammar",
+    }),
     "",
     "Stream as NDJSON:",
     `{"type":"grammar_speak","phase":"prompt","target":"<${TARGET} sentence>","prompt":"<instruction in ${TARGET}>"}`,
@@ -796,6 +809,9 @@ function buildTranslateStreamPrompt({
     `- Hint in ${SUPPORT} (≤8 words) about the grammar point.`,
     languageGuard,
     topicDirective,
+    buildCurriculumPromptContext(lessonContent?.curriculumContext, {
+      mode: "grammar",
+    }),
     "",
     "Stream as NDJSON:",
     `{"type":"translate","phase":"q","sentence":"<${SOURCE_LANG} sentence>"}`,

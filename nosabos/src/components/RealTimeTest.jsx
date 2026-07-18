@@ -99,6 +99,7 @@ import {
   nativeModalMotionProps,
   nativeOverlayMotionProps,
 } from "../utils/modalMotion";
+import { buildCurriculumPromptContext } from "../utils/lessonCurriculum";
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-2.1-mini") + "";
@@ -1812,6 +1813,10 @@ export default function RealTimeTest({
     const cefrHint = getCEFRPromptHint(cefrLvl);
     const goalLangCode = uiLang;
     const goalLangName = getLanguagePromptName(goalLangCode) || "English";
+    const curriculumPromptContext = buildCurriculumPromptContext(
+      lessonContentData?.curriculumContext,
+      { mode: "realtime" },
+    );
 
     // Check if this is an integrated practice lesson
     const isIntegratedPractice =
@@ -1843,6 +1848,7 @@ Focus areas: ${focusPoints.join(", ") || "general vocabulary and grammar"}${
     }
 Level: ${cefrHint}
 Goal language: ${goalLangName} (write every field in ${goalLangName}, avoid mixing languages)${integratedContext}
+${curriculumPromptContext}
 
 IMPORTANT: Create a SPECIFIC, ACTIONABLE goal - NOT a generic one.
 BAD examples (too generic): "Practice places", "Have a conversation about food", "places conversation"
@@ -2321,6 +2327,10 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
     const cefrHint = getCEFRPromptHint(cefrLvl);
     const goalLangCode = uiLang;
     const goalLangName = getLanguagePromptName(goalLangCode) || "English";
+    const curriculumPromptContext = buildCurriculumPromptContext(
+      lessonContent?.curriculumContext,
+      { mode: "realtime" },
+    );
 
     // Get current goal for context
     const currentScenario =
@@ -2333,6 +2343,7 @@ Description: ${lessonDesc}
 Topic: ${topic}
 Focus areas: ${focusPoints.join(", ") || "general vocabulary and grammar"}
 Level: ${cefrHint}
+${curriculumPromptContext}
 
 ${
   currentScenario

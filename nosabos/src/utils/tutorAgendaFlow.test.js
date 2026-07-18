@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   advanceTutorAgendaProgress,
   getTutorAgendaSnapshot,
+  isLegacyTutorAgendaProgress,
   normalizeTutorAgendaProgress,
 } from "./tutorAgendaFlow.js";
 
@@ -54,4 +55,11 @@ test("stale progress from another agenda is removed", () => {
     }),
     { mama: true },
   );
+});
+
+test("unversioned and older Tutor agendas are recognized for full-XP migration", () => {
+  assert.equal(isLegacyTutorAgendaProgress(undefined, 2), true);
+  assert.equal(isLegacyTutorAgendaProgress(1, 2), true);
+  assert.equal(isLegacyTutorAgendaProgress(2, 2), false);
+  assert.equal(isLegacyTutorAgendaProgress(3, 2), false);
 });

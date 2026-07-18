@@ -96,6 +96,7 @@ import {
   normalizePracticeLanguage,
   normalizeSupportLanguage,
 } from "../constants/languages";
+import { buildCurriculumPromptContext } from "../utils/lessonCurriculum";
 import {
   nativeModalMotionProps,
   nativeOverlayMotionProps,
@@ -326,6 +327,11 @@ const resolveSupportLang = (supportLang, appUILang) =>
  */
 function buildVarietyLines(lessonContent, recentGood) {
   const lines = [];
+  const curriculumContext = buildCurriculumPromptContext(
+    lessonContent?.curriculumContext,
+    { mode: "vocabulary" },
+  );
+  if (curriculumContext) lines.push(curriculumContext);
   if (lessonContent?.levelGuard) {
     lines.push(`- ${lessonContent.levelGuard}`);
   }

@@ -277,17 +277,17 @@ const BUBBLE_LEAD_REPAIR_MULTI = {
 };
 
 const BUBBLE_WELCOME = {
-  en: "Hi! I'm your learning companion — your sidekick for this whole journey. My job is to notice the words and rules that trip you up, then bring them back as quick repairs the next day so they really stick. The more we practice, the stronger we both get. Ready for your first quest together?",
-  es: "¡Hola! Soy tu compañero de aprendizaje, tu aliado en todo este viaje. Mi misión es fijarme en las palabras y reglas que se te resisten y traértelas de vuelta al día siguiente como repasos rápidos para que se te queden de verdad. Cuanto más practicamos, más fuertes nos volvemos los dos. ¿Empezamos juntos tu primera misión?",
-  pt: "Oi! Sou seu companheiro de aprendizado, seu parceiro nesta jornada toda. Minha missão é perceber as palavras e regras que te enrolam e trazê-las de volta no dia seguinte como reparos rápidos, para fixar de vez. Quanto mais a gente pratica, mais fortes nós dois ficamos. Vamos começar juntos a sua primeira missão?",
-  fr: "Salut ! Je suis ton compagnon d'apprentissage, ton acolyte pour tout ce voyage. Mon rôle, c'est de repérer les mots et les règles qui te font trébucher, puis de te les ramener le lendemain en petites révisions pour qu'ils restent pour de bon. Plus on s'entraîne, plus on devient forts tous les deux. On se lance dans ta première quête ensemble ?",
-  it: "Ciao! Sono il tuo compagno di studio, il tuo alleato per tutto questo viaggio. Il mio compito è notare le parole e le regole che ti mettono in difficoltà e riportartele il giorno dopo come ripassi veloci, così restano davvero. Più ci alleniamo, più diventiamo forti tutti e due. Iniziamo insieme la tua prima missione?",
-  de: "Hi! Ich bin dein Lernbegleiter – dein Partner auf dieser ganzen Reise. Meine Aufgabe ist es, die Wörter und Regeln zu bemerken, die dir Schwierigkeiten machen, und sie dir am nächsten Tag als kurze Auffrischungen zurückzubringen, damit sie wirklich sitzen. Je mehr wir üben, desto stärker werden wir beide. Starten wir gemeinsam deine erste Mission?",
-  ja: "やあ！ぼくはきみの学習バディ、この旅をずっと一緒に進む相棒だよ。きみがつまずいた言葉やルールをちゃんと覚えておいて、次の日に軽いリペアとして持ってくるのがぼくの役目。しっかり身につくようにね。練習すればするほど、ぼくたちはどんどん強くなる。さあ、最初のクエストを一緒に始めよう！",
-  zh: "嗨！我是你的学习伙伴，会陪你走完这整段旅程。我的任务就是留意那些让你卡住的词和语法，第二天再把它们变成简短的复习带回来，让你真正记牢。练得越多，我们俩就越强。一起开始你的第一个任务吧？",
-  ru: "Привет! Я твой помощник в учёбе — твой напарник на всём этом пути. Моя задача — замечать слова и правила, на которых ты спотыкаешься, и на следующий день возвращать их в виде быстрых повторов, чтобы они закрепились по-настоящему. Чем больше мы практикуемся, тем сильнее становимся оба. Начнём твоё первое задание вместе?",
-  ar: "أهلاً! أنا رفيقك في التعلّم، وسندك طول الرحلة دي. شغلتي إني ألاحظ الكلمات والقواعد اللي بتعطّلك، وأرجّعها لك تاني يوم كمراجعات سريعة علشان تثبت معاك فعلاً. وكل ما نتمرّن أكتر، نقوى الاتنين أكتر. نبدأ أول مهمة مع بعض؟",
-  hi: "नमस्ते! मैं आपका लर्निंग साथी हूँ — इस पूरे सफ़र में आपका साथी। मेरा काम है उन शब्दों और नियमों पर नज़र रखना जो आपको अटकाते हैं, और अगले दिन उन्हें छोटे-छोटे अभ्यास के रूप में वापस लाना ताकि वे सच में याद रह जाएँ। हम जितना ज़्यादा अभ्यास करते हैं, हम दोनों उतने ही मज़बूत बनते हैं। चलिए आपकी पहली क्वेस्ट साथ में शुरू करें?",
+  en: "Hi! I'm your learning companion. I'll remember what you struggle with so we can review it the next day. Ready for our first quest?",
+  es: "¡Hola! Soy tu compañero de aprendizaje. Recordaré lo que te cueste para que podamos repasarlo al día siguiente. ¿Empezamos nuestra primera misión?",
+  pt: "Oi! Sou seu companheiro de aprendizado. Vou lembrar do que você achar difícil para podermos revisar no dia seguinte. Vamos começar nossa primeira missão?",
+  fr: "Salut ! Je suis ton compagnon d'apprentissage. Je retiendrai ce qui te pose problème pour qu'on puisse le revoir le lendemain. On commence notre première quête ?",
+  it: "Ciao! Sono il tuo compagno di studio. Ricorderò ciò che ti mette in difficoltà così potremo ripassarlo il giorno dopo. Iniziamo la nostra prima missione?",
+  de: "Hi! Ich bin dein Lernbegleiter. Ich merke mir, womit du Schwierigkeiten hast, damit wir es am nächsten Tag wiederholen können. Starten wir unsere erste Mission?",
+  ja: "やあ！ぼくはきみの学習バディ。苦手なところを覚えておいて、次の日にいっしょに復習できるようにするよ。最初のクエストを始めよう！",
+  zh: "嗨！我是你的学习伙伴。我会记住你觉得困难的地方，这样我们第二天就能一起复习。准备好开始我们的第一个任务了吗？",
+  ru: "Привет! Я твой помощник в учёбе. Я запомню, что даётся тебе с трудом, чтобы мы могли повторить это на следующий день. Начнём наше первое задание?",
+  ar: "أهلاً! أنا رفيقك في التعلّم. هفتكر الحاجات اللي بتصعب عليك علشان نراجعها مع بعض تاني يوم. نبدأ أول مهمة مع بعض؟",
+  hi: "नमस्ते! मैं आपका लर्निंग साथी हूँ। आपको जिन चीज़ों में कठिनाई होती है, मैं उन्हें याद रखूँगा ताकि हम अगले दिन उन्हें दोहरा सकें। हमारी पहली क्वेस्ट शुरू करें?",
 };
 
 const BUBBLE_LEAD_FRESH = {

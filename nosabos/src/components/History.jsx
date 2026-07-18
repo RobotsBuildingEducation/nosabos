@@ -80,6 +80,7 @@ import {
   normalizePracticeLanguage,
   normalizeSupportLanguage,
 } from "../constants/languages";
+import { buildCurriculumPromptContext } from "../utils/lessonCurriculum";
 
 const renderSpeakerIcon = (loading) =>
   loading ? (
@@ -497,11 +498,16 @@ function buildSeedLecturePrompt({
   const tutorialDirective = isTutorial
     ? tutorialReadingDirective(TARGET)
     : "";
+  const curriculumPromptContext = buildCurriculumPromptContext(
+    lessonContent?.curriculumContext,
+    { mode: "reading" },
+  );
 
   return `
 Write ONE short educational lecture about ${topicText}. ${promptText}. Difficulty: ${
     isTutorial ? "absolute beginner, very easy" : diff
   }.${tutorialDirective}
+${curriculumPromptContext}
 
 CRITICAL LANGUAGE REQUIREMENTS - YOU MUST FOLLOW THESE EXACTLY:
 1. Most importantly, the lecture generated is suitable for a ${isTutorial ? "pre-A1 absolute beginner" : cefrLevel + " level reader"}.
@@ -563,9 +569,14 @@ function buildLecturePrompt({
   const tutorialDirective = isTutorial
     ? tutorialReadingDirective(TARGET)
     : "";
+  const curriculumPromptContext = buildCurriculumPromptContext(
+    lessonContent?.curriculumContext,
+    { mode: "reading" },
+  );
 
   return `
 You are creating educational reading material for language learners focused on ${topicText}. ${promptText}${tutorialDirective}
+${curriculumPromptContext}
 Choose the **next related sub-topic** based on the list of previous lecture titles.
 Avoid repetition but maintain thematic coherence with ${topicText}.
 
@@ -785,6 +796,10 @@ function buildStreamingPrompt({
     lessonContent?.scenario ||
     "general cultural and linguistic concepts";
   const promptText = lessonContent?.prompt || "";
+  const curriculumPromptContext = buildCurriculumPromptContext(
+    lessonContent?.curriculumContext,
+    { mode: "reading" },
+  );
 
   const isTutorial = lessonContent?.topic === "tutorial";
   if (isTutorial) {
@@ -815,6 +830,7 @@ function buildStreamingPrompt({
   return [
     `You are writing an educational reading lecture for language learners about ${topicText}.`,
     baseTopic,
+    curriculumPromptContext,
     "",
     "CRITICAL LANGUAGE REQUIREMENTS - YOU MUST FOLLOW THESE EXACTLY:",
     `1. The target language for learning is: ${TARGET} (language code: ${targetLang})`,
