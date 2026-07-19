@@ -9458,24 +9458,6 @@ export default function Tutor({
         ? SKILL_STATUS.COMPLETED
         : SKILL_STATUS.IN_PROGRESS)
     : SKILL_STATUS.AVAILABLE;
-  const selectedTutorLessonRequiredXp = selectedTutorLesson
-    ? getTutorLessonXpRequired(selectedTutorLesson)
-    : 0;
-  const selectedTutorLessonDisplayedXp = selectedTutorLesson
-    ? Math.min(
-        selectedTutorLessonRequiredXp,
-        selectedTutorLessonProgressStatus === SKILL_STATUS.COMPLETED
-          ? selectedTutorLessonRequiredXp
-          : tutorLessonEarnedXp,
-      )
-    : 0;
-  const selectedTutorLessonXpPercent =
-    selectedTutorLessonRequiredXp > 0
-      ? Math.round(
-          (selectedTutorLessonDisplayedXp / selectedTutorLessonRequiredXp) *
-            100,
-        )
-      : 0;
   // Mirror the exact gate trackTutorLessonXp uses for lesson completion: full
   // XP alone used to flip the header ring to a checkmark while an incomplete
   // regular agenda silently blocked completion — no modal, and the next
@@ -9687,16 +9669,10 @@ export default function Tutor({
                   leftIcon={<RiRoadMapLine />}
                   size="xs"
                   variant="ghost"
+                  colorScheme="cyan"
+                  {...getChatLogButtonHighlightProps(false, isLightTheme)}
                   onClick={handleTutorPathOpen}
-                  opacity={1}
-                  bg={isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.100"}
-                  border="1px solid"
-                  borderColor={isLightTheme ? APP_BORDER : "whiteAlpha.300"}
-                  color={isLightTheme ? APP_TEXT_SECONDARY : undefined}
-                  _hover={{
-                    opacity: 1,
-                    bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.100",
-                  }}
+                  _hover={{ opacity: 1 }}
                   fontWeight="medium"
                 >
                   {uiText("app_mode_path", "Lessons")}
@@ -10036,47 +10012,71 @@ export default function Tutor({
                 onLevelChange={handleTutorLevelChange}
               />
 
-              {selectedTutorLesson && (
-                <Box
-                  border="1px solid"
-                  borderColor={isLightTheme ? APP_BORDER : "whiteAlpha.200"}
-                  bg={isLightTheme ? APP_SURFACE_ELEVATED : "whiteAlpha.100"}
-                  borderRadius="xl"
-                  p={4}
+              <Box
+                border="1px solid"
+                borderColor={isLightTheme ? APP_BORDER : "whiteAlpha.200"}
+                bg={isLightTheme ? APP_SURFACE_ELEVATED : "whiteAlpha.100"}
+                borderRadius="xl"
+                p={4}
+              >
+                <HStack
+                  justify="space-between"
+                  align="center"
+                  spacing={{ base: 4, md: 8 }}
                 >
-                  <VStack align="stretch" spacing={3}>
-                    <HStack justify="space-between" align="end" spacing={4}>
-                      <VStack align="start" spacing={1}>
-                        <Text fontSize="xs" color="var(--app-text-secondary)">
-                          {getTutorPathCopy("currentLesson", uiLang)}
-                        </Text>
-                        <Text fontWeight="bold">
-                          {getTutorDisplayText(
-                            selectedTutorLesson.title,
-                            uiLang,
-                          )}
-                        </Text>
-                      </VStack>
+                  <VStack align="start" spacing={0}>
+                    <Text
+                      fontSize="sm"
+                      fontWeight="black"
+                      color={APP_TEXT_PRIMARY}
+                      lineHeight="1"
+                    >
+                      {xp} XP
+                    </Text>
+                    <Text
+                      fontSize="xs"
+                      color={APP_TEXT_SECONDARY}
+                      fontWeight="medium"
+                    >
+                      {uiText(
+                        "skill_tree_next_level_progress",
+                        "{percent}% to Level {level}",
+                      )
+                        .replace("{percent}", String(progressPct))
+                        .replace("{level}", String(xpLevelNumber + 1))}
+                    </Text>
+                  </VStack>
+
+                  <VStack
+                    spacing={1}
+                    align="end"
+                    minW={{ base: "48%", md: "240px" }}
+                  >
+                    <HStack spacing={2}>
                       <Text
-                        flexShrink={0}
-                        fontSize="sm"
-                        fontWeight="800"
-                        color={isLightTheme ? "teal.700" : "teal.200"}
+                        fontSize="xs"
+                        fontWeight="semibold"
+                        color={APP_TEXT_PRIMARY}
                       >
-                        {selectedTutorLessonDisplayedXp}/
-                        {selectedTutorLessonRequiredXp} XP
+                        {activeTutorLevel}
+                      </Text>
+                      <Text fontSize="xs" fontWeight="bold" color="blue.300">
+                        {activeTutorLevelProgress}%
                       </Text>
                     </HStack>
                     <Box
+                      w="full"
                       role="progressbar"
-                      aria-label={`${selectedTutorLessonDisplayedXp}/${selectedTutorLessonRequiredXp} XP`}
+                      aria-label={`${activeTutorLevel} ${activeTutorLevelProgress}%`}
                       aria-valuemin={0}
-                      aria-valuemax={selectedTutorLessonRequiredXp}
-                      aria-valuenow={selectedTutorLessonDisplayedXp}
+                      aria-valuemax={100}
+                      aria-valuenow={activeTutorLevelProgress}
                     >
                       <WaveBar
-                        value={selectedTutorLessonXpPercent}
-                        height={14}
+                        value={activeTutorLevelProgress}
+                        height={12}
+                        start="#4aa8ff"
+                        end="#75f8ffff"
                         bg={
                           isLightTheme
                             ? APP_SURFACE_MUTED
@@ -10084,14 +10084,14 @@ export default function Tutor({
                         }
                         border={
                           isLightTheme
-                            ? "rgba(20, 184, 166, 0.26)"
-                            : "rgba(94, 234, 212, 0.24)"
+                            ? "rgba(74, 168, 255, 0.2)"
+                            : "rgba(117, 248, 255, 0.18)"
                         }
                       />
                     </Box>
                   </VStack>
-                </Box>
-              )}
+                </HStack>
+              </Box>
 
               {isTutorPathLoading ? (
                 <Center minH="320px">

@@ -43,6 +43,7 @@ import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import {
   SOFT_STOP_BUTTON_BG,
+  SOFT_STOP_BUTTON_EDGE,
   SOFT_STOP_BUTTON_HOVER_BG,
 } from "../utils/softStopButton";
 import {
@@ -50,7 +51,6 @@ import {
   DEFAULT_RESPONSES_MODEL,
   explainAnswer,
 } from "../utils/llm";
-import { speechReasonTips } from "../utils/speechEvaluation";
 import FeedbackRail from "./FeedbackRail";
 import TranslateSentence from "./TranslateSentence";
 import RepeatWhatYouHear from "./RepeatWhatYouHear";
@@ -2020,7 +2020,6 @@ Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Ant
   const [sVariant, setSVariant] = useState("repeat");
   const [sHint, setSHint] = useState("");
   const [sTranslation, setSTranslation] = useState("");
-  const [sRecognized, setSRecognized] = useState("");
   const [sEval, setSEval] = useState(null);
   const [loadingQSpeak, setLoadingQSpeak] = useState(false);
   const speakAudioRef = useRef(null);
@@ -3328,7 +3327,6 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
     setLastOk(null);
     setRecentXp(0);
     setNextAction(null);
-    setSRecognized("");
     setSEval(null);
 
     const prompt = buildSpeakVocabStreamPrompt({
@@ -4295,7 +4293,6 @@ Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
       setExplanationText("");
       setCurrentQuestionData(null);
 
-      setSRecognized(recognizedText || "");
       setSEval(evaluation);
 
       const ok = evaluation.pass;
@@ -4343,24 +4340,6 @@ Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
           ...recentCorrectRef.current,
           { mode: "speak", question: sStimulus || sTarget, variant: sVariant },
         ].slice(-5);
-      } else {
-        const tips = speechReasonTips(evaluation.reasons, {
-          uiLang: userLanguage,
-          targetLabel: targetName,
-        });
-        const retryTitle =
-          t("vocab_speak_retry_title") ||
-          (userLanguage === "pt"
-            ? "Tente novamente"
-            : userLanguage === "es"
-              ? "Intenta otra vez"
-              : "Try again");
-        toast({
-          title: retryTitle,
-          description: tips.join(" "),
-          status: "warning",
-          duration: 3600,
-        });
       }
     },
     [
@@ -4373,7 +4352,6 @@ Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
       sTranslation,
       sVariant,
       t,
-      targetName,
       toast,
       userLanguage,
     ],
@@ -6189,23 +6167,6 @@ Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
               </>
             )}
 
-            {sRecognized && lastOk !== true ? (
-              <Text fontSize="sm" mt={3} color="teal.200">
-                <Text as="span" fontWeight="600">
-                  {t("vocab_speak_last_heard") ||
-                    (userLanguage === "pt"
-                      ? "Ultima tentativa"
-                      : userLanguage === "ar"
-                        ? "آخر محاولة"
-                        : userLanguage === "es"
-                          ? "Último intento"
-                          : "Last attempt")}
-                  :
-                </Text>{" "}
-                {sRecognized}
-              </Text>
-            ) : null}
-
             <AssistantSupportBox />
 
             <Stack
@@ -6235,18 +6196,16 @@ Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
                 }
                 bg={isSpeakRecording ? SOFT_STOP_BUTTON_BG : undefined}
                 color={isSpeakRecording ? "white" : undefined}
+                boxShadow={
+                  isSpeakRecording
+                    ? `0px 4px 0px ${SOFT_STOP_BUTTON_EDGE}`
+                    : undefined
+                }
                 px={{ base: 7, md: 12 }}
                 py={{ base: 3, md: 4 }}
                 leftIcon={
                   isSpeakConnecting ? (
-                    <VoiceOrb
-                      state={
-                        ["idle", "listening", "speaking"][
-                          Math.floor(Math.random() * 3)
-                        ]
-                      }
-                      size={24}
-                    />
+                    <Spinner size="sm" thickness="2px" color="currentColor" />
                   ) : isSpeakRecording ? (
                     <RiStopCircleLine />
                   ) : (
@@ -6260,7 +6219,6 @@ Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
                   }
                   // Clear previous results to prevent UI flickering
                   setLastOk(null);
-                  setSRecognized("");
                   setSEval(null);
                   playSound(submitActionSound);
                   try {

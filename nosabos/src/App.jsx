@@ -1735,6 +1735,10 @@ function TopBar({
         : themeMode === "light"
           ? "#4b5563"
           : "whiteAlpha.700";
+  const dailyGoalHudTextColor =
+    themeMode === "light" && dailyRawPct >= 100
+      ? "#167F91"
+      : dailyGoalHudColor;
   const dailyGoalLabel = uiCopy(appLanguage, {
     en: "Daily XP",
     es: "XP diaria",
@@ -1874,6 +1878,7 @@ function TopBar({
                 <Text
                   fontSize={{ base: "xs", md: "xs" }}
                   fontWeight="bold"
+                  color={dailyGoalHudTextColor}
                   lineHeight="1"
                   whiteSpace="nowrap"
                   maxW={{ base: "92px", sm: "140px", md: "none" }}
@@ -1885,6 +1890,7 @@ function TopBar({
                 <Text
                   fontSize={{ base: "xs", md: "xs" }}
                   fontWeight="bold"
+                  color={dailyGoalHudTextColor}
                   lineHeight="1"
                   fontVariantNumeric="tabular-nums"
                   whiteSpace="nowrap"

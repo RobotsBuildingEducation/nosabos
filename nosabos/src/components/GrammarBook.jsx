@@ -39,6 +39,7 @@ import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import {
   SOFT_STOP_BUTTON_BG,
+  SOFT_STOP_BUTTON_EDGE,
   SOFT_STOP_BUTTON_HOVER_BG,
 } from "../utils/softStopButton";
 import {
@@ -46,7 +47,6 @@ import {
   DEFAULT_RESPONSES_MODEL,
   explainAnswer,
 } from "../utils/llm";
-import { speechReasonTips } from "../utils/speechEvaluation";
 import FeedbackRail from "./FeedbackRail";
 import TranslateSentence from "./TranslateSentence";
 import RepeatWhatYouHear from "./RepeatWhatYouHear";
@@ -2024,7 +2024,6 @@ Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Ant
   const [sTarget, setSTarget] = useState("");
   const [sHint, setSHint] = useState("");
   const [sTranslation, setSTranslation] = useState("");
-  const [sRecognized, setSRecognized] = useState("");
   const [sEval, setSEval] = useState(null);
   const [loadingSpeakQ, setLoadingSpeakQ] = useState(false);
   const speakAudioRef = useRef(null);
@@ -3069,7 +3068,6 @@ Create ONE multiple-answer ${LANG_NAME(
     setQuizCurrentQuestionAttempted(false);
     setRecentXp(0);
     setNextAction(null);
-    setSRecognized("");
     setSEval(null);
 
     const prompt = buildSpeakGrammarStreamPrompt({
@@ -4183,7 +4181,6 @@ Return JSON ONLY:
       setExplanationText("");
       setCurrentQuestionData(null);
 
-      setSRecognized(recognizedText || "");
       setSEval(evaluation);
 
       const ok = evaluation.pass;
@@ -4236,24 +4233,6 @@ Return JSON ONLY:
           ...recentCorrectRef.current,
           { mode: "speak", question: sTarget },
         ].slice(-5);
-      } else {
-        const tips = speechReasonTips(evaluation.reasons, {
-          uiLang: userLanguage,
-          targetLabel: targetName,
-        });
-        const retryTitle =
-          t("grammar_speak_retry_title") ||
-          (userLanguage === "pt"
-            ? "Tente novamente"
-            : userLanguage === "es"
-              ? "Intenta de nuevo"
-              : "Try again");
-        toast({
-          title: retryTitle,
-          description: tips.join(" "),
-          status: "warning",
-          duration: 3600,
-        });
       }
     },
     [
@@ -4264,7 +4243,6 @@ Return JSON ONLY:
       sTarget,
       sTranslation,
       t,
-      targetName,
       toast,
       userLanguage,
     ],
@@ -4274,6 +4252,7 @@ Return JSON ONLY:
     startRecording: startSpeakRecording,
     stopRecording: stopSpeakRecording,
     isRecording: isSpeakRecording,
+    isConnecting: isSpeakConnecting,
     supportsSpeech: supportsSpeak,
   } = useSpeechPractice({
     targetText: sTarget,
@@ -5864,23 +5843,6 @@ Return JSON ONLY:
               </>
             )}
 
-            {sRecognized && lastOk !== true ? (
-              <Text fontSize="sm" mt={3} color="teal.200">
-                <Text as="span" fontWeight="600">
-                  {t("grammar_speak_last_heard") ||
-                    (userLanguage === "pt"
-                      ? "Ultima tentativa"
-                      : userLanguage === "ar"
-                        ? "آخر محاولة"
-                      : userLanguage === "es"
-                        ? "Último intento"
-                        : "Last attempt")}
-                  :
-                </Text>{" "}
-                {sRecognized}
-              </Text>
-            ) : null}
-
             <AssistantSupportBox />
 
             <Stack
@@ -5901,11 +5863,27 @@ Return JSON ONLY:
                 </Button>
               )}
               <Button
-                colorScheme={isSpeakRecording ? undefined : "teal"}
+                colorScheme={
+                  isSpeakRecording
+                    ? undefined
+                    : isSpeakConnecting
+                      ? "yellow"
+                      : "teal"
+                }
                 bg={isSpeakRecording ? SOFT_STOP_BUTTON_BG : undefined}
                 color={isSpeakRecording ? "white" : undefined}
+                boxShadow={
+                  isSpeakRecording
+                    ? `0px 4px 0px ${SOFT_STOP_BUTTON_EDGE}`
+                    : undefined
+                }
                 px={{ base: 7, md: 12 }}
                 py={{ base: 3, md: 4 }}
+                leftIcon={
+                  isSpeakConnecting ? (
+                    <Spinner size="sm" thickness="2px" color="currentColor" />
+                  ) : undefined
+                }
                 _hover={
                   isSpeakRecording
                     ? { bg: SOFT_STOP_BUTTON_HOVER_BG }
@@ -5918,7 +5896,6 @@ Return JSON ONLY:
                   }
                   // Clear previous results to prevent UI flickering
                   setLastOk(null);
-                  setSRecognized("");
                   setSEval(null);
                   playSound(submitActionSound);
                   try {
@@ -5961,26 +5938,29 @@ Return JSON ONLY:
                   !supportsSpeak ||
                   loadingSpeakQ ||
                   !sTarget ||
+                  isSpeakConnecting ||
                   (isFinalQuiz && quizCurrentQuestionAttempted)
                 }
               >
-                {isSpeakRecording
-                  ? t("grammar_speak_stop") ||
-                    (userLanguage === "pt"
-                      ? "Parar"
-                      : userLanguage === "ar"
-                        ? "إيقاف"
-                      : userLanguage === "es"
-                        ? "Detener"
-                        : "Stop")
-                  : t("grammar_speak_record") ||
-                    (userLanguage === "pt"
-                      ? "Gravar"
-                      : userLanguage === "ar"
-                        ? "سجّل"
-                      : userLanguage === "es"
-                        ? "Grabar"
-                        : "Record")}
+                {isSpeakConnecting
+                  ? t("vocab_connecting")
+                  : isSpeakRecording
+                    ? t("grammar_speak_stop") ||
+                      (userLanguage === "pt"
+                        ? "Parar"
+                        : userLanguage === "ar"
+                          ? "إيقاف"
+                          : userLanguage === "es"
+                            ? "Detener"
+                            : "Stop")
+                    : t("grammar_speak_record") ||
+                      (userLanguage === "pt"
+                        ? "Gravar"
+                        : userLanguage === "ar"
+                          ? "سجّل"
+                          : userLanguage === "es"
+                            ? "Grabar"
+                            : "Record")}
               </Button>
             </Stack>
 

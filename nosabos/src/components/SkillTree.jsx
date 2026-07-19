@@ -3136,8 +3136,8 @@ export default function SkillTree({
                       <WaveBar
                         value={currentLevelProgress.percentage}
                         height={12}
-                        start="#60A5FA"
-                        end="#2563EB"
+                        start="#4aa8ff"
+                        end="#75f8ffff"
                         bg="rgba(255,255,255,0.05)"
                         border="rgba(255,255,255,0.1)"
                       />
