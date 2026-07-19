@@ -170,6 +170,25 @@ import {
   nativeOverlayMotionProps,
 } from "../utils/modalMotion";
 
+const DEFAULT_TUTOR_PAUSE_MS = 1200;
+
+function normalizeTutorPauseMs(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return DEFAULT_TUTOR_PAUSE_MS;
+  return Math.min(4000, Math.max(200, Math.round(numeric)));
+}
+
+function buildTutorTurnDetection(pauseMs) {
+  return {
+    type: "server_vad",
+    silence_duration_ms: normalizeTutorPauseMs(pauseMs),
+    threshold: 0.35,
+    prefix_padding_ms: 120,
+    create_response: false,
+    interrupt_response: false,
+  };
+}
+
 const RESPONSES_URL = `${import.meta.env.VITE_RESPONSES_URL}/proxyResponses`;
 const TRANSLATE_MODEL =
   import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-5-nano";
@@ -3690,6 +3709,7 @@ export default function Tutor({
   activeNpub = "",
   targetLang = "es",
   supportLang = "",
+  pauseMs = DEFAULT_TUTOR_PAUSE_MS,
   maxProficiencyLevel = "Pre-A1",
   onFirstLessonComplete,
   onDailyGoalCelebration,
@@ -3782,6 +3802,29 @@ export default function Tutor({
   const isIdleRef = useRef(true);
   const idleWaitersRef = useRef([]);
   const assistantInputLockedRef = useRef(false);
+  const pauseMsRef = useRef(normalizeTutorPauseMs(pauseMs));
+  pauseMsRef.current = normalizeTutorPauseMs(pauseMs);
+  useEffect(() => {
+    if (
+      !aliveRef.current ||
+      assistantInputLockedRef.current ||
+      dcRef.current?.readyState !== "open"
+    ) {
+      return;
+    }
+    try {
+      dcRef.current.send(
+        JSON.stringify({
+          type: "session.update",
+          session: {
+            turn_detection: buildTutorTurnDetection(pauseMsRef.current),
+          },
+        }),
+      );
+    } catch {
+      // The realtime session may close while the setting update is in flight.
+    }
+  }, [pauseMs]);
   const assistantSpeakingRef = useRef(false);
   const assistantUnlockTimerRef = useRef(null);
   const listeningCueLastPlayedAtRef = useRef(0);
@@ -5578,6 +5621,7 @@ export default function Tutor({
               responseInstructionsPrefix:
                 buildOpenAIResponseInstructionsPrefix(),
               voice: openaiVoice,
+              pauseMs: pauseMsRef.current,
               inputLanguageCodes: inputLanguageCodes.length
                 ? inputLanguageCodes
                 : null,
@@ -6855,14 +6899,7 @@ export default function Tutor({
 
   function buildTurnDetectionConfig() {
     if (assistantInputLockedRef.current) return null;
-    return {
-      type: "server_vad",
-      silence_duration_ms: 2000,
-      threshold: 0.35,
-      prefix_padding_ms: 120,
-      create_response: false,
-      interrupt_response: false,
-    };
+    return buildTutorTurnDetection(pauseMsRef.current);
   }
 
   function setLocalMicEnabled(enabled) {
@@ -7332,14 +7369,7 @@ export default function Tutor({
         JSON.stringify({
           type: "session.update",
           session: {
-            turn_detection: {
-              type: "server_vad",
-              silence_duration_ms: 2000,
-              threshold: 0.35,
-              prefix_padding_ms: 120,
-              create_response: false,
-              interrupt_response: false,
-            },
+            turn_detection: buildTutorTurnDetection(pauseMsRef.current),
           },
         }),
       );

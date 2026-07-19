@@ -119,7 +119,9 @@ import useUserStore from "./hooks/useUserStore";
 import useModalStore from "./hooks/useModalStore";
 import { useDecentralizedIdentity } from "./hooks/useDecentralizedIdentity";
 import * as Tone from "tone";
-import useSoundSettings from "./hooks/useSoundSettings";
+import useSoundSettings, {
+  DEFAULT_TUTOR_VOLUME,
+} from "./hooks/useSoundSettings";
 
 import GrammarBook from "./components/GrammarBook";
 import Onboarding from "./components/Onboarding";
@@ -304,6 +306,7 @@ import {
   getTutorVoiceOption,
   getTutorVoiceOptions,
   getTutorVoicePreviewProvider,
+  isOpenAITutorProvider,
   normalizeTutorVoice,
 } from "./utils/tutorRealtime";
 
@@ -446,7 +449,7 @@ const ONBOARDING_TOTAL_STEPS = 1;
 const TEST_UNLOCK_NSEC =
   "nsec1akcvuhtemz3kw58gvvfg38uucu30zfsahyt6ulqapx44lype6a9q42qevv";
 
-const DEFAULT_VOICE_PAUSE_MS = 600;
+const DEFAULT_VOICE_PAUSE_MS = 1200;
 const LOADING_ORB_STATES = ["idle", "listening", "speaking"];
 
 // Repair routing: which surface each repair-step mode opens. Only modes
@@ -1254,6 +1257,7 @@ function TopBar({
   const isRtlApp = getLanguageDirection(appLanguage) === "rtl";
   const themeMode = useThemeStore((s) => s.themeMode);
   const syncThemeMode = useThemeStore((s) => s.syncThemeMode);
+  const showTutorVolumeControl = !isOpenAITutorProvider();
   const [settingsTabIndex, setSettingsTabIndex] = useState(0);
   // Defer mounting the heavy settings body until after the open animation has
   // started painting. On iOS Safari, mounting the full drawer tree in the same
@@ -2533,37 +2537,39 @@ function TopBar({
                           </Slider>
                         </Box>
 
-                        <Box bg="gray.800" p={3} rounded="md">
-                          <HStack justify="space-between" mb={2}>
-                            <Text fontSize="sm">
-                              {t.tutor_volume_label || "Tutor volume"}
-                            </Text>
-                            <Text fontSize="sm" opacity={0.8}>
-                              ×{Number(tutorVolume).toFixed(1)}
-                            </Text>
-                          </HStack>
-                          <Slider
-                            aria-label="tutor-volume-slider"
-                            min={0}
-                            max={4}
-                            step={0.1}
-                            value={tutorVolume}
-                            onChange={(val) => {
-                              onTutorVolumeChange(val);
-                              playSliderTick(val, 0, 4);
-                            }}
-                            onChangeEnd={(val) => onTutorVolumeSave(val)}
-                          >
-                            <SliderTrack
-                              bg="gray.700"
-                              h={3}
-                              borderRadius="full"
+                        {showTutorVolumeControl && (
+                          <Box bg="gray.800" p={3} rounded="md">
+                            <HStack justify="space-between" mb={2}>
+                              <Text fontSize="sm">
+                                {t.tutor_volume_label || "Tutor volume"}
+                              </Text>
+                              <Text fontSize="sm" opacity={0.8}>
+                                ×{Number(tutorVolume).toFixed(1)}
+                              </Text>
+                            </HStack>
+                            <Slider
+                              aria-label="tutor-volume-slider"
+                              min={0}
+                              max={4}
+                              step={0.1}
+                              value={tutorVolume}
+                              onChange={(val) => {
+                                onTutorVolumeChange(val);
+                                playSliderTick(val, 0, 4);
+                              }}
+                              onChangeEnd={(val) => onTutorVolumeSave(val)}
                             >
-                              <SliderFilledTrack bg="linear-gradient(90deg, #5dade2, #9370DB)" />
-                            </SliderTrack>
-                            <SliderThumb boxSize={6} />
-                          </Slider>
-                        </Box>
+                              <SliderTrack
+                                bg="gray.700"
+                                h={3}
+                                borderRadius="full"
+                              >
+                                <SliderFilledTrack bg="linear-gradient(90deg, #5dade2, #9370DB)" />
+                              </SliderTrack>
+                              <SliderThumb boxSize={6} />
+                            </Slider>
+                          </Box>
+                        )}
 
                         <Box bg="gray.800" p={3} rounded="md">
                           <HStack justifyContent="space-between">
@@ -2989,7 +2995,7 @@ export default function App({ onBootReady } = {}) {
   const [allowPosts, setAllowPosts] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [soundVolume, setSoundVolume] = useState(100);
-  const [tutorVolume, setTutorVolume] = useState(1);
+  const [tutorVolume, setTutorVolume] = useState(DEFAULT_TUTOR_VOLUME);
   const setSoundSettingsEnabled = useSoundSettings((s) => s.setSoundEnabled);
   const setSoundSettingsVolume = useSoundSettings((s) => s.setVolume);
   const setSoundSettingsTutorVolume = useSoundSettings((s) => s.setTutorVolume);
@@ -3036,11 +3042,19 @@ export default function App({ onBootReady } = {}) {
 
   // Sync tutorVolume (Gemini Live playback gain, 0-4) state with global store
   useEffect(() => {
-    // Default to 1 (no boost) if user.tutorVolume is not set
-    const vol = typeof user?.tutorVolume === "number" ? user.tutorVolume : 1;
+    const vol =
+      typeof user?.tutorVolume === "number"
+        ? user.tutorVolume
+        : typeof user?.progress?.tutorVolume === "number"
+          ? user.progress.tutorVolume
+          : DEFAULT_TUTOR_VOLUME;
     setTutorVolume(vol);
     setSoundSettingsTutorVolume(vol);
-  }, [user?.tutorVolume, setSoundSettingsTutorVolume]);
+  }, [
+    user?.progress?.tutorVolume,
+    user?.tutorVolume,
+    setSoundSettingsTutorVolume,
+  ]);
 
   // Warm up audio on first user interaction to eliminate mobile audio delay
   useEffect(() => {
@@ -5030,7 +5044,21 @@ export default function App({ onBootReady } = {}) {
       const normalizedThemeMode = normalizeThemeMode(
         safe(payload.themeMode, themeMode),
       );
+      const normalizedTutorVolume = Math.max(
+        0,
+        Math.min(
+          4,
+          Math.round(
+            Number(
+              typeof payload.tutorVolume === "number"
+                ? payload.tutorVolume
+                : DEFAULT_TUTOR_VOLUME,
+            ) * 10,
+          ) / 10,
+        ),
+      );
       syncThemeMode(normalizedThemeMode);
+      setSoundSettingsTutorVolume(normalizedTutorVolume);
 
       const now = new Date().toISOString();
       // Keep persisted app language aligned with onboarding support language.
@@ -5067,6 +5095,7 @@ export default function App({ onBootReady } = {}) {
           soundEnabled: payload.soundEnabled !== false,
           soundVolume:
             typeof payload.soundVolume === "number" ? payload.soundVolume : 100,
+          tutorVolume: normalizedTutorVolume,
           themeMode: normalizedThemeMode,
         },
         { merge: true },
@@ -5098,6 +5127,7 @@ export default function App({ onBootReady } = {}) {
         soundEnabled: payload.soundEnabled !== false,
         soundVolume:
           typeof payload.soundVolume === "number" ? payload.soundVolume : 100,
+        tutorVolume: normalizedTutorVolume,
         themeMode: normalizedThemeMode,
       });
       navigate("/", { replace: true });
@@ -9006,6 +9036,11 @@ export default function App({ onBootReady } = {}) {
   const onboardingInitialDraft = {
     ...(user?.progress || {}),
     ...(user?.onboarding?.draft || {}),
+    tutorVolume:
+      user?.onboarding?.draft?.tutorVolume ??
+      user?.tutorVolume ??
+      user?.progress?.tutorVolume ??
+      DEFAULT_TUTOR_VOLUME,
     themeMode:
       user?.onboarding?.draft?.themeMode || user?.themeMode || themeMode,
   };

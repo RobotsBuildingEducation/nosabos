@@ -31,7 +31,9 @@ import { ChevronDownIcon } from "@chakra-ui/icons";
 import submitActionSound from "../assets/submitaction.mp3";
 import selectSound from "../assets/select.mp3";
 import nextButtonSound from "../assets/nextbutton.mp3";
-import useSoundSettings from "../hooks/useSoundSettings";
+import useSoundSettings, {
+  DEFAULT_TUTOR_VOLUME,
+} from "../hooks/useSoundSettings";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { translations } from "../utils/translation";
@@ -59,11 +61,12 @@ import {
   getTutorVoiceOption,
   getTutorVoiceOptions,
   getTutorVoicePreviewProvider,
+  isOpenAITutorProvider,
   normalizeTutorVoice,
 } from "../utils/tutorRealtime";
 
 const BASE_PATH = "/onboarding";
-const DEFAULT_VOICE_PAUSE_MS = 600;
+const DEFAULT_VOICE_PAUSE_MS = 1200;
 const stepContentReveal = keyframes`
   0% {
     opacity: 0;
@@ -186,7 +189,7 @@ export default function Onboarding({
       tutorVolume:
         typeof initialDraft.tutorVolume === "number"
           ? initialDraft.tutorVolume
-          : 1,
+          : DEFAULT_TUTOR_VOLUME,
       themeMode:
         initialDraft.themeMode === "dark" || initialDraft.themeMode === "light"
           ? initialDraft.themeMode
@@ -212,6 +215,7 @@ export default function Onboarding({
   const playSliderTick = useSoundSettings((s) => s.playSliderTick);
 
   const [isSaving, setIsSaving] = useState(false);
+  const showTutorVolumeControl = !isOpenAITutorProvider();
 
   useEffect(() => {
     syncThemeMode(themeMode);
@@ -727,38 +731,40 @@ export default function Onboarding({
                         personaPlaceholder={personaPlaceholder}
                       />
 
-                      <Box bg="gray.800" p={3} rounded="md">
-                        <HStack justifyContent="space-between">
-                          <Text
-                            fontSize="sm"
-                            fontWeight="semibold"
-                            color="var(--app-text-primary)"
+                      {showTutorVolumeControl && (
+                        <Box bg="gray.800" p={3} rounded="md">
+                          <HStack justifyContent="space-between">
+                            <Text
+                              fontSize="sm"
+                              fontWeight="semibold"
+                              color="var(--app-text-primary)"
+                            >
+                              {ui.tutor_volume_label || "Tutor volume"}
+                            </Text>
+                            <Text fontSize="sm" opacity={0.8}>
+                              ×{Number(tutorVolume).toFixed(1)}
+                            </Text>
+                          </HStack>
+                          <Slider
+                            aria-label="onboarding-tutor-volume-slider"
+                            mt={3}
+                            min={0}
+                            max={4}
+                            step={0.1}
+                            value={tutorVolume}
+                            onChange={(val) => {
+                              setTutorVolume(val);
+                              setGlobalTutorVolume(val);
+                              playOnboardingSliderTick(val, 0, 4);
+                            }}
                           >
-                            {ui.tutor_volume_label || "Tutor volume"}
-                          </Text>
-                          <Text fontSize="sm" opacity={0.8}>
-                            ×{Number(tutorVolume).toFixed(1)}
-                          </Text>
-                        </HStack>
-                        <Slider
-                          aria-label="onboarding-tutor-volume-slider"
-                          mt={3}
-                          min={0}
-                          max={4}
-                          step={0.1}
-                          value={tutorVolume}
-                          onChange={(val) => {
-                            setTutorVolume(val);
-                            setGlobalTutorVolume(val);
-                            playOnboardingSliderTick(val, 0, 4);
-                          }}
-                        >
-                          <SliderTrack bg="gray.700" h={4} borderRadius="full">
-                            <SliderFilledTrack bg="linear-gradient(90deg, #5dade2, #9370DB)" />
-                          </SliderTrack>
-                          <SliderThumb boxSize={6} />
-                        </Slider>
-                      </Box>
+                            <SliderTrack bg="gray.700" h={4} borderRadius="full">
+                              <SliderFilledTrack bg="linear-gradient(90deg, #5dade2, #9370DB)" />
+                            </SliderTrack>
+                            <SliderThumb boxSize={6} />
+                          </Slider>
+                        </Box>
+                      )}
 
                       {/* Voice Activity Pause Slider */}
                       <Box bg="gray.800" p={3} rounded="md">

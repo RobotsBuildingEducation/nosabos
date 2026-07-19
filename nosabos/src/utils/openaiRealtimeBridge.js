@@ -24,6 +24,13 @@ const REALTIME_MODEL =
   ) + "";
 const REALTIME_BASE_URL = import.meta.env?.VITE_REALTIME_URL || "";
 const DATA_CHANNEL_OPEN_TIMEOUT_MS = 12000;
+const DEFAULT_PAUSE_MS = 1200;
+
+function normalizePauseMs(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return DEFAULT_PAUSE_MS;
+  return Math.min(4000, Math.max(200, Math.round(numeric)));
+}
 
 // Dev-only wire log so provider A/B runs are diagnosable at a glance
 // (deltas are skipped to keep the console readable).
@@ -36,7 +43,7 @@ function wireLog(direction, label) {
 // listening posture the Tutor later toggles.
 const DEFAULT_TURN_DETECTION = {
   type: "server_vad",
-  silence_duration_ms: 2000,
+  silence_duration_ms: DEFAULT_PAUSE_MS,
   threshold: 0.35,
   prefix_padding_ms: 120,
   create_response: false,
@@ -128,6 +135,7 @@ class OpenAIRealtimeBridge {
     initialInstructions = "",
     responseInstructionsPrefix = "",
     voice = "alloy",
+    pauseMs = DEFAULT_PAUSE_MS,
     inputLanguageCodes = null,
     inputTranscriptionKeywords = null,
     onEvent,
@@ -138,6 +146,7 @@ class OpenAIRealtimeBridge {
     this.initialInstructions = initialInstructions;
     this.responseInstructionsPrefix = responseInstructionsPrefix;
     this.voice = voice;
+    this.pauseMs = normalizePauseMs(pauseMs);
     this.inputLanguageCodes = Array.isArray(inputLanguageCodes)
       ? inputLanguageCodes
       : [];
@@ -300,7 +309,10 @@ class OpenAIRealtimeBridge {
       instructions: this.initialInstructions || "",
       voice: this.voice || "alloy",
       input_audio_transcription: this.inputTranscription,
-      turn_detection: DEFAULT_TURN_DETECTION,
+      turn_detection: {
+        ...DEFAULT_TURN_DETECTION,
+        silence_duration_ms: this.pauseMs,
+      },
     };
   }
 

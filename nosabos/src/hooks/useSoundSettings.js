@@ -33,6 +33,7 @@ const SOUND_MAP = new Map([
 
 // Module-level promise to track initialization across all callers
 let initPromise = null;
+export const DEFAULT_TUTOR_VOLUME = 3;
 
 /**
  * Global sound settings store.
@@ -43,8 +44,8 @@ const useSoundSettings = create((set, get) => ({
   soundEnabled: true,
   volume: 100, // Volume level 0-100; default 100% (sound effects are an on/off switch)
   // Tutor (Gemini Live) playback gain multiplier, 0-4 (1 = unchanged). Applied
-  // directly by the Tutor bridge via setOutputGain. Default 1 (no boost).
-  tutorVolume: 1,
+  // directly by the Tutor bridge via setOutputGain.
+  tutorVolume: DEFAULT_TUTOR_VOLUME,
   isInitialized: false,
 
   setSoundEnabled: (enabled) => {

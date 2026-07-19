@@ -2624,7 +2624,7 @@ export default function SkillTree({
   onStartLesson,
   onCompleteFlashcard, // Callback for flashcard completion with XP
   onRandomPracticeFlashcard, // Callback for random practice (awards XP, resets card)
-  pauseMs = 2000,
+  pauseMs = 1200,
   showMultipleLevels = true, // New prop to show multiple levels
   levels = ["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"], // Default to showing all CEFR levels
   // Mode-specific level props
@@ -3202,6 +3202,7 @@ export default function SkillTree({
                 activeNpub={activeNpub}
                 targetLang={targetLang}
                 supportLang={supportLang}
+                pauseMs={pauseMs}
                 maxProficiencyLevel={maxProficiencyLevel}
                 onFirstLessonComplete={onTutorFirstLessonComplete}
                 onDailyGoalCelebration={onTutorDailyGoalCelebration}
@@ -3244,6 +3245,7 @@ export default function SkillTree({
                 activeNpub={activeNpub}
                 targetLang={targetLang}
                 supportLang={supportLang}
+                pauseMs={pauseMs}
                 maxProficiencyLevel={maxProficiencyLevel}
                 onFirstLessonComplete={onTutorFirstLessonComplete}
                 onDailyGoalCelebration={onTutorDailyGoalCelebration}
