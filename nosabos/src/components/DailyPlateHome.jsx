@@ -575,7 +575,13 @@ export default function DailyPlateHome({
           companionLevel={companionLevel}
           onCustomizePet={onCustomizePet}
           questBubble={
-            showBubble ? { text: bubbleText, onDismiss: dismissBubble } : null
+            showBubble
+              ? {
+                  text: bubbleText,
+                  onDismiss: dismissBubble,
+                  fontSize: leadKind === "welcome" ? "sm" : undefined,
+                }
+              : null
           }
         />
         <PlateActivityHeatmap

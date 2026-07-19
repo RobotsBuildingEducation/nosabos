@@ -22,6 +22,12 @@ import { withArabicSkillTreeText } from "./skillTree/arabicLocalizer.js";
 import { withChineseSkillTreeText } from "./skillTree/chineseLocalizer.js";
 import { withGermanSkillTreeText } from "./skillTree/germanLocalizer.js";
 import { tagGameLessonContent } from "../components/RPGGame/content/buckets.js";
+import {
+  applyAuthoredTargetCurriculum,
+  buildUnitCurriculumSnapshot,
+  withCanonicalLessonAgenda,
+} from "../utils/lessonCurriculum.js";
+import { TARGET_CURRICULUM } from "./skillTree/targetCurriculum/index.js";
 
 const withLocalizedSkillTreeText = (skillTree) =>
   withArabicSkillTreeText(
@@ -10816,6 +10822,60 @@ const baseLearningPath = withLocalizedSkillTreeText({
           xpRequired: 8855,
           xpReward: 55,
           modes: ["reading", "realtime"],
+          agenda: {
+            version: 1,
+            items: [
+              {
+                id: "recognize-regional-forms-in-texts",
+                kind: "comprehension",
+                modes: ["reading"],
+                label: {
+                  en: "Recognize regional pronouns and vocabulary in texts from Spain, the River Plate, and Central America",
+                  es: "Reconoce pronombres y vocabulario regionales en textos de España, el Río de la Plata y Centroamérica",
+                  pt: "Reconheça pronomes e vocabulário regionais em textos da Espanha, do Rio da Prata e da América Central",
+                  it: "Riconosci pronomi e lessico regionali in testi provenienti dalla Spagna, dal Río de la Plata e dall'America Centrale",
+                  fr: "Repère les pronoms et le vocabulaire régionaux dans des textes d'Espagne, du Río de la Plata et d'Amérique centrale",
+                  de: "Erkenne regionale Pronomen und regionalen Wortschatz in Texten aus Spanien, dem Río de la Plata und Mittelamerika",
+                  ja: "スペイン、ラプラタ川流域、中米の文章で地域特有の代名詞と語彙を見分ける",
+                  hi: "स्पेन, रियो दे ला प्लाता और मध्य अमेरिका के पाठों में क्षेत्रीय सर्वनाम और शब्दावली पहचानें",
+                  ar: "تعرّف على الضمائر والمفردات الإقليمية في نصوص من إسبانيا ومنطقة ريو دي لا بلاتا وأمريكا الوسطى",
+                  zh: "识别西班牙、拉普拉塔河地区和中美洲文本中的地区性代词与词汇",
+                },
+                targetConcept:
+                  "Read short texts from Spain, the River Plate, and Central America and identify the regional pronouns and vocabulary",
+                evidence: {
+                  type: "identify",
+                  criteria:
+                    "Correctly identifies regional pronouns and vocabulary and associates them with the relevant region",
+                },
+              },
+              {
+                id: "adapt-pronouns-by-region-and-register",
+                kind: "communication",
+                modes: ["realtime"],
+                label: {
+                  en: "Choose the appropriate second-person form for the region and level of formality",
+                  es: "Elige la forma de segunda persona adecuada según la región y el nivel de formalidad",
+                  pt: "Escolha a forma de segunda pessoa adequada conforme a região e o nível de formalidade",
+                  it: "Scegli la forma di seconda persona adatta alla regione e al livello di formalità",
+                  fr: "Choisis la forme de deuxième personne adaptée à la région et au niveau de formalité",
+                  de: "Wähle die zur Region und zum Förmlichkeitsgrad passende Anredeform",
+                  ja: "地域と丁寧さに合った二人称表現を使い分ける",
+                  hi: "क्षेत्र और औपचारिकता के स्तर के अनुसार सही द्वितीय-पुरुष रूप चुनें",
+                  ar: "اختر صيغة المخاطب المناسبة بحسب المنطقة ومستوى الرسمية",
+                  zh: "根据地区和正式程度选择恰当的第二人称形式",
+                },
+                targetConcept:
+                  "Demonstrate when to use vos, tú, usted, vosotros, and ustedes based on region and formality",
+                targetExamples: ["vos", "tú", "usted", "vosotros", "ustedes"],
+                evidence: {
+                  type: "scenario_response",
+                  criteria:
+                    "Selects and uses a region- and register-appropriate second-person form in conversation",
+                },
+              },
+            ],
+          },
           content: {
             reading: {
               topic:
@@ -11836,7 +11896,7 @@ function addSupplementalLessons(level, unit) {
       content: {
         grammar: {
           topic,
-          focusPoints: ["pattern recycling", "micro-drills"],
+          prompt: `Recycle the concrete grammar objectives taught earlier in ${topic} using short, targeted drills.`,
         },
         vocabulary: {
           topic,
@@ -12840,7 +12900,7 @@ function ensureModeContent(mode, topic, lesson) {
   if (mode === "grammar") {
     updatedContent.grammar = updatedContent.grammar || {
       topic: topicLabel,
-      focusPoints: ["form", "use"],
+      prompt: `Practice the concrete grammar objectives for ${topicLabel}.`,
     };
   }
 
@@ -12867,74 +12927,6 @@ function ensureModeContent(mode, topic, lesson) {
   return updatedContent;
 }
 
-function hashText(text) {
-  return String(text || "")
-    .split("")
-    .reduce((hash, char) => {
-      return (hash * 31 + char.charCodeAt(0)) % 2147483647;
-    }, 7);
-}
-
-function applyPreA1LessonModuleStrategy(unit, lessons) {
-  const extraModes = ["realtime", "reading", "stories"];
-  let previousSignature = null;
-
-  return lessons.map((lesson) => {
-    const isProtectedLesson =
-      lesson.isTutorial ||
-      lesson.isFinalQuiz ||
-      lesson.id?.includes("skill-builder") ||
-      lesson.id?.includes("integrated-practice");
-
-    if (isProtectedLesson) {
-      previousSignature = null;
-      return lesson;
-    }
-
-    const seed = hashText(`${unit.id}-${lesson.id}-${lesson.title?.en || ""}`);
-    const desiredExtraCount = 1 + (seed % 2);
-    const rotatingModes = [...extraModes]
-      .sort((left, right) => {
-        const leftScore = (hashText(`${lesson.id}-${left}`) + seed) % 97;
-        const rightScore = (hashText(`${lesson.id}-${right}`) + seed) % 97;
-        return leftScore - rightScore;
-      })
-      .slice(0, desiredExtraCount);
-
-    const options = [
-      [...rotatingModes],
-      [...extraModes.filter((mode) => !rotatingModes.includes(mode))].slice(
-        0,
-        desiredExtraCount,
-      ),
-      [...extraModes.filter((mode) => !rotatingModes.includes(mode))],
-    ].filter((modes) => modes.length > 0);
-
-    const selectedExtras =
-      options.find((modes) => modes.sort().join("|") !== previousSignature) ||
-      rotatingModes;
-
-    const modes = ["vocabulary", "grammar", ...selectedExtras];
-    const signature = [...selectedExtras].sort().join("|");
-
-    let content = { ...(lesson.content || {}) };
-    modes.forEach((mode) => {
-      content = ensureModeContent(mode, deriveLessonTopic(unit, lesson), {
-        ...lesson,
-        content,
-      });
-    });
-
-    previousSignature = signature;
-
-    return {
-      ...lesson,
-      modes,
-      content,
-    };
-  });
-}
-
 function normalizeLessonModes(unit, lesson) {
   // Skip normalization for tutorial lessons - preserve their exact modes
   if (lesson.isTutorial) {
@@ -12957,20 +12949,9 @@ function normalizeLessonModes(unit, lesson) {
     modes = ["realtime", "reading", "stories"];
   } else {
     if (modes.length === 0) {
-      modes = ["vocabulary", "realtime", "reading"];
-    }
-
-    // Fill in missing modes only if lesson has fewer than 2
-    while (modes.length < 2) {
-      const filler = [
-        "vocabulary",
-        "grammar",
-        "reading",
-        "stories",
-        "realtime",
-      ].find((mode) => !modes.includes(mode));
-      if (!filler) break;
-      modes.push(filler);
+      modes = Object.keys(lesson.content || {}).filter((mode) =>
+        ALLOWED_MODULES.has(mode),
+      );
     }
 
     if (modes.length > 5) {
@@ -12984,71 +12965,6 @@ function normalizeLessonModes(unit, lesson) {
   });
 
   return { ...lesson, modes, content };
-}
-
-function ensureUnitModuleCoverage(unit, lessons) {
-  const moduleCounts = lessons.reduce((counts, lesson) => {
-    lesson.modes?.forEach((mode) => {
-      counts[mode] = (counts[mode] || 0) + 1;
-    });
-    return counts;
-  }, {});
-
-  const missingModules = Array.from(ALLOWED_MODULES).filter(
-    (module) => !moduleCounts[module],
-  );
-
-  const eligibleLessons = lessons.filter(
-    (lesson) =>
-      !lesson.isFinalQuiz &&
-      !lesson.id?.includes("skill-builder") &&
-      !lesson.id?.includes("integrated-practice"),
-  );
-
-  missingModules.forEach((module) => {
-    let targetLesson = eligibleLessons.find(
-      (lesson) =>
-        (lesson.modes?.length || 0) < 4 &&
-        !(lesson.modes || []).includes(module),
-    );
-
-    if (!targetLesson) {
-      targetLesson = eligibleLessons.find((lesson) => {
-        const lessonModes = lesson.modes || [];
-        if (lessonModes.includes(module)) return false;
-        if (lessonModes.length !== 4) return false;
-        return lessonModes.some((mode) => moduleCounts[mode] > 1);
-      });
-
-      if (targetLesson) {
-        const modeToReplace = targetLesson.modes.find(
-          (mode) => moduleCounts[mode] > 1,
-        );
-        if (modeToReplace) {
-          targetLesson.modes = targetLesson.modes
-            .filter((mode) => mode !== modeToReplace)
-            .concat(module);
-          moduleCounts[modeToReplace] -= 1;
-        }
-      }
-    }
-
-    if (!targetLesson) {
-      return;
-    }
-
-    targetLesson.modes = Array.from(
-      new Set([...(targetLesson.modes || []), module]),
-    );
-    targetLesson.content = ensureModeContent(
-      module,
-      deriveLessonTopic(unit, targetLesson),
-      targetLesson,
-    );
-    moduleCounts[module] = (moduleCounts[module] || 0) + 1;
-  });
-
-  return lessons;
 }
 
 function tagLessonWithFunction(level, unit, lesson) {
@@ -13128,10 +13044,47 @@ function applyCEFRScaffolding(path) {
           ),
         ),
       );
-      const balancedLessons = applyPreA1LessonModuleStrategy(
-        unit,
-        ensureUnitModuleCoverage(unit, enhancedLessons),
+      const agendaLessons = enhancedLessons.map((lesson) =>
+        withCanonicalLessonAgenda(lesson, { unit }),
       );
+      const agendaUnit = { ...unit, cefrLevel: level, lessons: agendaLessons };
+      const balancedLessons = agendaLessons.map((lesson) => {
+        if (
+          !lesson.id?.includes("skill-builder") &&
+          !lesson.id?.includes("integrated-practice")
+        ) {
+          return lesson;
+        }
+
+        const snapshot = buildUnitCurriculumSnapshot(agendaUnit, {
+          beforeLessonId: lesson.id,
+        });
+        const reviewItems = snapshot.agendaItems.map((item) => ({
+          ...item,
+          id: `review-${item.sourceLessonId}-${item.id}`,
+          sourceModes: item.modes,
+          modes: [...lesson.modes],
+          source: "unit-review",
+          sourceAgendaItemId: item.id,
+        }));
+
+        return reviewItems.length
+          ? {
+              ...lesson,
+              agenda: { version: 1, items: reviewItems },
+              reviewSourceLessonIds: snapshot.sourceLessonIds,
+              reviewStrategy: lesson.id.includes("skill-builder")
+                ? {
+                    formats: ["pattern_recycling", "micro_drill"],
+                    maxItemsPerRound: 4,
+                  }
+                : {
+                    formats: ["guided_scenario", "skill_integration"],
+                    minimumSourceObjectives: 2,
+                  },
+            }
+          : lesson;
+      });
 
       const scheduledLessons = applyLessonXPSchedule(balancedLessons);
 
@@ -13147,7 +13100,7 @@ function applyCEFRScaffolding(path) {
             l.title?.en || "",
           )
           .filter(Boolean);
-        scheduledLessons.push({
+        const gameLesson = {
           id: `${unit.id}-game`,
           title: { en: "Game Review", es: "Repaso de Juego" },
           description: {
@@ -13161,10 +13114,28 @@ function applyCEFRScaffolding(path) {
           content: {
             game: {
               topic: `${unitTitle} game review`, unitTitle, cefrLevel: level,
-              unitTopics, focusPoints: ["comprehensive review"],
+              unitTopics,
               ...tagGameLessonContent(unitTopics),
             },
           },
+        };
+        const gameSnapshot = buildUnitCurriculumSnapshot(
+          { ...unit, cefrLevel: level, lessons: scheduledLessons },
+        );
+        scheduledLessons.push({
+          ...gameLesson,
+          agenda: {
+            version: 1,
+            items: gameSnapshot.agendaItems.map((item) => ({
+              ...item,
+              id: `review-${item.sourceLessonId}-${item.id}`,
+              sourceModes: item.modes,
+              modes: ["game"],
+              source: "unit-review",
+              sourceAgendaItemId: item.id,
+            })),
+          },
+          reviewSourceLessonIds: gameSnapshot.sourceLessonIds,
         });
       }
 
@@ -13211,21 +13182,31 @@ const DEFAULT_TARGET_LANG = "es";
 const cloneLearningPath = () =>
   JSON.parse(JSON.stringify(cefrAlignedLearningPath));
 
+// Each practice language clones the Spanish-authored tree, then merges any
+// authored per-language curriculum so agenda adaptation has real concepts to
+// work with instead of improvising from the Spanish source.
+const buildTargetLearningPath = (lang) =>
+  applyAuthoredTargetCurriculum(
+    cloneLearningPath(),
+    lang,
+    TARGET_CURRICULUM[lang],
+  );
+
 export const LEARNING_PATHS = {
-  es: cloneLearningPath(), // Spanish
-  en: cloneLearningPath(), // English
-  pt: cloneLearningPath(), // Portuguese
-  fr: cloneLearningPath(), // French
-  it: cloneLearningPath(), // Italian
-  nl: cloneLearningPath(), // Dutch
-  nah: cloneLearningPath(), // Eastern Huasteca Nahuatl
-  ja: cloneLearningPath(), // Japanese
-  ru: cloneLearningPath(), // Russian
-  de: cloneLearningPath(), // German
-  el: cloneLearningPath(), // Greek
-  pl: cloneLearningPath(), // Polish
-  ga: cloneLearningPath(), // Irish
-  yua: cloneLearningPath(), // Yucatec Maya
+  es: buildTargetLearningPath("es"), // Spanish
+  en: buildTargetLearningPath("en"), // English
+  pt: buildTargetLearningPath("pt"), // Portuguese
+  fr: buildTargetLearningPath("fr"), // French
+  it: buildTargetLearningPath("it"), // Italian
+  nl: buildTargetLearningPath("nl"), // Dutch
+  nah: buildTargetLearningPath("nah"), // Eastern Huasteca Nahuatl
+  ja: buildTargetLearningPath("ja"), // Japanese
+  ru: buildTargetLearningPath("ru"), // Russian
+  de: buildTargetLearningPath("de"), // German
+  el: buildTargetLearningPath("el"), // Greek
+  pl: buildTargetLearningPath("pl"), // Polish
+  ga: buildTargetLearningPath("ga"), // Irish
+  yua: buildTargetLearningPath("yua"), // Yucatec Maya
 };
 
 /**

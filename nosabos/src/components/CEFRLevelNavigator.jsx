@@ -41,7 +41,7 @@ const CEFR_LEVEL_INFO = {
       pt: "Iniciante absoluto",
       it: "Principiante assoluto",
       fr: "Grand debutant",
-      de: "Absolute/r Anfänger/in",
+      de: "Absoluter Anfänger",
       ja: "完全初心者",
       hi: "पूर्ण शुरुआती",
       ar: "مبتدئ تمامًا",
@@ -64,7 +64,7 @@ const CEFR_LEVEL_INFO = {
     },
   },
   A1: {
-    name: { en: "Beginner", es: "Principiante", pt: "Iniciante", it: "Principiante", fr: "Debutant", de: "Anfänger/in", ja: "初心者", hi: "शुरुआती", ar: "مبتدئ", zh: "初学者" },
+    name: { en: "Beginner", es: "Principiante", pt: "Iniciante", it: "Principiante", fr: "Debutant", de: "Anfänger", ja: "初心者", hi: "शुरुआती", ar: "مبتدئ", zh: "初学者" },
     color: "#3B82F6",
     gradient: "linear(135deg, #60A5FA, #3B82F6)",
     description: {

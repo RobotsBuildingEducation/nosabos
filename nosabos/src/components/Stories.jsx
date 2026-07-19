@@ -75,6 +75,7 @@ import nextButtonSound from "../assets/nextbutton.mp3";
 import deliciousSound from "../assets/delicious.mp3";
 import XpProgressHeader from "./XpProgressHeader";
 import { getBidiTextProps, mergeBidiSx } from "../utils/bidiText";
+import { buildCurriculumPromptContext } from "../utils/lessonCurriculum";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -1059,6 +1060,10 @@ export default function StoryMode({
             ? `STRICT REQUIREMENT: The scenario MUST be about: ${lessonContent.scenario}. Do NOT create stories about other topics. This is lesson-specific content and you MUST NOT diverge.`
             : `STRICT REQUIREMENT: The story MUST focus on the topic: ${lessonContent.topic}. Do NOT create stories about other topics. This is lesson-specific content and you MUST NOT diverge.`
           : "Create a simple conversational story appropriate for language practice.";
+      const curriculumPromptContext = buildCurriculumPromptContext(
+        lessonContent?.curriculumContext,
+        { mode: "stories" },
+      );
 
       // Different prompts based on story type
       let prompt;
@@ -1070,6 +1075,7 @@ export default function StoryMode({
           }.`,
           `Also provide a brief support translation in ${sName} (${sLang}).`,
           scenarioDirective,
+          curriculumPromptContext,
           "",
           "Constraints:",
           "- Create a dialogue between 2-3 characters with distinct names.",

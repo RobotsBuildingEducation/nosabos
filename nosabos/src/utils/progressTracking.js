@@ -15,6 +15,11 @@ import {
 import { database } from "../firebaseResources/firebaseResources";
 import { SKILL_STATUS } from "../data/skillTree/index.js";
 
+// Version the Tutor agenda checkpoint so full-XP records written before the
+// app-owned agenda gate can be migrated without weakening completion rules for
+// new lessons.
+export const TUTOR_AGENDA_PROGRESS_SCHEMA_VERSION = 2;
+
 /**
  * Initialize progress structure for a new user
  */
@@ -265,6 +270,7 @@ export async function saveTutorAgendaProgress(
           targetLang: languageKey,
           lessonId,
           tutorAgendaProgress: {
+            schemaVersion: TUTOR_AGENDA_PROGRESS_SCHEMA_VERSION,
             items,
             updatedAt: serverTimestamp(),
           },

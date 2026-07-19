@@ -87,6 +87,7 @@ const PAD = 20;
 export default function CompanionQuestBubble({
   text,
   maxWidth = 220,
+  fontSize = "xs",
   onDismiss,
 }) {
   const contentRef = useRef(null);
@@ -152,7 +153,7 @@ export default function CompanionQuestBubble({
           fontFamily={
             "'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
           }
-          fontSize="xs"
+          fontSize={fontSize}
           color="var(--app-text-primary)"
           lineHeight="1.4"
           textAlign="center"

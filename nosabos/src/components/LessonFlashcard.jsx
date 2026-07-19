@@ -62,6 +62,7 @@ import {
   questionToneText,
 } from "./questionUiStyles";
 import { translations } from "../utils/translation";
+import { buildCurriculumPromptContext } from "../utils/lessonCurriculum";
 
 const MotionBox = motion(Box);
 const APP_SURFACE = "var(--app-surface)";
@@ -545,6 +546,10 @@ export function buildLessonFlashcardPrompt({
   const avoidLine = collectedConcepts.length
     ? `Avoid repeating these already-collected concepts: ${collectedConcepts.join(", ")}`
     : "";
+  const curriculumLine = buildCurriculumPromptContext(
+    lessonContent?.curriculumContext,
+    { mode: moduleType },
+  );
 
   const moduleHint =
     moduleType === "grammar"
@@ -557,6 +562,7 @@ export function buildLessonFlashcardPrompt({
     topicLine,
     focusLine,
     wordsLine,
+    curriculumLine,
     avoidLine,
     "",
     `Reply as a single JSON object (no markdown fences):`,
@@ -586,6 +592,7 @@ export default function LessonFlashcard({
   cefrLevel = "A1",
   // callbacks
   onCorrect, // (xp) => void — called when user answers correctly
+  onIncorrect, // ({ concept, userAnswer, correctAnswer }) => void
   onCollect, // (card) => void — add to unit deck
   onNext, // () => void — proceed to next question
   onSkip, // () => void
@@ -698,6 +705,12 @@ export default function LessonFlashcard({
           setCollected(true);
           onCollect?.({ concept, answer, cefrLevel, targetLang, supportLang });
         }
+      } else {
+        onIncorrect?.({
+          concept,
+          userAnswer: String(userAns || "").trim(),
+          correctAnswer: answer,
+        });
       }
     } catch (error) {
       console.error("AI grading error:", error);
@@ -1342,10 +1355,13 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                         <Button
                           flex={1}
                           size="md"
+                          colorScheme="blue"
                           color="white"
                           onClick={handleTextSubmit}
                           isDisabled={!textAnswer.trim()}
                           leftIcon={<RiKeyboardLine size={14} />}
+                          _hover={{ bg: "blue.600" }}
+                          _active={{ bg: "blue.700" }}
                         >
                           {t("submit")}
                         </Button>

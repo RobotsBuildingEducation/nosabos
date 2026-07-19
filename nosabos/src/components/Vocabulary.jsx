@@ -33,7 +33,6 @@ import { SortableArea, SortableList, SortableItem } from "./dnd/Sortable";
 import { database, simplemodel } from "../firebaseResources/firebaseResources"; // ✅ streaming model
 import useUserStore from "../hooks/useUserStore";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
-import { SpeakSuccessCard } from "./SpeakSuccessCard";
 import VoiceOrb from "./VoiceOrb";
 import translations from "../utils/translation";
 import { MdOutlineSupportAgent } from "react-icons/md";
@@ -44,6 +43,7 @@ import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import {
   SOFT_STOP_BUTTON_BG,
+  SOFT_STOP_BUTTON_EDGE,
   SOFT_STOP_BUTTON_HOVER_BG,
 } from "../utils/softStopButton";
 import {
@@ -51,7 +51,6 @@ import {
   DEFAULT_RESPONSES_MODEL,
   explainAnswer,
 } from "../utils/llm";
-import { speechReasonTips } from "../utils/speechEvaluation";
 import FeedbackRail from "./FeedbackRail";
 import TranslateSentence from "./TranslateSentence";
 import RepeatWhatYouHear from "./RepeatWhatYouHear";
@@ -96,6 +95,10 @@ import {
   normalizePracticeLanguage,
   normalizeSupportLanguage,
 } from "../constants/languages";
+import {
+  buildCurriculumPromptContext,
+  isCurriculumPayloadGrounded,
+} from "../utils/lessonCurriculum";
 import {
   nativeModalMotionProps,
   nativeOverlayMotionProps,
@@ -326,6 +329,11 @@ const resolveSupportLang = (supportLang, appUILang) =>
  */
 function buildVarietyLines(lessonContent, recentGood) {
   const lines = [];
+  const curriculumContext = buildCurriculumPromptContext(
+    lessonContent?.curriculumContext,
+    { mode: "vocabulary" },
+  );
+  if (curriculumContext) lines.push(curriculumContext);
   if (lessonContent?.levelGuard) {
     lines.push(`- ${lessonContent.levelGuard}`);
   }
@@ -2012,7 +2020,6 @@ Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Ant
   const [sVariant, setSVariant] = useState("repeat");
   const [sHint, setSHint] = useState("");
   const [sTranslation, setSTranslation] = useState("");
-  const [sRecognized, setSRecognized] = useState("");
   const [sEval, setSEval] = useState(null);
   const [loadingQSpeak, setLoadingQSpeak] = useState(false);
   const speakAudioRef = useRef(null);
@@ -3320,7 +3327,6 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
     setLastOk(null);
     setRecentXp(0);
     setNextAction(null);
-    setSRecognized("");
     setSEval(null);
 
     const prompt = buildSpeakVocabStreamPrompt({
@@ -3618,7 +3624,12 @@ Return JSON ONLY:
               Array.isArray(obj.right) &&
               obj.left.length >= 3 &&
               obj.left.length <= 6 &&
-              obj.left.length === obj.right.length
+              obj.left.length === obj.right.length &&
+              isCurriculumPayloadGrounded(
+                { left: obj.left },
+                lessonContent?.curriculumContext,
+                { mode: "vocabulary" },
+              )
             ) {
               const stem =
                 String(obj.stem).trim() ||
@@ -3658,7 +3669,12 @@ Return JSON ONLY:
                 Array.isArray(obj.right) &&
                 obj.left.length >= 3 &&
                 obj.left.length <= 6 &&
-                obj.left.length === obj.right.length
+                obj.left.length === obj.right.length &&
+                isCurriculumPayloadGrounded(
+                  { left: obj.left },
+                  lessonContent?.curriculumContext,
+                  { mode: "vocabulary" },
+                )
               ) {
                 const stem =
                   String(obj.stem).trim() ||
@@ -3681,10 +3697,23 @@ Return JSON ONLY:
       if (!okPayload) throw new Error("no-match");
     } catch {
       // Backend fallback (non-stream)
+      const curriculumScope = buildCurriculumPromptContext(
+        lessonContent?.curriculumContext,
+        { mode: "vocabulary" },
+      );
       const raw = await callResponses({
         model: MODEL,
         input: `
 Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
+${lessonContent?.topic ? `Lesson topic: ${lessonContent.topic}.` : ""}
+${
+  Array.isArray(lessonContent?.focusPoints) &&
+  lessonContent.focusPoints.length
+    ? `Mandatory focus points: ${JSON.stringify(lessonContent.focusPoints)}.`
+    : ""
+}
+${curriculumScope}
+Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
 {"stem":"<stem>","left":["<word>","..."],"right":["<short ${LANG_NAME(
           resolveSupportLang(supportLang, userLanguage),
         )} definition>","..."],"hint":"<${LANG_NAME(
@@ -3705,13 +3734,22 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         Array.isArray(parsed.right) &&
         parsed.left.length >= 3 &&
         parsed.left.length <= 6 &&
-        parsed.left.length === parsed.right.length
+        parsed.left.length === parsed.right.length &&
+        isCurriculumPayloadGrounded(
+          { left: parsed.left },
+          lessonContent?.curriculumContext,
+          { mode: "vocabulary" },
+        )
       ) {
         stem = String(parsed.stem || "Match the words to their definitions.");
         left = parsed.left.slice(0, 6).map(String);
         right = parsed.right.slice(0, 6).map(String);
         hint = String(parsed.hint || "");
       } else {
+        if (isFinalQuiz && curriculumScope) {
+          await generateMC();
+          return;
+        }
         stem = "Match words to their definitions.";
         left = ["rapid", "generous", "fragile"];
         right = ["quick", "kind in giving", "easily broken"];
@@ -4075,6 +4113,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     setCurrentQuestionData(null);
 
     const userPairs = mSlots.map((ri, li) => [li, ri]);
+    const userMappings = userPairs
+      .map(([li, ri]) => `${mLeft[li]} → ${mRight[ri]}`)
+      .join(", ");
 
     const verdictRaw = await callResponses({
       model: MODEL,
@@ -4110,9 +4151,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     }
 
     // Store question data for explanation and note creation
-    const userMappings = userPairs
-      .map(([li, ri]) => `${mLeft[li]} → ${mRight[ri]}`)
-      .join(", ");
     setCurrentQuestionData({
       question: mStem || "Match the items:",
       userAnswer: userMappings,
@@ -4255,7 +4293,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       setExplanationText("");
       setCurrentQuestionData(null);
 
-      setSRecognized(recognizedText || "");
       setSEval(evaluation);
 
       const ok = evaluation.pass;
@@ -4303,24 +4340,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           ...recentCorrectRef.current,
           { mode: "speak", question: sStimulus || sTarget, variant: sVariant },
         ].slice(-5);
-      } else {
-        const tips = speechReasonTips(evaluation.reasons, {
-          uiLang: userLanguage,
-          targetLabel: targetName,
-        });
-        const retryTitle =
-          t("vocab_speak_retry_title") ||
-          (userLanguage === "pt"
-            ? "Tente novamente"
-            : userLanguage === "es"
-              ? "Intenta otra vez"
-              : "Try again");
-        toast({
-          title: retryTitle,
-          description: tips.join(" "),
-          status: "warning",
-          duration: 3600,
-        });
       }
     },
     [
@@ -4333,7 +4352,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       sTranslation,
       sVariant,
       t,
-      targetName,
       toast,
       userLanguage,
     ],
@@ -6149,23 +6167,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               </>
             )}
 
-            {sRecognized && lastOk !== true ? (
-              <Text fontSize="sm" mt={3} color="teal.200">
-                <Text as="span" fontWeight="600">
-                  {t("vocab_speak_last_heard") ||
-                    (userLanguage === "pt"
-                      ? "Ultima tentativa"
-                      : userLanguage === "ar"
-                        ? "آخر محاولة"
-                        : userLanguage === "es"
-                          ? "Último intento"
-                          : "Last attempt")}
-                  :
-                </Text>{" "}
-                {sRecognized}
-              </Text>
-            ) : null}
-
             <AssistantSupportBox />
 
             <Stack
@@ -6195,18 +6196,16 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 }
                 bg={isSpeakRecording ? SOFT_STOP_BUTTON_BG : undefined}
                 color={isSpeakRecording ? "white" : undefined}
+                boxShadow={
+                  isSpeakRecording
+                    ? `0px 4px 0px ${SOFT_STOP_BUTTON_EDGE}`
+                    : undefined
+                }
                 px={{ base: 7, md: 12 }}
                 py={{ base: 3, md: 4 }}
                 leftIcon={
                   isSpeakConnecting ? (
-                    <VoiceOrb
-                      state={
-                        ["idle", "listening", "speaking"][
-                          Math.floor(Math.random() * 3)
-                        ]
-                      }
-                      size={24}
-                    />
+                    <Spinner size="sm" thickness="2px" color="currentColor" />
                   ) : isSpeakRecording ? (
                     <RiStopCircleLine />
                   ) : (
@@ -6220,7 +6219,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   }
                   // Clear previous results to prevent UI flickering
                   setLastOk(null);
-                  setSRecognized("");
                   setSEval(null);
                   playSound(submitActionSound);
                   try {
@@ -6310,37 +6308,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               noteCreated={noteCreated}
             />
 
-            {lastOk === true ? (
-              <SpeakSuccessCard
-                title={
-                  t("vocab_speak_success_title") ||
-                  (userLanguage === "pt"
-                    ? "Otima pronunciacao!"
-                    : userLanguage === "ar"
-                      ? "نطق ممتاز!"
-                      : userLanguage === "es"
-                        ? "¡Gran pronunciación!"
-                        : "Great pronunciation!")
-                }
-                scoreLabel={
-                  sEval
-                    ? t("vocab_speak_success_desc", { score: sEval.score }) ||
-                      (userLanguage === "pt"
-                        ? `Pontuacao ${sEval.score}%`
-                        : userLanguage === "ar"
-                          ? `النتيجة ${sEval.score}%`
-                          : userLanguage === "es"
-                            ? `Puntaje ${sEval.score}%`
-                            : `Score ${sEval.score}%`)
-                    : ""
-                }
-                xp={recentXp}
-                recognizedText={sRecognized}
-                translation={showTRSpeak ? sTranslation : ""}
-                t={t}
-                userLanguage={userLanguage}
-              />
-            ) : null}
           </>
         ) : null}
 
@@ -6785,6 +6752,16 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               }
               setLastOk(true);
               setRecentXp(xpAmount);
+            }}
+            onIncorrect={({ concept, userAnswer, correctAnswer }) => {
+              setCurrentQuestionData({
+                question: concept || fcConcept,
+                userAnswer,
+                correctAnswer: correctAnswer || fcAnswer,
+                questionType: "flashcard",
+              });
+              setLastOk(false);
+              setRecentXp(0);
             }}
             onCollect={(card) => {
               setFcDeck((prev) => [...prev, card]);

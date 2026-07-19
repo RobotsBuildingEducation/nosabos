@@ -2131,7 +2131,11 @@ export default function PlatePetPanel({
                   pointerEvents="auto"
                   w="max-content"
                 >
-                  <CompanionQuestBubble text={questBubble.text} onDismiss={questBubble.onDismiss} />
+                  <CompanionQuestBubble
+                    text={questBubble.text}
+                    fontSize={questBubble.fontSize}
+                    onDismiss={questBubble.onDismiss}
+                  />
                 </Box>
               ) : null}
             </Box>

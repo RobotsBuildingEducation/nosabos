@@ -3071,8 +3071,11 @@ export default function RPGGame({
   const reviewContext = useMemo(
     () =>
       lessonContext?.gameReviewContext ||
-      buildGameReviewContext({ lesson: lessonContext }),
-    [lessonContext],
+      buildGameReviewContext({
+        lesson: lessonContext,
+        targetLang: targetLangProp || lessonContext?.targetLang || "",
+      }),
+    [lessonContext, targetLangProp],
   );
 
   // CEFR proficiency level from lesson context - controls dialogue complexity
@@ -8113,7 +8116,7 @@ export default function RPGGame({
         onTouchStartCapture={handleAudioGesture}
       >
         <VStack spacing={6} maxW="560px" mx={4}>
-          {!isEmbedded && (
+          {!isEmbedded && !isTutorialGame && (
             <IconButton
               icon={<ArrowBackIcon />}
               aria-label={ui.back}
@@ -8372,14 +8375,16 @@ export default function RPGGame({
         zIndex={10}
       >
         <HStack spacing={2}>
-          <IconButton
-            icon={<ArrowBackIcon />}
-            aria-label={ui.back}
-            size="sm"
-            variant="solid"
-            colorScheme="blackAlpha"
-            onClick={goToScenarioSelect}
-          />
+          {!isTutorialGame && (
+            <IconButton
+              icon={<ArrowBackIcon />}
+              aria-label={ui.back}
+              size="sm"
+              variant="solid"
+              colorScheme="blackAlpha"
+              onClick={goToScenarioSelect}
+            />
+          )}
           {isTutorialGame && (
             <Button
               size="sm"
@@ -9512,11 +9517,11 @@ export default function RPGGame({
                       <Button
                         size="sm"
                         variant="ghost"
-                        color={isLightTheme ? rpgTextPrimary : "white"}
+                        color={rpgTextPrimary}
                         bg="transparent"
                         border="1px solid"
-                        borderColor={isLightTheme ? rpgTextPrimary : "white"}
-                        _hover={{ bg: "whiteAlpha.200" }}
+                        borderColor={rpgPanelBorder}
+                        _hover={{ bg: rpgChoiceHoverBg }}
                         onClick={() => completeNPCChapter(dialogue.npcIdx)}
                         w="100%"
                       >
@@ -9617,11 +9622,11 @@ export default function RPGGame({
                       <Button
                         size="sm"
                         variant="ghost"
-                        color={isLightTheme ? rpgTextPrimary : "white"}
+                        color={rpgTextPrimary}
                         bg="transparent"
                         border="1px solid"
-                        borderColor={isLightTheme ? rpgTextPrimary : "white"}
-                        _hover={{ bg: "whiteAlpha.200" }}
+                        borderColor={rpgPanelBorder}
+                        _hover={{ bg: rpgChoiceHoverBg }}
                         onClick={() => completeNPCChapter(dialogue.npcIdx)}
                         w="100%"
                       >
@@ -9702,11 +9707,11 @@ export default function RPGGame({
                       <Button
                         size="sm"
                         variant="ghost"
-                        color={isLightTheme ? rpgTextPrimary : "white"}
+                        color={rpgTextPrimary}
                         bg="transparent"
                         border="1px solid"
-                        borderColor={isLightTheme ? rpgTextPrimary : "white"}
-                        _hover={{ bg: "whiteAlpha.200" }}
+                        borderColor={rpgPanelBorder}
+                        _hover={{ bg: rpgChoiceHoverBg }}
                         onClick={closeDialogue}
                         w="100%"
                         h="auto"
@@ -9743,11 +9748,11 @@ export default function RPGGame({
                     <Button
                       size="sm"
                       variant="ghost"
-                      color={isLightTheme ? rpgTextPrimary : "white"}
+                      color={rpgTextPrimary}
                       bg="transparent"
                       border="1px solid"
-                      borderColor={isLightTheme ? rpgTextPrimary : "white"}
-                      _hover={{ bg: "whiteAlpha.200" }}
+                      borderColor={rpgPanelBorder}
+                      _hover={{ bg: rpgChoiceHoverBg }}
                       onClick={() => completeNPCChapter(dialogue.npcIdx)}
                       h="auto"
                       py={2}

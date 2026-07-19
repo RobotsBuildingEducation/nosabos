@@ -30,7 +30,6 @@ import { SortableArea, SortableList, SortableItem } from "./dnd/Sortable";
 import { database, simplemodel } from "../firebaseResources/firebaseResources"; // ✅ Gemini (client-side)
 import useUserStore from "../hooks/useUserStore";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
-import { SpeakSuccessCard } from "./SpeakSuccessCard";
 import VoiceOrb from "./VoiceOrb";
 import translations from "../utils/translation";
 import { MdOutlineSupportAgent } from "react-icons/md";
@@ -40,6 +39,7 @@ import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import {
   SOFT_STOP_BUTTON_BG,
+  SOFT_STOP_BUTTON_EDGE,
   SOFT_STOP_BUTTON_HOVER_BG,
 } from "../utils/softStopButton";
 import {
@@ -47,7 +47,6 @@ import {
   DEFAULT_RESPONSES_MODEL,
   explainAnswer,
 } from "../utils/llm";
-import { speechReasonTips } from "../utils/speechEvaluation";
 import FeedbackRail from "./FeedbackRail";
 import TranslateSentence from "./TranslateSentence";
 import RepeatWhatYouHear from "./RepeatWhatYouHear";
@@ -92,6 +91,10 @@ import {
   getQuestionToolButtonProps,
   questionAssistantText,
 } from "./questionUiStyles";
+import {
+  buildCurriculumPromptContext,
+  isCurriculumPayloadGrounded,
+} from "../utils/lessonCurriculum";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -364,6 +367,9 @@ function buildFillStreamPrompt({
     }`,
     `- No meta like "(to go)" in the stem; ≤120 chars.`,
     topicDirective,
+    buildCurriculumPromptContext(lessonContent?.curriculumContext, {
+      mode: "grammar",
+    }),
     `- Hint in ${SUPPORT} (≤8 words).`,
     languageGuard,
     wantTranslation
@@ -412,25 +418,60 @@ function buildMatchStreamPrompt({
   showTranslations,
   appUILang,
   recentGood,
+  lessonContent = null,
 }) {
   const TARGET = LANG_NAME(targetLang);
   const SUPPORT_CODE = resolveSupportLang(supportLang, appUILang);
   const SUPPORT = LANG_NAME(SUPPORT_CODE);
   const diff = difficultyHint(cefrLevel);
+  const curriculumScope = buildCurriculumPromptContext(
+    lessonContent?.curriculumContext,
+    { mode: "grammar" },
+  );
+  const lessonScope = [
+    lessonContent?.levelGuard ? `- ${lessonContent.levelGuard}` : "",
+    lessonContent?.topic
+      ? `- Grammar topic: ${lessonContent.topic}.`
+      : "",
+    Array.isArray(lessonContent?.topics) && lessonContent.topics.length
+      ? `- Grammar topics: ${JSON.stringify(lessonContent.topics)}.`
+      : "",
+    Array.isArray(lessonContent?.focusPoints) &&
+    lessonContent.focusPoints.length
+      ? `- Mandatory focus points: ${JSON.stringify(
+          lessonContent.focusPoints,
+        )}.`
+      : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+  const familyScope = curriculumScope
+    ? [
+        "- Derive the matching family ONLY from the curriculum objectives and examples below.",
+        "- Every row must directly test that lesson vocabulary or grammar; do not substitute a generic grammar family.",
+        "- If testing agreement or plurals, use nouns and modifiers from the stated lesson topic only.",
+      ].join("\n")
+    : [
+        "Allowed families (pick ONE for all rows):",
+        "1) Subject pronoun → correct present form of ONE high-frequency verb",
+        "2) Verb (infinitive) → past participle (or simple past)",
+        "3) Noun (singular) → plural form",
+        "4) Adjective (base) → comparative form",
+        "5) Personal pronoun → object/indirect/possessive form (pick one)",
+        `6) Time signal → appropriate tense/aspect label (within ${TARGET})`,
+      ].join("\n");
 
   return [
     `Create ONE ${TARGET} GRAMMAR matching exercise using exactly ONE grammar family (coherent set). Difficulty: ${diff}.`,
-    `Stay related to recent correct topics: ${JSON.stringify(
-      recentGood.slice(-3),
-    )}`,
+    lessonScope,
+    curriculumScope,
+    curriculumScope
+      ? ""
+      : `Stay related to recent correct topics: ${JSON.stringify(
+          recentGood.slice(-3),
+        )}`,
     "",
-    "Allowed families (pick ONE for all rows):",
-    "1) Subject pronoun → correct present form of ONE high-frequency verb",
-    "2) Verb (infinitive) → past participle (or simple past)",
-    "3) Noun (singular) → plural form",
-    "4) Adjective (base) → comparative form",
-    "5) Personal pronoun → object/indirect/possessive form (pick one)",
-    `6) Time signal → appropriate tense/aspect label (within ${TARGET})`,
+    familyScope,
     "",
     `- All items in ${TARGET}; hint in ${SUPPORT} (≤ 8 words).`,
     "- 3–6 rows; left/right unique; clear 1:1 mapping.",
@@ -523,6 +564,9 @@ function buildMCStreamPrompt({
       : `- Empty translation "".`,
     languageGuard,
     topicDirective,
+    buildCurriculumPromptContext(lessonContent?.curriculumContext, {
+      mode: "grammar",
+    }),
     "",
     "Stream as NDJSON:",
     `{"type":"mc","phase":"q","question":"<stem in ${TARGET}>"}  // first`,
@@ -630,6 +674,9 @@ function buildMAStreamPrompt({
       ? `- ${SUPPORT} translation of the complete sentence.`
       : `- Empty translation "".`,
     topicDirective,
+    buildCurriculumPromptContext(lessonContent?.curriculumContext, {
+      mode: "grammar",
+    }),
     "",
     "Stream as NDJSON:",
     `{"type":"ma","phase":"q","question":"<${TARGET} sentence with EXACTLY ${numBlanks} ___ blanks>"}  // first`,
@@ -689,6 +736,9 @@ function buildSpeakGrammarStreamPrompt({
       ? `- Include a ${SUPPORT} translation of the sentence.`
       : `- Use empty translation "".`,
     topicDirective,
+    buildCurriculumPromptContext(lessonContent?.curriculumContext, {
+      mode: "grammar",
+    }),
     "",
     "Stream as NDJSON:",
     `{"type":"grammar_speak","phase":"prompt","target":"<${TARGET} sentence>","prompt":"<instruction in ${TARGET}>"}`,
@@ -796,6 +846,9 @@ function buildTranslateStreamPrompt({
     `- Hint in ${SUPPORT} (≤8 words) about the grammar point.`,
     languageGuard,
     topicDirective,
+    buildCurriculumPromptContext(lessonContent?.curriculumContext, {
+      mode: "grammar",
+    }),
     "",
     "Stream as NDJSON:",
     `{"type":"translate","phase":"q","sentence":"<${SOURCE_LANG} sentence>"}`,
@@ -1971,7 +2024,6 @@ Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Ant
   const [sTarget, setSTarget] = useState("");
   const [sHint, setSHint] = useState("");
   const [sTranslation, setSTranslation] = useState("");
-  const [sRecognized, setSRecognized] = useState("");
   const [sEval, setSEval] = useState(null);
   const [loadingSpeakQ, setLoadingSpeakQ] = useState(false);
   const speakAudioRef = useRef(null);
@@ -3016,7 +3068,6 @@ Create ONE multiple-answer ${LANG_NAME(
     setQuizCurrentQuestionAttempted(false);
     setRecentXp(0);
     setNextAction(null);
-    setSRecognized("");
     setSEval(null);
 
     const prompt = buildSpeakGrammarStreamPrompt({
@@ -3160,6 +3211,7 @@ Create ONE ${LANG_NAME(
       showTranslations,
       appUILang: userLanguage,
       recentGood: recentCorrectRef.current,
+      lessonContent,
     });
 
     let okPayload = false;
@@ -3187,7 +3239,12 @@ Create ONE ${LANG_NAME(
               Array.isArray(obj.right) &&
               obj.left.length >= 3 &&
               obj.left.length <= 6 &&
-              obj.left.length === obj.right.length
+              obj.left.length === obj.right.length &&
+              isCurriculumPayloadGrounded(
+                { left: obj.left, right: obj.right },
+                lessonContent?.curriculumContext,
+                { mode: "grammar" },
+              )
             ) {
               const stem = String(obj.stem).trim() || "Empareja los elementos.";
               const left = obj.left.slice(0, 6).map(String);
@@ -3229,7 +3286,12 @@ Create ONE ${LANG_NAME(
                 Array.isArray(obj.right) &&
                 obj.left.length >= 3 &&
                 obj.left.length <= 6 &&
-                obj.left.length === obj.right.length
+                obj.left.length === obj.right.length &&
+                isCurriculumPayloadGrounded(
+                  { left: obj.left, right: obj.right },
+                  lessonContent?.curriculumContext,
+                  { mode: "grammar" },
+                )
               ) {
                 const stem =
                   String(obj.stem).trim() || "Empareja los elementos.";
@@ -3255,12 +3317,30 @@ Create ONE ${LANG_NAME(
       if (!okPayload) throw new Error("no-match");
     } catch {
       // Backend fallback with the same coherence guarantees
+      const curriculumScope = buildCurriculumPromptContext(
+        lessonContent?.curriculumContext,
+        { mode: "grammar" },
+      );
       const raw = await callResponses({
         model: MODEL,
         input: `
 Create ONE ${LANG_NAME(
           targetLang,
         )} GRAMMAR matching exercise (single grammar family, 3–6 rows).
+${lessonContent?.topic ? `Lesson topic: ${lessonContent.topic}.` : ""}
+${
+  Array.isArray(lessonContent?.topics) && lessonContent.topics.length
+    ? `Lesson topics: ${JSON.stringify(lessonContent.topics)}.`
+    : ""
+}
+${
+  Array.isArray(lessonContent?.focusPoints) &&
+  lessonContent.focusPoints.length
+    ? `Mandatory focus points: ${JSON.stringify(lessonContent.focusPoints)}.`
+    : ""
+}
+${curriculumScope}
+Use ONLY the lesson curriculum above. Every row must directly test its vocabulary or grammar. Never substitute unrelated generic nouns, verbs, or grammar families.
 Return JSON ONLY:
 {"stem":"<stem>","left":["..."],"right":["..."],"map":[0,2,1],"hint":"<hint in ${LANG_NAME(
           resolveSupportLang(supportLang, userLanguage),
@@ -3281,7 +3361,12 @@ Return JSON ONLY:
         Array.isArray(parsed.right) &&
         parsed.left.length >= 3 &&
         parsed.left.length <= 6 &&
-        parsed.left.length === parsed.right.length
+        parsed.left.length === parsed.right.length &&
+        isCurriculumPayloadGrounded(
+          { left: parsed.left, right: parsed.right },
+          lessonContent?.curriculumContext,
+          { mode: "grammar" },
+        )
       ) {
         stem = String(parsed.stem || "Empareja los elementos.");
         left = parsed.left.slice(0, 6).map(String);
@@ -3289,6 +3374,10 @@ Return JSON ONLY:
         hint = String(parsed.hint || "");
         map = normalizeMap(parsed.map, right.length);
       } else {
+        if (isFinalQuiz && curriculumScope) {
+          await generateMC();
+          return;
+        }
         // Safe default set (family: subject → 'to be' present)
         if (targetLang === "es") {
           stem =
@@ -3911,6 +4000,9 @@ Return JSON ONLY:
     setCurrentQuestionData(null);
 
     const userPairs = mSlots.map((ri, li) => [li, ri]);
+    const userMappings = userPairs
+      .map(([li, ri]) => `${mLeft[li]} → ${mRight[ri]}`)
+      .join(", ");
 
     let ok = false;
     if (mAnswerMap.length === mSlots.length) {
@@ -3949,9 +4041,6 @@ Return JSON ONLY:
     setRecentXp(delta);
 
     // Store question data for explanation and note creation
-    const userMappings = userPairs
-      .map(([li, ri]) => `${mLeft[li]} → ${mRight[ri]}`)
-      .join(", ");
     setCurrentQuestionData({
       question: mStem || "Match the items:",
       userAnswer: userMappings,
@@ -4092,7 +4181,6 @@ Return JSON ONLY:
       setExplanationText("");
       setCurrentQuestionData(null);
 
-      setSRecognized(recognizedText || "");
       setSEval(evaluation);
 
       const ok = evaluation.pass;
@@ -4145,24 +4233,6 @@ Return JSON ONLY:
           ...recentCorrectRef.current,
           { mode: "speak", question: sTarget },
         ].slice(-5);
-      } else {
-        const tips = speechReasonTips(evaluation.reasons, {
-          uiLang: userLanguage,
-          targetLabel: targetName,
-        });
-        const retryTitle =
-          t("grammar_speak_retry_title") ||
-          (userLanguage === "pt"
-            ? "Tente novamente"
-            : userLanguage === "es"
-              ? "Intenta de nuevo"
-              : "Try again");
-        toast({
-          title: retryTitle,
-          description: tips.join(" "),
-          status: "warning",
-          duration: 3600,
-        });
       }
     },
     [
@@ -4173,7 +4243,6 @@ Return JSON ONLY:
       sTarget,
       sTranslation,
       t,
-      targetName,
       toast,
       userLanguage,
     ],
@@ -4183,6 +4252,7 @@ Return JSON ONLY:
     startRecording: startSpeakRecording,
     stopRecording: stopSpeakRecording,
     isRecording: isSpeakRecording,
+    isConnecting: isSpeakConnecting,
     supportsSpeech: supportsSpeak,
   } = useSpeechPractice({
     targetText: sTarget,
@@ -5773,23 +5843,6 @@ Return JSON ONLY:
               </>
             )}
 
-            {sRecognized && lastOk !== true ? (
-              <Text fontSize="sm" mt={3} color="teal.200">
-                <Text as="span" fontWeight="600">
-                  {t("grammar_speak_last_heard") ||
-                    (userLanguage === "pt"
-                      ? "Ultima tentativa"
-                      : userLanguage === "ar"
-                        ? "آخر محاولة"
-                      : userLanguage === "es"
-                        ? "Último intento"
-                        : "Last attempt")}
-                  :
-                </Text>{" "}
-                {sRecognized}
-              </Text>
-            ) : null}
-
             <AssistantSupportBox />
 
             <Stack
@@ -5810,11 +5863,27 @@ Return JSON ONLY:
                 </Button>
               )}
               <Button
-                colorScheme={isSpeakRecording ? undefined : "teal"}
+                colorScheme={
+                  isSpeakRecording
+                    ? undefined
+                    : isSpeakConnecting
+                      ? "yellow"
+                      : "teal"
+                }
                 bg={isSpeakRecording ? SOFT_STOP_BUTTON_BG : undefined}
                 color={isSpeakRecording ? "white" : undefined}
+                boxShadow={
+                  isSpeakRecording
+                    ? `0px 4px 0px ${SOFT_STOP_BUTTON_EDGE}`
+                    : undefined
+                }
                 px={{ base: 7, md: 12 }}
                 py={{ base: 3, md: 4 }}
+                leftIcon={
+                  isSpeakConnecting ? (
+                    <Spinner size="sm" thickness="2px" color="currentColor" />
+                  ) : undefined
+                }
                 _hover={
                   isSpeakRecording
                     ? { bg: SOFT_STOP_BUTTON_HOVER_BG }
@@ -5827,7 +5896,6 @@ Return JSON ONLY:
                   }
                   // Clear previous results to prevent UI flickering
                   setLastOk(null);
-                  setSRecognized("");
                   setSEval(null);
                   playSound(submitActionSound);
                   try {
@@ -5870,60 +5938,31 @@ Return JSON ONLY:
                   !supportsSpeak ||
                   loadingSpeakQ ||
                   !sTarget ||
+                  isSpeakConnecting ||
                   (isFinalQuiz && quizCurrentQuestionAttempted)
                 }
               >
-                {isSpeakRecording
-                  ? t("grammar_speak_stop") ||
-                    (userLanguage === "pt"
-                      ? "Parar"
-                      : userLanguage === "ar"
-                        ? "إيقاف"
-                      : userLanguage === "es"
-                        ? "Detener"
-                        : "Stop")
-                  : t("grammar_speak_record") ||
-                    (userLanguage === "pt"
-                      ? "Gravar"
-                      : userLanguage === "ar"
-                        ? "سجّل"
-                      : userLanguage === "es"
-                        ? "Grabar"
-                        : "Record")}
+                {isSpeakConnecting
+                  ? t("vocab_connecting")
+                  : isSpeakRecording
+                    ? t("grammar_speak_stop") ||
+                      (userLanguage === "pt"
+                        ? "Parar"
+                        : userLanguage === "ar"
+                          ? "إيقاف"
+                          : userLanguage === "es"
+                            ? "Detener"
+                            : "Stop")
+                    : t("grammar_speak_record") ||
+                      (userLanguage === "pt"
+                        ? "Gravar"
+                        : userLanguage === "ar"
+                          ? "سجّل"
+                          : userLanguage === "es"
+                            ? "Grabar"
+                            : "Record")}
               </Button>
             </Stack>
-
-            {lastOk === true ? (
-              <SpeakSuccessCard
-                title={
-                  t("grammar_speak_success_title") ||
-                  (userLanguage === "pt"
-                    ? "Pronuncia aprovada!"
-                    : userLanguage === "ar"
-                      ? "النطق ممتاز!"
-                    : userLanguage === "es"
-                      ? "¡Pronunciación aprobada!"
-                      : "Pronunciation approved!")
-                }
-                scoreLabel={
-                  sEval
-                    ? t("grammar_speak_success_desc", { score: sEval.score }) ||
-                      (userLanguage === "pt"
-                        ? `Pontuacao ${sEval.score}%`
-                        : userLanguage === "ar"
-                          ? `النتيجة ${sEval.score}%`
-                        : userLanguage === "es"
-                          ? `Puntaje ${sEval.score}%`
-                          : `Score ${sEval.score}%`)
-                    : ""
-                }
-                xp={recentXp}
-                recognizedText={sRecognized}
-                translation={showTRSpeak ? sTranslation : ""}
-                t={t}
-                userLanguage={userLanguage}
-              />
-            ) : null}
 
             <FeedbackRail
               ok={lastOk}
@@ -6393,6 +6432,16 @@ Return JSON ONLY:
               }
               setLastOk(true);
               setRecentXp(xpAmount);
+            }}
+            onIncorrect={({ concept, userAnswer, correctAnswer }) => {
+              setCurrentQuestionData({
+                question: concept || fcConcept,
+                userAnswer,
+                correctAnswer: correctAnswer || fcAnswer,
+                questionType: "flashcard",
+              });
+              setLastOk(false);
+              setRecentXp(0);
             }}
             onCollect={(card) => {
               setFcDeck((prev) => [...prev, card]);

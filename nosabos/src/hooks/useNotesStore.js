@@ -85,16 +85,16 @@ const useNotesStore = create((set, get) => ({
   // Set loading state (for border animation)
   setLoading: (loading) => set({ isLoading: loading }),
 
-  // Set done state (for success border animation)
+  // Set done state (for the capture celebration)
   setDone: (done) => set({ isDone: done }),
 
-  // Trigger the done animation. Clears after 2s — matches the notes button's
-  // two 1s glow pulses in App (notesDone 1s ease-in-out 2); keep in sync.
+  // Trigger the capture celebration. The 3.07s window lets the extended
+  // crystal gather finish, then holds the bright state for about 300ms.
   triggerDoneAnimation: () => {
     set({ isLoading: false, isDone: true });
     setTimeout(() => {
       set({ isDone: false });
-    }, 2000);
+    }, 3070);
   },
 }));
 
