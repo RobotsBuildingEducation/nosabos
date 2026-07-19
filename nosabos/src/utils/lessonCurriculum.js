@@ -138,6 +138,51 @@ const EVIDENCE_BY_MODE = {
 
 const cleanText = (value) => String(value || "").replace(/\s+/g, " ").trim();
 
+const CURRICULUM_GROUNDING_STOP_WORDS = new Set([
+  "accurate",
+  "accurately",
+  "about",
+  "agreement",
+  "and",
+  "answer",
+  "answers",
+  "apply",
+  "appropriate",
+  "choose",
+  "complete",
+  "correct",
+  "demonstrate",
+  "form",
+  "forms",
+  "grammar",
+  "identify",
+  "match",
+  "noun",
+  "nouns",
+  "plural",
+  "practice",
+  "read",
+  "recognize",
+  "sentence",
+  "sentences",
+  "singular",
+  "structure",
+  "structures",
+  "the",
+  "understand",
+  "use",
+  "word",
+  "words",
+  "with",
+  "forma",
+  "formas",
+  "gramatica",
+  "palabra",
+  "palabras",
+  "plural",
+  "singular",
+]);
+
 const normalizeObjectiveKey = (value) =>
   cleanText(value)
     .normalize("NFD")
@@ -146,6 +191,62 @@ const normalizeObjectiveKey = (value) =>
     .replace(/[¿?¡!.,;:"'()[\]{}]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+
+const collectTextValues = (value) => {
+  if (typeof value === "string" || typeof value === "number") {
+    return [cleanText(value)];
+  }
+  if (Array.isArray(value)) return value.flatMap(collectTextValues);
+  if (!value || typeof value !== "object") return [];
+  return Object.values(value).flatMap(collectTextValues);
+};
+
+const getGroundingTerms = (value) =>
+  Array.from(
+    new Set(
+      collectTextValues(value)
+        .flatMap((text) =>
+          normalizeObjectiveKey(text).match(/[\p{L}\p{M}\p{N}]+/gu),
+        )
+        .filter(
+          (term) =>
+            term &&
+            term.length >= 3 &&
+            !CURRICULUM_GROUNDING_STOP_WORDS.has(term),
+        ),
+    ),
+  );
+
+export function isCurriculumPayloadGrounded(
+  payload,
+  curriculumContext,
+  { mode = "" } = {},
+) {
+  const agendaItems = Array.isArray(curriculumContext?.agendaItems)
+    ? curriculumContext.agendaItems
+    : [];
+  const relevantItems = agendaItems.filter(
+    (item) =>
+      !mode ||
+      !Array.isArray(item?.modes) ||
+      item.modes.length === 0 ||
+      item.modes.includes(mode),
+  );
+  if (!relevantItems.length) return true;
+
+  const objectiveTerms = getGroundingTerms(
+    relevantItems.flatMap((item) => [
+      item?.targetConcept,
+      ...(Array.isArray(item?.targetExamples) ? item.targetExamples : []),
+    ]),
+  );
+  if (!objectiveTerms.length) return true;
+
+  const candidateText = normalizeObjectiveKey(
+    collectTextValues(payload).join(" "),
+  );
+  return objectiveTerms.some((term) => candidateText.includes(term));
+}
 
 const slugify = (value) =>
   normalizeObjectiveKey(value)
@@ -432,7 +533,18 @@ export function getLessonAgenda(
       const label = Object.fromEntries(
         Object.entries(MODE_LABELS).map(([lang, labels]) => [
           lang,
-          `${labels[objectiveMode] || labels.realtime}: ${authoredTargetConcept}`,
+          `${labels[objectiveMode] || labels.realtime}: ${
+            // Authored prose concepts intentionally contain English authoring
+            // scaffolding (for example, "Read a dialogue and..."). That is
+            // useful to the Tutor, but it must not leak into a non-English
+            // support-language UI. Every authored curriculum entry has a
+            // target-language example, so use that as the learner-facing
+            // teaching target after the localized action label. English
+            // support keeps the fuller authored concept.
+            lang === "en"
+              ? authoredTargetConcept
+              : authoredTargetExamples[0] || authoredTargetConcept
+          }`,
         ]),
       );
       adaptedItems.push({

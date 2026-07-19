@@ -543,9 +543,17 @@ function GameLoadingFallback({ minH = "420px" }) {
 // Same interactive mini-map and rotating progress copy shown while optimized
 // RPG review lessons prepare. The tutorial uses it only when its background
 // preparation has not finished by the time the learner reaches the game step.
-function TutorialGameLoadingFallback({ supportLang = "en" }) {
+function TutorialGameLoadingFallback({ supportLang = "en", onSkip }) {
+  const normalizedSupportLang = normalizeSupportLanguage(
+    supportLang,
+    DEFAULT_SUPPORT_LANGUAGE,
+  );
   const messages =
-    GAME_LOADING_MESSAGES[supportLang] || GAME_LOADING_MESSAGES.en;
+    GAME_LOADING_MESSAGES[normalizedSupportLang] || GAME_LOADING_MESSAGES.en;
+  const skipLabel =
+    translations[normalizedSupportLang]?.ra_btn_skip ||
+    translations.en?.ra_btn_skip ||
+    "Skip";
   const [messageIndex, setMessageIndex] = useState(0);
 
   useEffect(() => {
@@ -567,22 +575,41 @@ function TutorialGameLoadingFallback({ supportLang = "en" }) {
         py={{ base: 3, md: 4 }}
         bgGradient="linear(to-b, rgba(10, 13, 27, 0.96), rgba(10, 13, 27, 0.72), transparent)"
       >
-        <Text
-          fontSize={{ base: "sm", md: "md" }}
-          color="blue.100"
-          minH="24px"
-          key={messageIndex}
-          fontFamily="monospace"
-          sx={{
-            animation: "fadeIn 0.4s ease-in-out",
-            "@keyframes fadeIn": {
-              "0%": { opacity: 0, transform: "translateY(-4px)" },
-              "100%": { opacity: 1, transform: "translateY(0)" },
-            },
-          }}
-        >
-          {messages[messageIndex]}
-        </Text>
+        <HStack align="center" justify="space-between" spacing={3}>
+          <Text
+            flex="1"
+            fontSize={{ base: "sm", md: "md" }}
+            color="blue.100"
+            minH="24px"
+            key={messageIndex}
+            fontFamily="monospace"
+            sx={{
+              animation: "fadeIn 0.4s ease-in-out",
+              "@keyframes fadeIn": {
+                "0%": { opacity: 0, transform: "translateY(-4px)" },
+                "100%": { opacity: 1, transform: "translateY(0)" },
+              },
+            }}
+          >
+            {messages[messageIndex]}
+          </Text>
+          <Button
+            size="sm"
+            variant="solid"
+            bg="rgba(9, 16, 34, 0.7)"
+            color="white"
+            border="1px solid"
+            borderColor="rgba(170, 201, 255, 0.26)"
+            boxShadow="0 10px 18px rgba(0, 0, 0, 0.24)"
+            backdropFilter="blur(10px)"
+            onClick={onSkip}
+            flexShrink={0}
+            _hover={{ bg: "rgba(14, 24, 46, 0.82)" }}
+            _active={{ bg: "rgba(6, 12, 28, 0.92)" }}
+          >
+            {skipLabel}
+          </Button>
+        </HStack>
       </Box>
       <Box flex="1" overflow="hidden" position="relative">
         <Suspense fallback={<GameLoadingFallback minH="100dvh" />}>
@@ -9526,6 +9553,7 @@ export default function App({ onBootReady } = {}) {
                           >
                             <TutorialGameLoadingFallback
                               supportLang={resolvedSupportLang}
+                              onSkip={switchToRandomLessonMode}
                             />
                           </Box>
                         ) : GameRouterComponent ? (

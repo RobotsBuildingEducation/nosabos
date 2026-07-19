@@ -9,8 +9,9 @@ in this repo.
 The skill tree ([src/data/skillTreeData.js](src/data/skillTreeData.js)) is
 authored for **Spanish practice** and cloned for all 14 practice languages.
 Non-Spanish learners used to get improvised lessons (the AI translated Spanish
-curriculum live, badly). The fix: author real per-language curriculum data that
-the app's adapter reads at runtime. **The code is done; what remains is data.**
+curriculum live, badly). The fix was to author real per-language curriculum
+data that the app's adapter reads at runtime. **The supported-language
+curriculum is now complete through C2.**
 
 Every practice language gets, per agenda objective, an authored `concept`
 (the equivalent teaching point in that language) plus 1–3 short `examples`
@@ -27,6 +28,10 @@ keywords — it is **not** display-only.
 - `getLessonAgenda(lesson, {unit, targetLang})` emits authored items per
   objective (`source: "target-language-authored"`); unauthored items fall back
   to a generic per-mode adapter, so **partial coverage is always safe to ship**.
+- Learner-facing objective labels keep the localized support-language action
+  prefix and show a target-language example as the objective body. The fuller
+  English-authored `concept` remains available to the Tutor and to English
+  support-language labels, but no longer leaks into other app languages.
 - Review lessons (skill-builder / integrated-practice / game) inherit authored
   data from source lessons automatically. Final quizzes draw from the quiz
   blueprint. **Only source lessons need authoring** — the export command below
@@ -40,10 +45,10 @@ keywords — it is **not** display-only.
 
 | Language | Pre-A1 (144) | A1 (140) | A2 (180) | B1 (150) | B2 (120) | C1 (101) | C2 (84) |
 |---|---|---|---|---|---|---|---|
-| en, pt, fr, de, it, ja, ru, nl, el, pl, ga | ✅ 100% | ✅ 100% | — | — | — | — | — |
+| en, pt, fr, de, it, ja, ru, nl, el, pl, ga | ✅ 100% | ✅ 100% | ✅ 100% | ✅ 100% | ✅ 100% | ✅ 100% | ✅ 100% |
 | nah, yua | *excluded* | *excluded* | — | — | — | — | — |
 
-- ~3,124 items authored; **6,985 remain** (635/language × 11 languages).
+- **10,109/10,109 items authored; 0 remain** for the 11 supported languages.
 - Check live coverage anytime: `node scripts/generateTargetCurriculum.mjs validate --lang <code>`
 - **nah (Eastern Huasteca Nahuatl) and yua (Yucatec Maya) are deliberately
   excluded**: model-generated curriculum for these languages is not reliable
@@ -51,9 +56,25 @@ keywords — it is **not** display-only.
   the safe generic fallback they currently use. Their data should come from
   native speakers/community sources. Do not mass-generate them.
 
-## The work loop (per level, per language)
+Latest verified checkpoint:
 
-Work **level by level** (A2 → B1 → B2 → C1 → C2), all 11 languages per level.
+- A2 complete for all 11 supported languages: 180/180 authored for each
+  (2026-07-18).
+- B1 complete for all 11 supported languages: 150/150 authored and validated
+  for each (2026-07-18).
+- B2 complete for all 11 supported languages: 120/120 authored and validated
+  for each (2026-07-18).
+- C1 complete for all 11 supported languages: 101/101 authored and validated
+  for each (2026-07-18).
+- C2 complete for all 11 supported languages: 84/84 authored and validated for
+  each (2026-07-18).
+- Final full-tree validation reports 100% for all seven levels in every
+  supported language with no orphaned entries; `npm test` passes 44/44,
+  `npm run build` passes, and `git diff --check` is clean (2026-07-18).
+
+## Authoring workflow (for future maintenance)
+
+For future additions, work **level by level** across all 11 languages.
 Language order (approximate user priority): en, pt, fr, de, it, ja, ru, nl, el, pl, ga.
 
 1. **Export the level's manifest** (once per level):
@@ -136,19 +157,19 @@ language's established conventions — **stay consistent with them**.
 | pl | ty/pan-pani; poproszę for ordering; wpół do; ordinal clock times (jest pierwsza); genitive dates |
 | ga | no T-V (tú/sibh plural); is maith liom / ba mhaith liom; tá…agam for have; lenition after mo/feminine; answer yes/no with the verb (tá/níl) |
 
-## Remaining content by level (source concepts are in the manifests)
+## Completed content by level
 
 - **A2 (180/lang)**: descriptions (ser/estar-type contrasts), shopping, market
   quantities, transport, directions + imperatives, plans (ir a + inf), hobbies
   (soler/frequency), sports (jugar a vs hacer), **regular + irregular preterite**,
-  storytelling (imperfect vs preterite), and more — map each tense/contrast to
+  storytelling (imperfect vs preterite), and more — each tense/contrast was mapped to
   the language's own system (e.g., German Perfekt for A2 past, French passé
   composé, Japanese 〜ました, Polish aspect pairs, Irish past tense + bhí).
 - **B1 (150)**, **B2 (120)**, **C1 (101)**, **C2 (84)**: progressively advanced
   grammar (subjunctive-equivalents, conditionals, passive, reported speech,
-  discourse/register). Where a Spanish category has no direct equivalent
-  (e.g., subjunctive in Japanese), teach the language's own means for the same
-  *function* (conjecture, wishes, politeness) — never fake a parallel form.
+  discourse/register). Where a Spanish category had no direct equivalent
+  (e.g., subjunctive in Japanese), the curriculum uses the language's own means
+  for the same *function* (conjecture, wishes, politeness).
 
 ## Do not
 

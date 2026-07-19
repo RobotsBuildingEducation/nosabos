@@ -140,6 +140,12 @@ import {
   getLessonAgenda,
   getLocalizedAgendaLabel,
 } from "../utils/lessonCurriculum";
+import {
+  getTutorStarterModelPhrase,
+  getTutorStarterTargetExamples,
+} from "../utils/tutorStarterAgenda";
+import { TUTOR_LEVEL_INFO } from "../utils/tutorLevelInfo";
+import { getTutorPathCopy } from "../utils/tutorPathCopy";
 import { getCEFRPromptHint } from "../utils/cefrUtils";
 import {
   loadMultiLevelLearningPath,
@@ -149,6 +155,7 @@ import useSoundSettings from "../hooks/useSoundSettings";
 import { listeningCueSound } from "../constants/sounds";
 import submitActionSound from "../assets/submitaction.mp3";
 import XpProgressHeader from "./XpProgressHeader";
+import { WaveBar } from "./WaveBar";
 import RandomCharacter from "./RandomCharacter";
 import { useThemeStore } from "../useThemeStore";
 import {
@@ -250,59 +257,6 @@ const APP_TEXT_PRIMARY = "var(--app-text-primary)";
 const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
 const APP_SHADOW = "var(--app-shadow-soft)";
 const TUTOR_CEFR_LEVELS = ["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"];
-const TUTOR_LEVEL_INFO = {
-  "Pre-A1": {
-    label: "A0",
-    name: { en: "Ultimate Beginner", es: "Principiante Total" },
-    description: { en: "First words and recognition", es: "Primeras palabras" },
-    color: "#8B5CF6",
-  },
-  A1: {
-    label: "A1",
-    name: { en: "Beginner", es: "Principiante" },
-    description: { en: "Basic survival language", es: "Lenguaje basico" },
-    color: "#3B82F6",
-  },
-  A2: {
-    label: "A2",
-    name: { en: "Elementary", es: "Elemental" },
-    description: {
-      en: "Simple everyday communication",
-      es: "Comunicacion cotidiana",
-    },
-    color: "#8B5CF6",
-  },
-  B1: {
-    label: "B1",
-    name: { en: "Intermediate", es: "Intermedio" },
-    description: {
-      en: "Handle everyday situations",
-      es: "Situaciones cotidianas",
-    },
-    color: "#A855F7",
-  },
-  B2: {
-    label: "B2",
-    name: { en: "Upper Intermediate", es: "Intermedio Alto" },
-    description: { en: "Complex discussions", es: "Discusiones complejas" },
-    color: "#F97316",
-  },
-  C1: {
-    label: "C1",
-    name: { en: "Advanced", es: "Avanzado" },
-    description: { en: "Sophisticated language use", es: "Uso sofisticado" },
-    color: "#EF4444",
-  },
-  C2: {
-    label: "C2",
-    name: { en: "Mastery", es: "Maestria" },
-    description: {
-      en: "Near-native proficiency",
-      es: "Competencia casi nativa",
-    },
-    color: "#EC4899",
-  },
-};
 
 function isTutorEarlyLevel(level) {
   return level === "Pre-A1" || level === "A1";
@@ -1137,21 +1091,14 @@ function getTutorStarterAgendaSummary(lang = "en") {
 }
 
 function getTutorStarterAgendaPromptText(targetLang = "es") {
-  const baseLang = getBaseLanguageCode(targetLang || "es") || "es";
   return TUTOR_STARTER_AGENDA_ITEMS.map((item) => {
-    const examples = item.examples[baseLang] || item.examples.en || [];
+    const examples = getTutorStarterTargetExamples(item, targetLang);
     return `${item.id}: ${examples.join(" / ")}`;
   }).join("; ");
 }
 
 function getTutorStarterItemModelPhrase(item, targetLang = "es") {
-  const baseLang = getBaseLanguageCode(targetLang || "es") || "es";
-  return (
-    item?.examples?.[baseLang]?.[0] ||
-    item?.examples?.en?.[0] ||
-    item?.label?.en ||
-    ""
-  );
+  return getTutorStarterModelPhrase(item, targetLang);
 }
 
 function getTutorStarterItemSupportMeaning(item, supportLang = "en") {
@@ -1193,12 +1140,11 @@ function normalizeTutorAgendaSpeech(text) {
 }
 
 function getTutorStarterAgendaMatches(text, targetLang = "es") {
-  const baseLang = getBaseLanguageCode(targetLang || "es") || "es";
   const normalizedText = normalizeTutorAgendaSpeech(text);
   if (!normalizedText) return [];
 
   return TUTOR_STARTER_AGENDA_ITEMS.filter((item) => {
-    const examples = item.examples[baseLang] || item.examples.en || [];
+    const examples = getTutorStarterTargetExamples(item, targetLang);
     return examples.some((example) => {
       const normalizedExample = normalizeTutorAgendaSpeech(example);
       return normalizedExample && normalizedText.includes(normalizedExample);
@@ -3208,17 +3154,7 @@ function TutorPathLevelHeader({
         >
           <RiTrophyLine size={20} />
           <Text fontWeight="bold" fontSize="sm">
-            {tutorCopy(lang, {
-              en: "Level complete",
-              es: "Nivel completado",
-              pt: "Nivel completo",
-              it: "Livello completato",
-              fr: "Niveau termine",
-              ja: "レベル完了",
-              hi: "स्तर पूरा हुआ",
-              ar: "المستوى اكتمل",
-              zh: "等级完成",
-            })}
+            {getTutorPathCopy("levelComplete", lang)}
           </Text>
         </HStack>
       )}
@@ -3373,17 +3309,7 @@ function TutorPathLessonNode({
       _active={{ transform: "translateY(2px) scale(0.97)" }}
       aria-label={`${title}${
         isLocked
-          ? tutorCopy(supportLang, {
-              en: ", locked lesson preview",
-              es: ", vista previa de leccion bloqueada",
-              pt: ", pre-visualizacao da licao bloqueada",
-              it: ", anteprima della lezione bloccata",
-              fr: ", apercu de la lecon verrouillee",
-              ja: "、ロックされたレッスンのプレビュー",
-              hi: ", लॉक किए गए पाठ का पूर्वावलोकन",
-              ar: "، معاينة درس مقفول",
-              zh: "，已锁定课程预览",
-            })
+          ? getTutorPathCopy("lockedLessonPreview", supportLang)
           : ""
       }`}
       sx={{
@@ -6702,12 +6628,9 @@ export default function Tutor({
     const acceptedText = acceptedItems
       .map((item) => getTutorAgendaItemLabel(item, supportCode))
       .join(", ");
-    const baseLang = getBaseLanguageCode(tLang) || "es";
-    const nextModel =
-      nextItem?.examples?.[baseLang]?.[0] ||
-      nextItem?.examples?.en?.[0] ||
-      nextItem?.label?.en ||
-      "";
+    const nextModel = nextItem
+      ? getTutorStarterItemModelPhrase(nextItem, tLang)
+      : "";
     const nextMeaning = nextItem
       ? getTutorStarterItemSupportMeaning(nextItem, supportCode)
       : "";
@@ -9535,6 +9458,24 @@ export default function Tutor({
         ? SKILL_STATUS.COMPLETED
         : SKILL_STATUS.IN_PROGRESS)
     : SKILL_STATUS.AVAILABLE;
+  const selectedTutorLessonRequiredXp = selectedTutorLesson
+    ? getTutorLessonXpRequired(selectedTutorLesson)
+    : 0;
+  const selectedTutorLessonDisplayedXp = selectedTutorLesson
+    ? Math.min(
+        selectedTutorLessonRequiredXp,
+        selectedTutorLessonProgressStatus === SKILL_STATUS.COMPLETED
+          ? selectedTutorLessonRequiredXp
+          : tutorLessonEarnedXp,
+      )
+    : 0;
+  const selectedTutorLessonXpPercent =
+    selectedTutorLessonRequiredXp > 0
+      ? Math.round(
+          (selectedTutorLessonDisplayedXp / selectedTutorLessonRequiredXp) *
+            100,
+        )
+      : 0;
   // Mirror the exact gate trackTutorLessonXp uses for lesson completion: full
   // XP alone used to flip the header ring to a checkmark while an incomplete
   // regular agenda silently blocked completion — no modal, and the next
@@ -9747,7 +9688,10 @@ export default function Tutor({
                   size="xs"
                   variant="ghost"
                   onClick={handleTutorPathOpen}
-                  opacity={0.78}
+                  opacity={1}
+                  bg={isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.100"}
+                  border="1px solid"
+                  borderColor={isLightTheme ? APP_BORDER : "whiteAlpha.300"}
                   color={isLightTheme ? APP_TEXT_SECONDARY : undefined}
                   _hover={{
                     opacity: 1,
@@ -9755,17 +9699,7 @@ export default function Tutor({
                   }}
                   fontWeight="medium"
                 >
-                  {tutorCopy(uiLang, {
-                    en: "Lessons",
-                    es: "Lecciones",
-                    pt: "Lições",
-                    it: "Lezioni",
-                    fr: "Leçons",
-                    ja: "レッスン",
-                    hi: "पाठ",
-                    ar: "الدروس",
-                    zh: "课程",
-                  })}
+                  {uiText("app_mode_path", "Lessons")}
                 </Button>
                 <HStack spacing={2}>
                   <TutorLessonProgressRing
@@ -10091,47 +10025,7 @@ export default function Tutor({
           bg={isLightTheme ? APP_SURFACE : "gray.950"}
           color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
         >
-          <ModalHeader
-            borderBottom="1px solid"
-            borderColor={isLightTheme ? APP_BORDER : "whiteAlpha.200"}
-          >
-            <HStack justify="space-between" pr={8}>
-              <HStack spacing={3}>
-                <Box
-                  w={9}
-                  h={9}
-                  borderRadius="full"
-                  bg="cyan.500"
-                  color="white"
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="center"
-                >
-                  <RiRoadMapLine size={20} />
-                </Box>
-                <VStack align="start" spacing={0}>
-                  <Text fontSize="lg" fontWeight="bold">
-                    {uiText("app_mode_path", "Path")}
-                  </Text>
-                  <Text fontSize="xs" color="var(--app-text-secondary)">
-                    {tutorCopy(uiLang, {
-                      en: "Choose a lesson to shape the Tutor agenda",
-                      es: "Elige una leccion para guiar la agenda",
-                      pt: "Escolha uma licao para guiar a agenda",
-                      it: "Scegli una lezione per guidare l'agenda",
-                      fr: "Choisis une lecon pour guider le programme",
-                      ja: "チューターの内容に使うレッスンを選択",
-                      hi: "Tutor एजेंडा के लिए पाठ चुनें",
-                      ar: "اختار درس يوجّه خطة المعلّم",
-                      zh: "选择课程来引导导师安排",
-                    })}
-                  </Text>
-                </VStack>
-              </HStack>
-            </HStack>
-          </ModalHeader>
-          <ModalCloseButton />
-          <ModalBody px={{ base: 3, md: 6 }} py={5}>
+          <ModalBody px={{ base: 3, md: 6 }} py={{ base: 5, md: 7 }}>
             <VStack spacing={6} align="stretch" maxW="container.lg" mx="auto">
               <TutorPathLevelHeader
                 activeLevel={activeTutorLevel}
@@ -10150,36 +10044,52 @@ export default function Tutor({
                   borderRadius="xl"
                   p={4}
                 >
-                  <HStack justify="space-between" align="start" spacing={4}>
-                    <VStack align="start" spacing={1}>
-                      <Text fontSize="xs" color="var(--app-text-secondary)">
-                        {tutorCopy(uiLang, {
-                          en: "Current Tutor lesson",
-                          es: "Leccion actual",
-                          pt: "Licao atual",
-                          it: "Lezione attuale",
-                          fr: "Lecon actuelle",
-                          ja: "現在のレッスン",
-                          hi: "मौजूदा पाठ",
-                          ar: "الدرس الحالي",
-                          zh: "当前课程",
-                        })}
+                  <VStack align="stretch" spacing={3}>
+                    <HStack justify="space-between" align="end" spacing={4}>
+                      <VStack align="start" spacing={1}>
+                        <Text fontSize="xs" color="var(--app-text-secondary)">
+                          {getTutorPathCopy("currentLesson", uiLang)}
+                        </Text>
+                        <Text fontWeight="bold">
+                          {getTutorDisplayText(
+                            selectedTutorLesson.title,
+                            uiLang,
+                          )}
+                        </Text>
+                      </VStack>
+                      <Text
+                        flexShrink={0}
+                        fontSize="sm"
+                        fontWeight="800"
+                        color={isLightTheme ? "teal.700" : "teal.200"}
+                      >
+                        {selectedTutorLessonDisplayedXp}/
+                        {selectedTutorLessonRequiredXp} XP
                       </Text>
-                      <Text fontWeight="bold">
-                        {getTutorDisplayText(selectedTutorLesson.title, uiLang)}
-                      </Text>
-                    </VStack>
-                    <Badge colorScheme="cyan" flexShrink={0}>
-                      {Math.min(
-                        getTutorLessonXpRequired(selectedTutorLesson),
-                        selectedTutorLessonProgressStatus ===
-                          SKILL_STATUS.COMPLETED
-                          ? getTutorLessonXpRequired(selectedTutorLesson)
-                          : tutorLessonEarnedXp,
-                      )}
-                      /{getTutorLessonXpRequired(selectedTutorLesson)} XP
-                    </Badge>
-                  </HStack>
+                    </HStack>
+                    <Box
+                      role="progressbar"
+                      aria-label={`${selectedTutorLessonDisplayedXp}/${selectedTutorLessonRequiredXp} XP`}
+                      aria-valuemin={0}
+                      aria-valuemax={selectedTutorLessonRequiredXp}
+                      aria-valuenow={selectedTutorLessonDisplayedXp}
+                    >
+                      <WaveBar
+                        value={selectedTutorLessonXpPercent}
+                        height={14}
+                        bg={
+                          isLightTheme
+                            ? APP_SURFACE_MUTED
+                            : "rgba(255,255,255,0.06)"
+                        }
+                        border={
+                          isLightTheme
+                            ? "rgba(20, 184, 166, 0.26)"
+                            : "rgba(94, 234, 212, 0.24)"
+                        }
+                      />
+                    </Box>
+                  </VStack>
                 </Box>
               )}
 
@@ -10188,17 +10098,7 @@ export default function Tutor({
                   <VStack spacing={3}>
                     <Spinner color="cyan.300" size="lg" />
                     <Text fontSize="sm" color="var(--app-text-secondary)">
-                      {tutorCopy(uiLang, {
-                        en: "Loading path...",
-                        es: "Cargando ruta...",
-                        pt: "Carregando rota...",
-                        it: "Caricamento percorso...",
-                        fr: "Chargement du parcours...",
-                        ja: "パスを読み込み中...",
-                        hi: "पथ लोड हो रहा है...",
-                        ar: "بنحمّل المسار...",
-                        zh: "正在加载路径...",
-                      })}
+                      {getTutorPathCopy("loadingPath", uiLang)}
                     </Text>
                   </VStack>
                 </Center>
@@ -10221,22 +10121,45 @@ export default function Tutor({
               ) : (
                 <Center minH="260px">
                   <Text color="var(--app-text-secondary)">
-                    {tutorCopy(uiLang, {
-                      en: "No lessons found for this level yet.",
-                      es: "Aun no hay lecciones para este nivel.",
-                      pt: "Ainda nao ha licoes para este nivel.",
-                      it: "Non ci sono ancora lezioni per questo livello.",
-                      fr: "Aucune lecon pour ce niveau pour l'instant.",
-                      ja: "このレベルのレッスンはまだありません。",
-                      hi: "इस स्तर के लिए अभी कोई पाठ नहीं है।",
-                      ar: "مفيش دروس للمستوى ده لسه.",
-                      zh: "这个等级还没有课程。",
-                    })}
+                    {getTutorPathCopy("noLessons", uiLang)}
                   </Text>
                 </Center>
               )}
             </VStack>
           </ModalBody>
+          <ModalFooter
+            justifyContent="center"
+            flexShrink={0}
+            px={{ base: 4, md: 6 }}
+            pt={4}
+            pb="calc(1rem + env(safe-area-inset-bottom))"
+            borderTop="1px solid"
+            borderColor={isLightTheme ? APP_BORDER : "whiteAlpha.200"}
+            bg={isLightTheme ? APP_SURFACE_ELEVATED : "gray.950"}
+            boxShadow={
+              isLightTheme
+                ? "0 -8px 24px rgba(120,94,61,0.08)"
+                : "0 -8px 24px rgba(0,0,0,0.24)"
+            }
+          >
+            <Button
+              onClick={closeTutorPath}
+              variant="outline"
+              width={{ base: "100%", sm: "240px" }}
+              maxW="320px"
+              borderColor={isLightTheme ? APP_BORDER : "whiteAlpha.300"}
+              bg={isLightTheme ? APP_SURFACE : "whiteAlpha.100"}
+              color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
+              _hover={{
+                bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.200",
+                borderColor: isLightTheme
+                  ? "var(--app-border-strong)"
+                  : "whiteAlpha.400",
+              }}
+            >
+              {getTutorPathCopy("close", uiLang)}
+            </Button>
+          </ModalFooter>
         </ModalContent>
       </Modal>
 

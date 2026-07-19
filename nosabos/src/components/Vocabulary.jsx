@@ -33,7 +33,6 @@ import { SortableArea, SortableList, SortableItem } from "./dnd/Sortable";
 import { database, simplemodel } from "../firebaseResources/firebaseResources"; // ✅ streaming model
 import useUserStore from "../hooks/useUserStore";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
-import { SpeakSuccessCard } from "./SpeakSuccessCard";
 import VoiceOrb from "./VoiceOrb";
 import translations from "../utils/translation";
 import { MdOutlineSupportAgent } from "react-icons/md";
@@ -96,7 +95,10 @@ import {
   normalizePracticeLanguage,
   normalizeSupportLanguage,
 } from "../constants/languages";
-import { buildCurriculumPromptContext } from "../utils/lessonCurriculum";
+import {
+  buildCurriculumPromptContext,
+  isCurriculumPayloadGrounded,
+} from "../utils/lessonCurriculum";
 import {
   nativeModalMotionProps,
   nativeOverlayMotionProps,
@@ -3624,7 +3626,12 @@ Return JSON ONLY:
               Array.isArray(obj.right) &&
               obj.left.length >= 3 &&
               obj.left.length <= 6 &&
-              obj.left.length === obj.right.length
+              obj.left.length === obj.right.length &&
+              isCurriculumPayloadGrounded(
+                { left: obj.left },
+                lessonContent?.curriculumContext,
+                { mode: "vocabulary" },
+              )
             ) {
               const stem =
                 String(obj.stem).trim() ||
@@ -3664,7 +3671,12 @@ Return JSON ONLY:
                 Array.isArray(obj.right) &&
                 obj.left.length >= 3 &&
                 obj.left.length <= 6 &&
-                obj.left.length === obj.right.length
+                obj.left.length === obj.right.length &&
+                isCurriculumPayloadGrounded(
+                  { left: obj.left },
+                  lessonContent?.curriculumContext,
+                  { mode: "vocabulary" },
+                )
               ) {
                 const stem =
                   String(obj.stem).trim() ||
@@ -3687,10 +3699,23 @@ Return JSON ONLY:
       if (!okPayload) throw new Error("no-match");
     } catch {
       // Backend fallback (non-stream)
+      const curriculumScope = buildCurriculumPromptContext(
+        lessonContent?.curriculumContext,
+        { mode: "vocabulary" },
+      );
       const raw = await callResponses({
         model: MODEL,
         input: `
 Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
+${lessonContent?.topic ? `Lesson topic: ${lessonContent.topic}.` : ""}
+${
+  Array.isArray(lessonContent?.focusPoints) &&
+  lessonContent.focusPoints.length
+    ? `Mandatory focus points: ${JSON.stringify(lessonContent.focusPoints)}.`
+    : ""
+}
+${curriculumScope}
+Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
 {"stem":"<stem>","left":["<word>","..."],"right":["<short ${LANG_NAME(
           resolveSupportLang(supportLang, userLanguage),
         )} definition>","..."],"hint":"<${LANG_NAME(
@@ -3711,13 +3736,22 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         Array.isArray(parsed.right) &&
         parsed.left.length >= 3 &&
         parsed.left.length <= 6 &&
-        parsed.left.length === parsed.right.length
+        parsed.left.length === parsed.right.length &&
+        isCurriculumPayloadGrounded(
+          { left: parsed.left },
+          lessonContent?.curriculumContext,
+          { mode: "vocabulary" },
+        )
       ) {
         stem = String(parsed.stem || "Match the words to their definitions.");
         left = parsed.left.slice(0, 6).map(String);
         right = parsed.right.slice(0, 6).map(String);
         hint = String(parsed.hint || "");
       } else {
+        if (isFinalQuiz && curriculumScope) {
+          await generateMC();
+          return;
+        }
         stem = "Match words to their definitions.";
         left = ["rapid", "generous", "fragile"];
         right = ["quick", "kind in giving", "easily broken"];
@@ -4081,6 +4115,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     setCurrentQuestionData(null);
 
     const userPairs = mSlots.map((ri, li) => [li, ri]);
+    const userMappings = userPairs
+      .map(([li, ri]) => `${mLeft[li]} → ${mRight[ri]}`)
+      .join(", ");
 
     const verdictRaw = await callResponses({
       model: MODEL,
@@ -4116,9 +4153,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     }
 
     // Store question data for explanation and note creation
-    const userMappings = userPairs
-      .map(([li, ri]) => `${mLeft[li]} → ${mRight[ri]}`)
-      .join(", ");
     setCurrentQuestionData({
       question: mStem || "Match the items:",
       userAnswer: userMappings,
@@ -6316,37 +6350,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               noteCreated={noteCreated}
             />
 
-            {lastOk === true ? (
-              <SpeakSuccessCard
-                title={
-                  t("vocab_speak_success_title") ||
-                  (userLanguage === "pt"
-                    ? "Otima pronunciacao!"
-                    : userLanguage === "ar"
-                      ? "نطق ممتاز!"
-                      : userLanguage === "es"
-                        ? "¡Gran pronunciación!"
-                        : "Great pronunciation!")
-                }
-                scoreLabel={
-                  sEval
-                    ? t("vocab_speak_success_desc", { score: sEval.score }) ||
-                      (userLanguage === "pt"
-                        ? `Pontuacao ${sEval.score}%`
-                        : userLanguage === "ar"
-                          ? `النتيجة ${sEval.score}%`
-                          : userLanguage === "es"
-                            ? `Puntaje ${sEval.score}%`
-                            : `Score ${sEval.score}%`)
-                    : ""
-                }
-                xp={recentXp}
-                recognizedText={sRecognized}
-                translation={showTRSpeak ? sTranslation : ""}
-                t={t}
-                userLanguage={userLanguage}
-              />
-            ) : null}
           </>
         ) : null}
 
@@ -6791,6 +6794,16 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               }
               setLastOk(true);
               setRecentXp(xpAmount);
+            }}
+            onIncorrect={({ concept, userAnswer, correctAnswer }) => {
+              setCurrentQuestionData({
+                question: concept || fcConcept,
+                userAnswer,
+                correctAnswer: correctAnswer || fcAnswer,
+                questionType: "flashcard",
+              });
+              setLastOk(false);
+              setRecentXp(0);
             }}
             onCollect={(card) => {
               setFcDeck((prev) => [...prev, card]);

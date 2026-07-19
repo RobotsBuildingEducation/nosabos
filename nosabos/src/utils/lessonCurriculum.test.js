@@ -9,6 +9,7 @@ import {
   getCurriculumIntegrityIssues,
   getLessonAgenda,
   getLocalizedAgendaLabel,
+  isCurriculumPayloadGrounded,
   isInvalidLessonObjective,
   withCanonicalLessonAgenda,
 } from "./lessonCurriculum.js";
@@ -39,6 +40,48 @@ test("placeholder teaching formats are not curriculum objectives", () => {
   assert.equal(
     isInvalidLessonObjective("choose tú or vos based on region"),
     false,
+  );
+});
+
+test("quiz payload grounding rejects unrelated grammar families", () => {
+  const curriculumContext = {
+    agendaItems: [
+      {
+        modes: ["grammar"],
+        targetConcept: "llevar / ponerse (reflexive)",
+      },
+      {
+        modes: ["grammar"],
+        targetConcept: "agreement and plural of clothes",
+      },
+      {
+        modes: ["grammar"],
+        targetConcept: "colors + clothing (camisa azul)",
+      },
+    ],
+  };
+
+  assert.equal(
+    isCurriculumPayloadGrounded(
+      {
+        left: ["La casa", "El libro", "Un profesor", "La ciudad"],
+        right: ["Las casas", "Los libros", "Unos profesores", "Las ciudades"],
+      },
+      curriculumContext,
+      { mode: "grammar" },
+    ),
+    false,
+  );
+  assert.equal(
+    isCurriculumPayloadGrounded(
+      {
+        left: ["La camisa", "El pantalón", "El vestido"],
+        right: ["Las camisas", "Los pantalones", "Los vestidos"],
+      },
+      curriculumContext,
+      { mode: "grammar" },
+    ),
+    true,
   );
 });
 
@@ -114,7 +157,7 @@ test("non-Spanish practice paths do not expose Spanish-authored agenda examples"
   });
 });
 
-test("all non-Spanish practice paths retain mode-specific semantic detail", () => {
+test("authored non-Spanish practice paths retain mode-specific semantic detail", () => {
   const unit = getMultiLevelLearningPath("de", ["B2"]).find(
     (candidate) => candidate.id === "unit-b2-2",
   );
@@ -139,16 +182,22 @@ test("all non-Spanish practice paths retain mode-specific semantic detail", () =
 
   targetLanguages.forEach((targetLang) => {
     const agenda = getLessonAgenda(lesson, { unit, targetLang });
+    const hasGermanAuthoredCurriculum = targetLang === "de";
     assert.deepEqual(
       agenda.map((item) => item.label.en),
-      [
-        "Use in conversation: Passive Voice — Describing how a product is made",
-        "Understand in a story: Passive Voice — The passive voice in reports and news",
-      ],
+      hasGermanAuthoredCurriculum
+        ? [
+            "Use in conversation: Practice « wird gemacht » and « wurde von... hergestellt » to describe processes",
+            "Understand in a story: Read a news report and notice passive constructions",
+          ]
+        : [
+            "Use in conversation: Passive Voice — Describing how a product is made",
+            "Understand in a story: Passive Voice — The passive voice in reports and news",
+          ],
     );
     agenda.forEach((item) => {
       assert.doesNotMatch(item.targetConcept, /se hace|es fabricado por/i);
-      assert.deepEqual(item.targetExamples, []);
+      assert.equal(item.targetExamples.length > 0, hasGermanAuthoredCurriculum);
       SUPPORT_LANGUAGES.forEach((supportLang) => {
         assert.ok(getLocalizedAgendaLabel(item, supportLang));
       });
@@ -334,12 +383,39 @@ test("authored target-language curriculum keeps the per-objective sequence", () 
   assert.equal(agenda[0].id, `target-it-${lesson.agenda.items[0].id}`);
   assert.equal(agenda[0].targetConcept, "lunedì, martedì");
   assert.deepEqual(agenda[0].targetExamples, ["Oggi è lunedì."]);
-  assert.match(agenda[0].label.de, /lunedì, martedì/);
+  assert.equal(agenda[0].label.de, "Im Kontext verwenden: Oggi è lunedì.");
   assert.equal(agenda[1].targetConcept, "oggi, domani");
   // The unauthored grammar objective still collapses to the generic adapter.
   assert.equal(agenda[2].source, "target-language-adapter");
   assert.equal(agenda[2].id, "target-it-lesson-authored-grammar");
   assert.equal(agenda[2].targetExamples.length, 0);
+});
+
+test("non-English support labels do not expose English curriculum scaffolding", () => {
+  const units = getMultiLevelLearningPath("de", ["B2"]);
+  const unit = units.find((candidate) => candidate.id === "unit-b2-1");
+  const lesson = unit.lessons.find(
+    (candidate) => candidate.id === "lesson-b2-1-2",
+  );
+  const agenda = getLessonAgenda(lesson, { unit, targetLang: "de" });
+
+  assert.deepEqual(
+    agenda.map((item) => getLocalizedAgendaLabel(item, "it")),
+    [
+      "Usa in una conversazione: Als ich ankam, hatte der Film schon begonnen.",
+      "Comprendi in una storia: Maya war ruhig, weil sie sich gut vorbereitet hatte.",
+    ],
+  );
+  agenda.forEach((item) => {
+    assert.doesNotMatch(
+      getLocalizedAgendaLabel(item, "it"),
+      /\b(?:practice|read|demonstrate|notice|reported speech)\b/i,
+    );
+  });
+  assert.match(
+    getLocalizedAgendaLabel(agenda[0], "en"),
+    /Practice .* to order past events/,
+  );
 });
 
 test("Italian A1 lessons run on authored curriculum without Spanish leakage", () => {

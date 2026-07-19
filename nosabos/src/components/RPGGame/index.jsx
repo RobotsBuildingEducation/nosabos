@@ -8116,7 +8116,7 @@ export default function RPGGame({
         onTouchStartCapture={handleAudioGesture}
       >
         <VStack spacing={6} maxW="560px" mx={4}>
-          {!isEmbedded && (
+          {!isEmbedded && !isTutorialGame && (
             <IconButton
               icon={<ArrowBackIcon />}
               aria-label={ui.back}
@@ -8375,14 +8375,16 @@ export default function RPGGame({
         zIndex={10}
       >
         <HStack spacing={2}>
-          <IconButton
-            icon={<ArrowBackIcon />}
-            aria-label={ui.back}
-            size="sm"
-            variant="solid"
-            colorScheme="blackAlpha"
-            onClick={goToScenarioSelect}
-          />
+          {!isTutorialGame && (
+            <IconButton
+              icon={<ArrowBackIcon />}
+              aria-label={ui.back}
+              size="sm"
+              variant="solid"
+              colorScheme="blackAlpha"
+              onClick={goToScenarioSelect}
+            />
+          )}
           {isTutorialGame && (
             <Button
               size="sm"
