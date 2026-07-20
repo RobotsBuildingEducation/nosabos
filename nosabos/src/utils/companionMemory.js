@@ -71,7 +71,6 @@ const DISTINCTIVE_ENGLISH_WORDS = new Set([
   "tense",
   "today",
   "tomorrow",
-  "use",
   "word",
   "wrong",
   "your",
@@ -115,7 +114,8 @@ export function memoryTextMatchesSupportLanguage(text, supportLang) {
   const script = SUPPORT_SCRIPT_REQUIREMENTS[code];
   if (script && !script.pattern.test(value)) return false;
   if (code === "en") return true;
-  return distinctiveEnglishWordCount(value) < 2;
+  const englishWordCount = distinctiveEnglishWordCount(value);
+  return script ? englishWordCount === 0 : englishWordCount < 2;
 }
 
 export function cleanMemoryConceptForSupportLanguage(concept, supportLang) {

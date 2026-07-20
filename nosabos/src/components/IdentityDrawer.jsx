@@ -287,6 +287,31 @@ export function IdentityPanel({
           },
     [isLightTheme],
   );
+  const accountAccordionProps = {
+    bg: panelTheme.surface,
+    border: "1px solid",
+    borderColor: panelTheme.border,
+    rounded: "md",
+    maxW: "600px",
+    w: "100%",
+    mx: "auto",
+  };
+  const accountAccordionButtonProps = {
+    px: 4,
+    py: 3,
+    color: panelTheme.textPrimary,
+    _hover: { bg: panelTheme.surfaceMuted },
+    _expanded: { bg: panelTheme.surfaceMuted },
+  };
+  const accountAccordionPanelCardProps = {
+    bg: panelTheme.surfaceStrong,
+    border: "1px solid",
+    borderColor: panelTheme.border,
+    p: 3,
+    rounded: "md",
+    mx: 3,
+    mt: 3,
+  };
 
   const [isWalletOpen, setIsWalletOpen] = useState(false);
   const [isSignOutOpen, setIsSignOutOpen] = useState(false);
@@ -670,19 +695,12 @@ export function IdentityPanel({
         ) : null}
 
         {/* Display Name + Switch Account Accordions */}
-        <Accordion
-          allowMultiple
-          bg="gray.800"
-          rounded="md"
-          maxW="600px"
-          w="100%"
-          mx="auto"
-        >
+        <Accordion allowMultiple {...accountAccordionProps}>
           {/* Display Name */}
           <AccordionItem border="none">
-            <AccordionButton px={4} py={3}>
+            <AccordionButton {...accountAccordionButtonProps}>
               <Flex flex="1" textAlign="left" align="center">
-                <Text fontWeight="semibold" fontSize="sm">
+                <Text fontWeight="semibold">
                   {displayName
                     ? supportCopy(
                         lang,
@@ -704,96 +722,101 @@ export function IdentityPanel({
                       )}
                 </Text>
               </Flex>
-              <AccordionIcon />
+              <AccordionIcon color={panelTheme.textSecondary} />
             </AccordionButton>
-            <AccordionPanel pb={4}>
-              <Input
-                value={displayNameInput}
-                onChange={(e) => setDisplayNameInput(e.target.value)}
-                placeholder={supportCopy(
-                  lang,
-                  "Enter a display name",
-                  "Ingresa tu nombre",
-                  "Inserisci un nome visualizzato",
-                  "Saisis un nom d'affichage",
-                  "表示名を入力",
-                  "Digite um nome de exibição",
-                )}
-                bg="gray.700"
-                mb={2}
-              />
-              <HStack justify="flex-end">
-                <Button
-                  size="sm"
-                  colorScheme="teal"
-                  onClick={handleSaveDisplayName}
-                  isLoading={isSavingDisplayName}
-                  loadingText={supportCopy(
+            <AccordionPanel px={0} pb={4} pt={0}>
+              <Box {...accountAccordionPanelCardProps}>
+                <Input
+                  value={displayNameInput}
+                  onChange={(e) => setDisplayNameInput(e.target.value)}
+                  placeholder={supportCopy(
                     lang,
-                    "Saving…",
-                    "Guardando…",
-                    "Salvataggio…",
-                    "Enregistrement...",
-                    "保存中…",
-                    "Salvando…",
+                    "Enter a display name",
+                    "Ingresa tu nombre",
+                    "Inserisci un nome visualizzato",
+                    "Saisis un nom d'affichage",
+                    "表示名を入力",
+                    "Digite um nome de exibição",
                   )}
-                >
-                  {supportCopy(
-                    lang,
-                    "Save",
-                    "Guardar",
-                    "Salva",
-                    "Enregistrer",
-                    "保存",
-                    "Salvar",
-                  )}
-                </Button>
-              </HStack>
+                  bg={panelTheme.surfaceMuted}
+                  borderColor={panelTheme.border}
+                  color={panelTheme.textPrimary}
+                  mb={2}
+                />
+                <HStack justify="flex-end">
+                  <Button
+                    size="sm"
+                    colorScheme="teal"
+                    onClick={handleSaveDisplayName}
+                    isLoading={isSavingDisplayName}
+                    loadingText={supportCopy(
+                      lang,
+                      "Saving…",
+                      "Guardando…",
+                      "Salvataggio…",
+                      "Enregistrement...",
+                      "保存中…",
+                      "Salvando…",
+                    )}
+                  >
+                    {supportCopy(
+                      lang,
+                      "Save",
+                      "Guardar",
+                      "Salva",
+                      "Enregistrer",
+                      "保存",
+                      "Salvar",
+                    )}
+                  </Button>
+                </HStack>
+              </Box>
             </AccordionPanel>
           </AccordionItem>
 
           {/* Switch Account */}
         </Accordion>
-        <Accordion
-          allowMultiple
-          bg="gray.800"
-          rounded="md"
-          maxW="600px"
-          w="100%"
-          mx="auto"
-        >
+        <Accordion allowMultiple {...accountAccordionProps}>
           <AccordionItem border="none">
-            <AccordionButton px={4} py={3}>
+            <AccordionButton {...accountAccordionButtonProps}>
               <Flex flex="1" textAlign="left" align="center">
-                <Text fontWeight="semibold" fontSize="sm">
+                <Text fontWeight="semibold">
                   {t?.app_switch_account || "Switch account"}
                 </Text>
               </Flex>
-              <AccordionIcon />
+              <AccordionIcon color={panelTheme.textSecondary} />
             </AccordionButton>
-            <AccordionPanel pb={4}>
-              <Text fontSize="xs" opacity={0.75} mb={2}>
-                {t?.app_switch_note ||
-                  "We'll derive your public key (npub) from the secret and switch safely."}
-              </Text>
-              <Input
-                value={switchNsec}
-                onChange={(e) => setSwitchNsec(e.target.value)}
-                bg="gray.700"
-                placeholder={
-                  t?.app_nsec_placeholder || "Paste an nsec key to switch"
-                }
-              />
-              <HStack mt={2} justify="flex-end">
-                <Button
-                  isLoading={isSwitching}
-                  loadingText={t?.app_switching || "Switching…"}
-                  onClick={switchAccountWithNsec}
-                  colorScheme="teal"
+            <AccordionPanel px={0} pb={4} pt={0}>
+              <Box {...accountAccordionPanelCardProps}>
+                <Text
+                  fontSize="xs"
+                  color={panelTheme.textSecondary}
+                  mb={2}
                 >
-                  {t?.app_switch || "Switch"}
-                </Button>
-              </HStack>
+                  {t?.app_switch_note ||
+                    "We'll derive your public key (npub) from the secret and switch safely."}
+                </Text>
+                <Input
+                  value={switchNsec}
+                  onChange={(e) => setSwitchNsec(e.target.value)}
+                  bg={panelTheme.surfaceMuted}
+                  borderColor={panelTheme.border}
+                  color={panelTheme.textPrimary}
+                  placeholder={
+                    t?.app_nsec_placeholder || "Paste an nsec key to switch"
+                  }
+                />
+                <HStack mt={2} justify="flex-end">
+                  <Button
+                    isLoading={isSwitching}
+                    loadingText={t?.app_switching || "Switching…"}
+                    onClick={switchAccountWithNsec}
+                    colorScheme="teal"
+                  >
+                    {t?.app_switch || "Switch"}
+                  </Button>
+                </HStack>
+              </Box>
             </AccordionPanel>
           </AccordionItem>
         </Accordion>
@@ -810,22 +833,10 @@ export function IdentityPanel({
                 setIsWalletOpen(index === 0);
               }
             }}
-            bg={panelTheme.surface}
-            border="1px solid"
-            borderColor={panelTheme.border}
-            rounded="md"
-            maxW="600px"
-            w="100%"
-            mx="auto"
+            {...accountAccordionProps}
           >
             <AccordionItem border="none">
-              <AccordionButton
-                px={4}
-                py={3}
-                color={panelTheme.textPrimary}
-                _hover={{ bg: panelTheme.surfaceMuted }}
-                _expanded={{ bg: panelTheme.surfaceMuted }}
-              >
+              <AccordionButton {...accountAccordionButtonProps}>
                 <Flex flex="1" textAlign="left" align="center" gap={3}>
                   <Text fontWeight="semibold">
                     {supportCopy(
@@ -842,15 +853,7 @@ export function IdentityPanel({
                 <AccordionIcon color={panelTheme.textSecondary} />
               </AccordionButton>
               <AccordionPanel px={0} pb={4} pt={0}>
-                <Box
-                  bg={panelTheme.surfaceStrong}
-                  border="1px solid"
-                  borderColor={panelTheme.border}
-                  p={3}
-                  rounded="md"
-                  mx={3}
-                  mt={3}
-                >
+                <Box {...accountAccordionPanelCardProps}>
                   <BitcoinWalletSection
                     userLanguage={appLanguage}
                     identity={user?.identity || ""}
