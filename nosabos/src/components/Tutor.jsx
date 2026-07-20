@@ -114,6 +114,7 @@ import { normalizeGeminiLiveVoice } from "../utils/geminiLiveVoices";
 import {
   normalizeOpenAITutorVoice,
   normalizeTutorVoice,
+  resolveTutorRealtimeModel,
   resolveTutorRealtimeProvider,
 } from "../utils/tutorRealtime";
 import {
@@ -135,6 +136,7 @@ import {
   buildOpenAITutorResponsePolicy,
   buildOpenAIStarterAgendaTurnInstructions,
   buildOpenAIRepairTurnInstructions,
+  buildOpenAITutorTurnVerdictDirective,
 } from "../utils/openaiTutorPrompts";
 import {
   getLessonAgenda,
@@ -5468,7 +5470,14 @@ export default function Tutor({
     const current = hasDistinctMeaning
       ? `"${currentPhrase}" (meaning: "${currentLabel}")`
       : `"${currentPhrase || currentLabel}"`;
-    const evidenceCriteria = snapshot.currentItem?.evidence?.criteria || "";
+    // Evidence criteria are English author-notes; they ride along only when
+    // there is no concrete phrase to anchor the objective. With a phrase
+    // present they add nothing the tutor needs, and every extra line of
+    // English state nudged mini toward English narration and English-accented
+    // readings of target words on non-English support pairs.
+    const evidenceCriteria = currentPhrase
+      ? ""
+      : snapshot.currentItem?.evidence?.criteria || "";
     return [
       "# Current lesson state",
       "Phase: teach.",
@@ -5610,17 +5619,28 @@ export default function Tutor({
       // voice) — the same mapping the settings picker shows, so the session
       // always speaks with the previewed voice.
       const openaiVoice = normalizeOpenAITutorVoice(voiceRef.current);
+      const openaiModel = resolveTutorRealtimeModel();
       if (realtimeProvider === "openai") {
-        console.info("[tutor-realtime] openai voice:", openaiVoice);
+        console.info(
+          "[tutor-realtime] openai voice:",
+          openaiVoice,
+          "model:",
+          openaiModel,
+        );
       }
       const bridge =
         realtimeProvider === "openai"
           ? await createOpenAIRealtimeBridge({
               audioElement: audioRef.current,
-              initialInstructions: buildLanguageInstructions(),
+              // Session instructions are the compact policy, same as the
+              // per-response prefix — NOT the Gemini-tuned pile. Responses
+              // normally override them anyway, but anything that inherits the
+              // session default must see the same playground-clean policy.
+              initialInstructions: buildOpenAIResponseInstructionsPrefix(),
               responseInstructionsPrefix:
                 buildOpenAIResponseInstructionsPrefix(),
               voice: openaiVoice,
+              model: openaiModel,
               pauseMs: pauseMsRef.current,
               inputLanguageCodes: inputLanguageCodes.length
                 ? inputLanguageCodes
@@ -6323,7 +6343,11 @@ export default function Tutor({
       "This is the very first message of the tutorial lesson. Give ONLY a short, warm welcome.",
       `Speak entirely in ${supportLanguageName}. Do not use any ${targetLanguageName} yet.`,
       "Greet the learner, welcome them to their first lesson, and introduce yourself as their realtime tutor who will guide them along the way.",
-      `In ${supportLanguageName}, convey something along the lines of: "Hello! Welcome to your first lesson. I'm your realtime tutor and I'll guide you along the way." Adapt it naturally into ${supportLanguageName} — do not copy the English wording — then invite them to say hello or to let you know when they are ready to begin.`,
+      // OpenAI mini copies quoted English wording into non-English replies, so
+      // its variant describes the invite without an English example sentence.
+      realtimeProviderRef.current === "openai"
+        ? `Then invite them, in natural ${supportLanguageName}, to say hello or to let you know when they are ready to begin.`
+        : `In ${supportLanguageName}, convey something along the lines of: "Hello! Welcome to your first lesson. I'm your realtime tutor and I'll guide you along the way." Adapt it naturally into ${supportLanguageName} — do not copy the English wording — then invite them to say hello or to let you know when they are ready to begin.`,
       "Do NOT teach, model, translate, or ask the learner to repeat any words yet. Do NOT introduce any lesson phrase, vocabulary, or practice task.",
       "Do NOT mention XP, scoring, levels, or progress.",
       "Keep it warm and brief: about 2-3 short sentences.",
@@ -6469,7 +6493,6 @@ export default function Tutor({
         reviewPhrases: TUTOR_STARTER_AGENDA_ITEMS.map((agendaItem) =>
           getTutorStarterItemModelPhrase(agendaItem, targetLang),
         ),
-        latestTranscript,
         targetLanguageName,
         supportLanguageName,
       });
@@ -6807,16 +6830,17 @@ export default function Tutor({
         turnCount: turnCountRef.current,
         isStarterLesson: isTutorStarterAgendaLesson(lesson),
       });
-    // Plain directives, no "TURN VERDICT:" style labels: mini echoes labelled
-    // grading vocabulary back at the learner ("Nice, that was accepted").
+    // Same deadpan verdict wording as the starter path — the only variant
+    // mini has stopped narrating aloud (its old regular-path sibling's "next
+    // teaching move" came back as a spoken English "let me take that as a
+    // next step and build on it" inside a Hindi-Spanish session).
     const openAITurnVerdictInstruction =
       realtimeProviderRef.current !== "openai"
         ? ""
-        : turnVerdict === TUTOR_TURN_VERDICT.ACCEPTED
-          ? "The learner's latest attempt succeeded. Acknowledge it with one short natural phrase, then move forward with the next teaching move."
-          : turnVerdict === TUTOR_TURN_VERDICT.REJECTED
-            ? "The latest attempt did not succeed. First respond to the learner's actual intent: if they asked for help, meaning, clarification, or repetition, answer that without treating it as a mistake; otherwise give one concise correction. Then offer one natural chance to complete the current task."
-            : "The latest turn could not be graded. Do not call it right or wrong and do not invent a correction. Respond to what was clear, then ask one brief clarification or offer a fresh way to answer the current task.";
+        : buildOpenAITutorTurnVerdictDirective({
+            turnVerdict,
+            supportLanguageName,
+          });
 
     if (isTutorStarterAgendaLesson(lesson)) {
       return [
@@ -6842,20 +6866,23 @@ export default function Tutor({
         return buildOpenAIRepairTurnInstructions({
           repairDirective: buildTutorRepairAgendaInstruction(),
           turnVerdict,
-          latestTranscript: userMessage,
         });
       }
       // Compact by design: the standing policy on every response already
       // carries coherence/boundary rules, and the server-side conversation
       // already holds the dialog history — repeating recent lines here is what
-      // mini paraphrased into doubled replies.
+      // mini paraphrased into doubled replies. The learner's ASR transcript is
+      // deliberately NOT echoed: the model heard the actual audio, and the
+      // target-hinted transcription garbles support-language speech into
+      // pseudo-target text that pulled replies into the wrong language. There
+      // is also no "respond to the learner" opener — mini voiced that kind of
+      // meta-direction as a spoken transition; the verdict directive already
+      // says how to react.
       return [
-        "Respond directly and naturally to the learner's latest turn.",
         // Rare fallback: a repair focus rides a regular lesson when no
         // ephemeral repair session could be built from the saved material.
         buildTutorRepairAgendaInstruction(),
         buildOpenAIRegularTutorAgendaInstruction(),
-        userMessage ? `Latest learner transcript: "${userMessage}".` : "",
         openAITurnVerdictInstruction,
       ]
         .filter(Boolean)
@@ -7039,7 +7066,13 @@ export default function Tutor({
       realtimeProviderRef.current === "openai"
         ? normalizeOpenAITutorVoice(voiceRef.current)
         : normalizeGeminiLiveVoice(voiceRef.current);
-    const instructions = buildLanguageInstructions();
+    // OpenAI: the compact policy is BOTH the session instructions and the
+    // per-response prefix, mirroring a clean Playground session — the legacy
+    // Gemini-tuned pile must never ride an OpenAI session, even dormant.
+    const instructions =
+      realtimeProviderRef.current === "openai"
+        ? buildOpenAIResponseInstructionsPrefix()
+        : buildLanguageInstructions();
     if (realtimeProviderRef.current === "openai") {
       dcRef.current.setResponseInstructionsPrefix?.(
         buildOpenAIResponseInstructionsPrefix(),
@@ -7555,6 +7588,17 @@ export default function Tutor({
     window.dispatchEvent(new CustomEvent("lesson-completion:sequence-start"));
   }
 
+  // Fired when a committed completion attempt has either mounted its modal or
+  // failed. App holds the plate "task complete" celebration between start and
+  // settled — the completion modal can mount up to ~45s after the commit
+  // (waitUntilIdle lets the tutor finish speaking first), far longer than the
+  // celebration queue's own mount-grace window. Once the modal is actually in
+  // the DOM, App's modal poll takes over the sequencing.
+  function dispatchTutorCompletionSequenceSettled() {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(new CustomEvent("lesson-completion:sequence-settled"));
+  }
+
   function getTutorDailyGoalCelebrationDetail(awardResult, source) {
     if (!awardResult?.shouldCelebrateGoal) return null;
     return {
@@ -7928,6 +7972,10 @@ export default function Tutor({
     if (nextEarned >= xpRequired && canCompleteLesson) {
       if (pendingTutorLessonCompletionRef.current) return true;
       pendingTutorLessonCompletionRef.current = true;
+      // Signal at COMMIT time, before the idle wait: the plate celebration
+      // must start queuing behind a completion modal that may not mount for
+      // many seconds while the tutor finishes speaking.
+      dispatchTutorCompletionSequenceStart();
       void (async () => {
         try {
           if (deferCompletionUntilIdle && !isIdleRef.current) {
@@ -7943,6 +7991,7 @@ export default function Tutor({
           );
         } finally {
           pendingTutorLessonCompletionRef.current = false;
+          dispatchTutorCompletionSequenceSettled();
         }
       })();
       return true;
@@ -7962,6 +8011,9 @@ export default function Tutor({
     if (tutorLessonCompletionTriggeredRef.current) return;
     if (pendingTutorLessonCompletionRef.current) return;
     pendingTutorLessonCompletionRef.current = true;
+    // Same commit-time signal as trackTutorLessonXp: hold the plate
+    // celebration through the idle wait.
+    dispatchTutorCompletionSequenceStart();
     void (async () => {
       try {
         if (!isIdleRef.current) {
@@ -7972,6 +8024,7 @@ export default function Tutor({
         await completeTutorLessonFromXp(lesson, unit, [], []);
       } finally {
         pendingTutorLessonCompletionRef.current = false;
+        dispatchTutorCompletionSequenceSettled();
       }
     })();
   }

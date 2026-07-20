@@ -22,13 +22,128 @@ import { normalizePlateLang, recordPlateActivity } from "./dailyPlate";
 import {
   buildQuestBubble,
   companionMemorySummary,
+  memoryStatusLabel,
   REPAIR_COPY,
 } from "./companionMemoryCopy";
 import { callResponses } from "./llm";
 import { normalizeCEFRLevel } from "./cefrUtils";
 import { questDayDocumentId } from "./userDataSchema";
+import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  getLanguagePromptName,
+  normalizeSupportLanguage,
+} from "../constants/languages";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const SUPPORT_SCRIPT_REQUIREMENTS = {
+  ar: { name: "Arabic script", pattern: /[\u0600-\u06ff]/u },
+  hi: { name: "Devanagari script", pattern: /[\u0900-\u097f]/u },
+  ja: {
+    name: "Japanese script",
+    pattern: /[\u3040-\u30ff\u3400-\u9fff]/u,
+  },
+  ru: { name: "Cyrillic script", pattern: /[\u0400-\u04ff]/u },
+  zh: { name: "Chinese characters", pattern: /[\u3400-\u9fff]/u },
+};
+const DISTINCTIVE_ENGLISH_WORDS = new Set([
+  "answer",
+  "answered",
+  "captured",
+  "correct",
+  "ends",
+  "exercise",
+  "goodbye",
+  "greeting",
+  "greetings",
+  "hello",
+  "instead",
+  "learner",
+  "means",
+  "mistake",
+  "practice",
+  "reinforced",
+  "remember",
+  "repaired",
+  "said",
+  "saved",
+  "should",
+  "starts",
+  "tense",
+  "today",
+  "tomorrow",
+  "use",
+  "word",
+  "wrong",
+  "your",
+]);
+
+function normalizeMemorySupportLang(supportLang) {
+  return normalizeSupportLanguage(supportLang, DEFAULT_SUPPORT_LANGUAGE);
+}
+
+function supportLanguageGuard(supportLang) {
+  const code = normalizeMemorySupportLang(supportLang);
+  const languageName = getLanguagePromptName(code) || langName(code);
+  const script = SUPPORT_SCRIPT_REQUIREMENTS[code];
+  return [
+    `The UI/support language is ${languageName}.`,
+    `The "did" and "tip" values MUST be written entirely in natural ${languageName}.`,
+    code === "en"
+      ? ""
+      : `Do not write either value in English and do not add an English translation.`,
+    script
+      ? `Use ${script.name}; do not romanize or transliterate the ${languageName} text.`
+      : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function distinctiveEnglishWordCount(text) {
+  return (
+    String(text || "")
+      .toLowerCase()
+      .match(/[a-z]+/g)
+      ?.filter((word) => DISTINCTIVE_ENGLISH_WORDS.has(word)).length || 0
+  );
+}
+
+export function memoryTextMatchesSupportLanguage(text, supportLang) {
+  const value = String(text || "").trim();
+  if (!value) return true;
+  const code = normalizeMemorySupportLang(supportLang);
+  const script = SUPPORT_SCRIPT_REQUIREMENTS[code];
+  if (script && !script.pattern.test(value)) return false;
+  if (code === "en") return true;
+  return distinctiveEnglishWordCount(value) < 2;
+}
+
+export function cleanMemoryConceptForSupportLanguage(concept, supportLang) {
+  const value = String(concept || "").trim();
+  const code = normalizeMemorySupportLang(supportLang);
+  if (!value || code === "en") return value;
+  return value
+    .replace(/\s*\(([^()]*)\)/g, (match, parenthetical) =>
+      distinctiveEnglishWordCount(parenthetical) > 0 ? "" : match,
+    )
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function enrichmentMatchesSupportLanguage(fields, supportLang) {
+  return (
+    memoryTextMatchesSupportLanguage(fields?.mistake, supportLang) &&
+    memoryTextMatchesSupportLanguage(fields?.tip, supportLang)
+  );
+}
+
+export function memoryNoteMatchesSupportLanguage(note, supportLang) {
+  const normalizedSupportLang = normalizeMemorySupportLang(supportLang);
+  return (
+    normalizeMemorySupportLang(note?.supportLang) === normalizedSupportLang &&
+    enrichmentMatchesSupportLanguage(note, normalizedSupportLang)
+  );
+}
 
 // Note statuses through the lifecycle.
 export const MEMORY_STATUS = {
@@ -397,22 +512,30 @@ function buildMemoryNote({
   now,
 }) {
   const errorType = errorTypeForMode(sourceMode);
+  const normalizedSupportLang = normalizeMemorySupportLang(supportLang);
+  const localizedConcept = cleanMemoryConceptForSupportLanguage(
+    concept,
+    normalizedSupportLang,
+  );
   return {
     id: `mem-${now.getTime()}-${Math.random().toString(36).slice(2, 9)}`,
     createdDayKey: dayKey,
     createdAt: now.getTime(),
     targetLang,
-    supportLang,
+    supportLang: normalizedSupportLang,
     sourceMode,
     sourceContext: sourceContext || "",
-    concept: String(concept || "").slice(0, 240),
+    concept: localizedConcept.slice(0, 240),
     userAnswer: String(userAnswer || "").slice(0, 240),
     expectedAnswer: String(expectedAnswer || "").slice(0, 240),
     errorType,
     cefrLevel: displayCEFRLevel(cefrLevel, "Pre-A1"),
     severity: 1,
     recommendedRepairMode: repairModeForError(errorType),
-    companionSummary: companionMemorySummary(supportLang, concept),
+    companionSummary: companionMemorySummary(
+      normalizedSupportLang,
+      localizedConcept,
+    ),
     // Filled in shortly after capture by a cheap Flash-Lite pass (enrichNote).
     // Until then they're empty and the UI falls back to companionSummary.
     mistake: "", // what the learner got wrong (support language)
@@ -442,7 +565,9 @@ async function enrichNoteFields({
   sourceMode,
 }) {
   const targetName = langName(targetLang);
-  const supportName = langName(supportLang);
+  const normalizedSupportLang = normalizeMemorySupportLang(supportLang);
+  const supportName = langName(normalizedSupportLang);
+  const languageGuard = supportLanguageGuard(normalizedSupportLang);
   const input = [
     `A learner studying ${targetName} just slipped up during a ${sourceMode} exercise.`,
     `Prompt / concept: ${concept}`,
@@ -451,32 +576,80 @@ async function enrichNoteFields({
       : `The learner could not produce an answer.`,
     expectedAnswer ? `Expected answer: ${expectedAnswer}` : "",
     `Explain the slip warmly and concretely so a teammate could repair it tomorrow.`,
+    languageGuard,
     `Write "did" and "tip" in ${supportName}. Write "fix" in ${targetName} when it's a word/phrase, otherwise in ${supportName}.`,
     `Return ONLY strict minified JSON, no markdown, exactly:`,
-    `{"did":"what specifically was wrong, <=14 words","fix":"the correct form or answer","tip":"one short, encouraging way to remember it, <=16 words"}`,
+    `{"did":"<${supportName} only: what specifically was wrong, <=14 words>","fix":"<the correct form or answer>","tip":"<${supportName} only: one short encouraging memory tip, <=16 words>"}`,
   ]
     .filter(Boolean)
     .join("\n");
 
-  let raw = "";
+  const parseFields = (raw) => {
+    const parsed = parseBlueprintJson(raw); // tolerant {...} extractor, reused
+    if (!parsed) return null;
+    const did = String(parsed.did || "").trim().slice(0, 200);
+    const fix = String(parsed.fix || "").trim().slice(0, 200);
+    const tip = String(parsed.tip || "").trim().slice(0, 200);
+    if (!did && !fix && !tip) return null;
+    return { mistake: did, correction: fix, tip };
+  };
+
+  let fields = null;
   try {
-    raw = await callResponses({ input });
+    fields = parseFields(await callResponses({ input }));
   } catch {
     return null;
   }
-  const parsed = parseBlueprintJson(raw); // tolerant {...} extractor, reused
-  if (!parsed) return null;
-  const did = String(parsed.did || "").trim().slice(0, 200);
-  const fix = String(parsed.fix || "").trim().slice(0, 200);
-  const tip = String(parsed.tip || "").trim().slice(0, 200);
-  if (!did && !fix && !tip) return null;
-  return { mistake: did, correction: fix, tip };
+  if (!fields) return null;
+
+  // Script-based support languages are easy to validate deterministically.
+  // If the first pass leaks English, give the model one focused localization
+  // pass. Never persist the leaked support text if that repair still fails.
+  if (!enrichmentMatchesSupportLanguage(fields, normalizedSupportLang)) {
+    const retryInput = [
+      `Localize this language-learning memory record for a ${supportName} UI.`,
+      languageGuard,
+      `Keep "fix" in ${targetName}. Preserve its meaning exactly.`,
+      `Return ONLY strict minified JSON with keys "did", "fix", and "tip".`,
+      JSON.stringify({
+        did: fields.mistake,
+        fix: fields.correction || expectedAnswer || "",
+        tip: fields.tip,
+      }),
+    ].join("\n");
+    try {
+      const repaired = parseFields(await callResponses({ input: retryInput }));
+      if (repaired) fields = repaired;
+    } catch {
+      // The original target-language correction remains useful below.
+    }
+  }
+
+  if (!enrichmentMatchesSupportLanguage(fields, normalizedSupportLang)) {
+    return {
+      mistake: "",
+      correction: String(expectedAnswer || fields.correction || "").slice(
+        0,
+        200,
+      ),
+      tip: "",
+    };
+  }
+  return fields;
 }
 
 // Re-read the latest bucket and patch the just-captured note in place. Re-reading
 // avoids clobbering any capture that landed in between; if the note was pruned or
 // the user switched accounts, we simply skip.
-async function enrichAndPatchNote({ npub, langKey, noteId, fields }) {
+async function enrichAndPatchNote({
+  npub,
+  langKey,
+  noteId,
+  fields,
+  supportLang = "",
+  concept = "",
+  replaceLocalizedFields = false,
+}) {
   if (!fields) return;
   const store = useUserStore.getState?.();
   const bucket = readBucket(store?.user || {}, langKey);
@@ -486,9 +659,15 @@ async function enrichAndPatchNote({ npub, langKey, noteId, fields }) {
   const prev = notes[idx];
   notes[idx] = {
     ...prev,
-    mistake: fields.mistake || prev.mistake || "",
+    supportLang: supportLang
+      ? normalizeMemorySupportLang(supportLang)
+      : prev.supportLang,
+    concept: concept || prev.concept,
+    mistake: replaceLocalizedFields
+      ? fields.mistake || ""
+      : fields.mistake || prev.mistake || "",
     correction: fields.correction || prev.correction || "",
-    tip: fields.tip || prev.tip || "",
+    tip: replaceLocalizedFields ? fields.tip || "" : fields.tip || prev.tip || "",
     enriched: true,
   };
   await persistBucket(npub, langKey, {
@@ -505,13 +684,15 @@ async function enrichAndPatchNote({ npub, langKey, noteId, fields }) {
 // keyed to a content signature, so it regenerates only when the log actually
 // changes (a new capture, enrichment landing, a status flip, expiry).
 
-function memorySummaryStorageKey(langKey) {
-  return `companionMemorySummary:${langKey}`;
+function memorySummaryStorageKey(langKey, supportLang = "en") {
+  return `companionMemorySummary:${langKey}:${normalizeMemorySupportLang(
+    supportLang,
+  )}`;
 }
 
 // Bump when the summary prompt changes so cached summaries regenerate even
 // though the log itself didn't change.
-const MEMORY_SUMMARY_PROMPT_VERSION = "v2";
+const MEMORY_SUMMARY_PROMPT_VERSION = "v3";
 
 // Fields that would change what the summary says. Includes `enriched` so the
 // summary refreshes once the capture-time diagnosis lands.
@@ -521,10 +702,12 @@ function memoryLogSignature(notes = [], supportLang = "en") {
     .join("|")}`;
 }
 
-function readCachedMemorySummary(langKey) {
+function readCachedMemorySummary(langKey, supportLang = "en") {
   if (typeof window === "undefined") return null;
   try {
-    const raw = window.localStorage.getItem(memorySummaryStorageKey(langKey));
+    const raw = window.localStorage.getItem(
+      memorySummaryStorageKey(langKey, supportLang),
+    );
     const parsed = raw ? JSON.parse(raw) : null;
     return parsed && typeof parsed.text === "string" ? parsed : null;
   } catch {
@@ -534,8 +717,13 @@ function readCachedMemorySummary(langKey) {
 
 // Last generated summary for this language regardless of freshness — lets the
 // drawer paint something immediately while a refresh runs in the background.
-export function getCachedMemorySummaryText(targetLang) {
-  return readCachedMemorySummary(normalizePlateLang(targetLang))?.text || "";
+export function getCachedMemorySummaryText(targetLang, supportLang = "en") {
+  return (
+    readCachedMemorySummary(
+      normalizePlateLang(targetLang),
+      supportLang,
+    )?.text || ""
+  );
 }
 
 async function generateMemorySummaryText({ notes, langKey, supportLang }) {
@@ -550,33 +738,52 @@ async function generateMemorySummaryText({ notes, langKey, supportLang }) {
         : n.createdDayKey === yKey
           ? "yesterday"
           : n.createdDayKey,
-    concept: n.concept,
+    concept: cleanMemoryConceptForSupportLanguage(n.concept, supportLang),
     learnerAnswer: n.userAnswer || "",
     correctAnswer: n.expectedAnswer || n.correction || "",
     whatWentWrong: n.mistake || "",
     activity: n.sourceMode || "",
-    status: n.status,
+    status: memoryStatusLabel(supportLang, n.status),
     timesMissed: n.severity || 1,
   }));
   const input = [
     `You write the digest line at the top of a mistake log for a ${targetName} course. Here is the current log (JSON):`,
     JSON.stringify(feed),
-    `Statuses: "captured" = saved to practice tomorrow; "used_in_quest" = woven into today's quest; "reinforced" = already repaired; yesterday's unrepaired notes expire tonight.`,
     `Write a compact plain-text digest of the log in ${supportName}: the dominant pattern across the slips, what was repaired, and what is still open. Name the actual concepts, quoting ${targetName} words verbatim.`,
+    `Never repeat JSON field names or internal status codes. Express each status naturally in ${supportName}.`,
+    supportLanguageGuard(supportLang),
     `Dry, factual, matter-of-fact — like case notes. State only what the log shows. No greeting, no praise, no encouragement, no advice, no "we"/"let's", and do not address the learner. Terse fragments are fine. 1-3 short sentences, max 40 words, plain text only — no lists, no markdown, no emojis.`,
   ].join("\n");
 
-  let raw = "";
+  const cleanSummary = (raw) =>
+    String(raw || "")
+      .replace(/\s+/g, " ")
+      .replace(/^["'“”]+|["'“”]+$/g, "")
+      .trim()
+      .slice(0, 480);
+
+  let summary = "";
   try {
-    raw = await callResponses({ input });
+    summary = cleanSummary(await callResponses({ input }));
   } catch {
     return "";
   }
-  return String(raw || "")
-    .replace(/\s+/g, " ")
-    .replace(/^["'“”]+|["'“”]+$/g, "")
-    .trim()
-    .slice(0, 480);
+  if (!summary) return "";
+  if (!memoryTextMatchesSupportLanguage(summary, supportLang)) {
+    const retryInput = [
+      `Rewrite this mistake-log digest entirely in ${supportName}.`,
+      supportLanguageGuard(supportLang),
+      `Preserve quoted ${targetName} words verbatim. Do not repeat internal JSON keys or English status codes.`,
+      `Return only the localized plain-text digest, with no markdown:`,
+      summary,
+    ].join("\n");
+    try {
+      summary = cleanSummary(await callResponses({ input: retryInput }));
+    } catch {
+      return "";
+    }
+  }
+  return memoryTextMatchesSupportLanguage(summary, supportLang) ? summary : "";
 }
 
 const memorySummaryInflight = new Map();
@@ -596,7 +803,7 @@ export async function getOrBuildMemorySummary({
   const langKey = normalizePlateLang(targetLang);
   const signature = memoryLogSignature(notes, supportLang);
 
-  const cached = readCachedMemorySummary(langKey);
+  const cached = readCachedMemorySummary(langKey, supportLang);
   if (cached?.signature === signature && cached.text) return cached.text;
 
   const flightKey = `${langKey}|${signature}`;
@@ -609,7 +816,7 @@ export async function getOrBuildMemorySummary({
       if (text && typeof window !== "undefined") {
         try {
           window.localStorage.setItem(
-            memorySummaryStorageKey(langKey),
+            memorySummaryStorageKey(langKey, supportLang),
             JSON.stringify({ signature, text }),
           );
         } catch {
@@ -647,10 +854,13 @@ export async function captureCompanionMemory({
   sourceContext,
   now = new Date(),
 }) {
-  const trimmedConcept = String(concept || "").trim();
-  if (!trimmedConcept) return null;
-
   const langKey = normalizePlateLang(targetLang);
+  const normalizedSupportLang = normalizeMemorySupportLang(supportLang);
+  const trimmedConcept = cleanMemoryConceptForSupportLanguage(
+    concept,
+    normalizedSupportLang,
+  );
+  if (!trimmedConcept) return null;
   const dayKey = getCompanionDayKey(now);
   if (!dayKey) return null;
 
@@ -668,15 +878,30 @@ export async function captureCompanionMemory({
   );
 
   let stored;
+  let shouldEnrich = false;
   if (dupeIndex >= 0) {
     // Same slip again today — strengthen the signal rather than duplicate it.
     const existing = notes[dupeIndex];
+    const supportLanguageChanged =
+      normalizeMemorySupportLang(existing.supportLang) !==
+      normalizedSupportLang;
     stored = {
       ...existing,
+      supportLang: normalizedSupportLang,
       severity: Math.min(3, (Number(existing.severity) || 1) + 1),
       userAnswer: String(userAnswer || existing.userAnswer || "").slice(0, 240),
       createdAt: now.getTime(),
+      companionSummary: companionMemorySummary(
+        normalizedSupportLang,
+        trimmedConcept,
+      ),
+      mistake: supportLanguageChanged ? "" : existing.mistake || "",
+      tip: supportLanguageChanged ? "" : existing.tip || "",
+      enriched: supportLanguageChanged ? false : existing.enriched,
     };
+    shouldEnrich =
+      !stored.enriched ||
+      !enrichmentMatchesSupportLanguage(stored, normalizedSupportLang);
     notes[dupeIndex] = stored;
   } else {
     stored = buildMemoryNote({
@@ -684,13 +909,14 @@ export async function captureCompanionMemory({
       userAnswer,
       expectedAnswer,
       targetLang: langKey,
-      supportLang,
+      supportLang: normalizedSupportLang,
       sourceMode,
       sourceContext,
       cefrLevel,
       dayKey,
       now,
     });
+    shouldEnrich = true;
     notes.unshift(stored);
   }
 
@@ -714,20 +940,106 @@ export async function captureCompanionMemory({
   // Background enrichment (cheap Flash-Lite): describe the slip + a tip, then
   // patch the note a moment later. Fire-and-forget so capture stays snappy, and
   // only for notes not already enriched (a repeated miss keeps its first pass).
-  if (!stored.enriched) {
+  if (shouldEnrich) {
     void enrichNoteFields({
       concept: trimmedConcept,
       userAnswer: stored.userAnswer,
       expectedAnswer: stored.expectedAnswer,
       targetLang: langKey,
-      supportLang,
+      supportLang: normalizedSupportLang,
       sourceMode,
     }).then((fields) =>
-      enrichAndPatchNote({ npub, langKey, noteId: stored.id, fields }),
+      enrichAndPatchNote({
+        npub,
+        langKey,
+        noteId: stored.id,
+        fields,
+        supportLang: normalizedSupportLang,
+        replaceLocalizedFields: true,
+      }),
     );
   }
 
   return stored;
+}
+
+const memoryLocalizationInflight = new Map();
+
+/**
+ * Repairs recent stored diagnosis/tip text when it was generated in the wrong
+ * UI language, and relocalizes it when the learner changes support language.
+ * Raw answers and target-language corrections remain untouched.
+ */
+export async function ensureCompanionMemoryLocalization({
+  npub,
+  targetLang,
+  supportLang = "en",
+  notes = [],
+}) {
+  const langKey = normalizePlateLang(targetLang);
+  const normalizedSupportLang = normalizeMemorySupportLang(supportLang);
+  const candidates = notes.filter((note) => {
+    return (
+      !memoryNoteMatchesSupportLanguage(note, normalizedSupportLang) ||
+      cleanMemoryConceptForSupportLanguage(
+        note?.concept,
+        normalizedSupportLang,
+      ) !== note?.concept
+    );
+  });
+  if (!candidates.length) return;
+
+  const flightKey = `${langKey}|${normalizedSupportLang}|${candidates
+    .map((note) => note.id)
+    .join(",")}`;
+  if (memoryLocalizationInflight.has(flightKey)) {
+    return memoryLocalizationInflight.get(flightKey);
+  }
+
+  const pending = (async () => {
+    for (const note of candidates) {
+      const detailsNeedLocalization = !memoryNoteMatchesSupportLanguage(
+        note,
+        normalizedSupportLang,
+      );
+      const generatedFields = await enrichNoteFields({
+        concept: note.concept,
+        userAnswer: note.userAnswer,
+        expectedAnswer: note.expectedAnswer || note.correction,
+        targetLang: langKey,
+        supportLang: normalizedSupportLang,
+        sourceMode: note.sourceMode,
+      });
+      const fields =
+        generatedFields ||
+        (detailsNeedLocalization
+          ? {
+              mistake: "",
+              correction: note.expectedAnswer || note.correction || "",
+              tip: "",
+            }
+          : {
+              mistake: note.mistake || "",
+              correction: note.correction || note.expectedAnswer || "",
+              tip: note.tip || "",
+            });
+      await enrichAndPatchNote({
+        npub,
+        langKey,
+        noteId: note.id,
+        fields,
+        supportLang: normalizedSupportLang,
+        concept: cleanMemoryConceptForSupportLanguage(
+          note.concept,
+          normalizedSupportLang,
+        ),
+        replaceLocalizedFields: true,
+      });
+    }
+  })().finally(() => memoryLocalizationInflight.delete(flightKey));
+
+  memoryLocalizationInflight.set(flightKey, pending);
+  return pending;
 }
 
 function repairLessonLevelGuard(cefrLevel) {
@@ -1713,7 +2025,12 @@ async function persistBlueprint(rawNpub, langKey, dayKey, blueprint) {
 }
 
 function langName(code) {
-  return BATCH_LANG_NAMES[normalizePlateLang(code)] || BATCH_LANG_NAMES[code] || code;
+  return (
+    getLanguagePromptName(code) ||
+    BATCH_LANG_NAMES[normalizePlateLang(code)] ||
+    BATCH_LANG_NAMES[code] ||
+    code
+  );
 }
 
 // The single batch prompt. English instructions, output written in the user's

@@ -9,12 +9,15 @@ import { Badge, Box, HStack, Text, VStack } from "@chakra-ui/react";
 
 import useUserStore from "../hooks/useUserStore";
 import {
+  cleanMemoryConceptForSupportLanguage,
+  ensureCompanionMemoryLocalization,
   getCachedMemorySummaryText,
   getCompanionNotes,
   getCompanionDayKey,
   getOrBuildMemorySummary,
   getYesterdayKey,
   MEMORY_STATUS,
+  memoryNoteMatchesSupportLanguage,
 } from "../utils/companionMemory";
 import {
   MEMORY_CARD_COPY,
@@ -152,7 +155,9 @@ function MemoryCard({ note, lang, isYesterday }) {
   const correctValue = note.correction || note.expectedAnswer || "";
   // The companion's diagnosis + tip (filled by the Flash-Lite enrichment pass).
   // Until that lands, mistake/tip are empty and we just show the answers.
-  const tipText = [note.mistake, note.tip].filter(Boolean).join(" ");
+  const tipText = memoryNoteMatchesSupportLanguage(note, lang)
+    ? [note.mistake, note.tip].filter(Boolean).join(" ")
+    : "";
 
   return (
     <Box
@@ -171,7 +176,7 @@ function MemoryCard({ note, lang, isYesterday }) {
           color="var(--app-text-primary)"
           noOfLines={2}
         >
-          {note.concept}
+          {cleanMemoryConceptForSupportLanguage(note.concept, lang)}
         </Text>
 
         {/* Tags — status + source + severity */}
@@ -281,13 +286,22 @@ export default function CompanionMemoryList({ targetLang = "es", lang = "en" }) 
   }, [user, targetLang]);
 
   const hasAny = todays.length > 0 || yesterdays.length > 0;
+  useEffect(() => {
+    const notes = [...todays, ...yesterdays];
+    if (!notes.length) return;
+    void ensureCompanionMemoryLocalization({
+      targetLang,
+      supportLang: lang,
+      notes,
+    });
+  }, [todays, yesterdays, targetLang, lang]);
 
   // Plain-text AI digest of the whole log (Flash-Lite). Keyed to the log's
   // content signature inside getOrBuildMemorySummary, so this effect is free
   // when nothing changed; when it did, the last cached text paints first and
   // the fresh one swaps in when generation lands.
   const [summary, setSummary] = useState(() =>
-    getCachedMemorySummaryText(targetLang),
+    getCachedMemorySummaryText(targetLang, lang),
   );
   useEffect(() => {
     const notes = [...todays, ...yesterdays];
@@ -295,7 +309,7 @@ export default function CompanionMemoryList({ targetLang = "es", lang = "en" }) 
       setSummary("");
       return undefined;
     }
-    setSummary(getCachedMemorySummaryText(targetLang));
+    setSummary(getCachedMemorySummaryText(targetLang, lang));
     let cancelled = false;
     getOrBuildMemorySummary({ notes, targetLang, supportLang: lang }).then(
       (text) => {

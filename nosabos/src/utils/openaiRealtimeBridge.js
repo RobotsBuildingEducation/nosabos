@@ -15,8 +15,9 @@ import {
   mergeTutorInputTranscription,
 } from "./tutorSpeechPolicy";
 import { composeOpenAIRealtimeResponseInstructions } from "./openaiRealtimeResponseInstructions";
+import { DEFAULT_OPENAI_TUTOR_VOICE } from "./openaiTutorVoices";
 
-const REALTIME_MODEL =
+const DEFAULT_REALTIME_MODEL =
   (
     import.meta.env?.VITE_TUTOR_REALTIME_MODEL ||
     import.meta.env?.VITE_REALTIME_MODEL ||
@@ -134,7 +135,10 @@ class OpenAIRealtimeBridge {
     audioElement = null,
     initialInstructions = "",
     responseInstructionsPrefix = "",
-    voice = "alloy",
+    // Never default to a legacy voice: alloy/echo-era voices read
+    // target-language words with support-language phonology.
+    voice = DEFAULT_OPENAI_TUTOR_VOICE,
+    model = "",
     pauseMs = DEFAULT_PAUSE_MS,
     inputLanguageCodes = null,
     inputTranscriptionKeywords = null,
@@ -146,6 +150,7 @@ class OpenAIRealtimeBridge {
     this.initialInstructions = initialInstructions;
     this.responseInstructionsPrefix = responseInstructionsPrefix;
     this.voice = voice;
+    this.model = String(model || "").trim() || DEFAULT_REALTIME_MODEL;
     this.pauseMs = normalizePauseMs(pauseMs);
     this.inputLanguageCodes = Array.isArray(inputLanguageCodes)
       ? inputLanguageCodes
@@ -307,7 +312,7 @@ class OpenAIRealtimeBridge {
   buildInitialSession() {
     return {
       instructions: this.initialInstructions || "",
-      voice: this.voice || "alloy",
+      voice: this.voice || DEFAULT_OPENAI_TUTOR_VOICE,
       input_audio_transcription: this.inputTranscription,
       turn_detection: {
         ...DEFAULT_TURN_DETECTION,
@@ -320,7 +325,7 @@ class OpenAIRealtimeBridge {
     if (!REALTIME_BASE_URL) {
       throw new Error("Realtime URL is not configured (VITE_REALTIME_URL).");
     }
-    const url = `${REALTIME_BASE_URL}?model=${encodeURIComponent(REALTIME_MODEL)}`;
+    const url = `${REALTIME_BASE_URL}?model=${encodeURIComponent(this.model)}`;
 
     this.localStream = await navigator.mediaDevices.getUserMedia({
       audio: true,
@@ -460,14 +465,14 @@ class OpenAIRealtimeBridge {
     // that is only made bilingual by a later data-channel update.
     const initialSession = {
       ...toGaSession(this.buildInitialSession()),
-      model: REALTIME_MODEL,
+      model: this.model,
     };
     const response = await appCheckFetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         sdp: offer.sdp,
-        model: REALTIME_MODEL,
+        model: this.model,
         session: initialSession,
       }),
     });

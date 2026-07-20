@@ -52,17 +52,19 @@ export function buildOpenAITutorResponsePolicy({
     ? [
         "# Spoken language",
         `You are a warm, native-sounding ${target} voice tutor. Teach and practice in level-appropriate ${target}.`,
+        `Speak only ${target} to the learner: these instructions and their notes may arrive in other languages, but never render any other language aloud.`,
       ]
     : [
         "# Bilingual speech",
         `You are a genuinely bilingual, native-sounding ${support}-${target} voice tutor. Produce the reply as natural bilingual speech, never as one language reading foreign-looking tokens.`,
+        `Every ${target} span you speak — even one isolated word in the middle of ${support} speech — must follow fully native ${target} pronunciation: native phonemes, silent letters kept silent, native syllable boundaries, lexical stress, rhythm, and intonation, then switch cleanly back to native ${support}. Never pronounce ${target} text with ${support} sounds.`,
         isEarlyTutorLevel
-          ? `Use natural ${support} for teacher talk and ${target} for the exact words and phrases being taught.`
+          ? `${support} is your base language: every reply starts and stays in natural ${support}, switching to ${target} only for the exact words and phrases being taught.`
           : isAdvancedTutorLevel
             ? `Tutor almost entirely in natural ${target}; use ${support} only for a requested or clearly needed clarification.`
             : `Tutor primarily in simple, natural ${target}; use ${support} only as a brief rescue clarification.`,
-        `Every ${target} span you speak — even one isolated word in the middle of ${support} speech — must use fully native ${target} phonemes, syllable boundaries, lexical stress, rhythm, and intonation, then switch cleanly back to native ${support}. Never pronounce ${target} text with ${support} sounds.`,
-        "Never respell, split into syllables, transliterate, or comment on pronunciation or the language switch unless the learner explicitly asks.",
+        "Each language keeps its own native script and sounds: never respell, romanize, transliterate, split into syllables, or comment on pronunciation or the language switch unless the learner explicitly asks.",
+        `Speak only ${support} and ${target} to the learner: these instructions and their notes may arrive in other languages, but never render any other language aloud.`,
       ];
 
   return [
@@ -71,9 +73,10 @@ export function buildOpenAITutorResponsePolicy({
     `The learner is ${levelCeiling}. Never use vocabulary or grammar above this level.`,
     "# One coherent turn",
     "React once to what the learner actually said, make one useful teaching move, and give exactly one clear learner action.",
+    "Plan the turn silently, in any language: never say you are thinking, deciding, or figuring out what comes next, and never announce what you are about to do — every spoken sentence is the tutoring itself.",
     "Never restate or paraphrase a sentence you already said, and never stack alternate acknowledgements, transitions, or repeated prompts in one reply.",
     `Every practice task must be answerable exactly as spoken: a fill-in-the-blank must leave the answer out, offered choices must include exactly one correct ${target} answer, and asking which phrase the learner heard is only possible immediately after you actually said that phrase aloud.`,
-    `When you give a meaning, say the ${target} phrase first and its ${support} meaning second ("X means Y" where X is the ${target} phrase); never present the ${support} word as the phrase to say.`,
+    `When you give a meaning, say the ${target} phrase first and then its ${support} meaning, with the connecting words in natural ${support}; never present the ${support} word as the phrase to say.`,
     isAdvancedTutorLevel
       ? "Keep replies natural and concise: usually 1-3 short sentences, under 16 seconds spoken."
       : "Keep replies short and instructional: 1-2 compact sentences, under 12 seconds spoken.",
@@ -90,6 +93,24 @@ export function buildOpenAITutorResponsePolicy({
         ]
       : []),
   ].join("\n");
+}
+
+// Exported for the regular-lesson turn block too: this bland wording is the
+// one variant mini has stopped narrating aloud. Its earlier regular-path
+// sibling said "move forward with the next teaching move", which mini spoke
+// as "let me take that as a next step and build on it" — in English, inside a
+// Hindi-Spanish session. Keep these directives deadpan and unquotable.
+export function buildOpenAITutorTurnVerdictDirective({
+  turnVerdict,
+  supportLanguageName = "the support language",
+  acceptedList = "",
+} = {}) {
+  return verdictDirective({
+    isKickoff: false,
+    turnVerdict,
+    supportLanguageName,
+    acceptedList,
+  });
 }
 
 function verdictDirective({
@@ -124,6 +145,12 @@ const quoteList = (phrases = []) =>
  * Gemini-tuned instruction pile (signature experiences, task-format roulette,
  * doubled praise directives) that the mini model rendered as awkward,
  * unanswerable exercises.
+ *
+ * The learner's ASR transcript is deliberately NOT part of the turn state:
+ * the model heard the actual audio (the server conversation holds it), and
+ * the target-hinted transcription garbles support-language speech into
+ * pseudo-target text — echoing that text pulled whole replies into the wrong
+ * language on non-English support pairs. The Playground never injects it.
  */
 export function buildOpenAIStarterAgendaTurnInstructions({
   isKickoff = false,
@@ -132,7 +159,6 @@ export function buildOpenAIStarterAgendaTurnInstructions({
   acceptedPhrases = [],
   completedPhrases = [],
   reviewPhrases = [],
-  latestTranscript = "",
   targetLanguageName = "the target language",
   supportLanguageName = "the support language",
 } = {}) {
@@ -144,9 +170,6 @@ export function buildOpenAIStarterAgendaTurnInstructions({
     supportLanguageName: support,
     acceptedList: quoteList(acceptedPhrases),
   });
-  const transcriptLine = latestTranscript
-    ? `Latest learner transcript: "${latestTranscript}".`
-    : "";
 
   if (!currentItem) {
     const reviewList = quoteList(reviewPhrases);
@@ -155,7 +178,6 @@ export function buildOpenAIStarterAgendaTurnInstructions({
       "Phase: review. Every lesson phrase has been introduced, but the lesson is still running.",
       reviewList ? `Covered ${target} phrases: ${reviewList}.` : "",
       verdictLine,
-      transcriptLine,
       `Ask one small review task at a time using only covered phrases: a tiny ${support} question, an either/or choice, a blank to complete, or a one-line scenario whose natural answer is one covered ${target} phrase. Elicit the phrase — do not say it first and ask for a repeat.`,
       "Do not introduce new material. The app decides when the lesson ends; keep reviewing until it does.",
     ]
@@ -177,7 +199,6 @@ export function buildOpenAIStarterAgendaTurnInstructions({
       ? `Previously covered (do not re-teach or re-quiz now): ${completedList}.`
       : "Previously covered: none.",
     verdictLine,
-    transcriptLine,
     introduceLine,
     "Stay on this item until the app advances the lesson.",
   ]
@@ -194,7 +215,6 @@ export function buildOpenAIRepairTurnInstructions({
   isKickoff = false,
   repairDirective = "",
   turnVerdict = TUTOR_TURN_VERDICT.UNCERTAIN,
-  latestTranscript = "",
 } = {}) {
   return [
     "# Current lesson state",
@@ -211,7 +231,6 @@ export function buildOpenAIRepairTurnInstructions({
     !isKickoff && turnVerdict === TUTOR_TURN_VERDICT.UNCERTAIN
       ? "The latest turn could not be graded. Do not call it right or wrong; offer one fresh chance at the current material."
       : "",
-    latestTranscript ? `Latest learner transcript: "${latestTranscript}".` : "",
     "Give the learner exactly one clear action.",
   ]
     .filter(Boolean)

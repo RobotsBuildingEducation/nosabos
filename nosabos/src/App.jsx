@@ -3559,6 +3559,19 @@ export default function App({ onBootReady } = {}) {
   const lastTargetLangRef = useRef(resolvedTargetLang);
   const pendingLessonCompletionRef = useRef(null);
   const lessonCompletionSequenceActiveRef = useRef(false);
+  // Tutor completions commit BEFORE their modal can mount (the Tutor waits
+  // for speech to go idle first, up to ~45s) — this timestamp holds the plate
+  // and companion-unlock celebrations through that gap. Set by the Tutor's
+  // "lesson-completion:sequence-start" event, cleared by its
+  // "...:sequence-settled" event; the age cap below means a lost settled
+  // event can never wedge the celebration queues shut.
+  const tutorCompletionSequenceStartedAtRef = useRef(0);
+  const isTutorCompletionSequencePending = useCallback(
+    () =>
+      tutorCompletionSequenceStartedAtRef.current > 0 &&
+      Date.now() - tutorCompletionSequenceStartedAtRef.current < 90000,
+    [],
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -4554,6 +4567,10 @@ export default function App({ onBootReady } = {}) {
     if (typeof window === "undefined") return undefined;
     const handleSequenceStart = () => {
       deferDailyGoalCelebrationRef.current = true;
+      tutorCompletionSequenceStartedAtRef.current = Date.now();
+    };
+    const handleSequenceSettled = () => {
+      tutorCompletionSequenceStartedAtRef.current = 0;
     };
     const handleReleaseQueuedCelebration = (event) => {
       let opened = openPendingDailyGoalCelebration() || celebrateOpen;
@@ -4572,6 +4589,10 @@ export default function App({ onBootReady } = {}) {
       handleSequenceStart,
     );
     window.addEventListener(
+      "lesson-completion:sequence-settled",
+      handleSequenceSettled,
+    );
+    window.addEventListener(
       "daily-goal:releaseQueuedCelebration",
       handleReleaseQueuedCelebration,
     );
@@ -4579,6 +4600,10 @@ export default function App({ onBootReady } = {}) {
       window.removeEventListener(
         "lesson-completion:sequence-start",
         handleSequenceStart,
+      );
+      window.removeEventListener(
+        "lesson-completion:sequence-settled",
+        handleSequenceSettled,
       );
       window.removeEventListener(
         "daily-goal:releaseQueuedCelebration",
@@ -8566,6 +8591,7 @@ export default function App({ onBootReady } = {}) {
       return Boolean(
         modalStore.dailyGoalOpen ||
         modalStore.timerModalOpen ||
+        isTutorCompletionSequencePending() ||
         pendingDailyGoalCelebrationRef.current ||
         pendingLessonCompletionRef.current ||
         pendingTutorialBitcoinModalRef.current ||
@@ -8629,6 +8655,7 @@ export default function App({ onBootReady } = {}) {
     companionUnlockModal,
     markCompanionUnlockCelebrated,
     isCompanionUnlockCelebrated,
+    isTutorCompletionSequencePending,
   ]);
 
   useEffect(() => {
@@ -8671,6 +8698,7 @@ export default function App({ onBootReady } = {}) {
       const modalStore = useModalStore.getState?.() || {};
       return Boolean(
         lessonCompletionSequenceActiveRef.current ||
+        isTutorCompletionSequencePending() ||
         pendingLessonCompletionRef.current ||
         pendingDailyGoalCelebrationRef.current ||
         pendingTutorialBitcoinModalRef.current ||
@@ -8715,7 +8743,7 @@ export default function App({ onBootReady } = {}) {
       tick,
       expectsModal ? 400 : 100,
     );
-  }, [playSound]);
+  }, [isTutorCompletionSequencePending, playSound]);
 
   const requestPlateCelebration = useCallback(
     (celebration) => {
