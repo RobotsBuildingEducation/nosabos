@@ -72,6 +72,7 @@ import {
   nativeModalMotionProps,
   nativeOverlayMotionProps,
 } from "../utils/modalMotion";
+import { getThemeModeToggleProps } from "../utils/themeModeToggleStyle";
 
 // Helper to check if running on localhost
 const isLocalhost = () =>
@@ -204,30 +205,6 @@ const getTopControlProps = (isLightTheme) => ({
   },
   _active: {
     bg: isLightTheme ? "rgba(77, 58, 36, 0.12)" : "rgba(255, 255, 255, 0.1)",
-  },
-});
-
-const getThemeModeToggleProps = (isLightTheme) => ({
-  bg: isLightTheme
-    ? "linear-gradient(135deg, #fff7d6 0%, #fed7aa 100%)"
-    : "linear-gradient(135deg, rgba(15, 23, 42, 0.96) 0%, rgba(30, 41, 59, 0.92) 100%)",
-  color: isLightTheme ? "#b45309" : "#bfdbfe",
-  borderColor: isLightTheme
-    ? "rgba(245, 158, 11, 0.36)"
-    : "rgba(147, 197, 253, 0.32)",
-  boxShadow: isLightTheme
-    ? "0 10px 22px rgba(245, 158, 11, 0.18)"
-    : "0 12px 28px rgba(15, 23, 42, 0.32)",
-  backdropFilter: "blur(20px)",
-  _hover: {
-    bg: isLightTheme
-      ? "linear-gradient(135deg, #ffedb5 0%, #fdba74 100%)"
-      : "linear-gradient(135deg, rgba(30, 41, 59, 0.98) 0%, rgba(51, 65, 85, 0.94) 100%)",
-  },
-  _active: {
-    bg: isLightTheme
-      ? "linear-gradient(135deg, #fde68a 0%, #fb923c 100%)"
-      : "linear-gradient(135deg, rgba(15, 23, 42, 1) 0%, rgba(30, 41, 59, 0.98) 100%)",
   },
 });
 

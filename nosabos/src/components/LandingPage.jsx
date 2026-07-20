@@ -50,6 +50,7 @@ import { useDecentralizedIdentity } from "../hooks/useDecentralizedIdentity";
 import useSoundSettings from "../hooks/useSoundSettings";
 import * as Tone from "tone";
 import { useThemeStore } from "../useThemeStore";
+import { getThemeModeToggleProps } from "../utils/themeModeToggleStyle";
 import {
   getPracticeLanguageOptions,
   getSupportLanguageOptions,
@@ -989,7 +990,14 @@ const GlobalStyles = () => (
     }
 
     .piyali-landing-header.is-scrolled {
-      background-color: rgba(254, 250, 241, 1);
+      background-color: #FCF8F0;
+      border: 0;
+    }
+
+    .piyali-landing-header.is-dark.is-scrolled {
+      background-color: #060A16;
+      border: 0;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
     }
 
     .piyali-landing-header-inner {
@@ -1024,6 +1032,10 @@ const GlobalStyles = () => (
       line-height: 1;
       letter-spacing: 0;
       white-space: nowrap;
+    }
+
+    .piyali-landing-header.is-dark .piyali-landing-brand {
+      color: #f8fafc;
     }
 
     .piyali-landing-actions {
@@ -1212,6 +1224,7 @@ const ThemeModeToggle = ({ themeMode, onModeChange, fixed = true, compact = fals
   const nextMode = isDark ? "light" : "dark";
   const label = isDark ? "Switch to light mode" : "Switch to dark mode";
   const iconSize = compact ? 15 : 18;
+  const themeToggleProps = getThemeModeToggleProps(isLightTheme);
 
   return (
     <IconButton
@@ -1221,9 +1234,9 @@ const ThemeModeToggle = ({ themeMode, onModeChange, fixed = true, compact = fals
       onClick={() => onModeChange(nextMode)}
       icon={
         isDark ? (
-          <RiMoonClearFill size={iconSize} color={compact ? "#2a2119" : "#fffaf0"} />
+          <RiMoonClearFill size={iconSize} color="#fffaf0" />
         ) : (
-          <LuSun size={iconSize} color={compact ? "#2a2119" : undefined} strokeWidth={2.35} />
+          <LuSun size={iconSize} strokeWidth={2.35} />
         )
       }
       size="sm"
@@ -1238,44 +1251,7 @@ const ThemeModeToggle = ({ themeMode, onModeChange, fixed = true, compact = fals
             zIndex: 120,
           }
         : {})}
-      bg={
-        compact
-          ? "rgba(254, 250, 241, 0)"
-          : isLightTheme
-          ? "linear-gradient(135deg, #fff7d6 0%, #fed7aa 100%)"
-          : "linear-gradient(135deg, rgba(15, 23, 42, 0.96) 0%, rgba(30, 41, 59, 0.92) 100%)"
-      }
-      color={compact ? "#2a2119" : isLightTheme ? "#b45309" : "#bfdbfe"}
-      border={compact ? "0" : "1px solid"}
-      borderColor={
-        compact
-          ? "transparent"
-          : isLightTheme
-          ? "rgba(245, 158, 11, 0.36)"
-          : "rgba(147, 197, 253, 0.32)"
-      }
-      boxShadow={
-        compact
-          ? "none"
-          : isLightTheme
-          ? "0 10px 22px rgba(245, 158, 11, 0.18)"
-          : "0 12px 28px rgba(15, 23, 42, 0.32)"
-      }
-      backdropFilter={compact ? "none" : "blur(20px)"}
-      _hover={{
-        bg: compact
-          ? "rgba(42, 33, 25, 0.08)"
-          : isLightTheme
-          ? "linear-gradient(135deg, #ffedb5 0%, #fdba74 100%)"
-          : "linear-gradient(135deg, rgba(30, 41, 59, 0.98) 0%, rgba(51, 65, 85, 0.94) 100%)",
-      }}
-      _active={{
-        bg: compact
-          ? "rgba(42, 33, 25, 0.14)"
-          : isLightTheme
-          ? "linear-gradient(135deg, #fde68a 0%, #fb923c 100%)"
-          : "linear-gradient(135deg, rgba(15, 23, 42, 1) 0%, rgba(30, 41, 59, 0.98) 100%)",
-      }}
+      {...themeToggleProps}
     />
   );
 };
@@ -1291,7 +1267,9 @@ const LandingHeader = ({
   isScrolled,
 }) => (
   <motion.header
-    className={`piyali-landing-header${isScrolled ? " is-scrolled" : ""}`}
+    className={`piyali-landing-header${
+      themeMode === "dark" ? " is-dark" : ""
+    }${isScrolled ? " is-scrolled" : ""}`}
     initial={{ opacity: 0, y: -16 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.35 }}

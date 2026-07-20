@@ -3,6 +3,11 @@ import { Box, HStack, SimpleGrid, Text, VStack } from "@chakra-ui/react";
 import { RiMoonClearFill } from "react-icons/ri";
 import { LuSun } from "react-icons/lu";
 
+const SELECTED_TEAL = "#38B2AC";
+const SELECTED_TEAL_HOVER = "#4FD1C5";
+const SOFT_ACCENT_GRADIENT =
+  "linear-gradient(135deg, #7CE3D8 0%, #9DE6EF 100%)";
+
 const OPTIONS = [
   {
     value: "dark",
@@ -12,7 +17,7 @@ const OPTIONS = [
       panel: "rgba(17, 24, 39, 0.88)",
       text: "#e5e7eb",
       textMuted: "#94a3b8",
-      accent: "linear-gradient(135deg, #4fd1c5, #3f9f9b)",
+      accent: SOFT_ACCENT_GRADIENT,
     },
   },
   {
@@ -21,9 +26,9 @@ const OPTIONS = [
     preview: {
       bg: "linear-gradient(180deg, #fffdf9 0%, #f7f1e7 100%)",
       panel: "rgba(255, 253, 249, 0.96)",
-      text: "#2f261d",
+      text: "#38BED1",
       textMuted: "#8d7a67",
-      accent: "linear-gradient(135deg, #4fd1c5, #3f9f9b)",
+      accent: SOFT_ACCENT_GRADIENT,
     },
   },
 ];
@@ -76,25 +81,27 @@ export default function ThemeModeField({
                 textAlign="left"
                 borderRadius="20px"
                 border="1px solid"
-                borderColor={isSelected ? "blue.400" : "var(--app-border)"}
+                borderColor={isSelected ? SELECTED_TEAL : "var(--app-border)"}
                 bg={isSelected ? "var(--app-surface-elevated)" : "var(--app-surface)"}
                 boxShadow={
                   isSelected
-                    ? "0 0 0 2px rgba(96, 165, 250, 0.22), var(--app-shadow-soft)"
+                    ? "0 0 0 2px rgba(56, 178, 172, 0.2), var(--app-shadow-soft)"
                     : "var(--app-shadow-soft)"
                 }
                 p={3}
                 transition="all 0.2s ease"
                 _hover={{
                   transform: "translateY(-1px)",
-                  borderColor: isSelected ? "blue.300" : "var(--app-border-strong)",
+                  borderColor: isSelected
+                    ? SELECTED_TEAL_HOVER
+                    : "var(--app-border-strong)",
                 }}
                 _active={{ transform: "translateY(0)" }}
                 aria-pressed={isSelected}
               >
                 <VStack align="stretch" spacing={3}>
                   <Box
-                    h={compact ? "92px" : "112px"}
+                    h={compact ? "100px" : "120px"}
                     borderRadius="16px"
                     p={3}
                     background={option.preview.bg}
@@ -170,7 +177,7 @@ export default function ThemeModeField({
                       borderRadius="full"
                       display="grid"
                       placeItems="center"
-                      bg={isSelected ? "blue.500" : "var(--app-surface-muted)"}
+                      bg={isSelected ? SELECTED_TEAL : "var(--app-surface-muted)"}
                       color={isSelected ? "white" : "var(--app-text-secondary)"}
                       flexShrink={0}
                     >
