@@ -92,10 +92,10 @@ export const linksPageTranslations = {
     // Link cards
     noSabosTitle: "Piyali",
     noSabosDescription:
-      "Your personal language tutor. Learn and explore new languages using intelligent tools to help you practice.",
+      "Your personal language tutor. As fun as Duolingo, but better for learning.",
     rbeTitle: "Robots Building Education",
     rbeDescription:
-      "Your personal coding tutor. Learn the foundations of software engineering quickly so you can start to leverage AI coding tools to build your ideas.",
+      "Your personal coding tutor. Learn the foundations of software engineering quickly so you can use coding agents to build your ideas.",
     citizenshipTitle: "Dual Citizenship Checklist (100% free)",
     citizenshipDescription:
       "Find your path to Mexican dual citizenship, save your progress, and organize the documents you need.",
@@ -291,10 +291,10 @@ export const linksPageTranslations = {
     // Link cards
     noSabosTitle: "Piyali",
     noSabosDescription:
-      "Il tuo tutor personale di lingue. Impara ed esplora nuove lingue usando strumenti intelligenti per aiutarti a praticare.",
+      "Il tuo tutor personale di lingue. Divertente come Duolingo, ma più efficace per imparare.",
     rbeTitle: "Robots Building Education",
     rbeDescription:
-      "Il tuo tutor personale di programmazione. Impara rapidamente i fondamenti dell'ingegneria del software per iniziare a sfruttare gli strumenti di programmazione AI e costruire le tue idee.",
+      "Il tuo tutor personale di programmazione. Impara rapidamente i fondamenti dell'ingegneria del software per poter usare agenti di programmazione e costruire le tue idee.",
     citizenshipTitle: "Checklist doppia cittadinanza (100% gratuita)",
     citizenshipDescription:
       "Trova il tuo percorso verso la doppia cittadinanza messicana, salva i progressi e organizza i documenti necessari.",
@@ -486,10 +486,10 @@ export const linksPageTranslations = {
     // Link cards
     noSabosTitle: "Piyali",
     noSabosDescription:
-      "Tu tutor personal de idiomas. Aprende y explora nuevos idiomas usando herramientas inteligentes que te ayudan a practicar.",
+      "Tu tutor personal de idiomas. Tan divertido como Duolingo, pero mejor para aprender.",
     rbeTitle: "Robots Building Education",
     rbeDescription:
-      "Tu tutor personal de programación. Aprende rápidamente los fundamentos de la ingeniería de software para que puedas empezar a aprovechar las herramientas de programación con IA y construir tus ideas.",
+      "Tu tutor personal de programación. Aprende rápidamente los fundamentos de la ingeniería de software para que puedas usar agentes de programación y construir tus ideas.",
     citizenshipTitle: "Checklist de doble ciudadanía (100% gratis)",
     citizenshipDescription:
       "Encuentra tu ruta hacia la doble ciudadanía mexicana, guarda tu avance y organiza los documentos que necesitas.",
@@ -840,10 +840,10 @@ linksPageTranslations.ar = {
   buyApps: "اشترِ التطبيقات",
   noSabosTitle: "Piyali",
   noSabosDescription:
-    "مدرّسك الشخصي للغات. اتعلّم واستكشف لغات جديدة بأدوات ذكية تساعدك تتدرّب.",
+    "مدرّسك الشخصي للغات. ممتع زي Duolingo، لكن أفضل للتعلّم.",
   rbeTitle: "Robots Building Education",
   rbeDescription:
-    "مدرّسك الشخصي للبرمجة. اتعلّم أساسيات هندسة البرمجيات بسرعة علشان تبدأ تستخدم أدوات البرمجة بالذكاء الاصطناعي وتبني أفكارك.",
+    "مدرّسك الشخصي للبرمجة. اتعلّم أساسيات هندسة البرمجيات بسرعة علشان تقدر تستخدم وكلاء البرمجة وتبني أفكارك.",
   citizenshipTitle: "قائمة الجنسية المزدوجة (مجانية 100%)",
   citizenshipDescription:
     "اعرف مسارك للجنسية المكسيكية المزدوجة، واحفظ تقدمك، ونظّم الوثائق اللي تحتاجها.",
@@ -1014,9 +1014,9 @@ linksPageTranslations.fr = {
   buyApps: "Acheter les apps",
   noSabosTitle: "Piyali",
   noSabosDescription:
-    "Ton tuteur personnel de langues. Apprends et explore de nouvelles langues avec des outils intelligents pour t'aider a pratiquer.",
+    "Ton tuteur personnel de langues. Aussi amusant que Duolingo, mais plus efficace pour apprendre.",
   rbeDescription:
-    "Ton tuteur personnel de programmation. Apprends rapidement les bases de l'ingenierie logicielle pour utiliser les outils de code avec IA et construire tes idees.",
+    "Ton tuteur personnel de programmation. Apprends rapidement les bases de l'ingénierie logicielle pour utiliser des agents de programmation et construire tes idées.",
   citizenshipTitle: "Checklist double citoyenneté (100 % gratuite)",
   citizenshipDescription:
     "Trouve ton parcours vers la double citoyenneté mexicaine, enregistre ta progression et organise les documents nécessaires.",
@@ -1180,10 +1180,10 @@ linksPageTranslations.ja = {
   buyApps: "アプリを購入",
   noSabosTitle: "Piyali",
   noSabosDescription:
-    "あなた専用の言語チューター。インテリジェントなツールで新しい言語を学び、練習できます。",
+    "あなた専用の語学チューター。Duolingo と同じくらい楽しく、でも学習効果はもっと高い。",
   rbeTitle: "Robots Building Education",
   rbeDescription:
-    "あなた専用のコーディングチューター。ソフトウェアエンジニアリングの基礎を素早く学び、AIコーディングツールでアイデアを形にできます。",
+    "あなた専用のコーディングチューター。ソフトウェアエンジニアリングの基礎を素早く学び、コーディングエージェントを使ってアイデアを形にできます。",
   citizenshipTitle: "二重国籍チェックリスト（100%無料）",
   citizenshipDescription:
     "メキシコ二重国籍へのルートを確認し、進捗を保存し、必要書類を整理できます。",
@@ -1357,10 +1357,10 @@ linksPageTranslations.de = {
   buyApps: "Apps kaufen",
   noSabosTitle: "Piyali",
   noSabosDescription:
-    "Dein persönlicher Sprachcoach. Lerne und entdecke neue Sprachen mit intelligenten Übungstools.",
+    "Dein persönlicher Sprachcoach. So unterhaltsam wie Duolingo, aber besser zum Lernen.",
   rbeTitle: "Robots Building Education",
   rbeDescription:
-    "Dein persönlicher Programmiercoach. Lerne schnell die Grundlagen der Softwareentwicklung, um KI-Coding-Tools für deine Ideen zu nutzen.",
+    "Dein persönlicher Programmiercoach. Lerne schnell die Grundlagen der Softwareentwicklung, damit du Coding-Agenten nutzen und deine Ideen umsetzen kannst.",
   citizenshipTitle: "Checkliste für doppelte Staatsbürgerschaft (100% kostenlos)",
   citizenshipDescription:
     "Finde deinen Weg zur mexikanischen Doppelstaatsbürgerschaft, speichere deinen Fortschritt und organisiere die nötigen Dokumente.",

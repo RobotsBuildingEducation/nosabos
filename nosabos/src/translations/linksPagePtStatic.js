@@ -23,10 +23,10 @@ export const LINKS_PAGE_PT_STATIC = {
   buyApps: "Comprar apps",
   noSabosTitle: "Piyali",
   noSabosDescription:
-    "Seu tutor pessoal de idiomas. Aprenda e explore novos idiomas com ferramentas inteligentes para ajudar você a praticar.",
+    "Seu tutor pessoal de idiomas. Tão divertido quanto o Duolingo, mas melhor para aprender.",
   rbeTitle: "Robots Building Education",
   rbeDescription:
-    "Seu tutor pessoal de programação. Aprenda rapidamente os fundamentos de engenharia de software para começar a aproveitar ferramentas de IA para programar e construir suas ideias.",
+    "Seu tutor pessoal de programação. Aprenda rapidamente os fundamentos da engenharia de software para usar agentes de programação e construir suas ideias.",
   citizenshipTitle: "Checklist de dupla cidadania (100% grátis)",
   citizenshipDescription:
     "Encontre seu caminho para a dupla cidadania mexicana, salve seu progresso e organize os documentos necessários.",

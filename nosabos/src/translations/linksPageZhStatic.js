@@ -23,10 +23,10 @@ export const LINKS_PAGE_ZH_STATIC = {
   buyApps: "购买应用",
   noSabosTitle: "Piyali",
   noSabosDescription:
-    "你的个人语言导师。使用智能工具学习并探索新语言，帮助你持续练习。",
+    "你的私人语言导师。像多邻国一样有趣，但学习效果更好。",
   rbeTitle: "Robots Building Education",
   rbeDescription:
-    "你的个人编程导师。快速学习软件工程基础，开始利用 AI 编程工具构建自己的想法。",
+    "你的个人编程导师。快速学习软件工程基础，以便使用编程智能体构建自己的想法。",
   citizenshipTitle: "双重国籍清单（100% 免费）",
   citizenshipDescription:
     "找到你的墨西哥双重国籍路径，保存进度，并整理所需文件。",
