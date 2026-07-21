@@ -3,10 +3,14 @@ import assert from "node:assert/strict";
 
 import {
   applyAuthoredTargetCurriculum,
+  buildLessonCurriculumAudit,
   buildLessonAgenda,
   buildUnitQuizBlueprint,
   buildUnitCurriculumSnapshot,
   getCurriculumIntegrityIssues,
+  getAgendaGoal,
+  getAgendaTargetForms,
+  getAgendaTargetRole,
   getLessonAgenda,
   getLocalizedAgendaLabel,
   isCurriculumPayloadGrounded,
@@ -116,6 +120,37 @@ test("agenda derivation ignores placeholders and uses concrete mode prompts", ()
   );
   assert.equal(agenda.some((item) => item.targetConcept === "form"), false);
   assert.equal(agenda.some((item) => item.targetConcept === "use"), false);
+  assert.deepEqual(
+    agenda.map((item) => getAgendaTargetRole(item)),
+    ["goal", "goal"],
+  );
+  agenda.forEach((item) => assert.deepEqual(getAgendaTargetForms(item), []));
+});
+
+test("legacy activity instructions are capability goals, never exact target forms", () => {
+  const lesson = {
+    id: "lesson-reading-safety",
+    modes: ["reading", "realtime"],
+    content: {
+      reading: {
+        prompt: "Read a short description of people in a neighborhood",
+      },
+      realtime: {
+        successCriteria: "The learner describes one person.",
+      },
+    },
+  };
+
+  const agenda = getLessonAgenda(withCanonicalLessonAgenda(lesson));
+  assert.deepEqual(
+    agenda.map((item) => getAgendaGoal(item)),
+    [
+      "Read a short description of people in a neighborhood",
+      "The learner describes one person.",
+    ],
+  );
+  assert.equal(agenda.every((item) => getAgendaTargetRole(item) === "goal"), true);
+  assert.equal(agenda.every((item) => getAgendaTargetForms(item).length === 0), true);
 });
 
 test("non-Spanish practice paths do not expose Spanish-authored agenda examples", () => {
@@ -383,7 +418,14 @@ test("authored target-language curriculum keeps the per-objective sequence", () 
   assert.equal(agenda[0].id, `target-it-${lesson.agenda.items[0].id}`);
   assert.equal(agenda[0].targetConcept, "lunedì, martedì");
   assert.deepEqual(agenda[0].targetExamples, ["Oggi è lunedì."]);
-  assert.equal(agenda[0].label.de, "Im Kontext verwenden: Oggi è lunedì.");
+  // The Spanish-authored base concept survives adaptation as a gloss for
+  // Spanish-support learners of any target language.
+  assert.equal(agenda[0].sourceConcept, "lunes, martes");
+  // Short-chunk concepts stay the learner-facing objective in every support
+  // language; the example sentence is context, not the drill target (it was
+  // being promoted into the label, which made Pre-A1 tutors drill full
+  // conjugated sentences).
+  assert.equal(agenda[0].label.de, "Im Kontext verwenden: lunedì, martedì");
   assert.equal(agenda[1].targetConcept, "oggi, domani");
   // The unauthored grammar objective still collapses to the generic adapter.
   assert.equal(agenda[2].source, "target-language-adapter");
@@ -451,6 +493,83 @@ test("Italian A1 lessons run on authored curriculum without Spanish leakage", ()
   quizBlueprint.questionTargets.forEach((target) => {
     assert.doesNotMatch(target.targetConcept, spanishTokens);
   });
+});
+
+test("People Around Me uses localized capability goals instead of spoken metadata", () => {
+  const targets = ["es", "en", "it", "de", "ja"];
+  targets.forEach((targetLang) => {
+    const unit = getMultiLevelLearningPath(targetLang, ["Pre-A1"]).find(
+      (candidate) => candidate.id === "unit-pre-a1-people",
+    );
+    const lesson = unit.lessons.find(
+      (candidate) => candidate.id === "lesson-pre-a1-1-3",
+    );
+    const agenda = getLessonAgenda(lesson, { unit, targetLang });
+
+    assert.equal(lesson.agenda.version, 2);
+    assert.deepEqual(
+      agenda.map((item) => getAgendaGoal(item)),
+      [
+        "Identify familiar people and their relationships in a short neighborhood description",
+        "Produce one short, understandable description of a familiar person",
+      ],
+    );
+    assert.equal(
+      agenda.every((item) => getAgendaTargetRole(item) === "goal"),
+      true,
+    );
+    assert.equal(
+      agenda.every((item) => getAgendaTargetForms(item).length === 0),
+      true,
+    );
+    assert.equal(
+      agenda.every(
+        (item) =>
+          item.targetExamples.length > 0 &&
+          item.activityBrief &&
+          item.evidence?.criteria,
+      ),
+      true,
+    );
+    SUPPORT_LANGUAGES.forEach((supportLang) => {
+      const labels = agenda.map((item) =>
+        getLocalizedAgendaLabel(item, supportLang),
+      );
+      assert.equal(labels.every(Boolean), true);
+      assert.equal(
+        labels.some((label) =>
+          /Read a short description of people in a neighborhood/i.test(label),
+        ),
+        false,
+      );
+    });
+  });
+});
+
+test("curriculum audit separates release blockers from manual review candidates", () => {
+  const units = getMultiLevelLearningPath("es", ["Pre-A1"]);
+  const audit = buildLessonCurriculumAudit(units, {
+    requiredSupportLanguages: SUPPORT_LANGUAGES,
+    targetLang: "es",
+  });
+
+  assert.equal(audit.lessonCount > 0, true);
+  assert.equal(audit.itemCount > 0, true);
+  assert.deepEqual(audit.blockers, []);
+  assert.equal(
+    audit.reviewCandidates.some(
+      (finding) => finding.type === "legacy_fallback_objective",
+    ),
+    true,
+  );
+  assert.equal(
+    audit.reviewCandidates.some(
+      (finding) =>
+        finding.lessonId === "lesson-pre-a1-1-3" &&
+        finding.type === "legacy_fallback_objective",
+    ),
+    false,
+  );
 });
 
 test("the full curriculum passes agenda and support-language integrity", () => {

@@ -26,6 +26,11 @@ const MODE_KIND = {
   game: "communication",
 };
 
+const AGENDA_TARGET_ROLES = new Set(["form", "goal"]);
+const EXACT_FORM_MODES = new Set(["vocabulary"]);
+const INSTRUCTIONAL_OBJECTIVE_PATTERN =
+  /^(?:ask|complete|demonstrate|describe|discuss|follow|interpret|learn|listen|practice|read|repeat|roleplay|tell|the learner|the user|use only|write)\b/i;
+
 const MODE_LABELS = {
   en: {
     vocabulary: "Use in context",
@@ -287,6 +292,67 @@ const extractItemText = (value) => {
   );
 };
 
+const normalizeTextList = (value) =>
+  uniqueText(
+    (Array.isArray(value) ? value : value ? [value] : [])
+      .map(extractItemText)
+      .filter(Boolean),
+  );
+
+export function isInstructionalLessonObjective(value) {
+  const text = cleanText(value);
+  const words = text.match(/[\p{L}\p{M}\p{N}]+/gu) || [];
+  if (words.length <= 1) return false;
+  // Comma/slash-separated vocabulary lists may legitimately begin with an
+  // English verb such as "read, paint, cook, dance".
+  if (/[,/|]/.test(text) && words.length <= 12) return false;
+  return INSTRUCTIONAL_OBJECTIVE_PATTERN.test(text);
+}
+
+export function getAgendaTargetRole(item = {}) {
+  if (AGENDA_TARGET_ROLES.has(item.targetRole)) return item.targetRole;
+  if (normalizeTextList(item.targetForms).length) return "form";
+
+  const mode =
+    item.modes?.find((candidate) => MODE_KIND[candidate]) ||
+    Object.entries(MODE_KIND).find(([, kind]) => kind === item.kind)?.[0] ||
+    "";
+  const concept = cleanText(item.targetConcept);
+  return EXACT_FORM_MODES.has(mode) && !isInstructionalLessonObjective(concept)
+    ? "form"
+    : "goal";
+}
+
+export function getAgendaTargetForms(item = {}) {
+  const explicit = normalizeTextList(item.targetForms);
+  if (explicit.length) return explicit;
+  if (getAgendaTargetRole(item) !== "form") return [];
+  return normalizeTextList(item.targetConcept);
+}
+
+export function getAgendaGoal(item = {}) {
+  return (
+    cleanText(item.goal) ||
+    cleanText(item.targetConcept) ||
+    getDisplayText(item.label, "en")
+  );
+}
+
+function normalizeAgendaItemSemantics(item = {}) {
+  const targetRole = getAgendaTargetRole(item);
+  const targetForms =
+    targetRole === "form"
+      ? getAgendaTargetForms(item)
+      : normalizeTextList(item.targetForms);
+  return {
+    ...item,
+    goal: getAgendaGoal(item),
+    targetRole,
+    targetForms,
+    activityBrief: cleanText(item.activityBrief),
+  };
+}
+
 export function isInvalidLessonObjective(value) {
   const normalized = normalizeObjectiveKey(value);
   if (!normalized) return true;
@@ -382,18 +448,28 @@ function buildObjectiveLabel(mode, objective, lesson) {
   return label;
 }
 
-function createAgendaItem({ lesson, mode, objective, index, source }) {
+function createAgendaItem({ lesson, mode, objective, index, source, block }) {
   const kind = MODE_KIND[mode] || "communication";
   const concept = cleanText(objective);
-  return {
+  const targetRole =
+    EXACT_FORM_MODES.has(mode) &&
+    source === "explicit" &&
+    !isInstructionalLessonObjective(concept)
+      ? "form"
+      : "goal";
+  return normalizeAgendaItemSemantics({
     id: `${mode}-${slugify(concept)}-${index + 1}`,
     kind,
     modes: [mode],
     label: buildObjectiveLabel(mode, concept, lesson),
+    goal: concept,
     targetConcept: concept,
+    targetRole,
+    targetForms: targetRole === "form" ? [concept] : [],
+    activityBrief: cleanText(block?.prompt || block?.scenario || ""),
     evidence: { ...(EVIDENCE_BY_MODE[mode] || EVIDENCE_BY_MODE.realtime) },
     source: source || "derived",
-  };
+  });
 }
 
 export function buildLessonAgenda(lesson, { unit = null } = {}) {
@@ -418,6 +494,7 @@ export function buildLessonAgenda(lesson, { unit = null } = {}) {
           objective: objective.text,
           index,
           source: objective.source,
+          block,
         }),
       );
     });
@@ -485,12 +562,14 @@ export function getLessonAgenda(
       ? buildLessonAgenda(lesson, { unit }).items
       : [];
 
-  const filteredItems = sourceItems.filter((item) => {
-    const concept = item?.targetConcept || getDisplayText(item?.label, "en");
-    if (!item?.id || isInvalidLessonObjective(concept)) return false;
-    if (!mode) return true;
-    return Array.isArray(item.modes) && item.modes.includes(mode);
-  });
+  const filteredItems = sourceItems
+    .map(normalizeAgendaItemSemantics)
+    .filter((item) => {
+      const concept = item?.targetConcept || getDisplayText(item?.label, "en");
+      if (!item?.id || isInvalidLessonObjective(concept)) return false;
+      if (!mode) return true;
+      return Array.isArray(item.modes) && item.modes.includes(mode);
+    });
 
   const normalizedTarget = String(targetLang || "")
     .trim()
@@ -518,6 +597,7 @@ export function getLessonAgenda(
     const {
       targetConceptByLanguage,
       targetExamplesByLanguage,
+      targetFormsByLanguage,
       ...portableItem
     } = item;
     const authoredTargetConcept = cleanText(
@@ -528,38 +608,67 @@ export function getLessonAgenda(
     )
       ? targetExamplesByLanguage[normalizedTarget].map(cleanText).filter(Boolean)
       : [];
+    const authoredTargetForms = normalizeTextList(
+      targetFormsByLanguage?.[normalizedTarget],
+    );
 
     if (authoredTargetConcept) {
-      const label = Object.fromEntries(
+      // Word/short-chunk concepts ("mom", "lunedì, martedì") ARE the
+      // learner-facing objective — promoting their fuller example sentence
+      // ("Dad is working.") made the agenda preview and the Tutor drill full
+      // conjugated sentences at Pre-A1. Only prose criteria concepts (English
+      // authoring scaffolding like "Read a dialogue and...") still swap in
+      // the target-language example so English never leaks into a
+      // non-English support UI.
+      const conceptIsShortPhrase =
+        authoredTargetConcept.length <= 32 &&
+        authoredTargetConcept.split(/\s+/).length <= 4;
+      const targetRole = getAgendaTargetRole(portableItem);
+      const targetForms = authoredTargetForms.length
+        ? authoredTargetForms
+        : portableItem.useExamplesAsTargetForms
+          ? authoredTargetExamples
+          : targetRole === "form"
+            ? [authoredTargetConcept]
+            : [];
+      const adaptedLabel = Object.fromEntries(
         Object.entries(MODE_LABELS).map(([lang, labels]) => [
           lang,
           `${labels[objectiveMode] || labels.realtime}: ${
-            // Authored prose concepts intentionally contain English authoring
-            // scaffolding (for example, "Read a dialogue and..."). That is
-            // useful to the Tutor, but it must not leak into a non-English
-            // support-language UI. Every authored curriculum entry has a
-            // target-language example, so use that as the learner-facing
-            // teaching target after the localized action label. English
-            // support keeps the fuller authored concept.
-            lang === "en"
+            lang === "en" || conceptIsShortPhrase
               ? authoredTargetConcept
               : authoredTargetExamples[0] || authoredTargetConcept
           }`,
         ]),
       );
-      adaptedItems.push({
+      const label = portableItem.preserveCanonicalGoal
+        ? portableItem.label
+        : adaptedLabel;
+      adaptedItems.push(normalizeAgendaItemSemantics({
         ...portableItem,
         id: `target-${normalizedTarget}-${item.id}`,
         label,
+        goal: portableItem.preserveCanonicalGoal
+          ? portableItem.goal
+          : authoredTargetConcept,
         targetConcept: authoredTargetConcept,
         targetExamples: authoredTargetExamples,
+        targetRole,
+        targetForms,
+        // The pre-adaptation concept is the Spanish-authored base curriculum
+        // ("papá" for the English item "dad") — a free support-language gloss
+        // for Spanish-support learners of any target language.
+        sourceConcept: cleanText(item.targetConcept),
         sourceModes,
         source: "target-language-authored",
+        sourceObjectiveSource: portableItem.source || "authored-agenda",
         sourceAgendaItemIds: [item.sourceAgendaItemId || item.id],
         evidence: {
-          ...(EVIDENCE_BY_MODE[objectiveMode] || EVIDENCE_BY_MODE.realtime),
+          ...(portableItem.evidence ||
+            EVIDENCE_BY_MODE[objectiveMode] ||
+            EVIDENCE_BY_MODE.realtime),
         },
-      });
+      }));
       return;
     }
 
@@ -618,19 +727,23 @@ export function getLessonAgenda(
         ];
       }),
     );
-    const groupEntry = {
+    const groupEntry = normalizeAgendaItemSemantics({
       ...portableItem,
       id: `target-${normalizedTarget}-${sourceLessonId}-${objectiveMode}`,
       label,
+      goal: `${label.en}. Complete this objective in the selected practice language.`,
       targetConcept: `${label.en}. Complete this objective in the selected practice language.`,
       targetExamples: [],
+      targetRole: "goal",
+      targetForms: [],
       sourceModes,
       source: "target-language-adapter",
+      sourceObjectiveSource: portableItem.source || "unknown",
       sourceAgendaItemIds: [item.sourceAgendaItemId || item.id],
       evidence: {
         ...(EVIDENCE_BY_MODE[objectiveMode] || EVIDENCE_BY_MODE.realtime),
       },
-    };
+    });
     groupedItems.set(groupKey, groupEntry);
     adaptedItems.push(groupEntry);
   });
@@ -738,6 +851,8 @@ export function buildUnitQuizBlueprint(
       sourceLessonId: item.sourceLessonId,
       kind: item.kind,
       modes: item.modes,
+      targetRole: getAgendaTargetRole(item),
+      targetForms: getAgendaTargetForms(item),
       targetConcept: item.targetConcept,
       evidence: item.evidence,
     })),
@@ -770,8 +885,14 @@ export function buildCurriculumPromptContext(
     id: item.sourceAgendaItemId || item.id,
     sourceLessonId: item.sourceLessonId || "",
     kind: item.kind || "",
-    objective:
-      cleanText(item.targetConcept) || getDisplayText(item.label, "en"),
+    goal: getAgendaGoal(item),
+    targetRole: getAgendaTargetRole(item),
+    ...(getAgendaTargetForms(item).length
+      ? { targetForms: getAgendaTargetForms(item).slice(0, 8) }
+      : {}),
+    ...(cleanText(item.activityBrief)
+      ? { activityBrief: cleanText(item.activityBrief) }
+      : {}),
     evidence: cleanText(item.evidence?.criteria),
     ...(Array.isArray(item.targetExamples) && item.targetExamples.length
       ? { examples: item.targetExamples.slice(0, 3) }
@@ -790,7 +911,7 @@ export function buildCurriculumPromptContext(
     curriculumContext?.targetLanguageAdapted
       ? "The source curriculum was authored for another practice language. Ignore legacy source-language examples in lesson content and create all examples in the selected target language."
       : "",
-    "Build the activity from these concrete objectives. Teaching formats are not objectives. Do not introduce unrelated curriculum.",
+    "Build the activity from these curriculum goals. Only targetForms are exact language for the learner to produce; goals and activityBriefs are private instructions and must never be presented as phrases to repeat. Do not introduce unrelated curriculum.",
   ]
     .filter(Boolean)
     .join("\n");
@@ -799,7 +920,7 @@ export function buildCurriculumPromptContext(
 /**
  * Attach authored practice-language adaptations onto a learning path's agenda
  * items. `data` is keyed by source lesson id → agenda item id → { concept,
- * examples }. Review lessons reference source items via sourceLessonId /
+ * examples, forms }. Review lessons reference source items via sourceLessonId /
  * sourceAgendaItemId, so their items pick up the same authored entries.
  * Mutates (and returns) the path, which is always a fresh clone per language.
  */
@@ -835,6 +956,13 @@ export function applyAuthoredTargetCurriculum(pathByLevel, targetLang, data) {
             item.targetExamplesByLanguage = {
               ...item.targetExamplesByLanguage,
               [normalizedTarget]: examples,
+            };
+          }
+          const forms = normalizeTextList(entry.forms);
+          if (forms.length) {
+            item.targetFormsByLanguage = {
+              ...item.targetFormsByLanguage,
+              [normalizedTarget]: forms,
             };
           }
         });
@@ -897,6 +1025,133 @@ export function getCurriculumIntegrityIssues(
     });
   });
   return issues;
+}
+
+export function buildLessonCurriculumAudit(
+  units = [],
+  { requiredSupportLanguages = [], targetLang = "" } = {},
+) {
+  const report = {
+    targetLang,
+    lessonCount: 0,
+    itemCount: 0,
+    sourceCounts: {},
+    roleCounts: { form: 0, goal: 0 },
+    blockers: [],
+    reviewCandidates: [],
+  };
+
+  const addFinding = (bucket, type, unit, lesson, item, extra = {}) => {
+    report[bucket].push({
+      type,
+      level: unit?.cefrLevel || unit?.level || "",
+      unitId: unit?.id || "",
+      lessonId: lesson?.id || "",
+      lessonTitle: getDisplayText(lesson?.title, "en"),
+      agendaItemId: item?.id || "",
+      mode: item?.modes?.[0] || "",
+      source: item?.source || "unknown",
+      goal: getAgendaGoal(item),
+      ...extra,
+    });
+  };
+
+  (Array.isArray(units) ? units : []).forEach((unit) => {
+    (unit?.lessons || []).forEach((lesson) => {
+      if (!lesson || isReviewLesson(lesson)) return;
+      report.lessonCount += 1;
+      const agenda = getLessonAgenda(lesson, { unit, targetLang });
+      agenda.forEach((item) => {
+        report.itemCount += 1;
+        const source = item.source || "unknown";
+        const sourceObjectiveSource = item.sourceObjectiveSource || source;
+        const role = getAgendaTargetRole(item);
+        const forms = getAgendaTargetForms(item);
+        report.sourceCounts[source] = (report.sourceCounts[source] || 0) + 1;
+        report.roleCounts[role] = (report.roleCounts[role] || 0) + 1;
+
+        if (role === "form" && !forms.length) {
+          addFinding("blockers", "exact_target_without_forms", unit, lesson, item);
+        }
+        forms.forEach((form) => {
+          if (isInstructionalLessonObjective(form)) {
+            addFinding(
+              "blockers",
+              "instruction_used_as_exact_target",
+              unit,
+              lesson,
+              item,
+              { form },
+            );
+          }
+        });
+        if (!cleanText(item.evidence?.criteria)) {
+          addFinding("blockers", "missing_evidence", unit, lesson, item);
+        }
+
+        if (source === "target-language-adapter") {
+          addFinding(
+            "reviewCandidates",
+            "generic_target_language_adapter",
+            unit,
+            lesson,
+            item,
+          );
+        } else if (
+          ["prompt", "successCriteria", "scenario", "topic", "lesson-description"].includes(
+            sourceObjectiveSource,
+          )
+        ) {
+          addFinding(
+            "reviewCandidates",
+            "legacy_fallback_objective",
+            unit,
+            lesson,
+            item,
+          );
+        } else if (role === "goal" && isInstructionalLessonObjective(getAgendaGoal(item))) {
+          addFinding(
+            "reviewCandidates",
+            "instructional_goal_needs_author_review",
+            unit,
+            lesson,
+            item,
+          );
+        }
+
+        const englishLabel = getDisplayText(item.label, "en");
+        requiredSupportLanguages.forEach((lang) => {
+          const localizedLabel = getDisplayText(item.label, lang);
+          if (!localizedLabel) {
+            addFinding(
+              "blockers",
+              "missing_support_label",
+              unit,
+              lesson,
+              item,
+              { lang },
+            );
+          } else if (
+            lang !== "en" &&
+            englishLabel.length >= 12 &&
+            normalizeObjectiveKey(localizedLabel) ===
+              normalizeObjectiveKey(englishLabel)
+          ) {
+            addFinding(
+              "reviewCandidates",
+              "support_label_matches_english",
+              unit,
+              lesson,
+              item,
+              { lang },
+            );
+          }
+        });
+      });
+    });
+  });
+
+  return report;
 }
 
 export const INVALID_LESSON_OBJECTIVE_LABELS = Object.freeze([

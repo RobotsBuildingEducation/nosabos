@@ -137,8 +137,14 @@ import {
   buildOpenAIStarterAgendaTurnInstructions,
   buildOpenAIRepairTurnInstructions,
   buildOpenAITutorTurnVerdictDirective,
+  buildOpenAITeachTurnInstructions,
+  buildOpenAIGoalTurnInstructions,
 } from "../utils/openaiTutorPrompts";
+import { getOpenAITutorLanguageAnchor } from "../utils/openaiTutorLanguageAnchor";
+import { getLocalizedTutorTaskFormatSentence } from "../utils/tutorTaskFormatCopy";
 import {
+  getAgendaGoal,
+  getAgendaTargetForms,
   getLessonAgenda,
   getLocalizedAgendaLabel,
 } from "../utils/lessonCurriculum";
@@ -296,20 +302,10 @@ const TUTOR_LESSON_XP_REQUIRED_MAX = 90;
 const TUTOR_TURN_XP_RANGE = { min: 3, max: 7 };
 // Ephemeral repair sessions are deliberately short: ~2-3 successful turns.
 const TUTOR_REPAIR_LESSON_XP_REQUIRED = 12;
-const TUTOR_TASK_VARIATIONS = [
-  "Ask one tiny meaning-check question about the current lesson concept.",
-  "Give a fill-in-the-blank prompt using a current lesson phrase.",
-  "Offer two short choices and ask the learner to pick the correct one.",
-  "Ask the learner to transform or personalize a current lesson phrase.",
-  "Set up a tiny realistic scenario and ask for one short reply.",
-  "Ask the learner to combine two already covered lesson concepts.",
-];
-const TUTOR_PRE_A1_TASK_VARIATIONS = [
-  "Ask one yes/no meaning check about the current word or phrase.",
-  "Give a one-word fill-in-the-blank using the current lesson item.",
-  "Offer two familiar words and ask the learner to choose one.",
-  "Give one tiny scenario whose answer is the current 1-3 word phrase.",
-];
+// Task-format sentences now live in utils/tutorTaskFormatCopy.js, localized
+// per support language: English-authored formats kept surfacing as spoken
+// English inside support-language lessons on OpenAI. Gemini keeps reading the
+// English set via getTutorTaskVariationSentence below.
 const TUTOR_SIGNATURE_EXPERIENCES = {
   microMission: {
     label: "Micro mission",
@@ -1051,15 +1047,15 @@ function buildTutorRepairLessonFromFocus(focus) {
   };
 }
 
+function getTutorTaskVariationSentence(turnCount = 0, selectedLevel = "A1") {
+  return getLocalizedTutorTaskFormatSentence(turnCount, selectedLevel, "en");
+}
+
 function getTutorTaskVariationInstruction(turnCount = 0, selectedLevel = "A1") {
-  const variations =
-    selectedLevel === "Pre-A1"
-      ? TUTOR_PRE_A1_TASK_VARIATIONS
-      : TUTOR_TASK_VARIATIONS;
-  const index =
-    Math.abs(Number.isFinite(turnCount) ? turnCount : 0) %
-    variations.length;
-  return `CURRENT TASK FORMAT: ${variations[index]}`;
+  return `CURRENT TASK FORMAT: ${getTutorTaskVariationSentence(
+    turnCount,
+    selectedLevel,
+  )}`;
 }
 
 function getTutorSignatureExperienceInstruction({
@@ -1091,6 +1087,40 @@ function getTutorSignatureExperienceInstruction({
       ? "PRE-A1 LIMIT: The experience must use one already-taught word or one 1-3 word phrase. Never require an explanation, transformation, personalization, combined sentence, open-ended answer, tense change, or new vocabulary."
       : "",
     "If the recent on-screen context shows an experience already in progress, continue or complete it before starting a new one.",
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+// OpenAI variant of the signature-experience layer: same level pools and
+// rotation as Gemini's, compressed to one deliverable line (no labels, no
+// overlay preamble — mini speaks labelled meta-structure aloud). The Pre-A1
+// limit rides inline so the interactive layer can never outrun the level.
+function getOpenAITutorSignatureExperienceLine({
+  selectedLevel = "A1",
+  turnCount = 0,
+  isStarterLesson = false,
+  supportLanguageName = "the support language",
+} = {}) {
+  const level = TUTOR_CEFR_LEVELS.includes(selectedLevel)
+    ? selectedLevel
+    : "A1";
+  const pool =
+    TUTOR_SIGNATURE_EXPERIENCE_POOLS[level] ||
+    TUTOR_SIGNATURE_EXPERIENCE_POOLS.A1;
+  const turn = Math.abs(Number.isFinite(turnCount) ? turnCount : 0);
+  const card =
+    TUTOR_SIGNATURE_EXPERIENCES[pool[turn % pool.length]] ||
+    TUTOR_SIGNATURE_EXPERIENCES.microMission;
+
+  return [
+    `Light interaction layer for this turn, kept inside the current item and delivered in ${supportLanguageName}: ${card.instruction}`,
+    isStarterLesson
+      ? "The fixed phrase agenda stays the source of truth; use this only around the current phrase."
+      : "",
+    level === "Pre-A1"
+      ? "It must use one already-taught word or one 1-3 word chunk — never an explanation, transformation, personalization, combined sentence, open-ended answer, tense change, or new vocabulary."
+      : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -1426,19 +1456,28 @@ function getTutorLessonFocusAgendaItems(
   targetLang = "",
   unit = null,
 ) {
-  return getLessonAgenda(lesson, { unit, targetLang }).map((item) => ({
-    id: item.id,
-    phrase: item.targetConcept || getLocalizedAgendaLabel(item, "en"),
-    label: getLocalizedAgendaLabel(item, supportLang),
-    evidence: item.evidence,
-    kind: item.kind,
-    modes: item.modes,
-    examples: Array.isArray(item.targetExamples) ? item.targetExamples : [],
-    // Generic adapter items describe the objective in English instead of
-    // carrying a target-language phrase; phrase matching and ASR keywords
-    // must skip those (authored per-language items are real phrases).
-    isGenericAdapterItem: item.source === "target-language-adapter",
-  }));
+  return getLessonAgenda(lesson, { unit, targetLang }).map((item) => {
+    const targetForms = getAgendaTargetForms(item);
+    return {
+      id: item.id,
+      // Only an explicitly typed target form is allowed onto the exact-phrase
+      // path. Goals, prompts, and success criteria are private tutor context.
+      phrase: targetForms[0] || "",
+      targetForms,
+      goal: getAgendaGoal(item),
+      label: getLocalizedAgendaLabel(item, supportLang),
+      activityBrief: item.activityBrief || "",
+      // Spanish-authored base concept ("papá" for "dad") — a support-language
+      // gloss when the support language is Spanish.
+      sourceConcept: item.sourceConcept || "",
+      evidence: item.evidence,
+      kind: item.kind,
+      modes: item.modes,
+      examples: Array.isArray(item.targetExamples) ? item.targetExamples : [],
+      isExactTargetItem: targetForms.length > 0,
+      isGenericAdapterItem: item.source === "target-language-adapter",
+    };
+  });
 }
 
 function getTutorLessonPreviewAgendaItems(
@@ -1504,7 +1543,7 @@ function buildTutorCompletedAgendaData({
       ).map((item) => ({
         id: item.id,
         task: item.label,
-        phrase: item.phrase,
+        phrase: item.phrase || item.label,
         meaning: getTutorLessonAgendaSubtitle(lesson, unit, normalizedSupport),
         completed: forceComplete,
       }));
@@ -5375,11 +5414,12 @@ export default function Tutor({
     const snapshot = getOpenAIRegularTutorAgendaSnapshot();
     if (!snapshot?.currentItem) return [];
     const tLang = targetLangRef.current || targetLang || "es";
-    // Generic adapter objectives are English instructions, not phrases the
-    // learner will say; only examples (authored target-language data) count.
-    const candidates = snapshot.currentItem.isGenericAdapterItem
-      ? snapshot.currentItem.examples || []
-      : [snapshot.currentItem.phrase, ...(snapshot.currentItem.examples || [])];
+    // Local phrase matching may advance only exact-form objectives. Capability
+    // goals require the semantic judge to verify their evidence; repeating a
+    // reading example is not automatically reading comprehension.
+    const candidates = snapshot.currentItem.isExactTargetItem
+      ? snapshot.currentItem.targetForms
+      : [];
     return compactUnique(candidates).filter(
       (phrase) =>
         phrase && isTutorPracticePhraseAllowedForTarget(phrase, tLang),
@@ -5443,52 +5483,123 @@ export default function Tutor({
     return next.advancedItem;
   }
 
-  function buildOpenAIRegularTutorAgendaInstruction() {
+  // Regular lessons share the ONE teach-turn shape with the starter tutorial
+  // (buildOpenAITeachTurnInstructions) — the starter behaved flawlessly while
+  // this path drifted into target-language instructions and dry recitation,
+  // because it had its own all-English block with no support-language framing
+  // and no natural-introduction recipe. Gemini call sites pass no args and
+  // get state only (no verdict, no interaction layer).
+  function buildOpenAIRegularTutorAgendaInstruction({
+    isKickoff = false,
+    turnVerdict = null,
+  } = {}) {
     const snapshot = getOpenAIRegularTutorAgendaSnapshot();
     if (!snapshot) return "";
 
-    const completed = snapshot.completedItems
+    const isOpenAIProvider = realtimeProviderRef.current === "openai";
+    const level =
+      selectedTutorUnitRef.current?.cefrLevel ||
+      selectedTutorUnitRef.current?.level ||
+      conversationSettingsRef.current.proficiencyLevel ||
+      maxProficiencyLevel ||
+      "A1";
+    const supportCode = normalizeSupportLanguage(
+      supportLangRef.current || resolvedSupportLang,
+      DEFAULT_SUPPORT_LANGUAGE,
+    );
+    const supportName =
+      getLanguagePromptName(supportCode) || "the support language";
+    const targetName =
+      getLanguagePromptName(targetLangRef.current || targetLang || "es") ||
+      "the target language";
+    const completedPhrases = snapshot.completedItems
       .map((item) => item.phrase || item.label)
-      .join(", ");
+      .filter(Boolean);
+    const completed = completedPhrases.join(", ");
+    const verdictLine =
+      isOpenAIProvider && (isKickoff || turnVerdict)
+        ? buildOpenAITutorTurnVerdictDirective({
+            isKickoff,
+            turnVerdict,
+            supportLanguageName: supportName,
+          })
+        : "";
+    const interactionLine = isOpenAIProvider
+      ? getOpenAITutorSignatureExperienceLine({
+          selectedLevel: level,
+          turnCount: turnCountRef.current,
+          supportLanguageName: supportName,
+        })
+      : "";
+    const sequenceLine =
+      "The lesson runs strictly in order: stay on this item — through corrections and retries — until the app advances the sequence; do not preview later topics or re-quiz previously covered items. The review comes only after every objective is done.";
 
     if (snapshot.phase === "review") {
       return [
         "# Current lesson state",
         "Phase: review. Every lesson objective has been taught in order; now consolidate them.",
         `Covered material: ${completed}.`,
-        "Ask one small review task at a time using only the covered material: a tiny question, an either/or choice, a blank to complete, or a one-line scenario. Elicit the learner's production — do not say the answer first and ask for a repeat.",
+        verdictLine,
+        "Ask one small review task at a time using only the covered material: a tiny question, an either/or choice, a blank to complete, or a one-line scenario.",
+        // Review is a quiz, not re-teaching (Gemini parity): the answer and
+        // its meaning stay out of the prompt so the learner retrieves it.
+        "Quiz from memory: do not dictate what to say, do not speak the answer first, and do not restate its meaning right before the prompt — the learner must retrieve it themselves.",
+        // The format sentence is authored IN the support language (see
+        // tutorTaskFormatCopy.js) — English-authored formats surfaced as
+        // spoken English inside support-language lessons.
+        `Format for this turn, asked and explained in ${supportName}: ${getLocalizedTutorTaskFormatSentence(
+          turnCountRef.current,
+          level,
+          supportCode,
+        )}`,
         "Do not introduce new curriculum. The app decides when the lesson ends; keep reviewing until it does.",
-      ].join("\n");
+      ]
+        .filter(Boolean)
+        .join("\n");
     }
 
     const currentPhrase = snapshot.currentItem?.phrase || "";
     const currentLabel = snapshot.currentItem?.label || "";
-    const hasDistinctMeaning =
-      currentPhrase &&
-      currentLabel &&
-      currentLabel.trim().toLowerCase() !== currentPhrase.trim().toLowerCase();
-    const current = hasDistinctMeaning
-      ? `"${currentPhrase}" (meaning: "${currentLabel}")`
-      : `"${currentPhrase || currentLabel}"`;
-    // Evidence criteria are English author-notes; they ride along only when
-    // there is no concrete phrase to anchor the objective. With a phrase
-    // present they add nothing the tutor needs, and every extra line of
-    // English state nudged mini toward English narration and English-accented
-    // readings of target words on non-English support pairs.
-    const evidenceCriteria = currentPhrase
-      ? ""
-      : snapshot.currentItem?.evidence?.criteria || "";
-    return [
-      "# Current lesson state",
-      "Phase: teach.",
-      `Current curriculum objective: ${current}.`,
-      evidenceCriteria ? `Evidence of success: ${evidenceCriteria}.` : "",
-      completed ? `Previously covered: ${completed}.` : "Previously covered: none.",
-      "Teach this objective in one natural tutor turn and give the learner one clear way to demonstrate it. If you use multiple choice, include one unambiguously correct answer grounded in the objective.",
-      "The lesson runs strictly in order: do not quiz or review previously covered items, and do not preview or drill later lesson topics. Stay with the current objective — through corrections and retries if needed — until the app advances the sequence; the review comes only after every objective is done.",
-    ]
-      .filter(Boolean)
-      .join("\n");
+    if (currentPhrase) {
+      return buildOpenAITeachTurnInstructions({
+        isKickoff,
+        turnVerdict,
+        phrase: currentPhrase,
+        // The base curriculum is Spanish-authored, so Spanish-support
+        // learners get a real gloss ("papá" for "dad"); other support
+        // languages fall back to the shape's give-the-meaning-yourself line.
+        meaning:
+          supportCode === "es"
+            ? snapshot.currentItem?.sourceConcept || ""
+            : "",
+        completedPhrases,
+        interactionLayer: interactionLine,
+        // Early learners work in pieces; A2+ get the authored example as
+        // usage context instead.
+        chunkMultiWord: isTutorEarlyLevel(level),
+        contextExample: isTutorEarlyLevel(level)
+          ? ""
+          : snapshot.currentItem?.examples?.[0] || "",
+        sequenceLine,
+        targetLanguageName: targetName,
+        supportLanguageName: supportName,
+      });
+    }
+
+    return buildOpenAIGoalTurnInstructions({
+      isKickoff,
+      turnVerdict,
+      label: currentLabel,
+      goal: snapshot.currentItem?.goal || currentLabel,
+      activityBrief: snapshot.currentItem?.activityBrief || "",
+      evidence: snapshot.currentItem?.evidence?.criteria || "",
+      examples: snapshot.currentItem?.examples || [],
+      completedItems: completedPhrases,
+      interactionLayer: interactionLine,
+      sequenceLine,
+      targetLanguageName: targetName,
+      supportLanguageName: supportName,
+    });
   }
 
   function getCurrentTutorInputLanguageCodes() {
@@ -5517,9 +5628,10 @@ export default function Tutor({
     const regularAgenda = getOpenAIRegularTutorAgendaSnapshot();
     if (regularAgenda?.currentItem) {
       const currentItem = regularAgenda.currentItem;
-      const keywordCandidates = currentItem.isGenericAdapterItem
-        ? currentItem.examples || []
-        : [currentItem.phrase || currentItem.label, ...(currentItem.examples || [])];
+      const keywordCandidates = [
+        ...(currentItem.targetForms || []),
+        ...(currentItem.examples || []),
+      ];
       const keywords = compactUnique(keywordCandidates)
         .filter((phrase) => isTutorPracticePhraseAllowedForTarget(phrase, tLang))
         .slice(0, 8);
@@ -5639,6 +5751,8 @@ export default function Tutor({
               initialInstructions: buildOpenAIResponseInstructionsPrefix(),
               responseInstructionsPrefix:
                 buildOpenAIResponseInstructionsPrefix(),
+              responseInstructionsSuffix:
+                buildOpenAIResponseInstructionsSuffix(),
               voice: openaiVoice,
               model: openaiModel,
               pauseMs: pauseMsRef.current,
@@ -6141,6 +6255,33 @@ export default function Tutor({
     });
   }
 
+  // Support-language output anchor, appended as the LAST line of every
+  // response's instructions (see openaiTutorLanguageAnchor.js). Only for the
+  // bands where the support language is the teaching voice: early levels and
+  // localized same-language mode. Mid/advanced tutor primarily in the target
+  // language, where the anchor would fight the intended immersion.
+  function buildOpenAIResponseInstructionsSuffix() {
+    const tLang = targetLangRef.current || targetLang || "es";
+    const supportCode = normalizeSupportLanguage(
+      supportLangRef.current || resolvedSupportLang,
+      DEFAULT_SUPPORT_LANGUAGE,
+    );
+    const tutorLessonDetails = buildTutorLessonContext(
+      selectedTutorLessonRef.current,
+      selectedTutorUnitRef.current,
+      supportCode,
+      tLang,
+    );
+    const selectedLevel =
+      tutorLessonDetails?.level ||
+      conversationSettingsRef.current.proficiencyLevel ||
+      maxProficiencyLevel ||
+      "A1";
+    const sameLanguage = supportCode === tLang;
+    if (!sameLanguage && !isTutorEarlyLevel(selectedLevel)) return "";
+    return getOpenAITutorLanguageAnchor(sameLanguage ? tLang : supportCode);
+  }
+
   // Routed repair (deep-seed): when the Daily Quest sends a tutor repair here,
   // both the kickoff and every followup instruction lead with this directive so
   // the model actually elicits the weak phrase(s) instead of going straight to
@@ -6285,12 +6426,14 @@ export default function Tutor({
         });
       }
       return [
-        "Start the lesson now with one warm, natural tutor turn.",
         // Rare fallback: a repair focus rides a regular lesson when no
         // ephemeral repair session could be built from the saved material.
         buildTutorRepairAgendaInstruction({ isKickoff: true }),
-        buildOpenAIRegularTutorAgendaInstruction(),
-        "Teach the current item as a skilled bilingual tutor would, and give the learner one clear next action.",
+        // The shared turn block carries the kickoff directive and the
+        // natural-introduction recipe; a bare fallback covers the edge where
+        // the lesson has no derivable agenda yet.
+        buildOpenAIRegularTutorAgendaInstruction({ isKickoff: true }) ||
+          `Start the lesson now with one warm, natural tutor turn in ${supportLanguageName}.`,
       ]
         .filter(Boolean)
         .join("\n");
@@ -6493,6 +6636,19 @@ export default function Tutor({
         reviewPhrases: TUTOR_STARTER_AGENDA_ITEMS.map((agendaItem) =>
           getTutorStarterItemModelPhrase(agendaItem, targetLang),
         ),
+        // Gemini-parity review rotation: one suggested quiz format per turn,
+        // authored in the support language so it cannot surface as English.
+        taskVariation: getLocalizedTutorTaskFormatSentence(
+          turnCountRef.current,
+          selectedLevel,
+          supportCode,
+        ),
+        interactionLayer: getOpenAITutorSignatureExperienceLine({
+          selectedLevel,
+          turnCount: turnCountRef.current,
+          isStarterLesson: true,
+          supportLanguageName,
+        }),
         targetLanguageName,
         supportLanguageName,
       });
@@ -6830,17 +6986,6 @@ export default function Tutor({
         turnCount: turnCountRef.current,
         isStarterLesson: isTutorStarterAgendaLesson(lesson),
       });
-    // Same deadpan verdict wording as the starter path — the only variant
-    // mini has stopped narrating aloud (its old regular-path sibling's "next
-    // teaching move" came back as a spoken English "let me take that as a
-    // next step and build on it" inside a Hindi-Spanish session).
-    const openAITurnVerdictInstruction =
-      realtimeProviderRef.current !== "openai"
-        ? ""
-        : buildOpenAITutorTurnVerdictDirective({
-            turnVerdict,
-            supportLanguageName,
-          });
 
     if (isTutorStarterAgendaLesson(lesson)) {
       return [
@@ -6876,14 +7021,17 @@ export default function Tutor({
       // target-hinted transcription garbles support-language speech into
       // pseudo-target text that pulled replies into the wrong language. There
       // is also no "respond to the learner" opener — mini voiced that kind of
-      // meta-direction as a spoken transition; the verdict directive already
-      // says how to react.
+      // meta-direction as a spoken transition; the verdict directive (embedded
+      // in the shared turn block) already says how to react.
       return [
         // Rare fallback: a repair focus rides a regular lesson when no
         // ephemeral repair session could be built from the saved material.
         buildTutorRepairAgendaInstruction(),
-        buildOpenAIRegularTutorAgendaInstruction(),
-        openAITurnVerdictInstruction,
+        buildOpenAIRegularTutorAgendaInstruction({ turnVerdict }) ||
+          buildOpenAITutorTurnVerdictDirective({
+            turnVerdict,
+            supportLanguageName,
+          }),
       ]
         .filter(Boolean)
         .join("\n");
@@ -6898,7 +7046,6 @@ export default function Tutor({
       teacherTalkLanguageInstruction,
       codeSwitchingAudioInstruction,
       userMessage ? `Latest learner transcript: "${userMessage}".` : "",
-      openAITurnVerdictInstruction,
       buildRecentOnScreenContextInstruction(),
       noWrapInstruction,
       varietyInstruction,
@@ -7076,6 +7223,9 @@ export default function Tutor({
     if (realtimeProviderRef.current === "openai") {
       dcRef.current.setResponseInstructionsPrefix?.(
         buildOpenAIResponseInstructionsPrefix(),
+      );
+      dcRef.current.setResponseInstructionsSuffix?.(
+        buildOpenAIResponseInstructionsSuffix(),
       );
     }
     const inputAudioTranscription = buildTutorInputTranscription({
@@ -8104,28 +8254,25 @@ export default function Tutor({
     const openAIAgenda = getOpenAIRegularTutorAgendaSnapshot();
     if (openAIAgenda?.currentItem) {
       const currentItem = openAIAgenda.currentItem;
-      const currentCandidates = currentItem.isGenericAdapterItem
-        ? currentItem.examples || []
-        : [
-            currentItem.phrase || currentItem.label,
-            ...(currentItem.examples || []),
-          ];
+      const currentCandidates = [
+        ...(currentItem.targetForms || []),
+        ...(currentItem.examples || []),
+      ];
       return compactUnique(currentCandidates).filter((phrase) =>
         isTutorPracticePhraseAllowedForTarget(phrase, currentTargetLang),
       );
     }
 
-    // Adapted agendas carry authored target-language phrases for non-Spanish
-    // practice, so the fallback no longer needs an es-only gate; generic
-    // adapter items stay excluded because they are English instructions.
+    // Only exact target forms are safe phrase fallbacks. Capability goals are
+    // judged against their evidence and never enter phrase matching.
     return getTutorLessonFocusAgendaItems(
       lesson,
       "en",
       currentTargetLang,
       selectedTutorUnitRef.current,
     )
-      .filter((item) => !item.isGenericAdapterItem)
-      .map((item) => item.phrase || item.label)
+      .filter((item) => item.isExactTargetItem)
+      .flatMap((item) => item.targetForms)
       .filter((phrase) =>
         isTutorPracticePhraseAllowedForTarget(phrase, currentTargetLang),
       );
@@ -8184,7 +8331,7 @@ export default function Tutor({
       tLang,
       selectedTutorUnitRef.current,
     )
-      .map((item) => item.phrase || item.label)
+      .map((item) => item.goal || item.label)
       .filter(Boolean)
       .slice(0, 10);
     // Sequence gate context: the app-owned agenda advances only on evidence
@@ -8245,7 +8392,7 @@ export default function Tutor({
         ? `Current agenda objective (the lesson sequence may only advance on evidence for THIS item): ${JSON.stringify(
             {
               objective:
-                currentObjectiveItem.phrase || currentObjectiveItem.label,
+                currentObjectiveItem.goal || currentObjectiveItem.label,
               evidence: currentObjectiveItem.evidence?.criteria || "",
             },
           )}`

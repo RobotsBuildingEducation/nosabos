@@ -26,10 +26,9 @@
 //
 // Model prompt sketch (per lesson batch): "You adapt a Spanish-practice
 // curriculum for learners practicing <language>. For each objective, give the
-// equivalent concept in <language> (same register as the source: word lists
-// stay word lists, patterns stay patterns, English task descriptions stay
-// English but reference <language> forms) and 1-3 short natural example
-// phrases in <language> a learner at <level> could say. Adapt, don't
+// equivalent goal in <language>, optional exact `forms` only when the learner
+// should produce those forms verbatim, and 1-3 short natural example phrases
+// in <language>. Activity instructions are goals, never forms. Adapt, don't
 // transliterate: pick the forms a native curriculum author would teach."
 
 import { readFile, writeFile } from "node:fs/promises";
@@ -87,7 +86,10 @@ function collectSourceLessons(pathByLevel, levels, curriculum) {
             id: item.id,
             kind: item.kind,
             modes: item.modes,
-            concept: item.targetConcept,
+            goal: curriculum.getAgendaGoal(item),
+            targetRole: curriculum.getAgendaTargetRole(item),
+            forms: curriculum.getAgendaTargetForms(item),
+            activityBrief: item.activityBrief || "",
           }));
         if (!items.length) continue;
         lessons.push({
@@ -124,7 +126,11 @@ function serializeCurriculum(lang, data) {
           const examples = (entry.examples || [])
             .map((example) => JSON.stringify(example))
             .join(", ");
-          return `    ${JSON.stringify(itemId)}: {\n      concept: ${JSON.stringify(entry.concept)},\n      examples: [${examples}],\n    },`;
+          const forms = (entry.forms || [])
+            .map((form) => JSON.stringify(form))
+            .join(", ");
+          const formsLine = forms ? `\n      forms: [${forms}],` : "";
+          return `    ${JSON.stringify(itemId)}: {\n      concept: ${JSON.stringify(entry.concept)},${formsLine}\n      examples: [${examples}],\n    },`;
         })
         .join("\n");
       return `  ${JSON.stringify(lessonId)}: {\n${itemLines}\n  },`;
@@ -223,12 +229,15 @@ async function runMerge(curriculumApi) {
       const examples = Array.isArray(entry?.examples)
         ? entry.examples.map((example) => String(example).trim()).filter(Boolean)
         : [];
+      const forms = Array.isArray(entry?.forms)
+        ? entry.forms.map((form) => String(form).trim()).filter(Boolean)
+        : [];
       if (merged[lessonId]?.[resolvedId] && !overwrite) {
         skipped += 1;
         continue;
       }
       merged[lessonId] = merged[lessonId] || {};
-      merged[lessonId][resolvedId] = { concept, examples };
+      merged[lessonId][resolvedId] = { concept, forms, examples };
       added += 1;
     }
   }

@@ -262,6 +262,83 @@ const baseLearningPath = withLocalizedSkillTreeText({
           xpRequired: 20,
           xpReward: 15,
           modes: ["reading", "realtime"],
+          agenda: {
+            version: 2,
+            items: [
+              {
+                // Keep the legacy ID during the schema migration so existing
+                // in-progress Tutor checkpoints remain valid.
+                id: "reading-read-a-short-description-of-people-in-a-neighborhood-1",
+                kind: "comprehension",
+                modes: ["reading"],
+                label: {
+                  en: "Identify familiar people in a short description",
+                  es: "Identifica personas conocidas en una descripción breve",
+                  pt: "Identifique pessoas conhecidas em uma descrição curta",
+                  it: "Identifica persone conosciute in una breve descrizione",
+                  fr: "Identifie des personnes connues dans une courte description",
+                  de: "Erkenne bekannte Personen in einer kurzen Beschreibung",
+                  ja: "短い説明の中で身近な人を見分ける",
+                  hi: "छोटे वर्णन में परिचित लोगों को पहचानें",
+                  ar: "تعرّف على الأشخاص المألوفين في وصف قصير",
+                  zh: "识别简短描述中的熟人",
+                },
+                goal:
+                  "Identify familiar people and their relationships in a short neighborhood description",
+                targetConcept:
+                  "Identify familiar people and their relationships in a short neighborhood description",
+                preserveCanonicalGoal: true,
+                targetRole: "goal",
+                targetForms: [],
+                targetExamples: [
+                  "Esta es mi amiga Ana.",
+                  "Ella es mi vecina.",
+                ],
+                activityBrief:
+                  "Present a two-sentence Pre-A1 description in the target language, then ask one simple meaning question",
+                evidence: {
+                  type: "identify",
+                  criteria:
+                    "The learner correctly identifies at least one person or relationship from the description",
+                },
+              },
+              {
+                id: "realtime-the-learner-uses-people-vocabulary-to-describe-someo-1",
+                kind: "communication",
+                modes: ["realtime"],
+                label: {
+                  en: "Describe one person you know",
+                  es: "Describe a una persona que conoces",
+                  pt: "Descreva uma pessoa que você conhece",
+                  it: "Descrivi una persona che conosci",
+                  fr: "Décris une personne que tu connais",
+                  de: "Beschreibe eine Person, die du kennst",
+                  ja: "知っている人を一人説明する",
+                  hi: "अपने परिचित किसी एक व्यक्ति का वर्णन करें",
+                  ar: "اوصف شخصًا واحدًا تعرفه",
+                  zh: "描述一个你认识的人",
+                },
+                goal:
+                  "Produce one short, understandable description of a familiar person",
+                targetConcept:
+                  "Produce one short, understandable description of a familiar person",
+                preserveCanonicalGoal: true,
+                targetRole: "goal",
+                targetForms: [],
+                targetExamples: [
+                  "Esta es mi amiga.",
+                  "Mi vecino es amable.",
+                ],
+                activityBrief:
+                  "Help the learner build one short personal description using familiar people vocabulary",
+                evidence: {
+                  type: "scenario_response",
+                  criteria:
+                    "The learner produces one understandable sentence containing a people word",
+                },
+              },
+            ],
+          },
           content: {
             reading: {
               topic: "people in daily life",

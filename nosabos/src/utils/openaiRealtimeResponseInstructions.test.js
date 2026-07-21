@@ -25,3 +25,21 @@ test("does not invent a turn instruction when only the speech policy exists", ()
     "Native bilingual speech.",
   );
 });
+
+test("the support-language anchor is always the final line", () => {
+  const instructions = composeOpenAIRealtimeResponseInstructions(
+    "Policy.",
+    "Turn task.",
+    "Recuerda: di todas las instrucciones en español.",
+  );
+  assert.ok(
+    instructions.endsWith(
+      "\n\nRecuerda: di todas las instrucciones en español.",
+    ),
+  );
+  // No suffix → unchanged composition.
+  assert.equal(
+    composeOpenAIRealtimeResponseInstructions("Policy.", "Turn task.", ""),
+    "Policy.\n\n# Current turn\n\nTurn task.",
+  );
+});

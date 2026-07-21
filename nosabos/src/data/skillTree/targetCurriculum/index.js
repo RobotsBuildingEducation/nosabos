@@ -1,9 +1,11 @@
 // Authored practice-language curriculum adaptations.
 //
 // The base skill tree is authored for Spanish practice. Each module here maps
-// sourceLessonId → agendaItemId → { concept, examples } for one practice
+// sourceLessonId → agendaItemId → { concept, forms?, examples } for one practice
 // language, produced with scripts/generateTargetCurriculum.mjs and merged into
 // that language's LEARNING_PATHS clone (see applyAuthoredTargetCurriculum).
+// `forms` is only for exact learner production; activity instructions remain
+// private curriculum concepts and must never be promoted to forms.
 // Lessons/items without an entry fall back to the generic per-mode adapter,
 // so partial coverage is always safe. Files are reviewable data — hand-edits
 // survive regeneration (the script only fills missing entries by default).

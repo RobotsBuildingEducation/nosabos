@@ -15,6 +15,7 @@ import {
   russianFlag,
   usaFlag,
 } from "../components/flagsIcons/flags";
+import { SUPPORT_LANGUAGE_CODES as CANONICAL_SUPPORT_LANGUAGE_CODES } from "./supportLanguages";
 
 export const DEFAULT_SUPPORT_LANGUAGE = "en";
 export const DEFAULT_TARGET_LANGUAGE = "es";
@@ -196,18 +197,7 @@ const PRACTICE_LANGUAGE_CODES_BASE = LANGUAGE_META.filter(
   (item) => item.practiceEnabled !== false,
 ).map((item) => item.value);
 const PRACTICE_LANGUAGE_CODES_SET = new Set(PRACTICE_LANGUAGE_CODES_BASE);
-const SUPPORT_LANGUAGE_CODES_BASE = [
-  "en",
-  "es",
-  "pt",
-  "it",
-  "fr",
-  "de",
-  "ja",
-  "hi",
-  "ar",
-  "zh",
-];
+const SUPPORT_LANGUAGE_CODES_BASE = [...CANONICAL_SUPPORT_LANGUAGE_CODES];
 const SUPPORT_LANGUAGE_CODES_SET = new Set(SUPPORT_LANGUAGE_CODES_BASE);
 export const RTL_LANGUAGE_CODES = ["ar"];
 

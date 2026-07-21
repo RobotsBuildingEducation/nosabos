@@ -135,6 +135,7 @@ class OpenAIRealtimeBridge {
     audioElement = null,
     initialInstructions = "",
     responseInstructionsPrefix = "",
+    responseInstructionsSuffix = "",
     // Never default to a legacy voice: alloy/echo-era voices read
     // target-language words with support-language phonology.
     voice = DEFAULT_OPENAI_TUTOR_VOICE,
@@ -149,6 +150,7 @@ class OpenAIRealtimeBridge {
     this.audioElement = audioElement;
     this.initialInstructions = initialInstructions;
     this.responseInstructionsPrefix = responseInstructionsPrefix;
+    this.responseInstructionsSuffix = responseInstructionsSuffix;
     this.voice = voice;
     this.model = String(model || "").trim() || DEFAULT_REALTIME_MODEL;
     this.pauseMs = normalizePauseMs(pauseMs);
@@ -198,6 +200,10 @@ class OpenAIRealtimeBridge {
 
   setResponseInstructionsPrefix(instructions = "") {
     this.responseInstructionsPrefix = String(instructions || "").trim();
+  }
+
+  setResponseInstructionsSuffix(instructions = "") {
+    this.responseInstructionsSuffix = String(instructions || "").trim();
   }
 
   send(raw) {
@@ -263,6 +269,7 @@ class OpenAIRealtimeBridge {
       const responseInstructions = composeOpenAIRealtimeResponseInstructions(
         this.responseInstructionsPrefix,
         turnInstructions,
+        this.responseInstructionsSuffix,
       );
       if (responseInstructions) {
         response.instructions = responseInstructions;
