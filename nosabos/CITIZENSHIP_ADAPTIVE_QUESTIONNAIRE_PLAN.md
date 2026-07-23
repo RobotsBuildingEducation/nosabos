@@ -1,9 +1,37 @@
 # Citizenship Adaptive Questionnaire Plan
 
-Status: Planning only  
+Status: Implemented; qualified Mexican nationality review pending before production rollout
 Product surface: `/citizenship`  
 Primary implementation: `src/components/CitizenshipGuide.jsx`  
 Prepared: July 22, 2026
+
+## Implementation Record
+
+Implemented July 23, 2026.
+
+- The deterministic assessment, question planner, question definitions, legal
+  rule metadata, stable checklist items, and version-3 persistence migration
+  now live in `src/features/citizenship/`.
+- The questionnaire uses stable question IDs and visited history, prunes
+  invalid downstream answers, stops at the first conclusive result, and opens
+  a persisted checkpoint where users can review the current result, check for
+  possible document or filing issues, or continue directly to final results.
+- Reports and assistant context contain only applicable answered questions and
+  include the structured legal basis, workflow, and status.
+- Firestore stores bounded questionnaire and checklist state in
+  `users/{npub}/citizenship/progress`, with saved assistant messages under
+  `users/{npub}/citizenship/chat/messages/{messageId}`. Existing
+  `users/{npub}.citizenshipProgress` maps are migrated forward and removed
+  only after the dedicated documents are written successfully.
+- The decision fixtures, navigation behavior, migration, invalidation, and
+  adaptive localization have automated coverage.
+- Production build, targeted lint, desktop flow, and a 390-pixel mobile flow
+  were validated. Repository-wide lint still reports pre-existing errors
+  outside this feature.
+- Legal rule metadata was checked against the primary sources in the
+  **Official Reference Baseline**. This implementation remains an eligibility
+  guide and still requires the planned review by a qualified Mexican
+  nationality professional before production rollout.
 
 ## Objective
 
@@ -233,7 +261,9 @@ Typical soft-stop questions include:
 - Name inconsistencies
 - Applicant's consulate or Mexican state
 
-The product should display the result and offer **Refine my checklist** rather than forcing these questions before the result.
+The product should open a checkpoint that displays the current result and
+offers **Refine document further** or **View my results now**, rather than
+forcing these questions before the full results and checklist.
 
 ### Do not stop when
 
@@ -262,7 +292,9 @@ Every question should be assigned one role:
 
 ### Move or repurpose current questions
 
-- Move `handlingLocation` after route identification.
+- Collect `handlingLocation` only in the final-results consulate finder, where
+  it is directly useful, instead of repeating it in the questionnaire or
+  refinement flow.
 - Make `currentCitizenship` control nationality-specific warnings instead of showing the U.S. warning universally.
 - Either make `applicantType` affect appearance and minor requirements or remove it from initial routing.
 - Replace the unused `applicantAdult` answer with an age group that supports minor, adult, and over-60 rules.
@@ -430,8 +462,9 @@ Deliverable: A pure planner that can be exhaustively tested without rendering Re
 ### Phase 5: Update the questionnaire experience
 
 - Replace index-based navigation with question-ID navigation.
-- Show the initial result at the first valid terminal point.
-- Add **Refine my checklist** for optional readiness questions.
+- Show a result-state checkpoint at the first valid terminal point.
+- Offer **Refine document further** and **View my results now** from the
+  checkpoint; keep answer editing on the final results page.
 - Explain skipped questions in plain language.
 - Update edit mode to show applicable answered questions and optional refinements.
 - Reopen required questions when an edit makes the result incomplete.

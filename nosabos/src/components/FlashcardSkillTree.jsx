@@ -11,11 +11,6 @@ import {
   HStack,
   Text,
   Button,
-  Accordion,
-  AccordionItem,
-  AccordionButton,
-  AccordionPanel,
-  AccordionIcon,
 } from "@chakra-ui/react";
 import { keyframes } from "@emotion/react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -54,7 +49,6 @@ import {
 } from "../utils/flashcardReview";
 import {
   DEFAULT_SUPPORT_LANGUAGE,
-  getLanguageLocale,
   normalizeSupportLanguage,
 } from "../constants/languages";
 import { APP_SQUIRCLE_SHAPE } from "../theme";
@@ -65,7 +59,6 @@ const APP_SURFACE = "var(--app-surface)";
 const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
 const APP_SURFACE_MUTED = "var(--app-surface-muted)";
 const APP_BORDER = "var(--app-border)";
-const APP_BORDER_STRONG = "var(--app-border-strong)";
 const APP_TEXT_PRIMARY = "var(--app-text-primary)";
 const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
 const APP_TEXT_MUTED = "var(--app-text-muted)";
@@ -155,85 +148,6 @@ function buildOptimisticActivityMap(localProgressOverrides = {}, baseProgressMap
     },
     {},
   );
-}
-
-function buildHeatmapWeeks(activityMap, language, now = new Date()) {
-  const today = new Date(now);
-  today.setHours(0, 0, 0, 0);
-  const currentYear = today.getFullYear();
-  const yearStart = new Date(currentYear, 0, 1);
-  const yearEnd = new Date(currentYear, 11, 31);
-  const firstWeekPadding = yearStart.getDay();
-  const totalDaysInYear =
-    Math.round((yearEnd.getTime() - yearStart.getTime()) / (24 * 60 * 60 * 1000)) +
-    1;
-  const totalWeeks = Math.ceil((firstWeekPadding + totalDaysInYear) / 7);
-
-  const locale = getLanguageLocale(
-    normalizeSupportLanguage(language, DEFAULT_SUPPORT_LANGUAGE),
-  );
-  const monthFormatter = new Intl.DateTimeFormat(locale, { month: "short" });
-
-  return Array.from({ length: totalWeeks }, (_, weekIndex) => {
-    let monthLabel = "";
-    const days = Array.from({ length: 7 }, (_, dayIndex) => {
-      const cellIndex = weekIndex * 7 + dayIndex;
-      const dayOffset = cellIndex - firstWeekPadding;
-
-      if (dayOffset < 0 || dayOffset >= totalDaysInYear) {
-        return {
-          count: 0,
-          dayKey: `blank-${weekIndex}-${dayIndex}`,
-          date: null,
-          isFuture: false,
-          isToday: false,
-          isBlank: true,
-          level: "blank",
-        };
-      }
-
-      const date = new Date(yearStart);
-      date.setDate(yearStart.getDate() + dayOffset);
-      const dayKey = getLocalDayKey(date);
-      const count = Number(activityMap?.[dayKey]) || 0;
-      const isFuture = date.getTime() > today.getTime();
-
-      if (!monthLabel && date.getDate() === 1) {
-        monthLabel = monthFormatter.format(date);
-      }
-
-      return {
-        count,
-        dayKey,
-        date,
-        isFuture,
-        isToday: dayKey === getLocalDayKey(today),
-        isBlank: false,
-        level:
-          count >= FLASHCARD_DAILY_TARGET
-            ? "complete"
-            : count > 0
-              ? "partial"
-              : "empty",
-      };
-    });
-
-    return {
-      key: `week-${currentYear}-${weekIndex}`,
-      monthLabel,
-      days,
-    };
-  });
-}
-
-function formatActivityDate(date, language) {
-  const locale = getLanguageLocale(
-    normalizeSupportLanguage(language, DEFAULT_SUPPORT_LANGUAGE),
-  );
-  return new Intl.DateTimeFormat(locale, {
-    month: "short",
-    day: "numeric",
-  }).format(date);
 }
 
 function getCardDecor(status, cefrColor, isLightTheme) {
@@ -636,205 +550,6 @@ function DashboardStat({ label, value }) {
       <Text mt={1} fontSize="2xl" fontWeight="black" color={APP_TEXT_PRIMARY}>
         {value}
       </Text>
-    </Box>
-  );
-}
-
-function ActivityHeatmap({ activityMap, appLanguage, embedded = false }) {
-  const weeks = useMemo(
-    () => buildHeatmapWeeks(activityMap, appLanguage),
-    [activityMap, appLanguage],
-  );
-
-  const renderDayCell = (day) => {
-    if (day.isBlank) {
-      return (
-        <Box
-          key={day.dayKey}
-          w="100%"
-          aspectRatio="1 / 1"
-          borderRadius={{ base: "1px", sm: "2px", md: "3px", lg: "4px" }}
-          bg="transparent"
-        />
-      );
-    }
-
-    const title = `${formatActivityDate(day.date, appLanguage)} - ${
-      day.count
-    }/${FLASHCARD_DAILY_TARGET}`;
-    const baseProps = {
-      w: "100%",
-      aspectRatio: "1 / 1",
-      borderRadius: { base: "2px", sm: "3px", md: "3px", lg: "4px" },
-      borderStyle: "solid",
-      borderWidth: "1px",
-      transition: "transform 0.16s ease, opacity 0.16s ease",
-    };
-
-    if (day.level === "complete") {
-      return (
-        <Box
-          key={day.dayKey}
-          {...baseProps}
-          title={title}
-          bgGradient="linear(135deg, #2dd4bf 0%, #38bdf8 100%)"
-          borderColor="rgba(167, 243, 208, 0.55)"
-          boxShadow={{
-            base: "none",
-            md: "0 0 0 1px rgba(45, 212, 191, 0.14), 0 6px 12px rgba(14, 165, 233, 0.16)",
-          }}
-          opacity={day.isFuture ? 0.28 : 1}
-          transform={day.isToday ? "scale(1.04)" : "none"}
-        />
-      );
-    }
-
-    if (day.level === "partial") {
-      return (
-        <Box
-          key={day.dayKey}
-          {...baseProps}
-          title={title}
-          bg="rgba(45, 212, 191, 0.42)"
-          borderColor="rgba(94, 234, 212, 0.28)"
-          opacity={day.isFuture ? 0.28 : 1}
-          transform={day.isToday ? "scale(1.04)" : "none"}
-        />
-      );
-    }
-
-    return (
-      <Box
-        key={day.dayKey}
-        {...baseProps}
-        title={title}
-        bg={day.isFuture ? "rgba(148,163,184,0.08)" : "rgba(148,163,184,0.16)"}
-        borderColor={
-          day.isToday
-            ? APP_BORDER_STRONG
-            : "rgba(148,163,184,0.18)"
-        }
-        opacity={day.isFuture ? 0.35 : 1}
-        transform={day.isToday ? "scale(1.04)" : "none"}
-      />
-    );
-  };
-
-  return (
-    <Box
-      p={embedded ? 0 : { base: 3, md: 4 }}
-      borderRadius={embedded ? "0" : "2xl"}
-      style={embedded ? undefined : APP_SQUIRCLE_STYLE}
-      bg={embedded ? "transparent" : APP_SURFACE_ELEVATED}
-      border={embedded ? "none" : "1px solid"}
-      borderColor={embedded ? "transparent" : APP_BORDER}
-      boxShadow={embedded ? "none" : APP_SHADOW}
-    >
-      {embedded ? null : (
-        <HStack justify="space-between" align="baseline" mb={3} flexWrap="wrap">
-          <Text
-            fontSize="xs"
-            color={APP_TEXT_MUTED}
-            textTransform="uppercase"
-            letterSpacing="0.08em"
-          >
-            {getTranslation("flashcard_activity")}
-          </Text>
-          <Text fontSize="xs" color={APP_TEXT_SECONDARY}>
-            {getTranslation("flashcard_activity_subtitle")}
-          </Text>
-        </HStack>
-      )}
-
-      <Box
-        overflowX="auto"
-        overflowY="hidden"
-        w="100%"
-        pb={2}
-        sx={{
-          "&::-webkit-scrollbar": {
-            display: "none",
-          },
-          msOverflowStyle: "none",
-          scrollbarWidth: "none",
-        }}
-      >
-        <Box
-          display="grid"
-          gridTemplateColumns={{
-            base: `repeat(${weeks.length}, 12px)`,
-            sm: `repeat(${weeks.length}, 13px)`,
-            md: `repeat(${weeks.length}, 13px)`,
-            lg: `repeat(${weeks.length}, minmax(14px, 1fr))`,
-          }}
-          columnGap={{ base: "2px", md: "2px", lg: "4px" }}
-          rowGap="0px"
-          alignItems="start"
-          w={{ base: "max-content", lg: "100%" }}
-          minW={{ base: "max-content", lg: "100%" }}
-        >
-          {weeks.map((week) => (
-            <Box key={week.key} minW={0}>
-              <Text
-                minH={{ base: "10px", sm: "11px", md: "12px", lg: "14px" }}
-                fontSize={{ base: "7px", sm: "7px", md: "8px", lg: "9px" }}
-                lineHeight="1"
-                color={APP_TEXT_SECONDARY}
-                textTransform="uppercase"
-                whiteSpace="nowrap"
-                textAlign="left"
-              >
-                {week.monthLabel}
-              </Text>
-              <Box display="grid" rowGap={{ base: "2px", md: "2px" }}>
-                {week.days.map((day) => renderDayCell(day))}
-              </Box>
-            </Box>
-          ))}
-        </Box>
-      </Box>
-
-      <HStack spacing={4} mt={4} flexWrap="wrap">
-        <HStack spacing={2}>
-          <Box
-            w="10px"
-            h="10px"
-            borderRadius="3px"
-            bg="rgba(148,163,184,0.16)"
-            border="1px solid"
-            borderColor="rgba(148,163,184,0.18)"
-          />
-          <Text fontSize="xs" color={APP_TEXT_SECONDARY}>
-            {getTranslation("flashcard_activity_empty")}
-          </Text>
-        </HStack>
-        <HStack spacing={2}>
-          <Box
-            w="10px"
-            h="10px"
-            borderRadius="3px"
-            bg="rgba(45, 212, 191, 0.42)"
-            border="1px solid"
-            borderColor="rgba(94, 234, 212, 0.28)"
-          />
-          <Text fontSize="xs" color={APP_TEXT_SECONDARY}>
-            {getTranslation("flashcard_activity_some")}
-          </Text>
-        </HStack>
-        <HStack spacing={2}>
-          <Box
-            w="10px"
-            h="10px"
-            borderRadius="3px"
-            bgGradient="linear(135deg, #2dd4bf 0%, #38bdf8 100%)"
-            border="1px solid"
-            borderColor="rgba(167, 243, 208, 0.55)"
-          />
-          <Text fontSize="xs" color={APP_TEXT_SECONDARY}>
-            {getTranslation("flashcard_activity_goal")}
-          </Text>
-        </HStack>
-      </HStack>
     </Box>
   );
 }
@@ -1507,50 +1222,6 @@ export default function FlashcardSkillTree({
               />
             </Box>
 
-            <Accordion allowToggle>
-              <AccordionItem
-                border="1px solid"
-                borderColor={APP_BORDER}
-                borderRadius="2xl"
-                style={APP_SQUIRCLE_STYLE}
-                bg={APP_SURFACE_ELEVATED}
-                boxShadow={APP_SHADOW}
-                overflow="hidden"
-              >
-                <AccordionButton
-                  px={4}
-                  py={3}
-                  _hover={{ bg: APP_SURFACE_MUTED }}
-                  sx={{
-                    "&:focus, &:focus-visible": {
-                      outline: "none",
-                      boxShadow: "none",
-                    },
-                  }}
-                >
-                  <Text
-                    fontSize="xs"
-                    color={APP_TEXT_MUTED}
-                    textTransform="uppercase"
-                    letterSpacing="0.08em"
-                    fontWeight="bold"
-                  >
-                    {getTranslation("flashcard_activity")}
-                  </Text>
-                  <AccordionIcon color={APP_TEXT_MUTED} />
-                </AccordionButton>
-                <AccordionPanel px={4} pb={4} pt={2}>
-                  <Text fontSize="xs" color={APP_TEXT_SECONDARY} mb={3}>
-                    {getTranslation("flashcard_activity_subtitle")}
-                  </Text>
-                  <ActivityHeatmap
-                    activityMap={dailyActivityMap}
-                    appLanguage={appLanguage}
-                    embedded
-                  />
-                </AccordionPanel>
-              </AccordionItem>
-            </Accordion>
           </VStack>
         </Box>
 
