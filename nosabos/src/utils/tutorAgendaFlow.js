@@ -65,3 +65,39 @@ export function advanceTutorAgendaProgress(items = [], progress = {}) {
     advancedItem: snapshot.currentItem,
   };
 }
+
+export function advanceTutorQuizAttempt(
+  items = [],
+  progress = {},
+  correctItems = {},
+  { correct = false, passingScore = 1 } = {},
+) {
+  const next = advanceTutorAgendaProgress(items, progress);
+  if (!next.advancedItem) {
+    return {
+      ...next,
+      correctItems: { ...correctItems },
+      score: Object.keys(correctItems || {}).length,
+      passed: false,
+      failed: false,
+    };
+  }
+
+  const scoredItems = { ...(correctItems || {}) };
+  if (correct) scoredItems[next.advancedItem.id] = true;
+  const score = Object.keys(scoredItems).length;
+  const threshold = Math.max(1, Number(passingScore) || 1);
+  const passed = next.isComplete && score >= threshold;
+  const failed = next.isComplete && !passed;
+
+  return {
+    ...next,
+    // A failed attempt restarts at question 1. A passed attempt retains its
+    // completed cursor until lesson completion is committed.
+    progress: failed ? {} : next.progress,
+    correctItems: failed ? {} : scoredItems,
+    score,
+    passed,
+    failed,
+  };
+}

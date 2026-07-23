@@ -133,7 +133,8 @@ const TEXT_TRANSLATIONS = {
   "corporate world": "Unternehmenswelt",
   "count from zero to ten in spanish": "Auf Spanisch von null bis zehn zählen",
   "count from zero to ten": "Von null bis zehn zählen",
-  "count to twenty": "Bis zwanzig zählen",
+  "count from eleven to thirty": "Von elf bis dreißig zählen",
+  "counting from eleven to thirty": "Von elf bis dreißig zählen",
   "counting objects": "Gegenstände zählen",
   "counting to one hundred": "Bis hundert zählen",
   "counting to twenty": "Bis zwanzig zählen",
@@ -281,8 +282,12 @@ const TEXT_TRANSLATIONS = {
     "Lerne neue Wörter mit interaktiven Fragen. Übe, Hallo zu sagen.",
   "learn to count from twenty-one to one hundred":
     "Lerne, von einundzwanzig bis hundert zu zählen",
-  "learn to count from zero to twenty":
-    "Lerne, von null bis zwanzig zu zählen",
+  "learn to count from eleven to thirty":
+    "Lerne, von elf bis dreißig zu zählen",
+  "numbers 11-30": "Zahlen 11-30",
+  "numbers 11-30 quiz": "Quiz zu den Zahlen 11-30",
+  "test your knowledge of numbers 11-30":
+    "Teste dein Wissen über die Zahlen von 11 bis 30",
   "learn to count from zero to ten": "Lerne, von null bis zehn zu zählen",
   "learn to introduce yourself": "Lerne, dich vorzustellen",
   "lesson": "Lektion",

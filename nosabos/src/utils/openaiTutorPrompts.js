@@ -277,6 +277,247 @@ export function buildOpenAIGoalTurnInstructions({
 }
 
 /**
+ * Retrieval-first turn shape for generated Skill Builder lessons. Unlike a
+ * first-teaching turn, it keeps target forms private until the learner has
+ * attempted to recall them. A genuine miss gets one concise correction and
+ * one retry, so the lesson remains supportive without becoming re-teaching.
+ */
+export function buildOpenAITargetedReviewTurnInstructions({
+  isKickoff = false,
+  turnVerdict = null,
+  currentItem = null,
+  completedItems = [],
+  interactionLayer = "",
+  targetLanguageName = "the target language",
+  supportLanguageName = "the support language",
+} = {}) {
+  if (!currentItem) return "";
+
+  const targetForms = quoteList(currentItem.targetForms || []);
+  const examples = quoteList((currentItem.examples || []).slice(0, 3));
+  const completedList = quoteList(completedItems);
+  const verdictLine = isKickoff
+    ? "The learner has already been welcomed. Begin the review now — do not greet them again."
+    : turnVerdict === TUTOR_TURN_VERDICT.ACCEPTED
+      ? "The learner recalled the previous item successfully. Acknowledge it briefly, then test the new current item."
+      : turnVerdict === TUTOR_TURN_VERDICT.REJECTED
+        ? `The latest attempt did not succeed. Give one concise correction or scaffold in ${supportLanguageName}, then ask for one retry of the same current item.`
+        : turnVerdict === TUTOR_TURN_VERDICT.UNCERTAIN
+          ? "The latest attempt could not be graded. Do not call it right or wrong; ask the same retrieval task again in a clearer way without revealing the answer."
+          : "";
+
+  return [
+    "# Current lesson state",
+    "Phase: targeted skill review — retrieve first, correct only after an attempt.",
+    `Private current objective: ${currentItem.goal || currentItem.label || "review the current unit skill"}.`,
+    currentItem.evidence
+      ? `Private success criterion: ${currentItem.evidence}.`
+      : "",
+    targetForms
+      ? `Private accepted ${targetLanguageName} form(s): ${targetForms}.`
+      : "",
+    examples
+      ? `Private ${targetLanguageName} reference examples: ${examples}.`
+      : "",
+    completedList
+      ? `Previously reviewed (do not test again now): ${completedList}.`
+      : "Previously reviewed: none.",
+    verdictLine,
+    turnVerdict === TUTOR_TURN_VERDICT.REJECTED
+      ? "Because an attempt has already occurred, the correction may include the answer; keep it brief and require one new learner attempt."
+      : `Elicit the answer from memory with one short prompt in ${supportLanguageName}: a meaning cue, an answer-free blank, a contrast, or a tiny situation. Do not say, translate, spell, paraphrase, or model any accepted ${targetLanguageName} form before the learner attempts it.`,
+    "Do not announce a drill or teaching method. Test only the current objective and give exactly one learner action.",
+    interactionLayer,
+    "The app controls order and completion; stay on this item until it advances.",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+/**
+ * Scenario-first turn shape for generated Integrated Practice lessons. The
+ * current objective remains the only grading target, while nearby unit
+ * objectives give the tutor enough material to maintain one coherent
+ * roleplay instead of presenting isolated drills.
+ */
+export function buildOpenAIIntegratedScenarioTurnInstructions({
+  isKickoff = false,
+  turnVerdict = null,
+  currentItem = null,
+  companionItems = [],
+  completedItems = [],
+  interactionLayer = "",
+  targetLanguageName = "the target language",
+  supportLanguageName = "the support language",
+} = {}) {
+  if (!currentItem) return "";
+
+  const targetForms = quoteList(currentItem.targetForms || []);
+  const examples = quoteList((currentItem.examples || []).slice(0, 3));
+  const companionList = companionItems
+    .slice(0, 2)
+    .map((item) => item?.goal || item?.label)
+    .filter(Boolean)
+    .map((item) => `"${String(item).trim()}"`)
+    .join(", ");
+  const completedList = quoteList(completedItems);
+  const verdictLine = isKickoff
+    ? "The learner has already been welcomed. Establish the roleplay immediately without another greeting."
+    : turnVerdict === TUTOR_TURN_VERDICT.ACCEPTED
+      ? "The learner completed the previous objective. Acknowledge it naturally and continue the same roleplay with the new current objective; do not reset the scene."
+      : turnVerdict === TUTOR_TURN_VERDICT.REJECTED
+        ? `The latest attempt did not demonstrate the current objective. Stay inside the roleplay, give one brief correction or scaffold in ${supportLanguageName}, and offer another natural chance to respond.`
+        : turnVerdict === TUTOR_TURN_VERDICT.UNCERTAIN
+          ? "The latest attempt could not be graded. Stay in character and ask one clearer follow-up that still requires the current objective."
+          : "";
+
+  return [
+    "# Current lesson state",
+    "Phase: integrated practice in one continuous, realistic scenario.",
+    `Private required objective for this turn: ${currentItem.goal || currentItem.label || "apply the current unit skill"}.`,
+    currentItem.activityBrief
+      ? `Private activity guidance: ${currentItem.activityBrief}.`
+      : "",
+    currentItem.evidence
+      ? `Private success criterion: ${currentItem.evidence}.`
+      : "",
+    targetForms
+      ? `Private accepted ${targetLanguageName} form(s): ${targetForms}.`
+      : "",
+    examples
+      ? `Private ${targetLanguageName} reference examples: ${examples}.`
+      : "",
+    companionList
+      ? `Supporting unit objectives to weave into the surrounding scene, but not grade or complete on this turn: ${companionList}.`
+      : "",
+    completedList
+      ? `Objectives already demonstrated; keep them available as natural context without explicitly re-testing them: ${completedList}.`
+      : "Objectives already demonstrated: none.",
+    verdictLine,
+    "Use one coherent roleplay across turns. Never announce, list, or teach the objectives separately, and never restart the scenario merely because the app advances to another objective.",
+    turnVerdict === TUTOR_TURN_VERDICT.REJECTED
+      ? "A correction may model only what is needed to repair the failed attempt, then return immediately to the scene."
+      : `Set up a natural situation that makes the learner demonstrate the required objective. Do not model or reveal the required answer before their first attempt; use ${targetLanguageName} naturally as the scenario allows and ${supportLanguageName} only for level-appropriate support.`,
+    "Ask for exactly one learner action. The current required objective is the only evidence the app should grade on this turn.",
+    interactionLayer,
+    "The app controls objective order and completion; continue the scenario until it advances.",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+export function buildOpenAIPurposeReviewLoopInstructions({
+  tutorPurpose = "",
+  coveredItems = [],
+  interactionLayer = "",
+  targetLanguageName = "the target language",
+  supportLanguageName = "the support language",
+} = {}) {
+  const coveredList = quoteList(coveredItems);
+  if (!coveredList) return "";
+
+  if (tutorPurpose === "targeted_review") {
+    return [
+      "# Current lesson state",
+      "Phase: mixed retrieval review. Every targeted skill has been recalled at least once.",
+      `Private covered material: ${coveredList}.`,
+      `Give one short retrieval task in ${supportLanguageName} using only the covered material. Do not speak, translate, or model the ${targetLanguageName} answer before the learner attempts it.`,
+      "Rotate the objective and prompt format naturally; do not re-teach the unit or announce a drill.",
+      interactionLayer,
+      "The app owns completion. Continue one retrieval task at a time until it ends the lesson.",
+    ]
+      .filter(Boolean)
+      .join("\n");
+  }
+
+  if (tutorPurpose === "integrated_scenario") {
+    return [
+      "# Current lesson state",
+      "Phase: integrated scenario review. Every unit objective has been demonstrated at least once.",
+      `Private covered material: ${coveredList}.`,
+      "Continue the established roleplay, or begin one compact new scenario if it has naturally concluded. Make the situation require at least two covered objectives across the exchange.",
+      "Do not return to isolated phrase drills, list the objectives, or model the learner's response before they attempt it. Ask for exactly one natural learner action now.",
+      interactionLayer,
+      "The app owns completion. Keep the scenario moving until it ends the lesson.",
+    ]
+      .filter(Boolean)
+      .join("\n");
+  }
+
+  return "";
+}
+
+/**
+ * Assessment-only turn shape for unit quizzes. Curriculum answers and examples
+ * are private grading material: unlike a teaching turn, the tutor must elicit
+ * an answer before it may explain or model it.
+ */
+export function buildOpenAIQuizTurnInstructions({
+  isKickoff = false,
+  turnVerdict = null,
+  currentQuestion = null,
+  questionNumber = 1,
+  totalQuestions = 1,
+  passingScore = 1,
+  completionMode = "score",
+  previousCorrection = "",
+  previousAttemptResult = null,
+  targetLanguageName = "the target language",
+  supportLanguageName = "the support language",
+} = {}) {
+  if (!currentQuestion) return "";
+
+  const targetForms = quoteList(currentQuestion.targetForms || []);
+  const examples = quoteList((currentQuestion.examples || []).slice(0, 3));
+  const isProduction = questionNumber % 2 === 1;
+  const feedbackLine = isKickoff
+    ? "Begin the quiz directly with the first question; do not teach or review first."
+    : turnVerdict === TUTOR_TURN_VERDICT.ACCEPTED
+      ? "The previous answer was correct. Confirm it briefly without repeating or explaining the answer, then ask the new question."
+      : turnVerdict === TUTOR_TURN_VERDICT.REJECTED
+        ? `The previous answer was incorrect. Give one concise correction${
+            previousCorrection ? ` using this private correction: "${previousCorrection}"` : ""
+          }, then ask the new question. Do not make the learner retry the old question.`
+        : "The previous answer was unclear. Do not score it or call it right or wrong; ask the same question again in simpler words without revealing the answer.";
+  const attemptLine = previousAttemptResult
+    ? completionMode === "xp"
+      ? `The previous question round scored ${previousAttemptResult.score}/${previousAttemptResult.total}. State that result briefly in ${supportLanguageName}, then continue with a new round at question 1. Do not describe it as a pass or failure.`
+      : `The previous attempt scored ${previousAttemptResult.score}/${previousAttemptResult.total}; ${previousAttemptResult.passingScore} was required. State that result briefly in ${supportLanguageName}, say a new attempt is starting, then ask question 1.`
+    : "";
+
+  return [
+    "# Current lesson state",
+    "Phase: scored assessment — never teach before the learner answers.",
+    completionMode === "xp"
+      ? `Question ${questionNumber} of ${totalQuestions}. Correct answers earn lesson progress; the app completes the quiz when its XP requirement is reached. Ask exactly one scored question.`
+      : `Question ${questionNumber} of ${totalQuestions}; passing score: ${passingScore}. Ask exactly one scored question.`,
+    attemptLine,
+    feedbackLine,
+    `Private objective: ${currentQuestion.goal || currentQuestion.label || currentQuestion.targetConcept || "assess the current unit objective"}.`,
+    currentQuestion.activityBrief
+      ? `Private task guidance: ${currentQuestion.activityBrief}.`
+      : "",
+    currentQuestion.evidence
+      ? `Private success criterion: ${currentQuestion.evidence}.`
+      : "",
+    targetForms ? `Private accepted ${targetLanguageName} form(s): ${targetForms}.` : "",
+    examples ? `Private ${targetLanguageName} reference examples: ${examples}.` : "",
+    targetForms
+      ? isProduction
+        ? `Use a production question: describe a meaning or tiny situation naturally in ${supportLanguageName} and ask the learner to supply the ${targetLanguageName} answer. Do not say, spell, translate, paraphrase, or model any accepted form before they answer.`
+        : `Use a recognition question: you may present exactly one accepted ${targetLanguageName} form and ask for its meaning or appropriate situation in ${supportLanguageName}, but do not give away that meaning.`
+      : `Create one level-appropriate comprehension or communication question from the private objective. Present any needed ${targetLanguageName} material, then ask for one answer; do not quote the curriculum objective or success criterion to the learner.`,
+    "The learner gets one scored attempt. Never add a hint, answer-containing choice, translation, model, repetition drill, or explanation before that attempt.",
+    `All instructions and scoring feedback must be natural ${supportLanguageName}; use ${targetLanguageName} only as the material being tested.`,
+    completionMode === "xp"
+      ? "Do not announce internal state, grading machinery, XP, or curriculum metadata. The app decides correctness, advancement, progress, and completion."
+      : "Do not announce internal state, grading machinery, or curriculum metadata. The app decides correctness, advancement, score, and completion.",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+/**
  * Per-turn state for the starter introductions lesson. This replaces the
  * Gemini-tuned instruction pile (signature experiences, task-format roulette,
  * doubled praise directives) that the mini model rendered as awkward,

@@ -246,6 +246,7 @@ body {
   inset: 0;
   border: 3px solid var(--app-surface-frame);
   border-radius: inherit;
+  corner-shape: inherit;
   pointer-events: none;
   z-index: 1;
 }
@@ -385,13 +386,15 @@ button[role="tab"]:focus-visible {
 /* LiquidGlass bottom action bar: allow menu popups */
 .bottombar-glass {
   overflow: visible !important;
+  border-radius: 40px !important;
+  corner-shape: superellipse(2);
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.12), transparent 52%),
     rgba(11, 18, 32, 0.18);
   border: 1px solid var(--app-border);
   box-shadow:
     0 20px 50px rgba(2, 6, 23, 0.24),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
 }
 
 :root[data-theme-mode="light"] .bottombar-glass {

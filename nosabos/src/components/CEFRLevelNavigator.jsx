@@ -7,6 +7,7 @@ import {
   RiTrophyLine,
 } from "react-icons/ri";
 import { motion } from "framer-motion";
+import { APP_SQUIRCLE_SHAPE } from "../theme";
 import { translations } from "../utils/translation";
 import { normalizeSupportLanguage } from "../constants/languages";
 
@@ -281,6 +282,7 @@ export default function CEFRLevelNavigator({
               px={4}
               py={2}
               borderRadius="16px"
+              style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
               bg="var(--app-glass-bg)"
               bgGradient={`linear(135deg, ${levelInfo.color}20, ${levelInfo.color}10)`}
               backdropFilter="blur(10px)"

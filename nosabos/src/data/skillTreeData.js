@@ -28,9 +28,10 @@ import {
   withCanonicalLessonAgenda,
 } from "../utils/lessonCurriculum.js";
 import { TARGET_CURRICULUM } from "./skillTree/targetCurriculum/index.js";
+import { withCurriculumRepairSupportText } from "./skillTree/curriculumRepairSupportText.js";
 
 const withLocalizedSkillTreeText = (skillTree) =>
-  withArabicSkillTreeText(
+  withCurriculumRepairSupportText(withArabicSkillTreeText(
     withChineseSkillTreeText(
       withHindiSkillTreeText(
         withJapaneseSkillTreeText(
@@ -42,7 +43,7 @@ const withLocalizedSkillTreeText = (skillTree) =>
         ),
       ),
     ),
-  );
+  ));
 
 export const SKILL_STATUS = {
   LOCKED: "locked",
@@ -248,7 +249,11 @@ const baseLearningPath = withLocalizedSkillTreeText({
             stories: {
               topic: "extended family",
               prompt:
-                "A story about visiting grandparents and meeting extended family",
+                "Identify grandparents and extended family members during a short family visit",
+              preserveCanonicalGoal: true,
+              targetCurriculumAliases: [
+                "stories-a-story-about-visiting-grandparents-and-meeting-exte-1",
+              ],
             },
           },
         },
@@ -422,7 +427,11 @@ const baseLearningPath = withLocalizedSkillTreeText({
             stories: {
               topic: "numbers 6-10",
               prompt:
-                "A story about counting items at a market from six to ten",
+                "Identify quantities from six to ten in a short market exchange",
+              preserveCanonicalGoal: true,
+              targetCurriculumAliases: [
+                "stories-a-story-about-counting-items-at-a-market-from-six-to-1",
+              ],
             },
             reading: {
               topic: "numbers 6-10",
@@ -450,7 +459,11 @@ const baseLearningPath = withLocalizedSkillTreeText({
             stories: {
               topic: "counting objects",
               prompt:
-                "A short story about a child counting toys and sharing them",
+                "Retell how many toys a child has and shares using numbers zero to ten",
+              preserveCanonicalGoal: true,
+              targetCurriculumAliases: [
+                "stories-a-short-story-about-a-child-counting-toys-and-sharin-1",
+              ],
             },
           },
         },
@@ -547,7 +560,11 @@ const baseLearningPath = withLocalizedSkillTreeText({
             stories: {
               topic: "greetings in context",
               prompt:
-                "A story about arriving at a party and greeting everyone differently",
+                "Choose and produce an appropriate greeting when arriving at a party",
+              preserveCanonicalGoal: true,
+              targetCurriculumAliases: [
+                "stories-a-story-about-arriving-at-a-party-and-greeting-every-1",
+              ],
             },
             reading: {
               topic: "greeting conversations",
@@ -633,7 +650,11 @@ const baseLearningPath = withLocalizedSkillTreeText({
             stories: {
               topic: "uncertainty expressions",
               prompt:
-                "A story about someone who can't decide what to eat for lunch",
+                "Respond to an undecided lunch choice with an uncertainty expression",
+              preserveCanonicalGoal: true,
+              targetCurriculumAliases: [
+                "stories-a-story-about-someone-who-can-t-decide-what-to-eat-f-1",
+              ],
             },
           },
         },
@@ -652,7 +673,11 @@ const baseLearningPath = withLocalizedSkillTreeText({
             },
             stories: {
               topic: "quick responses",
-              prompt: "A story about friends reacting to surprising news",
+              prompt: "Choose a natural short reaction to surprising news",
+              preserveCanonicalGoal: true,
+              targetCurriculumAliases: [
+                "stories-a-story-about-friends-reacting-to-surprising-news-1",
+              ],
             },
           },
         },
@@ -731,7 +756,11 @@ const baseLearningPath = withLocalizedSkillTreeText({
             stories: {
               topic: "apologies",
               prompt:
-                "A story about someone who accidentally bumps into people and apologizes",
+                "Choose an appropriate apology after accidentally bumping into someone",
+              preserveCanonicalGoal: true,
+              targetCurriculumAliases: [
+                "stories-a-story-about-someone-who-accidentally-bumps-into-pe-1",
+              ],
             },
             realtime: {
               scenario: "Apologizing and excusing yourself",
@@ -838,7 +867,11 @@ const baseLearningPath = withLocalizedSkillTreeText({
             stories: {
               topic: "personal items",
               prompt:
-                "A story about someone who lost their keys and searches for them",
+                "Identify which personal item is missing and say where to look for it",
+              preserveCanonicalGoal: true,
+              targetCurriculumAliases: [
+                "stories-a-story-about-someone-who-lost-their-keys-and-search-1",
+              ],
             },
           },
         },
@@ -957,7 +990,11 @@ const baseLearningPath = withLocalizedSkillTreeText({
             stories: {
               topic: "neutral colors",
               prompt:
-                "A story about painting a room and choosing between light and dark colors",
+                "Describe a room choice using light, dark, and neutral color words",
+              preserveCanonicalGoal: true,
+              targetCurriculumAliases: [
+                "stories-a-story-about-painting-a-room-and-choosing-between-l-1",
+              ],
             },
             realtime: {
               scenario: "Color preferences",
@@ -1032,7 +1069,11 @@ const baseLearningPath = withLocalizedSkillTreeText({
             stories: {
               topic: "asking for names",
               prompt:
-                "A story about a new student meeting classmates and learning their names",
+                "Ask for and remember the names of two new classmates",
+              preserveCanonicalGoal: true,
+              targetCurriculumAliases: [
+                "stories-a-story-about-a-new-student-meeting-classmates-and-l-1",
+              ],
             },
             realtime: {
               scenario: "Asking someone's name",
@@ -1061,7 +1102,11 @@ const baseLearningPath = withLocalizedSkillTreeText({
             stories: {
               topic: "nice to meet you",
               prompt:
-                "A story about a welcome party where everyone introduces themselves",
+                "Complete a first meeting with an introduction and a nice-to-meet-you expression",
+              preserveCanonicalGoal: true,
+              targetCurriculumAliases: [
+                "stories-a-story-about-a-welcome-party-where-everyone-introdu-1",
+              ],
             },
           },
         },
@@ -1097,18 +1142,21 @@ const baseLearningPath = withLocalizedSkillTreeText({
         es: "Primeras Palabras",
       },
       description: {
-        en: "Your very first words",
-        es: "Tus primeras palabras",
+        en: "Combine familiar basics into complete first conversations",
+        es: "Combina lo básico en primeras conversaciones completas",
       },
       color: "#22C55E",
       position: { row: 8, offset: 0 },
       lessons: [
         {
           id: "lesson-a1-1-1",
-          title: { en: "Hello and Goodbye", es: "Hola y Adiós" },
+          title: {
+            en: "Conversation Building Blocks",
+            es: "Bloques de una Conversación",
+          },
           description: {
-            en: "Learn essential greetings and farewells",
-            es: "Aprende saludos y despedidas esenciales",
+            en: "Combine greetings, introductions, courtesy, and closings",
+            es: "Combina saludos, presentaciones, cortesía y despedidas",
           },
           xpRequired: 0,
           xpReward: 45,
@@ -1144,12 +1192,22 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "meeting someone new and saying hello",
-              prompt: "Practice greetings and introductions: 'hola, me llamo...'",
+              scenario: "holding a complete first conversation",
+              prompt:
+                "Complete a four-turn first meeting: greet, exchange names, ask how someone is, and close politely",
+              preserveCanonicalGoal: true,
+              targetCurriculumAliases: [
+                "realtime-practice-greetings-and-introductions-hola-me-llamo-1",
+              ],
             },
             stories: {
-              topic: "a first conversation",
-              prompt: "Read a short greeting dialogue and discuss it",
+              topic: "the sequence of a first conversation",
+              prompt:
+                "Identify the greeting, introduction, courtesy phrase, and closing in a short conversation",
+              preserveCanonicalGoal: true,
+              targetCurriculumAliases: [
+                "stories-read-a-short-greeting-dialogue-and-discuss-it-1",
+              ],
             },
           },
         },
@@ -1157,8 +1215,8 @@ const baseLearningPath = withLocalizedSkillTreeText({
           id: "lesson-a1-1-3",
           title: { en: "Advanced Greetings", es: "Saludos Avanzados" },
           description: {
-            en: "Master formal and informal greetings",
-            es: "Domina saludos formales e informales",
+            en: "Switch a complete introduction between casual and formal register",
+            es: "Cambia una presentación completa entre registro casual y formal",
           },
           xpRequired: 20,
           xpReward: 45,
@@ -1166,11 +1224,21 @@ const baseLearningPath = withLocalizedSkillTreeText({
           content: {
             reading: {
               topic: "formal vs informal greetings",
-              prompt: "Read and notice when to use tú vs usted in greetings",
+              prompt:
+                "Compare two introductions and identify the casual and formal register choices",
+              preserveCanonicalGoal: true,
+              targetCurriculumAliases: [
+                "reading-read-and-notice-when-to-use-tu-vs-usted-in-greetings-1",
+              ],
             },
             realtime: {
               scenario: "greeting a friend vs a stranger",
-              prompt: "Demonstrate greetings and introductions in the right register",
+              prompt:
+                "Perform the same introduction casually with a peer and formally with a stranger",
+              preserveCanonicalGoal: true,
+              targetCurriculumAliases: [
+                "realtime-demonstrate-greetings-and-introductions-in-the-right-1",
+              ],
             },
           },
         },
@@ -1206,44 +1274,47 @@ const baseLearningPath = withLocalizedSkillTreeText({
         },
       ],
     },
-    // Unit: Numbers 0-20 (moved from A1)
+    // Unit: Numbers 11-30 (moved from A1)
     {
       id: "unit-a1-3",
       title: {
-        en: "Numbers 0-20",
-        es: "Números 0-20",
+        en: "Numbers 11-30",
+        es: "Números 11-30",
       },
       description: {
-        en: "Count to twenty",
-        es: "Cuenta hasta veinte",
+        en: "Count from eleven to thirty",
+        es: "Cuenta del once al treinta",
       },
       color: "#F59E0B",
       position: { row: 9, offset: 0 },
       lessons: [
         {
           id: "lesson-a1-3-1",
-          title: { en: "Counting to Twenty", es: "Contando hasta Veinte" },
+          title: {
+            en: "Counting from Eleven to Thirty",
+            es: "Contando del Once al Treinta",
+          },
           description: {
-            en: "Learn to count from zero to twenty",
-            es: "Aprende a contar desde cero hasta veinte",
+            en: "Learn to count from eleven to thirty",
+            es: "Aprende a contar del once al treinta",
           },
           xpRequired: 0,
           xpReward: 45,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "numbers 0-20",
+              topic: "numbers 11-30",
               focusPoints: [
-                "cero, uno, dos, tres, cuatro, cinco",
-                "seis, siete, ocho, nueve, diez",
-                "once, doce... veinte",
+                "once, doce, trece, catorce, quince",
+                "dieciséis, diecisiete, dieciocho, diecinueve, veinte",
+                "veintiuno, veintidós... treinta",
               ],
             },
             grammar: {
               topic: "using numbers to count and quantify",
               focusPoints: [
-                "hay + number (hay tres libros)",
-                "un/una vs uno",
+                "hay + number (hay trece libros)",
+                "veintiuno vs veintiún/veintiuna",
                 "¿cuántos/cuántas hay?",
               ],
             },
@@ -1265,7 +1336,7 @@ const baseLearningPath = withLocalizedSkillTreeText({
           content: {
             realtime: {
               scenario: "counting things out loud with a friend",
-              prompt: "Practice numbers 0-20 with 'hay' and '¿cuántos hay?'",
+              prompt: "Practice numbers 11-30 with 'hay' and '¿cuántos hay?'",
             },
             stories: {
               topic: "numbers in everyday life",
@@ -1286,23 +1357,25 @@ const baseLearningPath = withLocalizedSkillTreeText({
           xpRequired: 20,
           xpReward: 45,
           modes: ["reading", "realtime"],
+          objectiveAlignment: [["phone"], ["age"]],
           content: {
             reading: {
-              topic: "numbers in prices and quantities",
-              prompt: "Read and say numbers in counts and simple prices",
+              topic: "phone numbers and ages",
+              prompt:
+                "Read a contact card and identify a phone number and an age",
             },
             realtime: {
-              scenario: "telling someone how many you have",
-              prompt: "Demonstrate numbers 0-20 to count and quantify",
+              scenario: "exchanging contact details and ages",
+              prompt: "Ask for and give a phone number and an age",
             },
           },
         },
         {
           id: "lesson-a1-3-quiz",
-          title: { en: "Numbers 0-20 Quiz", es: "Prueba de Números 0-20" },
+          title: { en: "Numbers 11-30 Quiz", es: "Prueba de Números 11-30" },
           description: {
-            en: "Test your knowledge of numbers 0-20",
-            es: "Prueba tus conocimientos de números 0-20",
+            en: "Test your knowledge of numbers 11-30",
+            es: "Prueba tus conocimientos de números 11-30",
           },
           xpRequired: 30,
           xpReward: 50,
@@ -1311,10 +1384,10 @@ const baseLearningPath = withLocalizedSkillTreeText({
           quizConfig: { questionsRequired: 10, passingScore: 8 },
           content: {
             vocabulary: {
-              topic: "numbers 0-20",
+              topic: "numbers 11-30",
               focusPoints: [
-                "cero a diez",
                 "once a veinte",
+                "veintiuno a treinta",
               ],
             },
             grammar: {
@@ -1330,12 +1403,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
         },
       ],
     },
-    // Unit: Numbers 21-100 (moved from A1)
+    // Unit: Numbers 31-100 (moved from A1)
     {
       id: "unit-a1-4",
       title: {
-        en: "Numbers 21-100",
-        es: "Números 21-100",
+        en: "Numbers 31-100",
+        es: "Números 31-100",
       },
       description: {
         en: "Larger numbers",
@@ -1346,29 +1419,32 @@ const baseLearningPath = withLocalizedSkillTreeText({
       lessons: [
         {
           id: "lesson-a1-4-1",
-          title: { en: "Counting to One Hundred", es: "Contando hasta Cien" },
+          title: {
+            en: "Counting from Thirty-One to One Hundred",
+            es: "Contando del Treinta y Uno al Cien",
+          },
           description: {
-            en: "Learn to count from twenty-one to one hundred",
-            es: "Aprende a contar desde veintiuno hasta cien",
+            en: "Learn to count from thirty-one to one hundred",
+            es: "Aprende a contar del treinta y uno al cien",
           },
           xpRequired: 0,
           xpReward: 55,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "numbers 21-100",
+              topic: "numbers 31-100",
               focusPoints: [
-                "veintiuno, treinta, cuarenta, cincuenta",
+                "treinta y uno, cuarenta, cincuenta",
                 "sesenta, setenta, ochenta, noventa, cien",
                 "compounds: treinta y cinco, cuarenta y dos",
               ],
             },
             grammar: {
-              topic: "forming numbers 21-100",
+              topic: "forming numbers 31-100",
               focusPoints: [
                 "y in compounds (cuarenta y dos)",
                 "cien vs ciento",
-                "agreement: veintiún libros, veintiuna casas",
+                "agreement: treinta y un libros, treinta y una casas",
               ],
             },
           },
@@ -1385,8 +1461,9 @@ const baseLearningPath = withLocalizedSkillTreeText({
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "exchanging phone numbers and prices",
-              prompt: "Practice numbers 21-100 with prices, ages, and phone numbers",
+              scenario: "comparing prices and checking a total",
+              prompt:
+                "Practice numbers 31-100 with prices, totals, and change",
             },
             stories: {
               topic: "numbers in prices and quantities",
@@ -1410,20 +1487,26 @@ const baseLearningPath = withLocalizedSkillTreeText({
           content: {
             reading: {
               topic: "larger numbers in real contexts",
-              prompt: "Read larger numbers (prices, years, quantities) and interpret them",
+              prompt:
+                "Read numbers 31-100 in prices, scores, and quantities and interpret them",
+              preserveCanonicalGoal: true,
+              targetCurriculumAliases: [
+                "reading-read-larger-numbers-prices-years-quantities-and-inte-1",
+              ],
             },
             realtime: {
-              scenario: "saying totals, ages, and years",
-              prompt: "Demonstrate numbers 21-100 in prices, ages, and quantities",
+              scenario: "saying prices, scores, totals, and quantities",
+              prompt:
+                "Use numbers 31-100 to state prices, scores, totals, and quantities",
             },
           },
         },
         {
           id: "lesson-a1-4-quiz",
-          title: { en: "Numbers 21-100 Quiz", es: "Prueba de Números 21-100" },
+          title: { en: "Numbers 31-100 Quiz", es: "Prueba de Números 31-100" },
           description: {
-            en: "Test your knowledge of numbers 21-100",
-            es: "Prueba tus conocimientos de números 21-100",
+            en: "Test your knowledge of numbers 31-100",
+            es: "Prueba tus conocimientos de números 31-100",
           },
           xpRequired: 30,
           xpReward: 50,
@@ -1432,15 +1515,15 @@ const baseLearningPath = withLocalizedSkillTreeText({
           quizConfig: { questionsRequired: 10, passingScore: 8 },
           content: {
             vocabulary: {
-              topic: "numbers 21-100",
+              topic: "numbers 31-100",
               focusPoints: [
-                "veintiuno a cien",
+                "treinta y uno a cien",
                 "compound numbers",
               ],
             },
             grammar: {
               topics: [
-                "forming numbers 21-100",
+                "forming numbers 31-100",
               ],
               focusPoints: [
                 "y in compounds",
@@ -1928,14 +2011,17 @@ const baseLearningPath = withLocalizedSkillTreeText({
           xpRequired: 590,
           xpReward: 55,
           modes: ["reading", "realtime"],
+          objectiveAlignment: [["appointment"], ["time", "schedule"]],
           content: {
             reading: {
-              topic: "times of events and routines",
-              prompt: "Read and say the times in a daily plan",
+              topic: "finding an available appointment time",
+              prompt:
+                "Read two schedules and identify a mutually available appointment time",
             },
             realtime: {
-              scenario: "arranging to meet at a specific time",
-              prompt: "Demonstrate telling the time and using 'a las...'",
+              scenario: "arranging and changing an appointment",
+              prompt:
+                "Arrange, confirm, and reschedule an appointment using dates and times",
             },
           },
         },
@@ -2456,14 +2542,17 @@ const baseLearningPath = withLocalizedSkillTreeText({
           xpRequired: 890,
           xpReward: 35,
           modes: ["reading", "realtime"],
+          objectiveAlignment: [["bill"], ["total", "charge", "payment"]],
           content: {
             reading: {
-              topic: "restaurant interactions",
-              prompt: "Read a menu and a short order and follow along",
+              topic: "checking an itemized restaurant bill",
+              prompt:
+                "Read an itemized restaurant bill and verify the items, total, and change",
             },
             realtime: {
-              scenario: "asking for the menu and the bill",
-              prompt: "Demonstrate ordering politely at a restaurant",
+              scenario: "paying and resolving a question about the bill",
+              prompt:
+                "Ask for the bill, clarify a charge, choose a payment method, and close politely",
             },
           },
         },
@@ -2509,12 +2598,12 @@ const baseLearningPath = withLocalizedSkillTreeText({
     {
       id: "unit-a1-12",
       title: {
-        en: "Common Objects",
-        es: "Objetos Comunes",
+        en: "Classroom Objects",
+        es: "Objetos del Aula",
       },
       description: {
-        en: "Everyday items",
-        es: "Artículos cotidianos",
+        en: "Identify and locate school and desk items",
+        es: "Identifica y ubica artículos escolares y de escritorio",
       },
       color: "#A855F7",
       position: { row: 5, offset: 1 },
@@ -2522,23 +2611,23 @@ const baseLearningPath = withLocalizedSkillTreeText({
         {
           id: "lesson-a1-12-1",
           title: {
-            en: "Everyday Items",
-            es: "Objetos Cotidianos",
+            en: "Desk and School Supplies",
+            es: "Útiles Escolares y de Escritorio",
           },
           description: {
-            en: "Learn key vocabulary for common objects",
-            es: "Aprende vocabulario clave para objetos comunes",
+            en: "Learn key classroom and workspace vocabulary",
+            es: "Aprende vocabulario clave del aula y del espacio de trabajo",
           },
           xpRequired: 935,
           xpReward: 45,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "common everyday objects",
+              topic: "classroom and workspace objects",
               focusPoints: [
-                "la mesa, la silla, el libro, el bolígrafo",
-                "el teléfono, las llaves, la mochila",
-                "la puerta, la ventana",
+                "el libro, el cuaderno, el bolígrafo, el lápiz",
+                "la mochila, el escritorio, la pizarra",
+                "el ordenador/computadora, la pantalla, el teclado",
               ],
             },
             grammar: {
@@ -2558,8 +2647,8 @@ const baseLearningPath = withLocalizedSkillTreeText({
             es: "¿Qué Es Esto?",
           },
           description: {
-            en: "Practice common objects in conversation",
-            es: "Practica objetos comunes en conversación",
+            en: "Identify classroom objects in conversation",
+            es: "Identifica objetos del aula en conversación",
           },
           xpRequired: 950,
           xpReward: 50,
@@ -2567,47 +2656,67 @@ const baseLearningPath = withLocalizedSkillTreeText({
           content: {
             realtime: {
               scenario: "naming the things on your desk",
-              prompt: "Practice object names with 'esto es...' and 'hay...'",
+              prompt:
+                "Identify and locate classroom objects with 'esto es...' and 'hay...'",
+              preserveCanonicalGoal: true,
+              targetCurriculumAliases: [
+                "realtime-practice-object-names-with-esto-es-and-hay-1",
+              ],
             },
             stories: {
-              topic: "objects around us",
-              prompt: "Read a description of a room's objects and discuss",
+              topic: "objects in a classroom",
+              prompt:
+                "Read a classroom description and identify where the school supplies are",
+              preserveCanonicalGoal: true,
+              targetCurriculumAliases: [
+                "stories-read-a-description-of-a-room-s-objects-and-discuss-1",
+              ],
             },
           },
         },
         {
           id: "lesson-a1-12-3",
           title: {
-            en: "Objects Around Us",
-            es: "Objetos a Nuestro Alrededor",
+            en: "Around the Classroom",
+            es: "Alrededor del Aula",
           },
           description: {
-            en: "Apply common objects skills",
-            es: "Aplica habilidades de objetos comunes",
+            en: "Use demonstratives to distinguish classroom objects",
+            es: "Usa demostrativos para distinguir objetos del aula",
           },
           xpRequired: 965,
           xpReward: 45,
           modes: ["reading", "realtime"],
           content: {
             reading: {
-              topic: "this and that with objects",
-              prompt: "Read and notice este/ese for near and far objects",
+              topic: "this and that with classroom objects",
+              prompt:
+                "Distinguish nearby and distant classroom objects with este and ese",
+              preserveCanonicalGoal: true,
+              targetCurriculumAliases: [
+                "reading-read-and-notice-este-ese-for-near-and-far-objects-1",
+              ],
             },
             realtime: {
-              scenario: "asking what something is",
-              prompt: "Demonstrate object vocabulary with '¿qué es esto?'",
+              scenario: "asking about unfamiliar classroom objects",
+              prompt:
+                "Ask and answer what classroom objects are with '¿qué es esto?'",
+              preserveCanonicalGoal: true,
+              targetCurriculumAliases: [
+                "realtime-demonstrate-object-vocabulary-with-que-es-esto-1",
+              ],
             },
           },
         },
         {
           id: "lesson-a1-12-quiz",
           title: {
-            en: "Common Objects Quiz",
-            es: "Prueba de Objetos Comunes",
+            en: "Classroom Objects Quiz",
+            es: "Prueba de Objetos del Aula",
           },
           description: {
-            en: "Test your knowledge of common objects",
-            es: "Prueba tus conocimientos de objetos comunes",
+            en: "Test your knowledge of classroom objects",
+            es: "Prueba tus conocimientos de objetos del aula",
           },
           xpRequired: 980,
           xpReward: 60,
@@ -2619,10 +2728,11 @@ const baseLearningPath = withLocalizedSkillTreeText({
           },
           content: {
             vocabulary: {
-              topic: "common objects",
+              topic: "classroom objects",
               focusPoints: [
-                "mesa, silla, libro, bolígrafo",
-                "teléfono, llaves, mochila",
+                "libro, cuaderno, bolígrafo, lápiz",
+                "mochila, escritorio, pizarra",
+                "ordenador/computadora, pantalla, teclado",
               ],
             },
             grammar: {
@@ -3646,14 +3756,17 @@ const baseLearningPath = withLocalizedSkillTreeText({
           xpRequired: 1490,
           xpReward: 45,
           modes: ["reading", "realtime"],
+          objectiveAlignment: [["dream", "destination"], ["appealing", "like"]],
           content: {
             reading: {
-              topic: "hay vs estar vs ser",
-              prompt: "Read and choose hay/está/es to describe places",
+              topic: "descriptions of dream destinations",
+              prompt:
+                "Read two destination descriptions and identify what makes each place appealing",
             },
             realtime: {
-              scenario: "comparing two neighborhoods",
-              prompt: "Demonstrate place description with hay, estar, and ser",
+              scenario: "sharing where you would most like to travel",
+              prompt:
+                "Describe a dream destination and explain what the place is like",
             },
           },
         },
@@ -4569,14 +4682,17 @@ const baseLearningPath = withLocalizedSkillTreeText({
           xpRequired: 2190,
           xpReward: 55,
           modes: ["reading", "realtime"],
+          objectiveAlignment: [["fitness"], ["goal"]],
           content: {
             reading: {
-              topic: "sports and frequency",
-              prompt: "Read and notice 'jugar a' vs 'hacer/practicar' with sports",
+              topic: "a simple fitness plan",
+              prompt:
+                "Read a fitness plan and identify its activity, frequency, and goal",
             },
             realtime: {
-              scenario: "describing your exercise routine",
-              prompt: "Demonstrate sports vocabulary with jugar/hacer and frequency",
+              scenario: "setting a realistic fitness goal",
+              prompt:
+                "State a fitness goal and explain what activity you will do and how often",
             },
           },
         },
@@ -5228,14 +5344,17 @@ const baseLearningPath = withLocalizedSkillTreeText({
           xpRequired: 2690,
           xpReward: 55,
           modes: ["reading", "realtime"],
+          objectiveAlignment: [["healthy"], ["habit", "routine"]],
           content: {
             reading: {
-              topic: "body parts and aches",
-              prompt: "Read and match symptoms to body parts with 'doler'",
+              topic: "a simple healthy routine",
+              prompt:
+                "Read a simple healthy routine and identify habits that support wellbeing",
             },
             realtime: {
-              scenario: "describing where it hurts",
-              prompt: "Demonstrate body vocabulary with 'me duele' and 'me duelen'",
+              scenario: "sharing realistic ways to live more healthfully",
+              prompt:
+                "Describe healthy habits for food, movement, rest, and sleep",
             },
           },
         },
@@ -5492,14 +5611,17 @@ const baseLearningPath = withLocalizedSkillTreeText({
           xpRequired: 2890,
           xpReward: 55,
           modes: ["reading", "realtime"],
+          objectiveAlignment: [["dream"], ["job"]],
           content: {
             reading: {
-              topic: "professions and workplaces",
-              prompt: "Read and match jobs to where people work",
+              topic: "job profiles and personal interests",
+              prompt:
+                "Read two job profiles and identify which one matches a person's interests and why",
             },
             realtime: {
-              scenario: "describing your job or dream job",
-              prompt: "Demonstrate job vocabulary with 'ser' and 'trabajar de/en'",
+              scenario: "explaining what would make a job fulfilling",
+              prompt:
+                "Describe a dream job and explain the tasks, workplace, and qualities you want",
             },
           },
         },
@@ -5624,14 +5746,17 @@ const baseLearningPath = withLocalizedSkillTreeText({
           xpRequired: 2990,
           xpReward: 35,
           modes: ["reading", "realtime"],
+          objectiveAlignment: [["learning", "learner"], ["progress", "goal"]],
           content: {
             reading: {
-              topic: "subjects and school life",
-              prompt: "Read a timetable and discuss the subjects and times",
+              topic: "a learner's progress and next steps",
+              prompt:
+                "Read a learner progress note and identify strengths, challenges, and the next goal",
             },
             realtime: {
-              scenario: "describing your studies",
-              prompt: "Demonstrate school vocabulary with 'estudiar' and 'tener que'",
+              scenario: "reflecting on progress and planning what to study next",
+              prompt:
+                "Describe your learning progress and set one specific study goal",
             },
           },
         },
@@ -8662,14 +8787,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           xpRequired: 5985,
           xpReward: 45,
           modes: ["reading", "realtime"],
+          objectiveAlignment: [
+            ["future", "predict"],
+            ["science", "scientific", "technology"],
+          ],
           content: {
             reading: {
-              topic: "comprehending science writing",
-              prompt: "Read a science text and paraphrase the main finding",
+              topic: "evidence-based predictions about emerging science",
+              prompt:
+                "Read predictions about an emerging technology and distinguish evidence from speculation",
             },
             realtime: {
-              scenario: "debating the pros and cons of AI",
-              prompt: "Demonstrate science vocabulary to argue a position",
+              scenario: "considering how a scientific advance may change daily life",
+              prompt:
+                "Predict how a scientific advance could affect daily life and defend the prediction",
             },
           },
         },
@@ -8902,14 +9033,17 @@ const baseLearningPath = withLocalizedSkillTreeText({
           xpRequired: 6255,
           xpReward: 40,
           modes: ["realtime", "stories"],
+          objectiveAlignment: [["artistic"], ["movement"]],
           content: {
             realtime: {
-              scenario: "recommending a book or film to a friend",
-              prompt: "Practice summarizing a plot and giving your opinion",
+              scenario: "comparing two artistic movements",
+              prompt:
+                "Compare two artistic movements and explain a defining feature of each",
             },
             stories: {
-              topic: "a book or film review",
-              prompt: "Read a review and discuss the opinion and reasons",
+              topic: "the origins and influence of an artistic movement",
+              prompt:
+                "Read about an artistic movement and identify its period, style, and influence",
             },
           },
         },
@@ -8926,14 +9060,17 @@ const baseLearningPath = withLocalizedSkillTreeText({
           xpRequired: 6285,
           xpReward: 45,
           modes: ["reading", "realtime"],
+          objectiveAlignment: [["cultural"], ["context"]],
           content: {
             reading: {
-              topic: "interpreting a short literary text",
-              prompt: "Read a passage and discuss its theme and characters",
+              topic: "the cultural context behind a creative work",
+              prompt:
+                "Read a cultural text or artwork description and identify the values and context it reflects",
             },
             realtime: {
-              scenario: "discussing your favorite work",
-              prompt: "Demonstrate arts vocabulary to describe and evaluate a work",
+              scenario: "connecting a creative work to its time and community",
+              prompt:
+                "Analyze how a work reflects its cultural and historical context",
             },
           },
         },
@@ -9058,14 +9195,20 @@ const baseLearningPath = withLocalizedSkillTreeText({
           xpRequired: 6435,
           xpReward: 35,
           modes: ["reading", "realtime"],
+          objectiveAlignment: [
+            ["citizen", "civic"],
+            ["action", "participation"],
+          ],
           content: {
             reading: {
-              topic: "bias and perspective in political texts",
-              prompt: "Read two takes on an issue and compare their stance",
+              topic: "ways citizens can participate in their community",
+              prompt:
+                "Read a community proposal and identify a concrete action citizens can take",
             },
             realtime: {
-              scenario: "debating a policy proposal politely",
-              prompt: "Demonstrate politics vocabulary with concession and rebuttal",
+              scenario: "organizing a practical response to a community need",
+              prompt:
+                "Propose a civic action, explain its benefit, and respond to one concern",
             },
           },
         },
@@ -9190,14 +9333,17 @@ const baseLearningPath = withLocalizedSkillTreeText({
           xpRequired: 6585,
           xpReward: 55,
           modes: ["reading", "realtime"],
+          objectiveAlignment: [["wellness", "wellbeing"], ["physical"], ["mental"]],
           content: {
             reading: {
-              topic: "habits and their effects",
-              prompt: "Read about a habit and its impact on health",
+              topic: "how different dimensions of wellbeing interact",
+              prompt:
+                "Read a wellness plan and identify how sleep, nutrition, movement, and stress affect one another",
             },
             realtime: {
-              scenario: "at the doctor describing symptoms and getting advice",
-              prompt: "Demonstrate health vocabulary to describe a problem and advice",
+              scenario: "creating a balanced plan for overall wellbeing",
+              prompt:
+                "Discuss a wellbeing plan that supports both physical and mental health",
             },
           },
         },
@@ -9589,16 +9735,17 @@ const baseLearningPath = withLocalizedSkillTreeText({
           xpRequired: 7070,
           xpReward: 35,
           modes: ["reading", "realtime"],
+          objectiveAlignment: [["emotion", "regret", "wish"], ["past"]],
           content: {
             reading: {
-              topic: "imperfect subjunctive in si-clauses and reported speech",
+              topic: "regret and desire expressed through past-subjunctive forms",
               prompt:
-                "Read and identify hypothetical and past-wish uses of the imperfect subjunctive",
+                "Read a reflection and identify how past-subjunctive forms express regret or desire",
             },
             realtime: {
-              scenario: "talking about unreal situations (si tuviera tiempo, viajaría)",
+              scenario: "reflecting on emotionally significant unreal past situations",
               prompt:
-                "Demonstrate the imperfect subjunctive in si-clauses and after past-tense triggers",
+                "Express regret, wishes, and emotional reactions about unreal past situations",
             },
           },
         },
@@ -10110,14 +10257,17 @@ const baseLearningPath = withLocalizedSkillTreeText({
           xpRequired: 7770,
           xpReward: 45,
           modes: ["reading", "realtime"],
+          objectiveAlignment: [["lead", "leadership"], ["team", "meeting"]],
           content: {
             reading: {
-              topic: "interpreting professional documents",
-              prompt: "Read a proposal and summarize its key points",
+              topic: "priorities and responsibilities in a team proposal",
+              prompt:
+                "Read a team proposal and identify its priorities, risks, and responsibilities",
             },
             realtime: {
-              scenario: "presenting an update to your team",
-              prompt: "Demonstrate clear, professional communication in a meeting",
+              scenario: "leading a short planning meeting",
+              prompt:
+                "Lead a short meeting by framing the goal, inviting input, and assigning next steps",
             },
           },
         },
@@ -11082,25 +11232,26 @@ const baseLearningPath = withLocalizedSkillTreeText({
           id: "lesson-c2-3-3",
           title: {
             en: "Artistic Language",
-            es: "Dominio Estilístico - Aplicación",
+            es: "Lenguaje Artístico",
           },
           description: {
-            en: "Apply stylistic mastery skills",
-            es: "Aplica habilidades de dominio estilístico",
+            en: "Apply artistic language skills",
+            es: "Aplica recursos de lenguaje artístico",
           },
           xpRequired: 9055,
           xpReward: 45,
           modes: ["reading", "realtime"],
+          objectiveAlignment: [["artistic", "expressive"], ["imagery"]],
           content: {
             reading: {
-              topic: "formal and literary discourse markers and nominalization",
+              topic: "imagery, rhythm, and stylistic choices in literary language",
               prompt:
-                "Read a formal opinion piece and identify hedging, connectors, and sophisticated phrasing",
+                "Read a literary passage and identify imagery, rhythm, and deliberate stylistic choices",
             },
             realtime: {
-              scenario: "giving diplomatic, softened feedback vs blunt feedback",
+              scenario: "turning an ordinary description into expressive language",
               prompt:
-                "Demonstrate softening and politeness strategies, like 'quizás convendría...' and 'me preguntaba si...'",
+                "Create a short expressive description using imagery and figurative language",
             },
           },
         },
@@ -11969,6 +12120,7 @@ function addSupplementalLessons(level, unit) {
       },
       xpRequired: maxNonQuizXp + xpStep,
       xpReward: 35,
+      tutorPurpose: "targeted_review",
       modes: ["grammar", "vocabulary"],
       content: {
         grammar: {
@@ -11997,6 +12149,7 @@ function addSupplementalLessons(level, unit) {
       },
       xpRequired: maxNonQuizXp + xpStep * 2,
       xpReward: 60,
+      tutorPurpose: "integrated_scenario",
       modes: ["realtime", "reading", "stories"],
       content: {
         realtime: generateIntegratedPracticeGoal(topic, unit, lessons),
@@ -13187,6 +13340,7 @@ function applyCEFRScaffolding(path) {
           xpRequired: maxXp + 30,
           xpReward: 30,
           isGame: true,
+          tutorPurpose: "rpg_game",
           modes: ["game"],
           content: {
             game: {

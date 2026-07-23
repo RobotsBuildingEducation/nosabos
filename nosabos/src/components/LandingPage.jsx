@@ -1,13 +1,5 @@
-import React, {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
-import {
-  motion,
-  AnimatePresence,
-} from "framer-motion";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   FaComments,
   FaBookOpen,
@@ -51,6 +43,10 @@ import useSoundSettings from "../hooks/useSoundSettings";
 import * as Tone from "tone";
 import { useThemeStore } from "../useThemeStore";
 import { getThemeModeToggleProps } from "../utils/themeModeToggleStyle";
+import {
+  APP_BUTTON_RADIUS as LANDING_BUTTON_RADIUS,
+  APP_SQUIRCLE_SHAPE as LANDING_SQUIRCLE_SHAPE,
+} from "../theme";
 import {
   getPracticeLanguageOptions,
   getSupportLanguageOptions,
@@ -98,7 +94,8 @@ const theme = {
     },
   },
   fonts: {
-    display: "'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    display:
+      "'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
     body: "'DM Sans', -apple-system, sans-serif",
     mono: "'JetBrains Mono', monospace",
   },
@@ -519,8 +516,7 @@ const translations = {
     signin_or: "o",
     signin_error_invalid_key:
       "Chiave segreta non valida. Controllala e riprova.",
-    signin_error_extension:
-      "Accesso con estensione non riuscito. Riprova.",
+    signin_error_extension: "Accesso con estensione non riuscito. Riprova.",
     signin_error_generic: "Accesso non riuscito. Riprova.",
     back_button: "Indietro",
     language_nl: "Olandese",
@@ -669,10 +665,8 @@ translations.fr = {
   signin_button: "Connexion",
   signin_extension: "Connexion avec extension",
   signin_or: "ou",
-  signin_error_invalid_key:
-    "Cle secrete invalide. Verifie-la et reessaie.",
-  signin_error_extension:
-    "La connexion avec l'extension a echoue. Reessaie.",
+  signin_error_invalid_key: "Cle secrete invalide. Verifie-la et reessaie.",
+  signin_error_extension: "La connexion avec l'extension a echoue. Reessaie.",
   signin_error_generic: "Connexion impossible. Reessaie.",
   back_button: "Retour",
   language_nl: "Néerlandais",
@@ -720,8 +714,7 @@ translations.ja = {
   feature_daily_quests_desc:
     "練習・復習・報酬を組み合わせた毎日のプランを届けます。",
   feature_companion: "学習コンパニオン",
-  feature_companion_desc:
-    "学ぶほど強く育つコンパニオンと一緒に進みます。",
+  feature_companion_desc: "学ぶほど強く育つコンパニオンと一緒に進みます。",
   feature_conversations: "カスタマイズ会話",
   feature_conversations_desc:
     "場面、役割、難易度、目標を選び、練習したい内容に合ったスピーキングセッションを作れます。",
@@ -741,8 +734,7 @@ translations.ja = {
   feature_flashcards_desc:
     "レベルやよくある場面に合わせて新しい単語を練習します。",
   feature_goals: "日次目標",
-  feature_goals_desc:
-    "毎日のXP目標と進捗トラッキングで学習習慣を育てます。",
+  feature_goals_desc: "毎日のXP目標と進捗トラッキングで学習習慣を育てます。",
   feature_notes: "ノート生成",
   feature_notes_desc:
     "レッスン内容から、あとで見返せる学習ノートを自動で作成します。",
@@ -773,8 +765,7 @@ translations.ja = {
     "話す、読む、書く、聞く、文法、語彙の6つの練習モードで、学び方に合わせて学べます。",
   value_3:
     "A1の初級からC2の習熟まで、324レッスンと明確なマイルストーンで進むCEFR学習パスです。",
-  value_4:
-    "聞き取り、修正し、話す自信を育てるリアルタイム発音コーチングです。",
+  value_4: "聞き取り、修正し、話す自信を育てるリアルタイム発音コーチングです。",
   value_adaptive: "適応型",
   value_adaptive_desc: "練習はあなたのレベル、回答、目標に合わせて変化します。",
   value_voice: "音声対応",
@@ -792,8 +783,7 @@ translations.ja = {
   faq_label: "FAQ",
   faq_title: "よくある質問",
   faq_q1: "何を練習できますか？",
-  faq_a1:
-    "会話、語彙、文法、読解、ストーリー、発音などを練習できます。",
+  faq_a1: "会話、語彙、文法、読解、ストーリー、発音などを練習できます。",
   faq_q2: "キーについて知る必要がありますか？",
   faq_a2:
     "いいえ。技術的な部分はこちらで処理します。レッスンに戻るには保存したキーだけが必要です。",
@@ -811,7 +801,8 @@ translations.ja = {
   footer_brand: "Piyali",
   footer_tagline: "誰でも言語学習にアクセスできるように。",
   signin_title: "おかえりなさい",
-  signin_subtitle: "アカウント作成時に保存したシークレットキーを貼り付けてください。",
+  signin_subtitle:
+    "アカウント作成時に保存したシークレットキーを貼り付けてください。",
   signin_placeholder: "シークレットキーを貼り付け",
   signin_button: "サインイン",
   signin_extension: "拡張機能でサインイン",
@@ -820,8 +811,7 @@ translations.ja = {
     "シークレットキーが無効です。確認してもう一度お試しください。",
   signin_error_extension:
     "拡張機能でのサインインに失敗しました。もう一度お試しください。",
-  signin_error_generic:
-    "サインインに失敗しました。もう一度お試しください。",
+  signin_error_generic: "サインインに失敗しました。もう一度お試しください。",
   back_button: "戻る",
   language_nl: "オランダ語",
   language_en: "英語",
@@ -854,7 +844,9 @@ const LanguageMenu = ({ lang, setLang, playSound }) => {
   const selected = options.find((o) => o.value === lang) || options[0];
 
   return (
-    <div style={{ display: "flex", justifyContent: "center", marginTop: "8px" }}>
+    <div
+      style={{ display: "flex", justifyContent: "center", marginTop: "8px" }}
+    >
       <Menu autoSelect={false} isLazy>
         <MenuButton
           as={ChakraButton}
@@ -868,6 +860,8 @@ const LanguageMenu = ({ lang, setLang, playSound }) => {
           _active={{ bg: "var(--app-glass-bg-soft)" }}
           backdropFilter="blur(20px)"
           rounded="xl"
+          borderRadius={LANDING_BUTTON_RADIUS}
+          style={{ cornerShape: LANDING_SQUIRCLE_SHAPE }}
           px={4}
           py={5}
           minW="150px"
@@ -884,6 +878,8 @@ const LanguageMenu = ({ lang, setLang, playSound }) => {
         <MenuList
           borderColor="var(--app-border)"
           bg="var(--app-surface)"
+          borderRadius="24px"
+          style={{ cornerShape: LANDING_SQUIRCLE_SHAPE }}
           shadow="xl"
           minW="160px"
           maxH="300px"
@@ -895,10 +891,12 @@ const LanguageMenu = ({ lang, setLang, playSound }) => {
             "&::-webkit-scrollbar-track": {
               background: "var(--app-glass-bg-soft)",
               borderRadius: "4px",
+              cornerShape: LANDING_SQUIRCLE_SHAPE,
             },
             "&::-webkit-scrollbar-thumb": {
               background: "var(--app-border-strong)",
               borderRadius: "4px",
+              cornerShape: LANDING_SQUIRCLE_SHAPE,
             },
             "&::-webkit-scrollbar-thumb:hover": {
               background: "var(--app-text-muted)",
@@ -918,6 +916,8 @@ const LanguageMenu = ({ lang, setLang, playSound }) => {
                 key={opt.value}
                 value={opt.value}
                 bg="transparent"
+                borderRadius="12px"
+                style={{ cornerShape: LANDING_SQUIRCLE_SHAPE }}
                 _hover={{ bg: "var(--app-surface-elevated)" }}
                 _checked={{ fontWeight: "semibold" }}
                 py={3}
@@ -1184,6 +1184,7 @@ const Logo = ({ size = 48 }) => (
   <motion.div
     style={{
       borderRadius: "16px",
+      cornerShape: LANDING_SQUIRCLE_SHAPE,
       background: `linear-gradient(135deg, ${theme.colors.accent.primary} 0%, ${theme.colors.accent.secondary} 100%)`,
       display: "flex",
       alignItems: "center",
@@ -1218,7 +1219,12 @@ const Logo = ({ size = 48 }) => (
   </motion.div>
 );
 
-const ThemeModeToggle = ({ themeMode, onModeChange, fixed = true, compact = false }) => {
+const ThemeModeToggle = ({
+  themeMode,
+  onModeChange,
+  fixed = true,
+  compact = false,
+}) => {
   const isDark = themeMode === "dark";
   const isLightTheme = !isDark;
   const nextMode = isDark ? "light" : "dark";
@@ -1242,7 +1248,8 @@ const ThemeModeToggle = ({ themeMode, onModeChange, fixed = true, compact = fals
       size="sm"
       minW={compact ? "34px" : "40px"}
       h={compact ? "34px" : "40px"}
-      rounded="full"
+      borderRadius={LANDING_BUTTON_RADIUS}
+      style={{ cornerShape: LANDING_SQUIRCLE_SHAPE }}
       {...(fixed
         ? {
             position: "fixed",
@@ -1295,7 +1302,6 @@ const LandingHeader = ({
                 loading={isCreating}
                 disabled={isCreating}
                 style={{
-                  borderRadius: "999px",
                   padding: "8px 14px",
                   boxShadow: "none",
                   whiteSpace: "nowrap",
@@ -1308,7 +1314,6 @@ const LandingHeader = ({
                 variant="secondary"
                 onClick={onSignIn}
                 style={{
-                  borderRadius: "999px",
                   padding: "8px 14px",
                   whiteSpace: "nowrap",
                 }}
@@ -1376,7 +1381,6 @@ const Button = ({
     ...sizes[size],
     fontFamily: theme.fonts.body,
     fontWeight: 600,
-    borderRadius: "12px",
     cursor: disabled ? "not-allowed" : "pointer",
     opacity: disabled ? 0.5 : 1,
     width: fullWidth ? "100%" : "auto",
@@ -1388,6 +1392,8 @@ const Button = ({
     position: "relative",
     overflow: "hidden",
     ...style,
+    borderRadius: LANDING_BUTTON_RADIUS,
+    cornerShape: LANDING_SQUIRCLE_SHAPE,
   };
 
   return (
@@ -1438,11 +1444,12 @@ const Input = ({
       fontFamily: theme.fonts.body,
       background: theme.colors.bg.glass,
       border: `1px solid ${theme.colors.border.subtle}`,
-      borderRadius: "12px",
       color: theme.colors.text.primary,
       outline: "none",
       transition: "all 0.2s ease",
       ...style,
+      borderRadius: LANDING_BUTTON_RADIUS,
+      cornerShape: LANDING_SQUIRCLE_SHAPE,
     }}
     onFocus={(e) => {
       e.target.style.borderColor = theme.colors.accent.primary;
@@ -1511,6 +1518,7 @@ const FeatureCard = ({ icon, title, description }) => (
       padding: "clamp(16px, 3vw, 32px)",
       background: theme.colors.bg.elevated,
       borderRadius: "clamp(12px, 2vw, 24px)",
+      cornerShape: LANDING_SQUIRCLE_SHAPE,
       border: `1px solid ${theme.colors.border.subtle}`,
       position: "relative",
       overflow: "hidden",
@@ -1535,6 +1543,7 @@ const FeatureCard = ({ icon, title, description }) => (
         width: "clamp(40px, 5vw, 56px)",
         height: "clamp(40px, 5vw, 56px)",
         borderRadius: "clamp(10px, 1.5vw, 16px)",
+        cornerShape: LANDING_SQUIRCLE_SHAPE,
         background: theme.colors.bg.glow,
         border: `1px solid ${theme.colors.border.accent}`,
         display: "flex",
@@ -1584,6 +1593,8 @@ const FAQItem = ({ question, answer, isOpen, onClick, index }) => (
     transition={{ delay: index * 0.1 }}
     style={{
       borderBottom: `1px solid ${theme.colors.border.subtle}`,
+      borderRadius: "24px",
+      cornerShape: LANDING_SQUIRCLE_SHAPE,
       overflow: "hidden",
     }}
   >
@@ -1594,6 +1605,8 @@ const FAQItem = ({ question, answer, isOpen, onClick, index }) => (
         padding: "24px 0",
         background: "transparent",
         border: "none",
+        borderRadius: LANDING_BUTTON_RADIUS,
+        cornerShape: LANDING_SQUIRCLE_SHAPE,
         cursor: "pointer",
         display: "flex",
         alignItems: "center",
@@ -1714,6 +1727,7 @@ const SignInView = ({ copy, onBack, onSignIn, onExtension, hasExtension }) => {
           background: theme.colors.bg.elevated,
           backdropFilter: "blur(40px)",
           borderRadius: "32px",
+          cornerShape: LANDING_SQUIRCLE_SHAPE,
           border: `1px solid ${theme.colors.border.subtle}`,
         }}
       >
@@ -1888,7 +1902,9 @@ const LandingPage = ({ onAuthenticated }) => {
   const [isHeaderScrolled, setIsHeaderScrolled] = useState(false);
   const heroSectionRef = useRef(null);
   const [heroVoiceOrbState] = useState(() => {
-    const randomIndex = Math.floor(Math.random() * HERO_VOICE_ORB_STATES.length);
+    const randomIndex = Math.floor(
+      Math.random() * HERO_VOICE_ORB_STATES.length,
+    );
     return HERO_VOICE_ORB_STATES[randomIndex];
   });
 
@@ -2241,11 +2257,7 @@ const LandingPage = ({ onAuthenticated }) => {
             >
               {copy.cta_start} →
             </Button>
-            <Button
-              variant="secondary"
-              onClick={openSignInView}
-              fullWidth
-            >
+            <Button variant="secondary" onClick={openSignInView} fullWidth>
               {copy.cta_signin}
             </Button>
 
@@ -2299,69 +2311,69 @@ const LandingPage = ({ onAuthenticated }) => {
               ui: translations[lang] || translations.en,
               uiLang: lang,
               includeTierTagInLabel: false,
-            }).map(
-              (langOption, i) => (
-                <motion.div
-                  key={langOption.value}
-                  initial={{ opacity: 0, y: 10 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "50px" }}
-                  transition={{ duration: 0.2, delay: i * 0.02 }}
+            }).map((langOption, i) => (
+              <motion.div
+                key={langOption.value}
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "50px" }}
+                transition={{ duration: 0.2, delay: i * 0.02 }}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "20px 16px",
+                  borderRadius: "16px",
+                  cornerShape: LANDING_SQUIRCLE_SHAPE,
+                  background: theme.colors.bg.elevated,
+                  border: `1px solid ${theme.colors.border.subtle}`,
+                  width: "100%",
+                  minHeight: "120px",
+                }}
+              >
+                <div style={{ fontSize: "32px", lineHeight: 1 }}>
+                  {langOption.flag}
+                </div>
+                <span
                   style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "20px 16px",
-                    borderRadius: "16px",
-                    background: theme.colors.bg.elevated,
-                    border: `1px solid ${theme.colors.border.subtle}`,
-                    width: "100%",
-                    minHeight: "120px",
+                    fontFamily: theme.fonts.body,
+                    fontSize: "0.85rem",
+                    fontWeight: 500,
+                    color: theme.colors.text.primary,
+                    textAlign: "center",
                   }}
                 >
-                  <div style={{ fontSize: "32px", lineHeight: 1 }}>
-                    {langOption.flag}
-                  </div>
-                  <span
-                    style={{
-                      fontFamily: theme.fonts.body,
-                      fontSize: "0.85rem",
-                      fontWeight: 500,
-                      color: theme.colors.text.primary,
-                      textAlign: "center",
-                    }}
-                  >
-                    {langOption.label}
-                  </span>
-                  <span
-                    style={{
-                      fontFamily: theme.fonts.mono,
-                      fontSize: "0.6rem",
-                      fontWeight: 600,
-                      letterSpacing: "0.1em",
-                      textTransform: "uppercase",
-                      visibility:
-                        langOption.alpha || langOption.beta
-                          ? "visible"
-                          : "hidden",
-                      color: langOption.alpha
-                        ? theme.colors.accent.warm
-                        : theme.colors.accent.tertiary,
-                      background: langOption.alpha
-                        ? "rgba(249, 115, 22, 0.12)"
-                        : "rgba(167, 139, 250, 0.12)",
-                      padding: "2px 8px",
-                      borderRadius: "6px",
-                    }}
-                  >
-                    {langOption.alpha
-                      ? copy.languages_alpha
-                      : copy.languages_beta}
-                  </span>
-                </motion.div>
-              ),
-            )}
+                  {langOption.label}
+                </span>
+                <span
+                  style={{
+                    fontFamily: theme.fonts.mono,
+                    fontSize: "0.6rem",
+                    fontWeight: 600,
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    visibility:
+                      langOption.alpha || langOption.beta
+                        ? "visible"
+                        : "hidden",
+                    color: langOption.alpha
+                      ? theme.colors.accent.warm
+                      : theme.colors.accent.tertiary,
+                    background: langOption.alpha
+                      ? "rgba(249, 115, 22, 0.12)"
+                      : "rgba(167, 139, 250, 0.12)",
+                    padding: "2px 8px",
+                    borderRadius: "6px",
+                    cornerShape: LANDING_SQUIRCLE_SHAPE,
+                  }}
+                >
+                  {langOption.alpha
+                    ? copy.languages_alpha
+                    : copy.languages_beta}
+                </span>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
@@ -2375,7 +2387,12 @@ const LandingPage = ({ onAuthenticated }) => {
         }}
       >
         <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: COMPACT_HEADING_MARGIN }}>
+          <div
+            style={{
+              textAlign: "center",
+              marginBottom: COMPACT_HEADING_MARGIN,
+            }}
+          >
             <SectionLabel>{copy.features_label}</SectionLabel>
             <motion.h2
               initial={{ opacity: 0, y: 30 }}
@@ -2425,7 +2442,12 @@ const LandingPage = ({ onAuthenticated }) => {
         }}
       >
         <div style={{ maxWidth: "900px", margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: COMPACT_HEADING_MARGIN }}>
+          <div
+            style={{
+              textAlign: "center",
+              marginBottom: COMPACT_HEADING_MARGIN,
+            }}
+          >
             <SectionLabel>{copy.value_label}</SectionLabel>
             <motion.h2
               initial={{ opacity: 0, y: 30 }}
@@ -2464,6 +2486,7 @@ const LandingPage = ({ onAuthenticated }) => {
                   background: theme.colors.bg.elevated,
                   backdropFilter: "blur(20px)",
                   borderRadius: "16px",
+                  cornerShape: LANDING_SQUIRCLE_SHAPE,
                   border: `1px solid ${theme.colors.border.subtle}`,
                 }}
               >
@@ -2472,6 +2495,7 @@ const LandingPage = ({ onAuthenticated }) => {
                     width: "48px",
                     height: "48px",
                     borderRadius: "12px",
+                    cornerShape: LANDING_SQUIRCLE_SHAPE,
                     background: theme.colors.accent.primary,
                     display: "flex",
                     alignItems: "center",
@@ -2518,6 +2542,7 @@ const LandingPage = ({ onAuthenticated }) => {
             margin: "0 auto",
             padding: "32px",
             borderRadius: "32px",
+            cornerShape: LANDING_SQUIRCLE_SHAPE,
             border: `1px solid rgba(249, 115, 22, 0.2)`,
             textAlign: "center",
             position: "relative",
@@ -2642,6 +2667,7 @@ const LandingPage = ({ onAuthenticated }) => {
             background: theme.colors.bg.elevated,
             backdropFilter: "blur(40px)",
             borderRadius: "32px",
+            cornerShape: LANDING_SQUIRCLE_SHAPE,
             border: `1px solid ${theme.colors.border.subtle}`,
             position: "relative",
             overflow: "hidden",
@@ -2717,11 +2743,7 @@ const LandingPage = ({ onAuthenticated }) => {
             >
               {copy.cta_start} →
             </Button>
-            <Button
-              variant="secondary"
-              onClick={openSignInView}
-              fullWidth
-            >
+            <Button variant="secondary" onClick={openSignInView} fullWidth>
               {copy.cta_signin}
             </Button>
           </div>

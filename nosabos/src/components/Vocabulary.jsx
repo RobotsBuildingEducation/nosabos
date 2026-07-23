@@ -86,6 +86,7 @@ import {
   getQuestionDropZoneProps,
   getQuestionToolButtonProps,
   questionAssistantText,
+  questionSquircleStyle,
 } from "./questionUiStyles";
 import {
   DEFAULT_SUPPORT_LANGUAGE,
@@ -4866,6 +4867,7 @@ Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
             py={1}
             mx={1}
             borderRadius="md"
+            style={questionSquircleStyle}
             borderBottomWidth="2px"
             borderBottomColor={APP_BORDER_STRONG}
             bg={APP_SURFACE_MUTED}
@@ -4880,7 +4882,7 @@ Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
                 {({ setNodeRef, attributes, listeners, style, isDragging }) => (
                   <Box
                     ref={setNodeRef}
-                    style={style}
+                    style={{ ...style, ...questionSquircleStyle }}
                     {...attributes}
                     {...listeners}
                     onClick={() => {
@@ -4952,6 +4954,7 @@ Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
             py={1}
             mx={1}
             borderRadius="md"
+            style={questionSquircleStyle}
             borderBottomWidth="2px"
             borderBottomColor={APP_BORDER_STRONG}
             bg={APP_SURFACE_MUTED}
@@ -4966,7 +4969,7 @@ Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
                 {({ setNodeRef, attributes, listeners, style, isDragging }) => (
                   <Box
                     ref={setNodeRef}
-                    style={style}
+                    style={{ ...style, ...questionSquircleStyle }}
                     {...attributes}
                     {...listeners}
                     onClick={() => {
@@ -5443,6 +5446,7 @@ Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
             <Box
               bg={APP_SURFACE_ELEVATED}
               borderRadius="lg"
+              style={questionSquircleStyle}
               borderWidth="1px"
               borderColor={APP_BORDER}
               p={5}
@@ -5485,6 +5489,7 @@ Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
             <AssistantSupportBox />
 
             <Input
+              style={questionSquircleStyle}
               value={ansFill}
               onChange={(e) => setAnsFill(e.target.value)}
               placeholder={t("vocab_input_placeholder_word")}
@@ -5585,6 +5590,7 @@ Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
                   <Box
                     bg={APP_SURFACE_ELEVATED}
                     borderRadius="lg"
+                    style={questionSquircleStyle}
                     borderWidth="1px"
                     borderColor={APP_BORDER}
                     p={5}
@@ -5632,7 +5638,7 @@ Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
                         {({ setNodeRef, attributes, listeners, style, isDragging }) => (
                           <Box
                             ref={setNodeRef}
-                            style={style}
+                            style={{ ...style, ...questionSquircleStyle }}
                             {...attributes}
                             {...listeners}
                             onClick={() => {
@@ -5675,6 +5681,7 @@ Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
                 <Box
                   bg={APP_SURFACE_ELEVATED}
                   borderRadius="lg"
+                  style={questionSquircleStyle}
                   borderWidth="1px"
                   borderColor={APP_BORDER}
                   p={5}
@@ -5835,6 +5842,7 @@ Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
                   <Box
                     bg={APP_SURFACE_ELEVATED}
                     borderRadius="lg"
+                    style={questionSquircleStyle}
                     borderWidth="1px"
                     borderColor={APP_BORDER}
                     p={5}
@@ -5882,7 +5890,7 @@ Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
                         {({ setNodeRef, attributes, listeners, style, isDragging }) => (
                           <Box
                             ref={setNodeRef}
-                            style={style}
+                            style={{ ...style, ...questionSquircleStyle }}
                             {...attributes}
                             {...listeners}
                             onClick={() => {
@@ -5925,6 +5933,7 @@ Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
                 <Box
                   bg={APP_SURFACE_ELEVATED}
                   borderRadius="lg"
+                  style={questionSquircleStyle}
                   borderWidth="1px"
                   borderColor={APP_BORDER}
                   p={5}
@@ -6133,6 +6142,7 @@ Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
                 <Box
                   border={`1px solid ${APP_BORDER}`}
                   rounded="xl"
+                  style={questionSquircleStyle}
                   p={6}
                   textAlign="center"
                   bg={APP_SURFACE_ELEVATED}
@@ -6318,6 +6328,7 @@ Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
               bg={APP_SURFACE_ELEVATED}
               border={`1px solid ${APP_BORDER}`}
               rounded="2xl"
+              style={questionSquircleStyle}
               p={{ base: 4, md: 6 }}
               position="relative"
               overflow="hidden"
@@ -6384,6 +6395,7 @@ Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
                       spacing={3}
                       bg={APP_SURFACE}
                       rounded="xl"
+                      style={questionSquircleStyle}
                       px={3}
                       py={2}
                       border={`1px solid ${APP_BORDER}`}
@@ -6449,7 +6461,7 @@ Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
                             {({ setNodeRef, attributes, listeners, style }) => (
                               <Box
                                 ref={setNodeRef}
-                                style={style}
+                                style={{ ...style, ...questionSquircleStyle }}
                                 {...attributes}
                                 {...listeners}
                                 onClick={() => {
@@ -6508,6 +6520,7 @@ Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
                   bg={APP_SURFACE}
                   border={`1px solid ${APP_BORDER}`}
                   rounded="xl"
+                  style={questionSquircleStyle}
                   p={3}
                 >
                   <Text
@@ -6536,6 +6549,7 @@ Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
                     p={2}
                     border={`1px dashed ${APP_BORDER_STRONG}`}
                     rounded="lg"
+                    style={questionSquircleStyle}
                     bg={APP_SURFACE_MUTED}
                   >
                     {(mBank.length
@@ -6549,7 +6563,7 @@ Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
                           {({ setNodeRef, attributes, listeners, style }) => (
                             <Box
                               ref={setNodeRef}
-                              style={style}
+                              style={{ ...style, ...questionSquircleStyle }}
                               {...attributes}
                               {...listeners}
                               onClick={() => {
@@ -6595,6 +6609,7 @@ Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
                           py={1.5}
                           rounded="lg"
                           border={`1px dashed ${APP_BORDER_STRONG}`}
+                          style={questionSquircleStyle}
                           opacity={0.4}
                         >
                           …
@@ -6812,6 +6827,7 @@ Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
           bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
           color="white"
           borderRadius="2xl"
+          style={questionSquircleStyle}
           boxShadow="2xl"
           maxW={{ base: "90%", sm: "md" }}
         >
@@ -6873,6 +6889,7 @@ Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
               <Box
                 bg="whiteAlpha.200"
                 borderRadius="xl"
+                style={questionSquircleStyle}
                 py={6}
                 px={8}
                 width="100%"
@@ -6938,6 +6955,7 @@ Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
           bg="linear-gradient(135deg, #e53e3e 0%, #c53030 100%)"
           color="white"
           borderRadius="2xl"
+          style={questionSquircleStyle}
           boxShadow="2xl"
           maxW={{ base: "90%", sm: "md" }}
         >
@@ -6979,6 +6997,7 @@ Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
               <Box
                 bg="whiteAlpha.200"
                 borderRadius="xl"
+                style={questionSquircleStyle}
                 py={6}
                 px={8}
                 width="100%"

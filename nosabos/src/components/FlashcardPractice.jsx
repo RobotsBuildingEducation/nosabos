@@ -79,6 +79,7 @@ import {
   nativeModalMotionProps,
   nativeOverlayMotionProps,
 } from "../utils/modalMotion";
+import { APP_CARD_RADIUS, APP_SQUIRCLE_SHAPE } from "../theme";
 
 const MotionBox = motion(Box);
 const APP_SURFACE = "var(--app-surface)";
@@ -328,7 +329,10 @@ export default function FlashcardPractice({
   const dailyDoneToday = Math.min(Number(dailyReviewed) || 0, dailyTarget || 0);
   const dailyProgressPct =
     dailyTarget > 0
-      ? Math.min(100, Math.round(((Number(dailyReviewed) || 0) / dailyTarget) * 100))
+      ? Math.min(
+          100,
+          Math.round(((Number(dailyReviewed) || 0) / dailyTarget) * 100),
+        )
       : 0;
   const effectiveCardLanguage = getEffectiveCardLanguage(supportLang);
   const cardPromptTextProps = useMemo(
@@ -623,7 +627,10 @@ export default function FlashcardPractice({
     // of getting it wrong ("I couldn't recall this") — a struggle signal the
     // AI-graded capture path (which needs a typed answer) misses entirely. Bank
     // it once per card-open, deduped against that path via companionCapturedRef.
-    if (rating === "again" && companionCapturedRef.current !== (card?.id || "")) {
+    if (
+      rating === "again" &&
+      companionCapturedRef.current !== (card?.id || "")
+    ) {
       companionCapturedRef.current = card?.id || "";
       captureCompanionMemory({
         targetLang,
@@ -1048,7 +1055,8 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
       <ModalContent
         motionProps={nativeModalMotionProps}
         bg={modalShellTheme.bg}
-        borderRadius="2xl"
+        borderRadius={{ base: "64px", md: APP_CARD_RADIUS }}
+        style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
         overflow="hidden"
         mx={{ base: "1%", md: 0 }}
         h={{ base: "calc(100vh - 2rem)", md: "620px" }}
@@ -1073,7 +1081,8 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
               ? "none"
               : "matrixGlowShift 10s ease-in-out infinite",
             zIndex: 0,
-            borderRadius: "2xl",
+            borderRadius: "inherit",
+            cornerShape: APP_SQUIRCLE_SHAPE,
           },
           "&::after": {
             content: '""',
@@ -1086,7 +1095,8 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
             opacity: isLightTheme ? 0.28 : 0.45,
             mixBlendMode: isLightTheme ? "normal" : "screen",
             zIndex: 0,
-            borderRadius: "2xl",
+            borderRadius: "inherit",
+            cornerShape: APP_SQUIRCLE_SHAPE,
           },
           "@keyframes matrixGlowShift": {
             "0%, 100%": { transform: "translate(0, 0) scale(1)" },
@@ -1803,7 +1813,9 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
                                 <Text
                                   fontSize="xs"
                                   fontWeight="bold"
-                                  color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
+                                  color={
+                                    isLightTheme ? APP_TEXT_PRIMARY : "white"
+                                  }
                                 >
                                   {dailyDoneToday}/{dailyTarget}
                                 </Text>

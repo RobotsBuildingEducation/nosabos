@@ -38,6 +38,7 @@ import { CloseIcon } from "@chakra-ui/icons";
 import { LuBlocks, LuSparkles } from "react-icons/lu";
 import CEFRLevelNavigator from "./CEFRLevelNavigator";
 import { useThemeStore } from "../useThemeStore";
+import { APP_SQUIRCLE_SHAPE } from "../theme";
 import {
   RiLockLine,
   RiCheckLine,
@@ -257,6 +258,7 @@ import {
 } from "../utils/lessonCurriculum";
 import { prepareTutorialGameScenario } from "../utils/tutorialGameLoader";
 import { waitForGameLoaderExploration } from "../utils/gameLoaderTiming";
+import { GAME_LOADING_MESSAGES } from "../utils/gameLoadingMessages";
 import {
   nativeModalMotionProps,
   nativeOverlayMotionProps,
@@ -618,10 +620,10 @@ const LESSON_TITLE_ICONS = {
   "Tell Me About Yourself": RiMessageLine,
 
   // A1 - Numbers
-  "Counting to Twenty": RiNumbersLine,
+  "Counting from Eleven to Thirty": RiNumbersLine,
   "Using Numbers Daily": RiAlarmLine,
   "Phone Numbers and Ages": RiPhoneLine,
-  "Counting to One Hundred": RiBarChartLine,
+  "Counting from Thirty-One to One Hundred": RiBarChartLine,
   "Prices and Money": RiMoneyDollarCircleLine,
   "Big Numbers in Context": RiLineChartLine,
 
@@ -1388,6 +1390,7 @@ const UnitSection = React.memo(function UnitSection({
           bgGradient={`linear(135deg, ${unit.color}15, ${unit.color}08)`}
           backdropFilter="blur(10px)"
           borderRadius="2xl"
+          style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
           p={4}
           pl={6}
           pr={6}
@@ -1751,108 +1754,7 @@ const UnitSection = React.memo(function UnitSection({
  * Lesson Detail Modal
  * Shows detailed information about a lesson
  */
-export const GAME_LOADING_MESSAGES = {
-  en: [
-    "Building your world...",
-    "Placing NPCs...",
-    "Writing quest dialogue...",
-    "Generating vocabulary challenges...",
-    "Designing the map layout...",
-    "Preparing language puzzles...",
-    "Setting the scene...",
-    "Crafting your adventure...",
-  ],
-  es: [
-    "Construyendo tu mundo...",
-    "Colocando NPCs...",
-    "Escribiendo diálogos de misión...",
-    "Generando desafíos de vocabulario...",
-    "Diseñando el mapa...",
-    "Preparando acertijos de idiomas...",
-    "Ambientando la escena...",
-    "Creando tu aventura...",
-  ],
-  it: [
-    "Costruendo il tuo mondo...",
-    "Posizionando i personaggi...",
-    "Scrivendo i dialoghi della missione...",
-    "Generando sfide di vocabolario...",
-    "Progettando la mappa...",
-    "Preparando i rompicapo linguistici...",
-    "Ambientando la scena...",
-    "Creando la tua avventura...",
-  ],
-  pt: [
-    "Construindo o seu mundo...",
-    "Posicionando NPCs...",
-    "Escrevendo diálogos da missão...",
-    "Gerando desafios de vocabulário...",
-    "Desenhando o mapa...",
-    "Preparando enigmas de idioma...",
-    "Montando a cena...",
-    "Criando a sua aventura...",
-  ],
-  fr: [
-    "Construction de votre monde...",
-    "Placement des PNJ...",
-    "Ecriture des dialogues de quete...",
-    "Generation des defis de vocabulaire...",
-    "Conception de la carte...",
-    "Preparation des enigmes de langue...",
-    "Mise en scene...",
-    "Creation de votre aventure...",
-  ],
-  de: [
-    "Deine Welt wird gebaut...",
-    "Figuren werden platziert...",
-    "Quest-Dialoge werden geschrieben...",
-    "Wortschatz-Herausforderungen werden erstellt...",
-    "Das Kartenlayout wird entworfen...",
-    "Sprachrätsel werden vorbereitet...",
-    "Die Szene wird eingerichtet...",
-    "Dein Abenteuer wird geschmiedet...",
-  ],
-  ja: [
-    "あなたの世界を作っています...",
-    "NPCを配置しています...",
-    "クエストの会話を書いています...",
-    "語彙チャレンジを生成しています...",
-    "マップを設計しています...",
-    "言語パズルを準備しています...",
-    "場面を整えています...",
-    "冒険を組み立てています...",
-  ],
-  hi: [
-    "आपकी दुनिया बनाई जा रही है...",
-    "NPC को रखा जा रहा है...",
-    "क्वेस्ट के संवाद लिखे जा रहे हैं...",
-    "शब्दावली चुनौतियां तैयार की जा रही हैं...",
-    "मानचित्र का लेआउट बनाया जा रहा है...",
-    "भाषा पहेलियां तैयार की जा रही हैं...",
-    "दृश्य सजाया जा रहा है...",
-    "आपका रोमांच तैयार किया जा रहा है...",
-  ],
-  ar: [
-    "بنكوّن عالمك...",
-    "بنحط الشخصيات...",
-    "بنكتب حوار المهمة...",
-    "بنجهز تحديات المفردات...",
-    "بنرسم خريطة المكان...",
-    "بنحضّر ألغاز اللغة...",
-    "بنظبط المشهد...",
-    "بنصنع مغامرتك...",
-  ],
-  zh: [
-    "正在构建你的世界...",
-    "正在放置角色...",
-    "正在编写任务对话...",
-    "正在生成词汇挑战...",
-    "正在设计地图布局...",
-    "正在准备语言谜题...",
-    "正在布置场景...",
-    "正在打造你的冒险...",
-  ],
-};
+export { GAME_LOADING_MESSAGES };
 
 function LessonDetailModal({
   isOpen,
@@ -2080,6 +1982,7 @@ function LessonDetailModal({
         bg="gray.900"
         color="var(--app-text-primary)"
         borderRadius={gameLoading ? { base: "0", md: "2xl" } : "2xl"}
+        style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
         overflow="hidden"
         boxShadow={
           isLightTheme
@@ -2280,6 +2183,7 @@ function LessonDetailModal({
                         px={3}
                         py={1.5}
                         borderRadius="full"
+                        style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
                         display="flex"
                         alignItems="center"
                         gap={1.5}
@@ -2323,6 +2227,7 @@ function LessonDetailModal({
                       isLightTheme ? "var(--app-surface-muted)" : "whiteAlpha.50"
                     }
                     borderRadius="xl"
+                    style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
                     border="1px solid"
                     borderColor={
                       isLightTheme ? "var(--app-border)" : "whiteAlpha.100"
@@ -2423,6 +2328,7 @@ function LessonDetailModal({
                   }
                   p={5}
                   borderRadius="xl"
+                  style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
                   position="relative"
                   overflow="hidden"
                   border="1px solid"
@@ -2459,6 +2365,7 @@ function LessonDetailModal({
                       <Box
                         p={2}
                         borderRadius="lg"
+                        style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
                         bg={
                           isLightTheme
                             ? lesson.isTutorial
@@ -3085,6 +2992,7 @@ export default function SkillTree({
               px={6}
               py={2}
               borderRadius="8px"
+              style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
               border="1px solid"
               borderColor="var(--app-border)"
               boxShadow="var(--app-shadow-soft)"

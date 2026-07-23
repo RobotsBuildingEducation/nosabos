@@ -89,6 +89,7 @@ import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
 import XpProgressHeader from "./XpProgressHeader";
 import { useThemeStore } from "../useThemeStore";
+import { APP_MESSAGE_RADIUS, APP_SQUIRCLE_SHAPE } from "../theme";
 import {
   DEFAULT_SUPPORT_LANGUAGE,
   getLanguagePromptName,
@@ -599,12 +600,12 @@ function AlignedBubble({
       ref={containerRef}
       bg={isLightTheme ? APP_SURFACE_ELEVATED : "transparent"}
       p={3}
-      rounded="2xl"
+      borderRadius={APP_MESSAGE_RADIUS}
+      style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
       border="1px solid"
       borderColor={isLightTheme ? APP_BORDER : "rgba(255,255,255,0.06)"}
       boxShadow={isLightTheme ? APP_SHADOW : "0 14px 28px rgba(0,0,0,0.35)"}
       maxW="100%"
-      borderBottomLeftRadius="0px"
       sx={isLightTheme ? PAPER_PANEL_SX : MATRIX_PANEL_SX}
       color={isLightTheme ? APP_TEXT_PRIMARY : "whiteAlpha.950"}
     >
@@ -770,7 +771,8 @@ function UserBubble({ label, text, textLang = "en" }) {
       bg={isLightTheme ? "rgba(108, 182, 191, 0.16)" : "blue.500"}
       color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
       p={3}
-      rounded="lg"
+      borderRadius={APP_MESSAGE_RADIUS}
+      style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
       boxShadow={isLightTheme ? APP_SHADOW : "0 6px 20px rgba(0,0,0,0.25)"}
       border="1px solid"
       borderColor={

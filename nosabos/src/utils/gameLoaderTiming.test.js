@@ -7,7 +7,7 @@ import {
   getGameLoaderExplorationDelay,
 } from "./gameLoaderTiming.js";
 
-test("loader exploration delay stays within the configured 6-10 second window", () => {
+test("loader exploration delay stays within the configured 5-8 second window", () => {
   assert.equal(
     getGameLoaderExplorationDelay(0),
     GAME_LOADER_EXPLORATION_MIN_MS,
@@ -16,7 +16,7 @@ test("loader exploration delay stays within the configured 6-10 second window", 
     getGameLoaderExplorationDelay(1),
     GAME_LOADER_EXPLORATION_MAX_MS,
   );
-  assert.equal(getGameLoaderExplorationDelay(0.5), 8_000);
+  assert.equal(getGameLoaderExplorationDelay(0.5), 6_500);
 });
 
 test("loader exploration delay clamps invalid random inputs safely", () => {

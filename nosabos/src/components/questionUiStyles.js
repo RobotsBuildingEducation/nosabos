@@ -1,3 +1,5 @@
+import { APP_SQUIRCLE_SHAPE } from "../theme";
+
 const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
 const APP_SURFACE_MUTED = "var(--app-surface-muted)";
 const APP_BORDER = "var(--app-border)";
@@ -5,6 +7,7 @@ const APP_BORDER_STRONG = "var(--app-border-strong)";
 const APP_TEXT_PRIMARY = "var(--app-text-primary)";
 const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
 const APP_TEXT_MUTED = "var(--app-text-muted)";
+export const questionSquircleStyle = { cornerShape: APP_SQUIRCLE_SHAPE };
 
 const toneVars = {
   single: {
@@ -27,6 +30,7 @@ export const questionToneText = {
 
 export function getQuestionToolButtonProps({ active = false } = {}) {
   return {
+    style: questionSquircleStyle,
     variant: "outline",
     bg: active ? "var(--question-tool-bg-hover)" : "var(--question-tool-bg)",
     color: "var(--question-tool-accent)",
@@ -56,6 +60,7 @@ export function getQuestionChoiceCardProps({
   const palette = toneVars[tone] || toneVars.single;
 
   return {
+    style: questionSquircleStyle,
     borderWidth: "2px",
     borderColor: selected ? palette.accent : APP_BORDER,
     bg: selected ? palette.bg : APP_SURFACE_ELEVATED,
@@ -90,6 +95,7 @@ export function getQuestionChoiceIndicatorProps({
 
 export function getQuestionChipProps({ dragging = false } = {}) {
   return {
+    style: questionSquircleStyle,
     borderWidth: "1px",
     borderColor: dragging
       ? "var(--question-chip-accent)"
@@ -107,6 +113,7 @@ export function getQuestionChipProps({ dragging = false } = {}) {
 
 export function getQuestionDropZoneProps({ filled = false } = {}) {
   return {
+    style: questionSquircleStyle,
     border: filled
       ? "1px solid var(--question-chip-border)"
       : `1px dashed ${APP_BORDER_STRONG}`,
@@ -118,6 +125,7 @@ export function getQuestionDropZoneProps({ filled = false } = {}) {
 
 export function getQuestionFeedbackPanelProps({ ok = false } = {}) {
   return {
+    style: questionSquircleStyle,
     bg: ok ? "var(--question-success-bg)" : "var(--question-error-bg)",
     borderWidth: "1px",
     borderColor: ok
@@ -134,6 +142,7 @@ export const questionFeedbackAccent = {
 
 export function getQuestionAssistantPanelProps() {
   return {
+    style: questionSquircleStyle,
     bg: "var(--question-assistant-bg)",
     borderWidth: "1px",
     borderColor: "var(--question-assistant-border)",

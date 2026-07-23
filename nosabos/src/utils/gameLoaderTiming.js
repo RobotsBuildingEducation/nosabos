@@ -1,5 +1,5 @@
-export const GAME_LOADER_EXPLORATION_MIN_MS = 6_000;
-export const GAME_LOADER_EXPLORATION_MAX_MS = 10_000;
+export const GAME_LOADER_EXPLORATION_MIN_MS = 5_000;
+export const GAME_LOADER_EXPLORATION_MAX_MS = 8_000;
 
 export function getGameLoaderExplorationDelay(randomValue = Math.random()) {
   const normalized = Math.min(1, Math.max(0, Number(randomValue) || 0));

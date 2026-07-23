@@ -24,17 +24,33 @@ import nl from "./nl.js";
 import pl from "./pl.js";
 import pt from "./pt.js";
 import ru from "./ru.js";
+import { ALIGNMENT_TARGET_OVERRIDES } from "./alignmentOverrides.js";
+import { REPAIR_TARGET_OVERRIDES } from "./repairOverrides.js";
+
+const mergeLessonOverrides = (base, overrides = {}) => {
+  const merged = { ...base };
+  Object.entries(overrides).forEach(([lessonId, items]) => {
+    merged[lessonId] = { ...(merged[lessonId] || {}), ...items };
+  });
+  return merged;
+};
+
+const mergeAllOverrides = (base, lang) =>
+  mergeLessonOverrides(
+    mergeLessonOverrides(base, ALIGNMENT_TARGET_OVERRIDES[lang]),
+    REPAIR_TARGET_OVERRIDES[lang],
+  );
 
 export const TARGET_CURRICULUM = {
-  de,
-  el,
-  en,
-  fr,
-  ga,
-  it,
-  ja,
-  nl,
-  pl,
-  pt,
-  ru,
+  de: mergeAllOverrides(de, "de"),
+  el: mergeAllOverrides(el, "el"),
+  en: mergeAllOverrides(en, "en"),
+  fr: mergeAllOverrides(fr, "fr"),
+  ga: mergeAllOverrides(ga, "ga"),
+  it: mergeAllOverrides(it, "it"),
+  ja: mergeAllOverrides(ja, "ja"),
+  nl: mergeAllOverrides(nl, "nl"),
+  pl: mergeAllOverrides(pl, "pl"),
+  pt: mergeAllOverrides(pt, "pt"),
+  ru: mergeAllOverrides(ru, "ru"),
 };

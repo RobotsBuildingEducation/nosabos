@@ -236,6 +236,7 @@ export async function saveTutorAgendaProgress(
   lessonId,
   targetLang = "es",
   progress = {},
+  quizAttempt = null,
 ) {
   if (!npub || !lessonId) return;
 
@@ -252,6 +253,19 @@ export async function saveTutorAgendaProgress(
     if (id && value === true) acc[id] = true;
     return acc;
   }, {});
+  const correctItems = Object.entries(quizAttempt?.correctItems || {}).reduce(
+    (acc, [id, value]) => {
+      if (id && value === true) acc[id] = true;
+      return acc;
+    },
+    {},
+  );
+  const quiz = quizAttempt
+    ? {
+        correctItems,
+        attemptNumber: Math.max(1, Number(quizAttempt.attemptNumber) || 1),
+      }
+    : null;
 
   try {
     await Promise.all([
@@ -272,6 +286,7 @@ export async function saveTutorAgendaProgress(
           tutorAgendaProgress: {
             schemaVersion: TUTOR_AGENDA_PROGRESS_SCHEMA_VERSION,
             items,
+            ...(quiz ? { quiz } : {}),
             updatedAt: serverTimestamp(),
           },
           lessonStartXp: deleteField(),

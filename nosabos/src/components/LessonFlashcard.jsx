@@ -58,6 +58,7 @@ import { getLanguageDirection } from "../constants/languages";
 import {
   getQuestionFeedbackPanelProps,
   getQuestionToolButtonProps,
+  questionSquircleStyle,
   questionFeedbackAccent,
   questionToneText,
 } from "./questionUiStyles";
@@ -907,6 +908,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
         w="100%"
         p={3}
         borderRadius="xl"
+        style={questionSquircleStyle}
         bg={APP_SURFACE_ELEVATED}
         border="1px solid"
         borderColor={APP_BORDER}
@@ -947,6 +949,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
       <VStack spacing={3} w="100%" maxW="400px" mx="auto">
         <Box
           borderRadius="2xl"
+          style={questionSquircleStyle}
           overflow="hidden"
           bg={isLightTheme ? APP_SURFACE_ELEVATED : "#08142b"}
           boxShadow={
@@ -1028,6 +1031,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
     <VStack spacing={3} w="100%" maxW="400px" mx="auto">
       <Box
         borderRadius="2xl"
+        style={questionSquircleStyle}
         overflow="hidden"
         boxShadow={
           isLightTheme
@@ -1281,6 +1285,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                       <Box
                         p={2}
                         borderRadius="md"
+                        style={questionSquircleStyle}
                         bg={APP_SURFACE}
                         border="1px solid"
                         borderColor={APP_BORDER}
@@ -1490,6 +1495,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                         w="100%"
                         p={3}
                         borderRadius="md"
+                        style={questionSquircleStyle}
                         bg={APP_SURFACE_ELEVATED}
                         border="1px solid"
                         borderColor={APP_BORDER}
@@ -1626,6 +1632,7 @@ export function FlashcardDeckReview({
                 alignItems="center"
                 bg={isLightTheme ? APP_SURFACE_ELEVATED : "#08142b"}
                 borderRadius="xl"
+                style={questionSquircleStyle}
                 border="2px solid"
                 borderColor={isLightTheme ? APP_BORDER : "rgba(59, 130, 246, 0.2)"}
                 sx={{
@@ -1711,6 +1718,7 @@ export function FlashcardDeckReview({
                     : "linear(135deg, #065F46, #059669)"
                 }
                 borderRadius="xl"
+                style={questionSquircleStyle}
                 border="2px solid"
                 borderColor={isLightTheme ? APP_BORDER : "rgba(59, 130, 246, 0.2)"}
                 sx={{

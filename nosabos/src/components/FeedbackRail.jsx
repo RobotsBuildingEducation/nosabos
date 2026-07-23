@@ -20,6 +20,7 @@ import sparkleSound from "../assets/sparkle.mp3";
 import VoiceOrb from "./VoiceOrb";
 import {
   getQuestionFeedbackPanelProps,
+  questionSquircleStyle,
   questionFeedbackAccent,
   questionToneText,
 } from "./questionUiStyles";
@@ -245,6 +246,7 @@ const FeedbackRail = React.memo(
               p={4}
               mb={6}
               borderRadius="lg"
+              style={questionSquircleStyle}
               bg={APP_SURFACE_ELEVATED}
               borderWidth="1px"
               borderColor={APP_BORDER}

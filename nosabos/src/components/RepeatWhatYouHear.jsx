@@ -25,6 +25,7 @@ import {
   getQuestionAssistantPanelProps,
   getQuestionChipProps,
   getQuestionToolButtonProps,
+  questionSquircleStyle,
   questionAssistantText,
 } from "./questionUiStyles";
 
@@ -393,6 +394,7 @@ export default function RepeatWhatYouHear({
         <Box
           bg={APP_SURFACE_ELEVATED}
           borderRadius="lg"
+          style={questionSquircleStyle}
           borderWidth="1px"
           borderColor={APP_BORDER}
           p={5}
@@ -463,6 +465,7 @@ export default function RepeatWhatYouHear({
             <Box
               bg={APP_SURFACE}
               borderRadius="lg"
+              style={questionSquircleStyle}
               borderWidth="2px"
               borderColor={
                 lastOk === true
@@ -486,6 +489,7 @@ export default function RepeatWhatYouHear({
                 bg="transparent"
                 activeStyles={{ bg: "rgba(128, 90, 213, 0.08)" }}
                 borderRadius="md"
+                style={questionSquircleStyle}
                 p={2}
                 transition="background 0.2s ease"
               >
@@ -557,6 +561,7 @@ export default function RepeatWhatYouHear({
           bg="transparent"
           activeStyles={{ bg: "rgba(128, 90, 213, 0.05)" }}
           borderRadius="md"
+          style={questionSquircleStyle}
           transition="background 0.2s ease"
         >
               {bankOrder.map((wordIndex, position) => (

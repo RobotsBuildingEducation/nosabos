@@ -57,6 +57,7 @@ import {
   getLanguageLocale,
   normalizeSupportLanguage,
 } from "../constants/languages";
+import { APP_SQUIRCLE_SHAPE } from "../theme";
 
 const MotionBox = motion(Box);
 const EMPTY_PROGRESS = {};
@@ -69,6 +70,7 @@ const APP_TEXT_PRIMARY = "var(--app-text-primary)";
 const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
 const APP_TEXT_MUTED = "var(--app-text-muted)";
 const APP_SHADOW = "var(--app-shadow-soft)";
+const APP_SQUIRCLE_STYLE = { cornerShape: APP_SQUIRCLE_SHAPE };
 
 const getAppLanguage = () => {
   if (typeof window !== "undefined") {
@@ -447,7 +449,8 @@ const FlashcardCard = React.memo(function FlashcardCard({
         h="100%"
         bg={decor.bg}
         bgGradient={decor.bgGradient}
-        borderRadius="2xl"
+        borderRadius="48px"
+        style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
         border="2px solid"
         borderColor={decor.borderColor}
         boxShadow={
@@ -621,6 +624,7 @@ function DashboardStat({ label, value }) {
       flex="1"
       p={4}
       borderRadius="2xl"
+      style={APP_SQUIRCLE_STYLE}
       bg={APP_SURFACE_ELEVATED}
       border="1px solid"
       borderColor={APP_BORDER}
@@ -720,6 +724,7 @@ function ActivityHeatmap({ activityMap, appLanguage, embedded = false }) {
     <Box
       p={embedded ? 0 : { base: 3, md: 4 }}
       borderRadius={embedded ? "0" : "2xl"}
+      style={embedded ? undefined : APP_SQUIRCLE_STYLE}
       bg={embedded ? "transparent" : APP_SURFACE_ELEVATED}
       border={embedded ? "none" : "1px solid"}
       borderColor={embedded ? "transparent" : APP_BORDER}
@@ -1441,6 +1446,7 @@ export default function FlashcardSkillTree({
         <Box
           p={{ base: 5, md: 6 }}
           borderRadius="3xl"
+          style={APP_SQUIRCLE_STYLE}
           bg={APP_SURFACE}
           border="1px solid"
           borderColor={APP_BORDER}
@@ -1474,6 +1480,7 @@ export default function FlashcardSkillTree({
             <Box
               p={4}
               borderRadius="2xl"
+              style={APP_SQUIRCLE_STYLE}
               bg={APP_SURFACE_ELEVATED}
               border="1px solid"
               borderColor={APP_BORDER}
@@ -1505,8 +1512,10 @@ export default function FlashcardSkillTree({
                 border="1px solid"
                 borderColor={APP_BORDER}
                 borderRadius="2xl"
+                style={APP_SQUIRCLE_STYLE}
                 bg={APP_SURFACE_ELEVATED}
                 boxShadow={APP_SHADOW}
+                overflow="hidden"
               >
                 <AccordionButton
                   px={4}

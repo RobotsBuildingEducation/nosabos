@@ -68,6 +68,7 @@ import {
   nativeModalMotionProps,
   nativeOverlayMotionProps,
 } from "../utils/modalMotion";
+import { questionSquircleStyle } from "./questionUiStyles";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -1545,6 +1546,7 @@ YES or NO
           w="full"
           bg={APP_SURFACE_ELEVATED}
           borderRadius="xl"
+          style={questionSquircleStyle}
           p={8}
           border="1px solid"
           borderColor={APP_BORDER}
@@ -1590,6 +1592,7 @@ YES or NO
                 </Text>
               )}
               <Input
+                style={questionSquircleStyle}
                 value={ansFill}
                 onChange={(e) => setAnsFill(e.target.value)}
                 placeholder={quizUi.answerPlaceholder}
@@ -1634,7 +1637,17 @@ YES or NO
                 >
                   <Stack spacing={2}>
                     {choicesMC.map((choice, idx) => (
-                      <Radio key={idx} value={choice} colorScheme="teal">
+                      <Radio
+                        key={idx}
+                        value={choice}
+                        colorScheme="teal"
+                        p={3}
+                        bg={APP_SURFACE}
+                        border="1px solid"
+                        borderColor={APP_BORDER}
+                        borderRadius="lg"
+                        style={questionSquircleStyle}
+                      >
                         {choice}
                       </Radio>
                     ))}
@@ -1679,7 +1692,17 @@ YES or NO
                 >
                   <Stack spacing={2}>
                     {choicesMA.map((choice, idx) => (
-                      <Checkbox key={idx} value={choice} colorScheme="teal">
+                      <Checkbox
+                        key={idx}
+                        value={choice}
+                        colorScheme="teal"
+                        p={3}
+                        bg={APP_SURFACE}
+                        border="1px solid"
+                        borderColor={APP_BORDER}
+                        borderRadius="lg"
+                        style={questionSquircleStyle}
+                      >
                         {choice}
                       </Checkbox>
                     ))}
@@ -1756,6 +1779,7 @@ YES or NO
                       p={3}
                       bg={APP_SURFACE}
                       borderRadius="md"
+                      style={questionSquircleStyle}
                       border="1px solid"
                       borderColor={APP_BORDER}
                       w="full"
@@ -1773,6 +1797,7 @@ YES or NO
                       p={3}
                       bg={APP_SURFACE_ELEVATED}
                       borderRadius="md"
+                      style={questionSquircleStyle}
                       border="1px solid"
                       borderColor={APP_BORDER}
                       w="full"
@@ -1810,6 +1835,7 @@ YES or NO
               p={4}
               bg={lastOk ? "green.500" : "red.500"}
               borderRadius="md"
+              style={questionSquircleStyle}
               color="white"
               textAlign="center"
             >

@@ -2,11 +2,15 @@
 import { extendTheme, defineStyle, defineStyleConfig } from "@chakra-ui/react";
 import { getColor, darken } from "@chakra-ui/theme-tools";
 
-import { menuAnatomy as parts } from "@chakra-ui/anatomy";
+import { menuAnatomy, modalAnatomy } from "@chakra-ui/anatomy";
 import { createMultiStyleConfigHelpers } from "@chakra-ui/styled-system";
 
 const { definePartsStyle, defineMultiStyleConfig } =
-  createMultiStyleConfigHelpers(parts.keys);
+  createMultiStyleConfigHelpers(menuAnatomy.keys);
+const {
+  definePartsStyle: defineModalPartsStyle,
+  defineMultiStyleConfig: defineModalMultiStyleConfig,
+} = createMultiStyleConfigHelpers(modalAnatomy.keys);
 
 // -------------------------------------------------------
 // Colors (Duolingo-ish flat palette)
@@ -42,6 +46,13 @@ const appGray = {
 // -------------------------------------------------------
 // Buttons (flat press effect by default)
 // -------------------------------------------------------
+export const APP_BUTTON_RADIUS = "100px";
+export const APP_CARD_RADIUS = "72px";
+export const APP_ACTION_BAR_RADIUS = "40px";
+export const APP_DAILY_QUEST_RADIUS = "28px";
+export const APP_MESSAGE_RADIUS = "28px";
+export const APP_SQUIRCLE_SHAPE = "superellipse(2)";
+
 const duoBase = defineStyle((props) => {
   const { theme, colorScheme = "duo" } = props;
 
@@ -74,7 +85,8 @@ const duoBase = defineStyle((props) => {
     justifyContent: "center",
     whiteSpace: "nowrap",
     userSelect: "none",
-    borderRadius: "lg",
+    borderRadius: APP_BUTTON_RADIUS,
+    cornerShape: APP_SQUIRCLE_SHAPE,
 
     _hover: { outline: "none" },
     _active: {
@@ -98,8 +110,7 @@ const duoSolid = defineStyle((props) => {
     getColor(theme, `${colorScheme}.500`) ??
     getColor(theme, "gray.500") ??
     "#4A5568";
-  const hoverBg =
-    getColor(theme, `${colorScheme}.600`) ?? darken(bg, 8) ?? bg;
+  const hoverBg = getColor(theme, `${colorScheme}.600`) ?? darken(bg, 8) ?? bg;
   const activeBg =
     getColor(theme, `${colorScheme}.700`) ?? darken(bg, 16) ?? hoverBg;
 
@@ -168,6 +179,7 @@ const Button = defineStyleConfig({
 const iconBase = defineStyle((props) => ({
   ...duoBase(props),
   borderRadius: "full",
+  cornerShape: "round",
   px: 0,
   minW: 11,
 }));
@@ -239,6 +251,19 @@ const Menu = defineMultiStyleConfig({
 });
 
 // -------------------------------------------------------
+// Modal (rounded squircle shell by default)
+// -------------------------------------------------------
+const Modal = defineModalMultiStyleConfig({
+  baseStyle: defineModalPartsStyle({
+    dialog: {
+      borderRadius: { base: "64px", md: APP_CARD_RADIUS },
+      cornerShape: APP_SQUIRCLE_SHAPE,
+      overflow: "hidden",
+    },
+  }),
+});
+
+// -------------------------------------------------------
 // Export theme
 // -------------------------------------------------------
 export const theme = extendTheme({
@@ -247,6 +272,7 @@ export const theme = extendTheme({
     Button,
     IconButton,
     Menu,
+    Modal,
   },
   styles: {
     global: {
@@ -256,6 +282,76 @@ export const theme = extendTheme({
       },
       "::selection": {
         background: "rgba(59, 130, 246, 0.28)",
+      },
+      ".chakra-modal__content": {
+        borderRadius: {
+          base: "48px !important",
+          md: `${APP_CARD_RADIUS} !important`,
+        },
+        cornerShape: `${APP_SQUIRCLE_SHAPE} !important`,
+        border: "none !important",
+        outline: "none",
+        overflow: "hidden !important",
+      },
+      // Corner-aware padding keeps the content boundary visually concentric
+      // with the large modal squircle instead of letting content crowd its
+      // curved corners. Compact modals use a 28px safe inset; the 72px desktop
+      // shell uses 40px.
+      ".chakra-modal__header, .chakra-modal__body, .chakra-modal__footer": {
+        paddingInlineStart: {
+          base: "28px !important",
+          md: "40px !important",
+        },
+        paddingInlineEnd: {
+          base: "28px !important",
+          md: "40px !important",
+        },
+      },
+      ".chakra-modal__header, .app-modal-header": {
+        paddingInlineStart: {
+          base: "32px !important",
+          md: "48px !important",
+        },
+        paddingInlineEnd: {
+          base: "32px !important",
+          md: "48px !important",
+        },
+        paddingTop: {
+          base: "28px !important",
+          md: "32px !important",
+        },
+        paddingBottom: {
+          base: "28px !important",
+          md: "32px !important",
+        },
+      },
+      ".chakra-modal__footer": {
+        paddingBottom: {
+          base: "28px !important",
+          md: "40px !important",
+        },
+      },
+      ".chakra-modal__body:first-child": {
+        paddingTop: {
+          base: "28px !important",
+          md: "40px !important",
+        },
+      },
+      ".chakra-modal__body:last-child": {
+        paddingBottom: {
+          base: "28px !important",
+          md: "40px !important",
+        },
+      },
+      ".chakra-modal__close-btn": {
+        top: {
+          base: "20px !important",
+          md: "28px !important",
+        },
+        insetInlineEnd: {
+          base: "20px !important",
+          md: "28px !important",
+        },
       },
     },
   },

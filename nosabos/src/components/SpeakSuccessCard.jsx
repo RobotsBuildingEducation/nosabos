@@ -1,6 +1,7 @@
 import React from "react";
 import { Box, HStack, Icon, Text } from "@chakra-ui/react";
 import { FiMic } from "react-icons/fi";
+import { questionSquircleStyle } from "./questionUiStyles";
 
 export function SpeakSuccessCard({
   title,
@@ -54,6 +55,7 @@ export function SpeakSuccessCard({
       mt={4}
       p={4}
       rounded="xl"
+      style={questionSquircleStyle}
       bgGradient="linear(to-r, teal.500, purple.500)"
       color="white"
       shadow="xl"

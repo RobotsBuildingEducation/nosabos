@@ -17,6 +17,8 @@ const lowerFirst = (value) => {
 };
 
 const TEXT_TRANSLATIONS = {
+  "artistic language": "कलात्मक भाषा",
+  "apply artistic language skills": "कलात्मक भाषा के कौशल लागू करें",
   "getting started": "शुरुआत",
   "first words": "पहले शब्द",
   "people & family": "लोग और परिवार",
@@ -181,7 +183,8 @@ const TEXT_TRANSLATIONS = {
   "basic greetings and farewells for any situation":
     "हर स्थिति के लिए बुनियादी अभिवादन और विदाई",
   "count from zero to ten": "शून्य से दस तक गिनें",
-  "count to twenty": "बीस तक गिनें",
+  "count from eleven to thirty": "ग्यारह से तीस तक गिनें",
+  "counting from eleven to thirty": "ग्यारह से तीस तक गिनती",
   "finish the tutorial by playing a short game review.":
     "एक छोटा गेम रिव्यू खेलकर ट्यूटोरियल पूरा करें।",
   "improve your reading skills with a simple hello passage.":
@@ -199,8 +202,12 @@ const TEXT_TRANSLATIONS = {
     "करीबी परिवार के सदस्यों के शब्द सीखें",
   "learn to count from twenty-one to one hundred":
     "इक्कीस से सौ तक गिनना सीखें",
-  "learn to count from zero to twenty":
-    "शून्य से बीस तक गिनना सीखें",
+  "learn to count from eleven to thirty":
+    "ग्यारह से तीस तक गिनना सीखें",
+  "numbers 11-30": "संख्याएँ 11-30",
+  "numbers 11-30 quiz": "संख्याएँ 11-30 प्रश्नोत्तरी",
+  "test your knowledge of numbers 11-30":
+    "11 से 30 तक की संख्याओं का अपना ज्ञान जाँचें",
   "learn to introduce yourself": "अपना परिचय देना सीखें",
   "learn words for the people in your life":
     "अपनी ज़िंदगी के लोगों के लिए शब्द सीखें",

@@ -132,7 +132,8 @@ const TEXT_TRANSLATIONS = {
   "corporate world": "Mondo aziendale",
   "count from zero to ten in spanish": "Conta da zero a dieci in spagnolo",
   "count from zero to ten": "Conta da zero a dieci",
-  "count to twenty": "Conta fino a venti",
+  "count from eleven to thirty": "Conta da undici a trenta",
+  "counting from eleven to thirty": "Contare da undici a trenta",
   "counting objects": "Contare oggetti",
   "counting to one hundred": "Contare fino a cento",
   "counting to twenty": "Contare fino a venti",
@@ -310,7 +311,8 @@ const TEXT_TRANSLATIONS = {
     "Impara le parole per i familiari stretti",
   "learn to count from twenty-one to one hundred":
     "Impara a contare da ventuno a cento",
-  "learn to count from zero to twenty": "Impara a contare da zero a venti",
+  "learn to count from eleven to thirty":
+    "Impara a contare da undici a trenta",
   "learn to identify and name colors":
     "Impara a identificare e nominare i colori",
   "identify and name colors": "Identifica e nomina i colori",
@@ -391,7 +393,10 @@ const TEXT_TRANSLATIONS = {
   "nuanced meaning": "Significato sfumato",
   numbers: "Numeri",
   "numbers 0-10": "Numeri 0-10",
-  "numbers 0-20": "Numeri 0-20",
+  "numbers 11-30": "Numeri 11-30",
+  "numbers 11-30 quiz": "Quiz sui numeri 11-30",
+  "test your knowledge of numbers 11-30":
+    "Verifica la tua conoscenza dei numeri da 11 a 30",
   "numbers 21-100": "Numeri 21-100",
   objects: "Oggetti",
   "objects around us": "Oggetti intorno a noi",

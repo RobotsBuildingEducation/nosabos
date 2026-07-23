@@ -6,6 +6,7 @@ import {
   buildLessonCurriculumAudit,
   buildLessonAgenda,
   buildUnitQuizBlueprint,
+  getLessonQuizSettings,
   buildUnitCurriculumSnapshot,
   getCurriculumIntegrityIssues,
   getAgendaGoal,
@@ -364,10 +365,33 @@ test("quiz blueprints distribute questions across the lessons taught in a unit",
     ),
     true,
   );
+  assert.equal(
+    blueprint.questionTargets.every(
+      (target) => target.goal && Array.isArray(target.targetExamples),
+    ),
+    true,
+  );
+});
+
+test("quiz settings scale the pass mark when a unit has fewer available objectives", () => {
+  assert.deepEqual(getLessonQuizSettings({ isFinalQuiz: true }, 9), {
+    questionCount: 9,
+    passingScore: 8,
+  });
+  assert.deepEqual(
+    getLessonQuizSettings(
+      {
+        isFinalQuiz: true,
+        quizConfig: { questionsRequired: 10, passingScore: 8 },
+      },
+      5,
+    ),
+    { questionCount: 5, passingScore: 4 },
+  );
 });
 
 test("support-language labels show concrete vocabulary and grammar objectives", () => {
-  const units = getMultiLevelLearningPath("es", ["A1"]);
+  const units = getMultiLevelLearningPath("es", ["Pre-A1", "A1"]);
   const unit = units.find((candidate) => candidate.id === "unit-a1-5");
   const lesson = unit.lessons.find(
     (candidate) => candidate.id === "lesson-a1-5-1",
@@ -570,6 +594,254 @@ test("curriculum audit separates release blockers from manual review candidates"
     ),
     false,
   );
+});
+
+test("curriculum audit blocks a declared lesson/objective alignment regression", () => {
+  const lesson = withCanonicalLessonAgenda({
+    id: "lesson-phone-age-regression",
+    title: { en: "Phone Numbers and Ages", es: "Teléfonos y edades" },
+    objectiveAlignment: [["phone"], ["age"]],
+    modes: ["reading"],
+    content: {
+      reading: {
+        prompt: "Read and say numbers in simple prices",
+      },
+    },
+  });
+  const audit = buildLessonCurriculumAudit([
+    {
+      id: "unit-regression",
+      title: { en: "Numbers", es: "Números" },
+      lessons: [lesson],
+    },
+  ]);
+
+  assert.deepEqual(
+    audit.blockers
+      .filter((finding) => finding.type === "objective_alignment_missing")
+      .map((finding) => finding.expectedAnyOf),
+    [["phone"], ["age"]],
+  );
+});
+
+test("the numbers unit covers 11-30 and the repaired lessons match their titles", () => {
+  const units = getMultiLevelLearningPath("es", [
+    "Pre-A1",
+    "A1",
+    "A2",
+    "B2",
+    "C1",
+    "C2",
+  ]);
+  const numbersUnit = units.find((unit) => unit.id === "unit-a1-3");
+  const largerNumbersUnit = units.find((unit) => unit.id === "unit-a1-4");
+  assert.equal(numbersUnit.title.en, "Numbers 11-30");
+  assert.equal(largerNumbersUnit.title.en, "Numbers 31-100");
+  assert.equal(JSON.stringify(numbersUnit).includes("Numbers 0-20"), false);
+  assert.equal(JSON.stringify(largerNumbersUnit).includes("Numbers 21-100"), false);
+
+  const findLesson = (lessonId) =>
+    units.flatMap((unit) => unit.lessons || []).find((lesson) => lesson.id === lessonId);
+  const goalsFor = (lessonId) =>
+    getLessonAgenda(findLesson(lessonId)).map((item) => getAgendaGoal(item));
+
+  assert.equal(goalsFor("lesson-a1-3-1").some((goal) => /treinta/i.test(goal)), true);
+  assert.equal(goalsFor("lesson-a1-3-1").some((goal) => /cero/i.test(goal)), false);
+  assert.equal(
+    goalsFor("lesson-a1-4-1").some((goal) => /veintiuno|veintiún/i.test(goal)),
+    false,
+  );
+
+  const expectedConcepts = {
+    "lesson-a1-3-3": [/phone/i, /age/i],
+    "lesson-a1-7-3": [/appointment/i, /schedule|reschedule/i],
+    "lesson-a1-11-3": [/bill/i, /total|charge/i],
+    "lesson-a2-2-3": [/dream destination/i, /appealing/i],
+    "lesson-a2-9-3": [/fitness/i, /goal/i],
+    "lesson-a2-14-3": [/healthy/i, /habit/i],
+    "lesson-a2-16-3": [/dream job/i, /interests|qualities/i],
+    "lesson-a2-17-3": [/progress/i, /goal/i],
+    "lesson-b2-7-3": [/predict/i, /technology|scientific/i],
+    "lesson-b2-9-2": [/artistic movement/i, /influence/i],
+    "lesson-b2-9-3": [/cultural/i, /context/i],
+    "lesson-b2-10-3": [/civic|citizen/i, /action/i],
+    "lesson-b2-11-3": [/wellness|wellbeing/i, /physical/i, /mental/i],
+    "lesson-c1-2-3": [/regret/i, /emotion/i],
+    "lesson-c1-6-3": [/lead/i, /team|meeting/i],
+    "lesson-c2-3-3": [/imagery/i, /figurative/i],
+  };
+  Object.entries(expectedConcepts).forEach(([lessonId, patterns]) => {
+    const combinedGoals = goalsFor(lessonId).join(" ");
+    patterns.forEach((pattern) => assert.match(combinedGoals, pattern));
+  });
+});
+
+test("early repeated units now cover materially different communicative work", () => {
+  const units = getMultiLevelLearningPath("es", ["Pre-A1", "A1"]);
+  const firstWords = units.find((unit) => unit.id === "unit-a1-1");
+  const preA1Objects = units.find((unit) => unit.id === "unit-pre-a1-objects");
+  const classroomObjects = units.find((unit) => unit.id === "unit-a1-12");
+
+  assert.equal(firstWords.lessons[0].title.en, "Conversation Building Blocks");
+  assert.match(
+    getLessonAgenda(firstWords.lessons[1], { unit: firstWords })
+      .map(getAgendaGoal)
+      .join(" "),
+    /four-turn first meeting/i,
+  );
+  assert.equal(preA1Objects.title.en, "Common Objects");
+  assert.equal(classroomObjects.title.en, "Classroom Objects");
+  assert.match(JSON.stringify(preA1Objects), /household items|personal items/i);
+  assert.match(JSON.stringify(classroomObjects), /cuaderno|pizarra|teclado/i);
+
+  [
+    units.find((unit) => unit.id === "unit-a1-4").title,
+    firstWords.lessons[0].title,
+    classroomObjects.title,
+  ].forEach((localizedTitle) => {
+    SUPPORT_LANGUAGES.forEach((lang) => {
+      assert.equal(typeof localizedTitle[lang], "string");
+      assert.equal(localizedTitle[lang].trim().length > 0, true);
+      if (lang !== "en") assert.notEqual(localizedTitle[lang], localizedTitle.en);
+    });
+  });
+});
+
+test("supplemental lessons expose distinct Tutor purposes over inherited unit objectives", () => {
+  const units = getMultiLevelLearningPath("es", ["Pre-A1", "A1"]);
+  const unit = units.find((candidate) => candidate.id === "unit-a1-3");
+  const skillBuilder = unit.lessons.find(
+    (lesson) => lesson.id === `${unit.id}-skill-builder`,
+  );
+  const integratedPractice = unit.lessons.find(
+    (lesson) => lesson.id === `${unit.id}-integrated-practice`,
+  );
+  const gameReview = unit.lessons.find(
+    (lesson) => lesson.id === `${unit.id}-game`,
+  );
+
+  assert.equal(skillBuilder.tutorPurpose, "targeted_review");
+  assert.equal(integratedPractice.tutorPurpose, "integrated_scenario");
+  assert.equal(gameReview.tutorPurpose, "rpg_game");
+  assert.equal(gameReview.isGame, true);
+  assert.deepEqual(skillBuilder.reviewStrategy.formats, [
+    "pattern_recycling",
+    "micro_drill",
+  ]);
+  assert.deepEqual(integratedPractice.reviewStrategy.formats, [
+    "guided_scenario",
+    "skill_integration",
+  ]);
+  assert.equal(skillBuilder.reviewSourceLessonIds.length >= 3, true);
+  assert.deepEqual(
+    integratedPractice.reviewSourceLessonIds,
+    skillBuilder.reviewSourceLessonIds,
+  );
+  assert.equal(
+    integratedPractice.agenda.items.every(
+      (item) => item.source === "unit-review" && item.sourceLessonId,
+    ),
+    true,
+  );
+});
+
+test("remaining Pre-A1 story modules are measurable learner outcomes", () => {
+  const repairedIds = new Set([
+    "lesson-pre-a1-1-2",
+    "lesson-pre-a1-2-2",
+    "lesson-pre-a1-2-3",
+    "lesson-pre-a1-3-3",
+    "lesson-pre-a1-4-2",
+    "lesson-pre-a1-4-3",
+    "lesson-pre-a1-5-2",
+    "lesson-pre-a1-6-2",
+    "lesson-pre-a1-7-3",
+    "lesson-pre-a1-8-2",
+    "lesson-pre-a1-8-3",
+  ]);
+  const units = getMultiLevelLearningPath("es", ["Pre-A1"]);
+  const repairedLessons = units
+    .flatMap((unit) => unit.lessons || [])
+    .filter((lesson) => repairedIds.has(lesson.id));
+
+  assert.equal(repairedLessons.length, repairedIds.size);
+  repairedLessons.forEach((lesson) => {
+    getLessonAgenda(lesson).forEach((item) => {
+      assert.doesNotMatch(getAgendaGoal(item), /^(?:a short story|a story) about/i);
+    });
+  });
+});
+
+test("the second repair pass stays authored across every generated target curriculum", () => {
+  const targetLanguages = ["de", "el", "en", "fr", "ga", "it", "ja", "nl", "pl", "pt", "ru"];
+  const repairedIds = new Set([
+    "lesson-pre-a1-1-2", "lesson-pre-a1-2-2", "lesson-pre-a1-2-3",
+    "lesson-pre-a1-3-3", "lesson-pre-a1-4-2", "lesson-pre-a1-4-3",
+    "lesson-pre-a1-5-2", "lesson-pre-a1-6-2", "lesson-pre-a1-7-3",
+    "lesson-pre-a1-8-2", "lesson-pre-a1-8-3", "lesson-a1-1-2",
+    "lesson-a1-1-3", "lesson-a1-4-1", "lesson-a1-4-2", "lesson-a1-4-3",
+    "lesson-a1-7-3", "lesson-a1-11-3", "lesson-a1-12-1",
+    "lesson-a1-12-2", "lesson-a1-12-3", "lesson-a2-9-3",
+    "lesson-a2-16-3", "lesson-a2-17-3", "lesson-b2-7-3",
+    "lesson-b2-10-3", "lesson-c1-6-3",
+  ]);
+
+  targetLanguages.forEach((targetLang) => {
+    const units = getMultiLevelLearningPath(targetLang, [
+      "Pre-A1", "A1", "A2", "B2", "C1",
+    ]);
+    const repairedLessons = units
+      .flatMap((unit) =>
+        (unit.lessons || [])
+          .filter((lesson) => repairedIds.has(lesson.id))
+          .map((lesson) => ({ lesson, unit })),
+      );
+    assert.equal(repairedLessons.length, repairedIds.size);
+    repairedLessons.forEach(({ lesson, unit }) => {
+      const agenda = getLessonAgenda(lesson, { unit, targetLang });
+      assert.equal(agenda.every((item) => item.source === "target-language-authored"), true);
+      assert.equal(agenda.every((item) => item.targetExamples?.length > 0), true);
+    });
+  });
+});
+
+test("repaired objectives retain authored examples in every generated target curriculum", () => {
+  const targetLanguages = ["de", "el", "en", "fr", "ga", "it", "ja", "nl", "pl", "pt", "ru"];
+  const repairedLessonIds = new Set([
+    "lesson-a1-3-1",
+    "lesson-a1-3-2",
+    "lesson-a1-3-3",
+    "lesson-a2-2-3",
+    "lesson-a2-14-3",
+    "lesson-b2-9-2",
+    "lesson-b2-9-3",
+    "lesson-b2-11-3",
+    "lesson-c1-2-3",
+    "lesson-c2-3-3",
+  ]);
+
+  targetLanguages.forEach((targetLang) => {
+    const units = getMultiLevelLearningPath(targetLang, [
+      "Pre-A1",
+      "A1",
+      "A2",
+      "B2",
+      "C1",
+      "C2",
+    ]);
+    const repairedLessons = units
+      .flatMap((unit) =>
+        (unit.lessons || [])
+          .filter((lesson) => repairedLessonIds.has(lesson.id))
+          .map((lesson) => ({ lesson, unit })),
+      );
+    assert.equal(repairedLessons.length, repairedLessonIds.size);
+    repairedLessons.forEach(({ lesson, unit }) => {
+      const agenda = getLessonAgenda(lesson, { unit, targetLang });
+      assert.equal(agenda.every((item) => item.source === "target-language-authored"), true);
+      assert.equal(agenda.every((item) => item.targetExamples?.length > 0), true);
+    });
+  });
 });
 
 test("the full curriculum passes agenda and support-language integrity", () => {

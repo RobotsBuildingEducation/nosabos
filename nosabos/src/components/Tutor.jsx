@@ -1,5 +1,6 @@
 // components/Tutor.jsx
 import React, {
+  Suspense,
   useEffect,
   useRef,
   useState,
@@ -29,6 +30,7 @@ import {
   ModalOverlay,
   Text,
   Portal,
+  PortalManager,
   VStack,
   Wrap,
   Spinner,
@@ -127,6 +129,7 @@ import {
 } from "../utils/tutorTurnVerdict";
 import {
   advanceTutorAgendaProgress,
+  advanceTutorQuizAttempt,
   getTutorAgendaSnapshot,
   isLegacyTutorAgendaProgress,
   normalizeTutorAgendaProgress,
@@ -139,12 +142,18 @@ import {
   buildOpenAITutorTurnVerdictDirective,
   buildOpenAITeachTurnInstructions,
   buildOpenAIGoalTurnInstructions,
+  buildOpenAITargetedReviewTurnInstructions,
+  buildOpenAIIntegratedScenarioTurnInstructions,
+  buildOpenAIPurposeReviewLoopInstructions,
+  buildOpenAIQuizTurnInstructions,
 } from "../utils/openaiTutorPrompts";
 import { getOpenAITutorLanguageAnchor } from "../utils/openaiTutorLanguageAnchor";
 import { getLocalizedTutorTaskFormatSentence } from "../utils/tutorTaskFormatCopy";
 import {
   getAgendaGoal,
   getAgendaTargetForms,
+  buildUnitQuizBlueprint,
+  getLessonQuizSettings,
   getLessonAgenda,
   getLocalizedAgendaLabel,
 } from "../utils/lessonCurriculum";
@@ -166,6 +175,7 @@ import XpProgressHeader from "./XpProgressHeader";
 import { WaveBar } from "./WaveBar";
 import RandomCharacter from "./RandomCharacter";
 import { useThemeStore } from "../useThemeStore";
+import { APP_MESSAGE_RADIUS, APP_SQUIRCLE_SHAPE } from "../theme";
 import {
   DEFAULT_SUPPORT_LANGUAGE,
   getLanguagePromptName,
@@ -177,8 +187,97 @@ import {
   nativeModalMotionProps,
   nativeOverlayMotionProps,
 } from "../utils/modalMotion";
+import { buildGameReviewContext } from "../utils/gameReviewContext";
+import { waitForGameLoaderExploration } from "../utils/gameLoaderTiming";
+import { GAME_LOADING_MESSAGES } from "../utils/gameLoadingMessages";
+import {
+  getTutorLessonLaunchMode,
+  TUTOR_LESSON_LAUNCH_MODE,
+} from "../utils/tutorLessonLaunch";
 
 const DEFAULT_TUTOR_PAUSE_MS = 1200;
+const TutorLoadingMiniGame = React.lazy(() => import("./LoadingMiniGame"));
+let tutorGameRouterComponentPromise = null;
+
+function loadTutorGameRouterComponent() {
+  if (!tutorGameRouterComponentPromise) {
+    tutorGameRouterComponentPromise = import("./RPGGame/GameRouter.jsx")
+      .then((module) => module.default)
+      .catch((error) => {
+        tutorGameRouterComponentPromise = null;
+        throw error;
+      });
+  }
+  return tutorGameRouterComponentPromise;
+}
+
+function TutorGameReviewLoadingExperience({ supportLang = "en" }) {
+  const normalizedSupport = normalizeSupportLanguage(
+    supportLang,
+    DEFAULT_SUPPORT_LANGUAGE,
+  );
+  const messages =
+    GAME_LOADING_MESSAGES[normalizedSupport] || GAME_LOADING_MESSAGES.en;
+  const [messageIndex, setMessageIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setMessageIndex((current) => (current + 1) % messages.length);
+    }, 1500);
+    return () => window.clearInterval(interval);
+  }, [messages]);
+
+  return (
+    <Box
+      position="relative"
+      display="flex"
+      flexDirection="column"
+      h="100%"
+      minH={0}
+      overflow="hidden"
+      bg="#0a0d1b"
+    >
+      <Box
+        position="absolute"
+        top={0}
+        left={0}
+        right={0}
+        zIndex={2}
+        px={{ base: 3, md: 4 }}
+        py={{ base: 3, md: 4 }}
+        bgGradient="linear(to-b, rgba(10, 13, 27, 0.96), rgba(10, 13, 27, 0.72), transparent)"
+      >
+        <Text
+          fontSize={{ base: "sm", md: "md" }}
+          color="blue.100"
+          minH="24px"
+          key={messageIndex}
+          fontFamily="monospace"
+          sx={{
+            animation: "fadeIn 0.4s ease-in-out",
+            "@keyframes fadeIn": {
+              "0%": { opacity: 0, transform: "translateY(-4px)" },
+              "100%": { opacity: 1, transform: "translateY(0)" },
+            },
+          }}
+        >
+          {messages[messageIndex]}
+        </Text>
+      </Box>
+      <Box flex="1" overflow="hidden" position="relative">
+        <Suspense
+          fallback={
+            <Center h="100%">
+              <VoiceOrb state="idle" size={88} />
+            </Center>
+          }
+        >
+          <TutorLoadingMiniGame supportLang={supportLang} />
+        </Suspense>
+      </Box>
+    </Box>
+  );
+}
 
 function normalizeTutorPauseMs(value) {
   const numeric = Number(value);
@@ -283,6 +382,7 @@ const APP_BORDER = "var(--app-border)";
 const APP_TEXT_PRIMARY = "var(--app-text-primary)";
 const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
 const APP_SHADOW = "var(--app-shadow-soft)";
+const APP_SQUIRCLE_STYLE = { cornerShape: APP_SQUIRCLE_SHAPE };
 const TUTOR_CEFR_LEVELS = ["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"];
 
 function isTutorEarlyLevel(level) {
@@ -1380,6 +1480,20 @@ function getSavedTutorRegularAgendaProgress(
   );
 }
 
+function getSavedTutorQuizAttempt(lessonProgress) {
+  const saved = lessonProgress?.tutorAgendaProgress?.quiz;
+  return {
+    correctItems: Object.entries(saved?.correctItems || {}).reduce(
+      (acc, [id, value]) => {
+        if (id && value === true) acc[id] = true;
+        return acc;
+      },
+      {},
+    ),
+    attemptNumber: Math.max(1, Number(saved?.attemptNumber) || 1),
+  };
+}
+
 function getNextTutorStarterAgendaItem(progress = {}) {
   return TUTOR_STARTER_AGENDA_ITEMS.find((item) => !progress[item.id]) || null;
 }
@@ -1456,7 +1570,33 @@ function getTutorLessonFocusAgendaItems(
   targetLang = "",
   unit = null,
 ) {
-  return getLessonAgenda(lesson, { unit, targetLang }).map((item) => {
+  let agendaItems = getLessonAgenda(lesson, { unit, targetLang });
+  if (lesson?.isFinalQuiz && unit) {
+    const requestedQuestions = Math.max(
+      1,
+      Number(lesson?.quizConfig?.questionsRequired) || 10,
+    );
+    const blueprint = buildUnitQuizBlueprint(unit, {
+      beforeLessonId: lesson.id,
+      questionCount: requestedQuestions,
+      targetLang,
+    });
+    const settings = getLessonQuizSettings(
+      lesson,
+      blueprint.questionTargets.length,
+    );
+    agendaItems = blueprint.questionTargets
+      .slice(0, settings.questionCount)
+      .map((item) => ({
+        ...item,
+        id: `quiz:${item.sourceLessonId}:${item.agendaItemId}`,
+        targetRole: item.targetRole,
+        targetExamples: item.targetExamples,
+        source: "unit-quiz-blueprint",
+      }));
+  }
+
+  return agendaItems.map((item) => {
     const targetForms = getAgendaTargetForms(item);
     return {
       id: item.id,
@@ -1474,6 +1614,7 @@ function getTutorLessonFocusAgendaItems(
       kind: item.kind,
       modes: item.modes,
       examples: Array.isArray(item.targetExamples) ? item.targetExamples : [],
+      questionNumber: item.questionNumber || null,
       isExactTargetItem: targetForms.length > 0,
       isGenericAdapterItem: item.source === "target-language-adapter",
     };
@@ -2470,7 +2611,8 @@ function AlignedBubble({
       ref={containerRef}
       bg={isLightTheme ? "rgba(241, 228, 211, 0.98)" : "transparent"}
       p={3}
-      rounded="2xl"
+      borderRadius={APP_MESSAGE_RADIUS}
+      style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
       border="1px solid"
       borderColor={
         isLightTheme ? "rgba(142, 113, 79, 0.26)" : "rgba(255,255,255,0.06)"
@@ -2481,7 +2623,6 @@ function AlignedBubble({
           : "0 14px 28px rgba(0,0,0,0.35)"
       }
       maxW="100%"
-      borderBottomLeftRadius="0px"
       sx={isLightTheme ? TUTOR_MESSAGE_PANEL_SX : MATRIX_PANEL_SX}
       color={isLightTheme ? APP_TEXT_PRIMARY : "whiteAlpha.950"}
     >
@@ -2794,7 +2935,8 @@ function UserBubble({ label, text, textLang = "en" }) {
       bg={isLightTheme ? "rgba(108, 182, 191, 0.16)" : "blue.500"}
       color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
       p={3}
-      rounded="lg"
+      borderRadius={APP_MESSAGE_RADIUS}
+      style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
       boxShadow={isLightTheme ? APP_SHADOW : "0 6px 20px rgba(0,0,0,0.25)"}
       border="1px solid"
       borderColor={
@@ -3145,6 +3287,7 @@ function TutorPathLevelHeader({
           px={4}
           py={2}
           borderRadius="16px"
+          style={APP_SQUIRCLE_STYLE}
           bg={
             isLightTheme
               ? "linear-gradient(135deg, rgba(255,253,249,0.98) 0%, rgba(255,247,237,0.98) 100%)"
@@ -3209,6 +3352,7 @@ function TutorPathLevelHeader({
           p={3}
           bgGradient="linear(135deg, green.500, green.600)"
           borderRadius="lg"
+          style={APP_SQUIRCLE_STYLE}
           spacing={2}
           color="white"
         >
@@ -3622,6 +3766,7 @@ function TutorPathUnit({
           bgGradient={`linear(135deg, ${unit.color}15, ${unit.color}08)`}
           backdropFilter="blur(10px)"
           borderRadius="2xl"
+          style={APP_SQUIRCLE_STYLE}
           p={4}
           px={6}
           border="2px solid"
@@ -3834,7 +3979,9 @@ export default function Tutor({
   // flag disables the transcript judges) while its instructions demand tool
   // calls the model can only "obey" by saying them out loud.
   const isTutorToolGradingActive = () =>
-    TUTOR_TOOL_GRADING_ENABLED && realtimeProviderRef.current !== "openai";
+    TUTOR_TOOL_GRADING_ENABLED &&
+    realtimeProviderRef.current !== "openai" &&
+    !selectedTutorLessonRef.current?.isFinalQuiz;
   // Response ids whose assistant message is the tutorial welcome (so it renders
   // in the support language rather than the target language).
   const tutorWelcomeRidSetRef = useRef(new Set());
@@ -3995,11 +4142,22 @@ export default function Tutor({
   const [selectedTutorLesson, setSelectedTutorLesson] = useState(null);
   const [selectedTutorUnit, setSelectedTutorUnit] = useState(null);
   const [previewedTutorLesson, setPreviewedTutorLesson] = useState(null);
+  const tutorLessonPreviewModalContentRef = useRef(null);
+  const [tutorGameLoaderFrame, setTutorGameLoaderFrame] = useState(null);
   const [previewedTutorObjectivesExpanded, setPreviewedTutorObjectivesExpanded] =
     useState(false);
   const previewedTutorObjectivesScrollRef = useRef(null);
   const [isStartingPreviewedLesson, setIsStartingPreviewedLesson] =
     useState(false);
+  const [tutorGameLaunch, setTutorGameLaunch] = useState(null);
+  const tutorGameLaunchTokenRef = useRef(0);
+  const tutorGameCompletionInFlightRef = useRef(false);
+  useEffect(
+    () => () => {
+      tutorGameLaunchTokenRef.current += 1;
+    },
+    [],
+  );
   useEffect(() => {
     if (!previewedTutorObjectivesExpanded) return undefined;
     const scroller = previewedTutorObjectivesScrollRef.current;
@@ -4045,6 +4203,10 @@ export default function Tutor({
     lessonId: "",
     progress: {},
     schemaVersion: null,
+    quizCorrectItems: {},
+    quizAttemptNumber: 1,
+    quizLastFeedback: null,
+    quizPreviousAttemptResult: null,
   });
   const openAIRegularAgendaAdvancedTurnRef = useRef(null);
   // Render-side mirror of openAIRegularAgendaRef mutations, so UI that gates
@@ -4433,6 +4595,7 @@ export default function Tutor({
           savedRegularProgress,
           progressLessons?.[resumeLesson.lesson.id]?.tutorAgendaProgress
             ?.schemaVersion,
+          progressLessons?.[resumeLesson.lesson.id]?.tutorAgendaProgress?.quiz,
         );
         tutorLessonCompletionTriggeredRef.current = false;
         setConversationSettings((prev) => ({
@@ -4602,6 +4765,7 @@ export default function Tutor({
 
   function closeTutorLessonPreview() {
     if (isStartingPreviewedLesson) return;
+    setTutorGameLoaderFrame(null);
     setPreviewedTutorObjectivesExpanded(false);
     setPreviewedTutorLesson(null);
   }
@@ -4609,9 +4773,85 @@ export default function Tutor({
   async function handlePreviewedTutorLessonStart() {
     const preview = previewedTutorLesson;
     if (!preview?.lesson || preview.status === SKILL_STATUS.LOCKED) return;
+    const launchMode = getTutorLessonLaunchMode(preview.lesson);
 
     setIsStartingPreviewedLesson(true);
     try {
+      if (launchMode === TUTOR_LESSON_LAUNCH_MODE.RPG_GAME) {
+        setErr("");
+        const modalRect =
+          tutorLessonPreviewModalContentRef.current?.getBoundingClientRect?.();
+        setTutorGameLoaderFrame(
+          modalRect?.width && modalRect?.height
+            ? {
+                width: Math.round(modalRect.width),
+                height: Math.round(modalRect.height),
+              }
+            : null,
+        );
+        const requestToken = tutorGameLaunchTokenRef.current + 1;
+        tutorGameLaunchTokenRef.current = requestToken;
+        tutorGameCompletionInFlightRef.current = false;
+        setTutorGameLaunch({
+          phase: "loading",
+          lesson: preview.lesson,
+          unit: preview.unit,
+          status: preview.status,
+          scenario: null,
+          GameRouterComponent: null,
+        });
+
+        // The RPG owns microphone/audio while active. Tear down the realtime
+        // Tutor bridge before scenario generation so it cannot listen, speak,
+        // or accrue provider time behind the mini-map and game.
+        await stop();
+
+        const [{ prepareLegacyEpisodeScenario }, GameRouterComponent] =
+          await Promise.all([
+            import("./RPGGame/episodes/legacyScenario.js"),
+            loadTutorGameRouterComponent(),
+          ]);
+        if (requestToken !== tutorGameLaunchTokenRef.current) return;
+
+        const reviewContext = buildGameReviewContext({
+          lesson: preview.lesson,
+          unit: preview.unit,
+          targetLang: targetLangRef.current || targetLang,
+        });
+        const lessonWithReviewContext = reviewContext
+          ? { ...preview.lesson, gameReviewContext: reviewContext }
+          : preview.lesson;
+        const scenario = await prepareLegacyEpisodeScenario({
+          lesson: lessonWithReviewContext,
+          targetLang: targetLangRef.current || targetLang || "es",
+          supportLang: resolvedSupportLang || "en",
+        });
+        if (requestToken !== tutorGameLaunchTokenRef.current) return;
+
+        await waitForGameLoaderExploration();
+        if (requestToken !== tutorGameLaunchTokenRef.current) return;
+
+        await handleTutorLessonSelect(
+          lessonWithReviewContext,
+          preview.unit,
+          preview.status,
+        );
+        if (requestToken !== tutorGameLaunchTokenRef.current) return;
+
+        setPreviewedTutorObjectivesExpanded(false);
+        setPreviewedTutorLesson(null);
+        setTutorGameLoaderFrame(null);
+        setTutorGameLaunch({
+          phase: "playing",
+          lesson: lessonWithReviewContext,
+          unit: preview.unit,
+          status: preview.status,
+          scenario,
+          GameRouterComponent,
+        });
+        return;
+      }
+
       await handleTutorLessonSelect(
         preview.lesson,
         preview.unit,
@@ -4619,9 +4859,78 @@ export default function Tutor({
       );
       setPreviewedTutorObjectivesExpanded(false);
       setPreviewedTutorLesson(null);
+    } catch (error) {
+      console.error("Failed to start previewed Tutor lesson:", error);
+      if (launchMode === TUTOR_LESSON_LAUNCH_MODE.RPG_GAME) {
+        tutorGameLaunchTokenRef.current += 1;
+        setTutorGameLaunch(null);
+        setTutorGameLoaderFrame(null);
+        setErr(
+          tutorCopy(uiLang, {
+            en: "The game could not start. Please try again.",
+            es: "El juego no pudo iniciar. Inténtalo de nuevo.",
+            pt: "Não foi possível iniciar o jogo. Tente novamente.",
+            it: "Impossibile avviare il gioco. Riprova.",
+            fr: "Le jeu n’a pas pu démarrer. Réessaie.",
+            de: "Das Spiel konnte nicht gestartet werden. Versuche es erneut.",
+            ja: "ゲームを開始できませんでした。もう一度お試しください。",
+            hi: "गेम शुरू नहीं हो सका। फिर से कोशिश करें।",
+            ar: "ما قدرنا نبدأ اللعبة. جرّب مرة ثانية.",
+            zh: "游戏无法启动，请重试。",
+          }),
+        );
+      }
     } finally {
       setIsStartingPreviewedLesson(false);
     }
+  }
+
+  function handleTutorGameExit() {
+    if (tutorGameCompletionInFlightRef.current) return;
+    tutorGameLaunchTokenRef.current += 1;
+    setTutorGameLaunch(null);
+    openTutorPath();
+  }
+
+  async function handleTutorGameComplete() {
+    const launch = tutorGameLaunch;
+    if (!launch?.lesson || tutorGameCompletionInFlightRef.current) return;
+
+    tutorGameCompletionInFlightRef.current = true;
+    setTutorGameLaunch((current) =>
+      current ? { ...current, phase: "completing" } : current,
+    );
+
+    const completed =
+      launch.status === SKILL_STATUS.COMPLETED
+        ? true
+        : await completeTutorLessonFromXp(launch.lesson, launch.unit);
+
+    tutorGameCompletionInFlightRef.current = false;
+    if (completed) {
+      tutorGameLaunchTokenRef.current += 1;
+      setTutorGameLaunch(null);
+      openTutorPath();
+      return;
+    }
+
+    setTutorGameLaunch((current) =>
+      current ? { ...current, phase: "playing" } : current,
+    );
+    setErr(
+      tutorCopy(uiLang, {
+        en: "The game finished, but Tutor progress could not be saved. Please try again.",
+        es: "El juego terminó, pero no se pudo guardar el progreso de Tutor. Inténtalo de nuevo.",
+        pt: "O jogo terminou, mas o progresso do Tutor não pôde ser salvo. Tente novamente.",
+        it: "Il gioco è terminato, ma non è stato possibile salvare i progressi del Tutor. Riprova.",
+        fr: "Le jeu est terminé, mais la progression du Tutor n’a pas pu être enregistrée. Réessaie.",
+        de: "Das Spiel ist beendet, aber der Tutor-Fortschritt konnte nicht gespeichert werden. Versuche es erneut.",
+        ja: "ゲームは完了しましたが、Tutorの進捗を保存できませんでした。もう一度お試しください。",
+        hi: "गेम पूरा हुआ, लेकिन Tutor की प्रगति सेव नहीं हो सकी। फिर से कोशिश करें।",
+        ar: "خلصت اللعبة، بس ما قدرنا نحفظ تقدم Tutor. جرّب مرة ثانية.",
+        zh: "游戏已完成，但无法保存 Tutor 进度，请重试。",
+      }),
+    );
   }
 
   async function handleTutorLessonSelect(lesson, unit, status) {
@@ -4668,6 +4977,7 @@ export default function Tutor({
       lesson,
       savedRegularProgress,
       lessonProgress?.tutorAgendaProgress?.schemaVersion,
+      lessonProgress?.tutorAgendaProgress?.quiz,
     );
     tutorLessonCompletionTriggeredRef.current = isCompleted;
     setConversationSettings((prev) => ({
@@ -5337,6 +5647,7 @@ export default function Tutor({
     lesson,
     progress = {},
     schemaVersion = null,
+    quizAttempt = null,
   ) {
     const items = getTutorLessonFocusAgendaItems(
       lesson,
@@ -5361,6 +5672,22 @@ export default function Tutor({
         : Number.isFinite(normalizedSchemaVersion)
           ? normalizedSchemaVersion
           : null,
+      quizCorrectItems:
+        sameLesson && !quizAttempt
+          ? openAIRegularAgendaRef.current.quizCorrectItems || {}
+          : getSavedTutorQuizAttempt({
+              tutorAgendaProgress: { quiz: quizAttempt },
+            }).correctItems,
+      quizAttemptNumber:
+        sameLesson && !quizAttempt
+          ? openAIRegularAgendaRef.current.quizAttemptNumber || 1
+          : Math.max(1, Number(quizAttempt?.attemptNumber) || 1),
+      quizLastFeedback: sameLesson
+        ? openAIRegularAgendaRef.current.quizLastFeedback || null
+        : null,
+      quizPreviousAttemptResult: sameLesson
+        ? openAIRegularAgendaRef.current.quizPreviousAttemptResult || null
+        : null,
     };
     if (!sameLesson) openAIRegularAgendaAdvancedTurnRef.current = null;
     setTutorRegularAgendaTick((tick) => tick + 1);
@@ -5483,6 +5810,106 @@ export default function Tutor({
     return next.advancedItem;
   }
 
+  function recordTutorQuizAnswer({
+    correct = false,
+    confidence = 0,
+    correction = "",
+    reason = "",
+  } = {}) {
+    const snapshot = getOpenAIRegularTutorAgendaSnapshot();
+    if (!snapshot?.lesson?.isFinalQuiz || !snapshot.currentItem) {
+      return { recorded: false, lessonCompletionTriggered: false };
+    }
+    if (Number(confidence) < 0.55) {
+      openAIRegularAgendaRef.current.quizLastFeedback = null;
+      return { recorded: false, lessonCompletionTriggered: false };
+    }
+    if (
+      openAIRegularAgendaAdvancedTurnRef.current === turnCountRef.current
+    ) {
+      return { recorded: false, lessonCompletionTriggered: false };
+    }
+
+    const attemptNumber = Math.max(
+      1,
+      Number(openAIRegularAgendaRef.current.quizAttemptNumber) || 1,
+    );
+    const feedback = {
+      correct: !!correct,
+      correction: String(correction || "").trim(),
+      reason: String(reason || "").trim(),
+    };
+    const settings = getLessonQuizSettings(
+      snapshot.lesson,
+      snapshot.items.length,
+    );
+    const next = advanceTutorQuizAttempt(
+      snapshot.items,
+      snapshot.progress,
+      openAIRegularAgendaRef.current.quizCorrectItems,
+      // Tutor quizzes use the same completion contract as every other Tutor
+      // lesson: correct turns earn XP, and XP completes the lesson. Finishing
+      // the question list starts another round rather than enforcing a pass.
+      { correct, passingScore: Number.POSITIVE_INFINITY },
+    );
+    const { score, failed: roundComplete } = next;
+    const nextProgress = next.progress;
+    const nextCorrectItems = next.correctItems;
+    const nextAttemptNumber = roundComplete
+      ? attemptNumber + 1
+      : attemptNumber;
+
+    openAIRegularAgendaRef.current = {
+      ...openAIRegularAgendaRef.current,
+      lessonId: snapshot.lesson.id,
+      progress: nextProgress,
+      schemaVersion: TUTOR_AGENDA_PROGRESS_SCHEMA_VERSION,
+      quizCorrectItems: nextCorrectItems,
+      quizAttemptNumber: nextAttemptNumber,
+      quizLastFeedback: feedback,
+      quizPreviousAttemptResult: roundComplete
+        ? {
+            score,
+            total: settings.questionCount,
+            passingScore: settings.passingScore,
+          }
+        : null,
+    };
+    openAIRegularAgendaAdvancedTurnRef.current = turnCountRef.current;
+    setTutorRegularAgendaTick((tick) => tick + 1);
+
+    if (currentNpub) {
+      void saveTutorAgendaProgress(
+        currentNpub,
+        snapshot.lesson.id,
+        targetLangRef.current,
+        nextProgress,
+        {
+          correctItems: nextCorrectItems,
+          attemptNumber: nextAttemptNumber,
+        },
+      ).catch((error) => {
+        console.error("Failed to save Tutor quiz progress:", error);
+      });
+    }
+
+    let lessonCompletionTriggered = false;
+    if (correct) {
+      lessonCompletionTriggered =
+        awardTurnXp({
+          deferCompletionUntilIdle: true,
+        })?.lessonCompletionTriggered || false;
+    }
+
+    return {
+      recorded: true,
+      correct: !!correct,
+      roundComplete,
+      score,
+      lessonCompletionTriggered,
+    };
+  }
+
   // Regular lessons share the ONE teach-turn shape with the starter tutorial
   // (buildOpenAITeachTurnInstructions) — the starter behaved flawlessly while
   // this path drifted into target-language instructions and dry recitation,
@@ -5534,7 +5961,50 @@ export default function Tutor({
     const sequenceLine =
       "The lesson runs strictly in order: stay on this item — through corrections and retries — until the app advances the sequence; do not preview later topics or re-quiz previously covered items. The review comes only after every objective is done.";
 
+    if (snapshot.lesson.isFinalQuiz && snapshot.currentItem) {
+      const settings = getLessonQuizSettings(
+        snapshot.lesson,
+        snapshot.items.length,
+      );
+      const previousAttemptResult =
+        openAIRegularAgendaRef.current.quizPreviousAttemptResult || null;
+      const quizInstruction = buildOpenAIQuizTurnInstructions({
+        isKickoff,
+        turnVerdict,
+        currentQuestion: {
+          ...snapshot.currentItem,
+          evidence: snapshot.currentItem?.evidence?.criteria || "",
+        },
+        questionNumber:
+          snapshot.currentItem.questionNumber ||
+          snapshot.completedItems.length + 1,
+        totalQuestions: settings.questionCount,
+        passingScore: settings.passingScore,
+        completionMode: "xp",
+        previousCorrection:
+          openAIRegularAgendaRef.current.quizLastFeedback?.correction || "",
+        previousAttemptResult,
+        targetLanguageName: targetName,
+        supportLanguageName: supportName,
+      });
+      if (previousAttemptResult) {
+        openAIRegularAgendaRef.current.quizPreviousAttemptResult = null;
+      }
+      return quizInstruction;
+    }
+
+    const tutorPurpose = snapshot.lesson.tutorPurpose || "instruction";
+
     if (snapshot.phase === "review") {
+      const purposeReviewInstruction = buildOpenAIPurposeReviewLoopInstructions({
+        tutorPurpose,
+        coveredItems: completedPhrases,
+        interactionLayer: interactionLine,
+        targetLanguageName: targetName,
+        supportLanguageName: supportName,
+      });
+      if (purposeReviewInstruction) return purposeReviewInstruction;
+
       return [
         "# Current lesson state",
         "Phase: review. Every lesson objective has been taught in order; now consolidate them.",
@@ -5556,6 +6026,36 @@ export default function Tutor({
       ]
         .filter(Boolean)
         .join("\n");
+    }
+
+    const currentPurposeItem = snapshot.currentItem
+      ? {
+          ...snapshot.currentItem,
+          evidence: snapshot.currentItem?.evidence?.criteria || "",
+        }
+      : null;
+    if (tutorPurpose === "targeted_review") {
+      return buildOpenAITargetedReviewTurnInstructions({
+        isKickoff,
+        turnVerdict,
+        currentItem: currentPurposeItem,
+        completedItems: completedPhrases,
+        interactionLayer: interactionLine,
+        targetLanguageName: targetName,
+        supportLanguageName: supportName,
+      });
+    }
+    if (tutorPurpose === "integrated_scenario") {
+      return buildOpenAIIntegratedScenarioTurnInstructions({
+        isKickoff,
+        turnVerdict,
+        currentItem: currentPurposeItem,
+        companionItems: snapshot.remainingItems.slice(1, 3),
+        completedItems: completedPhrases,
+        interactionLayer: interactionLine,
+        targetLanguageName: targetName,
+        supportLanguageName: supportName,
+      });
     }
 
     const currentPhrase = snapshot.currentItem?.phrase || "";
@@ -5973,6 +6473,11 @@ export default function Tutor({
     const starterAgendaLesson = isTutorStarterAgendaLesson(
       selectedTutorLessonRef.current,
     );
+    const quizLesson = selectedTutorLessonRef.current?.isFinalQuiz === true;
+    const tutorPurpose =
+      selectedTutorLessonRef.current?.tutorPurpose || "instruction";
+    const targetedReviewLesson = tutorPurpose === "targeted_review";
+    const integratedScenarioLesson = tutorPurpose === "integrated_scenario";
     const openAIRegularAgendaLesson =
       realtimeProviderRef.current === "openai" &&
       !!selectedTutorLessonRef.current &&
@@ -6078,6 +6583,15 @@ export default function Tutor({
     const tutorLessonContext = tutorLessonDetails?.promptText
       ? `LESSON AGENDA: The user selected this Tutor lesson.\n${tutorLessonDetails.promptText}\nUse this agenda to decide what to teach and practice throughout the session. Keep the lesson plan aligned with this agenda.`
       : "";
+    const quizAssessmentContext = quizLesson
+      ? [
+          "QUIZ MODE — THIS OVERRIDES ALL TEACHING OR RETRY INSTRUCTIONS.",
+          "Administer a scored assessment, not a lesson: ask exactly one question from the app-supplied current quiz item and wait for the learner's answer.",
+          "Never teach, explain, translate, model, hint at, or rehearse the answer before the learner responds.",
+          "Each confident answer gets one scored attempt. After a wrong answer, give only a concise correction and move to the next app-supplied question; never coach the learner to retry it.",
+          "Unclear audio is not an attempt: ask the same question again without revealing the answer. Correct answers earn normal Tutor progress; the app owns scoring, question advancement, XP, and completion.",
+        ].join(" ")
+      : "";
     const starterAgendaContext = starterAgendaLesson
       ? [
           "STARTER INTRODUCTIONS LESSON: This first Tutor lesson has a fixed agenda.",
@@ -6140,15 +6654,29 @@ export default function Tutor({
     if (openAIRegularAgendaLesson) {
       return [
         "# Role and objective",
-        `You are a warm, natural bilingual tutor teaching an adult ${selectedLevel} learner of ${targetLanguageName}. Sound like a skilled human tutor having one continuous conversation, not a drill generator.`,
-        "Teach the selected lesson in the exact sequence supplied by the app. Per-turn instructions titled # Current lesson state are authoritative: teach only the current item during the teach phase, then review only after the app changes the phase to review.",
+        quizLesson
+          ? `You are a warm, precise bilingual examiner assessing an adult ${selectedLevel} learner of ${targetLanguageName}.`
+          : targetedReviewLesson
+            ? `You are a warm, precise bilingual tutor consolidating an adult ${selectedLevel} learner's existing ${targetLanguageName} skills through retrieval and concise corrective feedback.`
+            : integratedScenarioLesson
+              ? `You are a warm, natural bilingual tutor helping an adult ${selectedLevel} learner combine existing ${targetLanguageName} skills in one realistic, continuous interaction.`
+              : `You are a warm, natural bilingual tutor teaching an adult ${selectedLevel} learner of ${targetLanguageName}. Sound like a skilled human tutor having one continuous conversation, not a drill generator.`,
+        quizLesson
+          ? quizAssessmentContext
+          : targetedReviewLesson
+            ? "Review the selected unit in the exact sequence supplied by the app. Per-turn instructions titled # Current lesson state are authoritative: elicit the current item from memory before giving help, then use mixed retrieval only after the app changes the phase."
+            : integratedScenarioLesson
+              ? "Run the selected unit practice as one coherent scenario while following the app's objective sequence. Per-turn instructions titled # Current lesson state are authoritative: require the current objective, weave neighboring objectives into context, and preserve the same scene as the app advances."
+              : "Teach the selected lesson in the exact sequence supplied by the app. Per-turn instructions titled # Current lesson state are authoritative: teach only the current item during the teach phase, then review only after the app changes the phase to review.",
         "# Spoken languages",
         strict,
         targetLanguageBoundaryInstruction,
         codeSwitchingAudioInstruction,
         "# Conversation behavior",
         "Listen to what the learner actually meant, respond to it naturally, and make one useful teaching move. Give the learner only one clear action per turn.",
-        "When an answer is accepted, acknowledge it briefly and continue with the new current item supplied by the app; do not add extra quizzes for the item just completed. When an answer is wrong, correct the important issue concisely and retry the same item. When the learner asks a question, answer it first and then return to the current item.",
+        quizLesson
+          ? "After a scored answer, follow the new current question supplied by the app. Never retry or teach the previous question."
+          : "When an answer is accepted, acknowledge it briefly and continue with the new current item supplied by the app; do not add extra quizzes for the item just completed. When an answer is wrong, correct the important issue concisely and retry the same item. When the learner asks a question, answer it first and then return to the current item.",
         "Do not announce a drill, memory technique, agenda, phase, scoring, or teaching method. Never use canned labels such as 'tiny choice', 'quick memory', or 'micro mission'. Do not force every item through repetition, yes/no, recall, and scenario prompts; one successful demonstration is enough for the app to advance.",
         `If you offer choices, include the current ${targetLanguageName} answer and make it the only correct choice. Never present a question with no correct answer.`,
         "# Lesson and level",
@@ -6192,6 +6720,7 @@ export default function Tutor({
       preA1HardCeiling,
       customSubjectsContext,
       tutorLessonContext,
+      quizAssessmentContext,
       starterAgendaContext,
       feedbackContext,
       completionControlInstruction,
@@ -6442,7 +6971,9 @@ export default function Tutor({
     return [
       "Kick off the Tutor lesson now. Do not wait for the learner to speak first.",
       buildTutorRepairAgendaInstruction({ isKickoff: true }),
-      buildOpenAIRegularTutorAgendaInstruction(),
+      buildOpenAIRegularTutorAgendaInstruction({
+        isKickoff: lesson?.isFinalQuiz === true,
+      }),
       targetLanguageBoundaryInstruction,
       teacherTalkLanguageInstruction,
       codeSwitchingAudioInstruction,
@@ -6452,11 +6983,13 @@ export default function Tutor({
       `Use the selected lesson agenda: ${agendaTitle}${
         agendaSubtitle ? ` - ${agendaSubtitle}` : ""
       }. Treat this as the lesson topic/concept, not permission to practice non-${targetLanguageName} phrases.`,
-      isEarlyTutorLevel
-        ? `Briefly orient the learner in ${supportLanguageName}, model one useful ${targetLanguageName} phrase, then ask for one tiny practice attempt.`
-        : isAdvancedTutorLevel
-          ? `Start in ${targetLanguageName} with a natural conversational opener about the agenda, then ask one open-ended question.`
-          : `Start in simple ${targetLanguageName}, give one short model or prompt, then ask a focused question the learner can answer in ${targetLanguageName}.`,
+      lesson?.isFinalQuiz
+        ? `Start with question 1 in ${supportLanguageName}; do not orient, review, explain, or model an answer first.`
+        : isEarlyTutorLevel
+          ? `Briefly orient the learner in ${supportLanguageName}, model one useful ${targetLanguageName} phrase, then ask for one tiny practice attempt.`
+          : isAdvancedTutorLevel
+            ? `Start in ${targetLanguageName} with a natural conversational opener about the agenda, then ask one open-ended question.`
+            : `Start in simple ${targetLanguageName}, give one short model or prompt, then ask a focused question the learner can answer in ${targetLanguageName}.`,
       supportCode !== tLang && !isEarlyTutorLevel
         ? `Do not default to ${supportLanguageName}; use it only for a quick clarification if needed.`
         : "",
@@ -6908,6 +7441,7 @@ export default function Tutor({
   ) {
     const lesson = selectedTutorLessonRef.current;
     const unit = selectedTutorUnitRef.current;
+    const tutorPurpose = lesson?.tutorPurpose || "instruction";
     const supportCode = normalizeSupportLanguage(
       supportLangRef.current || resolvedSupportLang,
       DEFAULT_SUPPORT_LANGUAGE,
@@ -7041,7 +7575,9 @@ export default function Tutor({
     return [
       "Respond to the learner's latest turn as their tutor.",
       buildTutorRepairAgendaInstruction(),
-      buildOpenAIRegularTutorAgendaInstruction(),
+      buildOpenAIRegularTutorAgendaInstruction({
+        turnVerdict: lesson?.isFinalQuiz ? turnVerdict : null,
+      }),
       targetLanguageBoundaryInstruction,
       teacherTalkLanguageInstruction,
       codeSwitchingAudioInstruction,
@@ -7050,15 +7586,29 @@ export default function Tutor({
       noWrapInstruction,
       varietyInstruction,
       signatureExperienceInstruction,
-      `Keep teaching from the selected agenda topic: ${agendaTitle}. Convert any non-${targetLanguageName} source wording into ${targetLanguageName} before modeling it.`,
-      selectedLevel === "Pre-A1"
-        ? "Work through the agenda first. Once covered, review one lesson word or one 1-3 word phrase at a time until the app transitions away."
-        : "Work through the agenda first. Once the agenda has been covered, review, combine, or practice only what was covered in this lesson until the app transitions away.",
-      isEarlyTutorLevel
-        ? `Use ${supportLanguageName} for coaching, explanations, and questions. Use ${targetLanguageName} only for examples, model phrases, and practice prompts.`
-        : isAdvancedTutorLevel
-          ? `Respond almost entirely in ${targetLanguageName}. Make it feel like a natural conversation, not a phrase drill.`
-          : `Respond primarily in simple ${targetLanguageName}. Use ${supportLanguageName} only for a short clarification if the learner seems stuck.`,
+      lesson?.isFinalQuiz
+        ? `Continue the scored quiz from the app-supplied current question for ${agendaTitle}. Do not teach or model its answer before the learner responds.`
+        : tutorPurpose === "targeted_review"
+          ? `Continue retrieval-first review of the app-supplied current objective for ${agendaTitle}. Do not model its answer until after the learner attempts it.`
+          : tutorPurpose === "integrated_scenario"
+            ? `Continue the same guided scenario for ${agendaTitle}. Require the app-supplied current objective naturally and do not turn the objectives into separate drills.`
+            : `Keep teaching from the selected agenda topic: ${agendaTitle}. Convert any non-${targetLanguageName} source wording into ${targetLanguageName} before modeling it.`,
+      lesson?.isFinalQuiz
+        ? "Ask only the current scored question; a confident answer advances once whether right or wrong."
+        : selectedLevel === "Pre-A1"
+          ? tutorPurpose === "integrated_scenario"
+            ? "Keep each learner action to one word or one 1-3 word phrase, but preserve one continuous situation across the agenda."
+            : "Work through the agenda first. Once covered, review one lesson word or one 1-3 word phrase at a time until the app transitions away."
+          : tutorPurpose === "integrated_scenario"
+            ? "Maintain one coherent roleplay across objectives; after the agenda is covered, continue combining covered material until the app transitions away."
+            : "Work through the agenda first. Once the agenda has been covered, review, combine, or practice only what was covered in this lesson until the app transitions away.",
+      lesson?.isFinalQuiz
+        ? `Use ${supportLanguageName} for question instructions and feedback. Use ${targetLanguageName} only for material being tested.`
+        : isEarlyTutorLevel
+          ? `Use ${supportLanguageName} for coaching, explanations, and questions. Use ${targetLanguageName} only for examples, model phrases, and practice prompts.`
+          : isAdvancedTutorLevel
+            ? `Respond almost entirely in ${targetLanguageName}. Make it feel like a natural conversation, not a phrase drill.`
+            : `Respond primarily in simple ${targetLanguageName}. Use ${supportLanguageName} only for a short clarification if the learner seems stuck.`,
       supportCode !== tLang && !isEarlyTutorLevel
         ? `Do not default back to ${supportLanguageName}; the learner is ${selectedLevel}, so they should practice following instructions in ${targetLanguageName}.`
         : "",
@@ -7840,9 +8390,9 @@ export default function Tutor({
     awardPromises = [],
     localDailyGoalUpdates = [],
   ) {
-    if (!lesson || tutorLessonCompletionTriggeredRef.current) return;
+    if (!lesson || tutorLessonCompletionTriggeredRef.current) return false;
     const npub = currentNpub;
-    if (!npub) return;
+    if (!npub) return false;
     const xpRequired = getTutorLessonXpRequired(lesson);
 
     if (lesson.isRepair) {
@@ -7926,12 +8476,13 @@ export default function Tutor({
           lessonId: lesson.id,
           xpRequired,
         });
+        return true;
       } catch (error) {
         console.error("Failed to complete Tutor repair:", error);
         tutorLessonCompletionTriggeredRef.current = false;
         releaseQueuedDailyGoalCelebration();
+        return false;
       }
-      return;
     }
 
     tutorLessonCompletionTriggeredRef.current = true;
@@ -8048,6 +8599,7 @@ export default function Tutor({
             nextTutorLesson.unit,
           ),
           nextProgress?.tutorAgendaProgress?.schemaVersion,
+          nextProgress?.tutorAgendaProgress?.quiz,
         );
         setConversationSettings((prev) => ({
           ...prev,
@@ -8073,10 +8625,12 @@ export default function Tutor({
         lessonId: lesson.id,
         xpRequired,
       });
+      return true;
     } catch (error) {
       console.error("Failed to complete Tutor lesson:", error);
       tutorLessonCompletionTriggeredRef.current = false;
       releaseQueuedDailyGoalCelebration();
+      return false;
     }
   }
 
@@ -8115,10 +8669,12 @@ export default function Tutor({
     }
 
     const canCompleteLesson =
-      forceLegacyCompletion ||
-      (isTutorStarterAgendaLesson(lesson)
-        ? isTutorStarterAgendaComplete(tutorStarterAgendaProgressRef.current)
-        : !isOpenAIRegularTutorAgendaIncomplete());
+      lesson.isFinalQuiz
+        ? true
+        : forceLegacyCompletion ||
+          (isTutorStarterAgendaLesson(lesson)
+            ? isTutorStarterAgendaComplete(tutorStarterAgendaProgressRef.current)
+            : !isOpenAIRegularTutorAgendaIncomplete());
     if (nextEarned >= xpRequired && canCompleteLesson) {
       if (pendingTutorLessonCompletionRef.current) return true;
       pendingTutorLessonCompletionRef.current = true;
@@ -8289,6 +8845,7 @@ export default function Tutor({
     } = {},
   ) {
     const lesson = selectedTutorLessonRef.current;
+    const isQuiz = lesson?.isFinalQuiz === true;
     const unit = selectedTutorUnitRef.current;
     const supportCode = normalizeSupportLanguage(
       supportLangRef.current || resolvedSupportLang,
@@ -8351,6 +8908,12 @@ export default function Tutor({
 
     return [
       "You are a strict, language-neutral XP gate for a realtime language tutor.",
+      isQuiz
+        ? "This is a scored quiz. Judge only whether the learner's first answer to the immediately previous question is correct. A confident incorrect answer is still a completed quiz attempt and will advance to the next question; your successful field must remain false for it."
+        : "",
+      isQuiz
+        ? 'Set "quizAnswered":true only when the learner actually attempts an answer (including "I do not know"). Set it false for a help, translation, hint, explanation, or repetition request; filler; unrelated speech; or unclear audio.'
+        : "",
       "Classify the latest learner transcript semantically across any language or writing system. Do not use keyword matching.",
       "XP should be awarded only for a correct or successful learner attempt at the tutor's immediately previous practice/comprehension task.",
       "Successful means the learner answered the prompt, produced the requested target-language phrase, completed the requested transformation, chose/identified the correct meaning, or gave a relevant understandable response for an open conversational prompt.",
@@ -8394,6 +8957,12 @@ export default function Tutor({
               objective:
                 currentObjectiveItem.goal || currentObjectiveItem.label,
               evidence: currentObjectiveItem.evidence?.criteria || "",
+              ...(isQuiz
+                ? {
+                    acceptedForms: currentObjectiveItem.targetForms || [],
+                    referenceExamples: currentObjectiveItem.examples || [],
+                  }
+                : {}),
             },
           )}`
         : "",
@@ -8413,8 +8982,12 @@ export default function Tutor({
       // wrong grammar/conjugation, or a clearly wrong/garbled phrase). Set
       // mistake=false when they got it right, asked for help/meaning/repetition,
       // were off-task, or gave filler — those are not repairable slips.
-      `When mistake=true, also give "concept" (a short skill label written in ${supportLanguageName}) and "correction" (the correct ${targetLanguageName} phrase the learner should have produced).`,
+      isQuiz
+        ? `When the quiz answer is wrong, give "correction" as the concise answer the learner should have given, in whichever language the question required; give "concept" as a short ${supportLanguageName} skill label.`
+        : `When mistake=true, also give "concept" (a short skill label written in ${supportLanguageName}) and "correction" (the correct ${targetLanguageName} phrase the learner should have produced).`,
       `Return ONLY JSON: {"successful":true|false,"confidence":0..1,"reason":"short semantic reason","mistake":true|false,"concept":"","correction":""${
+        isQuiz ? ',"quizAnswered":true|false' : ""
+      }${
         currentObjectiveItem ? ',"objectiveAdvanced":true|false' : ""
       }${repairFocusItems.length ? ',"repairAdvanced":true|false' : ""}}`,
     ]
@@ -8426,7 +8999,7 @@ export default function Tutor({
     if (!hasTutorMeaningfulTranscript(userMessage)) {
       return { successful: false, confidence: 0, reason: "empty transcript" };
     }
-    if (opts?.directPhraseAnswer) {
+    if (opts?.directPhraseAnswer && !selectedTutorLessonRef.current?.isFinalQuiz) {
       return {
         successful: true,
         confidence: 1,
@@ -8509,6 +9082,11 @@ export default function Tutor({
         successful: gatedSuccessful,
         confidence,
         reason: String(parsed.reason || "").slice(0, 180),
+        correction: String(parsed.correction || "").slice(0, 240),
+        quizAnswered:
+          selectedTutorLessonRef.current?.isFinalQuiz === true
+            ? parsed.quizAnswered === true
+            : undefined,
         mistake: parsed.mistake === true && confidence >= 0.55,
         // Sequence gate: when the judge omits the field (starter/repair
         // prompts never request it), fall back to the XP verdict so legacy
@@ -8664,6 +9242,10 @@ export default function Tutor({
     if (isTutorToolGradingActive()) return;
     const currentLesson = selectedTutorLessonRef.current;
     if (!currentLesson) return;
+    // Quiz attempts are scored synchronously against the exact question that
+    // preceded them. A late transcript must never be applied to the next
+    // question or counted as a second attempt.
+    if (currentLesson.isFinalQuiz) return;
     const isStarterLesson = isTutorStarterAgendaLesson(currentLesson);
     const starterCandidateItemIds = isStarterLesson
       ? getTutorStarterAgendaCandidateItemIds()
@@ -9200,6 +9782,38 @@ export default function Tutor({
         directPhraseAnswer,
       });
       const isOpenAIProvider = realtimeProviderRef.current === "openai";
+
+      if (currentLesson?.isFinalQuiz) {
+        const turnSuccess = await judgeTutorTurnSuccessfulForXp(text, {
+          regularPhraseMatch: false,
+          directPhraseAnswer: false,
+          acceptedPhrases: regularAcceptedPhrases,
+        });
+        if (!aliveRef.current) return;
+        if (currentLesson.id !== selectedTutorLessonRef.current?.id) return;
+        const turnVerdict = resolveTutorTurnVerdict({
+          semanticAttempted: true,
+          semanticSuccessful: turnSuccess.successful,
+          semanticConfidence: turnSuccess.quizAnswered
+            ? turnSuccess.confidence
+            : 0,
+        });
+        const quizProgress = recordTutorQuizAnswer({
+          correct: turnSuccess.successful,
+          confidence: turnSuccess.quizAnswered ? turnSuccess.confidence : 0,
+          correction: turnSuccess.correction,
+          reason: turnSuccess.reason,
+        });
+        if (!quizProgress.lessonCompletionTriggered) {
+          requestTutorTurnFollowup(
+            text,
+            [],
+            { turnVerdict },
+          );
+        }
+        return;
+      }
+
       let turnVerdict = resolveTutorTurnVerdict({
         localSuccessful: localTurnSuccessful,
       });
@@ -9714,6 +10328,7 @@ export default function Tutor({
             targetLang,
             selectedTutorUnit,
           );
+    if (lesson.isFinalQuiz) return true;
     return getTutorAgendaSnapshot(items, tracked).isComplete;
   }, [
     selectedTutorLesson,
@@ -9723,10 +10338,11 @@ export default function Tutor({
     tutorRegularAgendaTick,
   ]);
 
-  // Repair an interrupted completion on hydration. Current checkpoints require
-  // both durable prerequisites (full earned XP and a completed agenda). Legacy
-  // checkpoints predate the agenda schema, so full XP is their only trustworthy
-  // completion signal; migrate those once rather than stranding them forever.
+  // Repair an interrupted completion on hydration. Regular lessons require
+  // full XP plus their agenda; Tutor quizzes intentionally use XP alone.
+  // Legacy checkpoints predate the agenda schema, so full XP is their only
+  // trustworthy completion signal; migrate those once rather than stranding
+  // them forever.
   useEffect(() => {
     const lesson = selectedTutorLesson;
     if (
@@ -9865,11 +10481,75 @@ export default function Tutor({
     );
     return fallback ? [{ id: "lesson-overview", label: fallback }] : [];
   }, [previewedTutorLesson, targetLang, uiLang]);
+  const TutorGameRouterComponent = tutorGameLaunch?.GameRouterComponent || null;
+  const previewedTutorLaunchMode = getTutorLessonLaunchMode(
+    previewedTutorLesson?.lesson,
+  );
   /* ---------------------------
      Render
   --------------------------- */
   return (
     <>
+      {tutorGameLaunch &&
+      (tutorGameLaunch.phase === "playing" ||
+        tutorGameLaunch.phase === "completing") ? (
+        <Portal>
+          <Box
+            position="fixed"
+            inset={0}
+            zIndex={2400}
+            w="100vw"
+            h="100dvh"
+            bg="gray.950"
+            overflow="hidden"
+          >
+            {TutorGameRouterComponent ? (
+              <PortalManager zIndex={2500}>
+                <TutorGameRouterComponent
+                  lessonContext={tutorGameLaunch.lesson}
+                  initialScenario={tutorGameLaunch.scenario}
+                  targetLang={targetLangRef.current || targetLang}
+                  supportLang={resolvedSupportLang}
+                  npub={currentNpub}
+                  onComplete={handleTutorGameExit}
+                  onGameComplete={handleTutorGameComplete}
+                />
+              </PortalManager>
+            ) : (
+              <Center h="100%">
+                <VoiceOrb state="idle" size={88} />
+              </Center>
+            )}
+            {tutorGameLaunch.phase === "completing" ? (
+              <Center
+                position="absolute"
+                inset={0}
+                zIndex={4}
+                bg="rgba(3, 7, 18, 0.72)"
+                backdropFilter="blur(6px)"
+              >
+                <VStack spacing={3}>
+                  <Spinner color="cyan.200" size="lg" />
+                  <Text color="white" fontWeight="bold">
+                    {tutorCopy(uiLang, {
+                      en: "Saving Tutor progress...",
+                      es: "Guardando el progreso de Tutor...",
+                      pt: "Salvando o progresso do Tutor...",
+                      it: "Salvataggio dei progressi del Tutor...",
+                      fr: "Enregistrement de la progression du Tutor...",
+                      de: "Tutor-Fortschritt wird gespeichert...",
+                      ja: "Tutorの進捗を保存しています...",
+                      hi: "Tutor की प्रगति सेव हो रही है...",
+                      ar: "بنحفظ تقدم Tutor...",
+                      zh: "正在保存 Tutor 进度...",
+                    })}
+                  </Text>
+                </VStack>
+              </Center>
+            ) : null}
+          </Box>
+        </Portal>
+      ) : null}
       <TutorViewportEdgeGlow
         enabled={isActive}
         state={edgeGlowState}
@@ -10230,6 +10910,8 @@ export default function Tutor({
           motionProps={nativeModalMotionProps}
           bg={isLightTheme ? APP_SURFACE : "gray.950"}
           color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
+          borderRadius="0 !important"
+          sx={{ cornerShape: "initial !important" }}
         >
           <ModalBody px={{ base: 3, md: 6 }} py={{ base: 5, md: 7 }}>
             <VStack spacing={6} align="stretch" maxW="container.lg" mx="auto">
@@ -10247,6 +10929,7 @@ export default function Tutor({
                 borderColor={isLightTheme ? APP_BORDER : "whiteAlpha.200"}
                 bg={isLightTheme ? APP_SURFACE_ELEVATED : "whiteAlpha.100"}
                 borderRadius="xl"
+                style={APP_SQUIRCLE_STYLE}
                 p={4}
               >
                 <HStack
@@ -10359,10 +11042,14 @@ export default function Tutor({
           </ModalBody>
           <ModalFooter
             justifyContent="center"
+            alignItems="center"
             flexShrink={0}
             px={{ base: 4, md: 6 }}
-            pt={4}
-            pb="calc(1rem + env(safe-area-inset-bottom))"
+            py={4}
+            sx={{
+              paddingTop: "22px !important",
+              paddingBottom: "22px !important",
+            }}
             borderTop="1px solid"
             borderColor={isLightTheme ? APP_BORDER : "whiteAlpha.200"}
             bg={isLightTheme ? APP_SURFACE_ELEVATED : "gray.950"}
@@ -10377,6 +11064,9 @@ export default function Tutor({
               variant="outline"
               width={{ base: "100%", sm: "240px" }}
               maxW="320px"
+              h="auto"
+              minH="48px"
+              py={3}
               borderColor={isLightTheme ? APP_BORDER : "whiteAlpha.300"}
               bg={isLightTheme ? APP_SURFACE : "whiteAlpha.100"}
               color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
@@ -10408,11 +11098,36 @@ export default function Tutor({
           bg="var(--app-overlay)"
         />
         <ModalContent
+          ref={tutorLessonPreviewModalContentRef}
           motionProps={nativeModalMotionProps}
           mx={3}
-          maxH={{ base: "calc(100dvh - 32px)", md: "calc(100dvh - 80px)" }}
+          w={
+            tutorGameLaunch?.phase === "loading" &&
+            tutorGameLoaderFrame?.width
+              ? `${tutorGameLoaderFrame.width}px`
+              : undefined
+          }
+          maxW={
+            tutorGameLaunch?.phase === "loading" &&
+            tutorGameLoaderFrame?.width
+              ? `${tutorGameLoaderFrame.width}px`
+              : undefined
+          }
+          h={
+            tutorGameLaunch?.phase === "loading" &&
+            tutorGameLoaderFrame?.height
+              ? `${tutorGameLoaderFrame.height}px`
+              : undefined
+          }
+          maxH={
+            tutorGameLaunch?.phase === "loading" &&
+            tutorGameLoaderFrame?.height
+              ? `${tutorGameLoaderFrame.height}px`
+              : { base: "calc(100dvh - 32px)", md: "calc(100dvh - 80px)" }
+          }
           overflow="hidden"
           borderRadius="2xl"
+          style={APP_SQUIRCLE_STYLE}
           border="1px solid"
           borderColor={isLightTheme ? APP_BORDER : "whiteAlpha.200"}
           bg={
@@ -10427,6 +11142,11 @@ export default function Tutor({
               : "0 24px 70px rgba(0,0,0,0.5), 0 0 36px rgba(34,211,238,0.1)"
           }
         >
+          {tutorGameLaunch?.phase === "loading" ? (
+            <Box position="absolute" inset={0} zIndex={20}>
+              <TutorGameReviewLoadingExperience supportLang={uiLang} />
+            </Box>
+          ) : null}
           <ModalHeader
             px={{ base: 5, md: 7 }}
             pt={6}
@@ -10502,6 +11222,7 @@ export default function Tutor({
                     : "whiteAlpha.100"
                 }
                 borderRadius="xl"
+                style={APP_SQUIRCLE_STYLE}
                 overflow="hidden"
               >
                 <AccordionItem border="0">
@@ -10611,6 +11332,7 @@ export default function Tutor({
                   spacing={3}
                   p={4}
                   borderRadius="xl"
+                  style={APP_SQUIRCLE_STYLE}
                   bg={
                     isLightTheme
                       ? "rgba(139,122,99,0.1)"
@@ -10651,6 +11373,7 @@ export default function Tutor({
                 spacing={4}
                 p={4}
                 borderRadius="xl"
+                style={APP_SQUIRCLE_STYLE}
                 bg={
                   isLightTheme
                     ? "rgba(255,255,255,0.72)"
@@ -10668,6 +11391,7 @@ export default function Tutor({
                     w={9}
                     h={9}
                     borderRadius="lg"
+                    style={APP_SQUIRCLE_STYLE}
                     bg={
                       previewedTutorLesson?.unit?.color ||
                       (isLightTheme ? "teal.500" : "teal.400")
@@ -10760,18 +11484,32 @@ export default function Tutor({
                 zh: "正在开始...",
               })}
             >
-              {tutorCopy(uiLang, {
-                en: "Start lesson",
-                es: "Iniciar leccion",
-                pt: "Iniciar licao",
-                it: "Inizia la lezione",
-                fr: "Commencer la lecon",
-                de: "Lektion starten",
-                ja: "レッスンを開始",
-                hi: "पाठ शुरू करें",
-                ar: "ابدأ الدرس",
-                zh: "开始课程",
-              })}
+              {previewedTutorLaunchMode ===
+              TUTOR_LESSON_LAUNCH_MODE.RPG_GAME
+                ? tutorCopy(uiLang, {
+                    en: "Start game",
+                    es: "Iniciar juego",
+                    pt: "Iniciar jogo",
+                    it: "Avvia il gioco",
+                    fr: "Commencer le jeu",
+                    de: "Spiel starten",
+                    ja: "ゲームを開始",
+                    hi: "गेम शुरू करें",
+                    ar: "ابدأ اللعبة",
+                    zh: "开始游戏",
+                  })
+                : tutorCopy(uiLang, {
+                    en: "Start lesson",
+                    es: "Iniciar leccion",
+                    pt: "Iniciar licao",
+                    it: "Inizia la lezione",
+                    fr: "Commencer la lecon",
+                    de: "Lektion starten",
+                    ja: "レッスンを開始",
+                    hi: "पाठ शुरू करें",
+                    ar: "ابدأ الدرس",
+                    zh: "开始课程",
+                  })}
             </Button>
           </ModalFooter>
         </ModalContent>

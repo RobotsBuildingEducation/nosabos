@@ -223,8 +223,8 @@ const TEXT_TRANSLATIONS = {
   "near-native fluency quiz": "اختبار الطلاقة القريبة من أهل اللغة",
   "learn new words with interactive questions. practice saying hello.":
     "اتعلّم كلمات جديدة من خلال أسئلة تفاعلية. اتدرّب على قول أهلًا.",
-  "learn to count from zero to twenty":
-    "اتعلّم العد من صفر لعشرين",
+  "learn to count from eleven to thirty":
+    "اتعلّم العد من حداشر لتلاتين",
   "learn to count from twenty-one to one hundred":
     "اتعلّم العد من واحد وعشرين لمية",
   "learn the words for close family members":
@@ -232,7 +232,7 @@ const TEXT_TRANSLATIONS = {
   "learn essential greetings and farewells":
     "اتعلّم التحيات الأساسية وعبارات الوداع",
   "count from zero to ten": "عد من صفر لعشرة",
-  "count to twenty": "عد لحد عشرين",
+  "count from eleven to thirty": "عد من حداشر لتلاتين",
   "100 must-know words and phrases to start fast":
     "100 كلمة وعبارة لازم تعرفهم عشان تبدأ بسرعة",
   "20 everyday verbs and short requests to get things done":
@@ -286,8 +286,11 @@ const TEXT_TRANSLATIONS = {
   "advanced greetings": "تحيات متقدمة",
   "master formal and informal greetings":
     "اتقن التحيات الرسمية وغير الرسمية",
-  "numbers 0-20": "الأرقام من 0 لحد 20",
-  "counting to twenty": "العد لحد عشرين",
+  "numbers 11-30": "الأرقام من 11 لحد 30",
+  "counting from eleven to thirty": "العد من حداشر لتلاتين",
+  "numbers 11-30 quiz": "اختبار الأرقام من 11 لحد 30",
+  "test your knowledge of numbers 11-30":
+    "اختبر معرفتك بالأرقام من 11 لحد 30",
   "using numbers daily": "استخدام الأرقام يوميًا",
   "practice numbers in everyday situations":
     "اتدرّب على الأرقام في مواقف يومية",
@@ -482,6 +485,8 @@ const TEXT_TRANSLATIONS = {
   "cultural works": "أعمال ثقافية",
   "creative expression": "تعبير إبداعي",
   "artistic movements": "حركات فنية",
+  "artistic language": "اللغة الفنية",
+  "apply artistic language skills": "طبّق مهارات اللغة الفنية",
   "civic topics": "موضوعات مدنية",
   "civic engagement": "مشاركة مدنية",
   "political discourse": "خطاب سياسي",

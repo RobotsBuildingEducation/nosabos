@@ -81,6 +81,7 @@ import {
   normalizeSupportLanguage,
 } from "../constants/languages";
 import { buildCurriculumPromptContext } from "../utils/lessonCurriculum";
+import { questionSquircleStyle } from "./questionUiStyles";
 
 const renderSpeakerIcon = (loading) =>
   loading ? (
@@ -2080,6 +2081,7 @@ Return ONLY valid JSON:
             border="1px solid"
             borderColor="rgba(255, 255, 255, 0.1)"
             rounded="xl"
+            style={questionSquircleStyle}
             p={[3, 5]}
             minH="280px"
             width="100%"
@@ -2204,6 +2206,7 @@ Return ONLY valid JSON:
                   borderLeft="3px solid"
                   borderColor="teal.400"
                   rounded="lg"
+                  style={questionSquircleStyle}
                   p={3}
                 >
                   {isTranslationVisible ? (
@@ -2636,6 +2639,7 @@ Return ONLY valid JSON:
                                 align="stretch"
                                 p={4}
                                 borderRadius="xl"
+                                style={questionSquircleStyle}
                                 bg={
                                   isLightTheme
                                     ? paperSuccessBg
@@ -2727,6 +2731,7 @@ Return ONLY valid JSON:
                                         px={4}
                                         py={3}
                                         rounded="xl"
+                                        style={questionSquircleStyle}
                                         borderWidth="1px"
                                         borderColor={totalAccent}
                                         textAlign="center"
@@ -2824,6 +2829,7 @@ Return ONLY valid JSON:
                                                 px={3}
                                                 py={2.5}
                                                 rounded="lg"
+                                                style={questionSquircleStyle}
                                                 borderLeft="3px solid"
                                                 borderColor={accent}
                                                 borderWidth={isLightTheme ? "1px" : undefined}
@@ -3000,6 +3006,7 @@ Return ONLY valid JSON:
                           <>
                             <HStack maxW="400px">
                               <Input
+                                style={questionSquircleStyle}
                                 size="sm"
                                 placeholder={t(
                                   "history_fill_blank_placeholder",
@@ -3070,6 +3077,7 @@ Return ONLY valid JSON:
                                   }}
                                   p={3}
                                   borderRadius="lg"
+                                  style={questionSquircleStyle}
                                   borderWidth="1px"
                                   borderColor={
                                     reviewAnswer === opt
@@ -3137,6 +3145,7 @@ Return ONLY valid JSON:
                           <>
                             <HStack maxW="400px">
                               <Input
+                                style={questionSquircleStyle}
                                 size="sm"
                                 placeholder={t("history_answer_placeholder")}
                                 value={reviewAnswer}
@@ -3200,6 +3209,7 @@ Return ONLY valid JSON:
                                 align="stretch"
                                 p={4}
                                 borderRadius="xl"
+                                style={questionSquircleStyle}
                                 bg={
                                   reviewCorrect
                                     ? "linear-gradient(90deg, rgba(72,187,120,0.16), rgba(56,161,105,0.08))"
@@ -3342,6 +3352,7 @@ Return ONLY valid JSON:
                                 <Box
                                   p={4}
                                   borderRadius="lg"
+                                  style={questionSquircleStyle}
                                   bg="rgba(246, 92, 174, 0.1)"
                                   borderWidth="1px"
                                   borderColor="pink.400"

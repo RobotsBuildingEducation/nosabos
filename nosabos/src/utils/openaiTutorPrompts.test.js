@@ -8,6 +8,10 @@ import {
   buildOpenAITutorTurnVerdictDirective,
   buildOpenAITeachTurnInstructions,
   buildOpenAIGoalTurnInstructions,
+  buildOpenAITargetedReviewTurnInstructions,
+  buildOpenAIIntegratedScenarioTurnInstructions,
+  buildOpenAIPurposeReviewLoopInstructions,
+  buildOpenAIQuizTurnInstructions,
 } from "./openaiTutorPrompts.js";
 import { TUTOR_TURN_VERDICT } from "./tutorTurnVerdict.js";
 
@@ -303,6 +307,149 @@ test("capability goals cannot be recited as target-language phrases", () => {
     /For comprehension, present the English material first and ask a meaning question/,
   );
   assert.doesNotMatch(turn, /The item being taught is the English phrase/);
+});
+
+test("quiz turns test before teaching and advance after an incorrect answer", () => {
+  const first = buildOpenAIQuizTurnInstructions({
+    isKickoff: true,
+    currentQuestion: {
+      goal: "Produce a basic self-introduction",
+      targetForms: ["Me llamo"],
+      examples: ["Me llamo Ana."],
+      evidence: "Learner supplies the Spanish phrase",
+    },
+    questionNumber: 1,
+    totalQuestions: 9,
+    passingScore: 8,
+    targetLanguageName: "Spanish",
+    supportLanguageName: "English",
+  });
+  assert.match(first, /Phase: scored assessment/);
+  assert.match(first, /never teach before the learner answers/i);
+  assert.match(
+    first,
+    /Do not say, spell, translate, paraphrase, or model any accepted form/,
+  );
+  assert.match(first, /one scored attempt/i);
+
+  const afterMiss = buildOpenAIQuizTurnInstructions({
+    turnVerdict: TUTOR_TURN_VERDICT.REJECTED,
+    previousCorrection: "Me llamo",
+    currentQuestion: {
+      goal: "Recognize a morning greeting",
+      targetForms: ["Buenos días"],
+    },
+    questionNumber: 2,
+    totalQuestions: 9,
+    passingScore: 8,
+    targetLanguageName: "Spanish",
+    supportLanguageName: "English",
+  });
+  assert.match(afterMiss, /Give one concise correction/);
+  assert.match(afterMiss, /Do not make the learner retry the old question/);
+  assert.match(afterMiss, /then ask the new question/);
+});
+
+test("Skill Builder turns require retrieval before corrective teaching", () => {
+  const firstAttempt = buildOpenAITargetedReviewTurnInstructions({
+    isKickoff: true,
+    currentItem: {
+      goal: "Use a morning greeting",
+      targetForms: ["Buenos días"],
+      evidence: "The learner supplies an appropriate greeting",
+      examples: ["Buenos días, Ana."],
+    },
+    targetLanguageName: "Spanish",
+    supportLanguageName: "English",
+  });
+
+  assert.match(firstAttempt, /Phase: targeted skill review/);
+  assert.match(firstAttempt, /retrieve first/i);
+  assert.match(firstAttempt, /Do not say, translate, spell, paraphrase, or model/);
+  assert.match(firstAttempt, /exactly one learner action/i);
+
+  const afterMiss = buildOpenAITargetedReviewTurnInstructions({
+    turnVerdict: TUTOR_TURN_VERDICT.REJECTED,
+    currentItem: {
+      goal: "Use a morning greeting",
+      targetForms: ["Buenos días"],
+    },
+    targetLanguageName: "Spanish",
+    supportLanguageName: "English",
+  });
+  assert.match(afterMiss, /one concise correction or scaffold in English/);
+  assert.match(afterMiss, /correction may include the answer/);
+  assert.match(afterMiss, /one new learner attempt/);
+});
+
+test("Integrated Practice turns combine objectives inside one continuing scenario", () => {
+  const turn = buildOpenAIIntegratedScenarioTurnInstructions({
+    isKickoff: true,
+    currentItem: {
+      goal: "Ask the price",
+      targetForms: ["¿Cuánto cuesta?"],
+      evidence: "The learner asks for a price",
+    },
+    companionItems: [
+      { goal: "Request a quantity" },
+      { goal: "Confirm the total" },
+    ],
+    targetLanguageName: "Spanish",
+    supportLanguageName: "English",
+  });
+
+  assert.match(turn, /one continuous, realistic scenario/);
+  assert.match(turn, /Supporting unit objectives to weave/);
+  assert.match(turn, /not grade or complete on this turn/);
+  assert.match(turn, /Never announce, list, or teach the objectives separately/);
+  assert.match(turn, /only evidence the app should grade on this turn/);
+
+  const continued = buildOpenAIIntegratedScenarioTurnInstructions({
+    turnVerdict: TUTOR_TURN_VERDICT.ACCEPTED,
+    currentItem: { goal: "Confirm the total" },
+    companionItems: [{ goal: "Say goodbye politely" }],
+  });
+  assert.match(continued, /continue the same roleplay/);
+  assert.match(continued, /do not reset the scene/);
+});
+
+test("supplemental Tutor review loops retain their distinct modalities", () => {
+  const skillBuilder = buildOpenAIPurposeReviewLoopInstructions({
+    tutorPurpose: "targeted_review",
+    coveredItems: ["greet someone", "introduce yourself"],
+    targetLanguageName: "Spanish",
+    supportLanguageName: "English",
+  });
+  assert.match(skillBuilder, /mixed retrieval review/);
+  assert.match(skillBuilder, /Do not speak, translate, or model/);
+
+  const integrated = buildOpenAIPurposeReviewLoopInstructions({
+    tutorPurpose: "integrated_scenario",
+    coveredItems: ["greet someone", "introduce yourself"],
+  });
+  assert.match(integrated, /integrated scenario review/);
+  assert.match(integrated, /at least two covered objectives/);
+  assert.match(integrated, /Do not return to isolated phrase drills/);
+});
+
+test("Tutor quiz turns use XP completion without a pass-score instruction", () => {
+  const turn = buildOpenAIQuizTurnInstructions({
+    isKickoff: true,
+    completionMode: "xp",
+    currentQuestion: {
+      goal: "Use a greeting",
+      targetForms: ["hola"],
+    },
+    questionNumber: 1,
+    totalQuestions: 9,
+    passingScore: 8,
+    targetLanguageName: "Spanish",
+    supportLanguageName: "English",
+  });
+
+  assert.match(turn, /Correct answers earn lesson progress/);
+  assert.match(turn, /XP requirement is reached/);
+  assert.doesNotMatch(turn, /passing score|required.*pass/i);
 });
 
 test("regular lessons reuse the starter verdict wording, never a narratable variant", () => {

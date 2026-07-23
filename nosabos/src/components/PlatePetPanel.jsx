@@ -35,6 +35,7 @@ import {
   WAVE_BAR_PROGRESS_START,
 } from "./WaveBar";
 import { useThemeStore } from "../useThemeStore";
+import { APP_DAILY_QUEST_RADIUS, APP_SQUIRCLE_SHAPE } from "../theme";
 import {
   DEFAULT_SUPPORT_LANGUAGE,
   normalizeSupportLanguage,
@@ -1947,7 +1948,8 @@ function CompanionCanvas({
       aria-label={`${stage.label} ${resolvedPetType} companion`}
       w={{ base: "96px", md: "144px" }}
       h={{ base: "96px", md: "144px" }}
-      borderRadius={{ base: "lg", md: "xl" }}
+      borderRadius={{ base: "20px", md: APP_DAILY_QUEST_RADIUS }}
+      style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
       border="1px solid"
       borderColor={
         isCelebration
@@ -2093,7 +2095,8 @@ export default function PlatePetPanel({
       bg={panelBg}
       border="1px solid"
       borderColor={panelBorderColor}
-      borderRadius="2xl"
+      borderRadius={APP_DAILY_QUEST_RADIUS}
+      style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
       p={{ base: isCelebration ? 2.5 : 3, md: isCelebration ? 4 : 5 }}
       w="100%"
     >
@@ -2378,7 +2381,8 @@ export default function PlatePetPanel({
               bg={previewCardBg}
               border="1px solid"
               borderColor={isLightTheme ? APP_BORDER : "transparent"}
-              borderRadius="xl"
+              borderRadius={APP_DAILY_QUEST_RADIUS}
+              style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
               p={{ base: 2.5, md: 3 }}
               textAlign="center"
             >
@@ -2418,7 +2422,8 @@ export default function PlatePetPanel({
               bg={previewCardBg}
               border="1px solid"
               borderColor={isLightTheme ? APP_BORDER : "transparent"}
-              borderRadius="xl"
+              borderRadius={APP_DAILY_QUEST_RADIUS}
+              style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
               p={{ base: 2.5, md: 3 }}
               textAlign="center"
             >

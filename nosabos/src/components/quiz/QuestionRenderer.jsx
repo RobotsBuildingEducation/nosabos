@@ -21,6 +21,7 @@ import {
   DEFAULT_SUPPORT_LANGUAGE,
   normalizeSupportLanguage,
 } from "../../constants/languages";
+import { questionSquircleStyle } from "../questionUiStyles";
 
 /* ---------------------------
    Minimal i18n helper
@@ -125,7 +126,14 @@ export default function QuestionRenderer({ item, onSubmit, uiLang = "en" }) {
           <RadioGroup onChange={setValue} value={value}>
             <VStack align="stretch" spacing={2}>
               {shuffled.map((o) => (
-                <Radio key={o.id} value={o.id} bg="gray.700" p={2} rounded="md">
+                <Radio
+                  key={o.id}
+                  value={o.id}
+                  bg="gray.700"
+                  p={2}
+                  rounded="md"
+                  style={questionSquircleStyle}
+                >
                   {o.label}
                 </Radio>
               ))}
@@ -137,6 +145,7 @@ export default function QuestionRenderer({ item, onSubmit, uiLang = "en" }) {
                 shuffled.find((o) => o.id === value)?.correct ? "green" : "red"
               }
               w="fit-content"
+              style={questionSquircleStyle}
             >
               {shuffled.find((o) => o.id === value)?.correct
                 ? t("quiz_correct")
@@ -163,6 +172,7 @@ export default function QuestionRenderer({ item, onSubmit, uiLang = "en" }) {
                   bg="gray.700"
                   p={2}
                   rounded="md"
+                  style={questionSquircleStyle}
                 >
                   {o.label}
                 </Checkbox>
@@ -184,6 +194,7 @@ export default function QuestionRenderer({ item, onSubmit, uiLang = "en" }) {
                 return hasAll && noExtra ? "green" : "red";
               })()}
               w="fit-content"
+              style={questionSquircleStyle}
             >
               {(() => {
                 const chosen = new Set(values);
@@ -217,6 +228,7 @@ export default function QuestionRenderer({ item, onSubmit, uiLang = "en" }) {
       {item.type === "open" && (
         <VStack align="stretch" spacing={3}>
           <Textarea
+            style={questionSquircleStyle}
             bg="gray.700"
             value={openText}
             onChange={(e) => setOpenText(e.target.value)}
@@ -233,6 +245,7 @@ export default function QuestionRenderer({ item, onSubmit, uiLang = "en" }) {
                   : "orange"
               }
               w="fit-content"
+              style={questionSquircleStyle}
             >
               {t("quiz_checked")}
             </Badge>
@@ -253,6 +266,7 @@ export default function QuestionRenderer({ item, onSubmit, uiLang = "en" }) {
       {item.type === "oneword" && (
         <VStack align="stretch" spacing={3}>
           <Input
+            style={questionSquircleStyle}
             bg="gray.700"
             value={oneWord}
             onChange={(e) => setOneWord(e.target.value)}
@@ -270,6 +284,7 @@ export default function QuestionRenderer({ item, onSubmit, uiLang = "en" }) {
                   : "red";
               })()}
               w="fit-content"
+              style={questionSquircleStyle}
             >
               {(() => {
                 const toks = normalize(oneWord)
@@ -299,10 +314,17 @@ export default function QuestionRenderer({ item, onSubmit, uiLang = "en" }) {
         <VStack align="stretch" spacing={3}>
           {(item.left || []).map((l, idx) => (
             <HStack key={idx} spacing={3}>
-              <Box flex="1" bg="gray.700" p={2} rounded="md">
+              <Box
+                flex="1"
+                bg="gray.700"
+                p={2}
+                rounded="md"
+                style={questionSquircleStyle}
+              >
                 {l}
               </Box>
               <Select
+                style={questionSquircleStyle}
                 bg="gray.700"
                 value={matches[idx] || ""}
                 onChange={(e) =>

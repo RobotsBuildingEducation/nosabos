@@ -242,7 +242,10 @@ Object.assign(TEXT_TRANSLATIONS, {
   "contrary to fact": "Contraire aux faits",
   "corporate world": "Monde de l'entreprise",
   "count from zero to ten in spanish": "Compte de zero a dix en espagnol",
-  "count to twenty": "Compte jusqu'a vingt",
+  "count from eleven to thirty": "Compte de onze a trente",
+  "counting from eleven to thirty": "Compter de onze a trente",
+  "learn to count from eleven to thirty":
+    "Apprends a compter de onze a trente",
   "counting to one hundred": "Compter jusqu'a cent",
   "counting to twenty": "Compter jusqu'a vingt",
   "creative expression": "Expression creative",
@@ -575,7 +578,10 @@ Object.assign(TEXT_TRANSLATIONS, {
   "medical visits": "Visites medicales",
   "narrate events": "Raconter des evenements",
   "nature and ecology": "Nature et ecologie",
-  "numbers 0-20": "Nombres 0-20",
+  "numbers 11-30": "Nombres 11-30",
+  "numbers 11-30 quiz": "Quiz sur les nombres 11-30",
+  "test your knowledge of numbers 11-30":
+    "Teste tes connaissances des nombres de 11 a 30",
   "numbers 21-100": "Nombres 21-100",
   "phone numbers and ages": "Numeros de telephone et ages",
   "pre-a1 foundations": "Fondations Pre-A1",

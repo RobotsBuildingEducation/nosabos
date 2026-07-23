@@ -76,6 +76,7 @@ import deliciousSound from "../assets/delicious.mp3";
 import XpProgressHeader from "./XpProgressHeader";
 import { getBidiTextProps, mergeBidiSx } from "../utils/bidiText";
 import { buildCurriculumPromptContext } from "../utils/lessonCurriculum";
+import { questionSquircleStyle } from "./questionUiStyles";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -1846,6 +1847,7 @@ export default function StoryMode({
         minH="100vh"
         // bg="linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%)"
         borderRadius="24px"
+        style={questionSquircleStyle}
       >
         <Center h="100vh">
           <VStack spacing={6}>
@@ -1909,7 +1911,7 @@ export default function StoryMode({
 
       {/* Shared Level/XP card */}
       <Box px={4} pt={4}>
-        <Box p={3} rounded="2xl">
+        <Box p={3} rounded="2xl" style={questionSquircleStyle}>
           <Box display="flex" justifyContent={"center"}>
             <Box width="50%" maxW="600px">
               <XpProgressHeader
@@ -1960,6 +1962,7 @@ export default function StoryMode({
               bg={APP_SURFACE_ELEVATED}
               p={6}
               rounded="20px"
+              style={questionSquircleStyle}
               border={`1px solid ${APP_BORDER}`}
               boxShadow={APP_SHADOW}
             >
@@ -2061,6 +2064,7 @@ export default function StoryMode({
                                       : "rgba(99, 102, 241, 0.15)"
                                   }
                                   borderRadius="lg"
+                                  style={questionSquircleStyle}
                                   borderLeft={isLeft ? "3px solid" : "none"}
                                   borderRight={isLeft ? "none" : "3px solid"}
                                   borderColor={
@@ -2297,6 +2301,7 @@ export default function StoryMode({
                         <Box
                           p={4}
                           borderRadius="xl"
+                          style={questionSquircleStyle}
                           bg="linear-gradient(90deg, rgba(72,187,120,0.16), rgba(56,161,105,0.08))"
                           borderWidth="1px"
                           borderColor="green.400"

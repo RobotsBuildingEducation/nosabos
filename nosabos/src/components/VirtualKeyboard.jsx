@@ -10,6 +10,7 @@ import {
   IconButton,
 } from "@chakra-ui/react";
 import { MdClose, MdBackspace, MdSpaceBar } from "react-icons/md";
+import { APP_SQUIRCLE_SHAPE } from "../theme";
 
 // Japanese Hiragana keyboard layout
 const HIRAGANA = [
@@ -462,6 +463,7 @@ export default function VirtualKeyboard({
     <Box
       bg="rgba(20, 20, 30, 0.98)"
       borderRadius="lg"
+      style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
       borderWidth="1px"
       borderColor="whiteAlpha.200"
       p={3}

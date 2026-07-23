@@ -12,6 +12,7 @@ import { TbX } from "react-icons/tb";
 
 import useRepairFocusStore from "../hooks/useRepairFocusStore";
 import { repairCopy } from "../utils/companionMemoryCopy";
+import { APP_SQUIRCLE_SHAPE } from "../theme";
 
 export default function RepairFocusBanner({
   surface,
@@ -35,6 +36,7 @@ export default function RepairFocusBanner({
       border="1px solid"
       borderColor="rgba(168, 85, 247, 0.35)"
       borderRadius="14px"
+      style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
       px={3}
       py={2.5}
       mb={3}

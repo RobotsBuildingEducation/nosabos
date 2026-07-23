@@ -90,6 +90,7 @@ import {
   getQuestionDropZoneProps,
   getQuestionToolButtonProps,
   questionAssistantText,
+  questionSquircleStyle,
 } from "./questionUiStyles";
 import {
   buildCurriculumPromptContext,
@@ -4909,6 +4910,7 @@ Return JSON ONLY:
             py={1}
             mx={1}
             borderRadius="md"
+            style={questionSquircleStyle}
             borderBottomWidth="2px"
             borderBottomColor={APP_BORDER_STRONG}
             bg={APP_SURFACE_MUTED}
@@ -4923,7 +4925,7 @@ Return JSON ONLY:
                 {({ setNodeRef, attributes, listeners, style, isDragging }) => (
                   <Box
                     ref={setNodeRef}
-                    style={style}
+                    style={{ ...style, ...questionSquircleStyle }}
                     {...attributes}
                     {...listeners}
                     cursor="grab"
@@ -4991,6 +4993,7 @@ Return JSON ONLY:
             py={1}
             mx={1}
             borderRadius="md"
+            style={questionSquircleStyle}
             borderBottomWidth="2px"
             borderBottomColor={APP_BORDER_STRONG}
             bg={APP_SURFACE_MUTED}
@@ -5005,7 +5008,7 @@ Return JSON ONLY:
                 {({ setNodeRef, attributes, listeners, style, isDragging }) => (
                   <Box
                     ref={setNodeRef}
-                    style={style}
+                    style={{ ...style, ...questionSquircleStyle }}
                     {...attributes}
                     {...listeners}
                     cursor="grab"
@@ -5146,6 +5149,7 @@ Return JSON ONLY:
             <Box
               bg={APP_SURFACE_ELEVATED}
               borderRadius="lg"
+              style={questionSquircleStyle}
               borderWidth="1px"
               borderColor={APP_BORDER}
               p={5}
@@ -5188,6 +5192,7 @@ Return JSON ONLY:
             <AssistantSupportBox />
 
             <Input
+              style={questionSquircleStyle}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder={t("grammar_input_placeholder_answer")}
@@ -5284,6 +5289,7 @@ Return JSON ONLY:
                   <Box
                     bg={APP_SURFACE_ELEVATED}
                     borderRadius="lg"
+                    style={questionSquircleStyle}
                     borderWidth="1px"
                     borderColor={APP_BORDER}
                     p={5}
@@ -5335,7 +5341,7 @@ Return JSON ONLY:
                         {({ setNodeRef, attributes, listeners, style, isDragging }) => (
                           <Box
                             ref={setNodeRef}
-                            style={style}
+                            style={{ ...style, ...questionSquircleStyle }}
                             {...attributes}
                             {...listeners}
                             cursor="pointer"
@@ -5377,6 +5383,7 @@ Return JSON ONLY:
                 <Box
                   bg={APP_SURFACE_ELEVATED}
                   borderRadius="lg"
+                  style={questionSquircleStyle}
                   borderWidth="1px"
                   borderColor={APP_BORDER}
                   p={5}
@@ -5538,6 +5545,7 @@ Return JSON ONLY:
                   <Box
                     bg={APP_SURFACE_ELEVATED}
                     borderRadius="lg"
+                    style={questionSquircleStyle}
                     borderWidth="1px"
                     borderColor={APP_BORDER}
                     p={5}
@@ -5589,7 +5597,7 @@ Return JSON ONLY:
                         {({ setNodeRef, attributes, listeners, style, isDragging }) => (
                           <Box
                             ref={setNodeRef}
-                            style={style}
+                            style={{ ...style, ...questionSquircleStyle }}
                             {...attributes}
                             {...listeners}
                             cursor="pointer"
@@ -5631,6 +5639,7 @@ Return JSON ONLY:
                 <Box
                   bg={APP_SURFACE_ELEVATED}
                   borderRadius="lg"
+                  style={questionSquircleStyle}
                   borderWidth="1px"
                   borderColor={APP_BORDER}
                   p={5}
@@ -5811,6 +5820,7 @@ Return JSON ONLY:
                 <Box
                   border={`1px solid ${APP_BORDER}`}
                   rounded="xl"
+                  style={questionSquircleStyle}
                   p={6}
                   textAlign="center"
                   bg={APP_SURFACE_ELEVATED}
@@ -5993,6 +6003,7 @@ Return JSON ONLY:
               bg={APP_SURFACE_ELEVATED}
               border={`1px solid ${APP_BORDER}`}
               rounded="2xl"
+              style={questionSquircleStyle}
               p={{ base: 4, md: 6 }}
               position="relative"
               overflow="hidden"
@@ -6055,6 +6066,7 @@ Return JSON ONLY:
                       spacing={3}
                       bg={APP_SURFACE}
                       rounded="xl"
+                      style={questionSquircleStyle}
                       px={3}
                       py={2}
                       border={`1px solid ${APP_BORDER}`}
@@ -6120,7 +6132,7 @@ Return JSON ONLY:
                             {({ setNodeRef, attributes, listeners, style }) => (
                               <Box
                                 ref={setNodeRef}
-                                style={style}
+                                style={{ ...style, ...questionSquircleStyle }}
                                 {...attributes}
                                 {...listeners}
                                 onClick={() => {
@@ -6179,6 +6191,7 @@ Return JSON ONLY:
                   bg={APP_SURFACE}
                   border={`1px solid ${APP_BORDER}`}
                   rounded="xl"
+                  style={questionSquircleStyle}
                   p={3}
                 >
                   <Text
@@ -6207,6 +6220,7 @@ Return JSON ONLY:
                     p={2}
                     border={`1px dashed ${APP_BORDER_STRONG}`}
                     rounded="lg"
+                    style={questionSquircleStyle}
                     bg={APP_SURFACE_MUTED}
                   >
                     {(mBank.length
@@ -6220,7 +6234,7 @@ Return JSON ONLY:
                           {({ setNodeRef, attributes, listeners, style }) => (
                             <Box
                               ref={setNodeRef}
-                              style={style}
+                              style={{ ...style, ...questionSquircleStyle }}
                               {...attributes}
                               {...listeners}
                               onClick={() => {
@@ -6266,6 +6280,7 @@ Return JSON ONLY:
                           py={1.5}
                           rounded="lg"
                           border={`1px dashed ${APP_BORDER_STRONG}`}
+                          style={questionSquircleStyle}
                           opacity={0.4}
                         >
                           …

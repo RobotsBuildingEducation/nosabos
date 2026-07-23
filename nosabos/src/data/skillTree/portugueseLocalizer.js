@@ -225,11 +225,15 @@ const PORTUGUESE_SKILLTREE_EXACT = {
   [normalizeKey("Round out 100 words with connectors, feelings, and quick questions")]:
     "Complete 100 palavras com conectores, sentimentos e perguntas rápidas",
   [normalizeKey("Your very first words")]: "Suas primeiras palavras",
-  [normalizeKey("Numbers 0-20")]: "Números 0-20",
-  [normalizeKey("Count to twenty")]: "Conte até vinte",
-  [normalizeKey("Counting to Twenty")]: "Contando até vinte",
-  [normalizeKey("Learn to count from zero to twenty")]:
-    "Aprenda a contar do zero ao vinte",
+  [normalizeKey("Numbers 11-30")]: "Números 11-30",
+  [normalizeKey("Count from eleven to thirty")]: "Conte de onze a trinta",
+  [normalizeKey("Counting from Eleven to Thirty")]:
+    "Contando de onze a trinta",
+  [normalizeKey("Learn to count from eleven to thirty")]:
+    "Aprenda a contar de onze a trinta",
+  [normalizeKey("Numbers 11-30 Quiz")]: "Teste de números 11-30",
+  [normalizeKey("Test your knowledge of numbers 11-30")]:
+    "Teste seus conhecimentos dos números de 11 a 30",
   [normalizeKey("Numbers 21-100")]: "Números 21-100",
   [normalizeKey("Larger numbers")]: "Números maiores",
   [normalizeKey("Counting to One Hundred")]: "Contando até cem",

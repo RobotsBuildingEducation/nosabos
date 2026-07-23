@@ -273,6 +273,7 @@ import {
   normalizePetType,
 } from "./utils/petTypes";
 import { normalizeThemeMode, useThemeStore } from "./useThemeStore";
+import { APP_ACTION_BAR_RADIUS, APP_SQUIRCLE_SHAPE } from "./theme";
 import {
   DEFAULT_SUPPORT_LANGUAGE,
   DEFAULT_TARGET_LANGUAGE,
@@ -1740,9 +1741,7 @@ function TopBar({
           ? "#4b5563"
           : "whiteAlpha.700";
   const dailyGoalHudTextColor =
-    themeMode === "light" && dailyRawPct >= 100
-      ? "#167F91"
-      : dailyGoalHudColor;
+    themeMode === "light" && dailyRawPct >= 100 ? "#167F91" : dailyGoalHudColor;
   const dailyGoalLabel = uiCopy(appLanguage, {
     en: "Daily XP",
     es: "XP diaria",
@@ -1813,6 +1812,18 @@ function TopBar({
     [runTopBarAction],
   );
 
+  // Keep every icon-only top-bar action on the same sizing path. Chakra's
+  // Button and IconButton defaults otherwise produce subtly different boxes.
+  const topBarControlProps = {
+    size: "sm",
+    w: "32px",
+    h: "32px",
+    minW: "32px",
+    p: 0,
+    borderRadius: "13px",
+    style: { cornerShape: "superellipse(1.6)" },
+  };
+
   return (
     <>
       {/* ---- Header (responsive) ---- */}
@@ -1849,7 +1860,7 @@ function TopBar({
               align="center"
             >
               <IconButton
-                size="sm"
+                {...topBarControlProps}
                 variant="outline"
                 colorScheme="teal"
                 icon={dailyDone ? <FaCalendarCheck /> : <FaCalendarAlt />}
@@ -1861,7 +1872,6 @@ function TopBar({
                   zh: "打开每日目标",
                 })}
                 borderColor="teal.600"
-                px={{ base: 2, md: 3 }}
                 _active={{ transform: "none" }}
                 {...getTopBarPressProps("daily-goal", onOpenDailyGoalModal)}
               />
@@ -1914,10 +1924,11 @@ function TopBar({
               align="center"
             >
               {hasTimer && <SessionTimerBadge isRunning={isTimerRunning} />}
-              <Button
+              <IconButton
+                {...topBarControlProps}
                 colorScheme="teal"
                 variant={isTimerRunning ? "solid" : "outline"}
-                size="sm"
+                icon={<FiClock />}
                 boxShadow={isTimerRunning ? "none" : undefined}
                 aria-label={uiCopy(appLanguage, {
                   en: "Open timer",
@@ -1929,14 +1940,13 @@ function TopBar({
                 _hover={isTimerRunning ? { boxShadow: "none" } : undefined}
                 _active={{ boxShadow: "none", transform: "none" }}
                 {...getTopBarPressProps("session-timer", onOpenTimerModal)}
-              >
-                <FiClock />
-              </Button>
+              />
               {hasTimer && (
-                <Button
+                <IconButton
+                  {...topBarControlProps}
                   colorScheme="teal"
                   variant={timerPaused ? "outline" : "ghost"}
-                  size="sm"
+                  icon={timerPaused ? <FiPlay /> : <FiPause />}
                   aria-label={
                     timerPaused
                       ? uiCopy(appLanguage, {
@@ -1958,9 +1968,7 @@ function TopBar({
                     "session-timer-toggle",
                     onTogglePauseTimer,
                   )}
-                >
-                  {timerPaused ? <FiPlay /> : <FiPause />}
-                </Button>
+                />
               )}
             </HStack>
           </HStack>
@@ -3137,7 +3145,7 @@ export default function App({ onBootReady } = {}) {
   // The tutorial scenario is usually ready before the learner reaches its
   // final game step. Start the artificial exploration window only once that
   // loader is actually visible; timing it during earlier modules would make
-  // the intended 6-10 seconds invisible.
+  // the intended 5-8 seconds invisible.
   useEffect(() => {
     const shouldHoldTutorialGame =
       viewMode === "lesson" &&
@@ -10784,7 +10792,7 @@ function NoteCaptureCrystalShards() {
         const wanderY = Math.round(shard.y * 0.72);
         const nearX = Math.round(shard.x * 0.24);
         const nearY = Math.round(shard.y * 0.24);
-        const startRotate = (index * 37) % 120 - 60;
+        const startRotate = ((index * 37) % 120) - 60;
         const mainShape =
           MEMORY_CRYSTAL_SHAPES[index % MEMORY_CRYSTAL_SHAPES.length];
         return (
@@ -10964,6 +10972,7 @@ function BottomActionBar({
   onScrollToLatest,
   currentTab,
 }) {
+  const bottomActionButtonStyle = { cornerShape: "superellipse(1.6)" };
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
   const settingsLabel =
@@ -11258,9 +11267,13 @@ function BottomActionBar({
       paddingLeft={2}
       paddingRight={2}
     >
-      <Box borderRadius="24px" overflow="hidden">
+      <Box
+        borderRadius={APP_ACTION_BAR_RADIUS}
+        overflow="visible"
+        style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
+      >
         <GlassContainer
-          borderRadius="24px"
+          borderRadius={APP_ACTION_BAR_RADIUS}
           blur={0.5}
           contrast={1.1}
           brightness={1.05}
@@ -11284,7 +11297,8 @@ function BottomActionBar({
             width="100%"
             paddingBottom={5}
             paddingTop={3}
-            borderRadius="24px"
+            borderRadius={APP_ACTION_BAR_RADIUS}
+            style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
           >
             {/* Minimize caret above buttons */}
             {shouldShowMinimizeControls && (
@@ -11320,7 +11334,8 @@ function BottomActionBar({
               justify={{ base: "space-between", md: "space-between" }}
               flexWrap={{ base: "wrap", md: "wrap" }}
               overflow="visible"
-              borderRadius="24px"
+              borderRadius={APP_ACTION_BAR_RADIUS}
+              style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
             >
               <Box position="relative" flexShrink={0}>
                 {realWorldTasksTimerProgress > 0 && (
@@ -11356,8 +11371,8 @@ function BottomActionBar({
                       y="1.75"
                       width="40.5"
                       height="44.5"
-                      rx="14"
-                      ry="14"
+                      rx="17"
+                      ry="18"
                       fill="none"
                       stroke={
                         isLightTheme
@@ -11371,8 +11386,8 @@ function BottomActionBar({
                       y="1.75"
                       width="40.5"
                       height="44.5"
-                      rx="14"
-                      ry="14"
+                      rx="17"
+                      ry="18"
                       fill="none"
                       stroke="url(#immersionProgressGradient)"
                       strokeWidth="3.5"
@@ -11393,7 +11408,8 @@ function BottomActionBar({
                   onClick={() => handleActionClick(onOpenTeams)}
                   aria-label={tasksLabel}
                   size="sm"
-                  rounded="xl"
+                  borderRadius="18px"
+                  style={bottomActionButtonStyle}
                   borderWidth={realWorldTasksAttention ? "2px" : "0px"}
                   borderColor={
                     realWorldTasksAttention ? "teal.400" : "gray.700"
@@ -11458,7 +11474,8 @@ function BottomActionBar({
                 onClick={() => handleActionClick(onOpenSettings)}
                 aria-label={settingsLabel}
                 size="sm"
-                rounded="xl"
+                borderRadius="18px"
+                style={bottomActionButtonStyle}
                 flexShrink={0}
                 colorScheme="gray"
                 bg="gray.800"
@@ -11489,9 +11506,10 @@ function BottomActionBar({
                   boxShadow={notesLedgeShadow}
                   color={notesIsDone ? "white" : "gray.100"}
                   size="sm"
+                  borderRadius="18px"
+                  style={bottomActionButtonStyle}
                   position="relative"
                   zIndex={50}
-                  rounded="xl"
                   transition="color 0.2s ease"
                   animation={notesAnimation}
                   sx={{
@@ -11551,7 +11569,8 @@ function BottomActionBar({
                 aria-label={helpChatLabel}
                 isDisabled={!onOpenHelpChat}
                 size="sm"
-                rounded="xl"
+                borderRadius="18px"
+                style={bottomActionButtonStyle}
                 bg="white"
                 color="blue"
                 boxShadow="0 4px 0 blue"
@@ -11579,7 +11598,8 @@ function BottomActionBar({
                   icon={<CurrentModeIcon size={16} />}
                   aria-label={modeMenuLabel}
                   size="sm"
-                  rounded="xl"
+                  borderRadius="18px"
+                  style={bottomActionButtonStyle}
                   flexShrink={0}
                   onClick={() => playSound?.("modeSwitch")}
                   bg={isLightTheme ? "#38b2ac" : undefined}

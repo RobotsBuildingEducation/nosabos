@@ -178,7 +178,7 @@ const EXTRA_DIRECT_TRANSLATIONS = {
   "health & lifestyle": "健康とライフスタイル",
   "past tense irregular": "不規則動詞の過去形",
   "past tense regular": "規則動詞の過去形",
-  "numbers 0-20": "0から20の数字",
+  "numbers 11-30": "11から30の数字",
   "numbers 21-100": "21から100の数字",
   "at home": "家で",
   "at the doctor's": "病院で",
@@ -200,7 +200,8 @@ const EXTRA_DIRECT_TRANSLATIONS = {
     "名前・家族・移動に関する20語を追加で学ぶ",
   "basic greetings and farewells": "基本のあいさつと別れの表現",
   "count from zero to ten": "0から10まで数える",
-  "count to twenty": "20まで数える",
+  "count from eleven to thirty": "11から30まで数える",
+  "counting from eleven to thirty": "11から30まで数える",
   "finish the tutorial by playing a short game review.":
     "短いゲーム復習を遊んでチュートリアルを終える。",
   "improve your reading skills with a simple hello passage.":
@@ -214,8 +215,8 @@ const EXTRA_DIRECT_TRANSLATIONS = {
   "learn numbers 0-5": "0から5の数字を学ぶ",
   "learn the words for close family members":
     "近い家族を表す言葉を学ぶ",
-  "learn to count from zero to twenty":
-    "0から20まで数えることを学ぶ",
+  "learn to count from eleven to thirty":
+    "11から30まで数えることを学ぶ",
   "learn to count from twenty-one to one hundred":
     "21から100まで数えることを学ぶ",
   "learn to introduce yourself": "自己紹介することを学ぶ",
@@ -292,8 +293,8 @@ const EXTRA_DIRECT_TRANSLATIONS = {
     "インタラクティブなゲームで仮定・婉曲の表現を復習する",
   "review in the house by playing an interactive game":
     "インタラクティブなゲームで家の中の表現を復習する",
-  "review numbers 0-20 by playing an interactive game":
-    "インタラクティブなゲームで0から20の数字を復習する",
+  "review numbers 11-30 by playing an interactive game":
+    "インタラクティブなゲームで11から30の数字を復習する",
   "review numbers 21-100 by playing an interactive game":
     "インタラクティブなゲームで21から100の数字を復習する",
   "review past tense regular by playing an interactive game":
@@ -310,8 +311,9 @@ const EXTRA_DIRECT_TRANSLATIONS = {
     "仮定・婉曲の表現の理解を確かめる",
   "test your knowledge of in the house":
     "家の中の表現の理解を確かめる",
-  "test your knowledge of numbers 0-20":
-    "0から20の数字の理解を確かめる",
+  "numbers 11-30 quiz": "11から30の数字クイズ",
+  "test your knowledge of numbers 11-30":
+    "11から30の数字の理解を確かめる",
   "test your knowledge of numbers 21-100":
     "21から100の数字の理解を確かめる",
   "test your knowledge of past tense regular":

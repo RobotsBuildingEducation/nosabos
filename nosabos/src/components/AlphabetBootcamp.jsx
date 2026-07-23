@@ -123,6 +123,7 @@ import {
   getPhonicsBand,
   getPhonicsGenerationLevel,
 } from "../utils/phonicsLevel";
+import { APP_SQUIRCLE_SHAPE } from "../theme";
 
 const MotionBox = motion(Box);
 const APP_SURFACE = "var(--app-surface)";
@@ -134,6 +135,7 @@ const APP_TEXT_PRIMARY = "var(--app-text-primary)";
 const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
 const APP_TEXT_MUTED = "var(--app-text-muted)";
 const APP_SHADOW = "var(--app-shadow-soft)";
+const APP_SQUIRCLE_STYLE = { cornerShape: APP_SQUIRCLE_SHAPE };
 
 // Language name and script mapping for all supported languages
 const LANGUAGE_NAMES = {
@@ -1963,7 +1965,8 @@ function LetterCard({
           bg={APP_SURFACE_ELEVATED}
           border="1px solid"
           borderColor={APP_BORDER}
-          borderRadius="lg"
+          borderRadius="48px"
+          style={APP_SQUIRCLE_STYLE}
           p={4}
           boxShadow={APP_SHADOW}
           color={APP_TEXT_PRIMARY}
@@ -1982,7 +1985,13 @@ function LetterCard({
           )}
 
           <HStack justify="space-between" w="100%">
-            <Badge colorScheme={typeColor} borderRadius="md" px={2} py={1}>
+            <Badge
+              colorScheme={typeColor}
+              borderRadius="md"
+              px={2}
+              py={1}
+              style={APP_SQUIRCLE_STYLE}
+            >
               {typeLabel}
             </Badge>
             <HStack spacing={2}>
@@ -2064,7 +2073,8 @@ function LetterCard({
           bg={APP_SURFACE_ELEVATED}
           border="1px solid"
           borderColor={APP_BORDER_STRONG}
-          borderRadius="lg"
+          borderRadius="48px"
+          style={APP_SQUIRCLE_STYLE}
           p={4}
           boxShadow={APP_SHADOW}
           color={APP_TEXT_PRIMARY}
@@ -2939,6 +2949,7 @@ export default function AlphabetBootcamp({
                 justify="center"
                 bg={isLightTheme ? "green.50" : "green.900"}
                 borderRadius="lg"
+                style={APP_SQUIRCLE_STYLE}
                 border="1px solid"
                 borderColor={isLightTheme ? "green.300" : "green.500"}
                 p={6}
@@ -3026,6 +3037,7 @@ export default function AlphabetBootcamp({
           justify="center"
           bg={APP_SURFACE_ELEVATED}
           borderRadius="lg"
+          style={APP_SQUIRCLE_STYLE}
           border="1px solid"
           borderColor={APP_BORDER}
           p={6}

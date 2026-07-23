@@ -2,6 +2,7 @@ import React from "react";
 import { Badge, Box, HStack, Text } from "@chakra-ui/react";
 import { WaveBar } from "./WaveBar";
 import { useThemeStore } from "../useThemeStore";
+import { APP_SQUIRCLE_SHAPE } from "../theme";
 
 export default function XpProgressHeader({
   levelText,
@@ -50,7 +51,14 @@ export default function XpProgressHeader({
         >
           {levelText}
         </Text>
-        <Badge variant="subtle" {...resolvedXpBadgeProps}>
+        <Badge
+          variant="subtle"
+          {...resolvedXpBadgeProps}
+          style={{
+            cornerShape: APP_SQUIRCLE_SHAPE,
+            ...resolvedXpBadgeProps.style,
+          }}
+        >
           {xpText}
         </Badge>
       </HStack>

@@ -467,6 +467,10 @@ function createAgendaItem({ lesson, mode, objective, index, source, block }) {
     targetRole,
     targetForms: targetRole === "form" ? [concept] : [],
     activityBrief: cleanText(block?.prompt || block?.scenario || ""),
+    preserveCanonicalGoal: block?.preserveCanonicalGoal === true,
+    targetCurriculumAliases: normalizeTextList(
+      block?.targetCurriculumAliases,
+    ),
     evidence: { ...(EVIDENCE_BY_MODE[mode] || EVIDENCE_BY_MODE.realtime) },
     source: source || "derived",
   });
@@ -853,10 +857,44 @@ export function buildUnitQuizBlueprint(
       modes: item.modes,
       targetRole: getAgendaTargetRole(item),
       targetForms: getAgendaTargetForms(item),
+      goal: getAgendaGoal(item),
       targetConcept: item.targetConcept,
+      sourceConcept: item.sourceConcept,
+      labels: item.labels,
+      activityBrief: item.activityBrief,
+      targetExamples: Array.isArray(item.targetExamples)
+        ? item.targetExamples
+        : [],
       evidence: item.evidence,
     })),
   };
+}
+
+export function getLessonQuizSettings(
+  lesson,
+  availableQuestionCount = Number.POSITIVE_INFINITY,
+) {
+  const configuredQuestions = Math.max(
+    1,
+    Math.floor(Number(lesson?.quizConfig?.questionsRequired) || 10),
+  );
+  const available = Number(availableQuestionCount);
+  const questionCount = Number.isFinite(available)
+    ? Math.max(0, Math.min(configuredQuestions, Math.floor(available)))
+    : configuredQuestions;
+  const configuredPassingScore = Number(lesson?.quizConfig?.passingScore);
+  const configuredRatio =
+    Number.isFinite(configuredPassingScore) && configuredPassingScore > 0
+      ? configuredPassingScore / configuredQuestions
+      : 0.8;
+  const passingScore = questionCount
+    ? Math.max(
+        1,
+        Math.min(questionCount, Math.ceil(questionCount * configuredRatio)),
+      )
+    : 0;
+
+  return { questionCount, passingScore };
 }
 
 export function buildCurriculumPromptContext(
@@ -940,7 +978,13 @@ export function applyAuthoredTargetCurriculum(pathByLevel, targetLang, data) {
           if (!item) return;
           const lessonKey = item.sourceLessonId || lesson.id || "";
           const itemKey = item.sourceAgendaItemId || item.id || "";
-          const entry = data[lessonKey]?.[itemKey];
+          const curriculumKeys = [
+            itemKey,
+            ...normalizeTextList(item.targetCurriculumAliases),
+          ];
+          const entry = curriculumKeys
+            .map((key) => data[lessonKey]?.[key])
+            .find(Boolean);
           if (!entry) return;
           const concept = cleanText(entry.concept);
           if (concept) {
@@ -1051,7 +1095,7 @@ export function buildLessonCurriculumAudit(
       agendaItemId: item?.id || "",
       mode: item?.modes?.[0] || "",
       source: item?.source || "unknown",
-      goal: getAgendaGoal(item),
+      goal: item ? getAgendaGoal(item) : "",
       ...extra,
     });
   };
@@ -1061,6 +1105,37 @@ export function buildLessonCurriculumAudit(
       if (!lesson || isReviewLesson(lesson)) return;
       report.lessonCount += 1;
       const agenda = getLessonAgenda(lesson, { unit, targetLang });
+
+      // High-risk capstone lessons can declare a small semantic contract.
+      // Each inner group is an OR-list; every group must be represented in the
+      // canonical objectives. This catches title/content drift without trying
+      // to infer arbitrary semantic similarity from lesson titles.
+      const alignmentGroups = Array.isArray(lesson.objectiveAlignment)
+        ? lesson.objectiveAlignment
+            .map((group) =>
+              (Array.isArray(group) ? group : [group])
+                .map((term) => normalizeObjectiveKey(term))
+                .filter(Boolean),
+            )
+            .filter((group) => group.length)
+        : [];
+      if (alignmentGroups.length) {
+        const canonicalGoals = getLessonAgenda(lesson, { unit })
+          .map((item) => normalizeObjectiveKey(getAgendaGoal(item)))
+          .join(" ");
+        alignmentGroups.forEach((terms) => {
+          if (terms.some((term) => canonicalGoals.includes(term))) return;
+          addFinding(
+            "blockers",
+            "objective_alignment_missing",
+            unit,
+            lesson,
+            null,
+            { expectedAnyOf: terms },
+          );
+        });
+      }
+
       agenda.forEach((item) => {
         report.itemCount += 1;
         const source = item.source || "unknown";

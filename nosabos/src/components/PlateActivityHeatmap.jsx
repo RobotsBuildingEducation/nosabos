@@ -13,6 +13,7 @@ import {
 } from "../constants/languages";
 import { t as translate } from "../utils/translation";
 import { useThemeStore } from "../useThemeStore";
+import { APP_DAILY_QUEST_RADIUS, APP_SQUIRCLE_SHAPE } from "../theme";
 import useXpHistoryYear from "../hooks/useXpHistoryYear";
 
 const APP_SURFACE_MUTED = "var(--app-surface-muted)";
@@ -234,7 +235,8 @@ export default function PlateActivityHeatmap({
   return (
     <Box
       p={4}
-      borderRadius="xl"
+      borderRadius={APP_DAILY_QUEST_RADIUS}
+      style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
       bg={isLightTheme ? APP_SURFACE_MUTED : "gray.800"}
       border="1px solid"
       borderColor={isLightTheme ? APP_BORDER : "gray.700"}

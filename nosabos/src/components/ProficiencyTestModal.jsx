@@ -87,7 +87,12 @@ export default function ProficiencyTestModal({
         maxW={{ base: "90%", sm: "md" }}
       >
         {/* Header gradient */}
-        <Box bgGradient="linear(to-r, cyan.400, cyan.500)" px={6} py={6}>
+        <Box
+          className="app-modal-header"
+          bgGradient="linear(to-r, cyan.400, cyan.500)"
+          px={6}
+          py={6}
+        >
           <VStack spacing={3} mt={"-14"}>
             <RandomCharacter notSoRandomCharacter={"9"} width="100px" />
             {/* <Box as={LuBadgeCheck} fontSize="32px" color="white" /> */}

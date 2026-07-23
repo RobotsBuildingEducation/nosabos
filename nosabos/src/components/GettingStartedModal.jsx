@@ -173,6 +173,7 @@ export default function GettingStartedModal({
       >
         {/* Header gradient */}
         <Box
+          className="app-modal-header"
           bgGradient="linear(to-r, #6366F1, #8B5CF6)"
           px={{ base: 4, md: 5 }}
           py={{ base: 3, md: 4 }}

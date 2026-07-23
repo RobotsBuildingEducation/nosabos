@@ -94,6 +94,7 @@ import BottomDrawerDragHandle from "./BottomDrawerDragHandle";
 import useBottomDrawerSwipeDismiss from "../hooks/useBottomDrawerSwipeDismiss";
 import VoiceOrb from "./VoiceOrb";
 import { useThemeStore } from "../useThemeStore";
+import { APP_SQUIRCLE_SHAPE } from "../theme";
 import {
   DEFAULT_SUPPORT_LANGUAGE,
   normalizePracticeLanguage,
@@ -103,6 +104,11 @@ import {
   nativeAnchoredDrawerMotionProps,
   nativeOverlayMotionProps,
 } from "../utils/modalMotion";
+import {
+  buildMorphemeFallbackPrompt,
+  buildMorphemeModeInstruction,
+  hasCompleteMorphemeResponse,
+} from "../utils/helpChatMorpheme";
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-2.1-mini") + "";
@@ -794,9 +800,6 @@ const HelpChatFab = forwardRef(
       return assistantId;
     };
 
-    const hasMorphemeSection = (text) =>
-      /(^|\n)\s*\*\*[^*\n]+\*\*\s*=\s*.+\+/m.test(String(text || ""));
-
     const nameForLanguage = useCallback((code) => {
       return (
         {
@@ -979,6 +982,17 @@ const HelpChatFab = forwardRef(
                     primaryLang,
                   )} (support language), even if the user writes in another language.`;
 
+      if (morphemeMode) {
+        return [
+          buildMorphemeModeInstruction({
+            targetLanguageName: nameForLanguage(targetLang),
+            supportLanguageName: nameForLanguage(primaryLang),
+          }),
+          strict,
+          `Write the morpheme meanings and glosses in ${nameForLanguage(primaryLang)}.`,
+        ].join(" ");
+      }
+
       const levelHint = (() => {
         if (primaryLang === "es") {
           return lvl === "beginner"
@@ -1075,29 +1089,6 @@ const HelpChatFab = forwardRef(
                     primaryLang,
                   )}.`;
 
-      // Morpheme mode instructions - placed at START for priority
-      const morphemePrefix = morphemeMode
-        ? `🔬 MORPHEME MODE IS ON - YOU MUST INCLUDE A MORPHEME BREAKDOWN SECTION.
-
-You MUST include a short ${nameForLanguage(targetLang)} example sentence (1 sentence max) in your reply.
-Immediately after your reply, add the morpheme breakdown with NO heading, using this exact format for each word:
-
-**word** = part1 + part2 + part3
-- part1: meaning
-- part2: meaning
-→ "English translation"
-
-Example: **hablaremos** = habl + ar + emos
-- habl-: root "speak"
-- -ar-: infinitive marker
-- -emos: future 1st person plural
-→ "we will speak"
-
-DO NOT SKIP THE MORPHEME BREAKDOWN.
-
-`
-        : "";
-
       const glossLine = glossLang
         ? primaryLang === "pt"
           ? `Depois da explicação, adicione uma única linha de exemplo ou tradução em ${glossHuman}. Coloque-a em uma nova linha que comece com "// ".`
@@ -1115,7 +1106,6 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
               : "No añadas traducciones adicionales.";
 
       return [
-        morphemePrefix,
         "You are a helpful language study buddy for quick questions.",
         strict,
         `The learner practices ${nameForLanguage(
@@ -1124,9 +1114,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
         levelHint,
         focus ? `Focus area: ${focus}.` : "",
         supportNote,
-        morphemeMode
-          ? "Keep main reply ≤ 80 words, include exactly one target-language example sentence, then ADD the morpheme breakdown."
-          : "Keep replies ≤ 60 words.",
+        "Keep replies ≤ 60 words.",
         glossLine,
         "Use concise Markdown when helpful (bullets, **bold**, code, tables).",
       ]
@@ -1207,7 +1195,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
         stopRef.current = false;
 
         const instruction = buildInstruction();
-        const historyBlock = buildHistoryBlock();
+        const historyBlock = morphemeMode ? "" : buildHistoryBlock();
 
         const prompt =
           instruction +
@@ -1215,7 +1203,9 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
           (historyBlock
             ? `Previous conversation (for context, keep answers concise):\n${historyBlock}\n\n`
             : "") +
-          `User question:\n${question}`;
+          (morphemeMode
+            ? `Text to analyze verbatim:\n${question}`
+            : `User question:\n${question}`);
 
         const userId = crypto.randomUUID?.() || String(Date.now());
         pushMessage({ id: userId, role: "user", text: question, done: true });
@@ -1253,25 +1243,21 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
 
           let finalText = fullText;
 
-          if (morphemeMode && !hasMorphemeSection(finalText)) {
+          if (morphemeMode && !hasCompleteMorphemeResponse(finalText)) {
             const targetLang = progress?.targetLang || "es";
             const targetLangName = nameForLanguage(targetLang);
-            const fallbackPrompt = [
-              "You missed the morpheme breakdown section.",
-              `Target language: ${targetLangName}.`,
-              "Return ONLY the morpheme breakdown in this exact format (no heading):",
-              "**word** = part1 + part2 + part3",
-              "- part1: meaning",
-              "- part2: meaning",
-              '→ "English translation"',
-              "",
-              "If the answer below includes a target-language example sentence, use it.",
-              `Otherwise, create ONE short ${targetLangName} sentence related to the question.`,
-              "",
-              `User question: ${question}`,
-              "Assistant answer:",
-              finalText,
-            ].join("\n");
+            const supportLang = normalizeSupportLanguage(
+              progress?.supportLang === "bilingual"
+                ? appLanguage
+                : progress?.supportLang,
+              DEFAULT_SUPPORT_LANGUAGE,
+            );
+            const fallbackPrompt = buildMorphemeFallbackPrompt({
+              targetLanguageName: targetLangName,
+              supportLanguageName: nameForLanguage(supportLang),
+              question,
+              assistantAnswer: finalText,
+            });
 
             const fallbackResp =
               await simplemodel.generateContent(fallbackPrompt);
@@ -1281,7 +1267,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                 : fallbackResp?.response?.text) || "";
 
             if (fallbackText.trim()) {
-              finalText = `${finalText.trim()}\n\n${fallbackText.trim()}`;
+              finalText = fallbackText.trim();
               patchLastAssistant((m) => ({ ...m, text: finalText }));
             }
           }
@@ -2454,8 +2440,8 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                                 color={userBubbleColor}
                                 px={4}
                                 py={3}
-                                rounded="2xl"
-                                roundedBottomRight="md"
+                                borderRadius="40px"
+                                style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
                                 maxW="80%"
                                 boxShadow={userBubbleShadow}
                               >

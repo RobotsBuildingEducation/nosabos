@@ -17,6 +17,7 @@ import PlatePetPanel from "./PlatePetPanel";
 import PlateActivityHeatmap from "./PlateActivityHeatmap";
 import useSoundSettings from "../hooks/useSoundSettings";
 import { useThemeStore } from "../useThemeStore";
+import { APP_DAILY_QUEST_RADIUS, APP_SQUIRCLE_SHAPE } from "../theme";
 import selectSound from "../assets/select.mp3";
 import {
   getDailyPlateSnapshot,
@@ -390,7 +391,8 @@ export default function DailyPlateHome({
                 ? "rgba(183, 121, 31, 0.5)"
                 : "rgba(250, 204, 21, 0.5)"
             }
-            borderRadius="12px"
+            borderRadius={APP_DAILY_QUEST_RADIUS}
+            style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
             px={4}
             py={3}
             textAlign="center"
@@ -447,7 +449,8 @@ export default function DailyPlateHome({
                       : "var(--app-border)"
                 }
                 boxShadow="var(--app-shadow-soft)"
-                borderRadius="14px"
+                borderRadius={APP_DAILY_QUEST_RADIUS}
+                style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
                 px={4}
                 py={3}
               >

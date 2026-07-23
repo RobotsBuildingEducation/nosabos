@@ -1,6 +1,7 @@
 // components/ProgressBarBlock.jsx
 import React from "react";
 import { Box, HStack, Badge } from "@chakra-ui/react";
+import { APP_SQUIRCLE_SHAPE } from "../theme";
 
 export default function ProgressBarBlock({
   xp,
@@ -14,6 +15,7 @@ export default function ProgressBarBlock({
       bg="gray.800"
       p={3}
       rounded="2xl"
+      style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
       border="1px solid"
       borderColor="gray.700"
     >

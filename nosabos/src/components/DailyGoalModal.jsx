@@ -649,6 +649,7 @@ export default function DailyGoalModal({
       >
         {/* Header */}
         <Box
+          className="app-modal-header"
           bg={
             isLightTheme
               ? "linear-gradient(135deg, #43a19d 0%, #378b86 100%)"

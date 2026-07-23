@@ -84,7 +84,7 @@ async function initMessaging() {
 initMessaging();
 
 const simplemodel = getGenerativeModel(vertexAI, {
-  model: "gemini-3.1-flash-lite",
+  model: "gemini-3.5-flash-lite",
   generationConfig: {
     // Firebase AI Logic doesn't support Gemini 3 thinking_level yet.
     // For now, keep using thinking budgets (0 ≈ "minimal" behavior you're after).
@@ -93,7 +93,7 @@ const simplemodel = getGenerativeModel(vertexAI, {
 });
 
 const simplemodel3 = getGenerativeModel(vertexAI, {
-  model: "gemini-3-flash-preview",
+  model: "gemini-3.5-flash-lite",
   generationConfig: {
     thinkingConfig: { thinkingBudget: 0 },
     responseMimeType: "application/json",
@@ -101,7 +101,7 @@ const simplemodel3 = getGenerativeModel(vertexAI, {
 });
 
 const gradingModel = getGenerativeModel(vertexAI, {
-  model: "gemini-3-flash-preview",
+  model: "gemini-3.5-flash-lite",
   generationConfig: {
     thinkingConfig: { thinkingBudget: 1024 },
     responseMimeType: "application/json",
@@ -109,7 +109,7 @@ const gradingModel = getGenerativeModel(vertexAI, {
 });
 
 const gradingLiteModel = getGenerativeModel(vertexAI, {
-  model: "gemini-3.1-flash-lite",
+  model: "gemini-3.5-flash-lite",
   generationConfig: {
     thinkingConfig: { thinkingBudget: 0 },
     responseMimeType: "application/json",
@@ -117,7 +117,7 @@ const gradingLiteModel = getGenerativeModel(vertexAI, {
 });
 
 const citizenshipAssistantModel = getGenerativeModel(vertexAI, {
-  model: "gemini-3-flash-preview",
+  model: "gemini-3.5-flash-lite",
   generationConfig: {
     thinkingConfig: { thinkingBudget: 1024 },
   },

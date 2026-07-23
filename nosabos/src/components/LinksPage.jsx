@@ -1,12 +1,12 @@
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import {
   Accordion,
-  AccordionButton,
+  AccordionButton as ChakraAccordionButton,
   AccordionIcon,
   AccordionItem,
   AccordionPanel,
   Box,
-  Button,
+  Button as ChakraButton,
   Container,
   Divider,
   Heading,
@@ -20,14 +20,14 @@ import {
   MenuItemOption,
   Modal,
   ModalBody,
-  ModalCloseButton,
+  ModalCloseButton as ChakraModalCloseButton,
   ModalContent,
   ModalFooter,
   ModalHeader,
   ModalOverlay,
   Stack,
   Text,
-  IconButton,
+  IconButton as ChakraIconButton,
   useDisclosure,
   useToast,
   VStack,
@@ -68,6 +68,7 @@ import { syncDocumentLanguage } from "../utils/documentLanguage";
 import AnimatedLogo from "./AnimatedLogo/AnimatedLogo";
 import { linksPageTranslations } from "../translations/linksPage";
 import { useThemeStore } from "../useThemeStore";
+import { APP_BUTTON_RADIUS, APP_SQUIRCLE_SHAPE } from "../theme";
 import {
   nativeModalMotionProps,
   nativeOverlayMotionProps,
@@ -124,6 +125,38 @@ const APP_TEXT_PRIMARY = "var(--app-text-primary)";
 const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
 const APP_TEXT_MUTED = "var(--app-text-muted)";
 const APP_SHADOW = "var(--app-shadow-soft)";
+
+const BUTTON_SQUIRCLE_RADIUS = APP_BUTTON_RADIUS;
+const BUTTON_SQUIRCLE_SHAPE = APP_SQUIRCLE_SHAPE;
+
+const withSquircleCorners = (Component, displayName) => {
+  const SquircleComponent = React.forwardRef(function SquircleComponent(
+    { style, ...props },
+    ref,
+  ) {
+    return (
+      <Component
+        ref={ref}
+        {...props}
+        borderRadius={BUTTON_SQUIRCLE_RADIUS}
+        style={{ ...style, cornerShape: BUTTON_SQUIRCLE_SHAPE }}
+      />
+    );
+  });
+
+  SquircleComponent.displayName = displayName;
+  return SquircleComponent;
+};
+
+const Button = withSquircleCorners(ChakraButton, "LinksSquircleButton");
+const ModalCloseButton = withSquircleCorners(
+  ChakraModalCloseButton,
+  "LinksSquircleModalCloseButton",
+);
+const AccordionButton = withSquircleCorners(
+  ChakraAccordionButton,
+  "LinksSquircleAccordionButton",
+);
 
 const LINKS_PAPER_PAGE_SX = {
   background:
@@ -389,7 +422,7 @@ const LanguageMenuFixed = ({
     <Box>
       <Menu placement="bottom-start">
         <MenuButton
-          as={Button}
+          as={ChakraButton}
           type="button"
           aria-label={`Select language${selected?.label ? `: ${selected.label}` : ""}`}
           size="sm"
@@ -400,6 +433,7 @@ const LanguageMenuFixed = ({
           lineHeight="0"
           position="relative"
           rounded="full"
+          style={{ cornerShape: "round" }}
           border="1px solid"
           {...topControlProps}
         >
@@ -488,7 +522,7 @@ const ThemeModeToggle = ({ themeMode, onModeChange }) => {
   const label = isDark ? "Switch to light mode" : "Switch to dark mode";
 
   return (
-    <IconButton
+    <ChakraIconButton
       type="button"
       aria-label={label}
       title={label}
@@ -714,13 +748,14 @@ function LinkCard({
   return (
     <Box
       w="100%"
-      bg={isLightTheme ? "transparent" : "rgba(7, 16, 29, 0.65)"}
+      bg={isLightTheme ? "rgba(255, 233, 205, 0.35)" : "rgba(7, 16, 29, 0.65)"}
       color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
       border="1px solid"
       borderColor={isLightTheme ? APP_BORDER : "rgba(0, 255, 255, 0.08)"}
-      borderRadius="36px"
+      borderRadius="72px"
+      style={{ cornerShape: "superellipse(1.5)" }}
       px={{ base: 4, md: 6 }}
-      py={{ base: 4, md: 5 }}
+      py={{ base: 8, md: 12 }}
       boxShadow={isLightTheme ? APP_SHADOW : "0 0 10px rgba(0, 255, 255, 0.15)"}
     >
       <Stack
@@ -1634,6 +1669,7 @@ export default function LinksPage() {
             aria-label="Instagram"
             bg="radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%)"
             borderRadius="12px"
+            style={{ cornerShape: BUTTON_SQUIRCLE_SHAPE }}
             w="36px"
             h="36px"
             display="flex"
@@ -1661,6 +1697,7 @@ export default function LinksPage() {
             aria-label="LinkedIn"
             bg="#0A66C2"
             borderRadius="12px"
+            style={{ cornerShape: BUTTON_SQUIRCLE_SHAPE }}
             w="36px"
             h="36px"
             display="flex"
