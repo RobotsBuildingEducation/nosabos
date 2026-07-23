@@ -8,7 +8,7 @@
     "dev:direct": "vite --mode dev-direct",
     "build": "vite build",
     "audit:curriculum": "node scripts/auditLessonCurriculum.mjs",
-    "test": "node --test src/**/*.test.js",
+    "test": "node --test src/**/*.test.js src/features/citizenship/*.test.js",
     "lint": "eslint .",
     "preview": "vite preview"
   },

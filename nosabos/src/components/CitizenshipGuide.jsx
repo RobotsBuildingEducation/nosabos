@@ -41,11 +41,11 @@ import {
   MenuItemOption,
   MenuList,
   MenuOptionGroup,
-  Progress,
   Modal,
   ModalBody,
   ModalCloseButton,
   ModalContent,
+  ModalFooter,
   ModalHeader,
   ModalOverlay,
   SimpleGrid,
@@ -62,8 +62,6 @@ import {
   ChevronDown,
   CircleHelp,
   ClipboardCheck,
-  Copy,
-  Download,
   ExternalLink,
   FileBadge2,
   Gavel,
@@ -81,7 +79,6 @@ import {
   UserRound,
   UsersRound,
 } from "lucide-react";
-import { doc, getDoc, setDoc } from "firebase/firestore";
 import { useDecentralizedIdentity } from "../hooks/useDecentralizedIdentity";
 import useLanguage from "../hooks/useLanguage";
 import {
@@ -99,12 +96,61 @@ import useSoundSettings from "../hooks/useSoundSettings";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
 import { useThemeStore } from "../useThemeStore";
-import { SiMonkeytie, SiPatreon } from "react-icons/si";
+import { SiPatreon } from "react-icons/si";
+import { PiFingerprint } from "react-icons/pi";
+import { WaveBar } from "./WaveBar";
 import {
   nativeDrawerMotionProps,
   nativeModalMotionProps,
   nativeOverlayMotionProps,
 } from "../utils/modalMotion";
+import {
+  ASSESSMENT_STATUSES,
+  NATURALIZATION_MODALITIES,
+  WORKFLOWS,
+} from "../features/citizenship/assessmentModel";
+import {
+  assessCitizenship,
+  deriveLegacyRouteCode,
+} from "../features/citizenship/decisionEngine";
+import {
+  CITIZENSHIP_QUESTIONS as ADAPTIVE_QUESTION_DEFINITIONS,
+  DEFAULT_CITIZENSHIP_ANSWERS as ADAPTIVE_DEFAULT_ANSWERS,
+  getQuestionById,
+  hasQuestionAnswer as hasAdaptiveQuestionAnswer,
+  normalizeAnswerValue,
+} from "../features/citizenship/questions";
+import {
+  getApplicableQuestions,
+  getInvalidatedQuestionIds,
+  getNextRequiredQuestion,
+  getOptionalReadinessQuestions,
+  getRequiredProgress,
+  getRequiredQuestionIds,
+  pruneInvalidatedAnswers,
+} from "../features/citizenship/questionPlanner";
+import {
+  buildCitizenshipProgressV3,
+  CITIZENSHIP_PROGRESS_VERSION as ADAPTIVE_PROGRESS_VERSION,
+  normalizeCitizenshipAnswers as normalizeAdaptiveCitizenshipAnswers,
+  normalizeCitizenshipProgressV3,
+} from "../features/citizenship/persistence";
+import {
+  ALL_CHECKLIST_ITEMS,
+  getChecklistStableId,
+  getLegacyChecklistItemId,
+} from "../features/citizenship/checklist";
+import { ADAPTIVE_TEXT_TRANSLATIONS } from "../features/citizenship/adaptiveTranslations";
+import {
+  chooseMostRecentTimestamped,
+  clearCitizenshipChatDocuments,
+  combineProgressAndChat,
+  markCitizenshipOnboarded,
+  readCitizenshipRemoteBundle,
+  removeLegacyCitizenshipProgressMap,
+  writeCitizenshipChatDocuments,
+  writeCitizenshipProgressDocument,
+} from "../features/citizenship/firestorePersistence";
 
 const APP_SURFACE = "var(--app-surface)";
 const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
@@ -138,6 +184,40 @@ const CITIZENSHIP_TEAL_BUTTON_PROPS = {
     transform: "none",
   },
 };
+const CITIZENSHIP_ACCORDION_FOCUS_PROPS = {
+  _focus: {
+    outline: "none",
+    boxShadow: "none",
+  },
+  _focusVisible: {
+    outline: "none",
+    boxShadow: "none",
+    bg: APP_SURFACE_MUTED,
+  },
+};
+const CitizenshipWaveProgress = ({
+  value,
+  label,
+  isLightTheme,
+  mb = 0,
+}) => (
+  <Box
+    w="100%"
+    role="progressbar"
+    aria-label={label}
+    aria-valuemin={0}
+    aria-valuemax={100}
+    aria-valuenow={value}
+    mb={mb}
+  >
+    <WaveBar
+      value={value}
+      height={16}
+      bg={isLightTheme ? "rgba(96, 77, 56, 0.1)" : APP_SURFACE_MUTED}
+      border={isLightTheme ? "transparent" : APP_BORDER}
+    />
+  </Box>
+);
 
 const SUPPORT_LANGUAGE_FLAG_SWATCHES = {
   en: {
@@ -204,8 +284,8 @@ const getTopControlProps = (isLightTheme) => ({
 const ROUTES = {
   R1: {
     code: "R1",
-    title: "Already Mexican by birth",
-    subtitle: "Document/passport path",
+    title: "Already Mexican — document and ID path",
+    subtitle: "Existing nationality record",
     color: "#0f766e",
     bg: "rgba(15, 118, 110, 0.12)",
     icon: BadgeCheck,
@@ -277,7 +357,7 @@ const OFFICIAL_LINKS = [
 
 const CITIZENSHIP_ONBOARDED_STORAGE_KEY = "onboardedCitizenship";
 const CITIZENSHIP_PROGRESS_STORAGE_KEY = "citizenshipProgress";
-const CITIZENSHIP_PROGRESS_VERSION = 2;
+const CITIZENSHIP_PROGRESS_VERSION = ADAPTIVE_PROGRESS_VERSION;
 
 const getStoredNpub = () => {
   if (typeof window === "undefined") return "";
@@ -289,23 +369,8 @@ const getStoredNsec = () => {
   return (window.localStorage.getItem("local_nsec") || "").trim();
 };
 
-const normalizeCitizenshipAnswers = (rawAnswers = {}) => {
-  const normalized = {};
-
-  Object.entries(DEFAULT_ANSWERS).forEach(([key, defaultValue]) => {
-    const value = rawAnswers?.[key];
-    if (Array.isArray(defaultValue)) {
-      normalized[key] = Array.isArray(value)
-        ? value.filter((item) => typeof item === "string")
-        : defaultValue;
-      return;
-    }
-
-    normalized[key] = typeof value === "string" ? value : defaultValue;
-  });
-
-  return normalized;
-};
+const normalizeCitizenshipAnswers = (rawAnswers = {}) =>
+  normalizeAdaptiveCitizenshipAnswers(rawAnswers);
 
 const normalizeChecklistProgress = (rawProgress = {}) => {
   if (
@@ -316,12 +381,23 @@ const normalizeChecklistProgress = (rawProgress = {}) => {
     return {};
   }
 
-  return Object.entries(rawProgress).reduce((normalized, [key, value]) => {
+  const normalized = Object.entries(rawProgress).reduce(
+    (progress, [key, value]) => {
     if (typeof key === "string" && key.trim() && value === true) {
-      normalized[key] = true;
+        progress[key] = true;
     }
-    return normalized;
-  }, {});
+      return progress;
+    },
+    {},
+  );
+  ALL_CHECKLIST_ITEMS.forEach((entry) => {
+    const legacyId = getLegacyChecklistItemId(entry);
+    if (normalized[legacyId]) {
+      normalized[entry.id] = true;
+      delete normalized[legacyId];
+    }
+  });
+  return normalized;
 };
 
 const CITIZENSHIP_ASSISTANT_MAX_MESSAGES = 50;
@@ -379,23 +455,10 @@ const normalizeSavedAssistantChat = (rawChat) => {
 };
 
 const normalizeCitizenshipProgress = (rawProgress) => {
-  if (!rawProgress || typeof rawProgress !== "object") return null;
-
-  const questionIndex = Number(rawProgress.questionIndex);
-  return {
-    version: CITIZENSHIP_PROGRESS_VERSION,
-    answers: normalizeCitizenshipAnswers(rawProgress.answers),
-    questionIndex: Number.isFinite(questionIndex)
-      ? Math.max(0, Math.floor(questionIndex))
-      : 0,
-    showResults: rawProgress.showResults === true,
-    checklistProgress: normalizeChecklistProgress(
-      rawProgress.checklistProgress,
-    ),
-    assistantChat: normalizeSavedAssistantChat(rawProgress.assistantChat),
-    updatedAt:
-      typeof rawProgress.updatedAt === "string" ? rawProgress.updatedAt : "",
-  };
+  return normalizeCitizenshipProgressV3(rawProgress, {
+    normalizeChecklistProgress,
+    normalizeAssistantChat: normalizeSavedAssistantChat,
+  });
 };
 
 const readLocalCitizenshipProgress = () => {
@@ -421,30 +484,28 @@ const writeLocalCitizenshipProgress = (progress) => {
 
 const buildCitizenshipProgress = ({
   answers,
-  questionIndex,
+  currentQuestionId,
+  questionHistory = [],
+  visitedQuestionIds = [],
+  assessment,
   showResults,
+  showCheckpoint = false,
+  refiningChecklist = false,
   checklistProgress = {},
   assistantChat = createEmptyAssistantChat(),
-}) => ({
-  version: CITIZENSHIP_PROGRESS_VERSION,
-  answers: normalizeCitizenshipAnswers(answers),
-  questionIndex: Math.max(0, Math.floor(Number(questionIndex) || 0)),
-  showResults: showResults === true,
-  checklistProgress: normalizeChecklistProgress(checklistProgress),
-  assistantChat: normalizeSavedAssistantChat(assistantChat),
-  updatedAt: new Date().toISOString(),
-});
-
-const chooseMostRecentProgress = (remoteProgress, localProgress) => {
-  if (!remoteProgress) return localProgress;
-  if (!localProgress) return remoteProgress;
-
-  const remoteTime = Date.parse(remoteProgress.updatedAt || "");
-  const localTime = Date.parse(localProgress.updatedAt || "");
-  if (!Number.isFinite(remoteTime)) return localProgress;
-  if (!Number.isFinite(localTime)) return remoteProgress;
-  return remoteTime >= localTime ? remoteProgress : localProgress;
-};
+}) =>
+  buildCitizenshipProgressV3({
+    answers,
+    currentQuestionId,
+    questionHistory,
+    visitedQuestionIds,
+    assessment,
+    showResults,
+    showCheckpoint,
+    refiningChecklist,
+    checklistProgress: normalizeChecklistProgress(checklistProgress),
+    assistantChat: normalizeSavedAssistantChat(assistantChat),
+  });
 
 const getInitialCitizenshipState = () => {
   const progress = readLocalCitizenshipProgress();
@@ -454,8 +515,12 @@ const getInitialCitizenshipState = () => {
 
   return {
     answers: progress?.answers || DEFAULT_ANSWERS,
-    questionIndex: progress?.questionIndex || 0,
+    currentQuestionId: progress?.currentQuestionId || "existingDocs",
+    questionHistory: progress?.questionHistory || [],
+    visitedQuestionIds: progress?.visitedQuestionIds || [],
     showResults: progress?.showResults === true,
+    showCheckpoint: progress?.showCheckpoint === true,
+    refiningChecklist: progress?.refiningChecklist === true,
     checklistProgress: progress?.checklistProgress || {},
     assistantChat: progress?.assistantChat || createEmptyAssistantChat(),
     showIntro: !onboarded && !progress,
@@ -466,22 +531,20 @@ const getInitialCitizenshipState = () => {
 
 const persistCitizenshipProgress = async (
   progress,
-  { markOnboarded = false } = {},
+  { markOnboarded = false, clearChat = false } = {},
 ) => {
   writeLocalCitizenshipProgress(progress);
 
   const npub = getStoredNpub();
   if (!npub) return;
 
-  await setDoc(
-    doc(database, "users", npub),
-    {
-      ...(markOnboarded ? { onboardedCitizenship: true } : {}),
-      citizenshipProgress: progress,
-      updatedAt: progress.updatedAt,
-    },
-    { merge: true },
-  );
+  await writeCitizenshipProgressDocument(database, npub, progress);
+  if (markOnboarded) {
+    await markCitizenshipOnboarded(database, npub);
+  }
+  if (clearChat) {
+    await clearCitizenshipChatDocuments(database, npub);
+  }
 };
 
 const ES_TEXT = {
@@ -5498,6 +5561,9 @@ const translateText = (text, language = "en") => {
   if (normalizedLanguage === "en") return text;
 
   const translations = TEXT_TRANSLATIONS[normalizedLanguage] || {};
+  const adaptiveTranslations =
+    ADAPTIVE_TEXT_TRANSLATIONS[normalizedLanguage] || {};
+  if (adaptiveTranslations[text]) return adaptiveTranslations[text];
   if (translations[text]) return translations[text];
 
   if (text.startsWith("2-year route: ")) {
@@ -5519,40 +5585,7 @@ const translateText = (text, language = "en") => {
   return text;
 };
 
-const DEFAULT_ANSWERS = {
-  currentCitizenship: "",
-  birthplace: "",
-  existingDocs: [],
-  applicantType: "",
-  handlingLocation: "",
-  registeredMexico: "",
-  foreignNationalityBefore1998: "",
-  actaIssue: "",
-  parentMexicanAtBirth: "",
-  parentProof: "",
-  parentOrigin: "",
-  parentNamesMatch: "",
-  birthCertificateType: "",
-  parentsMarriedTiming: "",
-  parentAvailability: "",
-  applicantAdult: "",
-  foreignBirthRecord: "",
-  residentStatus: "",
-  residenceYears: "",
-  cardReady: "",
-  addressMatch: "",
-  absences: "",
-  marriedMexican: "",
-  mexicanChild: "",
-  descendant: "",
-  latinIberian: "",
-  adoptedParentalAuthority: "",
-  refugee: "",
-  distinguishedService: "",
-  criminalHistory: "",
-  examReady: "",
-  passportReady: "",
-};
+const DEFAULT_ANSWERS = { ...ADAPTIVE_DEFAULT_ANSWERS };
 
 const TEST_PREFILL_ANSWERS = {
   ...DEFAULT_ANSWERS,
@@ -5612,17 +5645,10 @@ const addUnique = (list, item) => {
 };
 
 const getChecklistItemId = (item) => {
-  const text = String(item || "");
-  let hash = 0;
-
-  for (let index = 0; index < text.length; index += 1) {
-    hash = (hash * 31 + text.charCodeAt(index)) >>> 0;
-  }
-
-  return `item_${text.length}_${hash.toString(36)}`;
+  return getChecklistStableId(item) || getLegacyChecklistItemId(item);
 };
 
-const evaluateCitizenshipRoute = (answers) => {
+const EVALUATE_LEGACY_CITIZENSHIP_ROUTE = (answers) => {
   const blockers = [];
   const reasons = [];
   const checklist = [];
@@ -6096,22 +6122,102 @@ const buildWarnings = (routeCode, baseRoute) => {
   return warnings;
 };
 
+const MODALITY_LABELS = {
+  [NATURALIZATION_MODALITIES.GENERAL_5Y]: "5-year general residence",
+  [NATURALIZATION_MODALITIES.MARRIAGE_2Y]:
+    "2-year route: marriage to a Mexican citizen",
+  [NATURALIZATION_MODALITIES.MEXICAN_CHILD_2Y]:
+    "2-year route: Mexican child by birth",
+  [NATURALIZATION_MODALITIES.DIRECT_DESCENDANT_2Y]:
+    "2-year route: direct descent from Mexican by birth",
+  [NATURALIZATION_MODALITIES.LATIN_IBERIAN_2Y]:
+    "2-year route: Latin American or Iberian origin",
+  [NATURALIZATION_MODALITIES.DISTINGUISHED_SERVICES]:
+    "Distinguished-service route",
+  [NATURALIZATION_MODALITIES.ADOPTION_PARENTAL_AUTHORITY_1Y]:
+    "1-year adoption / parental authority route",
+};
+
+const STATUS_SUBTITLES = {
+  [ASSESSMENT_STATUSES.ALREADY_MEXICAN]: "Already Mexican",
+  [ASSESSMENT_STATUSES.ELIGIBLE_NOW]: "Likely eligible now",
+  [ASSESSMENT_STATUSES.NOT_ELIGIBLE_YET]: "Not eligible yet",
+  [ASSESSMENT_STATUSES.NEEDS_REVIEW]: "Needs review",
+  [ASSESSMENT_STATUSES.NEED_MORE_INFORMATION]: "Need more information",
+};
+
+const WORKFLOW_TITLES = {
+  [WORKFLOWS.EXISTING_DOCUMENT]: "Already Mexican — document and ID path",
+  [WORKFLOWS.MEXICO_BIRTH_RECORD]: "Mexican by birth — record and ID path",
+  [WORKFLOWS.FOREIGN_BIRTH_REGISTRATION]: "Birth registration abroad",
+  [WORKFLOWS.PARENT_CHAIN]: "Parent-chain first",
+  [WORKFLOWS.DECLARATORIA]: "Declaratoria / recovery",
+  [WORKFLOWS.NATURALIZATION]: "Naturalization",
+};
+
+const WORKFLOW_ROUTE_STYLES = {
+  [WORKFLOWS.EXISTING_DOCUMENT]: ROUTES.R1,
+  [WORKFLOWS.MEXICO_BIRTH_RECORD]: ROUTES.R1,
+  [WORKFLOWS.FOREIGN_BIRTH_REGISTRATION]: ROUTES.R2,
+  [WORKFLOWS.PARENT_CHAIN]: ROUTES.R3,
+  [WORKFLOWS.DECLARATORIA]: ROUTES.R4,
+  [WORKFLOWS.NATURALIZATION]: ROUTES.R5,
+};
+
+const buildCitizenshipEvaluation = (answers, assessment) => {
+  const legacyCode = deriveLegacyRouteCode(assessment);
+  const style =
+    WORKFLOW_ROUTE_STYLES[assessment.workflow] ||
+    ROUTES[legacyCode] ||
+    ROUTES.R6;
+  const route = {
+    ...style,
+    code: legacyCode || "",
+    title:
+      WORKFLOW_TITLES[assessment.workflow] ||
+      (assessment.status === ASSESSMENT_STATUSES.NEED_MORE_INFORMATION
+        ? "Find the route"
+        : style.title),
+    subtitle:
+      STATUS_SUBTITLES[assessment.status] || style.subtitle,
+  };
+  const notices = [];
+  if (["us", "both"].includes(answers.currentCitizenship)) {
+    notices.push(
+      "U.S. citizens generally do not automatically lose U.S. citizenship by acquiring another nationality, and U.S. dual nationals generally must use a U.S. passport to enter and leave the United States.",
+    );
+  }
+  if (assessment.legalBasis === "mexican_by_birth") {
+    notices.push(
+      "Mexicans by birth cannot be deprived of Mexican nationality.",
+    );
+  }
+  if (assessment.legalBasis === "mexican_by_naturalization") {
+    notices.push(
+      "Naturalized Mexican nationality can be lost in specific situations, including voluntarily acquiring another foreign nationality, using a foreign passport as a Mexican in certain contexts, or residing abroad for five continuous years.",
+    );
+  }
+  notices.push(
+    "This tool is an eligibility guide, not a legal decision. SRE, consulates, and civil registry offices apply the final requirements.",
+  );
+
+  return {
+    assessment,
+    route,
+    confidence: route.subtitle,
+    baseRoute: null,
+    modality: MODALITY_LABELS[assessment.modality] || "",
+    reasons: assessment.reasons || [],
+    blockers: (assessment.issues || []).map((entry) => entry.explanation),
+    checklistItems: assessment.checklist || [],
+    checklist: (assessment.checklist || []).map((entry) => entry.text),
+    notices,
+  };
+};
+
 const DUAL_CITIZENSHIP_BENEFITS = {
   en: {
     title: "Benefits of Mexican dual citizenship",
-    subtitle:
-      "Start with the rights that matter at any age, then see how they can matter at different life stages.",
-    overallTitle: "Biggest overall benefits",
-    overallBenefits: [
-      "Live in Mexico without needing a visa",
-      "Work in Mexico without a work permit",
-      "Vote in Mexican elections",
-      "Get Mexican ID and passport",
-      "Own property more easily",
-      "Pass nationality to children",
-      "Retire in Mexico more securely",
-      "Keep U.S. citizenship while gaining Mexican rights",
-    ],
     ageTitle: "Benefits by age group",
     ageGroups: [
       {
@@ -6183,19 +6289,6 @@ const DUAL_CITIZENSHIP_BENEFITS = {
   },
   es: {
     title: "Beneficios de la doble ciudadanía mexicana",
-    subtitle:
-      "Empieza con los derechos que importan a cualquier edad y luego mira cómo pueden servir en distintas etapas de vida.",
-    overallTitle: "Mayores beneficios generales",
-    overallBenefits: [
-      "Vivir en México sin necesitar visa",
-      "Trabajar en México sin permiso de trabajo",
-      "Votar en elecciones mexicanas",
-      "Obtener identificación y pasaporte mexicanos",
-      "Tener propiedad con más facilidad",
-      "Transmitir nacionalidad a hijos",
-      "Jubilarte en México con más seguridad",
-      "Conservar ciudadanía estadounidense mientras obtienes derechos mexicanos",
-    ],
     ageTitle: "Beneficios por grupo de edad",
     ageGroups: [
       {
@@ -6267,19 +6360,6 @@ const DUAL_CITIZENSHIP_BENEFITS = {
   },
   pt: {
     title: "Benefícios da dupla cidadania mexicana",
-    subtitle:
-      "Comece pelos direitos que importam em qualquer idade e depois veja como eles podem ajudar em cada fase da vida.",
-    overallTitle: "Maiores benefícios gerais",
-    overallBenefits: [
-      "Viver no México sem precisar de visto",
-      "Trabalhar no México sem permissão de trabalho",
-      "Votar em eleições mexicanas",
-      "Obter identidade e passaporte mexicanos",
-      "Ter propriedade com mais facilidade",
-      "Transmitir nacionalidade aos filhos",
-      "Aposentar-se no México com mais segurança",
-      "Manter a cidadania dos EUA enquanto ganha direitos mexicanos",
-    ],
     ageTitle: "Benefícios por faixa etária",
     ageGroups: [
       {
@@ -6351,19 +6431,6 @@ const DUAL_CITIZENSHIP_BENEFITS = {
   },
   it: {
     title: "Benefici della doppia cittadinanza messicana",
-    subtitle:
-      "Parti dai diritti utili a qualsiasi eta, poi vedi come possono contare nelle diverse fasi della vita.",
-    overallTitle: "Benefici generali principali",
-    overallBenefits: [
-      "Vivere in Messico senza bisogno di visto",
-      "Lavorare in Messico senza permesso di lavoro",
-      "Votare nelle elezioni messicane",
-      "Ottenere ID e passaporto messicani",
-      "Possedere beni immobili con piu facilita",
-      "Trasmettere la nazionalita ai figli",
-      "Andare in pensione in Messico con piu sicurezza",
-      "Mantenere la cittadinanza statunitense ottenendo diritti messicani",
-    ],
     ageTitle: "Benefici per fascia d'eta",
     ageGroups: [
       {
@@ -6435,19 +6502,6 @@ const DUAL_CITIZENSHIP_BENEFITS = {
   },
   fr: {
     title: "Avantages de la double citoyennete mexicaine",
-    subtitle:
-      "Commence par les droits utiles a tout age, puis vois comment ils peuvent compter a chaque etape de la vie.",
-    overallTitle: "Plus grands avantages generaux",
-    overallBenefits: [
-      "Vivre au Mexique sans avoir besoin de visa",
-      "Travailler au Mexique sans permis de travail",
-      "Voter aux elections mexicaines",
-      "Obtenir une piece d'identite et un passeport mexicains",
-      "Posseder des biens plus facilement",
-      "Transmettre la nationalite aux enfants",
-      "Prendre sa retraite au Mexique avec plus de securite",
-      "Conserver la citoyennete americaine tout en obtenant des droits mexicains",
-    ],
     ageTitle: "Avantages par groupe d'age",
     ageGroups: [
       {
@@ -6519,19 +6573,6 @@ const DUAL_CITIZENSHIP_BENEFITS = {
   },
   ja: {
     title: "メキシコ二重国籍のメリット",
-    subtitle:
-      "まず年齢を問わず重要な権利を確認し、その後ライフステージごとの意味を見ていきます。",
-    overallTitle: "主な全体メリット",
-    overallBenefits: [
-      "ビザなしでメキシコに住める",
-      "就労許可なしでメキシコで働ける",
-      "メキシコの選挙で投票できる",
-      "メキシコの身分証とパスポートを取得できる",
-      "不動産をより取得しやすい",
-      "子どもに国籍を引き継げる",
-      "メキシコでより安心して退職生活を計画できる",
-      "米国市民権を保ちながらメキシコの権利を得られる",
-    ],
     ageTitle: "年齢別メリット",
     ageGroups: [
       {
@@ -6603,19 +6644,6 @@ const DUAL_CITIZENSHIP_BENEFITS = {
   },
   hi: {
     title: "मैक्सिकन दोहरी नागरिकता के लाभ",
-    subtitle:
-      "पहले वे अधिकार देखें जो हर उम्र में काम आते हैं, फिर उम्र के हिसाब से उनके फायदे देखें।",
-    overallTitle: "सबसे बड़े सामान्य लाभ",
-    overallBenefits: [
-      "वीजा के बिना मेक्सिको में रहना",
-      "वर्क परमिट के बिना मेक्सिको में काम करना",
-      "मैक्सिकन चुनावों में वोट देना",
-      "मैक्सिकन ID और पासपोर्ट पाना",
-      "संपत्ति रखना अधिक आसान",
-      "बच्चों को राष्ट्रीयता देना",
-      "मेक्सिको में अधिक सुरक्षित तरीके से रिटायर होना",
-      "अमेरिकी नागरिकता रखते हुए मैक्सिकन अधिकार पाना",
-    ],
     ageTitle: "उम्र के हिसाब से लाभ",
     ageGroups: [
       {
@@ -6687,19 +6715,6 @@ const DUAL_CITIZENSHIP_BENEFITS = {
   },
   ar: {
     title: "فوائد الجنسية المكسيكية المزدوجة",
-    subtitle:
-      "ابدأ بالحقوق المهمة في أي عمر، ثم انظر كيف تفيد في مراحل الحياة المختلفة.",
-    overallTitle: "أكبر الفوائد العامة",
-    overallBenefits: [
-      "العيش في المكسيك دون الحاجة إلى تأشيرة",
-      "العمل في المكسيك دون تصريح عمل",
-      "التصويت في الانتخابات المكسيكية",
-      "الحصول على هوية وجواز سفر مكسيكيين",
-      "امتلاك العقارات بسهولة أكبر",
-      "نقل الجنسية إلى الأطفال",
-      "التقاعد في المكسيك بأمان أكبر",
-      "الاحتفاظ بالجنسية الأمريكية مع الحصول على حقوق مكسيكية",
-    ],
     ageTitle: "الفوائد حسب الفئة العمرية",
     ageGroups: [
       {
@@ -6771,19 +6786,6 @@ const DUAL_CITIZENSHIP_BENEFITS = {
   },
   zh: {
     title: "墨西哥双重国籍的好处",
-    subtitle:
-      "先看任何年龄都重要的权利，再按人生阶段了解这些权利的实际作用。",
-    overallTitle: "最大的整体好处",
-    overallBenefits: [
-      "无需签证即可在墨西哥居住",
-      "无需工作许可即可在墨西哥工作",
-      "在墨西哥选举中投票",
-      "获得墨西哥身份证件和护照",
-      "更容易拥有房产",
-      "把国籍传给子女",
-      "在墨西哥更安心地退休",
-      "保留美国公民身份，同时获得墨西哥权利",
-    ],
     ageTitle: "按年龄段的好处",
     ageGroups: [
       {
@@ -6857,19 +6859,6 @@ const DUAL_CITIZENSHIP_BENEFITS = {
 
 DUAL_CITIZENSHIP_BENEFITS.de = {
   title: "Vorteile der doppelten mexikanischen Staatsangehörigkeit",
-  subtitle:
-    "Beginne mit den Rechten, die in jedem Alter wichtig sind, und sieh dann, wie sie in verschiedenen Lebensphasen zählen können.",
-  overallTitle: "Größte allgemeine Vorteile",
-  overallBenefits: [
-    "In Mexiko leben, ohne ein Visum zu benötigen",
-    "In Mexiko arbeiten, ohne Arbeitserlaubnis",
-    "Bei mexikanischen Wahlen wählen",
-    "Mexikanischen Ausweis und Reisepass erhalten",
-    "Eigentum leichter besitzen",
-    "Staatsangehörigkeit an Kinder weitergeben",
-    "Sicherer in Mexiko in Rente gehen",
-    "US-Staatsangehörigkeit behalten und zugleich mexikanische Rechte gewinnen",
-  ],
   ageTitle: "Vorteile nach Altersgruppe",
   ageGroups: [
     {
@@ -8648,7 +8637,7 @@ const CitizenshipIntro = ({
             transform="none"
             minW={{ base: "100%", sm: "176px" }}
             h="52px"
-            leftIcon={<Icon as={Copy} boxSize="16px" />}
+            leftIcon={<Icon as={PiFingerprint} boxSize="17px" />}
             onClick={() => {
               onSubmitSound?.();
               onCopySecretKey();
@@ -8706,12 +8695,13 @@ const CitizenshipIntro = ({
         <Divider borderColor="var(--app-border)" />
 
         <Flex
-          align={{ base: "stretch", sm: "center" }}
-          justify="space-between"
+          align="center"
+          justify="flex-end"
           gap={3}
-          direction={{ base: "column", sm: "row" }}
+          direction="row"
+          flexWrap="wrap"
         >
-          <Text color="var(--app-text-muted)" fontSize="sm">
+          <Text color="var(--app-text-muted)" fontSize="sm" textAlign="end">
             {translateText("Already have a key?", language)}
           </Text>
           <Button
@@ -8733,43 +8723,6 @@ const CitizenshipIntro = ({
             {translateText("Sign in", language)}
           </Button>
         </Flex>
-
-        <Accordion allowToggle>
-          <AccordionItem
-            border="1px solid"
-            borderColor="var(--app-border)"
-            borderRadius="8px"
-          >
-            <AccordionButton
-              onClick={onSelectSound}
-              _hover={{ bg: "var(--app-surface-muted)" }}
-            >
-              <HStack flex="1" textAlign="start" spacing={2}>
-                <Icon as={ShieldCheck} boxSize="16px" color="#0f766e" />
-                <Text fontWeight="700" color="var(--app-text-primary)">
-                  {translateText(PRIVACY_POLICY_TITLE, language)}
-                </Text>
-              </HStack>
-              <AccordionIcon />
-            </AccordionButton>
-            <AccordionPanel
-              bg="var(--app-surface-elevated)"
-              borderTop="1px solid var(--app-border)"
-            >
-              <Stack
-                spacing={3}
-                fontSize="sm"
-                color="var(--app-text-secondary)"
-              >
-                {PRIVACY_POLICY_COPY.map((paragraph) => (
-                  <Text key={paragraph}>
-                    {translateText(paragraph, language)}
-                  </Text>
-                ))}
-              </Stack>
-            </AccordionPanel>
-          </AccordionItem>
-        </Accordion>
 
         {showSignIn ? (
           <Stack
@@ -8823,6 +8776,44 @@ const CitizenshipIntro = ({
             </Flex>
           </Stack>
         ) : null}
+
+        <Accordion allowToggle>
+          <AccordionItem
+            border="1px solid"
+            borderColor="var(--app-border)"
+            borderRadius="8px"
+          >
+            <AccordionButton
+              {...CITIZENSHIP_ACCORDION_FOCUS_PROPS}
+              onClick={onSelectSound}
+              _hover={{ bg: "var(--app-surface-muted)" }}
+            >
+              <HStack flex="1" textAlign="start" spacing={2}>
+                <Icon as={ShieldCheck} boxSize="16px" color="#0f766e" />
+                <Text fontWeight="700" color="var(--app-text-primary)">
+                  {translateText(PRIVACY_POLICY_TITLE, language)}
+                </Text>
+              </HStack>
+              <AccordionIcon />
+            </AccordionButton>
+            <AccordionPanel
+              bg="var(--app-surface-elevated)"
+              borderTop="1px solid var(--app-border)"
+            >
+              <Stack
+                spacing={3}
+                fontSize="sm"
+                color="var(--app-text-secondary)"
+              >
+                {PRIVACY_POLICY_COPY.map((paragraph) => (
+                  <Text key={paragraph}>
+                    {translateText(paragraph, language)}
+                  </Text>
+                ))}
+              </Stack>
+            </AccordionPanel>
+          </AccordionItem>
+        </Accordion>
       </Stack>
     </Box>
   );
@@ -9051,7 +9042,7 @@ const POST_QUESTIONNAIRE_RESOURCE_SECTIONS = {
     paidHelpCta: "Get help with citizenship",
     supportTitle: "Support this free platform",
     supportBody:
-      "If this checklist helped you, support Notes And Other Stuff on Patreon. Subscribers get full access to our education apps and subscriber content while helping us keep improving the citizenship guide.",
+      "If you found this checklist helpful, we’d love to welcome you to join our platform on Patreon. Subscribers get full access to our education apps and subscriber content while helping us keep improving the citizenship guide.",
     supportCta: "Subscribe",
   },
   es: {
@@ -9061,7 +9052,7 @@ const POST_QUESTIONNAIRE_RESOURCE_SECTIONS = {
     paidHelpCta: "Obtener ayuda con ciudadanía",
     supportTitle: "Apoya esta plataforma gratuita",
     supportBody:
-      "Si esta lista te ayudó, apoya a Notes And Other Stuff en Patreon. Las personas suscritas obtienen acceso completo a nuestras apps educativas y contenido para suscriptores mientras nos ayudan a seguir mejorando la guía de ciudadanía.",
+      "Si esta lista te resultó útil, nos encantaría darte la bienvenida para que te unas a nuestra plataforma en Patreon. Las personas suscritas obtienen acceso completo a nuestras apps educativas y contenido para suscriptores mientras nos ayudan a seguir mejorando la guía de ciudadanía.",
     supportCta: "Suscribirse",
   },
   pt: {
@@ -9071,7 +9062,7 @@ const POST_QUESTIONNAIRE_RESOURCE_SECTIONS = {
     paidHelpCta: "Obter ajuda com cidadania",
     supportTitle: "Apoie esta plataforma gratuita",
     supportBody:
-      "Se este checklist ajudou você, apoie o Notes And Other Stuff no Patreon. Assinantes têm acesso completo aos nossos apps educacionais e conteúdo para assinantes enquanto nos ajudam a continuar melhorando o guia de cidadania.",
+      "Se você achou este checklist útil, adoraríamos receber você em nossa plataforma no Patreon. Assinantes têm acesso completo aos nossos apps educacionais e conteúdo para assinantes enquanto nos ajudam a continuar melhorando o guia de cidadania.",
     supportCta: "Assinar",
   },
   it: {
@@ -9081,7 +9072,7 @@ const POST_QUESTIONNAIRE_RESOURCE_SECTIONS = {
     paidHelpCta: "Ricevi aiuto per la cittadinanza",
     supportTitle: "Sostieni questa piattaforma gratuita",
     supportBody:
-      "Se questa checklist ti ha aiutato, sostieni Notes And Other Stuff su Patreon. Gli abbonati ricevono accesso completo alle nostre app educative e ai contenuti per abbonati mentre ci aiutano a migliorare la guida alla cittadinanza.",
+      "Se hai trovato utile questa checklist, ci farebbe piacere accoglierti sulla nostra piattaforma su Patreon. Gli abbonati ricevono accesso completo alle nostre app educative e ai contenuti per abbonati mentre ci aiutano a migliorare la guida alla cittadinanza.",
     supportCta: "Abbonati",
   },
   fr: {
@@ -9091,7 +9082,7 @@ const POST_QUESTIONNAIRE_RESOURCE_SECTIONS = {
     paidHelpCta: "Obtenir de l'aide pour la citoyenneté",
     supportTitle: "Soutenir cette plateforme gratuite",
     supportBody:
-      "Si cette checklist vous a aidé, soutenez Notes And Other Stuff sur Patreon. Les abonnés obtiennent un accès complet à nos apps éducatives et au contenu réservé aux abonnés tout en nous aidant à améliorer le guide de citoyenneté.",
+      "Si cette checklist vous a été utile, nous serions ravis de vous accueillir sur notre plateforme Patreon. Les abonnés obtiennent un accès complet à nos apps éducatives et au contenu réservé aux abonnés tout en nous aidant à améliorer le guide de citoyenneté.",
     supportCta: "S'abonner",
   },
   ja: {
@@ -9101,7 +9092,7 @@ const POST_QUESTIONNAIRE_RESOURCE_SECTIONS = {
     paidHelpCta: "国籍手続きの支援を受ける",
     supportTitle: "この無料プラットフォームを支援",
     supportBody:
-      "このチェックリストが役立った場合は、PatreonでNotes And Other Stuffを支援できます。登録者は教育アプリと登録者向けコンテンツをフル利用でき、国籍ガイドの改善も支えられます。",
+      "このチェックリストが役立ったなら、Patreonの私たちのプラットフォームにぜひご参加ください。登録者は教育アプリと登録者向けコンテンツをフル利用でき、国籍ガイドの改善も支えられます。",
     supportCta: "登録する",
   },
   hi: {
@@ -9111,7 +9102,7 @@ const POST_QUESTIONNAIRE_RESOURCE_SECTIONS = {
     paidHelpCta: "नागरिकता में मदद लें",
     supportTitle: "इस मुफ्त प्लेटफ़ॉर्म का समर्थन करें",
     supportBody:
-      "अगर यह चेकलिस्ट आपके काम आई, तो Patreon पर Notes And Other Stuff का समर्थन करें। सब्सक्राइबर हमारे शिक्षा ऐप्स और सब्सक्राइबर सामग्री का पूरा एक्सेस पाते हैं और नागरिकता गाइड को बेहतर बनाने में मदद करते हैं।",
+      "अगर आपको यह चेकलिस्ट मददगार लगी, तो Patreon पर हमारे प्लेटफ़ॉर्म से जुड़ने के लिए आपका स्वागत है। सब्सक्राइबर हमारे शिक्षा ऐप्स और सब्सक्राइबर सामग्री का पूरा एक्सेस पाते हैं और नागरिकता गाइड को बेहतर बनाने में मदद करते हैं।",
     supportCta: "सदस्यता लें",
   },
   ar: {
@@ -9121,7 +9112,7 @@ const POST_QUESTIONNAIRE_RESOURCE_SECTIONS = {
     paidHelpCta: "احصل على مساعدة في الجنسية",
     supportTitle: "ادعم هذه المنصة المجانية",
     supportBody:
-      "إذا ساعدتك هذه القائمة، ادعم Notes And Other Stuff على Patreon. يحصل المشتركون على وصول كامل إلى تطبيقاتنا التعليمية ومحتوى المشتركين، ويساعدوننا في تحسين دليل الجنسية.",
+      "إذا وجدت هذه القائمة مفيدة، يسعدنا الترحيب بانضمامك إلى منصتنا على Patreon. يحصل المشتركون على وصول كامل إلى تطبيقاتنا التعليمية ومحتوى المشتركين، ويساعدوننا في تحسين دليل الجنسية.",
     supportCta: "اشترك",
   },
   zh: {
@@ -9131,7 +9122,7 @@ const POST_QUESTIONNAIRE_RESOURCE_SECTIONS = {
     paidHelpCta: "获取国籍帮助",
     supportTitle: "支持这个免费平台",
     supportBody:
-      "如果这份清单帮到了你，可以在 Patreon 支持 Notes And Other Stuff。订阅者可完整使用我们的教育应用和订阅者内容，同时帮助我们继续改进国籍指南。",
+      "如果你觉得这份清单有帮助，我们很欢迎你加入我们在 Patreon 上的平台。订阅者可完整使用我们的教育应用和订阅者内容，同时帮助我们继续改进国籍指南。",
     supportCta: "订阅",
   },
   de: {
@@ -9141,7 +9132,7 @@ const POST_QUESTIONNAIRE_RESOURCE_SECTIONS = {
     paidHelpCta: "Hilfe zur Staatsangehörigkeit erhalten",
     supportTitle: "Diese kostenlose Plattform unterstützen",
     supportBody:
-      "Wenn dir diese Checkliste geholfen hat, unterstütze Notes And Other Stuff auf Patreon. Abonnenten erhalten vollen Zugriff auf unsere Bildungsapps und Inhalte für Abonnenten und helfen uns, den Staatsangehörigkeitsguide weiter zu verbessern.",
+      "Wenn du diese Checkliste hilfreich fandest, würden wir uns freuen, dich auf unserer Patreon-Plattform willkommen zu heißen. Abonnenten erhalten vollen Zugriff auf unsere Bildungsapps und Inhalte für Abonnenten und helfen uns, den Staatsangehörigkeitsguide weiter zu verbessern.",
     supportCta: "Abonnieren",
   },
 };
@@ -9160,7 +9151,7 @@ const DualCitizenshipBenefitsScene = ({
   return (
     <Stack spacing={5} textAlign="start">
       <Box>
-        <HStack spacing={3} mb={3}>
+        <HStack spacing={3}>
           <Box
             display="inline-flex"
             alignItems="center"
@@ -9183,42 +9174,6 @@ const DualCitizenshipBenefitsScene = ({
             {content.title}
           </Heading>
         </HStack>
-        <Text
-          color="var(--app-text-secondary)"
-          fontSize={{ base: "md", md: "lg" }}
-        >
-          {content.subtitle}
-        </Text>
-      </Box>
-
-      <Box
-        border="1px solid"
-        borderColor="rgba(15, 118, 110, 0.24)"
-        borderRadius="8px"
-        bg="rgba(15, 118, 110, 0.07)"
-        p={{ base: 4, md: 5 }}
-      >
-        <HStack spacing={2} mb={4} align="center">
-          <Text color="var(--app-text-primary)" fontWeight="800">
-            {content.overallTitle}
-          </Text>
-        </HStack>
-        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={3}>
-          {content.overallBenefits.map((benefit) => (
-            <HStack key={benefit} spacing={2} align="flex-start">
-              <Icon
-                as={Check}
-                color="#0f766e"
-                boxSize="15px"
-                mt="3px"
-                flexShrink={0}
-              />
-              <Text color="var(--app-text-secondary)" fontSize="sm">
-                {benefit}
-              </Text>
-            </HStack>
-          ))}
-        </SimpleGrid>
       </Box>
 
       <Box>
@@ -9413,6 +9368,7 @@ const PaidHelpValuePrimer = ({
               overflow="hidden"
             >
               <AccordionButton
+                {...CITIZENSHIP_ACCORDION_FOCUS_PROPS}
                 px={{ base: 4, md: 5 }}
                 py={4}
                 onClick={onSelectSound}
@@ -9576,7 +9532,7 @@ const PaidHelpValuePrimer = ({
   );
 };
 
-const QUESTION_DEFINITIONS = [
+const LEGACY_QUESTION_DEFINITIONS = [
   {
     id: "currentCitizenship",
     section: "Identity",
@@ -10067,16 +10023,29 @@ const QUESTION_DEFINITIONS = [
   },
 ];
 
-const hasQuestionAnswer = (question, answers) => {
-  const value = answers[question.id];
-  if (Array.isArray(value)) return value.length > 0;
-  return String(value || "").trim().length > 0;
+const QUESTION_ICON_BY_KEY = {
+  person: UserRound,
+  location: MapPin,
+  document: FileBadge2,
+  home: Home,
+  family: UsersRound,
+  legal: Gavel,
+  shield: ShieldCheck,
+  warning: AlertTriangle,
+  checklist: ClipboardCheck,
 };
 
-const getVisibleQuestions = (answers) =>
-  QUESTION_DEFINITIONS.filter((question) =>
-    question.when ? question.when(answers) : true,
-  );
+const QUESTION_DEFINITIONS = ADAPTIVE_QUESTION_DEFINITIONS.map((question) => ({
+  ...question,
+  icon: QUESTION_ICON_BY_KEY[question.iconKey] || CircleHelp,
+  legacyQuestionCount: LEGACY_QUESTION_DEFINITIONS.length,
+}));
+
+const hasQuestionAnswer = (question, answers) =>
+  hasAdaptiveQuestionAnswer(question, answers);
+
+const getVisibleQuestions = (answers, assessment = assessCitizenship(answers)) =>
+  getApplicableQuestions(answers, assessment);
 
 const getLocalizedQuestion = (question, language) => {
   if (!question) return null;
@@ -10123,7 +10092,10 @@ const buildCitizenshipReportText = ({
 }) => {
   const route = evaluation.route;
   const baseRoute = evaluation.baseRoute ? ROUTES[evaluation.baseRoute] : null;
-  const visibleQuestions = getVisibleQuestions(answers);
+  const visibleQuestions = getVisibleQuestions(
+    answers,
+    evaluation.assessment,
+  ).filter((question) => hasQuestionAnswer(question, answers));
   const checklistItems = evaluation.checklist.length
     ? evaluation.checklist
     : ["Complete the intake to generate a checklist."];
@@ -10138,6 +10110,15 @@ const buildCitizenshipReportText = ({
       language,
     )}`,
     `${translateText("Completion", language)}: 100%`,
+    `${translateText("Legal basis", language)}: ${
+      evaluation.assessment?.legalBasis || "unknown"
+    }`,
+    `${translateText("Workflow", language)}: ${
+      evaluation.assessment?.workflow || ""
+    }`,
+    `${translateText("Status", language)}: ${
+      evaluation.assessment?.status || ""
+    }`,
   ];
 
   if (route?.subtitle) {
@@ -10215,41 +10196,31 @@ const CHECKLIST_STAGE_DEFINITIONS = [
   {
     id: "resolve",
     title: "Fix blockers",
-    description:
-      "Clear issues that could stop the case before collecting everything else.",
     tone: "#dc2626",
   },
   {
     id: "documents",
     title: "Document collection",
-    description:
-      "Gather identity, civil registry, family, and nationality records.",
     tone: "#1d4ed8",
   },
   {
     id: "appointment",
     title: "Appointment prep",
-    description:
-      "Prepare scheduling, appearances, witnesses, and appointment-specific items.",
     tone: "#7c3aed",
   },
   {
     id: "filing",
     title: "Naturalization filing",
-    description:
-      "Prepare SRE filing documents, residence proof, exams, and modality evidence.",
     tone: "#b91c1c",
   },
   {
     id: "after",
     title: "After approval",
-    description: "Handle passport, CURP, ID, or post-approval follow-up tasks.",
     tone: "#0f766e",
   },
   {
     id: "other",
     title: "Other tasks",
-    description: "Track remaining tasks that do not fit a specific stage yet.",
     tone: "#64748b",
   },
 ];
@@ -10534,13 +10505,19 @@ const buildCitizenshipAssistantContext = ({
 }) => {
   const route = evaluation.route;
   const checklistItems = getCitizenshipChecklistItems(evaluation);
-  const visibleQuestions = getVisibleQuestions(answers);
+  const visibleQuestions = getVisibleQuestions(
+    answers,
+    evaluation.assessment,
+  ).filter((question) => hasQuestionAnswer(question, answers));
   const completedItems = checklistItems.filter(
     (item) => checklistProgress[getChecklistItemId(item)] === true,
   );
 
   return [
     `Selected route: ${route?.code || "unknown"} - ${route?.title || "Unknown"}`,
+    `Legal basis: ${evaluation.assessment?.legalBasis || "unknown"}`,
+    `Workflow: ${evaluation.assessment?.workflow || "unknown"}`,
+    `Assessment status: ${evaluation.assessment?.status || "unknown"}`,
     `Route subtitle: ${route?.subtitle || evaluation.confidence || ""}`,
     evaluation.baseRoute
       ? `Likely base route: ${evaluation.baseRoute} - ${ROUTES[evaluation.baseRoute]?.title || ""}`
@@ -10736,9 +10713,9 @@ const QuestionStep = ({
 
 const CitizenshipItemDetail = ({ detail, language }) => (
   <Stack
-    spacing={3}
+    spacing={{ base: 4, md: 5 }}
     borderInlineStart="2px solid var(--app-border-strong)"
-    ps={3}
+    ps={{ base: 3, md: 4 }}
   >
     {[
       ["Why it matters", detail.why],
@@ -10757,7 +10734,13 @@ const CitizenshipItemDetail = ({ detail, language }) => (
         >
           {translateText(label, language)}
         </Text>
-        <Text color="var(--app-text-secondary)" fontSize="sm" mt={1}>
+        <Text
+          color="var(--app-text-secondary)"
+          fontSize="xs"
+          lineHeight="1.75"
+          mt={2}
+          maxW="78ch"
+        >
           {translateText(body, language)}
         </Text>
       </Box>
@@ -10765,12 +10748,15 @@ const CitizenshipItemDetail = ({ detail, language }) => (
   </Stack>
 );
 
+const CITIZENSHIP_RESULTS_PANEL_BG = "var(--app-surface-elevated)";
+
 const ResultPanel = ({
   evaluation,
   completionPercent,
   language,
   isLightTheme,
   onSelectSound,
+  showCompletion = true,
 }) => {
   const route = evaluation.route;
   const RouteIcon = route?.icon || Route;
@@ -10784,10 +10770,10 @@ const ResultPanel = ({
       borderColor="var(--app-border)"
       borderRadius="8px"
       overflow="hidden"
-      bg="var(--app-surface-elevated)"
+      bg={CITIZENSHIP_RESULTS_PANEL_BG}
       boxShadow="var(--app-shadow-soft)"
     >
-      <Box p={{ base: 4, md: 5 }} bg={route?.bg || "var(--app-surface-muted)"}>
+      <Box p={{ base: 4, md: 5 }} bg={CITIZENSHIP_RESULTS_PANEL_BG}>
         <HStack align="flex-start" justify="space-between" spacing={4}>
           <HStack align="center" spacing={3}>
             <Box
@@ -10821,31 +10807,27 @@ const ResultPanel = ({
             </Box>
           </HStack>
         </HStack>
-        <Box mt={4}>
-          <HStack justify="space-between" mb={2}>
-            <Text color="var(--app-text-muted)" fontSize="sm">
-              {translateText("Completion", language)}
-            </Text>
-            <Text
-              color="var(--app-text-secondary)"
-              fontSize="sm"
-              fontWeight="700"
-            >
-              {completionPercent}%
-            </Text>
-          </HStack>
-          <Progress
-            value={completionPercent}
-            h="8px"
-            borderRadius="999px"
-            bg="rgba(148, 163, 184, 0.18)"
-            sx={{
-              "& > div": {
-                bg: route?.color || "#0f766e",
-              },
-            }}
-          />
-        </Box>
+        {showCompletion ? (
+          <Box mt={4}>
+            <HStack justify="space-between" mb={2}>
+              <Text color="var(--app-text-muted)" fontSize="sm">
+                {translateText("Completion", language)}
+              </Text>
+              <Text
+                color="var(--app-text-secondary)"
+                fontSize="sm"
+                fontWeight="700"
+              >
+                {completionPercent}%
+              </Text>
+            </HStack>
+            <CitizenshipWaveProgress
+              value={completionPercent}
+              label={`${translateText("Completion", language)}: ${completionPercent}%`}
+              isLightTheme={isLightTheme}
+            />
+          </Box>
+        ) : null}
       </Box>
 
       <Stack spacing={0} divider={<Divider borderColor="var(--app-border)" />}>
@@ -10912,6 +10894,7 @@ const ResultPanel = ({
                     <Accordion allowMultiple>
                       <AccordionItem border="0">
                         <AccordionButton
+                          {...CITIZENSHIP_ACCORDION_FOCUS_PROPS}
                           px={3}
                           py={3}
                           color="var(--app-text-primary)"
@@ -10969,6 +10952,7 @@ const ResultPanel = ({
           <Accordion allowMultiple>
             <AccordionItem border="0">
               <AccordionButton
+                {...CITIZENSHIP_ACCORDION_FOCUS_PROPS}
                 px={3}
                 py={3}
                 borderRadius="8px"
@@ -11006,6 +10990,7 @@ const ResultPanel = ({
 
             <AccordionItem border="0">
               <AccordionButton
+                {...CITIZENSHIP_ACCORDION_FOCUS_PROPS}
                 px={3}
                 py={3}
                 borderRadius="8px"
@@ -11058,6 +11043,150 @@ const ResultPanel = ({
   );
 };
 
+const CheckpointPanel = ({
+  evaluation,
+  language,
+  isLightTheme,
+  optionalQuestionCount,
+  onCheckIssues,
+  onViewResults,
+  onSelectSound,
+}) => (
+  <Stack spacing={5}>
+    <Box
+      border="1px solid"
+      borderColor="rgba(29, 78, 216, 0.28)"
+      borderRadius="8px"
+      bg="rgba(29, 78, 216, 0.07)"
+      p={{ base: 4, md: 5 }}
+      textAlign="start"
+    >
+      <HStack spacing={3} align="flex-start">
+        <Box
+          display="inline-flex"
+          alignItems="center"
+          justifyContent="center"
+          w="40px"
+          h="40px"
+          borderRadius="8px"
+          bg="rgba(29, 78, 216, 0.12)"
+          color="#1d4ed8"
+          flexShrink={0}
+        >
+          <Icon as={BadgeCheck} boxSize="22px" />
+        </Box>
+        <Box>
+          <Text
+            color="#1d4ed8"
+            fontSize="xs"
+            fontWeight="800"
+            textTransform="uppercase"
+          >
+            {translateText("Checkpoint", language)}
+          </Text>
+          <Heading
+            as="h1"
+            size="md"
+            mt={1}
+            color="var(--app-text-primary)"
+          >
+            {translateText("We found your likely route", language)}
+          </Heading>
+          <Text color="var(--app-text-secondary)" fontSize="sm" mt={2}>
+            {translateText(
+              "Your required answers point to the result below. You can check for document and filing issues before opening your full checklist.",
+              language,
+            )}
+          </Text>
+        </Box>
+      </HStack>
+    </Box>
+
+    <ResultPanel
+      evaluation={evaluation}
+      completionPercent={100}
+      language={language}
+      isLightTheme={isLightTheme}
+      onSelectSound={onSelectSound}
+    />
+
+    {optionalQuestionCount ? (
+      <Box
+        border="1px solid"
+        borderColor="var(--app-border)"
+        borderRadius="8px"
+        bg="var(--app-surface-elevated)"
+        p={{ base: 4, md: 5 }}
+        textAlign="start"
+      >
+        <HStack spacing={3} align="flex-start">
+          <Icon
+            as={CircleHelp}
+            color="#0f766e"
+            boxSize="20px"
+            mt="2px"
+            flexShrink={0}
+          />
+          <Box flex="1">
+            <Text fontWeight="800" color="var(--app-text-primary)">
+              {translateText("What remains unchecked", language)}
+            </Text>
+            <Text color="var(--app-text-secondary)" fontSize="sm" mt={1}>
+              {translateText(
+                "Additional questions can check documents, identity-record differences, and filing preparation.",
+                language,
+              )}
+            </Text>
+            <Badge
+              mt={3}
+              borderRadius="6px"
+              px={2}
+              py={1}
+              bg="rgba(15, 118, 110, 0.1)"
+              color={isLightTheme ? "#0f766e" : "#5eead4"}
+            >
+              {optionalQuestionCount}{" "}
+              {translateText("optional questions available", language)}
+            </Badge>
+          </Box>
+        </HStack>
+      </Box>
+    ) : null}
+
+    <Stack spacing={3}>
+      {optionalQuestionCount ? (
+        <Button
+          type="button"
+          minH="52px"
+          whiteSpace="normal"
+          leftIcon={<Icon as={ClipboardCheck} boxSize="18px" />}
+          onClick={onCheckIssues}
+          {...CITIZENSHIP_TEAL_BUTTON_PROPS}
+        >
+          {translateText("Refine document further", language)}
+        </Button>
+      ) : null}
+      <Button
+        type="button"
+        minH="50px"
+        whiteSpace="normal"
+        variant="outline"
+        borderRadius="8px"
+        bg="var(--app-surface-elevated)"
+        borderColor="#1d4ed8"
+        color={isLightTheme ? "#1d4ed8" : "#93c5fd"}
+        boxShadow="none"
+        transform="none"
+        onClick={onViewResults}
+        _hover={{ bg: "rgba(29, 78, 216, 0.08)" }}
+        _active={{ boxShadow: "none", transform: "none" }}
+      >
+        {translateText("View my results now", language)}
+      </Button>
+    </Stack>
+  </Stack>
+);
+
 const PostQuestionnaireResources = ({ language, onSelectSound }) => {
   const content = getPostQuestionnaireResourceSections(language);
   const resources = [
@@ -11082,14 +11211,14 @@ const PostQuestionnaireResources = ({ language, onSelectSound }) => {
   ];
 
   return (
-    <SimpleGrid columns={{ base: 1, md: 2 }} spacing={3} my={3}>
+    <SimpleGrid columns={{ base: 1, md: 2 }} spacing={3}>
       {resources.map((resource) => (
         <Box
           key={resource.href}
           border="1px solid"
           borderColor="var(--app-border)"
           borderRadius="8px"
-          bg="var(--app-surface)"
+          bg={CITIZENSHIP_RESULTS_PANEL_BG}
           p={{ base: 4, md: 5 }}
           textAlign="start"
           display="flex"
@@ -11131,11 +11260,14 @@ const PostQuestionnaireResources = ({ language, onSelectSound }) => {
             borderColor="var(--app-border)"
             bg="var(--app-surface-elevated)"
             color="var(--app-text-primary)"
+            w={{ base: "100%", sm: "280px" }}
+            minH="48px"
+            whiteSpace="normal"
             boxShadow="none"
             transform="none"
             onClick={onSelectSound}
             mt="auto"
-            alignSelf="flex-start"
+            alignSelf="center"
             _hover={{ bg: "var(--app-surface-muted)" }}
             _active={{ boxShadow: "none", transform: "none" }}
           >
@@ -11165,51 +11297,16 @@ const ChecklistPanel = ({
   const checklistPercent = checklistItems.length
     ? Math.round((completedChecklistItems / checklistItems.length) * 100)
     : 0;
-  const panelAccent = isLightTheme
-    ? {
-        bg: "rgba(96, 77, 56, 0.045)",
-        border: "rgba(96, 77, 56, 0.18)",
-      }
-    : {
-        bg: "rgba(24, 32, 49, 0.74)",
-        border: "rgba(148, 163, 184, 0.18)",
-      };
-
   return (
     <Box
       border="1px solid"
-      borderColor={panelAccent.border}
+      borderColor="var(--app-border)"
       borderRadius="8px"
-      bg={panelAccent.bg}
+      bg={CITIZENSHIP_RESULTS_PANEL_BG}
       boxShadow="var(--app-shadow-soft)"
       p={{ base: 4, md: 5 }}
       textAlign="start"
     >
-      <Button
-        type="button"
-        variant="outline"
-        leftIcon={<Icon as={MessageCircle} boxSize="17px" />}
-        onClick={() => {
-          onSelectSound?.();
-          onOpenAssistant();
-        }}
-        alignSelf="flex-start"
-        borderRadius="8px"
-        borderColor="var(--app-border)"
-        bg="var(--app-surface)"
-        color="var(--app-text-primary)"
-        boxShadow="none"
-        transform="none"
-        mb={4}
-        _hover={{ bg: "var(--app-surface-muted)" }}
-        _active={{
-          bg: "var(--app-surface-muted)",
-          boxShadow: "none",
-          transform: "none",
-        }}
-      >
-        {translateText("Assist me", language)}
-      </Button>
       <HStack justify="space-between" align="flex-start" gap={4} mb={3}>
         <Box>
           <Text fontWeight="800" color="var(--app-text-primary)">
@@ -11239,62 +11336,33 @@ const ChecklistPanel = ({
           ) : null}
         </Stack>
       </HStack>
-      <Progress
+      <CitizenshipWaveProgress
         value={checklistPercent}
-        h="6px"
-        borderRadius="999px"
-        bg="rgba(148, 163, 184, 0.18)"
-        sx={{ "& > div": { bg: "#1d4ed8" } }}
-        mb={4}
+        label={`${translateText("Checklist", language)}: ${checklistPercent}%`}
+        isLightTheme={isLightTheme}
+        mb={{ base: 6, md: 8 }}
       />
-      <Text
-        color="var(--app-text-primary)"
-        fontWeight="800"
-        fontSize="sm"
-        mb={3}
-      >
-        {translateText("Checklist stages", language)}
-      </Text>
-      <Stack spacing={4}>
+      <Stack spacing={{ base: 8, md: 10 }}>
         {checklistStageGroups.map((stage) => {
-          const completedInStage = stage.items.filter(
-            (item) => checklistProgress[getChecklistItemId(item)] === true,
-          ).length;
-
           return (
             <Box key={stage.id}>
-              <HStack justify="space-between" align="flex-start" gap={3} mb={2}>
-                <Box>
-                  <HStack spacing={2} align="center">
-                    <Box
-                      w="8px"
-                      h="8px"
-                      borderRadius="full"
-                      bg={stage.tone}
-                      flexShrink={0}
-                    />
-                    <Text
-                      color="var(--app-text-primary)"
-                      fontWeight="800"
-                      fontSize="sm"
-                    >
-                      {translateText(stage.title, language)}
-                    </Text>
-                  </HStack>
-                  <Text color="var(--app-text-muted)" fontSize="xs" mt={1}>
-                    {translateText(stage.description, language)}
-                  </Text>
-                </Box>
-                <Badge
-                  borderRadius="6px"
-                  bg="var(--app-surface-muted)"
-                  color="var(--app-text-secondary)"
+              <HStack spacing={2} align="center" mb={3}>
+                <Box
+                  w="8px"
+                  h="8px"
+                  borderRadius="full"
+                  bg={stage.tone}
                   flexShrink={0}
+                />
+                <Text
+                  color="var(--app-text-primary)"
+                  fontWeight="800"
+                  fontSize="sm"
                 >
-                  {completedInStage}/{stage.items.length}
-                </Badge>
+                  {translateText(stage.title, language)}
+                </Text>
               </HStack>
-              <Stack spacing={2}>
+              <Stack spacing={4}>
                 {stage.items.map((item) => {
                   const itemId = getChecklistItemId(item);
                   const isDone = checklistProgress[itemId] === true;
@@ -11305,14 +11373,10 @@ const ChecklistPanel = ({
                       key={itemId}
                       border="1px solid"
                       borderColor={
-                        isDone ? "rgba(29, 78, 216, 0.24)" : "var(--app-border)"
+                        isDone ? "rgba(15, 118, 110, 0.3)" : "var(--app-border)"
                       }
                       borderRadius="8px"
-                      bg={
-                        isDone
-                          ? "rgba(29, 78, 216, 0.06)"
-                          : "var(--app-surface)"
-                      }
+                      bg={CITIZENSHIP_RESULTS_PANEL_BG}
                       overflow="hidden"
                     >
                       <Accordion allowMultiple>
@@ -11334,20 +11398,22 @@ const ChecklistPanel = ({
                                     event.target.checked,
                                   );
                                 }}
-                                colorScheme="blue"
+                                colorScheme="teal"
                                 aria-label={translateText(item, language)}
                                 sx={{
                                   ".chakra-checkbox__control": {
                                     mt: "2px",
                                     borderRadius: "6px",
                                     borderColor: isDone
-                                      ? "#1d4ed8"
+                                      ? "#0f766e"
                                       : "var(--app-border-strong)",
+                                    bg: isDone ? "#0f766e" : "transparent",
                                   },
                                 }}
                               />
                             </Box>
                             <AccordionButton
+                              {...CITIZENSHIP_ACCORDION_FOCUS_PROPS}
                               px={0}
                               pe={3}
                               py={3}
@@ -11376,9 +11442,8 @@ const ChecklistPanel = ({
                             </AccordionButton>
                           </HStack>
                           <AccordionPanel
-                            px={3}
-                            pt={0}
-                            pb={3}
+                            px={{ base: 5, md: 6 }}
+                            py={{ base: 5, md: 6 }}
                             borderTop="1px solid var(--app-border)"
                           >
                             <CitizenshipItemDetail
@@ -11396,6 +11461,37 @@ const ChecklistPanel = ({
           );
         })}
       </Stack>
+      <Flex justify="center" mt={6}>
+        <Button
+          type="button"
+          variant="outline"
+          leftIcon={<Icon as={MessageCircle} boxSize="20px" />}
+          onClick={() => {
+            onSelectSound?.();
+            onOpenAssistant();
+          }}
+          w={{ base: "100%", sm: "60%" }}
+          minW={{ sm: "280px" }}
+          minH="56px"
+          px={8}
+          borderRadius="8px"
+          borderColor="var(--app-border)"
+          bg="var(--app-surface)"
+          color="var(--app-text-primary)"
+          boxShadow="none"
+          transform="none"
+          fontSize="md"
+          fontWeight="800"
+          _hover={{ bg: "var(--app-surface-muted)" }}
+          _active={{
+            bg: "var(--app-surface-muted)",
+            boxShadow: "none",
+            transform: "none",
+          }}
+        >
+          {translateText("Assist me", language)}
+        </Button>
+      </Flex>
     </Box>
   );
 };
@@ -11433,7 +11529,7 @@ const ConsulateFinderPanel = ({
     <Box
       border="1px solid var(--app-border)"
       borderRadius="8px"
-      bg="var(--app-surface)"
+      bg={CITIZENSHIP_RESULTS_PANEL_BG}
       boxShadow="var(--app-shadow-soft)"
       p={{ base: 4, md: 5 }}
       textAlign="start"
@@ -12032,11 +12128,23 @@ export default function CitizenshipGuide() {
   );
   const [initialCitizenshipState] = useState(getInitialCitizenshipState);
   const [answers, setAnswers] = useState(initialCitizenshipState.answers);
-  const [questionIndex, setQuestionIndex] = useState(
-    initialCitizenshipState.questionIndex,
+  const [currentQuestionId, setCurrentQuestionId] = useState(
+    initialCitizenshipState.currentQuestionId,
+  );
+  const [questionHistory, setQuestionHistory] = useState(
+    initialCitizenshipState.questionHistory,
+  );
+  const [visitedQuestionIds, setVisitedQuestionIds] = useState(
+    initialCitizenshipState.visitedQuestionIds,
   );
   const [showResults, setShowResults] = useState(
     initialCitizenshipState.showResults,
+  );
+  const [showCheckpoint, setShowCheckpoint] = useState(
+    initialCitizenshipState.showCheckpoint,
+  );
+  const [refiningChecklist, setRefiningChecklist] = useState(
+    initialCitizenshipState.refiningChecklist,
   );
   const [showIntro, setShowIntro] = useState(initialCitizenshipState.showIntro);
   const [showBenefits, setShowBenefits] = useState(
@@ -12058,9 +12166,13 @@ export default function CitizenshipGuide() {
   const [isSigningInWithKey, setIsSigningInWithKey] = useState(false);
   const [accountReloadNonce, setAccountReloadNonce] = useState(0);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
+  const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
   const hasTriggeredKeygenRef = useRef(false);
   const accountCreationPromiseRef = useRef(null);
   const hasLoadedProgressRef = useRef(false);
+  const editReturnViewRef = useRef("results");
+  const lastPersistedAssistantChatUpdatedAtRef = useRef("");
+  const pendingAssistantChatClearRef = useRef(false);
   const lastSavedAssistantChatRef = useRef(
     normalizeSavedAssistantChat(initialCitizenshipState.assistantChat),
   );
@@ -12074,9 +12186,46 @@ export default function CitizenshipGuide() {
     setAnswers((current) => ({ ...current, handlingLocation: value }));
   }, []);
   const setAnswer = (key, value) => {
+    if (lastSavedAssistantChatRef.current.saved) {
+      pendingAssistantChatClearRef.current = true;
+    }
     lastSavedAssistantChatRef.current = createEmptyAssistantChat();
-    setAnswers((current) => ({ ...current, [key]: value }));
+    lastPersistedAssistantChatUpdatedAtRef.current = "";
+    setAnswers((current) => {
+      const candidate = {
+        ...current,
+        [key]: normalizeAnswerValue(key, value),
+      };
+      const pruned = pruneInvalidatedAnswers(candidate, key);
+      const invalidated = getInvalidatedQuestionIds(current, pruned);
+      const nextAssessment = assessCitizenship(pruned);
+      const applicableIds = new Set(
+        getApplicableQuestions(pruned, nextAssessment).map(
+          (question) => question.id,
+        ),
+      );
+      setQuestionHistory((history) =>
+        history.filter((questionId) => applicableIds.has(questionId)),
+      );
+      setVisitedQuestionIds((visited) =>
+        visited.filter((questionId) => applicableIds.has(questionId)),
+      );
+      if (isEditingAnswers && invalidated.length) {
+        toast({
+          title: translateText("Your route changed", pageLanguage),
+          description: translateText(
+            "Questions that no longer apply were removed. Complete any newly required questions before viewing the result.",
+            pageLanguage,
+          ),
+          status: "info",
+          duration: 3600,
+          isClosable: true,
+        });
+      }
+      return pruned;
+    });
     setShowResults(false);
+    setShowCheckpoint(false);
     setAssistantChat(createEmptyAssistantChat());
   };
 
@@ -12176,32 +12325,89 @@ export default function CitizenshipGuide() {
 
       hasLoadedProgressRef.current = false;
       try {
-        const snap = await getDoc(doc(database, "users", npub));
+        const remoteBundle = await readCitizenshipRemoteBundle(database, npub);
         if (cancelled) return;
 
-        const data = snap.exists() ? snap.data() : {};
-        const remoteProgress = normalizeCitizenshipProgress(
-          data?.citizenshipProgress,
+        const dedicatedProgress = normalizeCitizenshipProgress(
+          remoteBundle.progressData,
+        );
+        const legacyProgress = normalizeCitizenshipProgress(
+          remoteBundle.userData?.citizenshipProgress,
         );
         const localProgress = readLocalCitizenshipProgress();
-        const progress = chooseMostRecentProgress(
-          remoteProgress,
+        const progressBase = chooseMostRecentTimestamped(
+          dedicatedProgress,
+          legacyProgress,
           localProgress,
         );
+        const dedicatedChat = normalizeSavedAssistantChat(
+          remoteBundle.chatData,
+        );
+        const assistantChat =
+          chooseMostRecentTimestamped(
+            dedicatedChat,
+            normalizeSavedAssistantChat(legacyProgress?.assistantChat),
+            normalizeSavedAssistantChat(localProgress?.assistantChat),
+          ) || createEmptyAssistantChat();
+        const progress = progressBase
+          ? combineProgressAndChat(progressBase, assistantChat)
+          : null;
 
         if (progress) {
           setAnswers(progress.answers);
-          setQuestionIndex(progress.questionIndex);
+          setCurrentQuestionId(progress.currentQuestionId);
+          setQuestionHistory(progress.questionHistory);
+          setVisitedQuestionIds(progress.visitedQuestionIds);
           setShowResults(progress.showResults);
+          setShowCheckpoint(progress.showCheckpoint);
+          setRefiningChecklist(progress.refiningChecklist);
           setChecklistProgress(progress.checklistProgress);
           setAssistantChat(progress.assistantChat);
           lastSavedAssistantChatRef.current = normalizeSavedAssistantChat(
             progress.assistantChat,
           );
+          if (
+            dedicatedChat.saved &&
+            dedicatedChat.updatedAt === assistantChat.updatedAt
+          ) {
+            lastPersistedAssistantChatUpdatedAtRef.current =
+              assistantChat.updatedAt;
+          }
           writeLocalCitizenshipProgress(progress);
         }
 
-        if (data?.onboardedCitizenship === true || progress) {
+        if (
+          Object.hasOwn(remoteBundle.userData, "citizenshipProgress") &&
+          progress
+        ) {
+          try {
+            await writeCitizenshipProgressDocument(
+              database,
+              npub,
+              progress,
+            );
+            if (assistantChat.saved) {
+              await writeCitizenshipChatDocuments(
+                database,
+                npub,
+                assistantChat,
+              );
+              lastPersistedAssistantChatUpdatedAtRef.current =
+                assistantChat.updatedAt;
+            }
+            await removeLegacyCitizenshipProgressMap(database, npub);
+          } catch (migrationError) {
+            console.warn(
+              "Failed to migrate legacy citizenship progress:",
+              migrationError,
+            );
+          }
+        }
+
+        if (
+          remoteBundle.userData?.onboardedCitizenship === true ||
+          progress
+        ) {
           window.localStorage.setItem(
             CITIZENSHIP_ONBOARDED_STORAGE_KEY,
             "true",
@@ -12225,71 +12431,166 @@ export default function CitizenshipGuide() {
     };
   }, [accountKeys.npub, accountReloadNonce]);
 
+  const assessment = useMemo(() => assessCitizenship(answers), [answers]);
   const evaluation = useMemo(
-    () => evaluateCitizenshipRoute(answers),
-    [answers],
+    () => buildCitizenshipEvaluation(answers, assessment),
+    [answers, assessment],
   );
-  const visibleQuestions = useMemo(
-    () => getVisibleQuestions(answers),
-    [answers],
+  const requiredQuestions = useMemo(
+    () =>
+      getRequiredQuestionIds(answers, assessment)
+        .map((questionId) => getQuestionById(questionId))
+        .filter(Boolean)
+        .map((question) => ({
+          ...question,
+          icon: QUESTION_ICON_BY_KEY[question.iconKey] || CircleHelp,
+        })),
+    [answers, assessment],
   );
-  const currentIndex = Math.min(questionIndex, visibleQuestions.length - 1);
-  const currentQuestion = visibleQuestions[currentIndex];
-  const totalQuestions = visibleQuestions.length;
-  const isLastQuestion = currentIndex >= totalQuestions - 1;
+  const optionalReadinessQuestions = useMemo(
+    () =>
+      getOptionalReadinessQuestions(answers, assessment).map((question) => ({
+        ...question,
+        icon: QUESTION_ICON_BY_KEY[question.iconKey] || CircleHelp,
+      })),
+    [answers, assessment],
+  );
+  const visibleQuestions = useMemo(() => {
+    if (refiningChecklist) return optionalReadinessQuestions;
+    if (isEditingAnswers) {
+      return getApplicableQuestions(answers, assessment).map((question) => ({
+        ...question,
+        icon: QUESTION_ICON_BY_KEY[question.iconKey] || CircleHelp,
+      }));
+    }
+    return requiredQuestions;
+  }, [
+    answers,
+    assessment,
+    isEditingAnswers,
+    optionalReadinessQuestions,
+    refiningChecklist,
+    requiredQuestions,
+  ]);
+  const currentQuestion =
+    visibleQuestions.find((question) => question.id === currentQuestionId) ||
+    getQuestionById(currentQuestionId);
+  const currentIndex = Math.max(
+    visibleQuestions.findIndex((question) => question.id === currentQuestionId),
+    0,
+  );
   const canContinue =
     !currentQuestion ||
     currentQuestion.optional ||
     hasQuestionAnswer(currentQuestion, answers);
-  const progressValue = totalQuestions
-    ? ((currentIndex + (hasQuestionAnswer(currentQuestion, answers) ? 1 : 0)) /
-        totalQuestions) *
-      100
-    : 0;
+  const hasNextEditableQuestion =
+    !isEditingAnswers || currentIndex < visibleQuestions.length - 1;
+  const requiredProgress = getRequiredProgress(answers, assessment);
   const completionPercent =
-    showResults || isEditingAnswers ? 100 : Math.round(progressValue);
+    showResults ||
+    showCheckpoint ||
+    assessment.status !== ASSESSMENT_STATUSES.NEED_MORE_INFORMATION
+      ? 100
+      : requiredProgress.percent;
 
   useEffect(() => {
-    setQuestionIndex((index) =>
-      Math.min(index, Math.max(visibleQuestions.length - 1, 0)),
+    if (showResults || showCheckpoint) return;
+    const isCurrentApplicable = visibleQuestions.some(
+      (question) => question.id === currentQuestionId,
     );
-  }, [visibleQuestions.length]);
+    if (isCurrentApplicable) return;
+    const nextRequired = getNextRequiredQuestion(answers, assessment);
+    const fallback =
+      (refiningChecklist
+        ? optionalReadinessQuestions.find(
+            (question) => !hasQuestionAnswer(question, answers),
+          )
+        : null) ||
+      nextRequired ||
+      visibleQuestions[0];
+    if (fallback) setCurrentQuestionId(fallback.id);
+  }, [
+    answers,
+    assessment,
+    currentQuestionId,
+    optionalReadinessQuestions,
+    refiningChecklist,
+    showCheckpoint,
+    showResults,
+    visibleQuestions,
+  ]);
 
   useEffect(() => {
     const savedChat = normalizeSavedAssistantChat(assistantChat);
-    if (savedChat.saved) {
-      lastSavedAssistantChatRef.current = savedChat;
+    if (!savedChat.saved) return;
+
+    pendingAssistantChatClearRef.current = false;
+    lastSavedAssistantChatRef.current = savedChat;
+    const cachedProgress = readLocalCitizenshipProgress();
+    if (cachedProgress) {
+      writeLocalCitizenshipProgress(
+        combineProgressAndChat(cachedProgress, savedChat),
+      );
     }
-  }, [assistantChat]);
+
+    const npub = accountKeys.npub || getStoredNpub();
+    if (
+      !npub ||
+      lastPersistedAssistantChatUpdatedAtRef.current === savedChat.updatedAt
+    ) {
+      return;
+    }
+
+    lastPersistedAssistantChatUpdatedAtRef.current = savedChat.updatedAt;
+    writeCitizenshipChatDocuments(database, npub, savedChat).catch((error) => {
+      if (
+        lastPersistedAssistantChatUpdatedAtRef.current === savedChat.updatedAt
+      ) {
+        lastPersistedAssistantChatUpdatedAtRef.current = "";
+      }
+      console.warn("Failed to save citizenship assistant chat:", error);
+    });
+  }, [accountKeys.npub, assistantChat]);
 
   useEffect(() => {
     if (showIntro || showBenefits || showPrimer || !hasLoadedProgressRef.current)
       return undefined;
 
-    const currentSavedChat = normalizeSavedAssistantChat(assistantChat);
     const progress = buildCitizenshipProgress({
       answers,
-      questionIndex,
+      currentQuestionId,
+      questionHistory,
+      visitedQuestionIds,
+      assessment,
       showResults,
+      showCheckpoint,
+      refiningChecklist,
       checklistProgress,
-      assistantChat: currentSavedChat.saved
-        ? currentSavedChat
-        : lastSavedAssistantChatRef.current,
+      assistantChat: lastSavedAssistantChatRef.current,
     });
     writeLocalCitizenshipProgress(progress);
 
     const timeoutId = window.setTimeout(() => {
-      persistCitizenshipProgress(progress).catch((error) => {
-        console.warn("Failed to save citizenship progress:", error);
-      });
+      const clearChat = pendingAssistantChatClearRef.current;
+      persistCitizenshipProgress(progress, { clearChat })
+        .then(() => {
+          if (clearChat) pendingAssistantChatClearRef.current = false;
+        })
+        .catch((error) => {
+          console.warn("Failed to save citizenship progress:", error);
+        });
     }, 700);
 
     return () => window.clearTimeout(timeoutId);
   }, [
     answers,
-    assistantChat,
+    assessment,
     checklistProgress,
-    questionIndex,
+    currentQuestionId,
+    questionHistory,
+    visitedQuestionIds,
+    refiningChecklist,
+    showCheckpoint,
     showResults,
     showIntro,
     showBenefits,
@@ -12299,29 +12600,147 @@ export default function CitizenshipGuide() {
   const goNext = () => {
     if (!canContinue) return;
     playSubmitSound();
-    if (isLastQuestion) {
-      setIsEditingAnswers(false);
-      setShowResults(true);
+    const nextAssessment = assessCitizenship(answers);
+    if (refiningChecklist) {
+      const nextOptional = getOptionalReadinessQuestions(
+        answers,
+        nextAssessment,
+      ).find(
+        (question) =>
+          question.id !== currentQuestionId &&
+          !hasQuestionAnswer(question, answers),
+      );
+      if (!nextOptional) {
+        setRefiningChecklist(false);
+        setIsEditingAnswers(false);
+        setShowCheckpoint(false);
+        setShowResults(true);
+        return;
+      }
+      setQuestionHistory((history) => [...history, currentQuestionId]);
+      setVisitedQuestionIds((visited) => [
+        ...new Set([...visited, currentQuestionId, nextOptional.id]),
+      ]);
+      setCurrentQuestionId(nextOptional.id);
       return;
     }
-    setQuestionIndex((index) => Math.min(index + 1, totalQuestions - 1));
+    if (isEditingAnswers) {
+      const editableQuestions = getApplicableQuestions(answers, nextAssessment);
+      const editableIndex = editableQuestions.findIndex(
+        (question) => question.id === currentQuestionId,
+      );
+      const nextEditable = editableQuestions[editableIndex + 1];
+      if (!nextEditable) return;
+      setQuestionHistory((history) => [...history, currentQuestionId]);
+      setVisitedQuestionIds((visited) => [
+        ...new Set([...visited, currentQuestionId, nextEditable.id]),
+      ]);
+      setCurrentQuestionId(nextEditable.id);
+      return;
+    }
+    const nextRequired = getNextRequiredQuestion(answers, nextAssessment);
+    if (!nextRequired) {
+      setIsEditingAnswers(false);
+      if (
+        isEditingAnswers &&
+        editReturnViewRef.current === "results"
+      ) {
+        setShowCheckpoint(false);
+        setShowResults(true);
+      } else {
+        setShowResults(false);
+        setShowCheckpoint(true);
+      }
+      return;
+    }
+    setQuestionHistory((history) => [...history, currentQuestionId]);
+    setVisitedQuestionIds((visited) => [
+      ...new Set([...visited, currentQuestionId, nextRequired.id]),
+    ]);
+    setCurrentQuestionId(nextRequired.id);
   };
 
   const goBack = () => {
     playSelectSound();
     setShowResults(false);
-    if (currentIndex === 0 && !isEditingAnswers) {
+    setShowCheckpoint(false);
+    if (!questionHistory.length && !isEditingAnswers && !refiningChecklist) {
       setShowBenefits(false);
       setShowPrimer(true);
       return;
     }
-    setQuestionIndex((index) => Math.max(index - 1, 0));
+    setQuestionHistory((history) => {
+      if (!history.length) return history;
+      const previousId = history[history.length - 1];
+      setCurrentQuestionId(previousId);
+      return history.slice(0, -1);
+    });
   };
 
   const finishEdits = () => {
     playSubmitSound();
+    const nextRequired = getNextRequiredQuestion(answers, assessment);
+    if (nextRequired) {
+      setRefiningChecklist(false);
+      setCurrentQuestionId(nextRequired.id);
+      setIsEditingAnswers(false);
+      setShowCheckpoint(false);
+      setShowResults(false);
+      return;
+    }
+    setRefiningChecklist(false);
     setIsEditingAnswers(false);
+    if (editReturnViewRef.current === "checkpoint") {
+      setShowResults(false);
+      setShowCheckpoint(true);
+    } else {
+      setShowCheckpoint(false);
+      setShowResults(true);
+    }
+  };
+
+  const editAnswersFrom = (returnView) => {
+    playSelectSound();
+    editReturnViewRef.current = returnView;
+    setRefiningChecklist(false);
+    setIsEditingAnswers(true);
+    setQuestionHistory([]);
+    const firstApplicable = getApplicableQuestions(answers, assessment)[0];
+    if (firstApplicable) {
+      setCurrentQuestionId(firstApplicable.id);
+    }
+    setShowCheckpoint(false);
+    setShowResults(false);
+  };
+
+  const startChecklistRefinement = () => {
+    playSelectSound();
+    const firstUnanswered =
+      optionalReadinessQuestions.find(
+        (question) => !hasQuestionAnswer(question, answers),
+      ) || optionalReadinessQuestions[0];
+    if (!firstUnanswered) {
+      setShowCheckpoint(false);
+      setShowResults(true);
+      return;
+    }
+    setRefiningChecklist(true);
+    setIsEditingAnswers(false);
+    setQuestionHistory([]);
+    setCurrentQuestionId(firstUnanswered.id);
+    setShowCheckpoint(false);
+    setShowResults(false);
+  };
+
+  const viewFinalResults = () => {
+    playSubmitSound();
+    setRefiningChecklist(false);
+    setIsEditingAnswers(false);
+    setShowCheckpoint(false);
     setShowResults(true);
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    });
   };
 
   const toggleTheme = () => {
@@ -12332,26 +12751,41 @@ export default function CitizenshipGuide() {
   const resetQuestions = () => {
     playSubmitSound();
     lastSavedAssistantChatRef.current = createEmptyAssistantChat();
+    lastPersistedAssistantChatUpdatedAtRef.current = "";
+    pendingAssistantChatClearRef.current = true;
     setAnswers(DEFAULT_ANSWERS);
     setChecklistProgress({});
     setAssistantChat(createEmptyAssistantChat());
     setIsAssistantOpen(false);
     setIsEditingAnswers(false);
-    setQuestionIndex(0);
+    setRefiningChecklist(false);
+    setShowCheckpoint(false);
+    setCurrentQuestionId("existingDocs");
+    setQuestionHistory([]);
+    setVisitedQuestionIds([]);
     setShowResults(false);
     const progress = buildCitizenshipProgress({
       answers: DEFAULT_ANSWERS,
-      questionIndex: 0,
+      currentQuestionId: "existingDocs",
+      questionHistory: [],
+      visitedQuestionIds: [],
+      assessment: assessCitizenship(DEFAULT_ANSWERS),
       showResults: false,
+      showCheckpoint: false,
+      refiningChecklist: false,
       checklistProgress: {},
       assistantChat: createEmptyAssistantChat(),
     });
     writeLocalCitizenshipProgress(progress);
 
     if (!showIntro && hasLoadedProgressRef.current) {
-      persistCitizenshipProgress(progress).catch((error) => {
-        console.warn("Failed to reset citizenship progress:", error);
-      });
+      persistCitizenshipProgress(progress, { clearChat: true })
+        .then(() => {
+          pendingAssistantChatClearRef.current = false;
+        })
+        .catch((error) => {
+          console.warn("Failed to reset citizenship progress:", error);
+        });
     }
   };
 
@@ -12473,12 +12907,18 @@ export default function CitizenshipGuide() {
       }
 
       lastSavedAssistantChatRef.current = createEmptyAssistantChat();
+      lastPersistedAssistantChatUpdatedAtRef.current = "";
+      pendingAssistantChatClearRef.current = false;
       setAnswers(DEFAULT_ANSWERS);
       setChecklistProgress({});
       setAssistantChat(createEmptyAssistantChat());
       setIsAssistantOpen(false);
       setIsEditingAnswers(false);
-      setQuestionIndex(0);
+      setRefiningChecklist(false);
+      setShowCheckpoint(false);
+      setCurrentQuestionId("existingDocs");
+      setQuestionHistory([]);
+      setVisitedQuestionIds([]);
       setShowResults(false);
       setShowBenefits(false);
       setShowPrimer(false);
@@ -12557,8 +12997,13 @@ export default function CitizenshipGuide() {
       await ensureCitizenshipAccount();
       const progress = buildCitizenshipProgress({
         answers,
-        questionIndex,
+        currentQuestionId,
+        questionHistory,
+        visitedQuestionIds,
+        assessment,
         showResults,
+        showCheckpoint,
+        refiningChecklist,
         checklistProgress,
         assistantChat: normalizeSavedAssistantChat(assistantChat).saved
           ? assistantChat
@@ -12654,22 +13099,7 @@ export default function CitizenshipGuide() {
         bg="var(--app-surface)"
       >
         <Container maxW="4xl" px={{ base: 4, md: 6 }} py={3}>
-          <Flex align="center" justify="space-between" gap={3} flexWrap="wrap">
-            <IconButton
-              as="a"
-              href="/links"
-              onClick={playSelectSound}
-              aria-label={translateText("Back", pageLanguage)}
-              title={translateText("Back", pageLanguage)}
-              size="sm"
-              minW="40px"
-              h="40px"
-              minH="40px"
-              borderRadius="full"
-              border="1px solid"
-              icon={<Icon as={ArrowLeft} boxSize="17px" />}
-              {...topControlProps}
-            />
+          <Flex align="center" justify="flex-end" gap={3} flexWrap="wrap">
             <Flex align="center" justify="flex-end" gap={3} flexWrap="wrap">
               <LanguageMenuFixed
                 language={pageLanguage}
@@ -12687,7 +13117,7 @@ export default function CitizenshipGuide() {
                 type="button"
                 aria-label={translateText("Copy key", pageLanguage)}
                 title={translateText("Copy key", pageLanguage)}
-                icon={<Icon as={SiMonkeytie} boxSize="17px" />}
+                icon={<Icon as={PiFingerprint} boxSize="17px" />}
                 size="sm"
                 minW="40px"
                 h="40px"
@@ -12733,7 +13163,10 @@ export default function CitizenshipGuide() {
                 type="button"
                 aria-label={translateText("Reset questions", pageLanguage)}
                 title={translateText("Reset questions", pageLanguage)}
-                onClick={resetQuestions}
+                onClick={() => {
+                  playSelectSound();
+                  setIsResetConfirmOpen(true);
+                }}
                 icon={<Icon as={RotateCcw} boxSize="17px" />}
                 size="sm"
                 minW="40px"
@@ -12787,7 +13220,11 @@ export default function CitizenshipGuide() {
             />
           ) : null}
 
-          {!showIntro && !showBenefits && !showPrimer && !showResults ? (
+          {!showIntro &&
+          !showBenefits &&
+          !showPrimer &&
+          !showCheckpoint &&
+          !showResults ? (
             <Box>
               <HStack justify="space-between" mb={2}>
                 {isEditingAnswers ? (
@@ -12836,7 +13273,20 @@ export default function CitizenshipGuide() {
                             key={question.id}
                             onClick={() => {
                               playSelectSound();
-                              setQuestionIndex(index);
+                              if (question.id !== currentQuestionId) {
+                                setQuestionHistory((history) => [
+                                  ...history,
+                                  currentQuestionId,
+                                ]);
+                                setVisitedQuestionIds((visited) => [
+                                  ...new Set([
+                                    ...visited,
+                                    currentQuestionId,
+                                    question.id,
+                                  ]),
+                                ]);
+                              }
+                              setCurrentQuestionId(question.id);
                             }}
                             bg={
                               isCurrentQuestion
@@ -12896,17 +13346,19 @@ export default function CitizenshipGuide() {
                   {completionPercent}% {translateText("complete", pageLanguage)}
                 </Text>
               </HStack>
-              <Progress
+              <CitizenshipWaveProgress
                 value={completionPercent}
-                h="8px"
-                borderRadius="999px"
-                bg="rgba(148, 163, 184, 0.18)"
-                sx={{ "& > div": { bg: "#0f766e" } }}
+                label={`${translateText("Completion", pageLanguage)}: ${completionPercent}%`}
+                isLightTheme={isLightTheme}
               />
             </Box>
           ) : null}
 
-          {!showIntro && !showBenefits && !showPrimer && !showResults ? (
+          {!showIntro &&
+          !showBenefits &&
+          !showPrimer &&
+          !showCheckpoint &&
+          !showResults ? (
             <>
               <Box
                 border="1px solid"
@@ -12968,7 +13420,10 @@ export default function CitizenshipGuide() {
                     transform="none"
                     minW="112px"
                     h="48px"
-                    isDisabled={currentIndex === 0 && isEditingAnswers}
+                    isDisabled={
+                      questionHistory.length === 0 &&
+                      (isEditingAnswers || refiningChecklist)
+                    }
                     onClick={goBack}
                     _hover={{ bg: "var(--app-surface-muted)" }}
                     _active={{ boxShadow: "none", transform: "none" }}
@@ -12976,7 +13431,8 @@ export default function CitizenshipGuide() {
                     {translateText("Back", pageLanguage)}
                   </Button>
                   <HStack spacing={3} justify="flex-end">
-                    {currentQuestion?.optional ? (
+                    {currentQuestion?.optional &&
+                    (!isEditingAnswers || hasNextEditableQuestion) ? (
                       <Button
                         variant="ghost"
                         color="var(--app-text-secondary)"
@@ -13001,7 +13457,7 @@ export default function CitizenshipGuide() {
                       boxShadow="none"
                       transform="none"
                       fontWeight="800"
-                      isDisabled={!canContinue}
+                      isDisabled={!canContinue || !hasNextEditableQuestion}
                       onClick={goNext}
                       minW="112px"
                       h="48px"
@@ -13026,7 +13482,20 @@ export default function CitizenshipGuide() {
                       }}
                     >
                       {translateText(
-                        isLastQuestion ? "Done" : "Next",
+                        isEditingAnswers
+                          ? "Next"
+                          : refiningChecklist
+                          ? optionalReadinessQuestions.every(
+                              (question) =>
+                                question.id === currentQuestionId ||
+                                hasQuestionAnswer(question, answers),
+                            )
+                            ? "Done"
+                            : "Next"
+                          : assessment.status !==
+                              ASSESSMENT_STATUSES.NEED_MORE_INFORMATION
+                          ? "Done"
+                          : "Next",
                         pageLanguage,
                       )}
                     </Button>
@@ -13037,24 +13506,24 @@ export default function CitizenshipGuide() {
                 <Flex justify="center" mt={3}>
                   <Button
                     type="button"
-                    variant="outline"
+                    variant="solid"
                     borderRadius="8px"
-                    bg="rgba(20, 184, 166, 0.1)"
-                    borderColor="#14b8a6"
-                    borderWidth="2px"
-                    color="#2dd4bf"
+                    bg={isLightTheme ? "#111111" : "#ffffff"}
+                    borderColor={isLightTheme ? "#111111" : "#ffffff"}
+                    borderWidth="1px"
+                    color={isLightTheme ? "#ffffff" : "#111111"}
                     boxShadow="none"
                     transform="none"
                     fontWeight="800"
                     w={{ base: "100%", sm: "50%" }}
                     onClick={finishEdits}
                     _hover={{
-                      bg: "rgba(20, 184, 166, 0.16)",
-                      borderColor: "#2dd4bf",
-                      color: "#5eead4",
+                      bg: isLightTheme ? "#262626" : "#f1f5f9",
+                      borderColor: isLightTheme ? "#262626" : "#f1f5f9",
+                      color: isLightTheme ? "#ffffff" : "#111111",
                     }}
                     _active={{
-                      bg: "rgba(20, 184, 166, 0.22)",
+                      bg: isLightTheme ? "#000000" : "#e2e8f0",
                       boxShadow: "none",
                       transform: "none",
                     }}
@@ -13064,7 +13533,10 @@ export default function CitizenshipGuide() {
                 </Flex>
               ) : null}
             </>
-          ) : !showIntro && !showBenefits && !showPrimer ? (
+          ) : !showIntro &&
+            !showBenefits &&
+            !showPrimer &&
+            showResults ? (
             <Flex
               alignSelf="stretch"
               justify="space-between"
@@ -13073,24 +13545,32 @@ export default function CitizenshipGuide() {
             >
               <Button
                 variant="outline"
+                w={{ base: "100%", sm: "220px" }}
+                minH="48px"
                 borderRadius="8px"
                 bg="var(--app-surface-elevated)"
                 borderColor="var(--app-border)"
                 color="var(--app-text-primary)"
-                boxShadow="none"
-                transform="none"
-                onClick={() => {
-                  playSelectSound();
-                  setIsEditingAnswers(true);
-                  setShowResults(false);
+                boxShadow="0 4px 0 var(--app-border-strong)"
+                transform="translateY(0)"
+                transitionProperty="transform, box-shadow, background-color"
+                transitionDuration="120ms"
+                onClick={() => editAnswersFrom("results")}
+                _hover={{
+                  bg: "var(--app-surface-muted)",
+                  boxShadow: "0 4px 0 var(--app-border-strong)",
                 }}
-                _hover={{ bg: "var(--app-surface-muted)" }}
-                _active={{ boxShadow: "none", transform: "none" }}
+                _active={{
+                  bg: "var(--app-surface-muted)",
+                  boxShadow: "none",
+                  transform: "translateY(4px)",
+                }}
               >
                 {translateText("Edit answers", pageLanguage)}
               </Button>
               <Button
-                leftIcon={<Icon as={Download} boxSize="16px" />}
+                w={{ base: "100%", sm: "220px" }}
+                minH="48px"
                 bg="#1d4ed8"
                 color="white"
                 borderRadius="8px"
@@ -13103,14 +13583,34 @@ export default function CitizenshipGuide() {
             </Flex>
           ) : null}
 
+          {!showIntro &&
+          !showBenefits &&
+          !showPrimer &&
+          showCheckpoint ? (
+            <CheckpointPanel
+              evaluation={evaluation}
+              language={pageLanguage}
+              isLightTheme={isLightTheme}
+              optionalQuestionCount={
+                optionalReadinessQuestions.filter(
+                  (question) => !hasQuestionAnswer(question, answers),
+                ).length
+              }
+              onCheckIssues={startChecklistRefinement}
+              onViewResults={viewFinalResults}
+              onSelectSound={playSelectSound}
+            />
+          ) : null}
+
           {!showIntro && !showBenefits && !showPrimer && showResults ? (
-            <Stack spacing={5}>
+            <Stack spacing={{ base: 8, md: 12 }}>
               <ResultPanel
                 evaluation={evaluation}
                 completionPercent={completionPercent}
                 language={pageLanguage}
                 isLightTheme={isLightTheme}
                 onSelectSound={playSelectSound}
+                showCompletion={false}
               />
               <ChecklistPanel
                 evaluation={evaluation}
@@ -13148,6 +13648,78 @@ export default function CitizenshipGuide() {
           ) : null}
         </Stack>
       </Container>
+      <Modal
+        isOpen={isResetConfirmOpen}
+        onClose={() => setIsResetConfirmOpen(false)}
+        isCentered
+        motionPreset="none"
+      >
+        <ModalOverlay
+          motionProps={nativeOverlayMotionProps}
+          bg="var(--app-overlay)"
+        />
+        <ModalContent
+          motionProps={nativeModalMotionProps}
+          bg="var(--app-surface)"
+          color="var(--app-text-primary)"
+          border="4px solid"
+          borderColor="#b91c1c"
+          mx={4}
+        >
+          <ModalHeader>
+            <HStack spacing={3}>
+              <Box
+                display="inline-flex"
+                alignItems="center"
+                justifyContent="center"
+                w="36px"
+                h="36px"
+                borderRadius="8px"
+                bg="rgba(185, 28, 28, 0.1)"
+                color="#b91c1c"
+                flexShrink={0}
+              >
+                <Icon as={AlertTriangle} boxSize="20px" />
+              </Box>
+              <Text>
+                {translateText("Reset questionnaire?", pageLanguage)}
+              </Text>
+            </HStack>
+          </ModalHeader>
+          <ModalCloseButton />
+          <ModalBody pb={2}>
+            <Text color="var(--app-text-secondary)" fontSize="sm">
+              {translateText(
+                "This will permanently clear your questionnaire answers, checklist progress, and saved assistant chat. This action cannot be undone.",
+                pageLanguage,
+              )}
+            </Text>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              type="button"
+              w={{ base: "100%", sm: "auto" }}
+              borderRadius="8px"
+              bg="#b91c1c"
+              color="white"
+              boxShadow="none"
+              transform="none"
+              onClick={() => {
+                setIsResetConfirmOpen(false);
+                resetQuestions();
+              }}
+              _hover={{ bg: "#991b1b" }}
+              _active={{
+                bg: "#7f1d1d",
+                boxShadow: "none",
+                transform: "none",
+              }}
+            >
+              {translateText("Reset progress", pageLanguage)}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
       <Modal
         isOpen={isPrivacyOpen}
         onClose={() => setIsPrivacyOpen(false)}
