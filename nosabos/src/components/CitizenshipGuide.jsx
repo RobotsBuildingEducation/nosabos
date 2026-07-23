@@ -11395,7 +11395,7 @@ const ChecklistPanel = ({
                             </Box>
                             <AccordionButton
                               {...CITIZENSHIP_ACCORDION_FOCUS_PROPS}
-                              px={0}
+                              ps={3}
                               pe={3}
                               py={3}
                               flex="1"
