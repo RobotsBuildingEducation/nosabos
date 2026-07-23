@@ -71,7 +71,6 @@ import {
   Moon,
   RotateCcw,
   Route,
-  Save,
   Send,
   ShieldCheck,
   Sparkles,
@@ -405,6 +404,7 @@ const CITIZENSHIP_ASSISTANT_MAX_MESSAGES = 50;
 const createEmptyAssistantChat = () => ({
   messages: [],
   saved: false,
+  contextKey: "",
   updatedAt: "",
 });
 
@@ -445,6 +445,8 @@ const normalizeAssistantChat = (rawChat) => {
   return {
     messages,
     saved: rawChat.saved === true && messages.length > 0,
+    contextKey:
+      typeof rawChat.contextKey === "string" ? rawChat.contextKey : "",
     updatedAt: typeof rawChat.updatedAt === "string" ? rawChat.updatedAt : "",
   };
 };
@@ -3287,7 +3289,7 @@ Object.assign(ES_TEXT, {
   "Thinking through your checklist...": "Analizando tu checklist...",
   Saved: "Guardado",
   "Save chat": "Guardar chat",
-  "Ask about a checklist item...": "Pregunta sobre un punto del checklist...",
+  "What do you need help on?": "¿En qué necesitas ayuda?",
   Send: "Enviar",
   "Chat saved": "Chat guardado",
   "This conversation will stay with your citizenship checklist.":
@@ -3347,7 +3349,7 @@ Object.assign(PT_TEXT, {
   "Thinking through your checklist...": "Analisando seu checklist...",
   Saved: "Salvo",
   "Save chat": "Salvar chat",
-  "Ask about a checklist item...": "Pergunte sobre um item do checklist...",
+  "What do you need help on?": "Em que você precisa de ajuda?",
   Send: "Enviar",
   "Chat saved": "Chat salvo",
   "This conversation will stay with your citizenship checklist.":
@@ -3408,7 +3410,7 @@ Object.assign(IT_TEXT, {
   "Thinking through your checklist...": "Analisi della checklist...",
   Saved: "Salvata",
   "Save chat": "Salva chat",
-  "Ask about a checklist item...": "Chiedi di un punto della checklist...",
+  "What do you need help on?": "Di cosa hai bisogno?",
   Send: "Invia",
   "Chat saved": "Chat salvata",
   "This conversation will stay with your citizenship checklist.":
@@ -3468,8 +3470,7 @@ Object.assign(FR_TEXT, {
   "Thinking through your checklist...": "Analyse de ta checklist...",
   Saved: "Enregistré",
   "Save chat": "Enregistrer le chat",
-  "Ask about a checklist item...":
-    "Pose une question sur un élément de la checklist...",
+  "What do you need help on?": "De quoi avez-vous besoin ?",
   Send: "Envoyer",
   "Chat saved": "Chat enregistré",
   "This conversation will stay with your citizenship checklist.":
@@ -3529,7 +3530,7 @@ Object.assign(JA_TEXT, {
   "Thinking through your checklist...": "チェックリストを確認中...",
   Saved: "保存済み",
   "Save chat": "チャットを保存",
-  "Ask about a checklist item...": "チェックリスト項目について質問...",
+  "What do you need help on?": "何をお手伝いしましょうか？",
   Send: "送信",
   "Chat saved": "チャットを保存しました",
   "This conversation will stay with your citizenship checklist.":
@@ -3588,7 +3589,7 @@ Object.assign(HI_TEXT, {
   "Thinking through your checklist...": "आपकी चेकलिस्ट देख रहा है...",
   Saved: "सेव",
   "Save chat": "चैट सेव करें",
-  "Ask about a checklist item...": "चेकलिस्ट आइटम के बारे में पूछें...",
+  "What do you need help on?": "आपको किस चीज़ में मदद चाहिए?",
   Send: "भेजें",
   "Chat saved": "चैट सेव हुई",
   "This conversation will stay with your citizenship checklist.":
@@ -3647,7 +3648,7 @@ Object.assign(AR_TEXT, {
   "Thinking through your checklist...": "أراجع قائمتك...",
   Saved: "محفوظ",
   "Save chat": "احفظ المحادثة",
-  "Ask about a checklist item...": "اسأل عن بند في القائمة...",
+  "What do you need help on?": "بماذا تحتاج إلى مساعدة؟",
   Send: "إرسال",
   "Chat saved": "تم حفظ المحادثة",
   "This conversation will stay with your citizenship checklist.":
@@ -3706,7 +3707,7 @@ Object.assign(ZH_TEXT, {
   "Thinking through your checklist...": "正在分析你的清单...",
   Saved: "已保存",
   "Save chat": "保存聊天",
-  "Ask about a checklist item...": "询问某个清单项目...",
+  "What do you need help on?": "你需要什么帮助？",
   Send: "发送",
   "Chat saved": "聊天已保存",
   "This conversation will stay with your citizenship checklist.":
@@ -5215,7 +5216,7 @@ const DE_TEXT = {
   "Checklist support": "Checklistenhilfe",
   "Thinking through your checklist...": "Checkliste wird durchdacht...",
   "Save chat": "Chat speichern",
-  "Ask about a checklist item...": "Frag zu einem Checklistenpunkt...",
+  "What do you need help on?": "Wobei brauchst du Hilfe?",
   "Chat saved": "Chat gespeichert",
   "Assistant unavailable": "Assistent nicht verfügbar",
   "Try again in a moment.": "Versuche es gleich noch einmal.",
@@ -10561,7 +10562,8 @@ const buildCitizenshipAssistantStarterPrompt = ({
     "Break down their checklist into a clear plan, call out the most important blockers or document risks, and explain what to do next.",
     "Keep it concise, specific to their route, and useful for document collection.",
     "Use concise Markdown for structure, including bullets, numbered steps, and **bold** emphasis when helpful.",
-    "Do not provide legal advice or promise an outcome. Tell the user to verify official requirements with SRE, the relevant consulate, or civil registry when needed.",
+    "Do not provide legal advice or promise an outcome.",
+    "Do not add a generic legal disclaimer, disclaimer heading, or disclaimer footer. Mention official verification only beside a specific step that requires it.",
     "Do not repeat every questionnaire answer. Do not invent fees, deadlines, or appointment availability.",
     "",
     "Use this shape:",
@@ -10601,6 +10603,7 @@ const buildCitizenshipAssistantFollowUpPrompt = ({
     `Respond in ${languageName}.`,
     "Answer the user's follow-up using the route, checklist, and answers below.",
     "Be concise, direct, and action-oriented. Do not provide legal advice or promise an outcome.",
+    "Do not add a generic legal disclaimer, disclaimer heading, or disclaimer footer. Mention official verification only beside a specific step that requires it.",
     "Use concise Markdown when it improves readability.",
     "If official verification is important, say so plainly.",
     "",
@@ -10619,7 +10622,7 @@ const buildCitizenshipAssistantFollowUpPrompt = ({
     .join("\n");
 };
 
-const buildCitizenshipChecklistAnalysisPrompt = ({
+const buildCitizenshipChecklistRefreshPrompt = ({
   answers,
   evaluation,
   checklistProgress,
@@ -10633,7 +10636,7 @@ const buildCitizenshipChecklistAnalysisPrompt = ({
     language,
     messages,
     userText: [
-      "Analyze my current checklist progress.",
+      "The checklist state changed since the last assistant response. Refresh the guidance using its current state.",
       "Compare what is already checked with what remains pending.",
       "Give me concise advice, guidance, and useful context to help me complete the checklist.",
       "Include the next 3 practical actions, any likely blockers, and what documents or proof I should prioritize next.",
@@ -11274,7 +11277,6 @@ const ChecklistPanel = ({
   checklistProgress,
   onChecklistItemChange,
   onOpenAssistant,
-  assistantChatSaved,
   isLightTheme,
   onSelectSound,
 }) => {
@@ -11314,15 +11316,6 @@ const ChecklistPanel = ({
           >
             {checklistPercent}% {translateText("complete", language)}
           </Text>
-          {assistantChatSaved ? (
-            <Badge
-              borderRadius="6px"
-              bg="rgba(15, 118, 110, 0.12)"
-              color="#0f766e"
-            >
-              {translateText("Saved chat", language)}
-            </Badge>
-          ) : null}
         </Stack>
       </HStack>
       <CitizenshipWaveProgress
@@ -11360,10 +11353,7 @@ const ChecklistPanel = ({
                   return (
                     <Box
                       key={itemId}
-                      border="1px solid"
-                      borderColor={
-                        isDone ? "rgba(15, 118, 110, 0.3)" : "var(--app-border)"
-                      }
+                      border="0"
                       borderRadius="8px"
                       bg={CITIZENSHIP_RESULTS_PANEL_BG}
                       overflow="hidden"
@@ -11380,6 +11370,7 @@ const ChecklistPanel = ({
                             >
                               <Checkbox
                                 isChecked={isDone}
+                                size="lg"
                                 onChange={(event) => {
                                   onSelectSound?.();
                                   onChecklistItemChange(
@@ -11392,6 +11383,7 @@ const ChecklistPanel = ({
                                 sx={{
                                   ".chakra-checkbox__control": {
                                     mt: "2px",
+                                    boxSize: "24px",
                                     borderRadius: "6px",
                                     borderColor: isDone
                                       ? "#0f766e"
@@ -11433,7 +11425,6 @@ const ChecklistPanel = ({
                           <AccordionPanel
                             px={{ base: 5, md: 6 }}
                             py={{ base: 5, md: 6 }}
-                            borderTop="1px solid var(--app-border)"
                           >
                             <CitizenshipItemDetail
                               detail={detail}
@@ -11650,6 +11641,37 @@ const CitizenshipMarkdown = ({ children }) => (
   </Box>
 );
 
+const ASSISTANT_DISCLAIMER_HEADING =
+  /^(?:#{1,6}\s*)?[*_]{0,2}\s*(?:disclaimer|legal disclaimer|aviso legal|descargo de responsabilidad|isenção de responsabilidade|avvertenza|avertissement|免責事項|अस्वीकरण|إخلاء المسؤولية|免责声明|haftungsausschluss)[*_]{0,2}\s*:?\s*/i;
+
+const stripAssistantDisclaimer = (value) => {
+  const blocks = String(value || "").split(/\n\s*\n/);
+  const kept = [];
+  let skipFollowingBlock = false;
+
+  blocks.forEach((block) => {
+    if (skipFollowingBlock) {
+      skipFollowingBlock = false;
+      return;
+    }
+
+    const trimmed = block.trim();
+    const match = trimmed.match(ASSISTANT_DISCLAIMER_HEADING);
+    if (!match) {
+      kept.push(block);
+      return;
+    }
+
+    const remaining = trimmed
+      .slice(match[0].length)
+      .replace(/^[*_:\s]+|[*_\s]+$/g, "")
+      .trim();
+    skipFollowingBlock = !remaining;
+  });
+
+  return kept.join("\n\n").trim();
+};
+
 const CitizenshipAssistantDrawer = ({
   isOpen,
   onClose,
@@ -11665,8 +11687,8 @@ const CitizenshipAssistantDrawer = ({
   const toast = useToast();
   const [input, setInput] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
-  const messagesEndRef = useRef(null);
-  const starterRequestKeyRef = useRef("");
+  const messagesScrollRef = useRef(null);
+  const wasOpenRef = useRef(false);
   const chat = useMemo(
     () => normalizeAssistantChat(assistantChat),
     [assistantChat],
@@ -11676,15 +11698,30 @@ const CitizenshipAssistantDrawer = ({
     () => getCitizenshipChecklistItems(evaluation),
     [evaluation],
   );
-  const starterKey = useMemo(
+  const assistantContextKey = useMemo(
     () =>
-      [
+      JSON.stringify({
         language,
-        evaluation.route?.code || "",
-        checklistItems.join("|"),
-        JSON.stringify(normalizeCitizenshipAnswers(answers)),
-      ].join("::"),
-    [answers, checklistItems, evaluation.route?.code, language],
+        route: evaluation.route?.code || "",
+        status: evaluation.status || "",
+        reasons: evaluation.reasons || [],
+        blockers: evaluation.blockers || [],
+        answers: normalizeCitizenshipAnswers(answers),
+        checklist: checklistItems.map((item) => ({
+          id: getChecklistItemId(item),
+          done: checklistProgress[getChecklistItemId(item)] === true,
+        })),
+      }),
+    [
+      answers,
+      checklistItems,
+      checklistProgress,
+      evaluation.blockers,
+      evaluation.reasons,
+      evaluation.route?.code,
+      evaluation.status,
+      language,
+    ],
   );
 
   const updateAssistantChat = useCallback(
@@ -11695,6 +11732,7 @@ const CitizenshipAssistantDrawer = ({
         return normalizeAssistantChat({
           messages: next.messages || normalized.messages,
           saved: next.saved ?? normalized.saved,
+          contextKey: next.contextKey ?? normalized.contextKey,
           updatedAt: new Date().toISOString(),
         });
       });
@@ -11703,28 +11741,28 @@ const CitizenshipAssistantDrawer = ({
   );
 
   const patchAssistantMessage = useCallback(
-    (messageId, patcher) => {
+    (messageId, patcher, saved = false) => {
       updateAssistantChat((current) => ({
         messages: current.messages.map((message) =>
           message.id === messageId ? patcher(message) : message,
         ),
-        saved: false,
+        saved,
       }));
     },
     [updateAssistantChat],
   );
 
   const generateAssistantReply = useCallback(
-    async ({ starter = false, userText = "", mode = "chat" } = {}) => {
+    async ({ starter = false, refresh = false, userText = "" } = {}) => {
       const normalizedUserText = userText.trim();
-      if (isGenerating || (!starter && !normalizedUserText)) return;
+      if (isGenerating || (!starter && !refresh && !normalizedUserText)) return;
 
       const assistantMessage = createCitizenshipChatMessage(
         "assistant",
         "",
         false,
       );
-      const userMessage = starter
+      const userMessage = starter || refresh
         ? null
         : createCitizenshipChatMessage("user", normalizedUserText, true);
 
@@ -11735,6 +11773,7 @@ const CitizenshipAssistantDrawer = ({
           assistantMessage,
         ].slice(-CITIZENSHIP_ASSISTANT_MAX_MESSAGES),
         saved: false,
+        contextKey: assistantContextKey,
       }));
 
       setIsGenerating(true);
@@ -11751,8 +11790,8 @@ const CitizenshipAssistantDrawer = ({
               checklistProgress,
               language,
             })
-          : mode === "checklistAnalysis"
-            ? buildCitizenshipChecklistAnalysisPrompt({
+          : refresh
+            ? buildCitizenshipChecklistRefreshPrompt({
                 answers,
                 evaluation,
                 checklistProgress,
@@ -11787,18 +11826,26 @@ const CitizenshipAssistantDrawer = ({
           ? fullText.trim()
           : getCitizenshipAssistantFallbackMessage(language);
 
-        patchAssistantMessage(assistantMessage.id, (message) => ({
-          ...message,
-          text: finalText,
-          done: true,
-        }));
+        patchAssistantMessage(
+          assistantMessage.id,
+          (message) => ({
+            ...message,
+            text: finalText,
+            done: true,
+          }),
+          true,
+        );
       } catch (error) {
         console.warn("Citizenship assistant error:", error);
-        patchAssistantMessage(assistantMessage.id, (message) => ({
-          ...message,
-          text: getCitizenshipAssistantFallbackMessage(language),
-          done: true,
-        }));
+        patchAssistantMessage(
+          assistantMessage.id,
+          (message) => ({
+            ...message,
+            text: getCitizenshipAssistantFallbackMessage(language),
+            done: true,
+          }),
+          true,
+        );
         toast({
           title: translateText("Assistant unavailable", language),
           description: translateText("Try again in a moment.", language),
@@ -11812,6 +11859,7 @@ const CitizenshipAssistantDrawer = ({
     },
     [
       answers,
+      assistantContextKey,
       checklistProgress,
       evaluation,
       isGenerating,
@@ -11824,24 +11872,43 @@ const CitizenshipAssistantDrawer = ({
   );
 
   useEffect(() => {
-    if (!isOpen || chat.saved || messages.length || isGenerating) return;
-    if (starterRequestKeyRef.current === starterKey) return;
+    const justOpened = isOpen && !wasOpenRef.current;
+    wasOpenRef.current = isOpen;
+    if (!justOpened || isGenerating) return;
 
-    starterRequestKeyRef.current = starterKey;
-    generateAssistantReply({ starter: true });
+    if (!messages.length) {
+      generateAssistantReply({ starter: true });
+      return;
+    }
+
+    if (chat.contextKey !== assistantContextKey) {
+      generateAssistantReply({ refresh: true });
+    }
   }, [
-    chat.saved,
+    assistantContextKey,
+    chat.contextKey,
     generateAssistantReply,
     isGenerating,
     isOpen,
     messages.length,
-    starterKey,
   ]);
 
   useEffect(() => {
     if (!isOpen) return;
-    messagesEndRef.current?.scrollIntoView({ block: "end" });
-  }, [isOpen, messages]);
+    let secondFrame = 0;
+    const firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(() => {
+        const messagesContainer = messagesScrollRef.current;
+        if (!messagesContainer) return;
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(firstFrame);
+      if (secondFrame) window.cancelAnimationFrame(secondFrame);
+    };
+  }, [isOpen, messages.length]);
 
   const sendMessage = () => {
     const text = input.trim();
@@ -11849,36 +11916,6 @@ const CitizenshipAssistantDrawer = ({
     onSubmitSound?.();
     setInput("");
     generateAssistantReply({ userText: text });
-  };
-
-  const analyzeChecklist = () => {
-    if (isGenerating) return;
-    onSubmitSound?.();
-    generateAssistantReply({
-      userText: translateText("Analyze my checklist", language),
-      mode: "checklistAnalysis",
-    });
-  };
-
-  const saveChat = () => {
-    if (!messages.length || isGenerating) return;
-    onSubmitSound?.();
-
-    updateAssistantChat((current) => ({
-      messages: current.messages.map((message) => ({ ...message, done: true })),
-      saved: true,
-    }));
-
-    toast({
-      title: translateText("Chat saved", language),
-      description: translateText(
-        "This conversation will stay with your citizenship checklist.",
-        language,
-      ),
-      status: "success",
-      duration: 2500,
-      isClosable: true,
-    });
   };
 
   return (
@@ -11902,11 +11939,14 @@ const CitizenshipAssistantDrawer = ({
         <DrawerHeader
           borderBottom="1px solid"
           borderColor="var(--app-border)"
-          py={4}
+          h="44px"
+          minH="44px"
+          px={3}
+          py={0}
         >
-          <Flex align="flex-start" justify="space-between" gap={3}>
+          <Flex h="100%" align="center" justify="space-between" gap={3}>
             <Text
-              fontSize="md"
+              fontSize="sm"
               fontWeight="800"
               color="var(--app-text-primary)"
             >
@@ -11919,6 +11959,7 @@ const CitizenshipAssistantDrawer = ({
               border="1px solid"
               borderColor="var(--app-border)"
               borderRadius="full"
+              boxSize="28px"
             />
           </Flex>
         </DrawerHeader>
@@ -11932,6 +11973,7 @@ const CitizenshipAssistantDrawer = ({
           overflow="hidden"
         >
           <Box
+            ref={messagesScrollRef}
             flex="1"
             minH={0}
             overflowY="auto"
@@ -11953,7 +11995,8 @@ const CitizenshipAssistantDrawer = ({
                   <Box
                     key={message.id}
                     alignSelf={isUser ? "flex-end" : "flex-start"}
-                    maxW="92%"
+                    w={isUser ? "auto" : { base: "100%", sm: "96%" }}
+                    maxW={isUser ? "92%" : { base: "100%", sm: "96%" }}
                     border="1px solid"
                     borderColor={
                       isUser ? "rgba(29, 78, 216, 0.28)" : "var(--app-border)"
@@ -11968,24 +12011,26 @@ const CitizenshipAssistantDrawer = ({
                     py={2}
                     textAlign="start"
                   >
-                    <HStack spacing={2} mb={1}>
-                      <Icon
-                        as={isUser ? UserRound : Sparkles}
-                        color={isUser ? "#1d4ed8" : "#0f766e"}
-                        boxSize="14px"
-                      />
-                      <Text
-                        color="var(--app-text-muted)"
-                        fontSize="xs"
-                        fontWeight="800"
-                      >
-                        {isUser
-                          ? translateText("You", language)
-                          : translateText("Assistant", language)}
-                      </Text>
-                    </HStack>
+                    {isUser ? (
+                      <HStack spacing={2} mb={1}>
+                        <Icon
+                          as={UserRound}
+                          color="#1d4ed8"
+                          boxSize="14px"
+                        />
+                        <Text
+                          color="var(--app-text-muted)"
+                          fontSize="xs"
+                          fontWeight="800"
+                        >
+                          {translateText("You", language)}
+                        </Text>
+                      </HStack>
+                    ) : null}
                     {message.text ? (
-                      <CitizenshipMarkdown>{message.text}</CitizenshipMarkdown>
+                      <CitizenshipMarkdown>
+                        {stripAssistantDisclaimer(message.text)}
+                      </CitizenshipMarkdown>
                     ) : message.done ? null : (
                       <Text color="var(--app-text-secondary)" fontSize="sm">
                         {translateText(
@@ -11997,63 +12042,17 @@ const CitizenshipAssistantDrawer = ({
                   </Box>
                 );
               })}
-              <Box ref={messagesEndRef} />
             </Stack>
           </Box>
 
-          <Box borderTop="1px solid" borderColor="var(--app-border)" p={4}>
-            <Flex
-              justify="space-between"
-              align="center"
-              gap={2}
-              mb={3}
-              wrap="wrap"
-            >
-              <HStack spacing={2} align="center">
-                <Button
-                  type="button"
-                  size="sm"
-                  leftIcon={<Icon as={Save} boxSize="15px" />}
-                  variant="outline"
-                  borderRadius="8px"
-                  borderColor="var(--app-border)"
-                  color="var(--app-text-primary)"
-                  bg="var(--app-surface-elevated)"
-                  onClick={saveChat}
-                  isDisabled={!messages.length || isGenerating || chat.saved}
-                  _hover={{ bg: "var(--app-surface-muted)" }}
-                >
-                  {translateText(chat.saved ? "Saved" : "Save chat", language)}
-                </Button>
-                {messages.length ? (
-                  <Badge
-                    borderRadius="6px"
-                    bg={
-                      chat.saved
-                        ? "rgba(15, 118, 110, 0.12)"
-                        : "rgba(180, 83, 9, 0.14)"
-                    }
-                    color={chat.saved ? "#0f766e" : "#b45309"}
-                  >
-                    {translateText(
-                      chat.saved ? "Saved chat" : "Unsaved chat",
-                      language,
-                    )}
-                  </Badge>
-                ) : null}
-              </HStack>
-              <Button
-                type="button"
-                size="sm"
-                leftIcon={<Icon as={ClipboardCheck} boxSize="15px" />}
-                onClick={analyzeChecklist}
-                isDisabled={isGenerating}
-                {...CITIZENSHIP_TEAL_BUTTON_PROPS}
-              >
-                {translateText("Analyze my checklist", language)}
-              </Button>
-            </Flex>
-            <HStack spacing={2} align="flex-end">
+          <Box
+            borderTop="1px solid"
+            borderColor="var(--app-border)"
+            px={3}
+            pt={3}
+            pb={2}
+          >
+            <HStack spacing={2} align="center">
               <Textarea
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
@@ -12064,17 +12063,20 @@ const CitizenshipAssistantDrawer = ({
                   }
                 }}
                 placeholder={translateText(
-                  "Ask about a checklist item...",
+                  "What do you need help on?",
                   language,
                 )}
-                minH="86px"
-                maxH="220px"
+                minH="64px"
+                maxH="160px"
                 resize="vertical"
                 borderRadius="8px"
                 bg="var(--app-surface-elevated)"
                 borderColor="var(--app-border)"
                 color="var(--app-text-primary)"
-                _placeholder={{ color: "var(--app-text-muted)" }}
+                _placeholder={{
+                  color: "var(--app-text-muted)",
+                  fontSize: "xs",
+                }}
                 _focusVisible={{
                   borderColor: "#0f766e",
                   boxShadow: "0 0 0 1px #0f766e",
@@ -12087,8 +12089,8 @@ const CitizenshipAssistantDrawer = ({
                 onClick={sendMessage}
                 isDisabled={!input.trim() || isGenerating}
                 {...CITIZENSHIP_TEAL_BUTTON_PROPS}
-                minW="44px"
-                h="44px"
+                minW="40px"
+                h="40px"
               />
             </HStack>
           </Box>
@@ -13037,10 +13039,6 @@ export default function CitizenshipGuide() {
 
   const closeAssistant = () => {
     setIsAssistantOpen(false);
-    const savedChat = normalizeSavedAssistantChat(assistantChat);
-    if (!savedChat.saved) {
-      setAssistantChat(lastSavedAssistantChatRef.current);
-    }
   };
 
   const downloadReport = () => {
@@ -13607,7 +13605,6 @@ export default function CitizenshipGuide() {
                 checklistProgress={checklistProgress}
                 onChecklistItemChange={setChecklistItemDone}
                 onOpenAssistant={() => setIsAssistantOpen(true)}
-                assistantChatSaved={assistantChat.saved}
                 isLightTheme={isLightTheme}
                 onSelectSound={playSelectSound}
               />

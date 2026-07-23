@@ -57,15 +57,15 @@ The route evaluator runs continuously against answers that default to empty valu
 
 The existing evaluator produces seven route codes:
 
-| Route | Current label | Current purpose | Main concern |
-| --- | --- | --- | --- |
-| R1 | Already Mexican by birth | Document/passport workflow for someone already considered Mexican | A Carta de Naturalización also produces R1, even though it proves nationality by naturalization rather than birth |
-| R2 | Birth registration abroad | Foreign-born applicant with a Mexican parent and some parent proof | Correctable document problems can replace the underlying R2 path with R7 |
-| R3 | Parent-chain first | Document the Mexican parent before the applicant | This is primarily a preparation or proof status layered over R2 |
-| R4 | Declaratoria / recovery | Mexican-by-birth applicant with a pre-March 20, 1998 foreign-nationality issue | The current question does not distinguish voluntary acquisition or use from citizenship acquired automatically at birth |
-| R5 | Naturalization | Carta de Naturalización through a general, shortened, or exceptional basis | Some modality conditions are incomplete or incorrectly represented |
-| R6 | Not eligible yet | Missing residence, timing, or another prerequisite | This is a status, not a legal path |
-| R7 | Manual review | Records, family, criminal-history, or exceptional-service review | It combines unrelated review conditions and hides the underlying path |
+| Route | Current label             | Current purpose                                                                | Main concern                                                                                                            |
+| ----- | ------------------------- | ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| R1    | Already Mexican by birth  | Document/passport workflow for someone already considered Mexican              | A Carta de Naturalización also produces R1, even though it proves nationality by naturalization rather than birth       |
+| R2    | Birth registration abroad | Foreign-born applicant with a Mexican parent and some parent proof             | Correctable document problems can replace the underlying R2 path with R7                                                |
+| R3    | Parent-chain first        | Document the Mexican parent before the applicant                               | This is primarily a preparation or proof status layered over R2                                                         |
+| R4    | Declaratoria / recovery   | Mexican-by-birth applicant with a pre-March 20, 1998 foreign-nationality issue | The current question does not distinguish voluntary acquisition or use from citizenship acquired automatically at birth |
+| R5    | Naturalization            | Carta de Naturalización through a general, shortened, or exceptional basis     | Some modality conditions are incomplete or incorrectly represented                                                      |
+| R6    | Not eligible yet          | Missing residence, timing, or another prerequisite                             | This is a status, not a legal path                                                                                      |
+| R7    | Manual review             | Records, family, criminal-history, or exceptional-service review               | It combines unrelated review conditions and hides the underlying path                                                   |
 
 ### Structural conclusion
 
@@ -280,13 +280,13 @@ The questionnaire must continue when an unanswered fact could still change:
 
 Every question should be assigned one role:
 
-| Role | Meaning | Required before initial result? |
-| --- | --- | --- |
-| `route` | Can change the legal nationality or acquisition path | Yes |
-| `eligibility` | Can change whether the person qualifies now | Yes |
-| `review` | Can create a meaningful legal or procedural review condition | When applicable |
-| `readiness` | Changes filing or document preparation only | No; offer after the result |
-| `personalization` | Location, preferences, and other convenience details | No; collect contextually |
+| Role              | Meaning                                                      | Required before initial result? |
+| ----------------- | ------------------------------------------------------------ | ------------------------------- |
+| `route`           | Can change the legal nationality or acquisition path         | Yes                             |
+| `eligibility`     | Can change whether the person qualifies now                  | Yes                             |
+| `review`          | Can create a meaningful legal or procedural review condition | When applicable                 |
+| `readiness`       | Changes filing or document preparation only                  | No; offer after the result      |
+| `personalization` | Location, preferences, and other convenience details         | No; collect contextually        |
 
 ## Proposed Question Changes
 
@@ -339,16 +339,16 @@ Progress version 3 should store:
 
 ```js
 {
-  version: 3,
-  currentQuestionId,
-  questionHistory,
-  visitedQuestionIds,
-  answers,
-  assessment,
-  showResults,
-  checklistProgress,
-  assistantChat,
-  updatedAt
+  version: (3,
+    currentQuestionId,
+    questionHistory,
+    visitedQuestionIds,
+    answers,
+    assessment,
+    showResults,
+    checklistProgress,
+    assistantChat,
+    updatedAt);
 }
 ```
 
@@ -402,12 +402,12 @@ src/features/citizenship/
 Suggested pure APIs:
 
 ```js
-assessCitizenship(answers)
-getNextRequiredQuestion(answers, assessment)
-getOptionalReadinessQuestions(answers, assessment)
-getApplicableQuestionIds(answers, assessment)
-pruneInvalidatedAnswers(previousAnswers, changedQuestionId)
-deriveLegacyRouteCode(assessment)
+assessCitizenship(answers);
+getNextRequiredQuestion(answers, assessment);
+getOptionalReadinessQuestions(answers, assessment);
+getApplicableQuestionIds(answers, assessment);
+pruneInvalidatedAnswers(previousAnswers, changedQuestionId);
+deriveLegacyRouteCode(assessment);
 ```
 
 The AI assistant must not select or alter the legal route. It may explain an already-computed assessment and checklist.

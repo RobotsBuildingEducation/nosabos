@@ -131,6 +131,10 @@ export const writeCitizenshipChatDocuments = async (
     refs.chat,
     {
       saved: assistantChat?.saved === true,
+      contextKey:
+        typeof assistantChat?.contextKey === "string"
+          ? assistantChat.contextKey
+          : "",
       updatedAt:
         typeof assistantChat?.updatedAt === "string"
           ? assistantChat.updatedAt
