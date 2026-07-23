@@ -166,7 +166,6 @@ export const getOptionalReadinessQuestionIds = (
     add(ids, "passportReady");
   }
 
-  add(ids, "handlingLocation");
   return ids;
 };
 
@@ -205,6 +204,9 @@ export const pruneInvalidatedAnswers = (candidateAnswers = {}) => {
   applicable.forEach((id) => {
     if (Object.hasOwn(candidateAnswers, id)) next[id] = candidateAnswers[id];
   });
+  // Location is collected by the final-results consulate finder rather than
+  // the questionnaire, so preserve it when route-dependent answers are pruned.
+  next.handlingLocation = candidateAnswers.handlingLocation || "";
   return next;
 };
 

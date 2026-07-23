@@ -36,7 +36,18 @@ test("foreign-parent result moves record details to optional refinement", () => 
   const optional = getOptionalReadinessQuestionIds(input, assessment);
   assert.ok(optional.includes("parentProof"));
   assert.ok(optional.includes("birthCertificateType"));
-  assert.ok(optional.includes("handlingLocation"));
+  assert.ok(!optional.includes("handlingLocation"));
+});
+
+test("final-view consulate location survives questionnaire answer pruning", () => {
+  const input = answers({
+    existingDocs: ["none"],
+    birthplace: "us",
+    parentMexicanAtBirth: "mother",
+    handlingLocation: "Los Angeles consulate",
+  });
+  const pruned = pruneInvalidatedAnswers(input);
+  assert.equal(pruned.handlingLocation, "Los Angeles consulate");
 });
 
 test("naturalization next question follows selected basis only", () => {

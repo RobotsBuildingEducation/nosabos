@@ -292,7 +292,9 @@ Every question should be assigned one role:
 
 ### Move or repurpose current questions
 
-- Move `handlingLocation` after route identification.
+- Collect `handlingLocation` only in the final-results consulate finder, where
+  it is directly useful, instead of repeating it in the questionnaire or
+  refinement flow.
 - Make `currentCitizenship` control nationality-specific warnings instead of showing the U.S. warning universally.
 - Either make `applicantType` affect appearance and minor requirements or remove it from initial routing.
 - Replace the unused `applicantAdult` answer with an age group that supports minor, adult, and over-60 rules.

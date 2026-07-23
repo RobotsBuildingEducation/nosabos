@@ -433,18 +433,6 @@ export const CITIZENSHIP_QUESTIONS = [
     ],
   },
   {
-    id: "handlingLocation",
-    section: "Location",
-    iconKey: "location",
-    type: "text",
-    role: QUESTION_ROLES.PERSONALIZATION,
-    label: "Which consulate or Mexican state will handle the case?",
-    helper:
-      "You can use a ZIP, preferred consulate, or Mexican state. Skip it if you do not know yet.",
-    placeholder: "ZIP, preferred consulate, or Mexican state",
-    optional: true,
-  },
-  {
     id: "parentOrigin",
     section: "Mexican parent",
     iconKey: "family",
@@ -646,4 +634,3 @@ export const normalizeAnswerValue = (questionId, value) => {
     ? [exclusive]
     : values.filter((item) => item !== exclusive);
 };
-

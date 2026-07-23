@@ -9621,17 +9621,6 @@ const LEGACY_QUESTION_DEFINITIONS = [
     ],
   },
   {
-    id: "handlingLocation",
-    section: "Location",
-    icon: MapPin,
-    type: "text",
-    label: "Which consulate or Mexican state will handle the case?",
-    helper:
-      "You can use a ZIP, preferred consulate, or Mexican state. Skip it if you do not know yet.",
-    placeholder: "ZIP, preferred consulate, or Mexican state",
-    optional: true,
-  },
-  {
     id: "registeredMexico",
     section: "Born in Mexico",
     icon: Home,
