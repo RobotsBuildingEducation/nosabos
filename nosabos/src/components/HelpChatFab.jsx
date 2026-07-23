@@ -105,9 +105,10 @@ import {
   nativeOverlayMotionProps,
 } from "../utils/modalMotion";
 import {
-  buildMorphemeFallbackPrompt,
-  buildMorphemeModeInstruction,
-  hasCompleteMorphemeResponse,
+  buildMorphemeBreakdownPrompt,
+  buildMorphemeTranslationPlanPrompt,
+  hasMorphemeBreakdown,
+  parseMorphemeTranslationPlan,
 } from "../utils/helpChatMorpheme";
 
 const REALTIME_MODEL =
@@ -982,17 +983,6 @@ const HelpChatFab = forwardRef(
                     primaryLang,
                   )} (support language), even if the user writes in another language.`;
 
-      if (morphemeMode) {
-        return [
-          buildMorphemeModeInstruction({
-            targetLanguageName: nameForLanguage(targetLang),
-            supportLanguageName: nameForLanguage(primaryLang),
-          }),
-          strict,
-          `Write the morpheme meanings and glosses in ${nameForLanguage(primaryLang)}.`,
-        ].join(" ");
-      }
-
       const levelHint = (() => {
         if (primaryLang === "es") {
           return lvl === "beginner"
@@ -1120,7 +1110,7 @@ const HelpChatFab = forwardRef(
       ]
         .filter(Boolean)
         .join(" ");
-    }, [progress, appLanguage, morphemeMode, nameForLanguage]);
+    }, [progress, appLanguage, nameForLanguage]);
 
     useEffect(() => {
       resizeTextarea();
@@ -1194,18 +1184,17 @@ const HelpChatFab = forwardRef(
         setInput("");
         stopRef.current = false;
 
-        const instruction = buildInstruction();
+        const instruction = morphemeMode ? "" : buildInstruction();
         const historyBlock = morphemeMode ? "" : buildHistoryBlock();
 
-        const prompt =
-          instruction +
-          "\n\n" +
-          (historyBlock
-            ? `Previous conversation (for context, keep answers concise):\n${historyBlock}\n\n`
-            : "") +
-          (morphemeMode
-            ? `Text to analyze verbatim:\n${question}`
-            : `User question:\n${question}`);
+        const prompt = morphemeMode
+          ? ""
+          : instruction +
+            "\n\n" +
+            (historyBlock
+              ? `Previous conversation (for context, keep answers concise):\n${historyBlock}\n\n`
+              : "") +
+            `User question:\n${question}`;
 
         const userId = crypto.randomUUID?.() || String(Date.now());
         pushMessage({ id: userId, role: "user", text: question, done: true });
@@ -1220,6 +1209,92 @@ const HelpChatFab = forwardRef(
 
         try {
           setSending(true);
+
+          if (morphemeMode) {
+            const targetLang = normalizePracticeLanguage(
+              progress?.targetLang,
+              "es",
+            );
+            const supportLang = normalizeSupportLanguage(
+              progress?.supportLang === "bilingual"
+                ? appLanguage
+                : progress?.supportLang,
+              DEFAULT_SUPPORT_LANGUAGE,
+            );
+            const targetLangName = nameForLanguage(targetLang);
+            const supportLangName = nameForLanguage(supportLang);
+            const planPrompt = buildMorphemeTranslationPlanPrompt({
+              targetLanguageName: targetLangName,
+              supportLanguageName: supportLangName,
+              question,
+            });
+            const planResp = await simplemodel.generateContent(planPrompt);
+            const planText =
+              (typeof planResp?.response?.text === "function"
+                ? planResp.response.text()
+                : planResp?.response?.text) || "";
+            const translationPlan = parseMorphemeTranslationPlan(planText);
+
+            if (
+              !translationPlan.translation ||
+              !translationPlan.targetText
+            ) {
+              throw new Error("Could not determine the morpheme translation.");
+            }
+
+            const translationPrefix = `// ${translationPlan.translation}`;
+            patchLastAssistant((m) => ({
+              ...m,
+              text: translationPrefix,
+            }));
+
+            if (stopRef.current) {
+              patchLastAssistant((m) => ({ ...m, done: true }));
+              return;
+            }
+
+            const breakdownPrompt = buildMorphemeBreakdownPrompt({
+              targetLanguageName: targetLangName,
+              supportLanguageName: supportLangName,
+              targetText: translationPlan.targetText,
+            });
+            const breakdownResult =
+              await simplemodel.generateContentStream(breakdownPrompt);
+            let breakdownText = "";
+
+            for await (const chunk of breakdownResult.stream) {
+              if (stopRef.current) break;
+
+              const chunkText =
+                typeof chunk.text === "function" ? chunk.text() : "";
+              if (!chunkText) continue;
+
+              breakdownText += chunkText;
+              patchLastAssistant((m) => ({
+                ...m,
+                text: `${translationPrefix}\n\n${breakdownText}`,
+              }));
+            }
+
+            if (!stopRef.current && !hasMorphemeBreakdown(breakdownText)) {
+              const fallbackResp =
+                await simplemodel.generateContent(breakdownPrompt);
+              const fallbackText =
+                (typeof fallbackResp?.response?.text === "function"
+                  ? fallbackResp.response.text()
+                  : fallbackResp?.response?.text) || "";
+              if (fallbackText.trim()) breakdownText = fallbackText.trim();
+            }
+
+            patchLastAssistant((m) => ({
+              ...m,
+              text: breakdownText
+                ? `${translationPrefix}\n\n${breakdownText}`
+                : translationPrefix,
+              done: true,
+            }));
+            return;
+          }
 
           // 🔥 STREAMING – same pattern as your working component
           const result = await simplemodel.generateContentStream(prompt);
@@ -1239,37 +1314,6 @@ const HelpChatFab = forwardRef(
             // Update the assistant message every chunk
             const current = fullText;
             patchLastAssistant((m) => ({ ...m, text: current }));
-          }
-
-          let finalText = fullText;
-
-          if (morphemeMode && !hasCompleteMorphemeResponse(finalText)) {
-            const targetLang = progress?.targetLang || "es";
-            const targetLangName = nameForLanguage(targetLang);
-            const supportLang = normalizeSupportLanguage(
-              progress?.supportLang === "bilingual"
-                ? appLanguage
-                : progress?.supportLang,
-              DEFAULT_SUPPORT_LANGUAGE,
-            );
-            const fallbackPrompt = buildMorphemeFallbackPrompt({
-              targetLanguageName: targetLangName,
-              supportLanguageName: nameForLanguage(supportLang),
-              question,
-              assistantAnswer: finalText,
-            });
-
-            const fallbackResp =
-              await simplemodel.generateContent(fallbackPrompt);
-            const fallbackText =
-              (typeof fallbackResp?.response?.text === "function"
-                ? fallbackResp.response.text()
-                : fallbackResp?.response?.text) || "";
-
-            if (fallbackText.trim()) {
-              finalText = fallbackText.trim();
-              patchLastAssistant((m) => ({ ...m, text: finalText }));
-            }
           }
 
           // Mark as done (don't overwrite text; we've already streamed it)

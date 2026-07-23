@@ -1,72 +1,92 @@
 export const hasMorphemeBreakdown = (text) =>
   /(^|\n)\s*\*\*[^*\n]+\*\*\s*=\s*\S+/m.test(String(text || ""));
 
-export const hasDirectTranslation = (text) =>
-  /(^|\n)\s*\/\/\s*\S+/m.test(String(text || ""));
+const cleanPlanValue = (value) =>
+  String(value || "")
+    .replace(/^\/\/\s*/, "")
+    .replace(/^[“”"']+|[“”"']+$/g, "")
+    .trim();
 
-export const hasCompleteMorphemeResponse = (text) =>
-  hasDirectTranslation(text) && hasMorphemeBreakdown(text);
-
-export const buildMorphemeModeInstruction = ({
-  targetLanguageName,
-  supportLanguageName,
-}) => `🔬 MORPHEME MODE IS ON.
-
-Treat the latest user input as the exact text to translate and analyze.
-
-First, directly translate the complete submitted text between ${targetLanguageName} and ${supportLanguageName}. If the input is in ${targetLanguageName}, translate it into ${supportLanguageName}; if it is in ${supportLanguageName}, translate it into ${targetLanguageName}. For a name or other text that normally stays unchanged, repeat it unchanged. Put this translation on the first line using exactly:
-
-// direct translation
-
-Then give the morpheme breakdown of the ORIGINAL submitted word or words. Do not break down the translated wording.
-
-Do not create an example sentence. Do not add related words, rewrite the input, or analyze words from the conversation history or your own response.
-
-Use this format for each submitted word:
-
-**word** = part1 + part2 + part3
-- part1: meaning or grammatical function
-- part2: meaning or grammatical function
-→ "concise English gloss"
-
-If a ${targetLanguageName} word cannot be meaningfully divided into smaller morphemes, do not invent a split. Show the word as a single unit instead:
-
-**word** = word
-- word: single morpheme (brief meaning, function, or origin when useful)
-→ "concise English gloss"
-
-Preserve the user's words and analyze all and only those words. Apart from the // translation line, use no heading or introductory paragraph.`;
-
-export const buildMorphemeFallbackPrompt = ({
+export const buildMorphemeTranslationPlanPrompt = ({
   targetLanguageName,
   supportLanguageName,
   question,
-  assistantAnswer,
 }) =>
   [
-    "The response did not contain both the required direct translation and morpheme breakdown.",
-    `Target language: ${targetLanguageName}.`,
-    `Support language: ${supportLanguageName}.`,
-    `First translate the exact latest user input between ${targetLanguageName} and ${supportLanguageName}.`,
-    `If it is in ${targetLanguageName}, translate into ${supportLanguageName}; if it is in ${supportLanguageName}, translate into ${targetLanguageName}.`,
-    "Return the direct translation as the first line in this exact format:",
-    "// direct translation",
+    "Determine the translation direction for a language-learning morpheme tool.",
+    `The target/practice language is ${targetLanguageName}.`,
+    `The learner's support language is ${supportLanguageName}.`,
     "",
-    "Then return a morpheme breakdown of only the ORIGINAL word or words in the latest user input.",
-    "Do not create an example sentence, add related words, or analyze text from the assistant answer.",
-    "Use this format for each submitted word (no heading):",
+    "If SOURCE_TEXT is in the support language:",
+    `- translation: translate it into ${targetLanguageName}.`,
+    "- targetText: use that target-language translation.",
+    "",
+    "If SOURCE_TEXT is in the target language:",
+    `- translation: translate it into ${supportLanguageName}.`,
+    "- targetText: copy the original target-language SOURCE_TEXT.",
+    "",
+    "targetText must ALWAYS contain the target-language wording whose morphemes should be analyzed.",
+    "For names or forms that conventionally stay unchanged, preserve them.",
+    "Return ONLY valid JSON with exactly these string fields:",
+    '{"translation":"direct translation of the complete source","targetText":"exact target-language text to analyze"}',
+    "",
+    "SOURCE_TEXT:",
+    question,
+  ].join("\n");
+
+export const parseMorphemeTranslationPlan = (text) => {
+  const raw = String(text || "").trim();
+  const jsonStart = raw.indexOf("{");
+  const jsonEnd = raw.lastIndexOf("}");
+
+  if (jsonStart >= 0 && jsonEnd > jsonStart) {
+    try {
+      const parsed = JSON.parse(raw.slice(jsonStart, jsonEnd + 1));
+      return {
+        translation: cleanPlanValue(parsed?.translation),
+        targetText: cleanPlanValue(parsed?.targetText),
+      };
+    } catch {
+      // Fall through to the labeled-text parser.
+    }
+  }
+
+  const translation = raw.match(
+    /(?:^|\n)\s*(?:translation|traducción)\s*:\s*(.+)/i,
+  )?.[1];
+  const targetText = raw.match(
+    /(?:^|\n)\s*(?:targetText|target text)\s*:\s*(.+)/i,
+  )?.[1];
+
+  return {
+    translation: cleanPlanValue(translation),
+    targetText: cleanPlanValue(targetText),
+  };
+};
+
+export const buildMorphemeBreakdownPrompt = ({
+  targetLanguageName,
+  supportLanguageName,
+  targetText,
+}) =>
+  [
+    `Analyze the morphemes in this exact ${targetLanguageName} text:`,
+    targetText,
+    "",
+    "Analyze all and only the target-language words above.",
+    "Do not translate or analyze any source-language wording.",
+    "Do not create an example sentence, add related words, or rewrite the text.",
+    `Write every morpheme meaning and grammatical explanation in ${supportLanguageName}.`,
+    "Return ONLY the breakdown, with no heading or introductory paragraph.",
+    "",
+    "Use this format for each target-language word:",
     "**word** = part1 + part2 + part3",
     "- part1: meaning or grammatical function",
     "- part2: meaning or grammatical function",
-    '→ "concise English gloss"',
+    '→ "concise whole-word gloss"',
     "",
-    "For a word with no meaningful smaller morphemes, use:",
+    "If a word cannot be meaningfully divided, do not invent a split:",
     "**word** = word",
-    "- word: single morpheme (brief meaning, function, or origin when useful)",
-    '→ "concise English gloss"',
-    "",
-    `Latest user input: ${question}`,
-    "",
-    "The previous assistant answer is included only to diagnose the missing format; do not analyze any words from it:",
-    assistantAnswer,
+    "- word: single morpheme (brief meaning or function)",
+    '→ "concise whole-word gloss"',
   ].join("\n");
