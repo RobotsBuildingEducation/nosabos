@@ -24,8 +24,7 @@ import {
 } from "@chakra-ui/react";
 import { FiChevronDown } from "react-icons/fi";
 import useSoundSettings from "../hooks/useSoundSettings";
-import selectSound from "../assets/select.mp3";
-import submitActionSound from "../assets/submitaction.mp3";
+import { selectSound, submitActionSound } from "../constants/sounds";
 import { useThemeStore } from "../useThemeStore";
 import {
   DEFAULT_SUPPORT_LANGUAGE,

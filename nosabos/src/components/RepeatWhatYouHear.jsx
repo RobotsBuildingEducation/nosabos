@@ -16,9 +16,7 @@ import { MdOutlineSupportAgent } from "react-icons/md";
 import ReactMarkdown from "react-markdown";
 import FeedbackRail from "./FeedbackRail";
 import useSoundSettings from "../hooks/useSoundSettings";
-import nextButtonSound from "../assets/nextbutton.mp3";
-import selectSound from "../assets/select.mp3";
-import submitActionSound from "../assets/submitaction.mp3";
+import { selectSound, submitActionSound } from "../constants/sounds";
 import VoiceOrb from "./VoiceOrb";
 import { getLanguageDirection } from "../constants/languages";
 import {

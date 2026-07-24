@@ -48,9 +48,7 @@ import {
   SOFT_STOP_BUTTON_BG,
   SOFT_STOP_BUTTON_HOVER_BG,
 } from "../utils/softStopButton";
-import submitActionSound from "../assets/submitaction.mp3";
-import deliciousSound from "../assets/delicious.mp3";
-import clickSound from "../assets/click.mp3";
+import { submitActionSound, deliciousSound, clickSound } from "../constants/sounds";
 import RandomCharacter from "./RandomCharacter";
 import VoiceOrb from "./VoiceOrb";
 import { useThemeStore } from "../useThemeStore";

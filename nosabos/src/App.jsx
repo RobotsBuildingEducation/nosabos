@@ -254,10 +254,7 @@ import { waitForGameLoaderExploration } from "./utils/gameLoaderTiming";
 import { LESSON_COUNTS, getLessonLevelFromId } from "./utils/cefrProgress";
 import { BsCalendar2DateFill } from "react-icons/bs";
 import { TbLanguage } from "react-icons/tb";
-import sparkleSound from "./assets/sparkle.mp3";
-import submitActionSound from "./assets/submitaction.mp3";
-import selectSound from "./assets/select.mp3";
-import dailyGoalSound from "./assets/dailygoal.mp3";
+import { sparkleSound, submitActionSound, selectSound, dailyGoalSound } from "./constants/sounds";
 import {
   DAILY_GOAL_PET_HEALTH_GAIN,
   buildDailyGoalResetFields,

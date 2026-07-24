@@ -28,9 +28,7 @@ import {
   MenuOptionGroup,
 } from "@chakra-ui/react";
 import { ChevronDownIcon } from "@chakra-ui/icons";
-import submitActionSound from "../assets/submitaction.mp3";
-import selectSound from "../assets/select.mp3";
-import nextButtonSound from "../assets/nextbutton.mp3";
+import { submitActionSound, selectSound, nextButtonSound } from "../constants/sounds";
 import useSoundSettings, {
   DEFAULT_TUTOR_VOLUME,
 } from "../hooks/useSoundSettings";

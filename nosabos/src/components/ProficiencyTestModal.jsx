@@ -12,8 +12,7 @@ import {
 } from "@chakra-ui/react";
 import { LuBadgeCheck } from "react-icons/lu";
 import useSoundSettings from "../hooks/useSoundSettings";
-import selectSound from "../assets/select.mp3";
-import submitActionSound from "../assets/submitaction.mp3";
+import { selectSound, submitActionSound } from "../constants/sounds";
 import RandomCharacter from "./RandomCharacter";
 import { t as tFn } from "../utils/translation";
 import {

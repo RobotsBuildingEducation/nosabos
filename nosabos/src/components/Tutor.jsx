@@ -169,8 +169,7 @@ import {
   SKILL_STATUS,
 } from "../data/skillTree/index.js";
 import useSoundSettings from "../hooks/useSoundSettings";
-import { listeningCueSound } from "../constants/sounds";
-import submitActionSound from "../assets/submitaction.mp3";
+import { listeningCueSound, submitActionSound } from "../constants/sounds";
 import XpProgressHeader from "./XpProgressHeader";
 import { WaveBar } from "./WaveBar";
 import RandomCharacter from "./RandomCharacter";

@@ -249,7 +249,7 @@ import { TbLanguage } from "react-icons/tb";
 import Tutor from "./Tutor";
 import useSoundSettings from "../hooks/useSoundSettings";
 import useModalStore from "../hooks/useModalStore";
-import selectSound from "../assets/select.mp3";
+import { selectSound } from "../constants/sounds";
 import VoiceOrb from "./VoiceOrb";
 import { buildGameReviewContext } from "../utils/gameReviewContext";
 import {

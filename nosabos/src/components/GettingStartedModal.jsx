@@ -18,7 +18,7 @@ import { CiSquarePlus } from "react-icons/ci";
 import { LuBadgeCheck, LuCopy, LuKeyRound, LuSettings } from "react-icons/lu";
 import { RxExternalLink } from "react-icons/rx";
 import useSoundSettings from "../hooks/useSoundSettings";
-import submitActionSound from "../assets/submitaction.mp3";
+import { submitActionSound } from "../constants/sounds";
 import RandomCharacter from "./RandomCharacter";
 import { useThemeStore } from "../useThemeStore";
 import { t as tFn } from "../utils/translation";

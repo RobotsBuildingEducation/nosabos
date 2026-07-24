@@ -3,42 +3,13 @@ import { create } from "zustand";
 import { triggerHaptic } from "tactus";
 import { soundManager } from "../utils/SoundManager";
 
-// Legacy MP3 imports - kept for backward compatibility with existing import statements
-// These are now just string identifiers that map to Tone.js sounds
-import clickSound from "../assets/click.mp3";
-import selectSound from "../assets/select.mp3";
-import submitSound from "../assets/submit.mp3";
-import submitActionSound from "../assets/submitaction.mp3";
-import nextButtonSound from "../assets/nextbutton.mp3";
-import completeSound from "../assets/complete.mp3";
-import deliciousSound from "../assets/delicious.mp3";
-import sparkleSound from "../assets/sparkle.mp3";
-import modeSwitcherSound from "../assets/modeswitcher.mp3";
-import dailyGoalSound from "../assets/dailygoal.mp3";
-
-// Map legacy MP3 file paths to new Tone.js sound names
-// Special value "randomChord" triggers playRandomChord instead of play()
-const SOUND_MAP = new Map([
-  [clickSound, "incorrect"], // click.mp3 was used for incorrect answers
-  [selectSound, "select"],
-  [submitSound, "submit"],
-  [submitActionSound, "submitAction"],
-  [nextButtonSound, "next"],
-  [completeSound, "correct"], // complete.mp3 -> correct (was unused, but map it anyway)
-  [deliciousSound, "correct"],
-  [sparkleSound, "sparkle"],
-  [modeSwitcherSound, "randomChord"], // Play random chord when switching modes
-  [dailyGoalSound, "dailyGoal"],
-]);
-
 // Module-level promise to track initialization across all callers
 let initPromise = null;
 export const DEFAULT_TUTOR_VOLUME = 3;
 
 /**
  * Global sound settings store.
- * Now uses Tone.js synthesized sounds instead of MP3 files.
- * Maintains backward compatibility with existing playSound(soundFile) calls.
+ * Uses Tone.js to synthesize sound effects without audio assets.
  */
 const useSoundSettings = create((set, get) => ({
   soundEnabled: true,
@@ -112,14 +83,12 @@ const useSoundSettings = create((set, get) => ({
   },
 
   /**
-   * Play a sound. Accepts either:
-   * - Legacy MP3 file path (from imports) - automatically mapped to Tone.js sound
-   * - Direct sound name string (e.g., "select", "correct", "submitAction")
+   * Play a synthesized sound by name.
    *
-   * @param {string} soundFileOrName - The imported sound file or direct sound name
+   * @param {string} soundName - A SoundManager sound name
    * @returns {Promise<void>}
    */
-  playSound: async (soundFileOrName) => {
+  playSound: async (soundName) => {
     const state = get();
     if (!state.soundEnabled) return;
 
@@ -133,9 +102,6 @@ const useSoundSettings = create((set, get) => ({
     // resume fails — on mobile the context may resume mid-gesture and the
     // sound can still fire.  Haptic feedback should always trigger.
     await soundManager.ensureContextRunning();
-
-    // Map legacy MP3 path to Tone.js sound name, or use direct name
-    const soundName = SOUND_MAP.get(soundFileOrName) || soundFileOrName;
 
     // Special handling for random chord
     if (soundName === "randomChord") {

@@ -18,7 +18,7 @@ import PlateActivityHeatmap from "./PlateActivityHeatmap";
 import useSoundSettings from "../hooks/useSoundSettings";
 import { useThemeStore } from "../useThemeStore";
 import { APP_DAILY_QUEST_RADIUS, APP_SQUIRCLE_SHAPE } from "../theme";
-import selectSound from "../assets/select.mp3";
+import { selectSound } from "../constants/sounds";
 import {
   getDailyPlateSnapshot,
   getNextPlateCourse,

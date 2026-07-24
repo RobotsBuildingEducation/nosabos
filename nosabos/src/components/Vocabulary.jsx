@@ -69,10 +69,7 @@ import { captureCompanionMemory } from "../utils/companionMemory";
 import VirtualKeyboard from "./VirtualKeyboard";
 import { MdKeyboard } from "react-icons/md";
 import useSoundSettings from "../hooks/useSoundSettings";
-import submitActionSound from "../assets/submitaction.mp3";
-import nextButtonSound from "../assets/nextbutton.mp3";
-import selectSound from "../assets/select.mp3";
-import submitSound from "../assets/submit.mp3";
+import { submitActionSound, nextButtonSound, selectSound, submitSound } from "../constants/sounds";
 import LessonFlashcard, {
   FlashcardDeckReview,
   buildLessonFlashcardPrompt,

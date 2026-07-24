@@ -60,8 +60,7 @@ import {
 } from "../utils/softStopButton";
 import { getPreferredTTSVoice, TTS_LANG_TAG } from "../utils/tts";
 import useSoundSettings from "../hooks/useSoundSettings";
-import submitActionSound from "../assets/submitaction.mp3";
-import completeSound from "../assets/complete.mp3";
+import { submitActionSound, completeSound } from "../constants/sounds";
 import { useThemeStore } from "../useThemeStore";
 import {
   DEFAULT_SUPPORT_LANGUAGE,

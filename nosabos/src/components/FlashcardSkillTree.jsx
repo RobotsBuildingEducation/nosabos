@@ -37,7 +37,7 @@ import { repairCopy } from "../utils/companionMemoryCopy";
 import useRepairFocusStore from "../hooks/useRepairFocusStore";
 import useSoundSettings from "../hooks/useSoundSettings";
 import useModalStore from "../hooks/useModalStore";
-import selectSound from "../assets/select.mp3";
+import { selectSound } from "../constants/sounds";
 import { useThemeStore } from "../useThemeStore";
 import {
   FLASHCARD_DAILY_TARGET,

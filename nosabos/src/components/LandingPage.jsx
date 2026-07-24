@@ -59,8 +59,7 @@ import { LANDING_PAGE_PT_STATIC } from "../translations/landingPagePtStatic";
 import { LANDING_PAGE_ZH_STATIC } from "../translations/landingPageZhStatic";
 import { syncDocumentLanguage } from "../utils/documentLanguage";
 import { rememberSecretKeySignIn } from "../utils/authSession";
-import selectSound from "../assets/select.mp3";
-import submitActionSound from "../assets/submitaction.mp3";
+import { selectSound, submitActionSound } from "../constants/sounds";
 
 // Minimal hook stubs for standalone demo - replace with your actual implementations
 

@@ -28,8 +28,7 @@ import RandomCharacter from "./RandomCharacter";
 import { BITCOIN_RECIPIENTS } from "../constants/bitcoinRecipients";
 import { useNostrWalletStore } from "../hooks/useNostrWalletStore";
 import useSoundSettings from "../hooks/useSoundSettings";
-import selectSound from "../assets/select.mp3";
-import submitActionSound from "../assets/submitaction.mp3";
+import { selectSound, submitActionSound } from "../constants/sounds";
 import { translations } from "../utils/translation";
 import { getGermanCopy } from "../utils/germanCopy";
 import {

@@ -85,8 +85,7 @@ import {
 } from "../data/conversationTopics";
 import useSoundSettings from "../hooks/useSoundSettings";
 import useModalStore from "../hooks/useModalStore";
-import selectSound from "../assets/select.mp3";
-import submitActionSound from "../assets/submitaction.mp3";
+import { selectSound, submitActionSound } from "../constants/sounds";
 import XpProgressHeader from "./XpProgressHeader";
 import { useThemeStore } from "../useThemeStore";
 import { APP_MESSAGE_RADIUS, APP_SQUIRCLE_SHAPE } from "../theme";

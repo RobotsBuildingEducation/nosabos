@@ -58,11 +58,7 @@ import {
   TTS_LANG_TAG,
 } from "../utils/tts";
 import useSoundSettings from "../hooks/useSoundSettings";
-import submitActionSound from "../assets/submitaction.mp3";
-import nextButtonSound from "../assets/nextbutton.mp3";
-import deliciousSound from "../assets/delicious.mp3";
-import clickSound from "../assets/click.mp3";
-import selectSound from "../assets/select.mp3";
+import { submitActionSound, nextButtonSound, deliciousSound, clickSound, selectSound } from "../constants/sounds";
 import RandomCharacter from "./RandomCharacter";
 import VoiceOrb from "./VoiceOrb";
 import XpProgressHeader from "./XpProgressHeader";

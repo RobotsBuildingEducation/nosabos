@@ -94,8 +94,7 @@ import {
   database,
 } from "../firebaseResources/firebaseResources";
 import useSoundSettings from "../hooks/useSoundSettings";
-import selectSound from "../assets/select.mp3";
-import submitActionSound from "../assets/submitaction.mp3";
+import { selectSound, submitActionSound } from "../constants/sounds";
 import { useThemeStore } from "../useThemeStore";
 import {
   APP_ACTION_BAR_RADIUS,
