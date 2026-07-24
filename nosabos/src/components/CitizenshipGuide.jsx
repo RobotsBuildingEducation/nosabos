@@ -72,13 +72,11 @@ import {
   Home,
   MapPin,
   MessageCircle,
-  Moon,
   RotateCcw,
   Route,
   Send,
   ShieldCheck,
   Sparkles,
-  Sun,
   UserRound,
   UsersRound,
 } from "lucide-react";
@@ -109,6 +107,8 @@ import {
 import { SiPatreon } from "react-icons/si";
 import { PiFingerprint } from "react-icons/pi";
 import { CiWarning } from "react-icons/ci";
+import { LuSun } from "react-icons/lu";
+import { RiMoonClearFill } from "react-icons/ri";
 import { WaveBar } from "./WaveBar";
 import {
   nativeDrawerMotionProps,
@@ -8534,7 +8534,13 @@ const ThemeModeToggle = ({ isLightTheme, onToggle, language }) => {
       aria-label={label}
       title={label}
       onClick={onToggle}
-      icon={<Icon as={isLightTheme ? Moon : Sun} boxSize="17px" />}
+      icon={
+        isLightTheme ? (
+          <RiMoonClearFill size={18} />
+        ) : (
+          <LuSun size={18} color="#fffaf0" strokeWidth={2.35} />
+        )
+      }
       size="sm"
       minW="40px"
       h="40px"

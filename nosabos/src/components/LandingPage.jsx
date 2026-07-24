@@ -1240,9 +1240,9 @@ const ThemeModeToggle = ({
       onClick={() => onModeChange(nextMode)}
       icon={
         isDark ? (
-          <RiMoonClearFill size={iconSize} color="#fffaf0" />
+          <LuSun size={iconSize} color="#fffaf0" strokeWidth={2.35} />
         ) : (
-          <LuSun size={iconSize} strokeWidth={2.35} />
+          <RiMoonClearFill size={iconSize} />
         )
       }
       size="sm"

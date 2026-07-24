@@ -426,14 +426,14 @@ const LanguageMenuFixed = ({
           type="button"
           aria-label={`Select language${selected?.label ? `: ${selected.label}` : ""}`}
           size="sm"
-          minW="40px"
-          w="40px"
-          h="40px"
+          minW="32px"
+          w="32px"
+          h="32px"
           p={0}
           lineHeight="0"
           position="relative"
-          rounded="full"
-          style={{ cornerShape: "round" }}
+          borderRadius="12px"
+          style={{ cornerShape: BUTTON_SQUIRCLE_SHAPE }}
           border="1px solid"
           {...topControlProps}
         >
@@ -529,17 +529,20 @@ const ThemeModeToggle = ({ themeMode, onModeChange }) => {
       onClick={() => onModeChange(nextMode)}
       icon={
         isDark ? (
-          <RiMoonClearFill size={18} color="#fffaf0" />
+          <LuSun size={18} color="#fffaf0" strokeWidth={2.35} />
         ) : (
-          <LuSun size={18} strokeWidth={2.35} />
+          <RiMoonClearFill size={18} />
         )
       }
       size="sm"
-      minW="40px"
-      h="40px"
-      rounded="full"
+      minW="32px"
+      w="32px"
+      h="32px"
       border="1px solid"
       {...themeToggleProps}
+      borderRadius="12px"
+      style={{ cornerShape: BUTTON_SQUIRCLE_SHAPE }}
+      boxShadow="none"
     />
   );
 };
@@ -1540,26 +1543,84 @@ export default function LinksPage() {
         pb={{ base: 16, md: 16 }}
       >
         <VStack spacing={6} textAlign="center">
-          {/* Top bar: language menu left, theme toggle right */}
+          {/* Top bar: social links, language, and theme controls */}
           <Box
             w="100%"
             display="flex"
-            justifyContent="space-between"
+            justifyContent="flex-end"
             alignItems="center"
             px={{ base: 3, sm: 4, md: 0 }}
             pt={{ base: 3, md: 1 }}
           >
-            <LanguageMenuFixed
-              language={language}
-              onSelect={setLanguage}
-              playSound={handleSelectSound}
-              translations={translations}
-              isLightTheme={isLightTheme}
-            />
-            <ThemeModeToggle
-              themeMode={themeMode}
-              onModeChange={handleThemeModeChange}
-            />
+            <HStack spacing={{ base: 3, md: 4 }} dir="ltr">
+              <Box
+                aria-label="Instagram"
+                bg="radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%)"
+                borderRadius="12px"
+                style={{ cornerShape: BUTTON_SQUIRCLE_SHAPE }}
+                w="36px"
+                h="36px"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                color="white"
+                cursor="pointer"
+                onClick={() => {
+                  handleSelectSound();
+                  if (!isLocalhost()) {
+                    logEvent(analytics, "links_social_click", {
+                      platform: "instagram",
+                    });
+                  }
+                  window.open(
+                    "https://www.instagram.com/sheilfer",
+                    "_blank",
+                    "noopener,noreferrer",
+                  );
+                }}
+              >
+                <FaInstagram size={24} />
+              </Box>
+              <Box
+                aria-label="LinkedIn"
+                bg="#0A66C2"
+                borderRadius="12px"
+                style={{ cornerShape: BUTTON_SQUIRCLE_SHAPE }}
+                w="36px"
+                h="36px"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                color="white"
+                cursor="pointer"
+                onClick={() => {
+                  handleSelectSound();
+                  if (!isLocalhost()) {
+                    logEvent(analytics, "links_social_click", {
+                      platform: "linkedin",
+                    });
+                  }
+                  window.open(
+                    "https://www.linkedin.com/in/sheilfer",
+                    "_blank",
+                    "noopener,noreferrer",
+                  );
+                }}
+              >
+                <FaLinkedinIn size={18} />
+              </Box>
+              <LanguageMenuFixed
+                language={language}
+                onSelect={setLanguage}
+                playSound={handleSelectSound}
+                translations={translations}
+                isLightTheme={isLightTheme}
+              />
+              <ThemeModeToggle
+                themeMode={themeMode}
+                onModeChange={handleThemeModeChange}
+              />
+            </HStack>
           </Box>
           {/* Profile Picture or Random Character */}
           {profilePicture ? (
@@ -1663,65 +1724,6 @@ export default function LinksPage() {
           ))}
         </VStack>
 
-        {/* Social Media Icons */}
-        <HStack spacing={8} justify="center" mt={16}>
-          <Box
-            aria-label="Instagram"
-            bg="radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%)"
-            borderRadius="12px"
-            style={{ cornerShape: BUTTON_SQUIRCLE_SHAPE }}
-            w="36px"
-            h="36px"
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
-            color="white"
-            cursor="pointer"
-            onClick={() => {
-              handleSelectSound();
-              if (!isLocalhost()) {
-                logEvent(analytics, "links_social_click", {
-                  platform: "instagram",
-                });
-              }
-              window.open(
-                "https://www.instagram.com/sheilfer",
-                "_blank",
-                "noopener,noreferrer",
-              );
-            }}
-          >
-            <FaInstagram size={24} />
-          </Box>
-          <Box
-            aria-label="LinkedIn"
-            bg="#0A66C2"
-            borderRadius="12px"
-            style={{ cornerShape: BUTTON_SQUIRCLE_SHAPE }}
-            w="36px"
-            h="36px"
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
-            color="white"
-            cursor="pointer"
-            onClick={() => {
-              handleSelectSound();
-              if (!isLocalhost()) {
-                logEvent(analytics, "links_social_click", {
-                  platform: "linkedin",
-                });
-              }
-              window.open(
-                "https://www.linkedin.com/in/sheilfer",
-                "_blank",
-                "noopener,noreferrer",
-              );
-            }}
-          >
-            <FaLinkedinIn size={18} />
-          </Box>
-        </HStack>
       </Container>
 
       {/* Robots Building Education Modal */}
