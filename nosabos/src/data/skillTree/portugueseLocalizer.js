@@ -34,6 +34,14 @@ const applySourceCase = (source, value) => {
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const PORTUGUESE_SKILLTREE_EXACT = {
+  [normalizeKey("Idiomatic Range")]: "Repertório idiomático",
+  [normalizeKey("Idiomatic Conversation")]: "Conversação idiomática",
+  [normalizeKey("Idiomatic Interpretation")]: "Interpretação idiomática",
+  [normalizeKey("Effortless Discourse")]: "Discurso fluente",
+  [normalizeKey("Effortless Discourse Quiz")]: "Quiz de discurso fluente",
+  [normalizeKey("Fluency Strategies")]: "Estratégias de fluência",
+  [normalizeKey("Interactive Fluency")]: "Fluência interativa",
+  [normalizeKey("Sustained Fluency")]: "Fluência sustentada",
   [normalizeKey("Learn how to use the app and explore all features")]:
     "Aprenda a usar o aplicativo e explore todos os recursos",
   [normalizeKey("Learn basic introductions")]:

@@ -4841,6 +4841,7 @@ export default function Tutor({
         setPreviewedTutorObjectivesExpanded(false);
         setPreviewedTutorLesson(null);
         setTutorGameLoaderFrame(null);
+        closeTutorPath();
         setTutorGameLaunch({
           phase: "playing",
           lesson: lessonWithReviewContext,
@@ -4859,6 +4860,7 @@ export default function Tutor({
       );
       setPreviewedTutorObjectivesExpanded(false);
       setPreviewedTutorLesson(null);
+      closeTutorPath();
     } catch (error) {
       console.error("Failed to start previewed Tutor lesson:", error);
       if (launchMode === TUTOR_LESSON_LAUNCH_MODE.RPG_GAME) {
@@ -4989,7 +4991,6 @@ export default function Tutor({
       setActiveTutorLevel(unit.cefrLevel);
     }
     writeStoredTutorLessonId(targetLangRef.current, lesson.id);
-    closeTutorPath();
 
     if (currentNpub && !isCompleted) {
       try {

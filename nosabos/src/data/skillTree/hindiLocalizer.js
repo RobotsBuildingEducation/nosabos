@@ -17,6 +17,14 @@ const lowerFirst = (value) => {
 };
 
 const TEXT_TRANSLATIONS = {
+  "idiomatic range": "मुहावरेदार अभिव्यक्ति का विस्तार",
+  "idiomatic conversation": "मुहावरेदार बातचीत",
+  "idiomatic interpretation": "मुहावरों की व्याख्या",
+  "effortless discourse": "सहज और सटीक विमर्श",
+  "effortless discourse quiz": "सहज और सटीक विमर्श क्विज़",
+  "fluency strategies": "प्रवाह की रणनीतियाँ",
+  "interactive fluency": "संवादात्मक प्रवाह",
+  "sustained fluency": "निरंतर प्रवाह",
   "artistic language": "कलात्मक भाषा",
   "apply artistic language skills": "कलात्मक भाषा के कौशल लागू करें",
   "getting started": "शुरुआत",

@@ -145,7 +145,7 @@ import SubscriptionGate from "./components/SubscriptionGate";
 import { useNostrWalletStore } from "./hooks/useNostrWalletStore";
 import { LuKey } from "react-icons/lu";
 import AlphabetBootcamp from "./components/AlphabetBootcamp";
-import TeamsDrawer from "./components/Teams/TeamsDrawer";
+
 import NotesDrawer from "./components/NotesDrawer";
 import RealWorldTasksModal, {
   REAL_WORLD_TASKS_REFRESH_MS,
@@ -6228,7 +6228,6 @@ export default function App({ onBootReady } = {}) {
      RANDOMIZE tab mechanics (no routing)
   ----------------------------------- */
   const RANDOM_POOL = useMemo(
-    // ⬅️ keep JobScript out of this list
     () => ["realtime", "stories", "grammar", "vocabulary", "history"],
     [],
   );
@@ -9247,18 +9246,6 @@ export default function App({ onBootReady } = {}) {
         lang={appLanguage}
         deferBody={!timerModalImmediateBody}
       />
-
-      {/* Teams/global feed modal temporarily hidden — replaced by Real-World Practice tasks.
-      <TeamsDrawer
-        isOpen={teamsOpen}
-        onClose={() => setTeamsOpen(false)}
-        userLanguage={appLanguage}
-        t={t}
-        pendingInviteCount={pendingTeamInviteCount}
-        allowPosts={allowPosts}
-        onAllowPostsChange={handleAllowPostsChange}
-      />
-      */}
 
       <RealWorldTasksModal
         isOpen={realWorldTasksOpen}

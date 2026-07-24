@@ -902,7 +902,7 @@ const LESSON_TITLE_ICONS = {
 
   // C2 - Near-Native Fluency
   "Advanced Expressions": RiQuillPenLine,
-  "Speaking Like a Native": RiVipCrownLine,
+  "Idiomatic Conversation": RiVipCrownLine,
   "Cultural Mastery": RiAwardFill,
   Dialects: RiVoiceprintLine,
   "Accent and Usage": RiSpeakerLine,
@@ -933,9 +933,9 @@ const LESSON_TITLE_ICONS = {
   "Cultural Ambassador": RiEarthLine,
 
   // C2 - Ultimate Mastery
-  "Native-Like Skills": RiMedalFill,
-  "Perfect Fluency": RiSparklingFill,
-  "Complete Mastery": RiTrophyLine,
+  "Fluency Strategies": RiMedalFill,
+  "Interactive Fluency": RiSparklingFill,
+  "Sustained Fluency": RiTrophyLine,
 };
 
 // Get icon based on exact lesson title match

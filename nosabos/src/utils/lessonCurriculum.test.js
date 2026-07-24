@@ -20,6 +20,22 @@ import {
 } from "./lessonCurriculum.js";
 import { getMultiLevelLearningPath } from "../data/skillTreeData.js";
 import {
+  getManualA1AgendaItems,
+  MANUAL_A1_AGENDAS,
+} from "../data/manualA1Agendas.js";
+import {
+  B1_B2_FOUNDATION_FORMS,
+  getManualB1B2AgendaItems,
+  getManualB1B2FoundationFormItems,
+  MANUAL_B1_B2_AGENDAS,
+} from "../data/manualB1B2Agendas.js";
+import {
+  C1_C2_FOUNDATION_FORMS,
+  getManualC1C2AgendaItems,
+  getManualC1C2FoundationFormItems,
+  MANUAL_C1_C2_AGENDAS,
+} from "../data/manualC1C2Agendas.js";
+import {
   getManualPreA1AgendaItems,
   MANUAL_PRE_A1_AGENDAS,
 } from "../data/manualPreA1Agendas.js";
@@ -679,9 +695,14 @@ test("mixed English editor notes are removed from localized grammar objectives",
   }).map((item) => getLocalizedAgendaLabel(item, "zh"));
 
   assert.deepEqual(labels, [
-    "在语境中使用: hablaré, comerás, vivirá",
-    "在语境中使用: tendré, haré, podré, saldré",
-    "在语境中使用: mañana, el año que viene, pronto",
+    "在语境中使用: hablaré / comerás / vivirá",
+    "在语境中使用: tendré",
+    "在语境中使用: haré",
+    "在语境中使用: podré",
+    "在语境中使用: saldré",
+    "在语境中使用: mañana",
+    "在语境中使用: el año que viene",
+    "在语境中使用: pronto",
     "准确使用: é/ás/á",
     "准确使用: ¿qué hora será?",
     "准确使用: 学习将来时的关键词汇",
@@ -692,6 +713,545 @@ test("mixed English editor notes are removed from localized grammar objectives",
     ),
     false,
   );
+});
+
+test("manual A1 review replaces all 28 vague practice and application lessons", () => {
+  assert.equal(Object.keys(MANUAL_A1_AGENDAS).length, 28);
+
+  Object.entries(MANUAL_A1_AGENDAS).forEach(([lessonId, spec]) => {
+    assert.ok(spec.forms.length >= 5, `${lessonId} has too few exact forms`);
+    assert.ok(spec.application?.goal, `${lessonId} has no application goal`);
+    assert.ok(
+      spec.application?.activityBrief,
+      `${lessonId} has no bounded activity`,
+    );
+    assert.ok(
+      spec.application?.evidence,
+      `${lessonId} has no observable evidence`,
+    );
+
+    const items = getManualA1AgendaItems(lessonId);
+    assert.equal(
+      items.filter((item) => getAgendaTargetRole(item) === "goal").length,
+      1,
+      `${lessonId} must end in one bounded application`,
+    );
+    SUPPORT_LANGUAGES.forEach((lang) => {
+      items.forEach((item) => {
+        assert.equal(
+          typeof item.label?.[lang],
+          "string",
+          `${lessonId}/${item.id} has no ${lang} label`,
+        );
+        assert.ok(item.label[lang].trim());
+        if (lang !== "en") {
+          assert.notEqual(
+            item.label[lang],
+            item.label.en,
+            `${lessonId}/${item.id} falls back to English for ${lang}`,
+          );
+        }
+      });
+    });
+  });
+});
+
+test("every core A1 lesson exposes concrete language and a measurable agenda", () => {
+  const units = getMultiLevelLearningPath("es", ["A1"]);
+  const lessons = units.flatMap((unit) =>
+    (unit.lessons || [])
+      .filter(
+        (lesson) =>
+          !lesson.isFinalQuiz && !lesson.isGame && !lesson.tutorPurpose,
+      )
+      .map((lesson) => ({ lesson, unit })),
+  );
+
+  assert.equal(units.length, 14);
+  assert.equal(lessons.length, 42);
+
+  lessons.forEach(({ lesson, unit }) => {
+    const agenda = getLessonAgenda(lesson, { unit, targetLang: "es" });
+    const exactForms = agenda.flatMap((item) => getAgendaTargetForms(item));
+    assert.ok(
+      exactForms.length >= 3,
+      `${lesson.id} exposes only ${exactForms.length} exact forms`,
+    );
+
+    if (MANUAL_A1_AGENDAS[lesson.id]) {
+      assert.ok(
+        exactForms.length >= 5,
+        `${lesson.id} does not build enough language`,
+      );
+      assert.equal(
+        agenda.some((item) =>
+          /^(?:Practice|Demonstrate|Apply .+ skills|Read .+ and discuss)/i.test(
+            getAgendaGoal(item),
+          ),
+        ),
+        false,
+        `${lesson.id} still exposes a vague legacy objective`,
+      );
+    }
+  });
+});
+
+test("A1 appointments and personal information have bounded phrase inventories", () => {
+  const units = getMultiLevelLearningPath("es", ["A1"]);
+  const expectations = {
+    "lesson-a1-7-3": [
+      "¿a qué hora puedes?",
+      "puedo a las...",
+      "no puedo a las...",
+      "¿te va bien...?",
+      "sí, perfecto",
+      "mejor a las...",
+    ],
+    "lesson-a1-18-3": [
+      "¿cómo te llamas?",
+      "¿de dónde eres?",
+      "¿dónde vives?",
+      "¿qué te gusta?",
+      "¿cuándo...?",
+      "¿por qué...?",
+    ],
+  };
+
+  Object.entries(expectations).forEach(([lessonId, expectedForms]) => {
+    const unit = units.find((candidate) =>
+      candidate.lessons?.some((lesson) => lesson.id === lessonId),
+    );
+    const lesson = unit.lessons.find((candidate) => candidate.id === lessonId);
+    const agenda = getLessonAgenda(lesson, { unit, targetLang: "es" });
+    assert.deepEqual(agenda.flatMap(getAgendaTargetForms), expectedForms);
+    assert.equal(
+      agenda.filter((item) => getAgendaTargetRole(item) === "goal").length,
+      1,
+    );
+  });
+});
+
+test("A1 generated reviews inherit the manual lesson repairs", () => {
+  const unit = getMultiLevelLearningPath("es", ["A1"]).find(
+    (candidate) => candidate.id === "unit-a1-7",
+  );
+  const review = unit.lessons.find(
+    (lesson) => lesson.id === "unit-a1-7-skill-builder",
+  );
+  const forms = getLessonAgenda(review, {
+    unit,
+    targetLang: "es",
+  }).flatMap(getAgendaTargetForms);
+
+  assert.equal(forms.includes("¿a qué hora puedes?"), true);
+  assert.equal(forms.includes("mejor a las..."), true);
+  assert.equal(
+    getLessonAgenda(review, { unit, targetLang: "es" }).some((item) =>
+      /Practice '¿qué hora es/i.test(getAgendaGoal(item)),
+    ),
+    false,
+  );
+});
+
+test("manual B1 and B2 review replaces every vague practice and application lesson", () => {
+  const lessonIds = Object.keys(MANUAL_B1_B2_AGENDAS);
+  assert.equal(lessonIds.length, 54);
+  assert.equal(lessonIds.filter((lessonId) => lessonId.includes("-b1-")).length, 30);
+  assert.equal(lessonIds.filter((lessonId) => lessonId.includes("-b2-")).length, 24);
+
+  Object.entries(MANUAL_B1_B2_AGENDAS).forEach(([lessonId, spec]) => {
+    assert.ok(spec.forms.length >= 6, `${lessonId} has too few discourse forms`);
+    assert.ok(spec.application?.goal, `${lessonId} has no application goal`);
+    assert.ok(
+      spec.application?.activityBrief,
+      `${lessonId} has no bounded activity`,
+    );
+    assert.ok(
+      spec.application?.evidence,
+      `${lessonId} has no observable evidence`,
+    );
+
+    const items = getManualB1B2AgendaItems(lessonId);
+    const application = items.at(-1);
+    assert.equal(
+      items.filter((item) => getAgendaTargetRole(item) === "goal").length,
+      1,
+      `${lessonId} must have one integrated outcome`,
+    );
+    SUPPORT_LANGUAGES.forEach((lang) => {
+      items.forEach((item) => {
+        assert.equal(
+          typeof item.label?.[lang],
+          "string",
+          `${lessonId}/${item.id} has no ${lang} label`,
+        );
+        assert.ok(item.label[lang].trim());
+        if (lang !== "en") {
+          assert.notEqual(
+            item.label[lang],
+            item.label.en,
+            `${lessonId}/${item.id} falls back to English for ${lang}`,
+          );
+        }
+      });
+      assert.equal(
+        application.label[lang].includes(spec.forms[0]),
+        true,
+        `${lessonId} ${lang} outcome must retain intentional Spanish target content`,
+      );
+    });
+  });
+});
+
+test("B1 and B2 introductory lessons split oversized bundles into usable targets", () => {
+  const lessonIds = Object.keys(B1_B2_FOUNDATION_FORMS);
+  assert.equal(lessonIds.length, 27);
+  assert.equal(lessonIds.filter((lessonId) => lessonId.includes("-b1-")).length, 15);
+  assert.equal(lessonIds.filter((lessonId) => lessonId.includes("-b2-")).length, 12);
+
+  lessonIds.forEach((lessonId) => {
+    const items = getManualB1B2FoundationFormItems(lessonId);
+    assert.equal(items.length, 8, `${lessonId} must expose eight targets`);
+    items.forEach((item) => {
+      assert.equal(getAgendaTargetRole(item), "form");
+      assert.equal(getAgendaTargetForms(item).length, 1);
+      SUPPORT_LANGUAGES.forEach((lang) => {
+        assert.equal(typeof item.label?.[lang], "string");
+        assert.ok(item.label[lang].trim());
+      });
+    });
+  });
+});
+
+test("every core B1 and B2 lesson has grounded language without vague legacy outcomes", () => {
+  const expected = {
+    B1: { units: 15, lessons: 45, repaired: 30 },
+    B2: { units: 12, lessons: 36, repaired: 24 },
+  };
+
+  Object.entries(expected).forEach(([level, counts]) => {
+    const units = getMultiLevelLearningPath("es", [level]);
+    const lessons = units.flatMap((unit) =>
+      (unit.lessons || [])
+        .filter(
+          (lesson) =>
+            !lesson.isFinalQuiz && !lesson.isGame && !lesson.tutorPurpose,
+        )
+        .map((lesson) => ({ lesson, unit })),
+    );
+
+    assert.equal(units.length, counts.units);
+    assert.equal(lessons.length, counts.lessons);
+    assert.equal(
+      lessons.filter(({ lesson }) => MANUAL_B1_B2_AGENDAS[lesson.id]).length,
+      counts.repaired,
+    );
+
+    lessons.forEach(({ lesson, unit }) => {
+      const agenda = getLessonAgenda(lesson, { unit, targetLang: "es" });
+      const forms = agenda.flatMap(getAgendaTargetForms);
+      assert.ok(forms.length >= 7, `${lesson.id} has too few exact forms`);
+      assert.equal(
+        agenda.some((item) =>
+          /^(?:Practice|Demonstrate|Apply .+ skills|Read .+ and discuss)/i.test(
+            getAgendaGoal(item),
+          ),
+        ),
+        false,
+        `${lesson.id} still exposes a vague legacy outcome`,
+      );
+      if (MANUAL_B1_B2_AGENDAS[lesson.id]) {
+        assert.ok(forms.length >= 6, `${lesson.id} lacks discourse scaffolding`);
+      }
+    });
+  });
+});
+
+test("B1 probability and B2 civic action require evidence-linked discourse", () => {
+  const checks = {
+    "lesson-b1-15-2": [
+      "quizás esté...",
+      "a lo mejor está...",
+      "debe de estar...",
+      "es posible que...",
+      "no creo que...",
+      "probablemente...",
+      "porque...",
+    ],
+    "lesson-b2-10-3": [
+      "propongo que...",
+      "beneficiaría a...",
+      "se podría...",
+      "una preocupación es...",
+      "para responder a eso...",
+      "el primer paso sería...",
+      "los ciudadanos podrían...",
+    ],
+  };
+
+  const units = getMultiLevelLearningPath("es", ["B1", "B2"]);
+  Object.entries(checks).forEach(([lessonId, expectedForms]) => {
+    const unit = units.find((candidate) =>
+      candidate.lessons?.some((lesson) => lesson.id === lessonId),
+    );
+    const lesson = unit.lessons.find((candidate) => candidate.id === lessonId);
+    const agenda = getLessonAgenda(lesson, { unit, targetLang: "es" });
+    assert.deepEqual(agenda.flatMap(getAgendaTargetForms), expectedForms);
+    assert.equal(
+      agenda.filter((item) => getAgendaTargetRole(item) === "goal").length,
+      1,
+    );
+    assert.ok(agenda.at(-1).activityBrief);
+    assert.ok(agenda.at(-1).evidence?.criteria);
+  });
+});
+
+test("B1 and B2 generated reviews inherit manually repaired discourse targets", () => {
+  const units = getMultiLevelLearningPath("es", ["B1", "B2"]);
+  const checks = [
+    ["unit-b1-15", "quizás esté...", "debe de estar..."],
+    ["unit-b2-10", "propongo que...", "una preocupación es..."],
+  ];
+
+  checks.forEach(([unitId, firstForm, secondForm]) => {
+    const unit = units.find((candidate) => candidate.id === unitId);
+    const review = unit.lessons.find(
+      (lesson) => lesson.id === `${unitId}-skill-builder`,
+    );
+    const agenda = getLessonAgenda(review, { unit, targetLang: "es" });
+    const forms = agenda.flatMap(getAgendaTargetForms);
+    assert.equal(forms.includes(firstForm), true);
+    assert.equal(forms.includes(secondForm), true);
+    assert.equal(
+      agenda.some((item) =>
+        /^(?:Practice|Demonstrate|Read .+ and discuss)/i.test(
+          getAgendaGoal(item),
+        ),
+      ),
+      false,
+    );
+  });
+});
+
+test("manual C1 and C2 review replaces every vague practice and application lesson", () => {
+  const lessonIds = Object.keys(MANUAL_C1_C2_AGENDAS);
+  assert.equal(lessonIds.length, 36);
+  assert.equal(
+    lessonIds.filter((lessonId) => lessonId.includes("-c1-")).length,
+    20,
+  );
+  assert.equal(
+    lessonIds.filter((lessonId) => lessonId.includes("-c2-")).length,
+    16,
+  );
+
+  Object.entries(MANUAL_C1_C2_AGENDAS).forEach(([lessonId, spec]) => {
+    assert.ok(spec.forms.length >= 7, `${lessonId} has too few precise forms`);
+    assert.ok(spec.application?.goal, `${lessonId} has no application goal`);
+    assert.ok(
+      spec.application?.activityBrief,
+      `${lessonId} has no bounded activity`,
+    );
+    assert.ok(
+      spec.application?.evidence,
+      `${lessonId} has no observable evidence`,
+    );
+
+    const items = getManualC1C2AgendaItems(lessonId);
+    const application = items.at(-1);
+    assert.equal(
+      items.filter((item) => getAgendaTargetRole(item) === "goal").length,
+      1,
+      `${lessonId} must have one integrated outcome`,
+    );
+    SUPPORT_LANGUAGES.forEach((lang) => {
+      items.forEach((item) => {
+        assert.equal(
+          typeof item.label?.[lang],
+          "string",
+          `${lessonId}/${item.id} has no ${lang} label`,
+        );
+        assert.ok(item.label[lang].trim());
+        if (lang !== "en") {
+          assert.notEqual(
+            item.label[lang],
+            item.label.en,
+            `${lessonId}/${item.id} falls back to English for ${lang}`,
+          );
+        }
+      });
+      assert.equal(
+        application.label[lang].includes(spec.forms[0]),
+        true,
+        `${lessonId} ${lang} outcome must retain intentional Spanish target content`,
+      );
+    });
+  });
+});
+
+test("C1 and C2 introductory lessons expose precise, manageable repertoires", () => {
+  const lessonIds = Object.keys(C1_C2_FOUNDATION_FORMS);
+  assert.equal(lessonIds.length, 18);
+  assert.equal(
+    lessonIds.filter((lessonId) => lessonId.includes("-c1-")).length,
+    10,
+  );
+  assert.equal(
+    lessonIds.filter((lessonId) => lessonId.includes("-c2-")).length,
+    8,
+  );
+
+  lessonIds.forEach((lessonId) => {
+    const items = getManualC1C2FoundationFormItems(lessonId);
+    assert.equal(items.length, 8, `${lessonId} must expose eight targets`);
+    items.forEach((item) => {
+      assert.equal(getAgendaTargetRole(item), "form");
+      assert.equal(getAgendaTargetForms(item).length, 1);
+      SUPPORT_LANGUAGES.forEach((lang) => {
+        assert.equal(typeof item.label?.[lang], "string");
+        assert.ok(item.label[lang].trim());
+      });
+    });
+  });
+});
+
+test("every core C1 and C2 lesson has precise language without vague legacy outcomes", () => {
+  const expected = {
+    C1: { units: 10, lessons: 30, repaired: 20 },
+    C2: { units: 8, lessons: 24, repaired: 16 },
+  };
+
+  Object.entries(expected).forEach(([level, counts]) => {
+    const units = getMultiLevelLearningPath("es", [level]);
+    const lessons = units.flatMap((unit) =>
+      (unit.lessons || [])
+        .filter(
+          (lesson) =>
+            !lesson.isFinalQuiz && !lesson.isGame && !lesson.tutorPurpose,
+        )
+        .map((lesson) => ({ lesson, unit })),
+    );
+
+    assert.equal(units.length, counts.units);
+    assert.equal(lessons.length, counts.lessons);
+    assert.equal(
+      lessons.filter(({ lesson }) => MANUAL_C1_C2_AGENDAS[lesson.id]).length,
+      counts.repaired,
+    );
+
+    lessons.forEach(({ lesson, unit }) => {
+      const agenda = getLessonAgenda(lesson, { unit, targetLang: "es" });
+      const forms = agenda.flatMap(getAgendaTargetForms);
+      assert.ok(forms.length >= 7, `${lesson.id} has too few precise forms`);
+      assert.equal(
+        agenda.some((item) =>
+          /^(?:Practice|Demonstrate|Apply .+ skills|Read .+ and discuss)/i.test(
+            getAgendaGoal(item),
+          ),
+        ),
+        false,
+        `${lesson.id} still exposes a vague legacy outcome`,
+      );
+    });
+  });
+});
+
+test("C1 synthesis and C2 nuance require advanced discourse control", () => {
+  const checks = {
+    "lesson-c1-10-3": [
+      "en síntesis...",
+      "en otras palabras...",
+      "respecto a...",
+      "dicho esto...",
+      "conviene matizar que...",
+      "de ahí que...",
+      "en última instancia...",
+    ],
+    "lesson-c2-6-3": [
+      "no es que...",
+      "dicho sea con reservas...",
+      "sin ánimo de...",
+      "me temo que...",
+      "quizá convendría...",
+      "curiosamente...",
+      "con cierta ironía...",
+    ],
+  };
+
+  const units = getMultiLevelLearningPath("es", ["C1", "C2"]);
+  Object.entries(checks).forEach(([lessonId, expectedForms]) => {
+    const unit = units.find((candidate) =>
+      candidate.lessons?.some((lesson) => lesson.id === lessonId),
+    );
+    const lesson = unit.lessons.find((candidate) => candidate.id === lessonId);
+    const agenda = getLessonAgenda(lesson, { unit, targetLang: "es" });
+    assert.deepEqual(agenda.flatMap(getAgendaTargetForms), expectedForms);
+    assert.equal(
+      agenda.filter((item) => getAgendaTargetRole(item) === "goal").length,
+      1,
+    );
+    assert.ok(agenda.at(-1).activityBrief);
+    assert.ok(agenda.at(-1).evidence?.criteria);
+  });
+});
+
+test("C1 and C2 generated reviews inherit manually repaired advanced targets", () => {
+  const units = getMultiLevelLearningPath("es", ["C1", "C2"]);
+  const checks = [
+    ["unit-c1-10", "conviene matizar que...", "de ahí que..."],
+    ["unit-c2-6", "no es que...", "con cierta ironía..."],
+  ];
+
+  checks.forEach(([unitId, firstForm, secondForm]) => {
+    const unit = units.find((candidate) => candidate.id === unitId);
+    const review = unit.lessons.find(
+      (lesson) => lesson.id === `${unitId}-skill-builder`,
+    );
+    const agenda = getLessonAgenda(review, { unit, targetLang: "es" });
+    const forms = agenda.flatMap(getAgendaTargetForms);
+    assert.equal(forms.includes(firstForm), true);
+    assert.equal(forms.includes(secondForm), true);
+    assert.equal(
+      agenda.some((item) =>
+        /^(?:Practice|Demonstrate|Read .+ and discuss)/i.test(
+          getAgendaGoal(item),
+        ),
+      ),
+      false,
+    );
+  });
+});
+
+test("C2 fluency titles describe functional control without native-speaker framing", () => {
+  const units = getMultiLevelLearningPath("es", ["C2"]);
+  const renamedIds = [
+    "unit-c2-1",
+    "lesson-c2-1-2",
+    "lesson-c2-1-3",
+    "unit-c2-8",
+    "lesson-c2-8-1",
+    "lesson-c2-8-2",
+    "lesson-c2-8-3",
+    "lesson-c2-8-quiz",
+  ];
+  const entries = units.flatMap((unit) => [
+    unit,
+    ...(unit.lessons || []),
+  ]);
+
+  renamedIds.forEach((id) => {
+    const entry = entries.find((candidate) => candidate.id === id);
+    assert.ok(entry, `${id} is missing`);
+    SUPPORT_LANGUAGES.forEach((lang) => {
+      assert.equal(typeof entry.title?.[lang], "string");
+      assert.ok(entry.title[lang].trim(), `${id} has no ${lang} title`);
+    });
+    assert.doesNotMatch(
+      entry.title.en,
+      /native|perfect|complete mastery/i,
+      `${id} retains native-speaker framing`,
+    );
+  });
 });
 
 test("Meeting Someone New names the exact language in its four-turn exchange", () => {

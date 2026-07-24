@@ -14,6 +14,14 @@ const normalizeKey = (value) =>
     .toLowerCase();
 
 const DIRECT_TRANSLATIONS = {
+  "idiomatic range": "慣用表現の運用範囲",
+  "idiomatic conversation": "慣用表現を使った会話",
+  "idiomatic interpretation": "慣用表現の解釈",
+  "effortless discourse": "自然で精密な談話",
+  "effortless discourse quiz": "自然で精密な談話クイズ",
+  "fluency strategies": "流暢さを支える方略",
+  "interactive fluency": "対話での流暢さ",
+  "sustained fluency": "持続的な流暢さ",
   "getting started": "はじめに",
   "first words": "最初の単語",
   "people & family": "人と家族",

@@ -13,6 +13,14 @@ const normalizeKey = (value) =>
     .toLowerCase();
 
 const TEXT_TRANSLATIONS = {
+  "idiomatic range": "ثراء التعبيرات الاصطلاحية",
+  "idiomatic conversation": "محادثة بالتعبيرات الاصطلاحية",
+  "idiomatic interpretation": "تفسير التعبيرات الاصطلاحية",
+  "effortless discourse": "خطاب سلس ودقيق",
+  "effortless discourse quiz": "اختبار الخطاب السلس والدقيق",
+  "fluency strategies": "استراتيجيات الطلاقة",
+  "interactive fluency": "الطلاقة التفاعلية",
+  "sustained fluency": "الطلاقة المستمرة",
   "getting started": "البداية",
   "first words": "أول كلمات",
   "people & family": "الناس والعيلة",

@@ -9,6 +9,14 @@ const normalizeKey = (value) =>
     .toLowerCase();
 
 const TEXT_TRANSLATIONS = {
+  "idiomatic range": "习语运用范围",
+  "idiomatic conversation": "习语会话",
+  "idiomatic interpretation": "习语解读",
+  "effortless discourse": "自然精准的表达",
+  "effortless discourse quiz": "自然精准表达测验",
+  "fluency strategies": "流利表达策略",
+  "interactive fluency": "互动流利度",
+  "sustained fluency": "持续表达能力",
   "getting started": "开始使用",
   "learn how to use the app and explore all features":
     "学习如何使用应用并探索所有功能",

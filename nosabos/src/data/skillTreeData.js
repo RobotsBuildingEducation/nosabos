@@ -10829,8 +10829,8 @@ const baseLearningPath = withLocalizedSkillTreeText({
     {
       id: "unit-c2-1",
       title: {
-        en: "Native Idioms",
-        es: "Modismos Nativos",
+        en: "Idiomatic Range",
+        es: "Dominio Idiomático",
       },
       description: {
         en: "Advanced idioms",
@@ -10875,8 +10875,8 @@ const baseLearningPath = withLocalizedSkillTreeText({
         {
           id: "lesson-c2-1-2",
           title: {
-            en: "Speaking Like a Native",
-            es: "Hablando Como Nativo",
+            en: "Idiomatic Conversation",
+            es: "Conversación Idiomática",
           },
           description: {
             en: "Practice native idioms in conversation",
@@ -10903,8 +10903,8 @@ const baseLearningPath = withLocalizedSkillTreeText({
         {
           id: "lesson-c2-1-3",
           title: {
-            en: "Cultural Mastery",
-            es: "Maestría Cultural",
+            en: "Idiomatic Interpretation",
+            es: "Interpretación Idiomática",
           },
           description: {
             en: "Apply native idioms skills",
@@ -11827,8 +11827,8 @@ const baseLearningPath = withLocalizedSkillTreeText({
     {
       id: "unit-c2-8",
       title: {
-        en: "Near-Native Fluency",
-        es: "Fluidez Casi Nativa",
+        en: "Effortless Discourse",
+        es: "Discurso Espontáneo y Preciso",
       },
       description: {
         en: "Native-like skills",
@@ -11840,8 +11840,8 @@ const baseLearningPath = withLocalizedSkillTreeText({
         {
           id: "lesson-c2-8-1",
           title: {
-            en: "Native-Like Skills",
-            es: "Habilidades Nativas",
+            en: "Fluency Strategies",
+            es: "Estrategias de Fluidez",
           },
           description: {
             en: "Learn key vocabulary for near-native fluency",
@@ -11872,8 +11872,8 @@ const baseLearningPath = withLocalizedSkillTreeText({
         {
           id: "lesson-c2-8-2",
           title: {
-            en: "Perfect Fluency",
-            es: "Fluidez Perfecta",
+            en: "Interactive Fluency",
+            es: "Fluidez Interactiva",
           },
           description: {
             en: "Practice near-native fluency in conversation",
@@ -11898,8 +11898,8 @@ const baseLearningPath = withLocalizedSkillTreeText({
         {
           id: "lesson-c2-8-3",
           title: {
-            en: "Complete Mastery",
-            es: "Maestría Completa",
+            en: "Sustained Fluency",
+            es: "Fluidez Sostenida",
           },
           description: {
             en: "Apply near-native fluency skills",
@@ -11924,8 +11924,8 @@ const baseLearningPath = withLocalizedSkillTreeText({
         {
           id: "lesson-c2-8-quiz",
           title: {
-            en: "Near-Native Fluency Quiz",
-            es: "Prueba de Fluidez Casi Nativa",
+            en: "Effortless Discourse Quiz",
+            es: "Prueba de Discurso Espontáneo y Preciso",
           },
           description: {
             en: "Test your knowledge of near-native fluency",

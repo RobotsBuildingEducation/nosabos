@@ -1,3 +1,12 @@
+import { getManualA1AgendaItems } from "../data/manualA1Agendas.js";
+import {
+  getManualB1B2AgendaItems,
+  getManualB1B2FoundationFormItems,
+} from "../data/manualB1B2Agendas.js";
+import {
+  getManualC1C2AgendaItems,
+  getManualC1C2FoundationFormItems,
+} from "../data/manualC1C2Agendas.js";
 import { getManualPreA1AgendaItems } from "../data/manualPreA1Agendas.js";
 
 const INVALID_OBJECTIVE_LABELS = new Set([
@@ -267,6 +276,24 @@ const getDisplayText = (value, lang = "en") => {
   return cleanText(
     value[lang] || value.en || value.es || Object.values(value).find(Boolean),
   );
+};
+
+const getManualSpanishAgendaItems = (lesson, options) => {
+  const preA1Items = getManualPreA1AgendaItems(lesson, options);
+  if (preA1Items.length) return preA1Items;
+  const a1Items = getManualA1AgendaItems(lesson, options);
+  if (a1Items.length) return a1Items;
+  const b1B2Items = getManualB1B2AgendaItems(lesson, options);
+  return b1B2Items.length
+    ? b1B2Items
+    : getManualC1C2AgendaItems(lesson, options);
+};
+
+const getManualSpanishFoundationFormItems = (lesson, options) => {
+  const b1B2Items = getManualB1B2FoundationFormItems(lesson, options);
+  return b1B2Items.length
+    ? b1B2Items
+    : getManualC1C2FoundationFormItems(lesson, options);
 };
 
 const uniqueText = (values = []) => {
@@ -817,7 +844,7 @@ export function getLessonAgenda(
     .toLowerCase()
     .split(/[-_]/)[0];
   const directManualItems =
-    normalizedTarget === "es" ? getManualPreA1AgendaItems(lesson) : [];
+    normalizedTarget === "es" ? getManualSpanishAgendaItems(lesson) : [];
   if (directManualItems.length) {
     return directManualItems
       .map(normalizeAgendaItemSemantics)
@@ -838,19 +865,55 @@ export function getLessonAgenda(
       ? buildLessonAgenda(lesson, { unit }).items
       : [];
 
+  const directFoundationForms =
+    normalizedTarget === "es"
+      ? getManualSpanishFoundationFormItems(lesson)
+      : [];
+  if (directFoundationForms.length) {
+    sourceItems = [
+      ...directFoundationForms,
+      ...sourceItems.filter((item) => getAgendaTargetRole(item) !== "form"),
+    ];
+  }
+
   // Generated Skill Builders, Integrated Practice lessons, and Game Reviews
-  // retain sourceLessonId on every inherited item. For Spanish Pre-A1, replace
-  // each weak source lesson's old prose objectives with the same hand-authored
-  // material used by its core lesson, while preserving strong source lessons.
+  // retain sourceLessonId on every inherited item. For manually reviewed
+  // Spanish lessons, replace each weak source lesson's old prose objectives
+  // with the same hand-authored material used by its core lesson, while
+  // preserving strong source lessons.
   if (normalizedTarget === "es" && sourceItems.some((item) => item.sourceLessonId)) {
     const replacedSourceIds = new Set();
+    const expandedFoundationIds = new Set();
     sourceItems = sourceItems.flatMap((item) => {
       const sourceLessonId = item.sourceLessonId;
       if (!sourceLessonId) return [item];
-      const manualItems = getManualPreA1AgendaItems(sourceLessonId, {
+      const manualItems = getManualSpanishAgendaItems(sourceLessonId, {
         modes: Array.isArray(item.modes) ? item.modes : lesson.modes,
       });
-      if (!manualItems.length) return [item];
+      if (!manualItems.length) {
+        const foundationItems = getManualSpanishFoundationFormItems(
+          sourceLessonId,
+          {
+            modes: Array.isArray(item.modes) ? item.modes : ["vocabulary"],
+          },
+        );
+        if (
+          !foundationItems.length ||
+          getAgendaTargetRole(item) !== "form"
+        ) {
+          return [item];
+        }
+        if (expandedFoundationIds.has(sourceLessonId)) return [];
+        expandedFoundationIds.add(sourceLessonId);
+        return foundationItems.map((foundationItem) => ({
+          ...foundationItem,
+          id: `review-${sourceLessonId}-${foundationItem.id}`,
+          sourceLessonId,
+          sourceAgendaItemId: foundationItem.id,
+          sourceModes: foundationItem.modes,
+          source: "unit-review",
+        }));
+      }
       if (replacedSourceIds.has(sourceLessonId)) return [];
       replacedSourceIds.add(sourceLessonId);
       return manualItems.map((manualItem) => ({

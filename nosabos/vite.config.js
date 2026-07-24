@@ -45,12 +45,12 @@ export default defineConfig({
         enabled: false,
       },
     }),
-    // visualizer({
-    //   filename: "dist/stats.html",
-    //   open: true,
-    //   template: "treemap",
-    //   gzipSize: true,
-    //   brotliSize: true,
-    // }),
+    visualizer({
+      filename: "stats.html",
+      open: true,
+      template: "treemap",
+      gzipSize: true,
+      brotliSize: true,
+    }),
   ],
 });

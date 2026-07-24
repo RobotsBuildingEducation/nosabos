@@ -22,6 +22,14 @@ const lowerFirst = (value) => {
 };
 
 const TEXT_TRANSLATIONS = {
+  "idiomatic range": "Répertoire idiomatique",
+  "idiomatic conversation": "Conversation idiomatique",
+  "idiomatic interpretation": "Interprétation idiomatique",
+  "effortless discourse": "Discours fluide",
+  "effortless discourse quiz": "Quiz sur le discours fluide",
+  "fluency strategies": "Stratégies d'aisance",
+  "interactive fluency": "Aisance interactive",
+  "sustained fluency": "Aisance soutenue",
   "getting started": "Pour commencer",
   "first words": "Premiers mots",
   "basic greetings and farewells": "Salutations et formules de base",

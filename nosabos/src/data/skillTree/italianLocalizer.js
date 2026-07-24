@@ -23,6 +23,14 @@ const capitalizeFirst = (value) => {
 };
 
 const TEXT_TRANSLATIONS = {
+  "idiomatic range": "Repertorio idiomatico",
+  "idiomatic conversation": "Conversazione idiomatica",
+  "idiomatic interpretation": "Interpretazione idiomatica",
+  "effortless discourse": "Discorso fluido",
+  "effortless discourse quiz": "Quiz sul discorso fluido",
+  "fluency strategies": "Strategie di fluidità",
+  "interactive fluency": "Fluidità interattiva",
+  "sustained fluency": "Fluidità sostenuta",
   "100 must-know words and phrases to start fast":
     "100 parole e frasi indispensabili per iniziare rapidamente",
   "20 everyday verbs and short requests to get things done":
