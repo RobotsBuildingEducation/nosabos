@@ -10,7 +10,7 @@ import { CheckCircleIcon } from "@chakra-ui/icons";
 
 import { WaveBar } from "./WaveBar";
 import useSoundSettings from "../hooks/useSoundSettings";
-import selectSound from "../assets/select.mp3";
+import { selectSound } from "../constants/sounds";
 import {
   DAILY_PLATE_BONUS_XP,
   getDailyPlateSnapshot,

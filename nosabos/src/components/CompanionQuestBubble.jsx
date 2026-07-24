@@ -9,7 +9,7 @@
 import React, { useLayoutEffect, useRef, useState } from "react";
 import { Box, Button, Text } from "@chakra-ui/react";
 import useSoundSettings from "../hooks/useSoundSettings";
-import submitActionSound from "../assets/submitaction.mp3";
+import { submitActionSound } from "../constants/sounds";
 
 // Tiny deterministic PRNG (Lehmer) so each message gets a stable hand-drawn
 // wobble instead of re-jittering every render.

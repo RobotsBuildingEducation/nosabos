@@ -38,8 +38,7 @@ import DailyGoalPetPanel from "./DailyGoalPetPanel.jsx";
 import useSoundSettings from "../hooks/useSoundSettings";
 import useEscapeToClose from "../hooks/useEscapeToClose";
 import useXpHistoryYear from "../hooks/useXpHistoryYear";
-import selectSound from "../assets/select.mp3";
-import submitActionSound from "../assets/submitaction.mp3";
+import { selectSound, submitActionSound } from "../constants/sounds";
 import {
   DEFAULT_SUPPORT_LANGUAGE,
   getLanguageDirection,

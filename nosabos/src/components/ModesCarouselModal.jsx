@@ -32,8 +32,7 @@ import {
 } from "../utils/modalMotion";
 import { plateUiCopy } from "../utils/dailyPlateCopy";
 import useSoundSettings from "../hooks/useSoundSettings";
-import selectSound from "../assets/select.mp3";
-import submitActionSound from "../assets/submitaction.mp3";
+import { selectSound, submitActionSound } from "../constants/sounds";
 
 const MotionBox = motion(Box);
 

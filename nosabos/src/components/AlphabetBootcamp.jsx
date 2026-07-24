@@ -106,9 +106,7 @@ import {
 } from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
 import useSoundSettings from "../hooks/useSoundSettings";
-import selectSound from "../assets/select.mp3";
-import submitActionSound from "../assets/submitaction.mp3";
-import nextButtonSound from "../assets/nextbutton.mp3";
+import { selectSound, submitActionSound, nextButtonSound } from "../constants/sounds";
 import VoiceOrb from "./VoiceOrb";
 import XpProgressHeader from "./XpProgressHeader";
 import RandomCharacter from "./RandomCharacter";

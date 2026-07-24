@@ -14,9 +14,7 @@ import ReactMarkdown from "react-markdown";
 import { WaveBar } from "./WaveBar";
 import RandomCharacter from "./RandomCharacter";
 import useSoundSettings from "../hooks/useSoundSettings";
-import deliciousSound from "../assets/delicious.mp3";
-import clickSound from "../assets/click.mp3";
-import sparkleSound from "../assets/sparkle.mp3";
+import { deliciousSound, clickSound, sparkleSound } from "../constants/sounds";
 import VoiceOrb from "./VoiceOrb";
 import {
   getQuestionFeedbackPanelProps,

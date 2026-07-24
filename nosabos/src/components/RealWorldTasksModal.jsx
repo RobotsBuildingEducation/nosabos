@@ -33,8 +33,7 @@ import { useThemeStore } from "../useThemeStore";
 import { WaveBar } from "./WaveBar";
 import VoiceOrb from "./VoiceOrb";
 import useSoundSettings from "../hooks/useSoundSettings";
-import selectSound from "../assets/select.mp3";
-import sparkleSound from "../assets/sparkle.mp3";
+import { selectSound, sparkleSound } from "../constants/sounds";
 import {
   DEFAULT_SUPPORT_LANGUAGE,
   normalizeSupportLanguage,

@@ -27,8 +27,7 @@ import { FiClock } from "react-icons/fi";
 import useSoundSettings from "../hooks/useSoundSettings";
 import useEscapeToClose from "../hooks/useEscapeToClose";
 import { useThemeStore } from "../useThemeStore";
-import selectSound from "../assets/select.mp3";
-import submitActionSound from "../assets/submitaction.mp3";
+import { selectSound, submitActionSound } from "../constants/sounds";
 import {
   DEFAULT_SUPPORT_LANGUAGE,
   getLanguageDirection,

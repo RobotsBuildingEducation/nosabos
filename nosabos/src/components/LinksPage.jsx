@@ -40,8 +40,7 @@ import { FaKey, FaInstagram, FaLinkedinIn } from "react-icons/fa";
 import { LuSun } from "react-icons/lu";
 import { RiMoonClearFill } from "react-icons/ri";
 import useSoundSettings from "../hooks/useSoundSettings";
-import selectSound from "../assets/select.mp3";
-import submitActionSound from "../assets/submitaction.mp3";
+import { selectSound, submitActionSound } from "../constants/sounds";
 
 import { RoleCanvas } from "./RoleCanvas/RoleCanvas";
 import VoiceOrb from "./VoiceOrb";

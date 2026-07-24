@@ -57,10 +57,7 @@ import {
   SOFT_STOP_BUTTON_GLOW,
   SOFT_STOP_BUTTON_HOVER_BG,
 } from "../utils/softStopButton";
-import submitActionSound from "../assets/submitaction.mp3";
-import deliciousSound from "../assets/delicious.mp3";
-import selectSound from "../assets/select.mp3";
-import nextButtonSound from "../assets/nextbutton.mp3";
+import { submitActionSound, deliciousSound, selectSound, nextButtonSound } from "../constants/sounds";
 import RandomCharacter from "./RandomCharacter";
 import VoiceOrb from "./VoiceOrb";
 import { useThemeStore } from "../useThemeStore";
