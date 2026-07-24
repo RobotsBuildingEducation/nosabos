@@ -7,7 +7,7 @@ import React, {
 } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { FaAddressCard } from "react-icons/fa";
+import { FaAddressCard, FaInstagram } from "react-icons/fa";
 import { HiOutlineDocumentCheck } from "react-icons/hi2";
 
 import {
@@ -16,10 +16,15 @@ import {
   AccordionIcon,
   AccordionItem,
   AccordionPanel,
+  Alert,
+  AlertDescription,
+  AlertIcon,
+  AlertTitle,
   Badge,
   Box,
   Button,
   Checkbox,
+  CloseButton,
   Container,
   Divider,
   Drawer,
@@ -56,7 +61,6 @@ import {
 } from "@chakra-ui/react";
 import {
   AlertTriangle,
-  ArrowLeft,
   BadgeCheck,
   Check,
   ChevronDown,
@@ -95,8 +99,16 @@ import useSoundSettings from "../hooks/useSoundSettings";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
 import { useThemeStore } from "../useThemeStore";
+import {
+  APP_ACTION_BAR_RADIUS,
+  APP_BUTTON_RADIUS,
+  APP_DAILY_QUEST_RADIUS,
+  APP_MESSAGE_RADIUS,
+  APP_SQUIRCLE_SHAPE,
+} from "../theme";
 import { SiPatreon } from "react-icons/si";
 import { PiFingerprint } from "react-icons/pi";
+import { CiWarning } from "react-icons/ci";
 import { WaveBar } from "./WaveBar";
 import {
   nativeDrawerMotionProps,
@@ -159,10 +171,34 @@ const APP_BORDER_STRONG = "var(--app-border-strong)";
 const APP_TEXT_PRIMARY = "var(--app-text-primary)";
 const APP_TEXT_MUTED = "var(--app-text-muted)";
 const APP_SHADOW = "var(--app-shadow-soft)";
+const SHEILFER_INSTAGRAM_URL = "https://www.instagram.com/sheilfer";
+const CITIZENSHIP_SQUIRCLE_STYLE = {
+  cornerShape: APP_SQUIRCLE_SHAPE,
+};
+const CITIZENSHIP_CARD_SQUIRCLE_PROPS = {
+  borderRadius: APP_ACTION_BAR_RADIUS,
+  style: CITIZENSHIP_SQUIRCLE_STYLE,
+};
+const CITIZENSHIP_INSET_SQUIRCLE_PROPS = {
+  borderRadius: APP_DAILY_QUEST_RADIUS,
+  style: CITIZENSHIP_SQUIRCLE_STYLE,
+};
+const CITIZENSHIP_CONTROL_SQUIRCLE_PROPS = {
+  borderRadius: APP_BUTTON_RADIUS,
+  style: CITIZENSHIP_SQUIRCLE_STYLE,
+};
+const CITIZENSHIP_MESSAGE_SQUIRCLE_PROPS = {
+  borderRadius: APP_MESSAGE_RADIUS,
+  style: CITIZENSHIP_SQUIRCLE_STYLE,
+};
+const CITIZENSHIP_ICON_SQUIRCLE_PROPS = {
+  borderRadius: "16px",
+  style: CITIZENSHIP_SQUIRCLE_STYLE,
+};
 const CITIZENSHIP_TEAL_BUTTON_PROPS = {
   bg: "#0f766e",
   color: "white",
-  borderRadius: "8px",
+  ...CITIZENSHIP_CONTROL_SQUIRCLE_PROPS,
   boxShadow: "0px 4px 0px #0b5f58",
   transform: "translateY(0)",
   _hover: {
@@ -526,7 +562,6 @@ const getInitialCitizenshipState = () => {
     checklistProgress: progress?.checklistProgress || {},
     assistantChat: progress?.assistantChat || createEmptyAssistantChat(),
     showIntro: !onboarded && !progress,
-    showBenefits: false,
     showPrimer: false,
   };
 };
@@ -6930,10 +6965,6 @@ DUAL_CITIZENSHIP_BENEFITS.de = {
   backCta: "Zurück zu den Vorteilen",
 };
 
-const getDualCitizenshipBenefits = (language) =>
-  DUAL_CITIZENSHIP_BENEFITS[normalizeSupportLanguage(language)] ||
-  DUAL_CITIZENSHIP_BENEFITS.en;
-
 const PAID_HELP_POSTS = {
   en: {
     title: "How paid help adds value",
@@ -6944,8 +6975,6 @@ const PAID_HELP_POSTS = {
       "If you were born in the U.S. to a Mexican parent, the official Mexican birth registration process can often be free or very low cost through a Mexican consulate.",
       "Paid help is most valuable when it turns uncertainty into a clear plan: checking records, spotting mismatches, and fixing blockers before they cost you time.",
     ],
-    priceFooter:
-      "Prices vary by provider, consulate, and case complexity. Always verify current fees before paying.",
     priceComparison: [
       {
         title: "Official DIY route",
@@ -7054,8 +7083,6 @@ const PAID_HELP_POSTS = {
       "Si naciste en EE. UU. de padre o madre mexicana, el registro mexicano de nacimiento suele ser gratis o de muy bajo costo en un consulado mexicano.",
       "La ayuda pagada aporta más valor cuando convierte la incertidumbre en un plan claro: revisar actas, detectar diferencias y corregir bloqueos antes de que te cuesten tiempo.",
     ],
-    priceFooter:
-      "Los precios varían por proveedor, consulado y complejidad del caso. Verifica tarifas actuales antes de pagar.",
     priceComparison: [
       {
         title: "Ruta oficial por tu cuenta",
@@ -7164,8 +7191,6 @@ const PAID_HELP_POSTS = {
       "Se você nasceu nos EUA com pai ou mãe mexicana, o registro mexicano de nascimento muitas vezes pode ser gratuito ou de baixo custo em um consulado mexicano.",
       "A ajuda paga traz mais valor quando transforma incerteza em um plano claro: revisar registros, encontrar divergências e corrigir bloqueios antes que custem tempo.",
     ],
-    priceFooter:
-      "Preços variam por provedor, consulado e complexidade do caso. Verifique as taxas atuais antes de pagar.",
     priceComparison: [
       {
         title: "Rota oficial por conta própria",
@@ -7274,8 +7299,6 @@ const PAID_HELP_POSTS = {
       "Se sei nato/a negli Stati Uniti da un genitore messicano, la registrazione messicana della nascita può spesso essere gratuita o a basso costo tramite un consolato messicano.",
       "L'aiuto pagato porta più valore quando trasforma l'incertezza in un piano chiaro: controllare i registri, trovare differenze e correggere blocchi prima che facciano perdere tempo.",
     ],
-    priceFooter:
-      "I prezzi variano per fornitore, consolato e complessità del caso. Verifica sempre le tariffe attuali prima di pagare.",
     priceComparison: [
       {
         title: "Percorso ufficiale fai-da-te",
@@ -7384,8 +7407,6 @@ const PAID_HELP_POSTS = {
       "Si vous êtes né/e aux États-Unis d'un parent mexicain, l'enregistrement mexicain de naissance peut souvent être gratuit ou peu coûteux via un consulat mexicain.",
       "L'aide payante apporte le plus de valeur lorsqu'elle transforme l'incertitude en plan clair: vérifier les actes, repérer les écarts et corriger les blocages avant qu'ils ne coûtent du temps.",
     ],
-    priceFooter:
-      "Les prix varient selon le prestataire, le consulat et la complexité du dossier. Vérifiez toujours les frais actuels avant de payer.",
     priceComparison: [
       {
         title: "Voie officielle par soi-même",
@@ -7494,8 +7515,6 @@ const PAID_HELP_POSTS = {
       "米国生まれで親の一方がメキシコ人の場合、メキシコ領事館での出生登録は無料または低額で済むことがあります。",
       "有料支援の価値が最も出るのは、不安を明確な計画に変えられるときです。記録を確認し、不一致を見つけ、時間を失う前に障害を直します。",
     ],
-    priceFooter:
-      "料金は業者、領事館、案件の複雑さで変わります。支払う前に最新料金を確認してください。",
     priceComparison: [
       {
         title: "公式の自分で行うルート",
@@ -7604,8 +7623,6 @@ const PAID_HELP_POSTS = {
       "अगर आपका जन्म अमेरिका में मैक्सिकन माता-पिता से हुआ है, तो मैक्सिकन वाणिज्य दूतावास के ज़रिए जन्म पंजीकरण अक्सर मुफ्त या बहुत कम खर्च में हो सकता है।",
       "भुगतान वाली मदद सबसे अधिक मूल्य तब देती है जब वह अनिश्चितता को साफ योजना में बदलती है: रिकॉर्ड जांचना, अंतर पकड़ना और समय गंवाने से पहले रुकावटें ठीक करना।",
     ],
-    priceFooter:
-      "कीमतें सेवा प्रदाता, वाणिज्य दूतावास और मामले की जटिलता पर निर्भर करती हैं। भुगतान से पहले मौजूदा शुल्क जरूर जांचें।",
     priceComparison: [
       {
         title: "आधिकारिक खुद करने वाला मार्ग",
@@ -7714,8 +7731,6 @@ const PAID_HELP_POSTS = {
       "إذا وُلدت في الولايات المتحدة لأب أو أم مكسيكية، فقد يكون تسجيل الميلاد المكسيكي عبر القنصلية مجانيا أو منخفض التكلفة.",
       "تقدم المساعدة المدفوعة أكبر قيمة عندما تحول الغموض إلى خطة واضحة: مراجعة السجلات، كشف الاختلافات، وحل العوائق قبل أن تكلفك الوقت.",
     ],
-    priceFooter:
-      "تختلف الأسعار حسب المزود والقنصلية وتعقيد الحالة. تحقق دائما من الرسوم الحالية قبل الدفع.",
     priceComparison: [
       {
         title: "المسار الرسمي بنفسك",
@@ -7824,8 +7839,6 @@ const PAID_HELP_POSTS = {
       "如果你出生在美国，且父母一方是墨西哥人，通过墨西哥领事馆办理墨西哥出生登记通常可以免费或低成本完成。",
       "当付费帮助能把不确定性变成清晰计划时，它最有价值：审核记录、发现不一致，并在浪费时间之前解决障碍。",
     ],
-    priceFooter:
-      "价格会因服务商、领事馆和案件复杂度而不同。付款前请务必确认最新费用。",
     priceComparison: [
       {
         title: "官方自办路线",
@@ -7936,8 +7949,6 @@ PAID_HELP_POSTS.de = {
     "Wenn du in den USA geboren wurdest und einen mexikanischen Elternteil hast, ist die offizielle mexikanische Geburtsregistrierung über ein mexikanisches Konsulat oft kostenlos oder sehr günstig.",
     "Bezahlte Hilfe bringt den größten Mehrwert, wenn sie Unsicherheit in einen klaren Plan verwandelt: Unterlagen prüfen, Abweichungen finden und Blocker lösen, bevor sie Zeit kosten.",
   ],
-  priceFooter:
-    "Preise variieren je nach Anbieter, Konsulat und Komplexität. Prüfe aktuelle Gebühren immer vor der Zahlung.",
   priceComparison: [
     {
       title: "Offizieller Weg in Eigenregie",
@@ -8051,7 +8062,7 @@ const OptionButton = ({ option, selected, onClick }) => (
     h="auto"
     whiteSpace="normal"
     textAlign="start"
-    borderRadius="8px"
+    {...CITIZENSHIP_CONTROL_SQUIRCLE_PROPS}
     px={3}
     py={2}
     borderColor={selected ? option.accent || "#0f766e" : "var(--app-border)"}
@@ -8223,6 +8234,7 @@ const TextField = ({ label, value, onChange, placeholder, helper }) => (
       </Text>
     ) : null}
     <Input
+      {...CITIZENSHIP_INSET_SQUIRCLE_PROPS}
       value={value}
       onChange={(event) => onChange(event.target.value)}
       placeholder={placeholder}
@@ -8443,6 +8455,7 @@ const LanguageMenuFixed = ({
           </Box>
         </MenuButton>
         <MenuList
+          {...CITIZENSHIP_INSET_SQUIRCLE_PROPS}
           dir={menuDirection}
           bg={APP_SURFACE_ELEVATED}
           borderColor={APP_BORDER}
@@ -8479,6 +8492,7 @@ const LanguageMenuFixed = ({
           >
             {langOptions.map((option) => (
               <MenuItemOption
+                {...CITIZENSHIP_CONTROL_SQUIRCLE_PROPS}
                 key={option.value}
                 value={option.value}
                 bg="transparent"
@@ -8557,21 +8571,21 @@ const CitizenshipIntro = ({
 
   return (
     <Box
+      {...CITIZENSHIP_CARD_SQUIRCLE_PROPS}
       border="1px solid"
       borderColor="var(--app-border)"
-      borderRadius="8px"
       bg="var(--app-surface)"
       p={{ base: 5, md: 8 }}
       textAlign="start"
     >
       <Stack spacing={5}>
         <Box
+          {...CITIZENSHIP_ICON_SQUIRCLE_PROPS}
           display="inline-flex"
           alignItems="center"
           justifyContent="center"
           w="44px"
           h="44px"
-          borderRadius="8px"
           bg="rgba(8, 145, 178, 0.14)"
           color="#0891b2"
         >
@@ -8598,9 +8612,9 @@ const CitizenshipIntro = ({
         </Box>
 
         <Box
+          {...CITIZENSHIP_INSET_SQUIRCLE_PROPS}
           border="1px solid"
           borderColor="var(--app-border)"
-          borderRadius="8px"
           bg="var(--app-surface-elevated)"
           p={4}
         >
@@ -8628,9 +8642,9 @@ const CitizenshipIntro = ({
 
         <Flex gap={3} direction={{ base: "column", sm: "row" }} align="stretch">
           <Button
+            {...CITIZENSHIP_CONTROL_SQUIRCLE_PROPS}
             type="button"
             variant="outline"
-            borderRadius="8px"
             bg="var(--app-surface-elevated)"
             borderColor="var(--app-border)"
             color="var(--app-text-primary)"
@@ -8650,14 +8664,14 @@ const CitizenshipIntro = ({
             {translateText("Copy key", language)}
           </Button>
           <Button
+            {...CITIZENSHIP_CONTROL_SQUIRCLE_PROPS}
             type="button"
             variant="solid"
-            borderRadius="8px"
             bg="#0f766e"
             border="2px solid"
             borderColor="#2dd4bf"
             color="white"
-            boxShadow="0 0 0 1px rgba(45, 212, 191, 0.32), 0 12px 24px rgba(13, 148, 136, 0.24)"
+            boxShadow="none"
             fontWeight="800"
             transform="none"
             onClick={() => {
@@ -8671,12 +8685,11 @@ const CitizenshipIntro = ({
             _hover={{
               bg: "#0d9488",
               borderColor: "#5eead4",
-              boxShadow:
-                "0 0 0 1px rgba(94, 234, 212, 0.42), 0 14px 28px rgba(13, 148, 136, 0.30)",
+              boxShadow: "none",
             }}
             _active={{
               bg: "#0f766e",
-              boxShadow: "0 0 0 1px rgba(45, 212, 191, 0.28)",
+              boxShadow: "none",
               transform: "translateY(1px)",
             }}
             _disabled={{
@@ -8706,9 +8719,9 @@ const CitizenshipIntro = ({
             {translateText("Already have a key?", language)}
           </Text>
           <Button
+            {...CITIZENSHIP_CONTROL_SQUIRCLE_PROPS}
             type="button"
             variant="outline"
-            borderRadius="8px"
             bg="transparent"
             borderColor="var(--app-border)"
             color="var(--app-text-primary)"
@@ -8727,14 +8740,15 @@ const CitizenshipIntro = ({
 
         {showSignIn ? (
           <Stack
+            {...CITIZENSHIP_INSET_SQUIRCLE_PROPS}
             spacing={3}
             border="1px solid"
             borderColor="var(--app-border)"
-            borderRadius="8px"
             bg="var(--app-surface-elevated)"
             p={4}
           >
             <Input
+              {...CITIZENSHIP_INSET_SQUIRCLE_PROPS}
               dir="ltr"
               type="password"
               value={secretInput}
@@ -8756,9 +8770,9 @@ const CitizenshipIntro = ({
                 {translateText("Use this key", language)}
               </Button>
               <Button
+                {...CITIZENSHIP_CONTROL_SQUIRCLE_PROPS}
                 type="button"
                 variant="outline"
-                borderRadius="8px"
                 bg="transparent"
                 borderColor="var(--app-border)"
                 color="var(--app-text-primary)"
@@ -8780,9 +8794,10 @@ const CitizenshipIntro = ({
 
         <Accordion allowToggle>
           <AccordionItem
+            {...CITIZENSHIP_INSET_SQUIRCLE_PROPS}
             border="1px solid"
             borderColor="var(--app-border)"
-            borderRadius="8px"
+            overflow="hidden"
           >
             <AccordionButton
               {...CITIZENSHIP_ACCORDION_FOCUS_PROPS}
@@ -9039,7 +9054,7 @@ const POST_QUESTIONNAIRE_RESOURCE_SECTIONS = {
   en: {
     paidHelpTitle: "Want paid help with your case?",
     paidHelpBody:
-      "DubMex is a small family-run business that helps people organize and work through Mexican citizenship document problems. They are not affiliated with this platform.",
+      "DubMex is a small family-run business that helps people quickly organize & file for citizenship and or through citizenship document problems. They are not affiliated with this platform. I just like them and their business motivated me to create this tool.\n\nP.S. let them know you found them through Sheilfer! =)",
     paidHelpCta: "Get help with citizenship",
     supportTitle: "Support this free platform",
     supportBody:
@@ -9049,7 +9064,7 @@ const POST_QUESTIONNAIRE_RESOURCE_SECTIONS = {
   es: {
     paidHelpTitle: "¿Quieres ayuda pagada con tu caso?",
     paidHelpBody:
-      "DubMex es un pequeño negocio familiar que ayuda a organizar y resolver problemas de documentos para ciudadanía mexicana. No están afiliados con esta plataforma.",
+      "DubMex es un pequeño negocio familiar que ayuda a las personas a organizarse rápidamente y presentar su solicitud de ciudadanía, o a resolver problemas con documentos de ciudadanía. No están afiliados con esta plataforma. Simplemente me gustan, y su negocio me motivó a crear esta herramienta.\n\nP. D. ¡Diles que los encontraste por medio de Sheilfer! =)",
     paidHelpCta: "Obtener ayuda con ciudadanía",
     supportTitle: "Apoya esta plataforma gratuita",
     supportBody:
@@ -9059,7 +9074,7 @@ const POST_QUESTIONNAIRE_RESOURCE_SECTIONS = {
   pt: {
     paidHelpTitle: "Quer ajuda paga com o seu caso?",
     paidHelpBody:
-      "A DubMex é uma pequena empresa familiar que ajuda pessoas a organizar e resolver problemas de documentos para cidadania mexicana. Eles não são afiliados a esta plataforma.",
+      "A DubMex é uma pequena empresa familiar que ajuda as pessoas a se organizarem rapidamente e solicitar a cidadania, ou a resolver problemas com documentos de cidadania. Eles não são afiliados a esta plataforma. Eu simplesmente gosto deles, e o negócio deles me motivou a criar esta ferramenta.\n\nP.S. Diga a eles que você os encontrou por meio de Sheilfer! =)",
     paidHelpCta: "Obter ajuda com cidadania",
     supportTitle: "Apoie esta plataforma gratuita",
     supportBody:
@@ -9069,7 +9084,7 @@ const POST_QUESTIONNAIRE_RESOURCE_SECTIONS = {
   it: {
     paidHelpTitle: "Vuoi aiuto pagato per il tuo caso?",
     paidHelpBody:
-      "DubMex è una piccola attività familiare che aiuta a organizzare e risolvere problemi di documenti per la cittadinanza messicana. Non è affiliata a questa piattaforma.",
+      "DubMex è una piccola attività familiare che aiuta le persone a organizzarsi rapidamente e presentare la domanda di cittadinanza, oppure a risolvere problemi con i documenti di cittadinanza. Non è affiliata a questa piattaforma. Semplicemente mi piace, e la sua attività mi ha motivato a creare questo strumento.\n\nP.S. Fai sapere che li hai trovati tramite Sheilfer! =)",
     paidHelpCta: "Ricevi aiuto per la cittadinanza",
     supportTitle: "Sostieni questa piattaforma gratuita",
     supportBody:
@@ -9079,7 +9094,7 @@ const POST_QUESTIONNAIRE_RESOURCE_SECTIONS = {
   fr: {
     paidHelpTitle: "Vous voulez une aide payante pour votre dossier?",
     paidHelpBody:
-      "DubMex est une petite entreprise familiale qui aide à organiser et résoudre les problèmes de documents pour la citoyenneté mexicaine. Elle n'est pas affiliée à cette plateforme.",
+      "DubMex est une petite entreprise familiale qui aide les personnes à s’organiser rapidement et à déposer leur demande de citoyenneté, ou à résoudre des problèmes de documents de citoyenneté. Elle n’est pas affiliée à cette plateforme. Je les apprécie simplement, et leur entreprise m’a donné envie de créer cet outil.\n\nP.-S. Dites-leur que vous les avez trouvés grâce à Sheilfer ! =)",
     paidHelpCta: "Obtenir de l'aide pour la citoyenneté",
     supportTitle: "Soutenir cette plateforme gratuite",
     supportBody:
@@ -9089,7 +9104,7 @@ const POST_QUESTIONNAIRE_RESOURCE_SECTIONS = {
   ja: {
     paidHelpTitle: "有料サポートが必要ですか？",
     paidHelpBody:
-      "DubMexは、メキシコ国籍の書類問題の整理と解決を支援する小さな家族経営の事業です。このプラットフォームとは提携していません。",
+      "DubMexは、国籍申請をすばやく整理して提出したり、国籍関連の書類問題を解決したりするのを支援する小さな家族経営の事業です。このプラットフォームとは提携していません。私は純粋にDubMexが好きで、その事業に刺激を受けてこのツールを作りました。\n\n追伸：Sheilferの紹介で知ったと伝えてください！ =)",
     paidHelpCta: "国籍手続きの支援を受ける",
     supportTitle: "この無料プラットフォームを支援",
     supportBody:
@@ -9099,7 +9114,7 @@ const POST_QUESTIONNAIRE_RESOURCE_SECTIONS = {
   hi: {
     paidHelpTitle: "अपने मामले में भुगतान वाली मदद चाहिए?",
     paidHelpBody:
-      "DubMex एक छोटा परिवार-चलित व्यवसाय है जो मैक्सिकन नागरिकता दस्तावेज़ समस्याओं को व्यवस्थित और हल करने में मदद करता है। वे इस प्लेटफ़ॉर्म से संबद्ध नहीं हैं।",
+      "DubMex एक छोटा परिवार-चलित व्यवसाय है जो लोगों को नागरिकता के लिए जल्दी से तैयारी और आवेदन करने, या नागरिकता दस्तावेज़ों की समस्याएँ सुलझाने में मदद करता है। वे इस प्लेटफ़ॉर्म से संबद्ध नहीं हैं। मुझे बस उनका काम पसंद है, और उनके व्यवसाय ने मुझे यह टूल बनाने के लिए प्रेरित किया।\n\nपी.एस. उन्हें बताएं कि आपको उनके बारे में Sheilfer से पता चला! =)",
     paidHelpCta: "नागरिकता में मदद लें",
     supportTitle: "इस मुफ्त प्लेटफ़ॉर्म का समर्थन करें",
     supportBody:
@@ -9109,7 +9124,7 @@ const POST_QUESTIONNAIRE_RESOURCE_SECTIONS = {
   ar: {
     paidHelpTitle: "هل تريد مساعدة مدفوعة في حالتك؟",
     paidHelpBody:
-      "DubMex مشروع عائلي صغير يساعد الناس على تنظيم وحل مشكلات وثائق الجنسية المكسيكية. ليست لديهم علاقة تابعة بهذه المنصة.",
+      "DubMex مشروع عائلي صغير يساعد الناس على تنظيم طلب الجنسية وتقديمه بسرعة، أو على حل مشكلات وثائق الجنسية. ليست لديهم علاقة تابعة بهذه المنصة. أنا فقط معجب بهم، وقد ألهمني نشاطهم لإنشاء هذه الأداة.\n\nملاحظة: أخبرهم أنك عرفت عنهم من خلال Sheilfer! =)",
     paidHelpCta: "احصل على مساعدة في الجنسية",
     supportTitle: "ادعم هذه المنصة المجانية",
     supportBody:
@@ -9119,7 +9134,7 @@ const POST_QUESTIONNAIRE_RESOURCE_SECTIONS = {
   zh: {
     paidHelpTitle: "想为你的案件获得付费帮助吗？",
     paidHelpBody:
-      "DubMex 是一家小型家族经营企业，帮助人们整理并处理墨西哥国籍文件问题。他们与本平台没有关联。",
+      "DubMex 是一家小型家族经营企业，帮助人们快速整理并提交国籍申请，或解决国籍文件问题。他们与本平台没有关联。我只是很喜欢他们，他们的业务也启发我创建了这个工具。\n\n附言：请告诉他们你是通过 Sheilfer 找到他们的！ =)",
     paidHelpCta: "获取国籍帮助",
     supportTitle: "支持这个免费平台",
     supportBody:
@@ -9129,7 +9144,7 @@ const POST_QUESTIONNAIRE_RESOURCE_SECTIONS = {
   de: {
     paidHelpTitle: "Möchtest du bezahlte Hilfe für deinen Fall?",
     paidHelpBody:
-      "DubMex ist ein kleines familiengeführtes Unternehmen, das Menschen hilft, Dokumentenprobleme zur mexikanischen Staatsangehörigkeit zu ordnen und zu lösen. Es ist nicht mit dieser Plattform verbunden.",
+      "DubMex ist ein kleines familiengeführtes Unternehmen, das Menschen hilft, ihren Staatsangehörigkeitsantrag schnell zu organisieren und einzureichen oder Probleme mit Staatsangehörigkeitsdokumenten zu lösen. Es ist nicht mit dieser Plattform verbunden. Ich mag das Unternehmen einfach, und seine Arbeit hat mich dazu inspiriert, dieses Tool zu entwickeln.\n\nP.S. Sag ihnen, dass du sie über Sheilfer gefunden hast! =)",
     paidHelpCta: "Hilfe zur Staatsangehörigkeit erhalten",
     supportTitle: "Diese kostenlose Plattform unterstützen",
     supportBody:
@@ -9138,147 +9153,89 @@ const POST_QUESTIONNAIRE_RESOURCE_SECTIONS = {
   },
 };
 
+const CITIZENSHIP_FEEDBACK_COPY = {
+  en: {
+    button: "Report issue or feedback",
+    title: "Thank you for using this tool",
+    body: "Thank you for taking the time to use this citizenship tool. If you found an issue or have feedback, contact Sheilfer on Instagram and share what you found.",
+    cta: "Contact Sheilfer",
+  },
+  es: {
+    button: "Reportar un problema o comentario",
+    title: "Gracias por usar esta herramienta",
+    body: "Gracias por dedicar tiempo a usar esta herramienta de ciudadanía. Si encontraste un problema o tienes algún comentario, contacta a Sheilfer en Instagram y comparte lo que encontraste.",
+    cta: "Contactar a Sheilfer",
+  },
+  pt: {
+    button: "Relatar um problema ou comentário",
+    title: "Obrigado por usar esta ferramenta",
+    body: "Obrigado por dedicar seu tempo a esta ferramenta de cidadania. Se você encontrou um problema ou tem algum comentário, entre em contato com Sheilfer no Instagram e compartilhe o que encontrou.",
+    cta: "Contatar Sheilfer",
+  },
+  it: {
+    button: "Segnala un problema o invia un commento",
+    title: "Grazie per aver usato questo strumento",
+    body: "Grazie per il tempo dedicato a questo strumento per la cittadinanza. Se hai trovato un problema o vuoi lasciare un commento, contatta Sheilfer su Instagram e racconta ciò che hai riscontrato.",
+    cta: "Contatta Sheilfer",
+  },
+  fr: {
+    button: "Signaler un problème ou donner votre avis",
+    title: "Merci d’avoir utilisé cet outil",
+    body: "Merci d’avoir pris le temps d’utiliser cet outil de citoyenneté. Si vous avez trouvé un problème ou souhaitez donner votre avis, contactez Sheilfer sur Instagram et partagez ce que vous avez constaté.",
+    cta: "Contacter Sheilfer",
+  },
+  ja: {
+    button: "問題やフィードバックを報告",
+    title: "このツールをご利用いただきありがとうございます",
+    body: "国籍手続きツールをご利用いただきありがとうございます。問題を見つけた場合やご意見がある場合は、InstagramでSheilferに連絡し、見つけた内容をお知らせください。",
+    cta: "Sheilferに連絡",
+  },
+  hi: {
+    button: "समस्या या प्रतिक्रिया रिपोर्ट करें",
+    title: "इस टूल का उपयोग करने के लिए धन्यवाद",
+    body: "इस नागरिकता टूल का उपयोग करने के लिए समय निकालने हेतु धन्यवाद। यदि आपको कोई समस्या मिली या आपके पास प्रतिक्रिया है, तो Instagram पर Sheilfer से संपर्क करें और जो मिला उसे साझा करें।",
+    cta: "Sheilfer से संपर्क करें",
+  },
+  ar: {
+    button: "الإبلاغ عن مشكلة أو إرسال ملاحظات",
+    title: "شكرا لاستخدامك هذه الأداة",
+    body: "شكرا لتخصيص وقتك لاستخدام أداة الجنسية هذه. إذا وجدت مشكلة أو كانت لديك ملاحظات، فتواصل مع Sheilfer على Instagram وشاركه ما وجدته.",
+    cta: "تواصل مع Sheilfer",
+  },
+  zh: {
+    button: "报告问题或提供反馈",
+    title: "感谢你使用此工具",
+    body: "感谢你花时间使用这款国籍工具。如果你发现问题或有任何反馈，请通过 Instagram 联系 Sheilfer，并分享你的发现。",
+    cta: "联系 Sheilfer",
+  },
+  de: {
+    button: "Problem oder Feedback melden",
+    title: "Danke, dass du dieses Tool nutzt",
+    body: "Danke, dass du dir Zeit für dieses Staatsangehörigkeits-Tool genommen hast. Wenn du ein Problem gefunden hast oder Feedback geben möchtest, kontaktiere Sheilfer auf Instagram und teile deine Beobachtung.",
+    cta: "Sheilfer kontaktieren",
+  },
+};
+
 const getPostQuestionnaireResourceSections = (language) =>
   POST_QUESTIONNAIRE_RESOURCE_SECTIONS[normalizeSupportLanguage(language)] ||
   POST_QUESTIONNAIRE_RESOURCE_SECTIONS.en;
 
-const DualCitizenshipBenefitsScene = ({
-  language,
-  onContinue,
-  onSubmitSound,
-}) => {
-  const content = getDualCitizenshipBenefits(language);
-
-  return (
-    <Stack spacing={5} textAlign="start">
-      <Box>
-        <HStack spacing={3}>
-          <Box
-            display="inline-flex"
-            alignItems="center"
-            justifyContent="center"
-            w="42px"
-            h="42px"
-            borderRadius="8px"
-            bg="rgba(15, 118, 110, 0.14)"
-            color="#0f766e"
-            flexShrink={0}
-          >
-            <Icon as={BadgeCheck} boxSize="22px" />
-          </Box>
-          <Heading
-            as="h1"
-            size="lg"
-            letterSpacing="0"
-            color="var(--app-text-primary)"
-          >
-            {content.title}
-          </Heading>
-        </HStack>
-      </Box>
-
-      <Box>
-        <Text color="var(--app-text-primary)" fontWeight="800" mb={3}>
-          {content.ageTitle}
-        </Text>
-        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={3}>
-          {content.ageGroups.map((group) => (
-            <Box
-              key={group.range}
-              border="1px solid"
-              borderColor="var(--app-border)"
-              borderRadius="8px"
-              bg="var(--app-surface)"
-              p={4}
-            >
-              <Badge
-                bg="rgba(15, 118, 110, 0.14)"
-                color="#0f766e"
-                borderRadius="6px"
-                px={2}
-                py={1}
-                mb={3}
-              >
-                {group.range}
-              </Badge>
-              <Stack spacing={2}>
-                {group.items.map((item) => (
-                  <HStack
-                    key={`${group.range}-${item}`}
-                    spacing={2}
-                    align="flex-start"
-                  >
-                    <Icon
-                      as={Check}
-                      color="#0f766e"
-                      boxSize="14px"
-                      mt="3px"
-                      flexShrink={0}
-                    />
-                    <Text color="var(--app-text-secondary)" fontSize="sm">
-                      {item}
-                    </Text>
-                  </HStack>
-                ))}
-              </Stack>
-            </Box>
-          ))}
-        </SimpleGrid>
-      </Box>
-
-      <Button
-        type="button"
-        alignSelf="center"
-        {...CITIZENSHIP_TEAL_BUTTON_PROPS}
-        minW={{ base: "100%", sm: "240px" }}
-        h="58px"
-        fontSize="lg"
-        mb={3}
-        onClick={() => {
-          onSubmitSound?.();
-          onContinue();
-        }}
-      >
-        {translateText("Next", language)}
-      </Button>
-    </Stack>
-  );
-};
+const getCitizenshipFeedbackCopy = (language) =>
+  CITIZENSHIP_FEEDBACK_COPY[normalizeSupportLanguage(language)] ||
+  CITIZENSHIP_FEEDBACK_COPY.en;
 
 const PaidHelpValuePrimer = ({
   language,
-  onBackToBenefits,
   onStartQuestions,
   isStarting,
   onSelectSound,
   onSubmitSound,
 }) => {
   const post = getPaidHelpPost(language);
-  const benefitsContent = getDualCitizenshipBenefits(language);
   const [openCaseIndexes, setOpenCaseIndexes] = useState([]);
 
   return (
     <Stack spacing={5} textAlign="start">
-      <Button
-        type="button"
-        variant="outline"
-        alignSelf="flex-start"
-        borderRadius="8px"
-        bg="var(--app-surface-elevated)"
-        borderColor="var(--app-border)"
-        color="var(--app-text-primary)"
-        boxShadow="none"
-        transform="none"
-        leftIcon={<Icon as={ArrowLeft} boxSize="16px" />}
-        onClick={() => {
-          onSelectSound?.();
-          onBackToBenefits();
-        }}
-        _hover={{ bg: "var(--app-surface-muted)" }}
-        _active={{ boxShadow: "none", transform: "none" }}
-      >
-        {benefitsContent.backCta}
-      </Button>
       <Box>
         <Heading
           as="h1"
@@ -9301,9 +9258,9 @@ const PaidHelpValuePrimer = ({
       </Box>
 
       <Box
+        {...CITIZENSHIP_CARD_SQUIRCLE_PROPS}
         border="1px solid"
         borderColor="rgba(15, 118, 110, 0.24)"
-        borderRadius="8px"
         bg="rgba(15, 118, 110, 0.07)"
         p={{ base: 4, md: 5 }}
       >
@@ -9325,14 +9282,17 @@ const PaidHelpValuePrimer = ({
         </Stack>
       </Box>
 
-      <Text color="var(--app-text-muted)" fontSize="sm">
-        {post.priceFooter}
-      </Text>
-
       <Button
         type="button"
         alignSelf="center"
         {...CITIZENSHIP_TEAL_BUTTON_PROPS}
+        minW={{ base: "100%", sm: "360px" }}
+        minH="68px"
+        px={{ base: 7, md: 10 }}
+        py={5}
+        fontSize={{ base: "lg", md: "xl" }}
+        lineHeight="1.25"
+        whiteSpace="normal"
         onClick={() => {
           onSubmitSound?.();
           onStartQuestions();
@@ -9360,10 +9320,10 @@ const PaidHelpValuePrimer = ({
           const cost = getPaidHelpCaseCost(language, card.tone);
           return (
             <AccordionItem
+              {...CITIZENSHIP_CARD_SQUIRCLE_PROPS}
               key={card.status}
               border="1px solid"
               borderColor={tone.border}
-              borderRadius="8px"
               bg={tone.bg}
               mb={3}
               overflow="hidden"
@@ -9377,9 +9337,9 @@ const PaidHelpValuePrimer = ({
               >
                 <HStack flex="1" spacing={3} textAlign="start" align="center">
                   <Badge
+                    {...CITIZENSHIP_CONTROL_SQUIRCLE_PROPS}
                     bg={tone.color}
                     color="white"
-                    borderRadius="6px"
                     px={2}
                     py={1}
                   >
@@ -9399,9 +9359,9 @@ const PaidHelpValuePrimer = ({
               <AccordionPanel px={{ base: 4, md: 5 }} pb={5}>
                 <SimpleGrid columns={{ base: 1, md: 3 }} spacing={3} mb={4}>
                   <Box
+                    {...CITIZENSHIP_INSET_SQUIRCLE_PROPS}
                     border="1px solid"
                     borderColor={tone.border}
-                    borderRadius="8px"
                     bg="var(--app-surface)"
                     p={3}
                   >
@@ -9422,9 +9382,9 @@ const PaidHelpValuePrimer = ({
                     </Text>
                   </Box>
                   <Box
+                    {...CITIZENSHIP_INSET_SQUIRCLE_PROPS}
                     border="1px solid"
                     borderColor={tone.border}
-                    borderRadius="8px"
                     bg="var(--app-surface)"
                     p={3}
                   >
@@ -9445,9 +9405,9 @@ const PaidHelpValuePrimer = ({
                     </Text>
                   </Box>
                   <Box
+                    {...CITIZENSHIP_INSET_SQUIRCLE_PROPS}
                     border="1px solid"
                     borderColor={tone.border}
-                    borderRadius="8px"
                     bg="var(--app-surface)"
                     p={3}
                   >
@@ -10756,11 +10716,11 @@ const ResultPanel = ({
 
   return (
     <Box
+      {...CITIZENSHIP_CARD_SQUIRCLE_PROPS}
       position={{ base: "static", lg: "sticky" }}
       top={{ lg: "24px" }}
       border="1px solid"
       borderColor="var(--app-border)"
-      borderRadius="8px"
       overflow="hidden"
       bg={CITIZENSHIP_RESULTS_PANEL_BG}
       boxShadow="var(--app-shadow-soft)"
@@ -10769,12 +10729,12 @@ const ResultPanel = ({
         <HStack align="flex-start" justify="space-between" spacing={4}>
           <HStack align="center" spacing={3}>
             <Box
+              {...CITIZENSHIP_ICON_SQUIRCLE_PROPS}
               display="inline-flex"
               alignItems="center"
               justifyContent="center"
               w="44px"
               h="44px"
-              borderRadius="8px"
               bg="var(--app-surface-elevated)"
               color={route?.color || "#475569"}
               flexShrink={0}
@@ -10854,7 +10814,7 @@ const ResultPanel = ({
               {translateText("Naturalization modality", language)}
             </Text>
             <Badge
-              borderRadius="6px"
+              {...CITIZENSHIP_CONTROL_SQUIRCLE_PROPS}
               px={2}
               py={1}
               bg="rgba(185, 28, 28, 0.1)"
@@ -10876,10 +10836,10 @@ const ResultPanel = ({
 
                 return (
                   <Box
+                    {...CITIZENSHIP_INSET_SQUIRCLE_PROPS}
                     key={blocker}
                     border="1px solid"
                     borderColor="rgba(220, 38, 38, 0.2)"
-                    borderRadius="8px"
                     bg="rgba(220, 38, 38, 0.04)"
                     overflow="hidden"
                   >
@@ -10915,8 +10875,8 @@ const ResultPanel = ({
                           </HStack>
                           <HStack spacing={2} flexShrink={0} ms={3}>
                             <Badge
+                              {...CITIZENSHIP_CONTROL_SQUIRCLE_PROPS}
                               display={{ base: "none", sm: "inline-flex" }}
-                              borderRadius="6px"
                               bg="rgba(220, 38, 38, 0.12)"
                               color="#dc2626"
                             >
@@ -10944,10 +10904,10 @@ const ResultPanel = ({
           <Accordion allowMultiple>
             <AccordionItem border="0">
               <AccordionButton
+                {...CITIZENSHIP_INSET_SQUIRCLE_PROPS}
                 {...CITIZENSHIP_ACCORDION_FOCUS_PROPS}
                 px={3}
                 py={3}
-                borderRadius="8px"
                 color="var(--app-text-primary)"
                 onClick={onSelectSound}
                 _hover={{ bg: "var(--app-surface-muted)" }}
@@ -10982,10 +10942,10 @@ const ResultPanel = ({
 
             <AccordionItem border="0">
               <AccordionButton
+                {...CITIZENSHIP_INSET_SQUIRCLE_PROPS}
                 {...CITIZENSHIP_ACCORDION_FOCUS_PROPS}
                 px={3}
                 py={3}
-                borderRadius="8px"
                 color="var(--app-text-primary)"
                 onClick={onSelectSound}
                 _hover={{ bg: "var(--app-surface-muted)" }}
@@ -11046,21 +11006,21 @@ const CheckpointPanel = ({
 }) => (
   <Stack spacing={5}>
     <Box
+      {...CITIZENSHIP_CARD_SQUIRCLE_PROPS}
       border="1px solid"
       borderColor="rgba(29, 78, 216, 0.28)"
-      borderRadius="8px"
       bg="rgba(29, 78, 216, 0.07)"
       p={{ base: 4, md: 5 }}
       textAlign="start"
     >
       <HStack spacing={3} align="flex-start">
         <Box
+          {...CITIZENSHIP_ICON_SQUIRCLE_PROPS}
           display="inline-flex"
           alignItems="center"
           justifyContent="center"
           w="40px"
           h="40px"
-          borderRadius="8px"
           bg="rgba(29, 78, 216, 0.12)"
           color="#1d4ed8"
           flexShrink={0}
@@ -11104,9 +11064,9 @@ const CheckpointPanel = ({
 
     {optionalQuestionCount ? (
       <Box
+        {...CITIZENSHIP_CARD_SQUIRCLE_PROPS}
         border="1px solid"
         borderColor="var(--app-border)"
-        borderRadius="8px"
         bg="var(--app-surface-elevated)"
         p={{ base: 4, md: 5 }}
         textAlign="start"
@@ -11130,8 +11090,8 @@ const CheckpointPanel = ({
               )}
             </Text>
             <Badge
+              {...CITIZENSHIP_CONTROL_SQUIRCLE_PROPS}
               mt={3}
-              borderRadius="6px"
               px={2}
               py={1}
               bg="rgba(15, 118, 110, 0.1)"
@@ -11159,11 +11119,11 @@ const CheckpointPanel = ({
         </Button>
       ) : null}
       <Button
+        {...CITIZENSHIP_CONTROL_SQUIRCLE_PROPS}
         type="button"
         minH="50px"
         whiteSpace="normal"
         variant="outline"
-        borderRadius="8px"
         bg="var(--app-surface-elevated)"
         borderColor="#1d4ed8"
         color={isLightTheme ? "#1d4ed8" : "#93c5fd"}
@@ -11206,10 +11166,10 @@ const PostQuestionnaireResources = ({ language, onSelectSound }) => {
     <SimpleGrid columns={{ base: 1, md: 2 }} spacing={3}>
       {resources.map((resource) => (
         <Box
+          {...CITIZENSHIP_CARD_SQUIRCLE_PROPS}
           key={resource.href}
           border="1px solid"
           borderColor="var(--app-border)"
-          borderRadius="8px"
           bg={CITIZENSHIP_RESULTS_PANEL_BG}
           p={{ base: 4, md: 5 }}
           textAlign="start"
@@ -11219,12 +11179,12 @@ const PostQuestionnaireResources = ({ language, onSelectSound }) => {
         >
           <HStack align="flex-start" spacing={3} mb={3}>
             <Box
+              {...CITIZENSHIP_ICON_SQUIRCLE_PROPS}
               display="inline-flex"
               alignItems="center"
               justifyContent="center"
               w="38px"
               h="38px"
-              borderRadius="8px"
               bg={resource.iconBg}
               color={resource.iconColor}
               flexShrink={0}
@@ -11235,12 +11195,18 @@ const PostQuestionnaireResources = ({ language, onSelectSound }) => {
               <Text color="var(--app-text-primary)" fontWeight="800">
                 {resource.title}
               </Text>
-              <Text color="var(--app-text-secondary)" fontSize="sm" mt={1}>
+              <Text
+                color="var(--app-text-secondary)"
+                fontSize="sm"
+                mt={1}
+                whiteSpace="pre-line"
+              >
                 {resource.body}
               </Text>
             </Box>
           </HStack>
           <Button
+            {...CITIZENSHIP_CONTROL_SQUIRCLE_PROPS}
             as="a"
             href={resource.href}
             target="_blank"
@@ -11248,7 +11214,6 @@ const PostQuestionnaireResources = ({ language, onSelectSound }) => {
             type="button"
             variant="outline"
             rightIcon={<Icon as={ExternalLink} boxSize="15px" />}
-            borderRadius="8px"
             borderColor="var(--app-border)"
             bg="var(--app-surface-elevated)"
             color="var(--app-text-primary)"
@@ -11290,9 +11255,9 @@ const ChecklistPanel = ({
     : 0;
   return (
     <Box
+      {...CITIZENSHIP_CARD_SQUIRCLE_PROPS}
       border="1px solid"
       borderColor="var(--app-border)"
-      borderRadius="8px"
       bg={CITIZENSHIP_RESULTS_PANEL_BG}
       boxShadow="var(--app-shadow-soft)"
       p={{ base: 4, md: 5 }}
@@ -11352,9 +11317,9 @@ const ChecklistPanel = ({
 
                   return (
                     <Box
+                      {...CITIZENSHIP_INSET_SQUIRCLE_PROPS}
                       key={itemId}
                       border="0"
-                      borderRadius="8px"
                       bg={CITIZENSHIP_RESULTS_PANEL_BG}
                       overflow="hidden"
                     >
@@ -11384,7 +11349,8 @@ const ChecklistPanel = ({
                                   ".chakra-checkbox__control": {
                                     mt: "2px",
                                     boxSize: "24px",
-                                    borderRadius: "6px",
+                                    borderRadius: "9px",
+                                    cornerShape: APP_SQUIRCLE_SHAPE,
                                     borderColor: isDone
                                       ? "#0f766e"
                                       : "var(--app-border-strong)",
@@ -11394,6 +11360,7 @@ const ChecklistPanel = ({
                               />
                             </Box>
                             <AccordionButton
+                              {...CITIZENSHIP_INSET_SQUIRCLE_PROPS}
                               {...CITIZENSHIP_ACCORDION_FOCUS_PROPS}
                               ps={3}
                               pe={3}
@@ -11443,6 +11410,7 @@ const ChecklistPanel = ({
       </Stack>
       <Flex justify="center" mt={6}>
         <Button
+          {...CITIZENSHIP_CONTROL_SQUIRCLE_PROPS}
           type="button"
           variant="outline"
           leftIcon={<Icon as={MessageCircle} boxSize="20px" />}
@@ -11454,17 +11422,20 @@ const ChecklistPanel = ({
           minW={{ sm: "280px" }}
           minH="56px"
           px={8}
-          borderRadius="8px"
-          borderColor="var(--app-border)"
+          borderColor={isLightTheme ? "#111111" : "#ffffff"}
           bg="var(--app-surface)"
           color="var(--app-text-primary)"
           boxShadow="none"
           transform="none"
           fontSize="md"
           fontWeight="800"
-          _hover={{ bg: "var(--app-surface-muted)" }}
+          _hover={{
+            bg: "var(--app-surface-muted)",
+            borderColor: isLightTheme ? "#111111" : "#ffffff",
+          }}
           _active={{
             bg: "var(--app-surface-muted)",
+            borderColor: isLightTheme ? "#111111" : "#ffffff",
             boxShadow: "none",
             transform: "none",
           }}
@@ -11507,8 +11478,8 @@ const ConsulateFinderPanel = ({
 
   return (
     <Box
+      {...CITIZENSHIP_CARD_SQUIRCLE_PROPS}
       border="1px solid var(--app-border)"
-      borderRadius="8px"
       bg={CITIZENSHIP_RESULTS_PANEL_BG}
       boxShadow="var(--app-shadow-soft)"
       p={{ base: 4, md: 5 }}
@@ -11522,6 +11493,7 @@ const ConsulateFinderPanel = ({
           {translateText(CONSULATE_FINDER_DESCRIPTION, language)}
         </Text>
         <Input
+          {...CITIZENSHIP_INSET_SQUIRCLE_PROPS}
           value={locationInput}
           onChange={(event) => setLocationInput(event.target.value)}
           placeholder={translateText(CONSULATE_FINDER_PLACEHOLDER, language)}
@@ -11535,6 +11507,7 @@ const ConsulateFinderPanel = ({
         />
         <HStack>
           <Button
+            {...CITIZENSHIP_CONTROL_SQUIRCLE_PROPS}
             as="a"
             href={searchUrl}
             target="_blank"
@@ -11543,9 +11516,8 @@ const ConsulateFinderPanel = ({
             leftIcon={<Icon as={MapPin} boxSize="16px" />}
             bg="#1d4ed8"
             color="white"
-            borderRadius="8px"
-            _hover={{ bg: "#1e40af" }}
-            _active={{ bg: "#1e3a8a" }}
+            _hover={{ bg: "#1e40af", color: "white" }}
+            _active={{ bg: "#1e3a8a", color: "white" }}
           >
             {translateText(CONSULATE_FINDER_BUTTON, language)}
           </Button>
@@ -11599,14 +11571,16 @@ const CitizenshipMarkdown = ({ children }) => (
       },
       code: {
         border: "1px solid var(--app-border)",
-        borderRadius: "5px",
+        borderRadius: "10px",
+        cornerShape: APP_SQUIRCLE_SHAPE,
         background: "transparent",
         padding: "0.08rem 0.28rem",
         fontSize: "0.92em",
       },
       pre: {
         border: "1px solid var(--app-border)",
-        borderRadius: "8px",
+        borderRadius: "20px",
+        cornerShape: APP_SQUIRCLE_SHAPE,
         background: "transparent",
         padding: "0.75rem",
         overflowX: "auto",
@@ -11925,6 +11899,7 @@ const CitizenshipAssistantDrawer = ({
         bg="var(--app-overlay)"
       />
       <DrawerContent
+        {...CITIZENSHIP_CARD_SQUIRCLE_PROPS}
         motionProps={nativeDrawerMotionProps}
         bg="var(--app-surface)"
         color="var(--app-text-primary)"
@@ -11993,6 +11968,7 @@ const CitizenshipAssistantDrawer = ({
                 const isUser = message.role === "user";
                 return (
                   <Box
+                    {...CITIZENSHIP_MESSAGE_SQUIRCLE_PROPS}
                     key={message.id}
                     alignSelf={isUser ? "flex-end" : "flex-start"}
                     w={isUser ? "auto" : { base: "100%", sm: "96%" }}
@@ -12006,7 +11982,6 @@ const CitizenshipAssistantDrawer = ({
                         ? "rgba(29, 78, 216, 0.1)"
                         : "var(--app-surface-elevated)"
                     }
-                    borderRadius="8px"
                     px={3}
                     py={2}
                     textAlign="start"
@@ -12054,6 +12029,7 @@ const CitizenshipAssistantDrawer = ({
           >
             <HStack spacing={2} align="center">
               <Textarea
+                {...CITIZENSHIP_INSET_SQUIRCLE_PROPS}
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
                 onKeyDown={(event) => {
@@ -12069,7 +12045,6 @@ const CitizenshipAssistantDrawer = ({
                 minH="64px"
                 maxH="160px"
                 resize="vertical"
-                borderRadius="8px"
                 bg="var(--app-surface-elevated)"
                 borderColor="var(--app-border)"
                 color="var(--app-text-primary)"
@@ -12138,9 +12113,6 @@ export default function CitizenshipGuide() {
     initialCitizenshipState.refiningChecklist,
   );
   const [showIntro, setShowIntro] = useState(initialCitizenshipState.showIntro);
-  const [showBenefits, setShowBenefits] = useState(
-    initialCitizenshipState.showBenefits,
-  );
   const [showPrimer, setShowPrimer] = useState(
     initialCitizenshipState.showPrimer,
   );
@@ -12152,11 +12124,14 @@ export default function CitizenshipGuide() {
   );
   const [isAssistantOpen, setIsAssistantOpen] = useState(false);
   const [isEditingAnswers, setIsEditingAnswers] = useState(false);
+  const [mustCompleteEditedRoute, setMustCompleteEditedRoute] =
+    useState(false);
   const [isSavingIntro, setIsSavingIntro] = useState(false);
   const [isPreparingAccount, setIsPreparingAccount] = useState(false);
   const [isSigningInWithKey, setIsSigningInWithKey] = useState(false);
   const [accountReloadNonce, setAccountReloadNonce] = useState(0);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
   const hasTriggeredKeygenRef = useRef(false);
   const accountCreationPromiseRef = useRef(null);
@@ -12202,15 +12177,45 @@ export default function CitizenshipGuide() {
         visited.filter((questionId) => applicableIds.has(questionId)),
       );
       if (isEditingAnswers && invalidated.length) {
+        setMustCompleteEditedRoute(true);
         toast({
-          title: translateText("Your route changed", pageLanguage),
-          description: translateText(
-            "Questions that no longer apply were removed. Complete any newly required questions before viewing the result.",
-            pageLanguage,
+          id: "citizenship-route-changed",
+          duration: null,
+          render: ({ onClose }) => (
+            <Alert
+              {...CITIZENSHIP_INSET_SQUIRCLE_PROPS}
+              status="info"
+              variant="solid"
+              position="relative"
+              alignItems="flex-start"
+              pe="52px"
+              boxShadow="var(--app-shadow-soft)"
+            >
+              <AlertIcon mt="2px" />
+              <Box flex="1">
+                <AlertTitle>
+                  {translateText("Your route changed", pageLanguage)}
+                </AlertTitle>
+                <AlertDescription display="block">
+                  {translateText(
+                    "Questions that no longer apply were removed. Complete any newly required questions before viewing the result.",
+                    pageLanguage,
+                  )}
+                </AlertDescription>
+              </Box>
+              <CloseButton
+                aria-label={translateText("Close", pageLanguage)}
+                onClick={onClose}
+                position="absolute"
+                top="8px"
+                insetEnd="8px"
+                boxSize="36px"
+                fontSize="17px"
+                borderRadius="full"
+                _hover={{ bg: "rgba(255, 255, 255, 0.2)" }}
+              />
+            </Alert>
           ),
-          status: "info",
-          duration: 3600,
-          isClosable: true,
         });
       }
       return pruned;
@@ -12404,7 +12409,6 @@ export default function CitizenshipGuide() {
             "true",
           );
           setShowIntro(false);
-          setShowBenefits(false);
           setShowPrimer(false);
         }
       } catch (error) {
@@ -12544,7 +12548,7 @@ export default function CitizenshipGuide() {
   }, [accountKeys.npub, assistantChat]);
 
   useEffect(() => {
-    if (showIntro || showBenefits || showPrimer || !hasLoadedProgressRef.current)
+    if (showIntro || showPrimer || !hasLoadedProgressRef.current)
       return undefined;
 
     const progress = buildCitizenshipProgress({
@@ -12584,7 +12588,6 @@ export default function CitizenshipGuide() {
     showCheckpoint,
     showResults,
     showIntro,
-    showBenefits,
     showPrimer,
   ]);
 
@@ -12621,7 +12624,25 @@ export default function CitizenshipGuide() {
         (question) => question.id === currentQuestionId,
       );
       const nextEditable = editableQuestions[editableIndex + 1];
-      if (!nextEditable) return;
+      if (!nextEditable) {
+        const nextRequired = getNextRequiredQuestion(answers, nextAssessment);
+        if (nextRequired) {
+          setQuestionHistory((history) => [...history, currentQuestionId]);
+          setVisitedQuestionIds((visited) => [
+            ...new Set([...visited, currentQuestionId, nextRequired.id]),
+          ]);
+          setCurrentQuestionId(nextRequired.id);
+          return;
+        }
+        setRefiningChecklist(false);
+        setIsEditingAnswers(false);
+        setShowResults(false);
+        setShowCheckpoint(true);
+        window.requestAnimationFrame(() => {
+          window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+        });
+        return;
+      }
       setQuestionHistory((history) => [...history, currentQuestionId]);
       setVisitedQuestionIds((visited) => [
         ...new Set([...visited, currentQuestionId, nextEditable.id]),
@@ -12656,7 +12677,6 @@ export default function CitizenshipGuide() {
     setShowResults(false);
     setShowCheckpoint(false);
     if (!questionHistory.length && !isEditingAnswers && !refiningChecklist) {
-      setShowBenefits(false);
       setShowPrimer(true);
       return;
     }
@@ -12693,6 +12713,7 @@ export default function CitizenshipGuide() {
   const editAnswersFrom = (returnView) => {
     playSelectSound();
     editReturnViewRef.current = returnView;
+    setMustCompleteEditedRoute(false);
     setRefiningChecklist(false);
     setIsEditingAnswers(true);
     setQuestionHistory([]);
@@ -12911,7 +12932,6 @@ export default function CitizenshipGuide() {
       setQuestionHistory([]);
       setVisitedQuestionIds([]);
       setShowResults(false);
-      setShowBenefits(false);
       setShowPrimer(false);
       setShowIntro(true);
       hasLoadedProgressRef.current = false;
@@ -12947,15 +12967,14 @@ export default function CitizenshipGuide() {
     }
   };
 
-  const goToBenefits = async () => {
+  const goToPrimer = async () => {
     setIsSavingIntro(true);
     try {
       await ensureCitizenshipAccount();
       setShowIntro(false);
-      setShowBenefits(true);
-      setShowPrimer(false);
+      setShowPrimer(true);
     } catch (error) {
-      console.warn("Failed to prepare account before benefits:", error);
+      console.warn("Failed to prepare account before citizenship primer:", error);
       toast({
         title: translateText(
           "Creating your key failed. You can still paste an existing key.",
@@ -12968,18 +12987,6 @@ export default function CitizenshipGuide() {
     } finally {
       setIsSavingIntro(false);
     }
-  };
-
-  const goToPrimer = () => {
-    setShowIntro(false);
-    setShowBenefits(false);
-    setShowPrimer(true);
-  };
-
-  const goBackToBenefits = () => {
-    setShowIntro(false);
-    setShowPrimer(false);
-    setShowBenefits(true);
   };
 
   const startQuestions = async () => {
@@ -13018,7 +13025,6 @@ export default function CitizenshipGuide() {
     } finally {
       setIsSavingIntro(false);
       setShowIntro(false);
-      setShowBenefits(false);
       setShowPrimer(false);
     }
   };
@@ -13072,6 +13078,7 @@ export default function CitizenshipGuide() {
   const topControlProps = getTopControlProps(isLightTheme);
   const pageMenuTranslations =
     linksPageTranslations[pageLanguage] || linksPageTranslations.en;
+  const feedbackCopy = getCitizenshipFeedbackCopy(pageLanguage);
 
   return (
     <Box
@@ -13173,7 +13180,7 @@ export default function CitizenshipGuide() {
             <CitizenshipIntro
               language={pageLanguage}
               onCopySecretKey={copySecretKey}
-              onStartQuestions={goToBenefits}
+              onStartQuestions={goToPrimer}
               onSignInWithKey={signInWithSecretKey}
               onSelectSound={playSelectSound}
               onSubmitSound={playSubmitSound}
@@ -13188,18 +13195,9 @@ export default function CitizenshipGuide() {
             />
           ) : null}
 
-          {showBenefits ? (
-            <DualCitizenshipBenefitsScene
-              language={pageLanguage}
-              onContinue={goToPrimer}
-              onSubmitSound={playSubmitSound}
-            />
-          ) : null}
-
           {showPrimer ? (
             <PaidHelpValuePrimer
               language={pageLanguage}
-              onBackToBenefits={goBackToBenefits}
               onStartQuestions={startQuestions}
               isStarting={isSavingIntro}
               onSelectSound={playSelectSound}
@@ -13208,7 +13206,6 @@ export default function CitizenshipGuide() {
           ) : null}
 
           {!showIntro &&
-          !showBenefits &&
           !showPrimer &&
           !showCheckpoint &&
           !showResults ? (
@@ -13217,11 +13214,11 @@ export default function CitizenshipGuide() {
                 {isEditingAnswers ? (
                   <Menu placement="bottom-start">
                     <MenuButton
+                      {...CITIZENSHIP_CONTROL_SQUIRCLE_PROPS}
                       as={Button}
                       type="button"
                       size="sm"
                       variant="outline"
-                      borderRadius="8px"
                       bg="var(--app-surface-elevated)"
                       borderColor="var(--app-border)"
                       color="var(--app-text-primary)"
@@ -13239,6 +13236,7 @@ export default function CitizenshipGuide() {
                       {currentIndex + 1}
                     </MenuButton>
                     <MenuList
+                      {...CITIZENSHIP_INSET_SQUIRCLE_PROPS}
                       bg="var(--app-surface-elevated)"
                       borderColor="var(--app-border)"
                       boxShadow="var(--app-shadow-soft)"
@@ -13257,6 +13255,7 @@ export default function CitizenshipGuide() {
 
                         return (
                           <MenuItem
+                            {...CITIZENSHIP_CONTROL_SQUIRCLE_PROPS}
                             key={question.id}
                             onClick={() => {
                               playSelectSound();
@@ -13342,26 +13341,25 @@ export default function CitizenshipGuide() {
           ) : null}
 
           {!showIntro &&
-          !showBenefits &&
           !showPrimer &&
           !showCheckpoint &&
           !showResults ? (
             <>
               <Box
+                {...CITIZENSHIP_CARD_SQUIRCLE_PROPS}
                 border="1px solid"
                 borderColor="var(--app-border)"
-                borderRadius="8px"
                 bg="var(--app-surface)"
                 p={{ base: 4, md: 7 }}
               >
                 <HStack spacing={3} mb={6} align="center">
                   <Box
+                    {...CITIZENSHIP_ICON_SQUIRCLE_PROPS}
                     display="inline-flex"
                     alignItems="center"
                     justifyContent="center"
                     w="38px"
                     h="38px"
-                    borderRadius="8px"
                     bg="rgba(15, 118, 110, 0.14)"
                     color="#0f766e"
                     flexShrink={0}
@@ -13398,8 +13396,8 @@ export default function CitizenshipGuide() {
                   wrap="wrap"
                 >
                   <Button
+                    {...CITIZENSHIP_CONTROL_SQUIRCLE_PROPS}
                     variant="outline"
-                    borderRadius="8px"
                     bg="var(--app-surface-elevated)"
                     borderColor="var(--app-border)"
                     color="var(--app-text-primary)"
@@ -13435,8 +13433,8 @@ export default function CitizenshipGuide() {
                       </Button>
                     ) : null}
                     <Button
+                      {...CITIZENSHIP_CONTROL_SQUIRCLE_PROPS}
                       variant="outline"
-                      borderRadius="8px"
                       bg="rgba(20, 184, 166, 0.1)"
                       borderColor="#14b8a6"
                       borderWidth="2px"
@@ -13444,7 +13442,7 @@ export default function CitizenshipGuide() {
                       boxShadow="none"
                       transform="none"
                       fontWeight="800"
-                      isDisabled={!canContinue || !hasNextEditableQuestion}
+                      isDisabled={!canContinue}
                       onClick={goNext}
                       minW="112px"
                       h="48px"
@@ -13489,12 +13487,12 @@ export default function CitizenshipGuide() {
                   </HStack>
                 </Flex>
               </Box>
-              {isEditingAnswers ? (
+              {isEditingAnswers && !mustCompleteEditedRoute ? (
                 <Flex justify="center" mt={3}>
                   <Button
+                    {...CITIZENSHIP_CONTROL_SQUIRCLE_PROPS}
                     type="button"
                     variant="solid"
-                    borderRadius="8px"
                     bg={isLightTheme ? "#111111" : "#ffffff"}
                     borderColor={isLightTheme ? "#111111" : "#ffffff"}
                     borderWidth="1px"
@@ -13521,7 +13519,6 @@ export default function CitizenshipGuide() {
               ) : null}
             </>
           ) : !showIntro &&
-            !showBenefits &&
             !showPrimer &&
             showResults ? (
             <Flex
@@ -13531,10 +13528,10 @@ export default function CitizenshipGuide() {
               direction={{ base: "column", sm: "row" }}
             >
               <Button
+                {...CITIZENSHIP_CONTROL_SQUIRCLE_PROPS}
                 variant="outline"
                 w={{ base: "100%", sm: "220px" }}
                 minH="48px"
-                borderRadius="8px"
                 bg="var(--app-surface-elevated)"
                 borderColor="var(--app-border)"
                 color="var(--app-text-primary)"
@@ -13556,11 +13553,11 @@ export default function CitizenshipGuide() {
                 {translateText("Edit answers", pageLanguage)}
               </Button>
               <Button
+                {...CITIZENSHIP_CONTROL_SQUIRCLE_PROPS}
                 w={{ base: "100%", sm: "220px" }}
                 minH="48px"
                 bg="#1d4ed8"
                 color="white"
-                borderRadius="8px"
                 onClick={downloadReport}
                 _hover={{ bg: "#1e40af" }}
                 _active={{ bg: "#1e3a8a" }}
@@ -13571,7 +13568,6 @@ export default function CitizenshipGuide() {
           ) : null}
 
           {!showIntro &&
-          !showBenefits &&
           !showPrimer &&
           showCheckpoint ? (
             <CheckpointPanel
@@ -13589,7 +13585,7 @@ export default function CitizenshipGuide() {
             />
           ) : null}
 
-          {!showIntro && !showBenefits && !showPrimer && showResults ? (
+          {!showIntro && !showPrimer && showResults ? (
             <Stack spacing={{ base: 8, md: 12 }}>
               <ResultPanel
                 evaluation={evaluation}
@@ -13618,6 +13614,41 @@ export default function CitizenshipGuide() {
                 language={pageLanguage}
                 onSelectSound={playSelectSound}
               />
+              <Flex justify="center">
+                <Button
+                  {...CITIZENSHIP_CONTROL_SQUIRCLE_PROPS}
+                  type="button"
+                  variant="outline"
+                  leftIcon={<Icon as={CiWarning} boxSize="22px" />}
+                  w={{ base: "100%", sm: "60%" }}
+                  minW={{ sm: "320px" }}
+                  minH="56px"
+                  borderColor={isLightTheme ? "#fca5a5" : "#f87171"}
+                  bg={
+                    isLightTheme
+                      ? "rgba(254, 226, 226, 0.5)"
+                      : "rgba(127, 29, 29, 0.16)"
+                  }
+                  color={isLightTheme ? "#b91c1c" : "#fca5a5"}
+                  boxShadow="none"
+                  transform="none"
+                  fontWeight="800"
+                  onClick={() => {
+                    playSelectSound();
+                    setIsFeedbackOpen(true);
+                  }}
+                  _hover={{
+                    borderColor: isLightTheme ? "#f87171" : "#fca5a5",
+                    bg: isLightTheme
+                      ? "rgba(254, 202, 202, 0.62)"
+                      : "rgba(127, 29, 29, 0.28)",
+                    color: isLightTheme ? "#991b1b" : "#fecaca",
+                  }}
+                  _active={{ boxShadow: "none", transform: "none" }}
+                >
+                  {feedbackCopy.button}
+                </Button>
+              </Flex>
               <CitizenshipAssistantDrawer
                 isOpen={isAssistantOpen}
                 onClose={closeAssistant}
@@ -13635,6 +13666,67 @@ export default function CitizenshipGuide() {
         </Stack>
       </Container>
       <Modal
+        isOpen={isFeedbackOpen}
+        onClose={() => setIsFeedbackOpen(false)}
+        isCentered
+        motionPreset="none"
+      >
+        <ModalOverlay
+          motionProps={nativeOverlayMotionProps}
+          bg="var(--app-overlay)"
+        />
+        <ModalContent
+          style={CITIZENSHIP_SQUIRCLE_STYLE}
+          motionProps={nativeModalMotionProps}
+          bg="var(--app-surface)"
+          color="var(--app-text-primary)"
+          border="4px solid"
+          borderColor="#c13584"
+          mx={4}
+        >
+          <ModalHeader textAlign="center">
+            <Text>{feedbackCopy.title}</Text>
+          </ModalHeader>
+          <ModalCloseButton />
+          <ModalBody pb={2}>
+            <Text color="var(--app-text-secondary)">
+              {feedbackCopy.body}
+            </Text>
+          </ModalBody>
+          <ModalFooter justifyContent="center">
+            <Button
+              {...CITIZENSHIP_CONTROL_SQUIRCLE_PROPS}
+              as="a"
+              href={SHEILFER_INSTAGRAM_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              w={{ base: "100%", sm: "auto" }}
+              minH="52px"
+              px={7}
+              leftIcon={<Icon as={FaInstagram} boxSize="20px" />}
+              bg="linear-gradient(135deg, #833ab4, #c13584, #f77737)"
+              color="white"
+              boxShadow="0px 4px 0px #7a245d"
+              transform="translateY(0)"
+              onClick={playSelectSound}
+              _hover={{
+                bg: "linear-gradient(135deg, #6f2f9b, #ad2f76, #df6329)",
+                color: "white",
+                boxShadow: "0px 4px 0px #7a245d",
+              }}
+              _active={{
+                bg: "linear-gradient(135deg, #5d2783, #922864, #c65323)",
+                color: "white",
+                boxShadow: "none",
+                transform: "translateY(4px)",
+              }}
+            >
+              {feedbackCopy.cta}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+      <Modal
         isOpen={isResetConfirmOpen}
         onClose={() => setIsResetConfirmOpen(false)}
         isCentered
@@ -13645,6 +13737,7 @@ export default function CitizenshipGuide() {
           bg="var(--app-overlay)"
         />
         <ModalContent
+          style={CITIZENSHIP_SQUIRCLE_STYLE}
           motionProps={nativeModalMotionProps}
           bg="var(--app-surface)"
           color="var(--app-text-primary)"
@@ -13655,12 +13748,12 @@ export default function CitizenshipGuide() {
           <ModalHeader>
             <HStack spacing={3}>
               <Box
+                {...CITIZENSHIP_ICON_SQUIRCLE_PROPS}
                 display="inline-flex"
                 alignItems="center"
                 justifyContent="center"
                 w="36px"
                 h="36px"
-                borderRadius="8px"
                 bg="rgba(185, 28, 28, 0.1)"
                 color="#b91c1c"
                 flexShrink={0}
@@ -13683,9 +13776,9 @@ export default function CitizenshipGuide() {
           </ModalBody>
           <ModalFooter>
             <Button
+              {...CITIZENSHIP_CONTROL_SQUIRCLE_PROPS}
               type="button"
               w={{ base: "100%", sm: "auto" }}
-              borderRadius="8px"
               bg="#b91c1c"
               color="white"
               boxShadow="none"
@@ -13714,6 +13807,7 @@ export default function CitizenshipGuide() {
       >
         <ModalOverlay motionProps={nativeOverlayMotionProps} bg="var(--app-overlay)" />
         <ModalContent
+          style={CITIZENSHIP_SQUIRCLE_STYLE}
           motionProps={nativeModalMotionProps}
           bg="var(--app-surface)"
           color="var(--app-text-primary)"
