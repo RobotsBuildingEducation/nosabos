@@ -426,9 +426,9 @@ const LanguageMenuFixed = ({
           type="button"
           aria-label={`Select language${selected?.label ? `: ${selected.label}` : ""}`}
           size="sm"
-          minW="32px"
-          w="32px"
-          h="32px"
+          minW="36px"
+          w="36px"
+          h="36px"
           p={0}
           lineHeight="0"
           position="relative"
@@ -535,9 +535,9 @@ const ThemeModeToggle = ({ themeMode, onModeChange }) => {
         )
       }
       size="sm"
-      minW="32px"
-      w="32px"
-      h="32px"
+      minW="36px"
+      w="36px"
+      h="36px"
       border="1px solid"
       {...themeToggleProps}
       borderRadius="12px"
@@ -1752,8 +1752,7 @@ export default function LinksPage() {
           fontFamily="monospace"
         >
           <ModalHeader
-            borderBottom="1px solid"
-            borderColor={modalBorderSoft}
+            fontSize="lg"
             color={modalHeadingColor}
             textAlign={directionalTextAlign}
           >
@@ -1784,6 +1783,8 @@ export default function LinksPage() {
                 variant={isLightTheme ? "outline" : "solid"}
                 bg={isLightTheme ? APP_SURFACE : "#00aaff"}
                 w="100%"
+                h="auto"
+                py={4}
                 borderColor={isLightTheme ? linkAccent : undefined}
                 color={isLightTheme ? linkAccent : "white"}
                 _hover={
@@ -1802,12 +1803,20 @@ export default function LinksPage() {
                 bg={isLightTheme ? primaryAccent : "#009c9c"}
                 color={isLightTheme ? "#f8fafc" : "white"}
                 w="100%"
+                h="auto"
+                py={4}
                 boxShadow={
                   isLightTheme
                     ? "0 8px 18px rgba(15, 118, 110, 0.16)"
                     : undefined
                 }
-                _hover={isLightTheme ? { bg: "#0d9488" } : undefined}
+                _hover={{
+                  bg: isLightTheme ? "#0d9488" : "#009c9c",
+                  color: "white",
+                  textDecoration: "none",
+                }}
+                _active={{ color: "white" }}
+                _visited={{ color: "white" }}
                 onClick={() => {
                   handleSubmitActionSound();
                   if (!isLocalhost()) {
@@ -1822,25 +1831,6 @@ export default function LinksPage() {
               </Button>
             </VStack>
           </ModalBody>
-          <ModalFooter
-            borderTop="1px solid"
-            borderColor={modalBorderSoft}
-            justifyContent={isRtl ? "flex-start" : "flex-end"}
-          >
-            <Button
-              onClick={() => {
-                handleSelectSound();
-                onRbeClose();
-              }}
-              variant="ghost"
-              color={isLightTheme ? APP_TEXT_SECONDARY : "gray.400"}
-              _hover={{
-                bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.100",
-              }}
-            >
-              {translations.close}
-            </Button>
-          </ModalFooter>
         </ModalContent>
       </Modal>
 

@@ -106,7 +106,7 @@ export const linksPageTranslations = {
     // RBE Modal
     rbeModalTitle: "Robots Building Education",
     rbeModalDescription:
-      "You'll use your secret key to sign in to your account. If you entered through social media, you only have to do this once.",
+      "You'll have to use your secret key to sign in to your account.",
     copySecretKey: "Copy Secret Key",
     goToApp: "Go to app",
     close: "Close",
