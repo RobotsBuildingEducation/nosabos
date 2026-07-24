@@ -241,6 +241,7 @@ import {
   getAllLessonProgress,
   getAllFlashcardProgress,
 } from "../utils/cefrProgress";
+import { getLessonProgressPercent } from "../utils/lessonProgress";
 import FlashcardSkillTree from "./FlashcardSkillTree";
 import { CEFR_LEVELS } from "../data/flashcards/common";
 import { MdOutlineDescription } from "react-icons/md";
@@ -256,6 +257,10 @@ import {
   getLessonAgenda,
   getLocalizedAgendaLabel,
 } from "../utils/lessonCurriculum";
+import {
+  getTutorStarterPreviewAgendaItems,
+  isTutorStarterLesson,
+} from "../utils/tutorStarterAgenda";
 import { prepareTutorialGameScenario } from "../utils/tutorialGameLoader";
 import { waitForGameLoaderExploration } from "../utils/gameLoaderTiming";
 import { GAME_LOADING_MESSAGES } from "../utils/gameLoadingMessages";
@@ -1561,22 +1566,9 @@ const UnitSection = React.memo(function UnitSection({
 
             const inProgressPercent = (() => {
               if (status !== SKILL_STATUS.IN_PROGRESS) return 0;
-
-              const lessonStartXp = lessonProgress?.lessonStartXp;
-              if (
-                typeof lessonStartXp !== "number" ||
-                typeof userProgress.totalXp !== "number" ||
-                typeof lesson.xpReward !== "number" ||
-                lesson.xpReward <= 0
-              ) {
-                return 0;
-              }
-
-              const earnedDuringLesson = Math.max(
-                0,
-                userProgress.totalXp - lessonStartXp,
+              return Math.round(
+                getLessonProgressPercent(lessonProgress, lesson.xpReward),
               );
-              return Math.round((earnedDuringLesson / lesson.xpReward) * 100);
             })();
 
             return (
@@ -1839,7 +1831,12 @@ function LessonDetailModal({
   const lessonTitle = getUIDisplayText(lesson.title);
   const unitTitle = getUIDisplayText(unit.title);
   const lessonDescription = getUIDisplayText(lesson.description);
-  const lessonAgendaItems = getLessonAgenda(lesson, { unit, targetLang });
+  const lessonAgendaItems = isTutorStarterLesson(lesson)
+    ? getTutorStarterPreviewAgendaItems({
+        targetLang,
+        supportLang: resolvedSupportLang,
+      })
+    : getLessonAgenda(lesson, { unit, targetLang });
   const reviewContext = buildGameReviewContext({ lesson, unit, targetLang });
   const lessonWithReviewContext = reviewContext
     ? { ...lesson, gameReviewContext: reviewContext }

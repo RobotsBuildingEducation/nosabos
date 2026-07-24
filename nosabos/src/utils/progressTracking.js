@@ -40,14 +40,14 @@ export function initializeProgress() {
 
 /**
  * Start a lesson - mark it as in progress (but preserve COMPLETED and IN_PROGRESS status).
- * Saves `lessonStartXp` so users can resume mid-lesson progress across sessions.
+ * Saves lesson-owned `earnedXp` so progress resumes without counting XP from
+ * unrelated learning surfaces.
  */
 export async function startLesson(
   npub,
   lessonId,
   targetLang = "es",
   userProgress = null,
-  currentXp = 0,
 ) {
   if (!npub || !lessonId) return;
 
@@ -78,30 +78,39 @@ export async function startLesson(
 
     // Determine the lesson doc write:
     // - COMPLETED: don't touch (preserves unlock chain)
-    // - IN_PROGRESS: only bump updatedAt (preserve lessonStartXp & startedAt)
-    // - Otherwise (new/available): write full IN_PROGRESS with lessonStartXp
+    // - IN_PROGRESS: preserve earnedXp and startedAt
+    // - Otherwise (new/available): write full IN_PROGRESS with earnedXp = 0
     let lessonDocPromise;
     if (isAlreadyCompleted) {
       lessonDocPromise = Promise.resolve();
     } else if (isAlreadyInProgress) {
-      // Lesson already in progress — preserve lessonStartXp and startedAt
+      // Preserve trustworthy lesson-owned progress. Legacy records only have
+      // lessonStartXp, which cannot distinguish lesson activity from XP earned
+      // elsewhere, so they restart at zero rather than showing false progress.
       lessonDocPromise = setDoc(
         lessonProgressRef,
         {
+          earnedXp:
+            typeof existingLessonData?.earnedXp === "number"
+              ? Math.max(0, existingLessonData.earnedXp)
+              : 0,
+          lessonStartXp: deleteField(),
           tutorAgendaProgress: deleteField(),
           updatedAt: serverTimestamp(),
         },
         { merge: true },
       );
     } else {
-      // Fresh start — record the baseline XP so progress can be restored later
+      // Fresh starts own their XP counter so other learning surfaces cannot
+      // advance this lesson.
       lessonDocPromise = setDoc(
         lessonProgressRef,
         {
           targetLang: languageKey,
           lessonId,
           status: SKILL_STATUS.IN_PROGRESS,
-          lessonStartXp: currentXp,
+          earnedXp: 0,
+          lessonStartXp: deleteField(),
           tutorAgendaProgress: deleteField(),
           startedAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
@@ -390,6 +399,7 @@ export async function completeLesson(
           status: SKILL_STATUS.COMPLETED,
           completedAt: serverTimestamp(),
           xpEarned: xpReward,
+          earnedXp: xpReward,
           lessonStartXp: deleteField(),
           updatedAt: serverTimestamp(),
         },
@@ -625,6 +635,7 @@ export async function abandonLesson(npub, lessonId, targetLang = "es") {
           targetLang: languageKey,
           lessonId,
           status: SKILL_STATUS.AVAILABLE,
+          earnedXp: deleteField(),
           lessonStartXp: deleteField(),
           tutorAgendaProgress: deleteField(),
           updatedAt: serverTimestamp(),

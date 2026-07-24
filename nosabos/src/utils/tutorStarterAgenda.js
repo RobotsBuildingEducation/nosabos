@@ -8,6 +8,105 @@ export const TUTOR_STARTER_AGENDA_IDS = [
   "goodbye",
 ];
 
+export const TUTOR_STARTER_LESSON_IDS = [
+  "lesson-tutorial-1",
+  "lesson-tutorial-a1",
+];
+
+const SUPPORT_LABELS = {
+  hello: {
+    en: "hello",
+    es: "hola",
+    pt: "olá",
+    it: "ciao",
+    fr: "bonjour",
+    de: "hallo",
+    ja: "こんにちは",
+    hi: "नमस्ते",
+    ar: "أهلًا",
+    zh: "你好",
+    nl: "hallo",
+  },
+  myNameIs: {
+    en: "my name is",
+    es: "me llamo",
+    pt: "meu nome é",
+    it: "mi chiamo",
+    fr: "je m'appelle",
+    de: "ich heiße",
+    ja: "私の名前は",
+    hi: "मेरा नाम है",
+    ar: "اسمي",
+    zh: "我叫",
+    nl: "ik heet",
+  },
+  goodMorning: {
+    en: "good morning",
+    es: "buenos días",
+    pt: "bom dia",
+    it: "buongiorno",
+    fr: "bonjour",
+    de: "guten Morgen",
+    ja: "おはよう",
+    hi: "सुप्रभात",
+    ar: "صباح الخير",
+    zh: "早上好",
+    nl: "goedemorgen",
+  },
+  goodAfternoon: {
+    en: "good afternoon",
+    es: "buenas tardes",
+    pt: "boa tarde",
+    it: "buon pomeriggio",
+    fr: "bon après-midi",
+    de: "guten Nachmittag",
+    ja: "こんにちは",
+    hi: "नमस्कार",
+    ar: "مساء الخير",
+    zh: "下午好",
+    nl: "goedemiddag",
+  },
+  goodNight: {
+    en: "good night",
+    es: "buenas noches",
+    pt: "boa noite",
+    it: "buona notte",
+    fr: "bonne nuit",
+    de: "gute Nacht",
+    ja: "おやすみ",
+    hi: "शुभ रात्रि",
+    ar: "تصبح على خير",
+    zh: "晚安",
+    nl: "goedenacht",
+  },
+  howAreYou: {
+    en: "how are you",
+    es: "cómo estás",
+    pt: "como você está",
+    it: "come stai",
+    fr: "comment ça va",
+    de: "wie geht es dir",
+    ja: "お元気ですか",
+    hi: "आप कैसे हैं",
+    ar: "كيف حالك",
+    zh: "你好吗",
+    nl: "hoe gaat het",
+  },
+  goodbye: {
+    en: "goodbye",
+    es: "adiós",
+    pt: "adeus",
+    it: "arrivederci",
+    fr: "au revoir",
+    de: "auf Wiedersehen",
+    ja: "さようなら",
+    hi: "अलविदा",
+    ar: "مع السلامة",
+    zh: "再见",
+    nl: "tot ziens",
+  },
+};
+
 // The Tutor's first lesson has a deterministic agenda, so it cannot rely on
 // the realtime model to translate these phrases. Keep the spoken target
 // phrases aligned with the authored lesson-tutorial-1 curriculum.
@@ -159,4 +258,32 @@ export function getTutorStarterTargetExamples(itemOrId, targetLang = "es") {
 
 export function getTutorStarterModelPhrase(itemOrId, targetLang = "es") {
   return getTutorStarterTargetExamples(itemOrId, targetLang)[0] || "";
+}
+
+export function isTutorStarterLesson(lessonOrId) {
+  const lessonId =
+    typeof lessonOrId === "string"
+      ? lessonOrId
+      : String(lessonOrId?.id || "");
+  return TUTOR_STARTER_LESSON_IDS.includes(lessonId);
+}
+
+export function getTutorStarterPreviewAgendaItems({
+  targetLang = "es",
+  supportLang = "en",
+} = {}) {
+  const supportLanguage = getBaseLanguageCode(supportLang) || "en";
+
+  return TUTOR_STARTER_AGENDA_IDS.map((id) => {
+    const meaning =
+      SUPPORT_LABELS[id]?.[supportLanguage] || SUPPORT_LABELS[id]?.en || id;
+    const phrase = getTutorStarterModelPhrase(id, targetLang);
+    const label =
+      phrase &&
+      phrase.localeCompare(meaning, undefined, { sensitivity: "base" }) !== 0
+        ? `${meaning} · ${phrase}`
+        : meaning;
+
+    return { id, label };
+  });
 }

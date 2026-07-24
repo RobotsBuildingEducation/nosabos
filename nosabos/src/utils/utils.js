@@ -46,6 +46,8 @@ function syncAwardedXpToLocalStore({
   petHealth,
   activityField,
   activityCount,
+  skillTreeLessonId,
+  lessonEarnedXp,
 }) {
   try {
     const store = useUserStore.getState?.();
@@ -92,6 +94,25 @@ function syncAwardedXpToLocalStore({
             : delta,
         },
       };
+      if (
+        skillTreeLessonId &&
+        Number.isFinite(Number(lessonEarnedXp))
+      ) {
+        const currentLanguageLessons = currentProgress.languageLessons || {};
+        const currentLessonMap = currentLanguageLessons[langKey] || {};
+        patch.progress.languageLessons = {
+          ...currentLanguageLessons,
+          [langKey]: {
+            ...currentLessonMap,
+            [skillTreeLessonId]: {
+              ...(currentLessonMap[skillTreeLessonId] || {}),
+              targetLang: langKey,
+              lessonId: skillTreeLessonId,
+              earnedXp: Math.max(0, Number(lessonEarnedXp)),
+            },
+          },
+        };
+      }
       if (activityField && Number.isFinite(activityCount) && todayKey) {
         const currentLangActivity = pruneDayEntries(
           currentProgress?.[activityField]?.[langKey] || {},
@@ -126,8 +147,23 @@ function syncAwardedXpToLocalStore({
   }
 }
 
-export async function awardXp(npub, amount, targetLang = "es", source = "") {
+export async function awardXp(
+  npub,
+  amount,
+  targetLang = "es",
+  sourceOrOptions = "",
+) {
   if (!npub || !amount) return null;
+  const options =
+    sourceOrOptions && typeof sourceOrOptions === "object"
+      ? sourceOrOptions
+      : { source: sourceOrOptions };
+  const source =
+    typeof options.source === "string" ? options.source.trim() : "";
+  const skillTreeLessonId =
+    typeof options.skillTreeLessonId === "string"
+      ? options.skillTreeLessonId.trim()
+      : "";
   const ref = doc(database, "users", npub);
   const delta = Math.max(1, Math.round(amount));
   const now = new Date();
@@ -146,6 +182,7 @@ export async function awardXp(npub, amount, targetLang = "es", source = "") {
   let awardedLangKey = "";
   let awardedLanguageXp = null;
   let awardedActivityCount = null;
+  let awardedLessonXp = null;
 
   await runTransaction(database, async (tx) => {
     const [snap, monthSnap] = await Promise.all([tx.get(ref), tx.get(monthRef)]);
@@ -158,6 +195,21 @@ export async function awardXp(npub, amount, targetLang = "es", source = "") {
         ? data.progress.targetLang
         : "es";
     awardedLangKey = langKey;
+    const lessonProgressRef = skillTreeLessonId
+      ? doc(
+          database,
+          "users",
+          npub,
+          "languageLessons",
+          `${langKey}_${skillTreeLessonId}`,
+        )
+      : null;
+    const lessonProgressSnap = lessonProgressRef
+      ? await tx.get(lessonProgressRef)
+      : null;
+    const lessonProgressData = lessonProgressSnap?.exists()
+      ? lessonProgressSnap.data()
+      : null;
     const existingProgress = data?.progress || {};
     const existingLangXp = existingProgress?.languageXp?.[langKey] || 0;
     awardedLanguageXp = existingLangXp + delta;
@@ -270,6 +322,29 @@ export async function awardXp(npub, amount, targetLang = "es", source = "") {
       },
       { merge: true }
     );
+
+    // Skill Tree activity credits the active lesson document in the same
+    // transaction as the shared XP wallet. Tutor, flashcards, conversations,
+    // and other unscoped awards never touch this counter.
+    if (
+      lessonProgressRef &&
+      lessonProgressData?.status === "in_progress"
+    ) {
+      const existingLessonXp = Number(lessonProgressData.earnedXp);
+      awardedLessonXp =
+        (Number.isFinite(existingLessonXp) ? Math.max(0, existingLessonXp) : 0) +
+        delta;
+      tx.set(
+        lessonProgressRef,
+        {
+          targetLang: langKey,
+          lessonId: skillTreeLessonId,
+          earnedXp: awardedLessonXp,
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true },
+      );
+    }
   });
 
   syncAwardedXpToLocalStore({
@@ -282,12 +357,16 @@ export async function awardXp(npub, amount, targetLang = "es", source = "") {
     petHealth: awardedPetHealth,
     activityField,
     activityCount: awardedActivityCount,
+    skillTreeLessonId,
+    lessonEarnedXp: awardedLessonXp,
   });
 
   const result = {
     amount: delta,
     npub,
     source,
+    skillTreeLessonId,
+    lessonEarnedXp: awardedLessonXp,
     targetLang: awardedLangKey,
     languageXp: awardedLanguageXp,
     dailyXp: awardedDailyXp,
@@ -306,6 +385,8 @@ export async function awardXp(npub, amount, targetLang = "es", source = "") {
           amount: result.amount,
           npub: result.npub,
           source: result.source,
+          skillTreeLessonId: result.skillTreeLessonId,
+          lessonEarnedXp: result.lessonEarnedXp,
           targetLang: result.targetLang,
           languageXp: result.languageXp,
           dailyXp: result.dailyXp,

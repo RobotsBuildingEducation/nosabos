@@ -78,6 +78,7 @@ import {
 } from "../constants/languages";
 import { buildCurriculumPromptContext } from "../utils/lessonCurriculum";
 import { questionSquircleStyle } from "./questionUiStyles";
+import { getRandomHistoryXp } from "../utils/historyXp";
 
 const renderSpeakerIcon = (loading) =>
   loading ? (
@@ -141,7 +142,7 @@ function getLanguageTextProps(lang, { align = "start" } = {}) {
 }
 
 /* ---------------------------
-   LLM plumbing (backend for XP scoring + fallback)
+   LLM plumbing (fallback generation, translation, and grading)
 --------------------------- */
 const RESPONSES_URL = `${import.meta.env.VITE_RESPONSES_URL}/proxyResponses`;
 const MODEL = import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-5-nano";
@@ -610,118 +611,6 @@ Return JSON ONLY:
 }
 
 /* ---------------------------
-   XP scoring (kept on backend)
---------------------------- */
-function buildXpPrompt({
-  title,
-  target,
-  takeaways,
-  previousTitles,
-  cefrLevel,
-  currentXp,
-  hoursSinceLastLecture,
-}) {
-  const prev =
-    previousTitles && previousTitles.length
-      ? previousTitles.map((t) => `- ${t}`).join("\n")
-      : "(none yet)";
-
-  return `
-You are an impartial XP rater for a language-learning history app.
-
-Given the NEW lecture and the list of PREVIOUS lecture titles, assign an XP integer for this session.
-Consider:
-- Novelty vs. previous titles (avoid repetition; reward progression or deepening a thread).
-- Topic granularity/specificity (figures, events, policies), and overall difficulty for the user's CEFR level: ${cefrLevel}.
-- Coverage balance (people, culture, governments, wars) at least touched.
-- Text density/length (≈180–260 words is ideal).
-- Consistency/streak: if hours_since_last_lecture <= 48, give a small streak bonus.
-- Current user XP: ${currentXp} (slightly increase expectations as XP grows).
-
-Return JSON ONLY in this strict schema:
-
-{
-  "xp": <integer between 20 and 70>,
-  "reason": "<one-sentence reason>"
-}
-
-previous_titles:
-${prev}
-
-new_title: ${title}
-
-new_lecture_excerpt:
-${target.slice(0, 900)}
-
-new_takeaways:
-${Array.isArray(takeaways) ? takeaways.join(" | ") : ""}
-hours_since_last_lecture: ${hoursSinceLastLecture ?? "null"}
-`.trim();
-}
-
-async function computeAdaptiveXp({
-  title,
-  target,
-  takeaways,
-  previousTitles,
-  cefrLevel,
-  currentXp,
-  hoursSinceLastLecture,
-}) {
-  const MIN = 4;
-  const MAX = 7;
-
-  try {
-    const prompt = buildXpPrompt({
-      title,
-      target,
-      takeaways,
-      previousTitles,
-      cefrLevel,
-      currentXp,
-      hoursSinceLastLecture,
-    });
-    const raw = await callResponses({ model: MODEL, input: prompt });
-    const parsed = safeParseJSON(raw);
-
-    const xpRaw = Math.round(Number(parsed?.xp));
-    const xp = Number.isFinite(xpRaw)
-      ? Math.max(MIN, Math.min(MAX, xpRaw))
-      : null;
-
-    const reason =
-      typeof parsed?.reason === "string" && parsed.reason.trim()
-        ? parsed.reason.trim()
-        : "Auto-scored by rubric.";
-
-    if (xp !== null) return { xp, reason };
-  } catch {}
-
-  // Heuristic fallback (kept inside 4–7) - normalized to 4-7 XP range
-  let score = 5; // center
-  // Nudge by density (smaller increments for 4-7 range)
-  score += target.length > 230 ? 1 : target.length < 170 ? -1 : 0;
-  // Novelty vs previous titles
-  const looksRepeated = previousTitles?.some((t) =>
-    String(t || "")
-      .toLowerCase()
-      .includes(String(title || "").toLowerCase()),
-  );
-  score += looksRepeated ? -1 : 1;
-  // Streak bonus
-  score += hoursSinceLastLecture != null && hoursSinceLastLecture <= 48 ? 1 : 0;
-  // CEFR level tweak
-  score += ["C1", "C2"].includes(cefrLevel)
-    ? 1
-    : ["B1", "B2"].includes(cefrLevel)
-      ? 0.5
-      : 0;
-
-  const xp = Math.max(MIN, Math.min(MAX, score));
-  return { xp, reason: "Heuristic fallback scoring." };
-}
-
-/* ---------------------------
    TTS helpers
 --------------------------- */
 
@@ -772,12 +661,91 @@ function textFromChunk(chunk) {
   return "";
 }
 
+const REVIEW_QUESTION_TYPES = ["text", "fill", "mc"];
+
+function randomReviewQuestionType() {
+  return REVIEW_QUESTION_TYPES[
+    Math.floor(Math.random() * REVIEW_QUESTION_TYPES.length)
+  ];
+}
+
+function normalizeReviewQuestion(candidate, expectedType = "") {
+  const type = REVIEW_QUESTION_TYPES.includes(expectedType)
+    ? expectedType
+    : REVIEW_QUESTION_TYPES.includes(candidate?.questionType)
+      ? candidate.questionType
+      : REVIEW_QUESTION_TYPES.includes(candidate?.type)
+        ? candidate.type
+        : "";
+  const question = String(
+    candidate?.question || candidate?.sentence || "",
+  ).trim();
+  const answer = String(candidate?.answer || "").trim();
+
+  if (!type || !question || !answer) return null;
+  if (type === "fill" && !question.includes("___")) return null;
+
+  if (type === "mc") {
+    const options = Array.isArray(candidate?.options)
+      ? candidate.options
+          .map((option) => String(option || "").trim())
+          .filter(Boolean)
+      : [];
+    const matchingAnswer = options.find(
+      (option) => normalizeForCompare(option) === normalizeForCompare(answer),
+    );
+    const distinctOptions = new Set(options.map(normalizeForCompare));
+    if (
+      options.length !== 4 ||
+      distinctOptions.size !== 4 ||
+      !matchingAnswer
+    ) {
+      return null;
+    }
+    return { type, question, options, answer: matchingAnswer };
+  }
+
+  return { type, question, answer };
+}
+
+function streamingReviewQuestionProtocol(questionType, supportLang) {
+  const SUPPORT = LANG_NAME(supportLang);
+  const shared = [
+    `Generate the review question in ${SUPPORT}.`,
+    "Base it only on the completed target-language passage.",
+    "Keep it to one short sentence and do not quote the passage.",
+  ];
+
+  if (questionType === "fill") {
+    return [
+      ...shared,
+      'Emit one line: {"type":"review_question","questionType":"fill","question":"<short original question containing ___>","answer":"<missing word or short phrase>"}',
+      'The question must contain exactly one "___", and its answer must be clearly derivable from the passage.',
+    ];
+  }
+
+  if (questionType === "mc") {
+    return [
+      ...shared,
+      'Emit one line: {"type":"review_question","questionType":"mc","question":"<comprehension question>","options":["<option 1>","<option 2>","<option 3>","<option 4>"],"answer":"<exact text of the correct option>"}',
+      "Provide exactly four plausible, distinct options and copy the correct option text exactly into answer.",
+    ];
+  }
+
+  return [
+    ...shared,
+    'Emit one line: {"type":"review_question","questionType":"text","question":"<comprehension question>","answer":"<short correct answer>"}',
+    "The answer must be a short phrase that a reasonable reader can derive from the passage.",
+  ];
+}
+
 function buildStreamingPrompt({
   isFirst,
   previousTitles,
   targetLang,
   supportLang,
   cefrLevel,
+  reviewQuestionType,
   lessonContent = null,
 }) {
   const TARGET = LANG_NAME(targetLang);
@@ -814,8 +782,10 @@ function buildStreamingPrompt({
       `1) {"type":"title","text":"<a simple welcome title in ${TARGET}>"}`,
       `2) Emit exactly four {"type":"target","text":"<one specified sentence in ${TARGET}>"} lines.`,
       `3) Emit exactly three {"type":"takeaway","text":"<a very short beginner takeaway in ${SUPPORT}>"} lines.`,
+      ...streamingReviewQuestionProtocol(reviewQuestionType, supportLang),
       '4) Finally emit {"type":"done"}',
       "",
+      "The review question must test one explicit meaning from the four-sentence welcome.",
       "No support lines, markdown, commentary, or additional target sentences.",
     ].join("\n");
   }
@@ -845,6 +815,7 @@ function buildStreamingPrompt({
     `2) Emit the lecture body sentence-by-sentence in ${TARGET}: {"type":"target","text":"<one sentence>"} (4–10 lines total)`,
     `3) Then emit the full translation sentence-by-sentence in ${SUPPORT}: {"type":"support","text":"<one sentence>"} (mirrors the body)`,
     `4) Emit exactly three takeaways (bullets) in ${SUPPORT}: {"type":"takeaway","text":"<concise takeaway>"} (3 lines)`,
+    ...streamingReviewQuestionProtocol(reviewQuestionType, supportLang),
     '5) Finally emit {"type":"done"}',
     "",
     "STRICT RULES:",
@@ -884,7 +855,7 @@ export default function History({
   lesson = null,
   lessonContent = null,
   onSkip = null,
-  lessonStartXp = null,
+  lessonEarnedXp = 0,
 }) {
   const uiLang = useMemo(
     () => resolveHistoryUiLanguage(userLanguage),
@@ -936,15 +907,19 @@ export default function History({
 
   // Lesson progress (mirrors Vocabulary / GrammarBook pattern)
   const lessonXpGoal = lesson?.xpReward || 0;
-  const lessonXpEarned =
-    lessonStartXp == null ? 0 : Math.max(0, xp - lessonStartXp);
+  const normalizedLessonEarnedXp = Math.max(
+    0,
+    Number(lessonEarnedXp) || 0,
+  );
   const lessonProgressPct =
-    lessonXpGoal > 0 ? Math.min(100, (lessonXpEarned / lessonXpGoal) * 100) : 0;
+    lessonXpGoal > 0
+      ? Math.min(100, (normalizedLessonEarnedXp / lessonXpGoal) * 100)
+      : 0;
   const lessonProgress =
-    lesson && !lesson.isTutorial && lessonStartXp != null && lessonXpGoal > 0
+    lesson && !lesson.isTutorial && lessonXpGoal > 0
       ? {
           pct: lessonProgressPct,
-          earned: Math.min(lessonXpEarned, lessonXpGoal),
+          earned: Math.min(normalizedLessonEarnedXp, lessonXpGoal),
           total: lessonXpGoal,
           label: t("vocab_lesson_progress"),
         }
@@ -1030,6 +1005,7 @@ export default function History({
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
   const [reviewCorrect, setReviewCorrect] = useState(null);
   const [isGeneratingQuestion, setIsGeneratingQuestion] = useState(false);
+  const questionFallbackAttemptedRef = useRef(new Set());
   const [isCheckingAnswer, setIsCheckingAnswer] = useState(false);
   const [explanationText, setExplanationText] = useState("");
   const [isLoadingExplanation, setIsLoadingExplanation] = useState(false);
@@ -1291,12 +1267,6 @@ export default function History({
       .map((l) => l.title || "")
       .filter(Boolean)
       .slice(-30);
-    const lastClient = lectures.length
-      ? lectures[lectures.length - 1].createdAtClient || 0
-      : 0;
-    const hoursSinceLastLecture = lastClient
-      ? Math.round((Date.now() - lastClient) / 3600000)
-      : null;
 
     const isFirst = previousTitles.length === 0;
     const prompt = isFirst
@@ -1380,15 +1350,8 @@ export default function History({
           .slice(0, 3)
       : [];
 
-    const { xp: xpAward, reason: xpReason } = await computeAdaptiveXp({
-      title: cleanTitle,
-      target: safeTarget,
-      takeaways: cleanTakeaways,
-      previousTitles,
-      cefrLevel,
-      currentXp: xp,
-      hoursSinceLastLecture,
-    });
+    const xpAward = getRandomHistoryXp();
+    const xpReason = "Immediate random 5–8 XP award.";
 
     const payload = {
       title: cleanTitle,
@@ -1431,26 +1394,23 @@ export default function History({
       .map((l) => l.title || "")
       .filter(Boolean)
       .slice(-30);
-    const lastClient = lectures.length
-      ? lectures[lectures.length - 1].createdAtClient || 0
-      : 0;
-    const hoursSinceLastLecture = lastClient
-      ? Math.round((Date.now() - lastClient) / 3600000)
-      : null;
 
     const isFirst = previousTitles.length === 0;
+    const plannedReviewQuestionType = randomReviewQuestionType();
     const streamPrompt = buildStreamingPrompt({
       isFirst,
       previousTitles,
       targetLang,
       supportLang,
       cefrLevel,
+      reviewQuestionType: plannedReviewQuestionType,
       lessonContent,
     });
 
     let title = "";
     const targetParts = [];
     const takeaways = [];
+    let bundledReviewQuestion = null;
     let revealed = false;
 
     // track seen lines to prevent duplicates (e.g., when a provider re-emits the whole output)
@@ -1483,8 +1443,17 @@ export default function History({
         return;
       }
 
-      const text = typeof obj?.text === "string" ? obj.text.trim() : "";
       const type = obj?.type;
+      if (type === "review_question") {
+        const normalizedQuestion = normalizeReviewQuestion(
+          obj,
+          plannedReviewQuestionType,
+        );
+        if (normalizedQuestion) bundledReviewQuestion = normalizedQuestion;
+        return;
+      }
+
+      const text = typeof obj?.text === "string" ? obj.text.trim() : "";
       if (!type || !text) return;
 
       const cleaned =
@@ -1563,16 +1532,8 @@ export default function History({
         title ||
         (targetLang === "en" ? "Untitled lecture" : "Lección sin título");
 
-      // XP scoring (backend)
-      const { xp: xpAward, reason: xpReason } = await computeAdaptiveXp({
-        title: finalTitle,
-        target: safeTarget,
-        takeaways: finalTakeaways,
-        previousTitles,
-        cefrLevel,
-        currentXp: xp,
-        hoursSinceLastLecture,
-      });
+      const xpAward = getRandomHistoryXp();
+      const xpReason = "Immediate random 5–8 XP award.";
 
       // Save locally (do not award yet)
       const payload = {
@@ -1584,6 +1545,8 @@ export default function History({
         supportLang,
         xpAward,
         xpReason,
+        reviewQuestion: bundledReviewQuestion,
+        reviewQuestionType: plannedReviewQuestionType,
         createdAtClient: Date.now(),
         awarded: false, // ← wait until user finishes reading
       };
@@ -1698,7 +1661,7 @@ export default function History({
   };
 
   // Generate a review question for the current lecture
-  async function generateReviewQuestion() {
+  async function generateReviewQuestion(preferredType = "") {
     const text = viewLecture?.target;
     if (!text || isGeneratingQuestion) return;
 
@@ -1708,9 +1671,9 @@ export default function History({
     setReviewSubmitted(false);
     setReviewCorrect(null);
 
-    const questionTypes = ["text", "fill", "mc"];
-    const type =
-      questionTypes[Math.floor(Math.random() * questionTypes.length)];
+    const type = REVIEW_QUESTION_TYPES.includes(preferredType)
+      ? preferredType
+      : randomReviewQuestionType();
 
     let instruction = "";
     if (type === "text") {
@@ -1748,26 +1711,8 @@ export default function History({
       const raw = await callResponses({ model: MODEL, input: instruction });
       const parsed = safeParseJSON(raw);
       if (parsed) {
-        if (type === "text") {
-          setReviewQuestion({
-            type,
-            question: parsed.question,
-            answer: parsed.answer,
-          });
-        } else if (type === "fill") {
-          setReviewQuestion({
-            type,
-            question: parsed.sentence,
-            answer: parsed.answer,
-          });
-        } else {
-          setReviewQuestion({
-            type,
-            question: parsed.question,
-            options: parsed.options,
-            answer: parsed.answer,
-          });
-        }
+        const normalizedQuestion = normalizeReviewQuestion(parsed, type);
+        if (normalizedQuestion) setReviewQuestion(normalizedQuestion);
       }
     } catch (e) {
       console.error("Failed to generate review question", e);
@@ -1845,7 +1790,9 @@ export default function History({
     if (isCorrect && activeLecture && !activeLecture.awarded) {
       const amt = Number(activeLecture?.xpAward || 0);
       if (amt > 0) {
-        await awardXp(npub, amt, targetLang).catch(() => {});
+        await awardXp(npub, amt, targetLang, {
+          skillTreeLessonId: lesson?.id,
+        }).catch(() => {});
       }
       setLectures((prev) =>
         prev.map((lec) =>
@@ -1953,7 +1900,9 @@ Return ONLY valid JSON:
     if (activeLecture && !activeLecture.awarded) {
       const amt = Number(activeLecture?.xpAward || 0);
       if (amt > 0) {
-        await awardXp(npub, amt, targetLang).catch(() => {});
+        await awardXp(npub, amt, targetLang, {
+          skillTreeLessonId: lesson?.id,
+        }).catch(() => {});
       }
       setLectures((prev) =>
         prev.map((lec) =>
@@ -1966,7 +1915,7 @@ Return ONLY valid JSON:
   // Reset review state when lecture changes
   useEffect(() => {
     setReviewFormat(null);
-    setReviewQuestion(null);
+    setReviewQuestion(activeLecture?.reviewQuestion || null);
     setExplanationText("");
     setIsLoadingExplanation(false);
     setReviewAnswer("");
@@ -1991,19 +1940,32 @@ Return ONLY valid JSON:
     }
   }, [activeLecture?.id, draftLecture, isGenerating]); // eslint-disable-line
 
-  // Generate the review question as soon as the lecture is ready so it is
-  // already waiting if the learner switches back from read-aloud mode.
+  // Gemini normally bundles the review question with the lecture stream. Use
+  // Nano once as a fallback only when that bundled record is missing or invalid.
   useEffect(() => {
+    const lectureId = activeLecture?.id;
     if (
-      activeLecture?.target &&
+      lectureId &&
+      activeLecture.target &&
       !draftLecture &&
       !isGenerating &&
+      !activeLecture.reviewQuestion &&
       !reviewQuestion &&
-      !isGeneratingQuestion
+      !isGeneratingQuestion &&
+      !questionFallbackAttemptedRef.current.has(lectureId)
     ) {
-      generateReviewQuestion();
+      questionFallbackAttemptedRef.current.add(lectureId);
+      generateReviewQuestion(activeLecture.reviewQuestionType);
     }
-  }, [activeLecture?.id, draftLecture, isGenerating]); // eslint-disable-line
+  }, [
+    activeLecture?.id,
+    activeLecture?.reviewQuestion,
+    activeLecture?.reviewQuestionType,
+    draftLecture,
+    isGenerating,
+    reviewQuestion,
+    isGeneratingQuestion,
+  ]); // eslint-disable-line
 
   const xpReasonText =
     activeLecture?.xpReason && typeof activeLecture.xpReason === "string"
@@ -3078,14 +3040,25 @@ Return ONLY valid JSON:
                                   borderColor={
                                     reviewAnswer === opt
                                       ? "teal.400"
-                                      : "whiteAlpha.200"
+                                      : isLightTheme
+                                        ? "rgba(90, 71, 54, 0.28)"
+                                        : "whiteAlpha.200"
                                   }
                                   bg={
                                     reviewAnswer === opt
                                       ? "rgba(56, 178, 172, 0.12)"
-                                      : "transparent"
+                                      : isLightTheme
+                                        ? "rgba(255, 250, 241, 0.38)"
+                                        : "transparent"
                                   }
-                                  _hover={{ bg: "rgba(255,255,255,0.06)" }}
+                                  _hover={{
+                                    bg:
+                                      reviewAnswer === opt
+                                        ? "rgba(56, 178, 172, 0.18)"
+                                        : isLightTheme
+                                          ? paperSecondaryButtonHoverBg
+                                          : "rgba(255,255,255,0.06)",
+                                  }}
                                   cursor="pointer"
                                   transition="all 0.15s"
                                   textAlign="left"
@@ -3101,14 +3074,22 @@ Return ONLY valid JSON:
                                       borderColor={
                                         reviewAnswer === opt
                                           ? "teal.400"
-                                          : "whiteAlpha.300"
+                                          : isLightTheme
+                                            ? "rgba(90, 71, 54, 0.42)"
+                                            : "whiteAlpha.300"
                                       }
                                       bg={
                                         reviewAnswer === opt
                                           ? "teal.400"
                                           : "transparent"
                                       }
-                                      color="white"
+                                      color={
+                                        reviewAnswer === opt
+                                          ? "white"
+                                          : isLightTheme
+                                            ? paperHeading
+                                            : "white"
+                                      }
                                       fontSize="xs"
                                       fontWeight="bold"
                                       flexShrink={0}

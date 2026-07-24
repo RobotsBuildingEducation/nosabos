@@ -1066,7 +1066,7 @@ export default function Vocabulary({
   onExitQuiz = null,
   pauseMs = 2000,
   onSendHelpRequest = null,
-  lessonStartXp = null,
+  lessonEarnedXp = 0,
 }) {
   const t = useT(userLanguage);
   const toast = useToast();
@@ -1174,19 +1174,22 @@ export default function Vocabulary({
     useSharedProgress();
 
   const lessonXpGoal = lesson?.xpReward || 0;
-  const lessonXpEarned =
-    lessonStartXp == null ? 0 : Math.max(0, xp - lessonStartXp);
+  const normalizedLessonEarnedXp = Math.max(
+    0,
+    Number(lessonEarnedXp) || 0,
+  );
   const lessonProgressPct =
-    lessonXpGoal > 0 ? Math.min(100, (lessonXpEarned / lessonXpGoal) * 100) : 0;
+    lessonXpGoal > 0
+      ? Math.min(100, (normalizedLessonEarnedXp / lessonXpGoal) * 100)
+      : 0;
   const lessonProgress =
     lesson &&
     !lesson.isTutorial &&
     !isFinalQuiz &&
-    lessonStartXp != null &&
     lessonXpGoal > 0
       ? {
           pct: lessonProgressPct,
-          earned: Math.min(lessonXpEarned, lessonXpGoal),
+          earned: Math.min(normalizedLessonEarnedXp, lessonXpGoal),
           total: lessonXpGoal,
           label: t("vocab_lesson_progress"),
         }
@@ -2621,7 +2624,11 @@ Return EXACTLY:
       setLastOk(ok);
       setRecentXp(0); // No XP in quiz mode
     } else {
-      if (delta > 0) await awardXp(npub, delta, targetLang).catch(() => {});
+      if (delta > 0) {
+        await awardXp(npub, delta, targetLang, {
+          skillTreeLessonId: lesson?.id,
+        }).catch(() => {});
+      }
 
       setResFill(ok ? "correct" : "try_again"); // log only
       setLastOk(ok);
@@ -2933,7 +2940,11 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
       setLastOk(ok);
       setRecentXp(0); // No XP in quiz mode
     } else {
-      if (delta > 0) await awardXp(npub, delta, targetLang).catch(() => {});
+      if (delta > 0) {
+        await awardXp(npub, delta, targetLang, {
+          skillTreeLessonId: lesson?.id,
+        }).catch(() => {});
+      }
 
       setResMC(ok ? "correct" : "try_again"); // log only
       setLastOk(ok);
@@ -3278,7 +3289,11 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
       setLastOk(ok);
       setRecentXp(0); // No XP in quiz mode
     } else {
-      if (delta > 0) await awardXp(npub, delta, targetLang).catch(() => {});
+      if (delta > 0) {
+        await awardXp(npub, delta, targetLang, {
+          skillTreeLessonId: lesson?.id,
+        }).catch(() => {});
+      }
 
       setResMA(ok ? "correct" : "try_again"); // log only
       setLastOk(ok);
@@ -4141,7 +4156,11 @@ Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
       setLastOk(ok);
       setRecentXp(0); // No XP in quiz mode
     } else {
-      if (delta > 0) await awardXp(npub, delta, targetLang).catch(() => {});
+      if (delta > 0) {
+        await awardXp(npub, delta, targetLang, {
+          skillTreeLessonId: lesson?.id,
+        }).catch(() => {});
+      }
 
       setMResult(ok ? "correct" : "try_again"); // log only
       setLastOk(ok);
@@ -4236,7 +4255,11 @@ Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
       return;
     }
 
-    if (delta > 0) await awardXp(npub, delta, targetLang).catch(() => {});
+    if (delta > 0) {
+      await awardXp(npub, delta, targetLang, {
+        skillTreeLessonId: lesson?.id,
+      }).catch(() => {});
+    }
 
     setLastOk(ok);
     setRecentXp(delta);
@@ -4307,7 +4330,11 @@ Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
         setLastOk(ok);
         setRecentXp(0); // No XP in quiz mode
       } else {
-        if (delta > 0) await awardXp(npub, delta, targetLang).catch(() => {});
+        if (delta > 0) {
+          await awardXp(npub, delta, targetLang, {
+            skillTreeLessonId: lesson?.id,
+          }).catch(() => {});
+        }
 
         setLastOk(ok);
         setRecentXp(delta);
@@ -4342,6 +4369,7 @@ Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
     },
     [
       lockedType,
+      lesson?.id,
       npub,
       sHint,
       sPrompt,
@@ -4351,6 +4379,7 @@ Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
       sVariant,
       t,
       toast,
+      targetLang,
       userLanguage,
     ],
   );
@@ -6760,7 +6789,9 @@ Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
             onOpenDeck={() => setShowDeckReview(true)}
             onCorrect={(xpAmount) => {
               if (!isFinalQuiz) {
-                awardXp(npub, xpAmount, targetLang).catch(() => {});
+                awardXp(npub, xpAmount, targetLang, {
+                  skillTreeLessonId: lesson?.id,
+                }).catch(() => {});
               }
               setLastOk(true);
               setRecentXp(xpAmount);

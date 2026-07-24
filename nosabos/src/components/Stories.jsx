@@ -1733,9 +1733,9 @@ export default function StoryMode({
     sessionAwardedRef.current = true;
 
     if (awardedXp > 0) {
-      await awardXp(npubLive, Math.round(awardedXp), targetLang).catch(
-        () => {},
-      );
+      await awardXp(npubLive, Math.round(awardedXp), targetLang, {
+        skillTreeLessonId: lesson?.id,
+      }).catch(() => {});
     }
     try {
       await saveStoryTurn(npubLive, {

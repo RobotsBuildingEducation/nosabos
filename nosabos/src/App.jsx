@@ -216,6 +216,10 @@ import {
   completeLesson,
   getLanguageXp,
 } from "./utils/progressTracking";
+import {
+  getLessonEarnedXp,
+  hasCompletedLessonXp,
+} from "./utils/lessonProgress";
 import { awardXp } from "./utils/utils";
 import {
   buildFlashcardReviewUpdate,
@@ -3556,10 +3560,7 @@ export default function App({ onBootReady } = {}) {
     );
   }, [activeLesson]);
 
-  // Track XP at lesson start for completion detection
-  const [lessonStartXp, setLessonStartXp] = useState(null);
   const lessonCompletionTriggeredRef = useRef(false);
-  const previousXpRef = useRef(null);
   const activeLessonLanguageRef = useRef(resolvedTargetLang);
   const lastTargetLangRef = useRef(resolvedTargetLang);
   const pendingLessonCompletionRef = useRef(null);
@@ -5274,11 +5275,6 @@ export default function App({ onBootReady } = {}) {
       const lessonLang = resolvedTargetLang;
       const langKey = (lessonLang || "es").toLowerCase();
 
-      // Compute current XP before calling startLesson (needed as baseline for fresh starts)
-      const fallbackTotalXp = Number(user?.xp ?? 0) || 0;
-      const preProgressSource = user?.progress || { totalXp: fallbackTotalXp };
-      const currentXp = getLanguageXp(preProgressSource, lessonLang);
-
       if (npub && !enrichedLesson.isRepair) {
         // Pass current user progress so startLesson can preserve COMPLETED/IN_PROGRESS status
         await startLesson(
@@ -5286,10 +5282,9 @@ export default function App({ onBootReady } = {}) {
           enrichedLesson.id,
           resolvedTargetLang,
           user?.progress,
-          currentXp,
         );
 
-        // Refresh user data to get updated progress (including saved lessonStartXp)
+        // Refresh user data to get the lesson-owned earnedXp counter.
         fresh = await loadUserObjectFromDB(database, npub);
         if (fresh) setUser?.(fresh);
       }
@@ -5300,35 +5295,17 @@ export default function App({ onBootReady } = {}) {
         localStorage.setItem("activeLesson", JSON.stringify(enrichedLesson));
       }
 
-      // Determine the correct starting XP:
-      // If the lesson was already in-progress and has a saved lessonStartXp, use it
-      // so the user resumes from where they left off. Otherwise use current XP.
       activeLessonLanguageRef.current = lessonLang;
-      const freshProgressSource = fresh?.progress || preProgressSource;
-      const freshCurrentXp = getLanguageXp(freshProgressSource, lessonLang);
+      const freshProgressSource = fresh?.progress || user?.progress || {};
       const savedLessonData =
         freshProgressSource?.languageLessons?.[langKey]?.[enrichedLesson.id];
-      const savedStartXp = savedLessonData?.lessonStartXp;
-
-      // Use saved XP baseline if it exists and is a valid number less than or equal to current XP
-      const effectiveStartXp =
-        typeof savedStartXp === "number" && savedStartXp <= freshCurrentXp
-          ? savedStartXp
-          : freshCurrentXp;
-
-      setLessonStartXp(effectiveStartXp);
       lessonCompletionTriggeredRef.current = false; // Reset completion flag
-      console.log("[Lesson Start] Recording starting XP:", {
+      console.log("[Lesson Start] Loaded lesson-owned progress:", {
         lessonId: enrichedLesson.id,
         lessonTitle: enrichedLesson.title.en,
         lessonLang,
-        startXp: effectiveStartXp,
-        currentXp: freshCurrentXp,
-        savedStartXp,
-        resumed: effectiveStartXp !== freshCurrentXp,
+        earnedXp: getLessonEarnedXp(savedLessonData),
         xpRequired: enrichedLesson.xpReward,
-        freshXp: fresh?.xp,
-        userXp: user?.xp,
       });
 
       // Switch to the first mode in the lesson BEFORE switching view mode
@@ -5527,8 +5504,6 @@ export default function App({ onBootReady } = {}) {
     setTutorialGameScenario(null);
     setTutorialGamePreparationFailed(false);
     setTutorialGameRevealReady(false);
-    setLessonStartXp(null);
-    previousXpRef.current = null;
     lessonCompletionTriggeredRef.current = false;
     activeLessonLanguageRef.current = resolvedTargetLang;
     // Reset tutorial state
@@ -6794,7 +6769,6 @@ export default function App({ onBootReady } = {}) {
     const unsub = onSnapshot(ref, (snap) => {
       const data = snap.exists() ? snap.data() : {};
       const newXp = Number(data?.xp || 0);
-      const lessonLang = activeLessonLanguageRef.current || resolvedTargetLang;
       const latestUser = useUserStore.getState()?.user || {};
       const existingProgress = latestUser?.progress || user?.progress || {};
       const rawProgress = data?.progress || { totalXp: newXp };
@@ -6817,8 +6791,6 @@ export default function App({ onBootReady } = {}) {
         tutorLanguageLessons: existingProgress?.tutorLanguageLessons ?? {},
         languageFlashcards: existingProgress?.languageFlashcards ?? {},
       };
-      const newLessonLanguageXp = getLanguageXp(progressPayload, lessonLang);
-
       // Keep global user store in sync with Firestore changes.
       // IMPORTANT: root user snapshots do not include subcollection-backed lesson/
       // flashcard progress, so avoid blindly overwriting `progress` before hydration.
@@ -6963,32 +6935,6 @@ export default function App({ onBootReady } = {}) {
           pickRandomFeature();
         }
 
-        // Check for lesson completion
-        if (viewMode === "lesson" && activeLesson && lessonStartXp !== null) {
-          const totalXpEarned = newLessonLanguageXp - lessonStartXp;
-
-          console.log("[Lesson XP Check]", {
-            newXp,
-            lessonLang,
-            newLessonLanguageXp,
-            lessonStartXp,
-            totalXpEarned,
-            lessonGoal: activeLesson.xpReward,
-            shouldComplete: totalXpEarned >= activeLesson.xpReward,
-          });
-
-          // Check if lesson goal reached
-          if (
-            totalXpEarned >= activeLesson.xpReward &&
-            !lessonCompletionTriggeredRef.current
-          ) {
-            console.log(
-              "[Lesson Completion] XP goal reached! Completing lesson...",
-            );
-            triggerLessonCompletion("xp_goal");
-          }
-        }
-
         maybePostNostrProgress({ totalXp: newXp });
       }
     });
@@ -7007,9 +6953,7 @@ export default function App({ onBootReady } = {}) {
     maybePostNostrProgress,
     viewMode,
     activeLesson,
-    lessonStartXp,
     resolvedTargetLang,
-    triggerLessonCompletion,
   ]);
 
   const RandomHeader = (
@@ -7153,6 +7097,44 @@ export default function App({ onBootReady } = {}) {
       flashcardActivity: flashcardActivityForLanguage,
     };
   }, [user?.progress, resolvedTargetLang]);
+
+  const activeSkillTreeLessonProgress = activeLesson?.id
+    ? userProgress.lessons?.[activeLesson.id]
+    : null;
+  const activeLessonEarnedXp = getLessonEarnedXp(
+    activeSkillTreeLessonProgress,
+  );
+
+  // Completion is driven by the active lesson's own counter. Shared language
+  // XP from Tutor, flashcards, conversations, or other surfaces cannot satisfy
+  // this gate.
+  useEffect(() => {
+    if (
+      viewMode !== "lesson" ||
+      !activeLesson ||
+      activeLesson.isRepair ||
+      activeSkillTreeLessonProgress?.status !== "in_progress" ||
+      lessonCompletionTriggeredRef.current
+    ) {
+      return;
+    }
+
+    if (
+      hasCompletedLessonXp(
+        activeSkillTreeLessonProgress,
+        activeLesson.xpReward,
+      )
+    ) {
+      triggerLessonCompletion("xp_goal", {
+        xpEarned: activeLesson.xpReward,
+      });
+    }
+  }, [
+    activeLesson,
+    activeSkillTreeLessonProgress,
+    triggerLessonCompletion,
+    viewMode,
+  ]);
 
   // CEFR level configuration (shared across modes)
   const CEFR_LEVELS = ["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"];
@@ -9537,7 +9519,7 @@ export default function App({ onBootReady } = {}) {
                           lesson={activeLesson}
                           lessonContent={activeLessonContent?.reading}
                           onSkip={switchToRandomLessonMode}
-                          lessonStartXp={lessonStartXp}
+                          lessonEarnedXp={activeLessonEarnedXp}
                         />
                       </TabPanel>
                     );
@@ -9563,7 +9545,7 @@ export default function App({ onBootReady } = {}) {
                           }
                           onSkip={switchToRandomLessonMode}
                           onSendHelpRequest={handleSendToHelpChat}
-                          lessonStartXp={lessonStartXp}
+                          lessonEarnedXp={activeLessonEarnedXp}
                         />
                       </TabPanel>
                     );
@@ -9590,7 +9572,7 @@ export default function App({ onBootReady } = {}) {
                           onSkip={switchToRandomLessonMode}
                           onExitQuiz={handleReturnToSkillTree}
                           onSendHelpRequest={handleSendToHelpChat}
-                          lessonStartXp={lessonStartXp}
+                          lessonEarnedXp={activeLessonEarnedXp}
                         />
                       </TabPanel>
                     );

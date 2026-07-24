@@ -989,7 +989,7 @@ export default function GrammarBook({
   onSkip = null,
   pauseMs = 2000,
   onSendHelpRequest = null,
-  lessonStartXp = null,
+  lessonEarnedXp = 0,
 }) {
   const t = useT(userLanguage);
   const toast = useToast();
@@ -1079,19 +1079,22 @@ export default function GrammarBook({
     useSharedProgress();
 
   const lessonXpGoal = lesson?.xpReward || 0;
-  const lessonXpEarned =
-    lessonStartXp == null ? 0 : Math.max(0, xp - lessonStartXp);
+  const normalizedLessonEarnedXp = Math.max(
+    0,
+    Number(lessonEarnedXp) || 0,
+  );
   const lessonProgressPct =
-    lessonXpGoal > 0 ? Math.min(100, (lessonXpEarned / lessonXpGoal) * 100) : 0;
+    lessonXpGoal > 0
+      ? Math.min(100, (normalizedLessonEarnedXp / lessonXpGoal) * 100)
+      : 0;
   const lessonProgress =
     lesson &&
     !lesson.isTutorial &&
     !isFinalQuiz &&
-    lessonStartXp != null &&
     lessonXpGoal > 0
       ? {
           pct: lessonProgressPct,
-          earned: Math.min(lessonXpEarned, lessonXpGoal),
+          earned: Math.min(normalizedLessonEarnedXp, lessonXpGoal),
           total: lessonXpGoal,
           label: t("vocab_lesson_progress"),
         }
@@ -3796,7 +3799,11 @@ Return JSON ONLY:
       return;
     }
 
-    if (delta > 0) await awardXp(npub, delta, targetLang).catch(() => {});
+    if (delta > 0) {
+      await awardXp(npub, delta, targetLang, {
+        skillTreeLessonId: lesson?.id,
+      }).catch(() => {});
+    }
 
     setLastOk(ok);
     setRecentXp(delta);
@@ -3875,7 +3882,11 @@ Return JSON ONLY:
       return;
     }
 
-    if (delta > 0) await awardXp(npub, delta, targetLang).catch(() => {});
+    if (delta > 0) {
+      await awardXp(npub, delta, targetLang, {
+        skillTreeLessonId: lesson?.id,
+      }).catch(() => {});
+    }
 
     setMcResult(ok ? "correct" : "try_again"); // for logs only
     setLastOk(ok);
@@ -3956,7 +3967,11 @@ Return JSON ONLY:
       return;
     }
 
-    if (delta > 0) await awardXp(npub, delta, targetLang).catch(() => {});
+    if (delta > 0) {
+      await awardXp(npub, delta, targetLang, {
+        skillTreeLessonId: lesson?.id,
+      }).catch(() => {});
+    }
 
     setMaResult(ok ? "correct" : "try_again"); // for logs only
     setLastOk(ok);
@@ -4033,7 +4048,11 @@ Return JSON ONLY:
       return;
     }
 
-    if (delta > 0) await awardXp(npub, delta, targetLang).catch(() => {});
+    if (delta > 0) {
+      await awardXp(npub, delta, targetLang, {
+        skillTreeLessonId: lesson?.id,
+      }).catch(() => {});
+    }
 
     setLastOk(ok);
     setRecentXp(delta);
@@ -4124,7 +4143,11 @@ Return JSON ONLY:
       return;
     }
 
-    if (delta > 0) await awardXp(npub, delta, targetLang).catch(() => {});
+    if (delta > 0) {
+      await awardXp(npub, delta, targetLang, {
+        skillTreeLessonId: lesson?.id,
+      }).catch(() => {});
+    }
 
     setLastOk(ok);
     setRecentXp(delta);
@@ -4203,7 +4226,11 @@ Return JSON ONLY:
         return;
       }
 
-      if (delta > 0) await awardXp(npub, delta, targetLang).catch(() => {});
+      if (delta > 0) {
+        await awardXp(npub, delta, targetLang, {
+          skillTreeLessonId: lesson?.id,
+        }).catch(() => {});
+      }
 
       setLastOk(ok);
       setRecentXp(delta);
@@ -4235,6 +4262,7 @@ Return JSON ONLY:
     },
     [
       modeLocked,
+      lesson?.id,
       npub,
       sHint,
       sPrompt,
@@ -4242,6 +4270,7 @@ Return JSON ONLY:
       sTranslation,
       t,
       toast,
+      targetLang,
       userLanguage,
     ],
   );
@@ -6440,7 +6469,9 @@ Return JSON ONLY:
             onOpenDeck={() => setShowDeckReview(true)}
             onCorrect={(xpAmount) => {
               if (!isFinalQuiz) {
-                awardXp(npub, xpAmount, targetLang).catch(() => {});
+                awardXp(npub, xpAmount, targetLang, {
+                  skillTreeLessonId: lesson?.id,
+                }).catch(() => {});
               }
               setLastOk(true);
               setRecentXp(xpAmount);

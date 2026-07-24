@@ -3324,7 +3324,12 @@ Respond with ONLY a JSON object: {"target":"phrase in ${targetName}","support":"
   --------------------------- */
   return (
     <>
-      <Box color="gray.100" position="relative" pb="120px">
+      <Box
+        color="gray.100"
+        position="relative"
+        pb="calc(240px + env(safe-area-inset-bottom))"
+        scrollPaddingBottom="calc(240px + env(safe-area-inset-bottom))"
+      >
         {/* Header area: robot separated from goal card */}
         <VStack px={4} mt={0} spacing={1} align="center">
           <Box

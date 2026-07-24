@@ -2767,7 +2767,9 @@ Return ONLY JSON:
           pron: !!practicePronunciationRef.current,
         });
         setXp((v) => v + xpGain);
-        await awardXp(currentNpub, xpGain, targetLangRef.current);
+        await awardXp(currentNpub, xpGain, targetLangRef.current, {
+          skillTreeLessonId: lesson?.id,
+        });
         goalXpAwardedRef.current = true;
       }
 
