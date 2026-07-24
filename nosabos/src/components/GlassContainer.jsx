@@ -50,10 +50,6 @@ export default function GlassContainer({
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
   const shouldUseGlassEffects = !isLightTheme || allowLightModeGlass;
-  const liquidGlassRadius =
-    typeof borderRadius === "number"
-      ? borderRadius
-      : Number.parseFloat(borderRadius) || 0;
   const fallbackStyle = useMemo(
     () => ({
       backdropFilter: shouldUseGlassEffects ? `blur(${fallbackBlur})` : "none",
@@ -69,7 +65,7 @@ export default function GlassContainer({
   if (supportsLiquidGlass && shouldUseGlassEffects) {
     return (
       <LiquidGlass
-        borderRadius={liquidGlassRadius}
+        borderRadius={borderRadius}
         blur={blur}
         contrast={contrast}
         brightness={brightness}
@@ -79,7 +75,6 @@ export default function GlassContainer({
         elasticity={elasticity}
         shadowIntensity={shadowIntensity}
         className={className}
-        border="1px solid red"
       >
         {children}
       </LiquidGlass>
