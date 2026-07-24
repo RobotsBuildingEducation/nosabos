@@ -14,6 +14,10 @@ import {
 } from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
 import { SKILL_STATUS } from "../data/skillTree/index.js";
+import {
+  normalizeTutorConversationDraftMessages,
+  TUTOR_CONVERSATION_DRAFT_VERSION,
+} from "./tutorConversationDraft.js";
 
 // Version the Tutor agenda checkpoint so full-XP records written before the
 // app-owned agenda gate can be migrated without weakening completion rules for
@@ -237,6 +241,53 @@ export async function saveTutorLessonEarnedXp(
 }
 
 /**
+ * Save a small reconnect transcript on the active Tutor lesson.
+ *
+ * Callers intentionally fire-and-forget this write. The Tutor UI debounces
+ * finalized message snapshots so speaking/listening never waits on Firestore.
+ */
+export async function saveTutorConversationDraft(
+  npub,
+  lessonId,
+  targetLang = "es",
+  messages = [],
+) {
+  if (!npub || !lessonId) return;
+
+  const languageKey = (targetLang || "es").toLowerCase();
+  const lessonProgressRef = doc(
+    database,
+    "users",
+    npub,
+    "tutorLanguageLessons",
+    `${languageKey}_${lessonId}`,
+  );
+  const normalizedMessages =
+    normalizeTutorConversationDraftMessages(messages);
+  if (!normalizedMessages.length) return;
+
+  try {
+    await setDoc(
+      lessonProgressRef,
+      {
+        targetLang: languageKey,
+        lessonId,
+        conversationDraft: {
+          version: TUTOR_CONVERSATION_DRAFT_VERSION,
+          messages: normalizedMessages,
+          updatedAt: serverTimestamp(),
+        },
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true },
+    );
+  } catch (error) {
+    console.error("Error saving Tutor conversation draft:", error);
+    throw error;
+  }
+}
+
+/**
  * Save Tutor's agenda checkpoint for a lesson.
  * Tutor progress is intentionally separate from Skill Tree languageLessons.
  */
@@ -349,6 +400,7 @@ export async function completeTutorLesson(
           earnedXp: xpReward,
           lessonStartXp: deleteField(),
           tutorAgendaProgress: deleteField(),
+          conversationDraft: deleteField(),
           updatedAt: serverTimestamp(),
         },
         { merge: true },

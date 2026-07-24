@@ -95,10 +95,15 @@ import {
   completeTutorLesson,
   getLanguageXp,
   saveTutorAgendaProgress,
+  saveTutorConversationDraft,
   saveTutorLessonEarnedXp,
   startTutorLesson,
   TUTOR_AGENDA_PROGRESS_SCHEMA_VERSION,
 } from "../utils/progressTracking";
+import {
+  getRestorableTutorConversationMessages,
+  normalizeTutorConversationDraftMessages,
+} from "../utils/tutorConversationDraft";
 import {
   SOFT_STOP_BUTTON_BG,
   SOFT_STOP_BUTTON_GLOW,
@@ -195,6 +200,7 @@ import {
 } from "../utils/tutorLessonLaunch";
 
 const DEFAULT_TUTOR_PAUSE_MS = 1200;
+const TUTOR_CONVERSATION_DRAFT_SAVE_DELAY_MS = 900;
 const TutorLoadingMiniGame = React.lazy(() => import("./LoadingMiniGame"));
 let tutorGameRouterComponentPromise = null;
 
@@ -1788,11 +1794,11 @@ function getTutorPathLessonStorageKey(targetLang) {
   return `tutorPathLesson:${getTutorStorageLang(targetLang)}`;
 }
 
-function getTutorMessagesStorageKey(npub, targetLang, lessonId) {
+function getTutorConversationDraftIdentity(npub, targetLang, lessonId) {
   if (!lessonId) return "";
   const safeUser = encodeURIComponent(String(npub || "anonymous"));
   const safeLesson = encodeURIComponent(String(lessonId));
-  return `tutorMessages:v1:${safeUser}:${getTutorStorageLang(targetLang)}:${safeLesson}`;
+  return `${safeUser}:${getTutorStorageLang(targetLang)}:${safeLesson}`;
 }
 
 function readStoredTutorLevel(targetLang) {
@@ -1958,77 +1964,6 @@ function buildRecentTutorConversationContext(messages = [], limit = 4) {
       return `${speaker}: "${getTutorMessageVisibleText(message)}"`;
     })
     .join("\n");
-}
-
-function sanitizeTutorMessageForStorage(message) {
-  const textFinal = sanitizeTutorAssistantText(
-    `${message?.textFinal || ""} ${message?.textStream || ""}`,
-  );
-  if (!textFinal) return null;
-
-  return {
-    id: String(message?.id || `stored-${Date.now()}`),
-    role: message?.role === "user" ? "user" : "assistant",
-    lang: String(message?.lang || ""),
-    textFinal,
-    textStream: "",
-    translation: String(message?.translation || ""),
-    translationLang: String(message?.translationLang || ""),
-    pairs: Array.isArray(message?.pairs)
-      ? message.pairs
-          .slice(0, 12)
-          .map((pair) => ({
-            lhs: String(pair?.lhs || ""),
-            rhs: String(pair?.rhs || ""),
-          }))
-          .filter((pair) => pair.lhs && pair.rhs)
-      : [],
-    done: true,
-    hasAudio: false,
-    // Preserve the tutorial welcome marker so a resumed session can tell the
-    // assistant-only greeting apart from a real tutor turn.
-    ...(message?.welcome ? { welcome: true } : {}),
-    ts: Number.isFinite(Number(message?.ts)) ? Number(message.ts) : Date.now(),
-  };
-}
-
-function normalizeStoredTutorMessages(messages = []) {
-  if (!Array.isArray(messages)) return [];
-  return messages
-    .map(sanitizeTutorMessageForStorage)
-    .filter(Boolean)
-    .slice(-20);
-}
-
-function readStoredTutorMessages(storageKey) {
-  if (typeof window === "undefined" || !storageKey) return [];
-  try {
-    const raw = window.localStorage.getItem(storageKey);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return normalizeStoredTutorMessages(parsed?.messages || parsed);
-  } catch {
-    return [];
-  }
-}
-
-function writeStoredTutorMessages(storageKey, messages) {
-  if (typeof window === "undefined" || !storageKey) return;
-  try {
-    const normalizedMessages = normalizeStoredTutorMessages(messages);
-    if (!normalizedMessages.length) {
-      window.localStorage.removeItem(storageKey);
-      return;
-    }
-    window.localStorage.setItem(
-      storageKey,
-      JSON.stringify({
-        version: 1,
-        updatedAt: Date.now(),
-        messages: normalizedMessages,
-      }),
-    );
-  } catch {}
 }
 
 const isoNow = () => {
@@ -5048,42 +4983,152 @@ export default function Tutor({
   // Messages
   const [messages, setMessages] = useState([]);
   const messagesRef = useRef([]);
-  const tutorMessagesStorageKeyRef = useRef("");
-  const tutorMessagesHydratedKeyRef = useRef("");
-  const tutorMessagesRestoringRef = useRef(false);
+  const tutorConversationDraftIdentityRef = useRef("");
+  const tutorConversationDraftHydratedIdentityRef = useRef("");
+  const tutorConversationDraftSaveTimerRef = useRef(null);
+  const tutorConversationDraftPendingRef = useRef(null);
+  const tutorConversationDraftLastSignatureRef = useRef("");
+  const tutorRestoredConversationNeedsContextRef = useRef(false);
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
 
+  function cancelTutorConversationDraftSave() {
+    if (tutorConversationDraftSaveTimerRef.current) {
+      clearTimeout(tutorConversationDraftSaveTimerRef.current);
+      tutorConversationDraftSaveTimerRef.current = null;
+    }
+    tutorConversationDraftPendingRef.current = null;
+  }
+
+  function flushTutorConversationDraftSave() {
+    if (tutorConversationDraftSaveTimerRef.current) {
+      clearTimeout(tutorConversationDraftSaveTimerRef.current);
+      tutorConversationDraftSaveTimerRef.current = null;
+    }
+    const pending = tutorConversationDraftPendingRef.current;
+    tutorConversationDraftPendingRef.current = null;
+    if (!pending) return;
+    if (
+      tutorLessonCompletionTriggeredRef.current &&
+      selectedTutorLessonRef.current?.id === pending.lessonId
+    ) {
+      return;
+    }
+
+    void saveTutorConversationDraft(
+      pending.npub,
+      pending.lessonId,
+      pending.targetLang,
+      pending.messages,
+    ).catch((error) => {
+      if (tutorConversationDraftLastSignatureRef.current === pending.signature) {
+        tutorConversationDraftLastSignatureRef.current = "";
+      }
+      console.error("Failed to save Tutor conversation draft:", error);
+    });
+  }
+
+  function queueTutorConversationDraftSave(normalizedMessages) {
+    if (
+      !currentNpub ||
+      !selectedTutorLessonRef.current?.id ||
+      selectedTutorLessonRef.current.isRepair ||
+      tutorLessonCompletionTriggeredRef.current ||
+      !normalizedMessages.length
+    ) {
+      return;
+    }
+
+    const identity = getTutorConversationDraftIdentity(
+      currentNpub,
+      targetLangRef.current,
+      selectedTutorLessonRef.current.id,
+    );
+    const signature = JSON.stringify(normalizedMessages);
+    if (
+      !identity ||
+      signature === tutorConversationDraftLastSignatureRef.current
+    ) {
+      return;
+    }
+
+    cancelTutorConversationDraftSave();
+    tutorConversationDraftLastSignatureRef.current = signature;
+    tutorConversationDraftPendingRef.current = {
+      signature,
+      npub: currentNpub,
+      lessonId: selectedTutorLessonRef.current.id,
+      targetLang: targetLangRef.current,
+      messages: normalizedMessages,
+    };
+    tutorConversationDraftSaveTimerRef.current = setTimeout(
+      flushTutorConversationDraftSave,
+      TUTOR_CONVERSATION_DRAFT_SAVE_DELAY_MS,
+    );
+  }
+
   useEffect(() => {
-    const storageKey = getTutorMessagesStorageKey(
+    const identity = getTutorConversationDraftIdentity(
       currentNpub,
       targetLang,
       selectedTutorLesson?.id,
     );
-    tutorMessagesStorageKeyRef.current = storageKey;
-    if (!storageKey || tutorMessagesHydratedKeyRef.current === storageKey) {
+    tutorConversationDraftIdentityRef.current = identity;
+    if (
+      !identity ||
+      tutorConversationDraftHydratedIdentityRef.current === identity
+    ) {
       return;
     }
 
-    const storedMessages = readStoredTutorMessages(storageKey);
-    tutorMessagesHydratedKeyRef.current = storageKey;
-    tutorMessagesRestoringRef.current = true;
-    messagesRef.current = storedMessages;
-    setMessages(storedMessages);
-  }, [currentNpub, selectedTutorLesson?.id, targetLang]);
+    flushTutorConversationDraftSave();
+    const lessonProgress =
+      tutorUserProgress.lessons?.[selectedTutorLesson?.id];
+    const restoredMessages = selectedTutorLesson?.isRepair
+      ? []
+      : getRestorableTutorConversationMessages(lessonProgress, {
+          sanitizeText: sanitizeTutorAssistantText,
+        });
+    tutorConversationDraftHydratedIdentityRef.current = identity;
+    tutorConversationDraftLastSignatureRef.current =
+      JSON.stringify(restoredMessages);
+    tutorRestoredConversationNeedsContextRef.current =
+      restoredMessages.length > 0;
+    messagesRef.current = restoredMessages;
+    setMessages(restoredMessages);
+  }, [
+    currentNpub,
+    selectedTutorLesson?.id,
+    selectedTutorLesson?.isRepair,
+    targetLang,
+    tutorUserProgress.lessons,
+  ]);
 
   useEffect(() => {
-    const storageKey = tutorMessagesStorageKeyRef.current;
-    if (!storageKey || tutorMessagesHydratedKeyRef.current !== storageKey) {
+    const identity = tutorConversationDraftIdentityRef.current;
+    if (
+      !identity ||
+      tutorConversationDraftHydratedIdentityRef.current !== identity
+    ) {
       return;
     }
-    if (tutorMessagesRestoringRef.current) {
-      tutorMessagesRestoringRef.current = false;
-      return;
-    }
-    writeStoredTutorMessages(storageKey, messages);
-  }, [messages]);
+    const normalizedMessages = normalizeTutorConversationDraftMessages(
+      messages,
+      { sanitizeText: sanitizeTutorAssistantText },
+    );
+    queueTutorConversationDraftSave(normalizedMessages);
+    // The queue function intentionally reads live refs at execution time; its
+    // function identity is not a persistence trigger.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, selectedTutorLesson?.id]);
+
+  useEffect(
+    () => () => {
+      flushTutorConversationDraftSave();
+    },
+    [],
+  );
 
   // The tutorial lesson opens with an assistant-only welcome greeting. That
   // greeting on its own does NOT mean the lesson has started — it has started
@@ -6301,6 +6346,14 @@ export default function Tutor({
   }
 
   async function stop() {
+    // Snapshot the last finalized turn in the background. This intentionally
+    // does not await Firestore, so stopping audio remains immediate.
+    queueTutorConversationDraftSave(
+      normalizeTutorConversationDraftMessages(messagesRef.current, {
+        sanitizeText: sanitizeTutorAssistantText,
+      }),
+    );
+    flushTutorConversationDraftSave();
     clearAutoStopTimer();
     clearTutorKickoffTimer();
     clearAssistantUnlockTimer();
@@ -7160,31 +7213,38 @@ export default function Tutor({
       ).map((agendaItem) =>
         getTutorStarterItemModelPhrase(agendaItem, targetLang),
       );
-      return buildOpenAIStarterAgendaTurnInstructions({
-        isKickoff,
-        turnVerdict,
-        currentItem: item ? { task, phrase, meaning } : null,
-        acceptedPhrases,
-        completedPhrases: completedPhraseList,
-        reviewPhrases: TUTOR_STARTER_AGENDA_ITEMS.map((agendaItem) =>
-          getTutorStarterItemModelPhrase(agendaItem, targetLang),
-        ),
-        // Gemini-parity review rotation: one suggested quiz format per turn,
-        // authored in the support language so it cannot surface as English.
-        taskVariation: getLocalizedTutorTaskFormatSentence(
-          turnCountRef.current,
-          selectedLevel,
-          supportCode,
-        ),
-        interactionLayer: getOpenAITutorSignatureExperienceLine({
-          selectedLevel,
-          turnCount: turnCountRef.current,
-          isStarterLesson: true,
+      return [
+        tutorRestoredConversationNeedsContextRef.current
+          ? recentOnScreenContext
+          : "",
+        buildOpenAIStarterAgendaTurnInstructions({
+          isKickoff,
+          turnVerdict,
+          currentItem: item ? { task, phrase, meaning } : null,
+          acceptedPhrases,
+          completedPhrases: completedPhraseList,
+          reviewPhrases: TUTOR_STARTER_AGENDA_ITEMS.map((agendaItem) =>
+            getTutorStarterItemModelPhrase(agendaItem, targetLang),
+          ),
+          // Gemini-parity review rotation: one suggested quiz format per turn,
+          // authored in the support language so it cannot surface as English.
+          taskVariation: getLocalizedTutorTaskFormatSentence(
+            turnCountRef.current,
+            selectedLevel,
+            supportCode,
+          ),
+          interactionLayer: getOpenAITutorSignatureExperienceLine({
+            selectedLevel,
+            turnCount: turnCountRef.current,
+            isStarterLesson: true,
+            supportLanguageName,
+          }),
+          targetLanguageName,
           supportLanguageName,
         }),
-        targetLanguageName,
-        supportLanguageName,
-      });
+      ]
+        .filter(Boolean)
+        .join("\n");
     }
 
     if (!item) {
@@ -7347,6 +7407,7 @@ export default function Tutor({
           },
         }),
       );
+      tutorRestoredConversationNeedsContextRef.current = false;
     } catch {
       resumeListeningWithAutoStop();
     }
@@ -7524,6 +7585,9 @@ export default function Tutor({
     if (isTutorStarterAgendaLesson(lesson)) {
       return [
         "Respond to the learner's latest turn as their tutor.",
+        tutorRestoredConversationNeedsContextRef.current
+          ? buildRecentOnScreenContextInstruction()
+          : "",
         targetLanguageBoundaryInstruction,
         teacherTalkLanguageInstruction,
         codeSwitchingAudioInstruction,
@@ -7548,9 +7612,10 @@ export default function Tutor({
         });
       }
       // Compact by design: the standing policy on every response already
-      // carries coherence/boundary rules, and the server-side conversation
-      // already holds the dialog history — repeating recent lines here is what
-      // mini paraphrased into doubled replies. The learner's ASR transcript is
+      // carries coherence/boundary rules, and the live server-side conversation
+      // holds the dialog history. Only the first turn after a cloud restore
+      // receives the short reconnect context above; repeating recent lines is
+      // what mini paraphrased into doubled replies. The learner's ASR transcript is
       // deliberately NOT echoed: the model heard the actual audio, and the
       // target-hinted transcription garbles support-language speech into
       // pseudo-target text that pulled replies into the wrong language. There
@@ -7558,6 +7623,9 @@ export default function Tutor({
       // meta-direction as a spoken transition; the verdict directive (embedded
       // in the shared turn block) already says how to react.
       return [
+        tutorRestoredConversationNeedsContextRef.current
+          ? buildRecentOnScreenContextInstruction()
+          : "",
         // Rare fallback: a repair focus rides a regular lesson when no
         // ephemeral repair session could be built from the saved material.
         buildTutorRepairAgendaInstruction(),
@@ -7995,6 +8063,7 @@ export default function Tutor({
           },
         }),
       );
+      tutorRestoredConversationNeedsContextRef.current = false;
     } catch {
       resumeListeningWithAutoStop();
     }
@@ -8394,6 +8463,9 @@ export default function Tutor({
     const npub = currentNpub;
     if (!npub) return false;
     const xpRequired = getTutorLessonXpRequired(lesson);
+    // Completion owns the final state for this document. Prevent a queued
+    // transcript write from racing the delete in completeTutorLesson.
+    cancelTutorConversationDraftSave();
 
     if (lesson.isRepair) {
       // Ephemeral repair step: no tutor-path writes (completeTutorLesson,
