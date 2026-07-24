@@ -19,6 +19,10 @@ import {
   withCanonicalLessonAgenda,
 } from "./lessonCurriculum.js";
 import { getMultiLevelLearningPath } from "../data/skillTreeData.js";
+import {
+  getManualPreA1AgendaItems,
+  MANUAL_PRE_A1_AGENDAS,
+} from "../data/manualPreA1Agendas.js";
 
 const SUPPORT_LANGUAGES = [
   "en",
@@ -520,7 +524,7 @@ test("Italian A1 lessons run on authored curriculum without Spanish leakage", ()
 });
 
 test("People Around Me uses localized capability goals instead of spoken metadata", () => {
-  const targets = ["es", "en", "it", "de", "ja"];
+  const targets = ["en", "it", "de", "ja"];
   targets.forEach((targetLang) => {
     const unit = getMultiLevelLearningPath(targetLang, ["Pre-A1"]).find(
       (candidate) => candidate.id === "unit-pre-a1-people",
@@ -568,6 +572,200 @@ test("People Around Me uses localized capability goals instead of spoken metadat
       );
     });
   });
+});
+
+test("every Spanish core lesson shown in Pre-A1 has concrete authored language", () => {
+  const units = getMultiLevelLearningPath("es", ["Pre-A1"]);
+  const lessons = units.flatMap((unit) =>
+    (unit.lessons || [])
+      .filter(
+        (lesson) =>
+          lesson.id !== "lesson-tutorial-1" &&
+          !lesson.isFinalQuiz &&
+          !lesson.isGame &&
+          !lesson.tutorPurpose,
+      )
+      .map((lesson) => ({ lesson, unit })),
+  );
+
+  assert.equal(lessons.length, 37);
+  lessons.forEach(({ lesson, unit }) => {
+    const exactForms = new Set(
+      getLessonAgenda(lesson, { unit, targetLang: "es" })
+        .flatMap((item) => getAgendaTargetForms(item))
+        .map((form) => form.toLocaleLowerCase("es")),
+    );
+    assert.ok(
+      exactForms.size >= 3,
+      `${lesson.id} exposes only ${exactForms.size} exact forms`,
+    );
+  });
+});
+
+test("manual review covers every previously prose-only Spanish Pre-A1 lesson", () => {
+  assert.equal(Object.keys(MANUAL_PRE_A1_AGENDAS).length, 26);
+  Object.entries(MANUAL_PRE_A1_AGENDAS).forEach(([lessonId, spec]) => {
+    assert.ok(spec.forms.length >= 4, `${lessonId} has too few concrete forms`);
+    assert.ok(spec.application?.goal, `${lessonId} has no application goal`);
+    assert.ok(
+      spec.application?.evidence,
+      `${lessonId} has no observable evidence`,
+    );
+    getManualPreA1AgendaItems(lessonId).forEach((item) => {
+      SUPPORT_LANGUAGES.forEach((lang) => {
+        assert.equal(
+          typeof item.label?.[lang],
+          "string",
+          `${lessonId}/${item.id} has no ${lang} label`,
+        );
+        assert.ok(item.label[lang].trim());
+        if (lang !== "en") {
+          assert.notEqual(
+            item.label[lang],
+            item.label.en,
+            `${lessonId}/${item.id} falls back to English for ${lang}`,
+          );
+        }
+      });
+    });
+  });
+});
+
+test("Spanish Tutor and skill-tree objectives have authored labels in every support language", () => {
+  const units = getMultiLevelLearningPath("es", [
+    "Pre-A1",
+    "A1",
+    "A2",
+    "B1",
+    "B2",
+    "C1",
+    "C2",
+  ]);
+
+  units.forEach((unit) => {
+    (unit.lessons || []).forEach((lesson) => {
+      getLessonAgenda(lesson, { unit, targetLang: "es" }).forEach((item) => {
+        SUPPORT_LANGUAGES.forEach((lang) => {
+          const label = item.label?.[lang];
+          assert.equal(
+            typeof label,
+            "string",
+            `${lesson.id}/${item.id} has no ${lang} label`,
+          );
+          assert.ok(label.trim(), `${lesson.id}/${item.id} has a blank ${lang} label`);
+          if (lang !== "en") {
+            assert.notEqual(
+              label,
+              item.label.en,
+              `${lesson.id}/${item.id} falls back to English for ${lang}`,
+            );
+          }
+        });
+      });
+    });
+  });
+});
+
+test("mixed English editor notes are removed from localized grammar objectives", () => {
+  const unit = getMultiLevelLearningPath("es", ["B1"]).find(
+    (candidate) => candidate.id === "unit-b1-3",
+  );
+  const lesson = unit.lessons.find(
+    (candidate) => candidate.id === "lesson-b1-3-1",
+  );
+  const labels = getLessonAgenda(lesson, {
+    unit,
+    targetLang: "es",
+  }).map((item) => getLocalizedAgendaLabel(item, "zh"));
+
+  assert.deepEqual(labels, [
+    "在语境中使用: hablaré, comerás, vivirá",
+    "在语境中使用: tendré, haré, podré, saldré",
+    "在语境中使用: mañana, el año que viene, pronto",
+    "准确使用: é/ás/á",
+    "准确使用: ¿qué hora será?",
+    "准确使用: 学习将来时的关键词汇",
+  ]);
+  assert.equal(
+    labels.some((label) =>
+      /irregular stems|markers|infinitive|future of probability/i.test(label),
+    ),
+    false,
+  );
+});
+
+test("Meeting Someone New names the exact language in its four-turn exchange", () => {
+  const unit = getMultiLevelLearningPath("es", ["Pre-A1"]).find(
+    (candidate) => candidate.id === "unit-a1-1",
+  );
+  const lesson = unit.lessons.find(
+    (candidate) => candidate.id === "lesson-a1-1-2",
+  );
+  const agenda = getLessonAgenda(lesson, {
+    unit,
+    targetLang: "es",
+  });
+  const forms = agenda.flatMap((item) => getAgendaTargetForms(item));
+
+  assert.deepEqual(forms, [
+    "hola",
+    "me llamo",
+    "¿cómo te llamas?",
+    "mucho gusto",
+    "¿cómo estás?",
+    "bien, gracias",
+    "hasta luego",
+  ]);
+  assert.equal(agenda.filter((item) => getAgendaTargetRole(item) === "goal").length, 1);
+  assert.match(
+    getAgendaGoal(agenda.at(-1)),
+    /greeting, names, wellbeing, and a closing/i,
+  );
+});
+
+test("Polite Expressions has a manually authored courtesy sequence", () => {
+  const unit = getMultiLevelLearningPath("es", ["Pre-A1"]).find(
+    (candidate) => candidate.id === "unit-pre-a1-courtesy",
+  );
+  const lesson = unit.lessons.find(
+    (candidate) => candidate.id === "lesson-pre-a1-5-3",
+  );
+  const forms = getLessonAgenda(lesson, {
+    unit,
+    targetLang: "es",
+  }).flatMap((item) => getAgendaTargetForms(item));
+
+  assert.deepEqual(forms, [
+    "muchas gracias",
+    "de nada",
+    "no hay problema",
+    "con gusto",
+    "no es nada",
+  ]);
+  assert.equal(forms.includes("por favor"), false);
+});
+
+test("Spanish unit reviews retain strong lessons and replace weak source objectives", () => {
+  const unit = getMultiLevelLearningPath("es", ["Pre-A1"]).find(
+    (candidate) => candidate.id === "unit-pre-a1-people",
+  );
+  const lesson = unit.lessons.find(
+    (candidate) => candidate.id === "unit-pre-a1-people-skill-builder",
+  );
+  const forms = getLessonAgenda(lesson, {
+    unit,
+    targetLang: "es",
+  }).flatMap((item) => getAgendaTargetForms(item));
+
+  assert.equal(forms.includes("mamá"), true);
+  assert.equal(forms.includes("abuelo"), true);
+  assert.equal(forms.includes("vecina"), true);
+  assert.equal(
+    getLessonAgenda(lesson, { unit, targetLang: "es" }).some((item) =>
+      /names at least two extended family/i.test(getAgendaGoal(item)),
+    ),
+    false,
+  );
 });
 
 test("curriculum audit separates release blockers from manual review candidates", () => {

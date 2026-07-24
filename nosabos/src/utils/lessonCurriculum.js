@@ -1,3 +1,5 @@
+import { getManualPreA1AgendaItems } from "../data/manualPreA1Agendas.js";
+
 const INVALID_OBJECTIVE_LABELS = new Set([
   "form",
   "use",
@@ -411,6 +413,235 @@ function getConcreteModeObjectives(block = {}) {
 // lesson copy instead of leaking English prose into the support-language UI.
 const CONCRETE_LABEL_MODES = new Set(["vocabulary", "grammar"]);
 
+// Curriculum focus points were originally authored as a mixture of Spanish
+// target forms and English editor notes (for example,
+// "irregular stems: tendré, haré"). Those notes must never leak into a
+// non-English support-language UI. Keep the actual Spanish form when it can be
+// separated safely; otherwise use the lesson's already-localized description.
+const ENGLISH_CURRICULUM_SCAFFOLDING =
+  /\b(?:actions?|adjectives?|agreement|articles?|auxiliary|backchanneling|cause|clauses?|collocations?|comparatives?|compounds?|conditionals?|connectors?|consequence|consonants?|contrast|discourse|endings?|events?|expressions?|field-specific|fillers?|formal|future|gender|gerunds?|idioms?|imperative|imperfect|impersonal|indicative|infinitive|informal|irregulars?|location|markers?|medical|negation|nominalization|nouns?|objects?|opinions?|passive|past|phrases?|plural|possessives?|predictions?|prefixes?|prepositions?|present|preterite|probability|pronouns?|questions?|reflexive|register|regular|repetition|reported|requests?|results?|routines?|singular|stems?|structures?|subjunctive|suffixes?|technical|time|tone|verbs?|voice|word order)\b/i;
+const ENGLISH_CURRICULUM_CONNECTORS =
+  /\b(?:and|as|at|for|from|in|into|of|on|the|to|with|without)\b/i;
+const SPANISH_TARGET_SIGNAL =
+  /[¿¡áéíóúüñ]|\b(?:al|aquí|allí|como|con|cuando|de|del|el|ella|ellos|en|es|esta|este|hay|la|las|lo|los|más|me|mi|no|para|pero|por|que|se|ser|si|sin|son|su|te|tener|tu|un|una|usted|y|yo)\b/i;
+const SUPPORT_GRAMMAR_TERMS = Object.freeze({
+  "present perfect": {
+    es: "pretérito perfecto",
+    pt: "pretérito perfeito",
+    it: "passato prossimo",
+    fr: "passé composé",
+    de: "Perfekt",
+    ja: "現在完了形",
+    hi: "वर्तमान पूर्ण काल",
+    ar: "المضارع التام",
+    zh: "现在完成时",
+  },
+  "past continuous": {
+    es: "pasado continuo",
+    pt: "passado contínuo",
+    it: "passato progressivo",
+    fr: "passé continu",
+    de: "Verlaufsform der Vergangenheit",
+    ja: "過去進行形",
+    hi: "भूतकाल निरंतर",
+    ar: "الماضي المستمر",
+    zh: "过去进行时",
+  },
+  "future tense": {
+    es: "tiempo futuro",
+    pt: "tempo futuro",
+    it: "tempo futuro",
+    fr: "futur",
+    de: "Futur",
+    ja: "未来形",
+    hi: "भविष्य काल",
+    ar: "زمن المستقبل",
+    zh: "将来时",
+  },
+  "past perfect": {
+    es: "pluscuamperfecto",
+    pt: "mais-que-perfeito",
+    it: "trapassato prossimo",
+    fr: "plus-que-parfait",
+    de: "Plusquamperfekt",
+    ja: "過去完了形",
+    hi: "पूर्ण भूतकाल",
+    ar: "الماضي التام",
+    zh: "过去完成时",
+  },
+  "passive voice": {
+    es: "voz pasiva",
+    pt: "voz passiva",
+    it: "forma passiva",
+    fr: "voix passive",
+    de: "Passiv",
+    ja: "受動態",
+    hi: "कर्मवाच्य",
+    ar: "المبني للمجهول",
+    zh: "被动语态",
+  },
+  "reported speech": {
+    es: "estilo indirecto",
+    pt: "discurso indireto",
+    it: "discorso indiretto",
+    fr: "discours indirect",
+    de: "indirekte Rede",
+    ja: "間接話法",
+    hi: "अप्रत्यक्ष कथन",
+    ar: "الكلام المنقول",
+    zh: "间接引语",
+  },
+  "relative clauses": {
+    es: "oraciones de relativo",
+    pt: "orações relativas",
+    it: "frasi relative",
+    fr: "propositions relatives",
+    de: "Relativsätze",
+    ja: "関係節",
+    hi: "संबंधवाचक उपवाक्य",
+    ar: "الجمل الموصولة",
+    zh: "关系从句",
+  },
+  "present subjunctive": {
+    es: "presente de subjuntivo",
+    pt: "presente do subjuntivo",
+    it: "congiuntivo presente",
+    fr: "subjonctif présent",
+    de: "Konjunktiv Präsens",
+    ja: "接続法現在",
+    hi: "वर्तमान संभावनार्थक",
+    ar: "صيغة الشرط في المضارع",
+    zh: "现在虚拟式",
+  },
+  "past subjunctive": {
+    es: "pasado de subjuntivo",
+    pt: "pretérito do subjuntivo",
+    it: "congiuntivo passato",
+    fr: "subjonctif passé",
+    de: "Konjunktiv Vergangenheit",
+    ja: "接続法過去",
+    hi: "भूतकाल संभावनार्थक",
+    ar: "صيغة الشرط في الماضي",
+    zh: "过去虚拟式",
+  },
+  subjunctive: {
+    es: "subjuntivo",
+    pt: "subjuntivo",
+    it: "congiuntivo",
+    fr: "subjonctif",
+    de: "Konjunktiv",
+    ja: "接続法",
+    hi: "संभावनार्थक",
+    ar: "صيغة الشرط",
+    zh: "虚拟式",
+  },
+  infinitive: {
+    es: "infinitivo",
+    pt: "infinitivo",
+    it: "infinito",
+    fr: "infinitif",
+    de: "Infinitiv",
+    ja: "不定詞",
+    hi: "क्रिया का मूल रूप",
+    ar: "المصدر",
+    zh: "不定式",
+  },
+});
+const UNLOCALIZED_CONTEXT_PATTERN =
+  /\b(?:integrated practice|irregular stems|skill builder|word order|introductions?|goodbyes?|present perfect|past continuous|future tense|past perfect|passive voice|reported speech|relative clauses|subjunctive|infinitive)\b/i;
+
+const hasEnglishCurriculumScaffolding = (value) =>
+  ENGLISH_CURRICULUM_SCAFFOLDING.test(value) ||
+  ENGLISH_CURRICULUM_CONNECTORS.test(value);
+
+function localizeEmbeddedGrammarTerms(value, lang) {
+  let localized = cleanText(value);
+  Object.entries(SUPPORT_GRAMMAR_TERMS).forEach(([englishTerm, translations]) => {
+    const replacement = translations[lang];
+    if (!replacement) return;
+    localized = localized.replace(
+      new RegExp(`\\b${englishTerm.replace(/\s+/g, "\\s+")}\\b`, "gi"),
+      replacement,
+    );
+  });
+  return localized;
+}
+
+const hasUsableLocalizedContext = (localizedContext, fallbackEn) =>
+  !!localizedContext &&
+  normalizeObjectiveKey(localizedContext) !== normalizeObjectiveKey(fallbackEn) &&
+  !UNLOCALIZED_CONTEXT_PATTERN.test(localizedContext);
+
+function extractTargetLanguageDetail(value) {
+  let detail = cleanText(value).replace(/\bvs\.?\b/gi, "/");
+  if (!detail) return "";
+
+  const colonIndex = detail.indexOf(":");
+  if (colonIndex > 0) {
+    const prefix = detail.slice(0, colonIndex);
+    const suffix = cleanText(detail.slice(colonIndex + 1));
+    if (
+      suffix &&
+      (hasEnglishCurriculumScaffolding(prefix) ||
+        SPANISH_TARGET_SIGNAL.test(suffix))
+    ) {
+      detail = suffix;
+    }
+  }
+
+  const parentheticalParts = Array.from(
+    detail.matchAll(/\(([^()]*)\)/g),
+    (match) => cleanText(match[1]),
+  );
+  if (parentheticalParts.length) {
+    const outside = cleanText(detail.replace(/\([^()]*\)/g, ""));
+    const targetParenthetical = parentheticalParts.find(
+      (part) =>
+        SPANISH_TARGET_SIGNAL.test(part) &&
+        !hasEnglishCurriculumScaffolding(part),
+    );
+    if (
+      targetParenthetical &&
+      hasEnglishCurriculumScaffolding(outside) &&
+      !SPANISH_TARGET_SIGNAL.test(outside)
+    ) {
+      detail = targetParenthetical;
+    } else {
+      detail = cleanText(
+        detail.replace(/\(([^()]*)\)/g, (match, inner) =>
+          hasEnglishCurriculumScaffolding(inner) &&
+          !SPANISH_TARGET_SIGNAL.test(inner)
+            ? ""
+            : match,
+        ),
+      );
+    }
+  }
+
+  // Formula objectives such as "infinitive + é/ás/á/emos/án" still contain
+  // useful target endings after their English editor prefix.
+  if (hasEnglishCurriculumScaffolding(detail)) {
+    const endings = detail.match(
+      /[a-z]*[áéíóúüñ][a-z]*(?:\s*[/,]\s*[a-z]*[áéíóúüñ][a-z]*)+/i,
+    );
+    if (endings) detail = endings[0];
+  }
+
+  if (hasEnglishCurriculumScaffolding(detail)) {
+    const quotedTargets = Array.from(
+      detail.matchAll(/['“‘]([^'”’]+)['”’]/g),
+      (match) => cleanText(match[1]),
+    ).filter(
+      (part) =>
+        SPANISH_TARGET_SIGNAL.test(part) &&
+        !hasEnglishCurriculumScaffolding(part),
+    );
+    if (quotedTargets.length) detail = uniqueText(quotedTargets).join(" / ");
+  }
+
+  return hasEnglishCurriculumScaffolding(detail) ? "" : cleanText(detail);
+}
+
 function buildObjectiveLabel(mode, objective, lesson) {
   const enPrefix = MODE_LABELS.en[mode] || "Practice";
   const esPrefix = MODE_LABELS.es[mode] || "Practica";
@@ -433,17 +664,41 @@ function buildObjectiveLabel(mode, objective, lesson) {
     if (lang === "en" || lang === "es") return;
     const prefix = labels[mode] || labels.realtime;
     if (showConcreteEverywhere) {
-      label[lang] = `${prefix}: ${objectiveText}`;
+      const targetDetail = extractTargetLanguageDetail(objectiveText);
+      const localizedContext =
+        lesson?.description && typeof lesson.description === "object"
+          ? localizeEmbeddedGrammarTerms(lesson.description[lang], lang)
+          : "";
+      const hasLocalizedContext = hasUsableLocalizedContext(
+        localizedContext,
+        fallbackEn,
+      );
+      label[lang] = targetDetail
+        ? `${prefix}: ${targetDetail}`
+        : hasLocalizedContext
+          ? `${prefix}: ${localizedContext}`
+          : prefix;
       return;
     }
     const localizedContext =
       lesson?.description && typeof lesson.description === "object"
-        ? cleanText(lesson.description[lang])
+        ? localizeEmbeddedGrammarTerms(lesson.description[lang], lang)
         : "";
-    if (localizedContext) {
+    if (hasUsableLocalizedContext(localizedContext, fallbackEn)) {
       label[lang] = `${prefix}: ${localizedContext}`;
+    } else {
+      label[lang] = prefix;
     }
   });
+
+  if (showConcreteEverywhere) {
+    const targetDetail = extractTargetLanguageDetail(objectiveText);
+    label.es = targetDetail
+      ? `${esPrefix}: ${targetDetail}`
+      : fallbackEs
+        ? `${esPrefix}: ${fallbackEs}`
+        : esPrefix;
+  }
 
   return label;
 }
@@ -557,14 +812,57 @@ export function getLessonAgenda(
   { unit = null, mode = null, allowLegacy = true, targetLang = "" } = {},
 ) {
   if (!lesson) return [];
+  const normalizedTarget = String(targetLang || "")
+    .trim()
+    .toLowerCase()
+    .split(/[-_]/)[0];
+  const directManualItems =
+    normalizedTarget === "es" ? getManualPreA1AgendaItems(lesson) : [];
+  if (directManualItems.length) {
+    return directManualItems
+      .map(normalizeAgendaItemSemantics)
+      .filter(
+        (item) =>
+          !mode ||
+          !Array.isArray(item.modes) ||
+          item.modes.includes(mode),
+      );
+  }
+
   const canonical = Array.isArray(lesson.agenda?.items)
     ? lesson.agenda.items
     : [];
-  const sourceItems = canonical.length
+  let sourceItems = canonical.length
     ? canonical
     : allowLegacy
       ? buildLessonAgenda(lesson, { unit }).items
       : [];
+
+  // Generated Skill Builders, Integrated Practice lessons, and Game Reviews
+  // retain sourceLessonId on every inherited item. For Spanish Pre-A1, replace
+  // each weak source lesson's old prose objectives with the same hand-authored
+  // material used by its core lesson, while preserving strong source lessons.
+  if (normalizedTarget === "es" && sourceItems.some((item) => item.sourceLessonId)) {
+    const replacedSourceIds = new Set();
+    sourceItems = sourceItems.flatMap((item) => {
+      const sourceLessonId = item.sourceLessonId;
+      if (!sourceLessonId) return [item];
+      const manualItems = getManualPreA1AgendaItems(sourceLessonId, {
+        modes: Array.isArray(item.modes) ? item.modes : lesson.modes,
+      });
+      if (!manualItems.length) return [item];
+      if (replacedSourceIds.has(sourceLessonId)) return [];
+      replacedSourceIds.add(sourceLessonId);
+      return manualItems.map((manualItem) => ({
+        ...manualItem,
+        id: `review-${sourceLessonId}-${manualItem.id}`,
+        sourceLessonId,
+        sourceAgendaItemId: manualItem.id,
+        sourceModes: manualItem.modes,
+        source: "unit-review",
+      }));
+    });
+  }
 
   const filteredItems = sourceItems
     .map(normalizeAgendaItemSemantics)
@@ -575,10 +873,6 @@ export function getLessonAgenda(
       return Array.isArray(item.modes) && item.modes.includes(mode);
     });
 
-  const normalizedTarget = String(targetLang || "")
-    .trim()
-    .toLowerCase()
-    .split(/[-_]/)[0];
   if (!normalizedTarget || normalizedTarget === "es") return filteredItems;
 
   // Two adaptation tiers for non-Spanish practice languages. Items with

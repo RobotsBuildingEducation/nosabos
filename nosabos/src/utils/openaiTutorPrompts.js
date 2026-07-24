@@ -21,7 +21,7 @@ import { TUTOR_TURN_VERDICT } from "./tutorTurnVerdict.js";
 
 const LEVEL_CEILINGS = {
   "Pre-A1":
-    "an absolute beginner (Pre-A1): one tiny step per turn, only the current lesson's most basic words and 1-3 word phrases, no grammar terminology, no multi-part questions",
+    "an absolute beginner (Pre-A1): one tiny step per turn, teach the current agenda's basic words and short fixed formula chunks in order, no grammar terminology, no multi-part questions",
   A1: "a complete beginner (A1): very simple everyday vocabulary, short 3-5 word present-tense phrases, one small step per turn",
   A2: "elementary (A2): simple everyday vocabulary, 5-8 word sentences, present, past, and simple future only",
   B1: "intermediate (B1): conversational vocabulary about familiar topics, 8-12 word sentences, moderate grammar",

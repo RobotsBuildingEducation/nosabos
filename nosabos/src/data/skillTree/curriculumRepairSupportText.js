@@ -3,6 +3,7 @@
 // the larger legacy localizers remain stable.
 
 const TEXT = {
+  "learn basic introductions and goodbyes": { pt: "Aprenda apresentações e despedidas básicas", it: "Impara presentazioni e saluti di base", fr: "Apprends les présentations et les formules d’adieu de base", de: "Lerne grundlegende Vorstellungen und Verabschiedungen", ja: "基本的な自己紹介と別れの表現を学ぶ", hi: "बुनियादी परिचय और विदाई सीखें", ar: "تعلّم عبارات التعارف والوداع الأساسية", zh: "学习基本的自我介绍和告别语" },
   "numbers 31-100": { pt: "Números 31-100", it: "Numeri 31-100", fr: "Nombres 31-100", de: "Zahlen 31-100", ja: "31から100の数字", hi: "संख्याएँ 31-100", ar: "الأرقام من 31 إلى 100", zh: "数字 31-100" },
   "counting from thirty-one to one hundred": { pt: "Contando de trinta e um a cem", it: "Contare da trentuno a cento", fr: "Compter de trente et un à cent", de: "Von einunddreißig bis hundert zählen", ja: "31から100まで数える", hi: "इकतीस से सौ तक गिनती", ar: "العد من واحد وثلاثين إلى مئة", zh: "从三十一数到一百" },
   "learn to count from thirty-one to one hundred": { pt: "Aprenda a contar de trinta e um a cem", it: "Impara a contare da trentuno a cento", fr: "Apprends à compter de trente et un à cent", de: "Lerne, von einunddreißig bis hundert zu zählen", ja: "31から100まで数えることを学ぶ", hi: "इकतीस से सौ तक गिनना सीखें", ar: "تعلّم العد من واحد وثلاثين إلى مئة", zh: "学习从三十一数到一百" },
@@ -37,4 +38,3 @@ export function withCurriculumRepairSupportText(skillTree) {
   visit(skillTree);
   return skillTree;
 }
-

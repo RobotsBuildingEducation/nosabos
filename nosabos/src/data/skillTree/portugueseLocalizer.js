@@ -645,10 +645,23 @@ const addPortugueseText = (value) => {
   const localized = Object.fromEntries(
     Object.entries(value).map(([key, child]) => [key, addPortugueseText(child)]),
   );
+  const hasCompleteAuthoredSupportCopy = [
+    "en",
+    "es",
+    "pt",
+    "it",
+    "fr",
+    "de",
+    "ja",
+    "hi",
+    "ar",
+    "zh",
+  ].every((lang) => typeof value[lang] === "string" && value[lang].trim());
 
   if (
     typeof value.en === "string" &&
     typeof value.es === "string" &&
+    !hasCompleteAuthoredSupportCopy &&
     shouldReplacePortugueseText(value.en, value.pt)
   ) {
     localized.pt = translateSkillTreeTextToPortuguese(value.en, value.es);

@@ -1184,7 +1184,7 @@ function getTutorSignatureExperienceInstruction({
       ? "For the starter introductions lesson, keep the fixed phrase agenda as the source of truth. Use the experience layer only to add listening checks, ask-me-back turns, or tiny missions around the current phrase."
       : "",
     level === "Pre-A1"
-      ? "PRE-A1 LIMIT: The experience must use one already-taught word or one 1-3 word phrase. Never require an explanation, transformation, personalization, combined sentence, open-ended answer, tense change, or new vocabulary."
+      ? "PRE-A1 LIMIT: The experience must use one already-taught word or one short fixed phrase. Never require an explanation, transformation, personalization, combined sentence, open-ended answer, tense change, or new vocabulary."
       : "",
     "If the recent on-screen context shows an experience already in progress, continue or complete it before starting a new one.",
   ]
@@ -1219,7 +1219,7 @@ function getOpenAITutorSignatureExperienceLine({
       ? "The fixed phrase agenda stays the source of truth; use this only around the current phrase."
       : "",
     level === "Pre-A1"
-      ? "It must use one already-taught word or one 1-3 word chunk — never an explanation, transformation, personalization, combined sentence, open-ended answer, tense change, or new vocabulary."
+      ? "It must use the current agenda word or short fixed chunk — never an explanation, transformation, personalization, combined sentence, open-ended answer, or tense change. New language is allowed only when it is the current authored agenda item."
       : "",
   ]
     .filter(Boolean)
@@ -6499,7 +6499,7 @@ export default function Tutor({
 
     // Proficiency level guidance
     const levelGuidance = {
-      "Pre-A1": `CRITICAL: User is at foundations level (Pre-A1). Treat them as an adult beginner. Teach one tiny step at a time. Use ONLY the selected lesson's most basic ${targetLanguageName} words, such as greetings, goodbye, yes/no, thank you, numbers 1-10, basic colors, or immediate-family words when family is the selected lesson. Model 1-3 word ${targetLanguageName} phrases, then ask the learner to try or complete them once.`,
+      "Pre-A1": `CRITICAL: User is at foundations level (Pre-A1). Treat them as an adult beginner. Teach one tiny step at a time. Use ONLY the selected lesson's authored ${targetLanguageName} words and fixed formula chunks. Model one short chunk, then ask the learner to try or complete it once.`,
       A1: `CRITICAL: User is a complete beginner (A1). Treat them as an adult beginner. Use ONLY very simple ${targetLanguageName} vocabulary, such as greetings, numbers, colors, and family. Model short 3-5 word ${targetLanguageName} phrases in present tense, then guide the learner to produce one phrase.`,
       A2: `CRITICAL: User is elementary level (A2). Use simple everyday ${targetLanguageName} vocabulary, such as food, shopping, and directions. Use 5-8 word sentences. Use present, past, and simple future tenses only. Avoid complex grammar.`,
       B1: "CRITICAL: User is intermediate (B1). Use conversational vocabulary about familiar topics (work, travel, hobbies). Can use 8-12 word sentences. Use various tenses but keep grammar structures moderate. Can express opinions simply.",
@@ -6514,10 +6514,10 @@ export default function Tutor({
         ? [
             "## PRE-A1 HARD CEILING — NON-NEGOTIABLE",
             "- Teach only the selected lesson concept and already-covered items.",
-            `- Ask for one ${targetLanguageName} word or one 1-3 word phrase at a time.`,
+            `- Ask for one ${targetLanguageName} word or one short authored formula chunk at a time.`,
             "- One learner action per turn. No multi-part questions.",
             "- No open-ended conversation, grammar terminology, tense changes, explanations from the learner, sentence building, transformations, comparisons, or combined concepts.",
-            "- Never introduce vocabulary merely to add variety.",
+            "- Introduce each distinct vocabulary item explicitly supplied by the lesson agenda. Never invent unrelated vocabulary merely to add variety.",
           ].join("\n")
         : "";
     const tutorPedagogyInstructions =

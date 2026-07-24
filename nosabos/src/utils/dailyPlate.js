@@ -17,7 +17,11 @@ import {
 } from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
 import useUserStore from "../hooks/useUserStore";
-import { FLASHCARD_DAILY_TARGET, getLocalDayKey } from "./flashcardReview";
+import {
+  DAILY_QUEST_FLASHCARD_TARGET_DEFAULT,
+  getDailyQuestFlashcardTarget,
+} from "./dailyQuestTargets";
+import { getLocalDayKey } from "./flashcardReview";
 import { pruneDayEntries } from "./userDataSchema";
 
 export const DAILY_PLATE_KINDS = ["review", "learn", "speak"];
@@ -27,8 +31,9 @@ export const DAILY_PLATE_KINDS = ["review", "learn", "speak"];
 export const DAILY_PLATE_COURSE_ORDER = ["speak", "learn", "review"];
 
 export const DAILY_PLATE_TARGETS = {
-  // Shared with the Cards screen's "Daily target" bar — one knob tunes both.
-  review: FLASHCARD_DAILY_TARGET,
+  // Snapshot generation replaces this fallback with the stable daily 4-6
+  // target. The Cards screen keeps its separate, standalone 12-card goal.
+  review: DAILY_QUEST_FLASHCARD_TARGET_DEFAULT,
   learn: 1, // skill-tree lessons completed
   speak: 1, // Tutor lessons completed
   conversation: 4, // fallback only — overridden per-day to 4-7 user turns
@@ -135,14 +140,21 @@ export function getDailyPlateSnapshot(
     const target =
       kind === "conversation"
         ? getConversationTurnTarget(dayKey, langKey)
-        : kind === "repair"
-          ? // Repair's "done" target is however many items the companion
-            // curated into today's repair plan (default 1).
-            Math.max(
-              1,
-              Number(user?.dailyQuestRepair?.[langKey]?.[dayKey]?.target) || 1,
-            )
-          : DAILY_PLATE_TARGETS[kind] || 1;
+        : kind === "review"
+          ? getDailyQuestFlashcardTarget({
+              userKey:
+                user?.local_npub || user?.identity || user?.id || "",
+              langKey,
+              dayKey,
+            })
+          : kind === "repair"
+            ? // Repair's "done" target is however many items the companion
+              // curated into today's repair plan (default 1).
+              Math.max(
+                1,
+                Number(user?.dailyQuestRepair?.[langKey]?.[dayKey]?.target) || 1,
+              )
+            : DAILY_PLATE_TARGETS[kind] || 1;
     const count = readDayCount(
       progress,
       DAILY_PLATE_ACTIVITY_FIELDS[kind],

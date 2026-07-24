@@ -105,13 +105,13 @@ const baseLearningPath = withLocalizedSkillTreeText({
             vocabulary: {
               topic: "tutorial",
               focusPoints: [
-                "hello",
-                "my name is",
-                "good morning",
-                "good afternoon",
-                "good night",
-                "how are you",
-                "goodbye",
+                "hola",
+                "me llamo",
+                "buenos días",
+                "buenas tardes",
+                "buenas noches",
+                "¿cómo estás?",
+                "adiós",
               ],
               tutorialDescription: {
                 en: "Learn first introduction and goodbye phrases with interactive questions.",
@@ -121,10 +121,10 @@ const baseLearningPath = withLocalizedSkillTreeText({
             grammar: {
               topic: "tutorial",
               focusPoints: [
-                "basic introduction patterns",
-                "time-based greetings",
-                "simple wellbeing questions",
-                "basic goodbye phrases",
+                "hola + me llamo",
+                "buenos días / buenas tardes / buenas noches",
+                "¿cómo estás? + bien, gracias",
+                "adiós / hasta luego",
               ],
               tutorialDescription: {
                 en: "Practice simple patterns for introductions, greetings, and goodbyes.",
@@ -176,13 +176,13 @@ const baseLearningPath = withLocalizedSkillTreeText({
               sceneId: "tutorialPlaza",
               xpReward: 30,
               focusPoints: [
-                "hello",
-                "my name is",
-                "good morning",
-                "good afternoon",
-                "good night",
-                "how are you",
-                "goodbye",
+                "hola",
+                "me llamo",
+                "buenos días",
+                "buenas tardes",
+                "buenas noches",
+                "¿cómo estás?",
+                "adiós",
               ],
               tutorialDescription: {
                 en: "Finish the tutorial by playing a short game review.",

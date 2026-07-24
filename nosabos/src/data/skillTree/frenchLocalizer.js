@@ -590,7 +590,7 @@ Object.assign(TEXT_TRANSLATIONS, {
   "recent events": "Evenements recents",
   "regular past verbs": "Verbes reguliers au passe",
   "round out 100 words with connectors, feelings, and quick questions":
-    "Complete 100 mots avec des connecteurs, des sentiments et des questions rapides",
+    "Complète 100 mots avec des connecteurs, des sentiments et des questions rapides",
   "say your name and origin": "Dis ton nom et ton origine",
   "share personal information and ask about others":
     "Partage des informations personnelles et pose des questions aux autres",
