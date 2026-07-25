@@ -27,8 +27,8 @@ import {
   ModalBody,
   Spinner,
 } from "@chakra-ui/react";
-import { PiMicrophoneStageDuotone } from "react-icons/pi";
 import {
+  FaMicrophone,
   FaStop,
   FaDice,
   FaRegCommentDots,
@@ -4128,7 +4128,7 @@ Return ONLY JSON:
                 </>
               ) : (
                 <>
-                  <PiMicrophoneStageDuotone /> &nbsp;{" "}
+                  <FaMicrophone /> &nbsp;{" "}
                   {status === "connecting"
                     ? ui.ra_btn_connecting
                     : ui.ra_btn_connect}

@@ -28,8 +28,8 @@ import {
   useBreakpointValue,
 } from "@chakra-ui/react";
 import { layoutWithLines, prepareWithSegments } from "@chenglou/pretext";
-import { PiMicrophoneStageDuotone } from "react-icons/pi";
 import {
+  FaMicrophone,
   FaStop,
   FaCheckCircle,
   FaDice,
@@ -51,6 +51,7 @@ import { logEvent } from "firebase/analytics";
 
 import useUserStore from "../hooks/useUserStore";
 import VoiceOrb from "./VoiceOrb";
+import AnimatedEllipsis from "./AnimatedEllipsis";
 import {
   CHAT_LOG_HIGHLIGHT_DURATION_MS,
   getChatLogButtonHighlightProps,
@@ -1292,7 +1293,6 @@ export default function Conversations({
   }, []);
   const [goalsCompleted, setGoalsCompleted] = useState(0);
   const [isGeneratingGoal, setIsGeneratingGoal] = useState(false);
-  const [streamingText, setStreamingText] = useState("");
   const [goalFeedback, setGoalFeedback] = useState("");
   const goalCheckPendingRef = useRef(false);
   // Failed attempts on the current goal; 2 misses re-anchor the goal so it
@@ -1314,7 +1314,6 @@ export default function Conversations({
     setGoalFeedback("");
     goalFailStreakRef.current = 0;
     goalShepherdRef.current = "";
-    setStreamingText("");
     streamingRef.current = true;
 
     // Determine the language for the response
@@ -1390,7 +1389,6 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
         if (!chunkText) continue;
 
         fullText += chunkText;
-        setStreamingText(fullText);
       }
 
       // Use the streamed text directly as the topic
@@ -1423,7 +1421,6 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       });
     } finally {
       streamingRef.current = false;
-      setStreamingText("");
       setIsGeneratingGoal(false);
     }
   }
@@ -3389,27 +3386,15 @@ Respond with ONLY a JSON object: {"target":"phrase in ${targetName}","support":"
                   justify="center"
                 >
                   {isGeneratingGoal ? (
-                    <>
-                      <VoiceOrb
-                        state={getRealtimeOrbVisualState(
-                          ["idle", "listening", "speaking"][
-                            Math.floor(Math.random() * 3)
-                          ],
+                    <Box flex="1">
+                      <AnimatedEllipsis
+                        color={isLightTheme ? "black" : "white"}
+                        ariaLabel={uiText(
+                          "ra_generating_topic",
+                          "Generating new topic...",
                         )}
-                        size={24}
-                        theme={isLightTheme ? "light" : "dark"}
                       />
-                      <Text
-                        fontSize="sm"
-                        fontWeight="medium"
-                        textAlign="center"
-                        color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
-                        flex="1"
-                      >
-                        {streamingText ||
-                          uiText("ra_generating_topic", "Generating new topic...")}
-                      </Text>
-                    </>
+                    </Box>
                   ) : (
                     <>
                       <IconButton
@@ -3429,23 +3414,31 @@ Respond with ONLY a JSON object: {"target":"phrase in ${targetName}","support":"
                         }}
                         isDisabled={status === "connected"}
                       />
-                      <Text
-                        fontSize="sm"
-                        fontWeight="medium"
-                        textAlign="center"
-                        color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
-                        opacity={currentGoal.completed ? 0.6 : 1}
-                        textDecoration={
-                          currentGoal.completed ? "line-through" : "none"
-                        }
-                        flex="1"
-                      >
-                        {goalTextForUI(currentGoal) ||
-                          uiText(
-                            "ra_generating_topic",
-                            "Generating new topic...",
-                          )}
-                      </Text>
+                      {goalTextForUI(currentGoal) ? (
+                        <Text
+                          fontSize="sm"
+                          fontWeight="medium"
+                          textAlign="center"
+                          color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
+                          opacity={currentGoal.completed ? 0.6 : 1}
+                          textDecoration={
+                            currentGoal.completed ? "line-through" : "none"
+                          }
+                          flex="1"
+                        >
+                          {goalTextForUI(currentGoal)}
+                        </Text>
+                      ) : (
+                        <Box flex="1">
+                          <AnimatedEllipsis
+                            color={isLightTheme ? "black" : "white"}
+                            ariaLabel={uiText(
+                              "ra_generating_topic",
+                              "Generating new topic...",
+                            )}
+                          />
+                        </Box>
+                      )}
                       {currentGoal.completed && (
                         <Box
                           as={FaCheckCircle}
@@ -3776,7 +3769,7 @@ Respond with ONLY a JSON object: {"target":"phrase in ${targetName}","support":"
                 </>
               ) : (
                 <>
-                  <PiMicrophoneStageDuotone /> &nbsp;{" "}
+                  <FaMicrophone /> &nbsp;{" "}
                   {status === "connecting"
                     ? uiText("ra_btn_starting", "Starting...")
                     : uiText("ra_btn_start", "Start")}

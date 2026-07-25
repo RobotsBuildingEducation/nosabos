@@ -40,8 +40,7 @@ import {
 } from "@chakra-ui/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { layoutWithLines, prepareWithSegments } from "@chenglou/pretext";
-import { PiMicrophoneStageDuotone } from "react-icons/pi";
-import { FaStop, FaRegCommentDots } from "react-icons/fa";
+import { FaMicrophone, FaStop, FaRegCommentDots } from "react-icons/fa";
 import { MdOutlineTranslate } from "react-icons/md";
 import {
   RiArrowLeftLine,
@@ -78,6 +77,7 @@ import { logEvent } from "firebase/analytics";
 
 import useUserStore from "../hooks/useUserStore";
 import VoiceOrb from "./VoiceOrb";
+import AnimatedEllipsis from "./AnimatedEllipsis";
 import {
   CHAT_LOG_HIGHLIGHT_DURATION_MS,
   getChatLogButtonHighlightProps,
@@ -217,41 +217,6 @@ import {
 } from "../utils/tutorLessonLaunch";
 
 const MotionBox = motion.create(Box);
-
-function AnimatedEllipsis({ color = "blue.200" }) {
-  return (
-    <HStack
-      spacing={1.5}
-      minH="24px"
-      justify="center"
-      role="status"
-      aria-label="Loading current lesson"
-    >
-      {[0, 1, 2].map((dot) => (
-        <Box
-          key={dot}
-          w="6px"
-          h="6px"
-          borderRadius="full"
-          bg={color}
-          sx={{
-            animation: `tutorEllipsisPulse 0.9s ease-in-out ${dot * 0.14}s infinite`,
-            "@keyframes tutorEllipsisPulse": {
-              "0%, 100%": {
-                opacity: 0.28,
-                transform: "translateY(0)",
-              },
-              "50%": {
-                opacity: 1,
-                transform: "translateY(-3px)",
-              },
-            },
-          }}
-        />
-      ))}
-    </HStack>
-  );
-}
 
 const DEFAULT_TUTOR_PAUSE_MS = 1200;
 const TUTOR_CONVERSATION_DRAFT_SAVE_DELAY_MS = 900;
@@ -10967,6 +10932,7 @@ export default function Tutor({
                   {isLessonAgendaLoading ? (
                     <AnimatedEllipsis
                       color={isLightTheme ? "black" : "white"}
+                      ariaLabel="Loading current lesson"
                     />
                   ) : (
                     <VStack spacing={1} align="center" flex="1" minW={0}>
@@ -11170,7 +11136,7 @@ export default function Tutor({
                 </>
               ) : (
                 <>
-                  <PiMicrophoneStageDuotone /> &nbsp;{" "}
+                  <FaMicrophone /> &nbsp;{" "}
                   {status === "connecting"
                     ? uiText("ra_btn_starting", "Starting...")
                     : uiText("ra_btn_start", "Start")}

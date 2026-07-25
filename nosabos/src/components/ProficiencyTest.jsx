@@ -30,8 +30,7 @@ import {
   GridItem,
 } from "@chakra-ui/react";
 import { CloseIcon } from "@chakra-ui/icons";
-import { PiMicrophoneStageDuotone } from "react-icons/pi";
-import { FaRegCommentDots, FaStop } from "react-icons/fa";
+import { FaMicrophone, FaRegCommentDots, FaStop } from "react-icons/fa";
 import { LuBadgeCheck } from "react-icons/lu";
 import { useNavigate } from "react-router-dom";
 import { doc, getDoc, setDoc } from "firebase/firestore";
@@ -2824,7 +2823,7 @@ Return ONLY valid JSON:
                 </>
               ) : (
                 <>
-                  <PiMicrophoneStageDuotone /> &nbsp;{" "}
+                  <FaMicrophone /> &nbsp;{" "}
                   {status === "connecting"
                     ? ui.vocab_connecting
                     : ui.proficiency_test_start}
