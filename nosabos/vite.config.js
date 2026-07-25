@@ -21,19 +21,19 @@ export default defineConfig({
         description: "PWA install handler package for Piyali",
         icons: [
           {
-            src: "https://res.cloudinary.com/dtkeyccga/image/upload/v1775284376/logos_512_x_512_px_6_qkqris.png",
+            src: "https://res.cloudinary.com/dtkeyccga/image/upload/v1784995553/logos_512_x_512_px_11_aqja42.png",
             sizes: "192x192",
             type: "image/png",
             purpose: "any",
           },
           {
-            src: "https://res.cloudinary.com/dtkeyccga/image/upload/v1775284376/logos_512_x_512_px_6_qkqris.png",
+            src: "https://res.cloudinary.com/dtkeyccga/image/upload/v1784995553/logos_512_x_512_px_11_aqja42.png",
             sizes: "256x256",
             type: "image/png",
             purpose: "any",
           },
           {
-            src: "https://res.cloudinary.com/dtkeyccga/image/upload/v1775284376/logos_512_x_512_px_6_qkqris.png",
+            src: "https://res.cloudinary.com/dtkeyccga/image/upload/v1784995553/logos_512_x_512_px_11_aqja42.png",
             sizes: "512x512",
             type: "image/png",
             purpose: "any",
