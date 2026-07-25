@@ -6,12 +6,9 @@ import {
   RiLockLine,
   RiTrophyLine,
 } from "react-icons/ri";
-import { motion } from "framer-motion";
 import { APP_SQUIRCLE_SHAPE } from "../theme";
 import { translations } from "../utils/translation";
 import { normalizeSupportLanguage } from "../constants/languages";
-
-const MotionBox = motion(Box);
 
 // Get app language from localStorage (UI language setting)
 const getAppLanguage = () => {
@@ -264,13 +261,7 @@ export default function CEFRLevelNavigator({
   };
 
   return (
-    <MotionBox
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      w="100%"
-      mb={6}
-    >
+    <Box w="100%" mb={6}>
       <VStack spacing={4} align="center">
         {/* Level Header */}
         <HStack justify="space-between" align="center">
@@ -342,11 +333,7 @@ export default function CEFRLevelNavigator({
         </HStack>
         {/* Completion Badge */}
         {levelProgress >= 100 && isCurrentUserLevel && (
-          <MotionBox
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: "spring", stiffness: 200 }}
-          >
+          <Box>
             <HStack
               justify="center"
               p={3}
@@ -359,9 +346,9 @@ export default function CEFRLevelNavigator({
                 {getTranslation("cefr_level_completed", {}, resolvedSupportLang)}
               </Text>
             </HStack>
-          </MotionBox>
+          </Box>
         )}
       </VStack>
-    </MotionBox>
+    </Box>
   );
 }

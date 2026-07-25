@@ -1044,6 +1044,7 @@ export default function Conversations({
   // User id
   const user = useUserStore((s) => s.user);
   const currentNpub = activeNpub?.trim?.() || strongNpub(user);
+  const loadedUserSettingsKeyRef = useRef("");
 
   useEffect(() => {
     if (!isActive) return;
@@ -1851,7 +1852,9 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
   --------------------------- */
   useEffect(() => {
     async function loadXp() {
-      if (!currentNpub) return;
+      if (!isActive || !currentNpub) return;
+      const settingsKey = `${currentNpub}:${String(targetLang || "").toLowerCase()}`;
+      if (loadedUserSettingsKeyRef.current === settingsKey) return;
       try {
         await ensureUserDoc(currentNpub);
         const snap = await getDoc(doc(database, "users", currentNpub));
@@ -1886,11 +1889,12 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
                   : savedSubjects,
             };
           });
+          loadedUserSettingsKeyRef.current = settingsKey;
         }
       } catch {}
     }
     loadXp();
-  }, [currentNpub, targetLang, maxProficiencyLevel]);
+  }, [currentNpub, isActive, targetLang, maxProficiencyLevel]);
 
   // Cleanup on unmount
   useEffect(

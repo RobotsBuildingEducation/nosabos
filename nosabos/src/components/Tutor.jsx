@@ -38,6 +38,7 @@ import {
   useDisclosure,
   useBreakpointValue,
 } from "@chakra-ui/react";
+import { AnimatePresence, motion } from "framer-motion";
 import { layoutWithLines, prepareWithSegments } from "@chenglou/pretext";
 import { PiMicrophoneStageDuotone } from "react-icons/pi";
 import { FaStop, FaRegCommentDots } from "react-icons/fa";
@@ -54,7 +55,15 @@ import {
   RiVolumeUpLine,
 } from "react-icons/ri";
 
-import { doc, setDoc, getDoc, increment } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  setDoc,
+  getDoc,
+  onSnapshot,
+  query,
+  where,
+} from "firebase/firestore";
 import {
   appCheckFetch,
   database,
@@ -100,6 +109,12 @@ import {
   startTutorLesson,
   TUTOR_AGENDA_PROGRESS_SCHEMA_VERSION,
 } from "../utils/progressTracking";
+import {
+  getCourseLevelStats,
+  getCourseProgressSummary,
+  replaceProgressLevel,
+} from "../utils/courseProgress";
+import { getLessonLevelFromId } from "../utils/cefrProgress";
 import {
   getRestorableTutorConversationMessages,
   normalizeTutorConversationDraftMessages,
@@ -170,9 +185,10 @@ import { TUTOR_LEVEL_INFO } from "../utils/tutorLevelInfo";
 import { getTutorPathCopy } from "../utils/tutorPathCopy";
 import { getCEFRPromptHint } from "../utils/cefrUtils";
 import {
-  loadMultiLevelLearningPath,
+  loadLearningPath,
   SKILL_STATUS,
 } from "../data/skillTree/index.js";
+import { createUnitRenderProgressSelector } from "../utils/skillTreeRenderProgress";
 import useSoundSettings from "../hooks/useSoundSettings";
 import { listeningCueSound, submitActionSound } from "../constants/sounds";
 import XpProgressHeader from "./XpProgressHeader";
@@ -196,8 +212,46 @@ import { waitForGameLoaderExploration } from "../utils/gameLoaderTiming";
 import { GAME_LOADING_MESSAGES } from "../utils/gameLoadingMessages";
 import {
   getTutorLessonLaunchMode,
+  resolveTutorPathLevel,
   TUTOR_LESSON_LAUNCH_MODE,
 } from "../utils/tutorLessonLaunch";
+
+const MotionBox = motion.create(Box);
+
+function AnimatedEllipsis({ color = "blue.200" }) {
+  return (
+    <HStack
+      spacing={1.5}
+      minH="24px"
+      justify="center"
+      role="status"
+      aria-label="Loading current lesson"
+    >
+      {[0, 1, 2].map((dot) => (
+        <Box
+          key={dot}
+          w="6px"
+          h="6px"
+          borderRadius="full"
+          bg={color}
+          sx={{
+            animation: `tutorEllipsisPulse 0.9s ease-in-out ${dot * 0.14}s infinite`,
+            "@keyframes tutorEllipsisPulse": {
+              "0%, 100%": {
+                opacity: 0.28,
+                transform: "translateY(0)",
+              },
+              "50%": {
+                opacity: 1,
+                transform: "translateY(-3px)",
+              },
+            },
+          }}
+        />
+      ))}
+    </HStack>
+  );
+}
 
 const DEFAULT_TUTOR_PAUSE_MS = 1200;
 const TUTOR_CONVERSATION_DRAFT_SAVE_DELAY_MS = 900;
@@ -389,6 +443,26 @@ const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
 const APP_SHADOW = "var(--app-shadow-soft)";
 const APP_SQUIRCLE_STYLE = { cornerShape: APP_SQUIRCLE_SHAPE };
 const TUTOR_CEFR_LEVELS = ["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"];
+
+function tagTutorPathLevel(units, level) {
+  return (Array.isArray(units) ? units : []).map((unit) => ({
+    ...unit,
+    cefrLevel: level,
+  }));
+}
+
+function mergeTutorPathLevelUnits(currentUnits, levelUnits, level) {
+  return [
+    ...(Array.isArray(currentUnits) ? currentUnits : []).filter(
+      (unit) => unit.cefrLevel !== level,
+    ),
+    ...levelUnits,
+  ].sort(
+    (left, right) =>
+      TUTOR_CEFR_LEVELS.indexOf(left.cefrLevel) -
+      TUTOR_CEFR_LEVELS.indexOf(right.cefrLevel),
+  );
+}
 
 function isTutorEarlyLevel(level) {
   return level === "Pre-A1" || level === "A1";
@@ -3369,6 +3443,7 @@ function TutorPathLessonNode({
   earnedPercent = 0,
   supportLang,
   onSelect,
+  animateDecorations = true,
 }) {
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
@@ -3547,7 +3622,7 @@ function TutorPathLessonNode({
                 : "none",
             }}
           />
-          {isCompleted && (
+          {isCompleted && animateDecorations && (
             <>
               <Box
                 pointerEvents="none"
@@ -3651,16 +3726,19 @@ function TutorPathLessonNode({
   );
 }
 
-function TutorPathUnit({
+const TutorPathUnit = React.memo(function TutorPathUnit({
   unit,
   unitIndex,
-  visibleUnits,
-  userProgress,
+  lessonProgressById,
+  previousUnitLastLessonStatus,
   supportLang,
-  getLessonStatus,
-  getLessonEarnedPercent,
+  selectedLessonId,
+  selectedLessonEarnedXp,
+  isTestUnlocked,
   onLessonSelect,
 }) {
+  const unitRef = useRef(null);
+  const [isNearViewport, setIsNearViewport] = useState(unitIndex < 2);
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
   const zigzagOffset =
@@ -3675,13 +3753,36 @@ function TutorPathUnit({
     ) || 240;
   const completedCount = unit.lessons.filter(
     (lesson) =>
-      userProgress.lessons?.[lesson.id]?.status === SKILL_STATUS.COMPLETED,
+      lessonProgressById?.[lesson.id]?.status === SKILL_STATUS.COMPLETED,
   ).length;
   const unitTitle = getTutorDisplayText(unit.title, supportLang);
   const unitDescription = getTutorDisplayText(unit.description, supportLang);
+  const estimatedHeight = Math.max(420, unit.lessons.length * 140 + 180);
+
+  useEffect(() => {
+    const node = unitRef.current;
+    if (!node || typeof IntersectionObserver === "undefined") {
+      setIsNearViewport(true);
+      return undefined;
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsNearViewport(entry.isIntersecting),
+      { rootMargin: "600px 0px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
 
   return (
-    <Box mb={-8} position="relative">
+    <Box
+      ref={unitRef}
+      mb={-8}
+      position="relative"
+      style={{
+        contentVisibility: "auto",
+        containIntrinsicSize: `auto ${estimatedHeight}px`,
+      }}
+    >
       <Box
         position="absolute"
         top="0"
@@ -3750,13 +3851,41 @@ function TutorPathUnit({
 
         <Box position="relative" py={4} minH="200px">
           {unit.lessons.map((lesson, lessonIndex) => {
-            const status = getLessonStatus(
-              lesson,
-              unit,
-              unitIndex,
-              lessonIndex,
-              visibleUnits,
-            );
+            const lessonProgress = lessonProgressById?.[lesson.id];
+            let status = lessonProgress?.status;
+            if (
+              status !== SKILL_STATUS.COMPLETED &&
+              status !== SKILL_STATUS.IN_PROGRESS
+            ) {
+              const previousCompleted =
+                isTestUnlocked ||
+                (lessonIndex === 0
+                  ? unitIndex === 0 ||
+                    previousUnitLastLessonStatus === SKILL_STATUS.COMPLETED
+                  : lessonProgressById?.[unit.lessons[lessonIndex - 1]?.id]
+                      ?.status === SKILL_STATUS.COMPLETED);
+              status = previousCompleted
+                ? SKILL_STATUS.AVAILABLE
+                : SKILL_STATUS.LOCKED;
+            }
+            const earnedPercent =
+              status === SKILL_STATUS.COMPLETED
+                ? 100
+                : status === SKILL_STATUS.IN_PROGRESS
+                  ? Math.round(
+                      (Math.max(
+                        0,
+                        selectedLessonId === lesson.id
+                          ? selectedLessonEarnedXp
+                          : getStoredTutorLessonEarnedXp(
+                              lessonProgress,
+                              lesson,
+                            ),
+                      ) /
+                        Math.max(1, getTutorLessonXpRequired(lesson))) *
+                        100,
+                    )
+                  : 0;
             const isEven = lessonIndex % 2 === 0;
             const offset = isEven ? 0 : zigzagOffset;
             const yPosition = lessonIndex * 140;
@@ -3808,8 +3937,9 @@ function TutorPathUnit({
                     unit={unit}
                     status={status}
                     supportLang={supportLang}
-                    earnedPercent={getLessonEarnedPercent(lesson, status)}
+                    earnedPercent={earnedPercent}
                     onSelect={() => onLessonSelect(lesson, unit, status)}
+                    animateDecorations={isNearViewport}
                   />
                 </Box>
               </Box>
@@ -3820,7 +3950,7 @@ function TutorPathUnit({
       </VStack>
     </Box>
   );
-}
+});
 
 /* ---------------------------
    Component
@@ -3853,6 +3983,7 @@ export default function Tutor({
   // User id
   const user = useUserStore((s) => s.user);
   const currentNpub = activeNpub?.trim?.() || strongNpub(user);
+  const loadedUserSettingsKeyRef = useRef("");
 
   useEffect(() => {
     if (!isActive) return;
@@ -4055,6 +4186,10 @@ export default function Tutor({
     return {
       lessons: lessonsForLanguage,
       targetLang,
+      courseSummary: getCourseProgressSummary(
+        user?.progress,
+        progressLanguageKey,
+      ),
     };
   }, [targetLang, user?.progress]);
 
@@ -4069,10 +4204,17 @@ export default function Tutor({
     maxProficiencyLevel,
   );
   const [activeTutorLevel, setActiveTutorLevel] = useState(initialTutorLevel);
+  const tutorLevelWasManuallySelectedRef = useRef(false);
+  const [isTutorProgressLoading, setIsTutorProgressLoading] = useState(true);
+  const hydratedTutorProgressLevelsRef = useRef(new Set());
   const [tutorPathUnits, setTutorPathUnits] = useState([]);
   const [isTutorPathLoading, setIsTutorPathLoading] = useState(false);
   const isTutorPathLoadingRef = useRef(false);
+  const loadedTutorPathLevelsRef = useRef(new Map());
   const tutorPathLoadedLangRef = useRef("");
+  const tutorUnitProgressSelectorRef = useRef(
+    createUnitRenderProgressSelector(),
+  );
   const [selectedTutorLesson, setSelectedTutorLesson] = useState(null);
   const [selectedTutorUnit, setSelectedTutorUnit] = useState(null);
   const [previewedTutorLesson, setPreviewedTutorLesson] = useState(null);
@@ -4086,6 +4228,89 @@ export default function Tutor({
   const [tutorGameLaunch, setTutorGameLaunch] = useState(null);
   const tutorGameLaunchTokenRef = useRef(0);
   const tutorGameCompletionInFlightRef = useRef(false);
+
+  useEffect(() => {
+    tutorLevelWasManuallySelectedRef.current = false;
+  }, [currentNpub, targetLang]);
+
+  useEffect(() => {
+    const resumeLevel = getLessonLevelFromId(
+      user?.progress?.currentTutorLesson,
+    );
+    if (!resumeLevel || tutorLevelWasManuallySelectedRef.current) return;
+    setActiveTutorLevel((current) =>
+      current === resumeLevel ? current : resumeLevel,
+    );
+  }, [targetLang, user?.progress?.currentTutorLesson]);
+
+  useEffect(() => {
+    if (!isActive) return undefined;
+    if (!currentNpub || !activeTutorLevel) {
+      setIsTutorProgressLoading(false);
+      return undefined;
+    }
+
+    const languageKey = String(targetLang || "es").toLowerCase();
+    const progressCacheKey = `${currentNpub}:${languageKey}:${activeTutorLevel}`;
+    const cachedLessons =
+      useUserStore.getState?.()?.user?.progress?.tutorLanguageLessons?.[
+        languageKey
+      ] || {};
+    const hasCachedLevel =
+      hydratedTutorProgressLevelsRef.current.has(progressCacheKey) ||
+      Object.values(cachedLessons).some(
+        (progress) =>
+          (progress?.cefrLevel ||
+            getLessonLevelFromId(progress?.lessonId)) === activeTutorLevel,
+      );
+    setIsTutorProgressLoading(!hasCachedLevel);
+    const progressRef = query(
+      collection(
+        database,
+        "users",
+        currentNpub,
+        "tutorLanguageLessons",
+      ),
+      where("targetLang", "==", languageKey),
+      where("cefrLevel", "==", activeTutorLevel),
+    );
+
+    return onSnapshot(
+      progressRef,
+      (snapshot) => {
+        const store = useUserStore.getState?.() || {};
+        const latestUser = store.user || {};
+        const currentProgress = latestUser.progress || {};
+        const tutorLanguageLessons =
+          currentProgress.tutorLanguageLessons || {};
+        const existingForLanguage =
+          tutorLanguageLessons[languageKey] || {};
+        const nextForLanguage = replaceProgressLevel({
+          existing: existingForLanguage,
+          documents: snapshot.docs,
+          mode: "tutor",
+          level: activeTutorLevel,
+          idField: "lessonId",
+        });
+
+        store.patchUser?.({
+          progress: {
+            ...currentProgress,
+            tutorLanguageLessons: {
+              ...tutorLanguageLessons,
+              [languageKey]: nextForLanguage,
+            },
+          },
+        });
+        hydratedTutorProgressLevelsRef.current.add(progressCacheKey);
+        setIsTutorProgressLoading(false);
+      },
+      (error) => {
+        console.error("Tutor progress listener failed:", error);
+        setIsTutorProgressLoading(false);
+      },
+    );
+  }, [activeTutorLevel, currentNpub, isActive, targetLang]);
   useEffect(
     () => () => {
       tutorGameLaunchTokenRef.current += 1;
@@ -4274,20 +4499,47 @@ export default function Tutor({
   }, [onFirstLessonComplete]);
 
   useEffect(() => {
+    if (!isActive) return undefined;
+
     const langKey = getTutorStorageLang(targetLang);
+    const pathKey = `${langKey}:${activeTutorLevel}`;
+    const cachedUnits = loadedTutorPathLevelsRef.current.get(pathKey);
+    const shouldRetainCurrentUnits =
+      tutorPathLoadedLangRef.current === langKey;
+    const mergeLevelUnits = (currentUnits, levelUnits) =>
+      mergeTutorPathLevelUnits(
+        shouldRetainCurrentUnits ? currentUnits : [],
+        levelUnits,
+        activeTutorLevel,
+      );
+
+    if (cachedUnits) {
+      setTutorPathUnits((current) => mergeLevelUnits(current, cachedUnits));
+      tutorPathLoadedLangRef.current = langKey;
+      setIsTutorPathLoading(false);
+      return undefined;
+    }
+
     let cancelled = false;
-    tutorPathLoadedLangRef.current = "";
-    setTutorPathUnits([]);
+    if (tutorPathLoadedLangRef.current !== langKey) {
+      setTutorPathUnits([]);
+    }
     setIsTutorPathLoading(true);
-    loadMultiLevelLearningPath(targetLang, TUTOR_CEFR_LEVELS)
+    loadLearningPath(targetLang, activeTutorLevel)
       .then((units) => {
         if (cancelled) return;
-        setTutorPathUnits(Array.isArray(units) ? units : []);
+        const levelUnits = tagTutorPathLevel(units, activeTutorLevel);
+        loadedTutorPathLevelsRef.current.set(pathKey, levelUnits);
+        setTutorPathUnits((current) => mergeLevelUnits(current, levelUnits));
         tutorPathLoadedLangRef.current = langKey;
       })
       .catch((error) => {
         console.error("Failed to load Tutor path:", error);
-        if (!cancelled) setTutorPathUnits([]);
+        if (!cancelled) {
+          if (tutorPathLoadedLangRef.current !== langKey) {
+            setTutorPathUnits([]);
+          }
+        }
       })
       .finally(() => {
         if (!cancelled) setIsTutorPathLoading(false);
@@ -4296,11 +4548,19 @@ export default function Tutor({
     return () => {
       cancelled = true;
     };
-  }, [targetLang]);
+  }, [activeTutorLevel, isActive, targetLang]);
 
   const visibleTutorUnits = useMemo(
     () => tutorPathUnits.filter((unit) => unit.cefrLevel === activeTutorLevel),
     [activeTutorLevel, tutorPathUnits],
+  );
+  const tutorUnitRenderProgress = useMemo(
+    () =>
+      tutorUnitProgressSelectorRef.current(
+        visibleTutorUnits,
+        tutorUserProgress.lessons,
+      ),
+    [tutorUserProgress.lessons, visibleTutorUnits],
   );
 
   const tutorLevelCompletionStatus = useMemo(() => {
@@ -4312,26 +4572,43 @@ export default function Tutor({
         (sum, unit) => sum + (unit.lessons?.length || 0),
         0,
       );
-      const completedLessons = levelUnits.reduce(
-        (sum, unit) =>
-          sum +
-          (unit.lessons || []).filter(
-            (lesson) =>
-              tutorUserProgress.lessons?.[lesson.id]?.status ===
-              SKILL_STATUS.COMPLETED,
-          ).length,
-        0,
+      const summaryStats = getCourseLevelStats(
+        tutorUserProgress.courseSummary,
+        "tutor",
+        level,
+        totalLessons,
       );
+      const effectiveTotalLessons = summaryStats.total || totalLessons;
+      const completedLessons =
+        summaryStats.completed ??
+        levelUnits.reduce(
+          (sum, unit) =>
+            sum +
+            (unit.lessons || []).filter(
+              (lesson) =>
+                tutorUserProgress.lessons?.[lesson.id]?.status ===
+                SKILL_STATUS.COMPLETED,
+            ).length,
+          0,
+        );
       acc[level] = {
-        isComplete: totalLessons > 0 && completedLessons >= totalLessons,
+        isComplete:
+          effectiveTotalLessons > 0 &&
+          completedLessons >= effectiveTotalLessons,
         progress:
-          totalLessons > 0
-            ? Math.round((completedLessons / totalLessons) * 100)
+          effectiveTotalLessons > 0
+            ? Math.round(
+                (completedLessons / effectiveTotalLessons) * 100,
+              )
             : 0,
       };
       return acc;
     }, {});
-  }, [tutorPathUnits, tutorUserProgress.lessons]);
+  }, [
+    tutorPathUnits,
+    tutorUserProgress.courseSummary,
+    tutorUserProgress.lessons,
+  ]);
 
   const activeTutorLevelProgress =
     tutorLevelCompletionStatus[activeTutorLevel]?.progress || 0;
@@ -4357,7 +4634,12 @@ export default function Tutor({
     if (!currentNpub) return;
     // While the path is loading, every level reads as incomplete — never
     // write from that state.
-    if (isTutorPathLoading || !tutorPathUnits.length) return;
+    if (
+      isTutorPathLoading ||
+      isTutorProgressLoading ||
+      !tutorPathUnits.length
+    )
+      return;
     const earnedIdx = TUTOR_CEFR_LEVELS.indexOf(tutorEarnedLevel);
     const storedIdx = TUTOR_CEFR_LEVELS.indexOf(storedTutorUnlockedLevel);
     // Monotonic: only ever raise the stored level, and skip the Pre-A1 floor
@@ -4385,6 +4667,7 @@ export default function Tutor({
   }, [
     currentNpub,
     isTutorPathLoading,
+    isTutorProgressLoading,
     tutorPathUnits,
     tutorEarnedLevel,
     storedTutorUnlockedLevel,
@@ -4395,8 +4678,9 @@ export default function Tutor({
   const isTutorAgendaHydratingRef = useRef(true);
 
   useEffect(() => {
-    isTutorPathLoadingRef.current = isTutorPathLoading;
-  }, [isTutorPathLoading]);
+    isTutorPathLoadingRef.current =
+      isTutorPathLoading || isTutorProgressLoading;
+  }, [isTutorPathLoading, isTutorProgressLoading]);
 
   useEffect(() => {
     isTutorAgendaHydratingRef.current = isTutorAgendaHydrating;
@@ -4430,7 +4714,7 @@ export default function Tutor({
   }, [targetLang]);
 
   useEffect(() => {
-    if (!tutorPathUnits.length) return;
+    if (!tutorPathUnits.length || isTutorProgressLoading) return;
     const langKey = getTutorStorageLang(targetLang);
     if (tutorPathLoadedLangRef.current !== langKey) return;
     const progressLessons = tutorUserProgress.lessons || {};
@@ -4467,11 +4751,14 @@ export default function Tutor({
         }
       : findLatestTutorUnlockedLesson(tutorPathUnits, progressLessons);
 
-    if (resumeLesson?.unit?.cefrLevel) {
-      setActiveTutorLevel(resumeLesson.unit.cefrLevel);
-    } else if (storedLevel) {
-      setActiveTutorLevel(storedLevel);
-    }
+    setActiveTutorLevel((current) =>
+      resolveTutorPathLevel({
+        activeLevel: current,
+        resumeLevel: resumeLesson?.unit?.cefrLevel,
+        storedLevel,
+        hasManualSelection: tutorLevelWasManuallySelectedRef.current,
+      }),
+    );
 
     let appliedResumeLesson = false;
 
@@ -4557,6 +4844,7 @@ export default function Tutor({
     user?.progress?.currentTutorLesson,
     xp,
     tutorRepairRestoreTick,
+    isTutorProgressLoading,
   ]);
 
   // Hand the surface back to the regular lesson once an ephemeral repair
@@ -4624,61 +4912,6 @@ export default function Tutor({
   const [inlineFeedback] = useState("");
   const [inlineFeedbackKind] = useState(null);
 
-  function getTutorLessonStatus(lesson, unit, unitIndex, lessonIndex, units) {
-    const lessonProgress = tutorUserProgress.lessons?.[lesson.id];
-    if (lessonProgress?.status === SKILL_STATUS.COMPLETED) {
-      return SKILL_STATUS.COMPLETED;
-    }
-    if (lessonProgress?.status === SKILL_STATUS.IN_PROGRESS) {
-      return SKILL_STATUS.IN_PROGRESS;
-    }
-
-    const testNsec =
-      typeof window !== "undefined" ? localStorage.getItem("local_nsec") : null;
-    const isTestUnlocked =
-      testNsec ===
-      "nsec1akcvuhtemz3kw58gvvfg38uucu30zfsahyt6ulqapx44lype6a9q42qevv";
-    if (isTestUnlocked) return SKILL_STATUS.AVAILABLE;
-
-    let previousCompleted = false;
-    if (lessonIndex === 0) {
-      if (unitIndex === 0) {
-        previousCompleted = true;
-      } else {
-        const previousUnit = units[unitIndex - 1];
-        const previousLesson =
-          previousUnit?.lessons?.[previousUnit.lessons.length - 1];
-        previousCompleted =
-          tutorUserProgress.lessons?.[previousLesson?.id]?.status ===
-          SKILL_STATUS.COMPLETED;
-      }
-    } else {
-      previousCompleted =
-        tutorUserProgress.lessons?.[unit.lessons[lessonIndex - 1]?.id]
-          ?.status === SKILL_STATUS.COMPLETED;
-    }
-
-    return previousCompleted ? SKILL_STATUS.AVAILABLE : SKILL_STATUS.LOCKED;
-  }
-
-  function getTutorLessonEarnedPercent(lesson, status) {
-    if (status === SKILL_STATUS.COMPLETED) return 100;
-    if (status !== SKILL_STATUS.IN_PROGRESS) return 0;
-
-    if (selectedTutorLesson?.id === lesson.id) {
-      const required = getTutorLessonXpRequired(lesson);
-      return Math.round(
-        (Math.max(0, tutorLessonEarnedXp) / Math.max(1, required || 1)) * 100,
-      );
-    }
-
-    const lessonProgress = tutorUserProgress.lessons?.[lesson.id];
-    const required = getTutorLessonXpRequired(lesson);
-    if (!required) return 0;
-    const earned = getStoredTutorLessonEarnedXp(lessonProgress, lesson);
-    return Math.round((Math.max(0, earned) / Math.max(1, required)) * 100);
-  }
-
   function handleTutorPathOpen() {
     openTutorPath();
   }
@@ -4687,15 +4920,18 @@ export default function Tutor({
     if (!TUTOR_CEFR_LEVELS.includes(level)) return;
     const nextLevel = clampTutorLevelToUnlocked(level, maxProficiencyLevel);
     if (nextLevel !== level) return;
+    if (nextLevel === activeTutorLevel) return;
+    tutorLevelWasManuallySelectedRef.current = true;
+    setIsTutorProgressLoading(true);
     setActiveTutorLevel(nextLevel);
     writeStoredTutorLevel(targetLang, nextLevel);
   }
 
-  function handleTutorLessonPreview(lesson, unit, status) {
+  const handleTutorLessonPreview = useCallback((lesson, unit, status) => {
     if (!lesson) return;
     setPreviewedTutorObjectivesExpanded(false);
     setPreviewedTutorLesson({ lesson, unit, status });
-  }
+  }, []);
 
   function closeTutorLessonPreview() {
     if (isStartingPreviewedLesson) return;
@@ -4933,6 +5169,7 @@ export default function Tutor({
           lesson.id,
           targetLangRef.current,
           tutorUserProgress,
+          unit?.cefrLevel,
         );
       } catch (error) {
         console.error("Failed to start Tutor lesson:", error);
@@ -4962,6 +5199,7 @@ export default function Tutor({
         lesson.id,
         targetLangRef.current,
         tutorUserProgress,
+        selectedTutorUnitRef.current?.cefrLevel,
       );
     } catch (error) {
       console.error("Failed to start Tutor lesson:", error);
@@ -5597,7 +5835,9 @@ export default function Tutor({
   --------------------------- */
   useEffect(() => {
     async function loadXp() {
-      if (!currentNpub) return;
+      if (!isActive || !currentNpub) return;
+      const settingsKey = `${currentNpub}:${String(targetLang || "").toLowerCase()}`;
+      if (loadedUserSettingsKeyRef.current === settingsKey) return;
       try {
         await ensureUserDoc(currentNpub);
         const snap = await getDoc(doc(database, "users", currentNpub));
@@ -5637,11 +5877,12 @@ export default function Tutor({
               conversationSubjects: savedSubjects,
             };
           });
+          loadedUserSettingsKeyRef.current = settingsKey;
         }
       } catch {}
     }
     loadXp();
-  }, [currentNpub, targetLang, maxProficiencyLevel]);
+  }, [currentNpub, isActive, targetLang, maxProficiencyLevel]);
 
   // Cleanup on unmount
   useEffect(
@@ -8566,12 +8807,40 @@ export default function Tutor({
         status: SKILL_STATUS.COMPLETED,
       },
     };
-    const nextTutorLesson = findNextTutorLessonAfter(
+    let nextTutorLesson = findNextTutorLessonAfter(
       tutorPathUnits,
       lesson.id,
       nextProgressLessons,
     );
     await stop();
+    if (!nextTutorLesson && unit?.cefrLevel) {
+      const currentLevelIndex = TUTOR_CEFR_LEVELS.indexOf(unit.cefrLevel);
+      const nextLevel = TUTOR_CEFR_LEVELS[currentLevelIndex + 1];
+      if (nextLevel) {
+        try {
+          const langKey = getTutorStorageLang(targetLangRef.current);
+          const nextPathKey = `${langKey}:${nextLevel}`;
+          let nextLevelUnits =
+            loadedTutorPathLevelsRef.current.get(nextPathKey);
+          if (!nextLevelUnits) {
+            nextLevelUnits = tagTutorPathLevel(
+              await loadLearningPath(targetLangRef.current, nextLevel),
+              nextLevel,
+            );
+            loadedTutorPathLevelsRef.current.set(nextPathKey, nextLevelUnits);
+          }
+          setTutorPathUnits((current) =>
+            mergeTutorPathLevelUnits(current, nextLevelUnits, nextLevel),
+          );
+          nextTutorLesson = findLatestTutorUnlockedLesson(
+            nextLevelUnits,
+            nextProgressLessons,
+          );
+        } catch (error) {
+          console.error("Failed to load the next Tutor level:", error);
+        }
+      }
+    }
     try {
       // Commit the path state before waiting for the final turn's XP write.
       // Crossing the subscription threshold can replace the learning surface
@@ -8583,6 +8852,7 @@ export default function Tutor({
         lesson.id,
         xpRequired || 1,
         targetLangRef.current,
+        unit?.cefrLevel,
       );
       const settledAwards = await Promise.allSettled(
         awardPromises.filter(Boolean),
@@ -10365,7 +10635,10 @@ export default function Tutor({
     uiLang,
   );
   const isLessonAgendaLoading =
-    isTutorPathLoading || (isTutorAgendaHydrating && !selectedTutorLesson);
+    isTutorPathLoading ||
+    isTutorProgressLoading ||
+    isTutorAgendaHydrating ||
+    tutorPathLoadedLangRef.current !== getTutorStorageLang(targetLang);
   const showGentleInlineFeedback =
     inlineFeedbackKind === "incorrect" && !!inlineFeedback;
   const selectedTutorLessonProgressStatus = selectedTutorLesson
@@ -10423,6 +10696,7 @@ export default function Tutor({
       lesson.isRepair ||
       isTutorAgendaHydrating ||
       isTutorPathLoading ||
+      isTutorProgressLoading ||
       selectedTutorLessonProgressStatus === SKILL_STATUS.COMPLETED ||
       selectedTutorLessonRef.current?.id !== lesson.id
     ) {
@@ -10457,6 +10731,7 @@ export default function Tutor({
     currentNpub,
     isTutorAgendaHydrating,
     isTutorPathLoading,
+    isTutorProgressLoading,
     regularAgendaGateOpen,
     selectedTutorLesson,
     selectedTutorLessonProgressStatus,
@@ -10690,37 +10965,9 @@ export default function Tutor({
                   justify="center"
                 >
                   {isLessonAgendaLoading ? (
-                    <>
-                      <VoiceOrb
-                        state={getRealtimeOrbVisualState(
-                          ["idle", "listening", "speaking"][
-                            Math.floor(Math.random() * 3)
-                          ],
-                        )}
-                        size={24}
-                        theme={isLightTheme ? "light" : "dark"}
-                      />
-                      <Text
-                        fontSize="sm"
-                        fontWeight="medium"
-                        textAlign="center"
-                        color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
-                        flex="1"
-                      >
-                        {tutorCopy(uiLang, {
-                          en: "Loading lesson agenda...",
-                          es: "Cargando agenda de la leccion...",
-                          pt: "Carregando agenda da licao...",
-                          it: "Caricamento agenda della lezione...",
-                          fr: "Chargement du programme...",
-                          de: "Lektionsagenda wird geladen...",
-                          ja: "レッスン内容を読み込み中...",
-                          hi: "पाठ एजेंडा लोड हो रहा है...",
-                          ar: "بنحمّل خطة الدرس...",
-                          zh: "正在加载课程安排...",
-                        })}
-                      </Text>
-                    </>
+                    <AnimatedEllipsis
+                      color={isLightTheme ? "black" : "white"}
+                    />
                   ) : (
                     <VStack spacing={1} align="center" flex="1" minW={0}>
                       <Text
@@ -11078,38 +11325,67 @@ export default function Tutor({
                 </HStack>
               </Box>
 
-              {isTutorPathLoading ? (
-                <Center minH="320px">
-                  <VStack spacing={3}>
-                    <Spinner color="cyan.300" size="lg" />
-                    <Text fontSize="sm" color="var(--app-text-secondary)">
-                      {getTutorPathCopy("loadingPath", uiLang)}
-                    </Text>
-                  </VStack>
-                </Center>
-              ) : visibleTutorUnits.length ? (
-                <VStack spacing={8} align="stretch">
-                  {visibleTutorUnits.map((unit, index) => (
-                    <TutorPathUnit
-                      key={unit.id}
-                      unit={unit}
-                      unitIndex={index}
-                      visibleUnits={visibleTutorUnits}
-                      userProgress={tutorUserProgress}
-                      supportLang={uiLang}
-                      getLessonStatus={getTutorLessonStatus}
-                      getLessonEarnedPercent={getTutorLessonEarnedPercent}
-                      onLessonSelect={handleTutorLessonPreview}
-                    />
-                  ))}
-                </VStack>
-              ) : (
-                <Center minH="260px">
-                  <Text color="var(--app-text-secondary)">
-                    {getTutorPathCopy("noLessons", uiLang)}
-                  </Text>
-                </Center>
-              )}
+              <Box minH="320px">
+                <AnimatePresence initial={false} mode="wait">
+                  {!isTutorPathLoading && !isTutorProgressLoading ? (
+                    <MotionBox
+                      key={`${targetLang}:${activeTutorLevel}`}
+                      initial={{ opacity: 0, scale: 0.985 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.985 }}
+                      transition={{ duration: 0.22, ease: "easeOut" }}
+                      style={{ willChange: "opacity, transform" }}
+                    >
+                      {visibleTutorUnits.length ? (
+                        <VStack spacing={8} align="stretch">
+                          {visibleTutorUnits.map((unit, index) => {
+                            const renderProgress =
+                              tutorUnitRenderProgress[index] || {};
+                            const ownsSelectedLesson =
+                              selectedTutorLesson?.id &&
+                              unit.lessons.some(
+                                (lesson) =>
+                                  lesson.id === selectedTutorLesson.id,
+                              );
+                            return (
+                              <TutorPathUnit
+                                key={unit.id}
+                                unit={unit}
+                                unitIndex={index}
+                                lessonProgressById={
+                                  renderProgress.lessonProgressById
+                                }
+                                previousUnitLastLessonStatus={
+                                  renderProgress.previousUnitLastLessonStatus
+                                }
+                                supportLang={uiLang}
+                                selectedLessonId={
+                                  ownsSelectedLesson
+                                    ? selectedTutorLesson.id
+                                    : null
+                                }
+                                selectedLessonEarnedXp={
+                                  ownsSelectedLesson
+                                    ? tutorLessonEarnedXp
+                                    : 0
+                                }
+                                isTestUnlocked={isTutorTestUnlockActive()}
+                                onLessonSelect={handleTutorLessonPreview}
+                              />
+                            );
+                          })}
+                        </VStack>
+                      ) : (
+                        <Center minH="260px">
+                          <Text color="var(--app-text-secondary)">
+                            {getTutorPathCopy("noLessons", uiLang)}
+                          </Text>
+                        </Center>
+                      )}
+                    </MotionBox>
+                  ) : null}
+                </AnimatePresence>
+              </Box>
             </VStack>
           </ModalBody>
           <ModalFooter

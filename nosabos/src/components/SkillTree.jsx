@@ -35,6 +35,7 @@ import {
   AccordionIcon,
 } from "@chakra-ui/react";
 import { CloseIcon } from "@chakra-ui/icons";
+import { AnimatePresence, motion } from "framer-motion";
 import { LuBlocks, LuSparkles } from "react-icons/lu";
 import CEFRLevelNavigator from "./CEFRLevelNavigator";
 import { useThemeStore } from "../useThemeStore";
@@ -222,7 +223,6 @@ import {
 import {
   loadLearningPath,
   loadMultiLevelLearningPath,
-  getUnitProgress,
   SKILL_STATUS,
 } from "../data/skillTree/index.js";
 import { translateSkillTreeTextToArabic } from "../data/skillTree/arabicLocalizer";
@@ -242,6 +242,7 @@ import {
   getAllFlashcardProgress,
 } from "../utils/cefrProgress";
 import { getLessonProgressPercent } from "../utils/lessonProgress";
+import { createUnitRenderProgressSelector } from "../utils/skillTreeRenderProgress";
 import FlashcardSkillTree from "./FlashcardSkillTree";
 import { CEFR_LEVELS } from "../data/flashcards/common";
 import { MdOutlineDescription } from "react-icons/md";
@@ -251,7 +252,6 @@ import Tutor from "./Tutor";
 import useSoundSettings from "../hooks/useSoundSettings";
 import useModalStore from "../hooks/useModalStore";
 import { selectSound } from "../constants/sounds";
-import VoiceOrb from "./VoiceOrb";
 import { buildGameReviewContext } from "../utils/gameReviewContext";
 import {
   getLessonAgenda,
@@ -270,6 +270,7 @@ import {
 } from "../utils/modalMotion";
 
 const LoadingMiniGame = lazy(() => import("./LoadingMiniGame"));
+const MotionBox = motion.create(Box);
 const KeepAliveConversations = memo(Conversations);
 const KeepAliveFlashcardSkillTree = memo(FlashcardSkillTree);
 const KeepAliveTutor = memo(Tutor);
@@ -318,35 +319,6 @@ const rgbToHex = ({ r, g, b }) => {
 
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 };
-
-const LOADING_ORB_STATES = ["idle", "listening", "speaking"];
-
-function getRandomLoadingOrbState() {
-  return LOADING_ORB_STATES[
-    Math.floor(Math.random() * LOADING_ORB_STATES.length)
-  ];
-}
-
-function PathModeFallback({ fill = false }) {
-  const orbState = useMemo(getRandomLoadingOrbState, []);
-
-  return (
-    <Box
-      w="100%"
-      h={fill ? "100%" : undefined}
-      minH={fill ? "100%" : undefined}
-      py={fill ? 0 : 12}
-      textAlign="center"
-      display="flex"
-      flexDirection="column"
-      alignItems="center"
-      justifyContent={fill ? "center" : undefined}
-      gap={3}
-    >
-      <VoiceOrb state={orbState} size={88} />
-    </Box>
-  );
-}
 
 const KEEP_ALIVE_PATH_MODES = [
   "path",
@@ -994,13 +966,14 @@ const getLessonIcon = (lesson, unitId) => {
  * - No Framer whileTap / whileHover
  * - touchAction: "manipulation" to avoid scroll interference
  */
-function LessonNode({
+const LessonNode = React.memo(function LessonNode({
   lesson,
   unit,
   status,
-  onClick,
+  onLessonClick,
   supportLang,
   inProgressPercent = 0,
+  animateDecorations = true,
 }) {
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
@@ -1022,7 +995,7 @@ function LessonNode({
 
   const handlePress = () => {
     if (!isClickable) return;
-    onClick?.();
+    onLessonClick?.(lesson, unit, status);
   };
 
   const ringPercent = Math.max(0, Math.min(100, inProgressPercent));
@@ -1217,7 +1190,7 @@ function LessonNode({
               />
 
               {/* Sparkle effect for completed lessons */}
-              {status === SKILL_STATUS.COMPLETED && (
+              {status === SKILL_STATUS.COMPLETED && animateDecorations && (
                 <>
                   <Box
                     pointerEvents="none"
@@ -1316,7 +1289,7 @@ function LessonNode({
       </Box>
     </Box>
   );
-}
+});
 
 /**
  * Unit Component
@@ -1324,20 +1297,35 @@ function LessonNode({
  */
 const UnitSection = React.memo(function UnitSection({
   unit,
-  userProgress,
+  lessonProgressById = {},
+  previousUnitLastLessonStatus = "",
   onLessonClick,
   index,
   supportLang,
   hasNextUnit,
-  previousUnit,
   latestUnlockedLessonId,
   latestUnlockedRef,
   isTutorialComplete = true,
 }) {
-  const bgColor = "gray.800";
-  const borderColor = "gray.700";
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
+  const unitRootRef = useRef(null);
+  const [isNearViewport, setIsNearViewport] = useState(index < 2);
+
+  useEffect(() => {
+    const element = unitRootRef.current;
+    if (!element || typeof IntersectionObserver === "undefined") {
+      setIsNearViewport(true);
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsNearViewport(entry.isIntersecting),
+      { rootMargin: "600px 0px" },
+    );
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
 
   // Responsive horizontal offset for zigzag pattern
   const zigzagOffset =
@@ -1363,17 +1351,28 @@ const UnitSection = React.memo(function UnitSection({
       { ssr: false },
     ) || 240;
 
-  const unitProgressPercent = getUnitProgress(unit, userProgress);
   const completedCount = unit.lessons.filter(
     (lesson) =>
-      userProgress.lessons?.[lesson.id]?.status === SKILL_STATUS.COMPLETED,
+      lessonProgressById[lesson.id]?.status === SKILL_STATUS.COMPLETED,
   ).length;
 
   const unitTitle = getUIDisplayText(unit.title);
   const unitDescription = getUIDisplayText(unit.description);
+  const intrinsicUnitHeight = Math.max(
+    420,
+    unit.lessons.length * 140 + 180,
+  );
 
   return (
-    <Box mb={-8} position="relative">
+    <Box
+      ref={unitRootRef}
+      mb={-8}
+      position="relative"
+      sx={{
+        contentVisibility: "auto",
+        containIntrinsicSize: `auto ${intrinsicUnitHeight}px`,
+      }}
+    >
       {/* Decorative gradient orb behind unit */}
       <Box
         position="absolute"
@@ -1437,7 +1436,9 @@ const UnitSection = React.memo(function UnitSection({
                   borderRadius="full"
                   bg={unit.color}
                   boxShadow={`0 0 20px ${unit.color}80`}
-                  animation="pulse 3s ease-in-out infinite"
+                  animation={
+                    isNearViewport ? "pulse 3s ease-in-out infinite" : "none"
+                  }
                 />
                 <Heading
                   size="sm"
@@ -1509,7 +1510,7 @@ const UnitSection = React.memo(function UnitSection({
         {/* Lessons in this unit - Game-like zigzag layout */}
         <Box position="relative" py={4} minH="200px">
           {unit.lessons.map((lesson, lessonIndex) => {
-            const lessonProgress = userProgress.lessons?.[lesson.id];
+            const lessonProgress = lessonProgressById[lesson.id];
             let status = SKILL_STATUS.LOCKED;
 
             // Testing unlock: check for specific nsec in local storage
@@ -1535,18 +1536,16 @@ const UnitSection = React.memo(function UnitSection({
                 if (index === 0) {
                   // First lesson of first unit - only available if tutorial is complete
                   isPreviousLessonCompleted = isTutorialComplete;
-                } else if (previousUnit) {
-                  // First lesson of subsequent units - check if last lesson of previous unit is completed
-                  const previousUnitLastLesson =
-                    previousUnit.lessons[previousUnit.lessons.length - 1];
+                } else {
+                  // First lesson of subsequent units follows the previous
+                  // unit's final completion without receiving its full map.
                   isPreviousLessonCompleted =
-                    userProgress.lessons?.[previousUnitLastLesson.id]
-                      ?.status === SKILL_STATUS.COMPLETED;
+                    previousUnitLastLessonStatus === SKILL_STATUS.COMPLETED;
                 }
               } else {
                 // Not the first lesson - check if previous lesson in same unit is completed
                 isPreviousLessonCompleted =
-                  userProgress.lessons?.[unit.lessons[lessonIndex - 1].id]
+                  lessonProgressById[unit.lessons[lessonIndex - 1].id]
                     ?.status === SKILL_STATUS.COMPLETED;
               }
 
@@ -1678,8 +1677,9 @@ const UnitSection = React.memo(function UnitSection({
                     unit={unit}
                     status={status}
                     inProgressPercent={inProgressPercent}
-                    onClick={() => onLessonClick(lesson, unit, status)}
+                    onLessonClick={onLessonClick}
                     supportLang={supportLang}
+                    animateDecorations={isNearViewport}
                   />
                 </Box>
               </Box>
@@ -2094,7 +2094,7 @@ function LessonDetailModal({
               </Flex>
             </Box>
             <Box flex="1" overflow="hidden" position="relative">
-              <Suspense fallback={<PathModeFallback fill />}>
+              <Suspense fallback={null}>
                 <LoadingMiniGame supportLang={supportLang} />
               </Suspense>
             </Box>
@@ -2541,6 +2541,8 @@ export default function SkillTree({
   onFlashcardLevelChange, // Callback when user navigates to different level in flashcard mode
   lessonLevelCompletionStatus = {}, // Status of all levels in lesson mode
   flashcardLevelCompletionStatus = {}, // Status of all levels in flashcard mode
+  isLessonProgressReady = true, // Active lesson slice has received its first Firestore snapshot
+  isFlashcardProgressReady = true, // Active flashcard slice has received its first Firestore snapshot
   // Legacy props (for backwards compatibility)
   activeCEFRLevel = "Pre-A1", // Currently active/visible CEFR level
   currentCEFRLevel = "Pre-A1", // User's current progress level
@@ -2569,6 +2571,20 @@ export default function SkillTree({
   const closeLessonDetail = useModalStore((s) => s.closeLessonDetail);
 
   const isModeVisible = (mode) => isKeepAliveModeVisible(pathMode, mode);
+  const [visitedModes, setVisitedModes] = useState(
+    () => new Set([normalizeKeepAlivePathMode(pathMode)]),
+  );
+  useEffect(() => {
+    const mode = normalizeKeepAlivePathMode(pathMode);
+    setVisitedModes((current) => {
+      if (current.has(mode)) return current;
+      const next = new Set(current);
+      next.add(mode);
+      return next;
+    });
+  }, [pathMode]);
+  const shouldMountMode = (mode) =>
+    isModeVisible(mode) || visitedModes.has(mode);
 
   // Sound settings
   const playSound = useSoundSettings((s) => s.playSound);
@@ -2630,21 +2646,24 @@ export default function SkillTree({
   const [units, setUnits] = useState(() =>
     hasInitialUnits ? initialUnits : [],
   );
-  const [isLoadingUnits, setIsLoadingUnits] = useState(() => !hasInitialUnits);
+  const [loadedUnitsKey, setLoadedUnitsKey] = useState(() =>
+    hasInitialUnits ? requestedUnitsKey : "",
+  );
 
   useEffect(() => {
+    if (pathMode !== "path") return undefined;
+
     let isMounted = true;
 
     if (hasInitialUnits) {
       setUnits(initialUnits);
-      setIsLoadingUnits(false);
+      setLoadedUnitsKey(requestedUnitsKey);
       return () => {
         isMounted = false;
       };
     }
 
     async function loadUnits() {
-      setIsLoadingUnits(true);
       try {
         const nextUnits = showMultipleLevels
           ? await loadMultiLevelLearningPath(
@@ -2655,15 +2674,13 @@ export default function SkillTree({
 
         if (isMounted) {
           setUnits(nextUnits);
+          setLoadedUnitsKey(requestedUnitsKey);
         }
       } catch (error) {
         console.error("Failed to load skill tree units:", error);
         if (isMounted) {
           setUnits([]);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoadingUnits(false);
+          setLoadedUnitsKey(requestedUnitsKey);
         }
       }
     }
@@ -2680,12 +2697,27 @@ export default function SkillTree({
     level,
     hasInitialUnits,
     initialUnits,
+    pathMode,
+    requestedUnitsKey,
   ]);
 
   // Filter units to show only the effective active level for the current mode
   const visibleUnits = useMemo(() => {
     return units.filter((unit) => unit.cefrLevel === effectiveActiveLevel);
   }, [units, effectiveActiveLevel]);
+  const unitRenderProgressSelectorRef = useRef(null);
+  if (!unitRenderProgressSelectorRef.current) {
+    unitRenderProgressSelectorRef.current =
+      createUnitRenderProgressSelector();
+  }
+  const unitRenderProgress = useMemo(
+    () =>
+      unitRenderProgressSelectorRef.current(
+        visibleUnits,
+        userProgress.lessons || {},
+      ),
+    [userProgress.lessons, visibleUnits],
+  );
 
   // Calculate max unlocked proficiency level for conversations
   // Uses the highest unlocked level between skill tree, flashcards, and
@@ -2848,48 +2880,84 @@ export default function SkillTree({
   }, [visibleUnits, userProgress, isTutorialComplete]);
 
   const pathModeContent = useMemo(() => {
-    if (isLoadingUnits) {
-      return <PathModeFallback />;
-    }
+    const isLevelReady =
+      loadedUnitsKey === requestedUnitsKey && isLessonProgressReady;
 
     return (
-      <VStack spacing={8} align="stretch">
-        {visibleUnits.length > 0 ? (
-          visibleUnits.map((unit, index) => (
-            <UnitSection
-              key={unit.id}
-              unit={unit}
-              userProgress={userProgress}
-              onLessonClick={handleLessonClick}
-              index={index}
-              supportLang={supportLang}
-              hasNextUnit={index < visibleUnits.length - 1}
-              previousUnit={index > 0 ? visibleUnits[index - 1] : null}
-              latestUnlockedLessonId={latestUnlockedLessonId}
-              latestUnlockedRef={latestUnlockedRef}
-              isTutorialComplete={isTutorialComplete}
-            />
-          ))
-        ) : (
-          <Box textAlign="center" py={12}>
-            <Text fontSize="lg" color="gray.400">
-              {getTranslation("skill_tree_no_path")}
-            </Text>
-            <Text fontSize="sm" color="gray.500" mt={2}>
-              {getTranslation("skill_tree_check_back")}
-            </Text>
-          </Box>
-        )}
-      </VStack>
+      <Box minH="320px" position="relative">
+        <AnimatePresence initial={false} mode="sync">
+          {isLevelReady ? (
+            <MotionBox
+              key={`${targetLang}:${effectiveActiveLevel}`}
+              initial={{ opacity: 0, scale: 0.985 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.985 }}
+              transition={{ duration: 0.22, ease: "easeOut" }}
+              position="relative"
+              zIndex={1}
+              style={{ willChange: "opacity, transform" }}
+            >
+              <VStack spacing={8} align="stretch">
+                {visibleUnits.length > 0 ? (
+                  visibleUnits.map((unit, index) => {
+                    const renderProgress = unitRenderProgress[index] || {};
+                    const unitOwnsLatestUnlockedLesson =
+                      latestUnlockedLessonId &&
+                      unit.lessons.some(
+                        (lesson) => lesson.id === latestUnlockedLessonId,
+                      );
+                    return (
+                      <UnitSection
+                        key={unit.id}
+                        unit={unit}
+                        lessonProgressById={
+                          renderProgress.lessonProgressById
+                        }
+                        previousUnitLastLessonStatus={
+                          renderProgress.previousUnitLastLessonStatus
+                        }
+                        onLessonClick={handleLessonClick}
+                        index={index}
+                        supportLang={supportLang}
+                        hasNextUnit={index < visibleUnits.length - 1}
+                        latestUnlockedLessonId={
+                          unitOwnsLatestUnlockedLesson
+                            ? latestUnlockedLessonId
+                            : null
+                        }
+                        latestUnlockedRef={latestUnlockedRef}
+                        isTutorialComplete={isTutorialComplete}
+                      />
+                    );
+                  })
+                ) : (
+                  <Box textAlign="center" py={12}>
+                    <Text fontSize="lg" color="gray.400">
+                      {getTranslation("skill_tree_no_path")}
+                    </Text>
+                    <Text fontSize="sm" color="gray.500" mt={2}>
+                      {getTranslation("skill_tree_check_back")}
+                    </Text>
+                  </Box>
+                )}
+              </VStack>
+            </MotionBox>
+          ) : null}
+        </AnimatePresence>
+      </Box>
     );
   }, [
+    effectiveActiveLevel,
     handleLessonClick,
-    isLoadingUnits,
+    isLessonProgressReady,
     isTutorialComplete,
     latestUnlockedLessonId,
     latestUnlockedRef,
+    loadedUnitsKey,
+    requestedUnitsKey,
     supportLang,
-    userProgress,
+    targetLang,
+    unitRenderProgress,
     visibleUnits,
   ]);
 
@@ -3066,56 +3134,64 @@ export default function SkillTree({
               {pathModeContent}
             </Box>
 
-            <Box
-              display={isModeVisible("flashcards") ? "block" : "none"}
-              aria-hidden={!isModeVisible("flashcards")}
-            >
-              <KeepAliveFlashcardSkillTree
-                userProgress={userProgress}
-                onStartFlashcard={handleFlashcardComplete}
-                onRandomPractice={handleRandomPractice}
-                targetLang={targetLang}
-                supportLang={supportLang}
-                activeCEFRLevel={effectiveActiveLevel}
-                pauseMs={pauseMs}
-              />
-            </Box>
+            {shouldMountMode("flashcards") ? (
+              <Box
+                display={isModeVisible("flashcards") ? "block" : "none"}
+                aria-hidden={!isModeVisible("flashcards")}
+              >
+                <KeepAliveFlashcardSkillTree
+                  userProgress={userProgress}
+                  onStartFlashcard={handleFlashcardComplete}
+                  onRandomPractice={handleRandomPractice}
+                  targetLang={targetLang}
+                  supportLang={supportLang}
+                  activeCEFRLevel={effectiveActiveLevel}
+                  pauseMs={pauseMs}
+                  isActive={isModeVisible("flashcards")}
+                  isProgressReady={isFlashcardProgressReady}
+                />
+              </Box>
+            ) : null}
 
-            <Box
-              display={isModeVisible("conversations") ? "block" : "none"}
-              aria-hidden={!isModeVisible("conversations")}
-            >
-              <KeepAliveConversations
-                activeNpub={activeNpub}
-                targetLang={targetLang}
-                supportLang={supportLang}
-                pauseMs={pauseMs}
-                maxProficiencyLevel={maxProficiencyLevel}
-                isActive={isModeVisible("conversations")}
-                bottomActionBarMinimized={bottomActionBarMinimized}
-                onConnectionStatusChange={
-                  handleConversationsConnectionStatusChange
-                }
-              />
-            </Box>
+            {shouldMountMode("conversations") ? (
+              <Box
+                display={isModeVisible("conversations") ? "block" : "none"}
+                aria-hidden={!isModeVisible("conversations")}
+              >
+                <KeepAliveConversations
+                  activeNpub={activeNpub}
+                  targetLang={targetLang}
+                  supportLang={supportLang}
+                  pauseMs={pauseMs}
+                  maxProficiencyLevel={maxProficiencyLevel}
+                  isActive={isModeVisible("conversations")}
+                  bottomActionBarMinimized={bottomActionBarMinimized}
+                  onConnectionStatusChange={
+                    handleConversationsConnectionStatusChange
+                  }
+                />
+              </Box>
+            ) : null}
 
-            <Box
-              display={isModeVisible("tutor") ? "block" : "none"}
-              aria-hidden={!isModeVisible("tutor")}
-            >
-              <KeepAliveTutor
-                activeNpub={activeNpub}
-                targetLang={targetLang}
-                supportLang={supportLang}
-                pauseMs={pauseMs}
-                maxProficiencyLevel={maxProficiencyLevel}
-                onFirstLessonComplete={onTutorFirstLessonComplete}
-                onDailyGoalCelebration={onTutorDailyGoalCelebration}
-                isActive={isModeVisible("tutor")}
-                bottomActionBarMinimized={bottomActionBarMinimized}
-                onConnectionStatusChange={handleTutorConnectionStatusChange}
-              />
-            </Box>
+            {shouldMountMode("tutor") ? (
+              <Box
+                display={isModeVisible("tutor") ? "block" : "none"}
+                aria-hidden={!isModeVisible("tutor")}
+              >
+                <KeepAliveTutor
+                  activeNpub={activeNpub}
+                  targetLang={targetLang}
+                  supportLang={supportLang}
+                  pauseMs={pauseMs}
+                  maxProficiencyLevel={maxProficiencyLevel}
+                  onFirstLessonComplete={onTutorFirstLessonComplete}
+                  onDailyGoalCelebration={onTutorDailyGoalCelebration}
+                  isActive={isModeVisible("tutor")}
+                  bottomActionBarMinimized={bottomActionBarMinimized}
+                  onConnectionStatusChange={handleTutorConnectionStatusChange}
+                />
+              </Box>
+            ) : null}
           </>
         ) : (
           <>
@@ -3129,6 +3205,8 @@ export default function SkillTree({
                 supportLang={supportLang}
                 activeCEFRLevel={effectiveActiveLevel}
                 pauseMs={pauseMs}
+                isActive
+                isProgressReady={isFlashcardProgressReady}
               />
             )}
             {isModeVisible("conversations") && (

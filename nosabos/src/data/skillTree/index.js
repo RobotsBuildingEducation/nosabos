@@ -1,13 +1,13 @@
 /**
  * Skill tree data access helpers.
  *
- * The lesson tree itself lives in ../skillTreeData.js (the aggregate source of
- * truth). This module exposes it to components via lightweight loaders and a
- * few pure progress helpers. (The old per-level lazy-loading modules
- * a1.js…c2.js were unused duplicates and have been removed.)
+ * The aggregate skillTreeData.js remains the authoring source of truth.
+ * Generated raw-level modules let the app download and transform only the
+ * selected CEFR level and target-language curriculum.
  */
 
 import { CEFR_LEVELS } from "../flashcards/common.js";
+import { loadTargetCurriculum } from "./targetCurriculum/load.js";
 
 export const SKILL_STATUS = {
   LOCKED: "locked",
@@ -16,18 +16,79 @@ export const SKILL_STATUS = {
   COMPLETED: "completed",
 };
 
-async function loadAggregateSkillTreeData() {
-  return import("../skillTreeData.js");
+const DEFAULT_TARGET_LANG = "es";
+const SUPPORTED_TARGET_LANGS = new Set([
+  "en",
+  "es",
+  "pt",
+  "fr",
+  "it",
+  "nl",
+  "nah",
+  "ja",
+  "ru",
+  "de",
+  "el",
+  "pl",
+  "ga",
+  "yua",
+]);
+
+const levelLoaders = {
+  "Pre-A1": () => import("./baseLevels/pre-a1.js"),
+  A1: () => import("./baseLevels/a1.js"),
+  A2: () => import("./baseLevels/a2.js"),
+  B1: () => import("./baseLevels/b1.js"),
+  B2: () => import("./baseLevels/b2.js"),
+  C1: () => import("./baseLevels/c1.js"),
+  C2: () => import("./baseLevels/c2.js"),
+};
+
+const learningPathCache = new Map();
+
+function normalizeTargetLang(targetLang) {
+  const languageKey = String(targetLang || DEFAULT_TARGET_LANG).toLowerCase();
+  return SUPPORTED_TARGET_LANGS.has(languageKey)
+    ? languageKey
+    : DEFAULT_TARGET_LANG;
 }
 
 /**
  * Load the learning path for a specific target language and level.
- * Uses the aggregate data source through a dynamic import so the lesson tree
- * stays out of the main bundle.
+ * Raw units and authored practice-language curriculum are separate dynamic
+ * chunks. The transformed result is cached by language + level.
  */
 export async function loadLearningPath(targetLang, level) {
-  const { getLearningPath } = await loadAggregateSkillTreeData();
-  return getLearningPath(targetLang, level);
+  const loader = levelLoaders[level];
+  if (!loader) return [];
+  const languageKey = normalizeTargetLang(targetLang);
+  const cacheKey = `${languageKey}:${level}`;
+  if (learningPathCache.has(cacheKey)) {
+    const cached = await learningPathCache.get(cacheKey);
+    return cached.slice();
+  }
+
+  const pending = Promise.all([
+    loader(),
+    import("../skillTreeLevelBuilder.js"),
+    loadTargetCurriculum(languageKey),
+  ])
+    .then(([rawModule, builderModule, authoredCurriculum]) =>
+      builderModule.buildLearningPathLevel({
+        rawUnits: rawModule.default,
+        level,
+        targetLang: languageKey,
+        authoredCurriculum,
+      }),
+    )
+    .catch((error) => {
+      learningPathCache.delete(cacheKey);
+      throw error;
+    });
+
+  learningPathCache.set(cacheKey, pending);
+  const units = await pending;
+  return units.slice();
 }
 
 /**
@@ -37,8 +98,16 @@ export async function loadMultiLevelLearningPath(
   targetLang,
   levels = ["A1", "A2"],
 ) {
-  const { getMultiLevelLearningPath } = await loadAggregateSkillTreeData();
-  return getMultiLevelLearningPath(targetLang, levels);
+  const requestedLevels = levels.filter((level) => CEFR_LEVELS.includes(level));
+  const levelUnits = await Promise.all(
+    requestedLevels.map((level) => loadLearningPath(targetLang, level)),
+  );
+  return levelUnits.flatMap((units, index) =>
+    units.map((unit) => ({
+      ...unit,
+      cefrLevel: requestedLevels[index],
+    })),
+  );
 }
 
 /**

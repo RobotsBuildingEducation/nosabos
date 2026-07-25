@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   getTutorLessonLaunchMode,
+  resolveTutorPathLevel,
   TUTOR_LESSON_LAUNCH_MODE,
 } from "./tutorLessonLaunch.js";
 
@@ -29,4 +30,27 @@ test("Tutor keeps ordinary, review, integrated, and quiz lessons in voice", () =
       TUTOR_LESSON_LAUNCH_MODE.VOICE,
     );
   });
+});
+
+test("Tutor resume does not override a proficiency level the user just selected", () => {
+  assert.equal(
+    resolveTutorPathLevel({
+      activeLevel: "B1",
+      resumeLevel: "A1",
+      storedLevel: "B1",
+      hasManualSelection: true,
+    }),
+    "B1",
+  );
+});
+
+test("Tutor resume selects the saved lesson level before manual navigation", () => {
+  assert.equal(
+    resolveTutorPathLevel({
+      activeLevel: "Pre-A1",
+      resumeLevel: "A2",
+      storedLevel: "A1",
+    }),
+    "A2",
+  );
 });

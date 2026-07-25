@@ -645,6 +645,8 @@ export default function FlashcardSkillTree({
   supportLang = "en",
   activeCEFRLevel = null,
   pauseMs = 2000,
+  isActive = true,
+  isProgressReady = true,
 }) {
   // Practice modal lives in useModalStore so tapping a card doesn't
   // re-render this 1,500-line FlashcardSkillTree before the modal opens.
@@ -654,7 +656,11 @@ export default function FlashcardSkillTree({
   const [localProgressOverrides, setLocalProgressOverrides] = useState({});
   const [flashcardData, setFlashcardData] = useState([]);
   const [isLoadingFlashcards, setIsLoadingFlashcards] = useState(true);
+  const [loadedFlashcardDataKey, setLoadedFlashcardDataKey] = useState("");
   const [isReady, setIsReady] = useState(false);
+  const requestedFlashcardDataKey = activeCEFRLevel
+    ? `${targetLang}:${activeCEFRLevel}`
+    : `${targetLang}:relevant`;
 
   const playSound = useSoundSettings((state) => state.playSound);
   const appLanguage = getAppLanguage();
@@ -676,6 +682,12 @@ export default function FlashcardSkillTree({
   }, [targetLang]);
 
   useEffect(() => {
+    if (!isActive) return undefined;
+    if (loadedFlashcardDataKey === requestedFlashcardDataKey) {
+      setIsLoadingFlashcards(false);
+      return undefined;
+    }
+
     let isMounted = true;
 
     async function loadFlashcards() {
@@ -714,6 +726,7 @@ export default function FlashcardSkillTree({
         }
       } finally {
         if (isMounted) {
+          setLoadedFlashcardDataKey(requestedFlashcardDataKey);
           setIsLoadingFlashcards(false);
         }
       }
@@ -724,7 +737,18 @@ export default function FlashcardSkillTree({
     return () => {
       isMounted = false;
     };
-  }, [userProgress, activeCEFRLevel]);
+  }, [
+    activeCEFRLevel,
+    isActive,
+    loadedFlashcardDataKey,
+    requestedFlashcardDataKey,
+    userProgress,
+  ]);
+
+  const isFlashcardViewReady =
+    !isLoadingFlashcards &&
+    isProgressReady &&
+    loadedFlashcardDataKey === requestedFlashcardDataKey;
 
   // Cards the learner earned outside the predefined library — their
   // definitions ride on the progress docs (a repair-deck card stores itself
@@ -756,6 +780,7 @@ export default function FlashcardSkillTree({
   const [isLoadingRepairDeck, setIsLoadingRepairDeck] = useState(false);
   useEffect(() => {
     if (
+      !isActive ||
       !activeRepairFocus ||
       // A step routed for another language is stale on this surface.
       String(activeRepairFocus.targetLang || "").toLowerCase() !==
@@ -780,7 +805,7 @@ export default function FlashcardSkillTree({
     return () => {
       alive = false;
     };
-  }, [activeRepairFocus, targetLang]);
+  }, [activeRepairFocus, isActive, targetLang]);
 
   // A repair card is answered once its progress exists (persisted doc, or the
   // instant local override written on completion).
@@ -800,13 +825,13 @@ export default function FlashcardSkillTree({
   // the main deck via customDeckCards).
   const repairDeckCompletedRef = useRef("");
   useEffect(() => {
-    if (!activeRepairFocus || !repairDeck.length) return;
+    if (!isActive || !activeRepairFocus || !repairDeck.length) return;
     if (repairAnsweredCount < repairDeck.length) return;
     const onceKey = repairDeck[0]?.id || "repair-deck";
     if (repairDeckCompletedRef.current === onceKey) return;
     repairDeckCompletedRef.current = onceKey;
     void completeRepairFocus();
-  }, [activeRepairFocus, repairAnsweredCount, repairDeck]);
+  }, [activeRepairFocus, isActive, repairAnsweredCount, repairDeck]);
 
   const effectiveProgressMap = useMemo(() => {
     const map = {};
@@ -1157,7 +1182,17 @@ export default function FlashcardSkillTree({
 
   return (
     <Box w="100%" minH="500px" position="relative">
-      <VStack spacing={8} align="stretch">
+      <AnimatePresence initial={false} mode="wait">
+        {isFlashcardViewReady ? (
+          <MotionBox
+            key={requestedFlashcardDataKey}
+            initial={{ opacity: 0, scale: 0.985 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.985 }}
+            transition={{ duration: 0.22, ease: "easeOut" }}
+            style={{ willChange: "opacity, transform" }}
+          >
+            <VStack spacing={8} align="stretch">
         <Box
           p={{ base: 5, md: 6 }}
           borderRadius="3xl"
@@ -1224,14 +1259,6 @@ export default function FlashcardSkillTree({
 
           </VStack>
         </Box>
-
-        {isLoadingFlashcards ? (
-          <Box px={2}>
-            <Text fontSize="sm" color={APP_TEXT_SECONDARY}>
-              {getTranslation("flashcard_session_loading")}
-            </Text>
-          </Box>
-        ) : null}
 
         {activeRepairFocus && isLoadingRepairDeck && !repairDeck.length ? (
           <Box px={2}>
@@ -1351,7 +1378,10 @@ export default function FlashcardSkillTree({
             </VStack>
           </MotionBox>
         ) : null}
-      </VStack>
+            </VStack>
+          </MotionBox>
+        ) : null}
+      </AnimatePresence>
 
       {/* Practice modal — Gate subscribes to useModalStore so toggling open/
           close doesn't re-render the whole FlashcardSkillTree component. */}
