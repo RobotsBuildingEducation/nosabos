@@ -11,14 +11,52 @@ import {
   increment,
   serverTimestamp,
   deleteField,
+  runTransaction,
 } from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
 import { SKILL_STATUS } from "../data/skillTree/index.js";
+import { LESSON_COUNTS, getLessonLevelFromId } from "./cefrProgress.js";
+import {
+  COURSE_PROGRESS_COLLECTION,
+  COURSE_PROGRESS_SCHEMA_VERSION,
+  normalizeCourseLevel,
+  toCourseLevelKey,
+} from "./courseProgress.js";
+import {
+  normalizeTutorConversationDraftMessages,
+  TUTOR_CONVERSATION_DRAFT_VERSION,
+} from "./tutorConversationDraft.js";
 
 // Version the Tutor agenda checkpoint so full-XP records written before the
 // app-owned agenda gate can be migrated without weakening completion rules for
 // new lessons.
 export const TUTOR_AGENDA_PROGRESS_SCHEMA_VERSION = 2;
+
+function getLessonCourseLevel(lessonId, cefrLevel) {
+  return normalizeCourseLevel(cefrLevel) || getLessonLevelFromId(lessonId);
+}
+
+function getCourseSummaryCompletionPatch(
+  targetLang,
+  mode,
+  cefrLevel,
+  shouldIncrement,
+) {
+  const levelKey = toCourseLevelKey(cefrLevel);
+  return {
+    schemaVersion: COURSE_PROGRESS_SCHEMA_VERSION,
+    targetLang,
+    [mode]: {
+      levels: {
+        [levelKey]: {
+          ...(shouldIncrement ? { completed: increment(1) } : {}),
+          total: LESSON_COUNTS[cefrLevel] || 0,
+        },
+      },
+    },
+    updatedAt: serverTimestamp(),
+  };
+}
 
 /**
  * Initialize progress structure for a new user
@@ -48,8 +86,10 @@ export async function startLesson(
   lessonId,
   targetLang = "es",
   userProgress = null,
+  cefrLevel = null,
 ) {
   if (!npub || !lessonId) return;
+  void userProgress;
 
   const languageKey = (targetLang || "es").toLowerCase();
   const userRef = doc(database, "users", npub);
@@ -61,55 +101,64 @@ export async function startLesson(
     `${languageKey}_${lessonId}`,
   );
 
-  // Check existing lesson status to decide what to write
-  const existingLessonData =
-    userProgress?.languageLessons?.[languageKey]?.[lessonId] ||
-    userProgress?.lessons?.[lessonId];
-  const existingStatus = existingLessonData?.status;
-
-  const isAlreadyCompleted = existingStatus === SKILL_STATUS.COMPLETED;
-  const isAlreadyInProgress = existingStatus === SKILL_STATUS.IN_PROGRESS;
+  const lessonLevel = getLessonCourseLevel(lessonId, cefrLevel);
 
   try {
-    const updateData = {
-      [`progress.currentLesson`]: lessonId,
-      "progress.lastActiveAt": serverTimestamp(),
-    };
+    return await runTransaction(database, async (transaction) => {
+      const lessonSnapshot = await transaction.get(lessonProgressRef);
+      const existingLessonData = lessonSnapshot.exists()
+        ? lessonSnapshot.data()
+        : {};
+      const existingStatus = existingLessonData?.status;
 
-    // Determine the lesson doc write:
-    // - COMPLETED: don't touch (preserves unlock chain)
-    // - IN_PROGRESS: preserve earnedXp and startedAt
-    // - Otherwise (new/available): write full IN_PROGRESS with earnedXp = 0
-    let lessonDocPromise;
-    if (isAlreadyCompleted) {
-      lessonDocPromise = Promise.resolve();
-    } else if (isAlreadyInProgress) {
-      // Preserve trustworthy lesson-owned progress. Legacy records only have
-      // lessonStartXp, which cannot distinguish lesson activity from XP earned
-      // elsewhere, so they restart at zero rather than showing false progress.
-      lessonDocPromise = setDoc(
-        lessonProgressRef,
-        {
+      transaction.update(userRef, {
+        "progress.currentLesson": lessonId,
+        "progress.lastActiveAt": serverTimestamp(),
+      });
+
+      if (existingStatus === SKILL_STATUS.COMPLETED) {
+        return existingLessonData;
+      }
+
+      if (existingStatus === SKILL_STATUS.IN_PROGRESS) {
+        // Preserve trustworthy lesson-owned progress. Legacy records only have
+        // lessonStartXp, which cannot distinguish lesson activity from XP
+        // earned elsewhere, so they restart at zero.
+        transaction.set(
+          lessonProgressRef,
+          {
+            ...(lessonLevel ? { cefrLevel: lessonLevel } : {}),
+            earnedXp:
+              typeof existingLessonData?.earnedXp === "number"
+                ? Math.max(0, existingLessonData.earnedXp)
+                : 0,
+            lessonStartXp: deleteField(),
+            tutorAgendaProgress: deleteField(),
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true },
+        );
+        return {
+          ...existingLessonData,
+          ...(lessonLevel ? { cefrLevel: lessonLevel } : {}),
           earnedXp:
             typeof existingLessonData?.earnedXp === "number"
               ? Math.max(0, existingLessonData.earnedXp)
               : 0,
-          lessonStartXp: deleteField(),
-          tutorAgendaProgress: deleteField(),
-          updatedAt: serverTimestamp(),
-        },
-        { merge: true },
-      );
-    } else {
-      // Fresh starts own their XP counter so other learning surfaces cannot
-      // advance this lesson.
-      lessonDocPromise = setDoc(
+        };
+      }
+
+      const freshProgress = {
+        targetLang: languageKey,
+        lessonId,
+        ...(lessonLevel ? { cefrLevel: lessonLevel } : {}),
+        status: SKILL_STATUS.IN_PROGRESS,
+        earnedXp: 0,
+      };
+      transaction.set(
         lessonProgressRef,
         {
-          targetLang: languageKey,
-          lessonId,
-          status: SKILL_STATUS.IN_PROGRESS,
-          earnedXp: 0,
+          ...freshProgress,
           lessonStartXp: deleteField(),
           tutorAgendaProgress: deleteField(),
           startedAt: serverTimestamp(),
@@ -117,9 +166,8 @@ export async function startLesson(
         },
         { merge: true },
       );
-    }
-
-    await Promise.all([updateDoc(userRef, updateData), lessonDocPromise]);
+      return freshProgress;
+    });
   } catch (error) {
     console.error("Error starting lesson:", error);
     throw error;
@@ -134,8 +182,10 @@ export async function startTutorLesson(
   lessonId,
   targetLang = "es",
   userProgress = null,
+  cefrLevel = null,
 ) {
   if (!npub || !lessonId) return;
+  void userProgress;
 
   const languageKey = (targetLang || "es").toLowerCase();
   const userRef = doc(database, "users", npub);
@@ -147,49 +197,60 @@ export async function startTutorLesson(
     `${languageKey}_${lessonId}`,
   );
 
-  const existingLessonData =
-    userProgress?.tutorLanguageLessons?.[languageKey]?.[lessonId] ||
-    userProgress?.lessons?.[lessonId];
-  const existingStatus = existingLessonData?.status;
-
-  const isAlreadyCompleted = existingStatus === SKILL_STATUS.COMPLETED;
-  const isAlreadyInProgress = existingStatus === SKILL_STATUS.IN_PROGRESS;
+  const lessonLevel = getLessonCourseLevel(lessonId, cefrLevel);
 
   try {
-    const updateData = {
-      "progress.currentTutorLesson": lessonId,
-      "progress.lastActiveAt": serverTimestamp(),
-    };
+    return await runTransaction(database, async (transaction) => {
+      const lessonSnapshot = await transaction.get(lessonProgressRef);
+      const existingLessonData = lessonSnapshot.exists()
+        ? lessonSnapshot.data()
+        : {};
+      const existingStatus = existingLessonData?.status;
 
-    let lessonDocPromise;
-    if (isAlreadyCompleted) {
-      lessonDocPromise = Promise.resolve();
-    } else if (isAlreadyInProgress) {
-      lessonDocPromise = setDoc(
+      transaction.update(userRef, {
+        "progress.currentTutorLesson": lessonId,
+        "progress.lastActiveAt": serverTimestamp(),
+      });
+
+      if (existingStatus === SKILL_STATUS.COMPLETED) {
+        return existingLessonData;
+      }
+
+      if (existingStatus === SKILL_STATUS.IN_PROGRESS) {
+        transaction.set(
+          lessonProgressRef,
+          {
+            ...(lessonLevel ? { cefrLevel: lessonLevel } : {}),
+            lessonStartXp: deleteField(),
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true },
+        );
+        return {
+          ...existingLessonData,
+          ...(lessonLevel ? { cefrLevel: lessonLevel } : {}),
+        };
+      }
+
+      const freshProgress = {
+        targetLang: languageKey,
+        lessonId,
+        ...(lessonLevel ? { cefrLevel: lessonLevel } : {}),
+        status: SKILL_STATUS.IN_PROGRESS,
+        earnedXp: 0,
+      };
+      transaction.set(
         lessonProgressRef,
         {
-          lessonStartXp: deleteField(),
-          updatedAt: serverTimestamp(),
-        },
-        { merge: true },
-      );
-    } else {
-      lessonDocPromise = setDoc(
-        lessonProgressRef,
-        {
-          targetLang: languageKey,
-          lessonId,
-          status: SKILL_STATUS.IN_PROGRESS,
-          earnedXp: 0,
+          ...freshProgress,
           lessonStartXp: deleteField(),
           startedAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         },
         { merge: true },
       );
-    }
-
-    await Promise.all([updateDoc(userRef, updateData), lessonDocPromise]);
+      return freshProgress;
+    });
   } catch (error) {
     console.error("Error starting Tutor lesson:", error);
     throw error;
@@ -232,6 +293,53 @@ export async function saveTutorLessonEarnedXp(
     );
   } catch (error) {
     console.error("Error saving Tutor lesson XP:", error);
+    throw error;
+  }
+}
+
+/**
+ * Save a small reconnect transcript on the active Tutor lesson.
+ *
+ * Callers intentionally fire-and-forget this write. The Tutor UI debounces
+ * finalized message snapshots so speaking/listening never waits on Firestore.
+ */
+export async function saveTutorConversationDraft(
+  npub,
+  lessonId,
+  targetLang = "es",
+  messages = [],
+) {
+  if (!npub || !lessonId) return;
+
+  const languageKey = (targetLang || "es").toLowerCase();
+  const lessonProgressRef = doc(
+    database,
+    "users",
+    npub,
+    "tutorLanguageLessons",
+    `${languageKey}_${lessonId}`,
+  );
+  const normalizedMessages =
+    normalizeTutorConversationDraftMessages(messages);
+  if (!normalizedMessages.length) return;
+
+  try {
+    await setDoc(
+      lessonProgressRef,
+      {
+        targetLang: languageKey,
+        lessonId,
+        conversationDraft: {
+          version: TUTOR_CONVERSATION_DRAFT_VERSION,
+          messages: normalizedMessages,
+          updatedAt: serverTimestamp(),
+        },
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true },
+    );
+  } catch (error) {
+    console.error("Error saving Tutor conversation draft:", error);
     throw error;
   }
 }
@@ -318,6 +426,7 @@ export async function completeTutorLesson(
   lessonId,
   xpReward,
   targetLang = "es",
+  cefrLevel = null,
 ) {
   if (!npub || !lessonId || !xpReward) return;
 
@@ -331,29 +440,56 @@ export async function completeTutorLesson(
     "tutorLanguageLessons",
     `${languageKey}_${lessonId}`,
   );
+  const lessonLevel = getLessonCourseLevel(lessonId, cefrLevel);
+  const summaryRef = doc(
+    database,
+    "users",
+    npub,
+    COURSE_PROGRESS_COLLECTION,
+    languageKey,
+  );
 
   try {
-    await Promise.all([
-      updateDoc(userRef, {
+    await runTransaction(database, async (transaction) => {
+      const lessonSnapshot = await transaction.get(lessonProgressRef);
+      const wasCompleted =
+        lessonSnapshot.exists() &&
+        lessonSnapshot.data()?.status === SKILL_STATUS.COMPLETED;
+
+      transaction.update(userRef, {
         "progress.currentTutorLesson": null,
         "progress.lastActiveAt": serverTimestamp(),
-      }),
-      setDoc(
+      });
+      transaction.set(
         lessonProgressRef,
         {
           targetLang: languageKey,
           lessonId,
+          ...(lessonLevel ? { cefrLevel: lessonLevel } : {}),
           status: SKILL_STATUS.COMPLETED,
           completedAt: serverTimestamp(),
           xpEarned: xpReward,
           earnedXp: xpReward,
           lessonStartXp: deleteField(),
           tutorAgendaProgress: deleteField(),
+          conversationDraft: deleteField(),
           updatedAt: serverTimestamp(),
         },
         { merge: true },
-      ),
-    ]);
+      );
+      if (lessonLevel) {
+        transaction.set(
+          summaryRef,
+          getCourseSummaryCompletionPatch(
+            languageKey,
+            "tutor",
+            lessonLevel,
+            !wasCompleted,
+          ),
+          { merge: true },
+        );
+      }
+    });
 
     return true;
   } catch (error) {
@@ -371,6 +507,7 @@ export async function completeLesson(
   lessonId,
   xpReward,
   targetLang = "es",
+  cefrLevel = null,
 ) {
   if (!npub || !lessonId || !xpReward) return;
 
@@ -384,18 +521,32 @@ export async function completeLesson(
     "languageLessons",
     `${languageKey}_${lessonId}`,
   );
+  const lessonLevel = getLessonCourseLevel(lessonId, cefrLevel);
+  const summaryRef = doc(
+    database,
+    "users",
+    npub,
+    COURSE_PROGRESS_COLLECTION,
+    languageKey,
+  );
 
   try {
-    await Promise.all([
-      updateDoc(userRef, {
+    await runTransaction(database, async (transaction) => {
+      const lessonSnapshot = await transaction.get(lessonProgressRef);
+      const wasCompleted =
+        lessonSnapshot.exists() &&
+        lessonSnapshot.data()?.status === SKILL_STATUS.COMPLETED;
+
+      transaction.update(userRef, {
         "progress.currentLesson": null,
         "progress.lastActiveAt": serverTimestamp(),
-      }),
-      setDoc(
+      });
+      transaction.set(
         lessonProgressRef,
         {
           targetLang: languageKey,
           lessonId,
+          ...(lessonLevel ? { cefrLevel: lessonLevel } : {}),
           status: SKILL_STATUS.COMPLETED,
           completedAt: serverTimestamp(),
           xpEarned: xpReward,
@@ -404,8 +555,20 @@ export async function completeLesson(
           updatedAt: serverTimestamp(),
         },
         { merge: true },
-      ),
-    ]);
+      );
+      if (lessonLevel) {
+        transaction.set(
+          summaryRef,
+          getCourseSummaryCompletionPatch(
+            languageKey,
+            "skillTree",
+            lessonLevel,
+            !wasCompleted,
+          ),
+          { merge: true },
+        );
+      }
+    });
 
     return true;
   } catch (error) {
@@ -444,7 +607,12 @@ export function getLanguageXp(progress, targetLang) {
 /**
  * Track lesson attempt (for analytics)
  */
-export async function trackLessonAttempt(npub, lessonId, targetLang = "es") {
+export async function trackLessonAttempt(
+  npub,
+  lessonId,
+  targetLang = "es",
+  cefrLevel = null,
+) {
   if (!npub || !lessonId) return;
 
   const languageKey = (targetLang || "es").toLowerCase();
@@ -456,6 +624,7 @@ export async function trackLessonAttempt(npub, lessonId, targetLang = "es") {
     "languageLessons",
     `${languageKey}_${lessonId}`,
   );
+  const lessonLevel = getLessonCourseLevel(lessonId, cefrLevel);
 
   try {
     await Promise.all([
@@ -467,6 +636,7 @@ export async function trackLessonAttempt(npub, lessonId, targetLang = "es") {
         {
           targetLang: languageKey,
           lessonId,
+          ...(lessonLevel ? { cefrLevel: lessonLevel } : {}),
           attempts: increment(1),
           lastAttemptAt: serverTimestamp(),
           updatedAt: serverTimestamp(),

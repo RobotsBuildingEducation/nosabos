@@ -328,8 +328,11 @@ test("quiz turns test before teaching and advance after an incorrect answer", ()
   assert.match(first, /never teach before the learner answers/i);
   assert.match(
     first,
-    /Do not say, spell, translate, paraphrase, or model any accepted form/,
+    /spoken turn must contain zero accepted forms/,
   );
+  assert.match(first, /HIDDEN ANSWER KEY/);
+  assert.match(first, /Ask the question and stop speaking/);
+  assert.match(first, /Never use a teaching label/);
   assert.match(first, /one scored attempt/i);
 
   const afterMiss = buildOpenAIQuizTurnInstructions({
@@ -348,6 +351,22 @@ test("quiz turns test before teaching and advance after an incorrect answer", ()
   assert.match(afterMiss, /Give one concise correction/);
   assert.match(afterMiss, /Do not make the learner retry the old question/);
   assert.match(afterMiss, /then ask the new question/);
+
+  const helpRequest = buildOpenAIQuizTurnInstructions({
+    turnVerdict: TUTOR_TURN_VERDICT.UNCERTAIN,
+    currentQuestion: {
+      goal: "Produce an evening greeting",
+      targetForms: ["Buenas noches"],
+      examples: ["Buenas noches, Ana."],
+    },
+    questionNumber: 3,
+    totalQuestions: 9,
+    targetLanguageName: "Spanish",
+    supportLanguageName: "English",
+  });
+  assert.match(helpRequest, /request for help instead of an answer/);
+  assert.match(helpRequest, /cannot help with answers during the quiz/);
+  assert.match(helpRequest, /Do not provide a hint, translation, example/);
 });
 
 test("Skill Builder turns require retrieval before corrective teaching", () => {

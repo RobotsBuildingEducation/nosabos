@@ -13,3 +13,13 @@ export function getTutorLessonLaunchMode(lesson) {
   }
   return TUTOR_LESSON_LAUNCH_MODE.VOICE;
 }
+
+export function resolveTutorPathLevel({
+  activeLevel,
+  resumeLevel,
+  storedLevel,
+  hasManualSelection = false,
+}) {
+  if (hasManualSelection) return activeLevel;
+  return resumeLevel || storedLevel || activeLevel;
+}

@@ -60,11 +60,17 @@ export function calculateLessonCompletion(userProgress, cefrLevel, targetLang = 
 
   if (totalLessonsInLevel === 0) return 0;
 
-  const completedCount = Object.keys(lessons).filter(lessonId => {
-    const isInLevel = getLessonLevelFromId(lessonId) === cefrLevel;
-    const isCompleted = lessons[lessonId]?.status === 'completed';
-    return isInLevel && isCompleted;
-  }).length;
+  const summaryKey = String(cefrLevel).toLowerCase().replace(/-/g, '_');
+  const summaryCompleted = Number(
+    userProgress.courseSummary?.skillTree?.levels?.[summaryKey]?.completed,
+  );
+  const completedCount = Number.isFinite(summaryCompleted)
+    ? Math.max(0, summaryCompleted)
+    : Object.keys(lessons).filter(lessonId => {
+        const isInLevel = getLessonLevelFromId(lessonId) === cefrLevel;
+        const isCompleted = lessons[lessonId]?.status === 'completed';
+        return isInLevel && isCompleted;
+      }).length;
 
   return Number(((completedCount / totalLessonsInLevel) * 100).toFixed(2));
 }
@@ -84,14 +90,17 @@ export function calculateFlashcardCompletion(userProgress, cefrLevel, targetLang
 
   if (totalFlashcardsInLevel === 0) return 0;
 
-  // Count completed flashcards for this CEFR level
-  // Flashcard IDs follow pattern: "a1-greet-1", "a2-food-5", etc.
-  const levelPrefix = cefrLevel.toLowerCase();
-  const completedCount = Object.keys(flashcards).filter(cardId => {
-    const isInLevel = cardId.startsWith(`${levelPrefix}-`);
-    const isCompleted = flashcards[cardId]?.completed === true;
-    return isInLevel && isCompleted;
-  }).length;
+  const summaryKey = String(cefrLevel).toLowerCase().replace(/-/g, '_');
+  const summaryCompleted = Number(
+    userProgress.courseSummary?.flashcards?.levels?.[summaryKey]?.completed,
+  );
+  const completedCount = Number.isFinite(summaryCompleted)
+    ? Math.max(0, summaryCompleted)
+    : Object.keys(flashcards).filter(cardId => {
+        const isInLevel = cardId.startsWith(`${cefrLevel.toLowerCase()}-`);
+        const isCompleted = flashcards[cardId]?.completed === true;
+        return isInLevel && isCompleted;
+      }).length;
 
   return Number(((completedCount / totalFlashcardsInLevel) * 100).toFixed(2));
 }
