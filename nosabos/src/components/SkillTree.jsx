@@ -35,7 +35,6 @@ import {
   AccordionIcon,
 } from "@chakra-ui/react";
 import { CloseIcon } from "@chakra-ui/icons";
-import { AnimatePresence, motion } from "framer-motion";
 import { LuBlocks, LuSparkles } from "react-icons/lu";
 import CEFRLevelNavigator from "./CEFRLevelNavigator";
 import { useThemeStore } from "../useThemeStore";
@@ -270,7 +269,6 @@ import {
 } from "../utils/modalMotion";
 
 const LoadingMiniGame = lazy(() => import("./LoadingMiniGame"));
-const MotionBox = motion.create(Box);
 const KeepAliveConversations = memo(Conversations);
 const KeepAliveFlashcardSkillTree = memo(FlashcardSkillTree);
 const KeepAliveTutor = memo(Tutor);
@@ -343,8 +341,17 @@ function detectTouchWebKit() {
   return isIOS && /WebKit/i.test(ua);
 }
 
+function detectCoarsePointer() {
+  return (
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(pointer: coarse)").matches
+  );
+}
+
 const SHOULD_KEEP_ALIVE_MODES = !detectTouchWebKit();
-const SHOULD_RENDER_DECORATIVE_FILTERS = !detectTouchWebKit();
+const SHOULD_RENDER_DECORATIVE_FILTERS =
+  !detectTouchWebKit() && !detectCoarsePointer();
 
 const mixHexColors = (baseHex, mixHex, amount = 0.5) => {
   const base = hexToRgb(baseHex);
@@ -1306,6 +1313,7 @@ const UnitSection = React.memo(function UnitSection({
   latestUnlockedLessonId,
   latestUnlockedRef,
   isTutorialComplete = true,
+  animateEntrance = false,
 }) {
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
@@ -1371,6 +1379,13 @@ const UnitSection = React.memo(function UnitSection({
       sx={{
         contentVisibility: "auto",
         containIntrinsicSize: `auto ${intrinsicUnitHeight}px`,
+        animation: animateEntrance
+          ? "skillTreeUnitEntrance 180ms ease-out both"
+          : undefined,
+        "@keyframes skillTreeUnitEntrance": {
+          from: { opacity: 0 },
+          to: { opacity: 1 },
+        },
       }}
     >
       {/* Decorative gradient orb behind unit */}
@@ -2649,6 +2664,10 @@ export default function SkillTree({
   const [loadedUnitsKey, setLoadedUnitsKey] = useState(() =>
     hasInitialUnits ? requestedUnitsKey : "",
   );
+  const renderUnits = hasInitialUnits ? initialUnits : units;
+  const renderLoadedUnitsKey = hasInitialUnits
+    ? requestedUnitsKey
+    : loadedUnitsKey;
 
   useEffect(() => {
     if (pathMode !== "path") return undefined;
@@ -2656,8 +2675,6 @@ export default function SkillTree({
     let isMounted = true;
 
     if (hasInitialUnits) {
-      setUnits(initialUnits);
-      setLoadedUnitsKey(requestedUnitsKey);
       return () => {
         isMounted = false;
       };
@@ -2703,8 +2720,10 @@ export default function SkillTree({
 
   // Filter units to show only the effective active level for the current mode
   const visibleUnits = useMemo(() => {
-    return units.filter((unit) => unit.cefrLevel === effectiveActiveLevel);
-  }, [units, effectiveActiveLevel]);
+    return renderUnits.filter(
+      (unit) => unit.cefrLevel === effectiveActiveLevel,
+    );
+  }, [renderUnits, effectiveActiveLevel]);
   const unitRenderProgressSelectorRef = useRef(null);
   if (!unitRenderProgressSelectorRef.current) {
     unitRenderProgressSelectorRef.current =
@@ -2811,11 +2830,11 @@ export default function SkillTree({
   );
 
   // Calculate overall progress
-  const totalLessons = units.reduce(
+  const totalLessons = renderUnits.reduce(
     (sum, unit) => sum + unit.lessons.length,
     0,
   );
-  const completedLessons = units.reduce(
+  const completedLessons = renderUnits.reduce(
     (sum, unit) =>
       sum +
       unit.lessons.filter(
@@ -2881,69 +2900,55 @@ export default function SkillTree({
 
   const pathModeContent = useMemo(() => {
     const isLevelReady =
-      loadedUnitsKey === requestedUnitsKey && isLessonProgressReady;
+      renderLoadedUnitsKey === requestedUnitsKey && isLessonProgressReady;
 
     return (
-      <Box minH="320px" position="relative">
-        <AnimatePresence initial={false} mode="sync">
-          {isLevelReady ? (
-            <MotionBox
-              key={`${targetLang}:${effectiveActiveLevel}`}
-              initial={{ opacity: 0, scale: 0.985 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.985 }}
-              transition={{ duration: 0.22, ease: "easeOut" }}
-              position="relative"
-              zIndex={1}
-              style={{ willChange: "opacity, transform" }}
-            >
-              <VStack spacing={8} align="stretch">
-                {visibleUnits.length > 0 ? (
-                  visibleUnits.map((unit, index) => {
-                    const renderProgress = unitRenderProgress[index] || {};
-                    const unitOwnsLatestUnlockedLesson =
-                      latestUnlockedLessonId &&
-                      unit.lessons.some(
-                        (lesson) => lesson.id === latestUnlockedLessonId,
-                      );
-                    return (
-                      <UnitSection
-                        key={unit.id}
-                        unit={unit}
-                        lessonProgressById={
-                          renderProgress.lessonProgressById
-                        }
-                        previousUnitLastLessonStatus={
-                          renderProgress.previousUnitLastLessonStatus
-                        }
-                        onLessonClick={handleLessonClick}
-                        index={index}
-                        supportLang={supportLang}
-                        hasNextUnit={index < visibleUnits.length - 1}
-                        latestUnlockedLessonId={
-                          unitOwnsLatestUnlockedLesson
-                            ? latestUnlockedLessonId
-                            : null
-                        }
-                        latestUnlockedRef={latestUnlockedRef}
-                        isTutorialComplete={isTutorialComplete}
-                      />
-                    );
-                  })
-                ) : (
-                  <Box textAlign="center" py={12}>
-                    <Text fontSize="lg" color="gray.400">
-                      {getTranslation("skill_tree_no_path")}
-                    </Text>
-                    <Text fontSize="sm" color="gray.500" mt={2}>
-                      {getTranslation("skill_tree_check_back")}
-                    </Text>
-                  </Box>
-                )}
-              </VStack>
-            </MotionBox>
-          ) : null}
-        </AnimatePresence>
+      <Box minH="320px" position="relative" sx={{ overflowAnchor: "none" }}>
+        {isLevelReady ? (
+          <VStack spacing={8} align="stretch">
+            {visibleUnits.length > 0 ? (
+              visibleUnits.map((unit, index) => {
+                const renderProgress = unitRenderProgress[index] || {};
+                const unitOwnsLatestUnlockedLesson =
+                  latestUnlockedLessonId &&
+                  unit.lessons.some(
+                    (lesson) => lesson.id === latestUnlockedLessonId,
+                  );
+                return (
+                  <UnitSection
+                    key={unit.id}
+                    unit={unit}
+                    lessonProgressById={renderProgress.lessonProgressById}
+                    previousUnitLastLessonStatus={
+                      renderProgress.previousUnitLastLessonStatus
+                    }
+                    onLessonClick={handleLessonClick}
+                    index={index}
+                    supportLang={supportLang}
+                    hasNextUnit={index < visibleUnits.length - 1}
+                    latestUnlockedLessonId={
+                      unitOwnsLatestUnlockedLesson
+                        ? latestUnlockedLessonId
+                        : null
+                    }
+                    latestUnlockedRef={latestUnlockedRef}
+                    isTutorialComplete={isTutorialComplete}
+                    animateEntrance={index < 2}
+                  />
+                );
+              })
+            ) : (
+              <Box textAlign="center" py={12}>
+                <Text fontSize="lg" color="gray.400">
+                  {getTranslation("skill_tree_no_path")}
+                </Text>
+                <Text fontSize="sm" color="gray.500" mt={2}>
+                  {getTranslation("skill_tree_check_back")}
+                </Text>
+              </Box>
+            )}
+          </VStack>
+        ) : null}
       </Box>
     );
   }, [
@@ -2953,7 +2958,7 @@ export default function SkillTree({
     isTutorialComplete,
     latestUnlockedLessonId,
     latestUnlockedRef,
-    loadedUnitsKey,
+    renderLoadedUnitsKey,
     requestedUnitsKey,
     supportLang,
     targetLang,
