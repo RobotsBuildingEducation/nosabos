@@ -181,7 +181,6 @@ import {
   hasSeenFirstQuest,
   isPastFirstQuest,
   isPlateSessionFor,
-  markFirstQuestFlagOnly,
   markFirstQuestSeen,
   normalizePlateLang,
   readPlateSession,
@@ -189,6 +188,7 @@ import {
   readQuestPlateKinds,
   recordPlateActivity,
   resetTodayPlate,
+  shouldUseFixedFirstQuest,
   startPlateSession,
   writeQuestPlate,
 } from "./utils/dailyPlate";
@@ -8489,65 +8489,57 @@ export default function App({ onBootReady } = {}) {
     const dayKey = plateSnapshot.dayKey;
     if (!langKey || !dayKey) return;
 
-    const todays = readQuestPlateKinds(langKey, dayKey);
-    if (todays && todays.length) {
-      setElectedQuestKinds((prev) =>
-        prev.join("|") === todays.join("|") ? prev : todays,
-      );
-      // A plate cached by older code may have skipped the first-seen flag for a
-      // returning user. Today's plate already exists, so they're past the intro
-      // — set the flag (no first-day stamp) so the companion bubble isn't gated
-      // off. (A genuine first-timer's trio election sets the flag itself below.)
-      // Only against a LOADED user: the boot-time null user reads as unflagged,
-      // which would set the flag for a first-timer reloading mid-intro-day.
-      const cachedPathUser = useUserStore.getState?.()?.user || user;
-      if (
-        !isLoadingApp &&
-        cachedPathUser &&
-        activeNpub &&
-        !hasSeenFirstQuest(cachedPathUser)
-      ) {
-        void markFirstQuestFlagOnly(activeNpub);
-      }
-      return;
-    }
-
-    // Need a loaded user before electing/marking (the first-seen flag and the
-    // neglect weights both come from the user doc). activeNpub resolves from
-    // localStorage at mount — long before the doc loads — and electing against
-    // that boot-time null user on a new day stamped TODAY as the first quest
-    // day (clobbering the real one, re-showing the welcome bubble on a repair
-    // day) and served the intro trio instead of an auto-elected plate.
+    // Quest persistence is account-scoped. The old browser-wide key allowed a
+    // newly created account to inherit another account's random plate and skip
+    // the fixed introductory quest.
     if (!activeNpub || isLoadingApp) return;
     const currentUser = useUserStore.getState?.()?.user || user;
     if (!currentUser) return;
 
-    let kinds;
-    if (!hasSeenFirstQuest(currentUser)) {
-      kinds = DAILY_PLATE_COURSE_ORDER;
-      void markFirstQuestSeen(activeNpub);
-    } else {
-      const previous = readQuestPlate();
-      const avoid =
-        previous &&
-        previous.langKey === langKey &&
-        Array.isArray(previous.kinds)
-          ? previous.kinds
-          : [];
-      kinds = electDailyQuestCourses({
-        available: availableQuestKinds,
-        avoid,
-        seed: `${activeNpub}:${langKey}:${dayKey}`,
-        weights: getQuestNeglectWeights(
-          currentUser,
-          langKey,
-          availableQuestKinds,
-        ),
-      });
+    if (shouldUseFixedFirstQuest(currentUser, dayKey)) {
+      const kinds = DAILY_PLATE_COURSE_ORDER;
+      writeQuestPlate(activeNpub, langKey, dayKey, kinds);
+      setElectedQuestKinds((prev) =>
+        prev.join("|") === kinds.join("|") ? prev : kinds,
+      );
+      if (
+        !hasSeenFirstQuest(currentUser) ||
+        !currentUser?.progress?.dailyQuestFirstDayKey
+      ) {
+        void markFirstQuestSeen(activeNpub, { stampMissingDay: true });
+      }
+      return;
     }
+
+    const todays = readQuestPlateKinds(activeNpub, langKey, dayKey);
+    if (todays && todays.length) {
+      setElectedQuestKinds((prev) =>
+        prev.join("|") === todays.join("|") ? prev : todays,
+      );
+      return;
+    }
+
+    let kinds;
+    const previous = readQuestPlate(activeNpub);
+    const avoid =
+      previous &&
+      previous.langKey === langKey &&
+      Array.isArray(previous.kinds)
+        ? previous.kinds
+        : [];
+    kinds = electDailyQuestCourses({
+      available: availableQuestKinds,
+      avoid,
+      seed: `${activeNpub}:${langKey}:${dayKey}`,
+      weights: getQuestNeglectWeights(
+        currentUser,
+        langKey,
+        availableQuestKinds,
+      ),
+    });
     if (!kinds.length) kinds = DAILY_PLATE_COURSE_ORDER;
 
-    writeQuestPlate(langKey, dayKey, kinds);
+    writeQuestPlate(activeNpub, langKey, dayKey, kinds);
     setElectedQuestKinds((prev) =>
       prev.join("|") === kinds.join("|") ? prev : kinds,
     );
@@ -8639,7 +8631,8 @@ export default function App({ onBootReady } = {}) {
 
     // Did yesterday's quest get finished, and what was left unfinished?
     const yKey = getYesterdayKey();
-    const yKinds = readQuestPlateKinds(plateLangKey, yKey) || [];
+    const yKinds =
+      readQuestPlateKinds(activeNpub, plateLangKey, yKey) || [];
     const ySnap = yKinds.length
       ? getDailyPlateSnapshot(
           currentUser,
@@ -8685,21 +8678,21 @@ export default function App({ onBootReady } = {}) {
   const [plateSessionActive, setPlateSessionActive] = useState(false);
 
   const endPlateSession = useCallback(() => {
-    clearPlateSession();
+    clearPlateSession(activeNpub);
     setPlateSessionActive(false);
-  }, []);
+  }, [activeNpub]);
 
   // Restore an in-flight session on boot; drop stale ones (new day/language).
   useEffect(() => {
-    const session = readPlateSession();
+    const session = readPlateSession(activeNpub);
     const active = isPlateSessionFor(
       session,
       plateSnapshot.langKey,
       plateSnapshot.dayKey,
     );
-    if (!active && session) clearPlateSession();
+    if (!active && session) clearPlateSession(activeNpub);
     setPlateSessionActive((prev) => (prev === active ? prev : active));
-  }, [plateSnapshot.langKey, plateSnapshot.dayKey]);
+  }, [activeNpub, plateSnapshot.langKey, plateSnapshot.dayKey]);
 
   // Internal navigation used by the plate (does NOT end the guided session,
   // unlike the bottom-bar mode switcher).
@@ -8813,7 +8806,11 @@ export default function App({ onBootReady } = {}) {
       goToSkillTreeMode("tutor");
       return;
     }
-    startPlateSession(plateSnapshot.langKey, plateSnapshot.dayKey);
+    startPlateSession(
+      activeNpub,
+      plateSnapshot.langKey,
+      plateSnapshot.dayKey,
+    );
     setPlateSessionActive(true);
     navigateToPlateCourse(next);
   };

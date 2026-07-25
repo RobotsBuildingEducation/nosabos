@@ -23,6 +23,13 @@ import {
 } from "./dailyQuestTargets";
 import { getLocalDayKey } from "./flashcardReview";
 import { pruneDayEntries } from "./userDataSchema";
+import {
+  readAccountScopedJson,
+  removeAccountScopedValue,
+  writeAccountScopedJson,
+} from "./dailyQuestState";
+
+export { shouldUseFixedFirstQuest } from "./dailyQuestState";
 
 export const DAILY_PLATE_KINDS = ["review", "learn", "speak"];
 
@@ -321,32 +328,21 @@ export function electDailyQuestCourses({
 
 const QUEST_PLATE_STORAGE_KEY = "dailyQuestPlate";
 
-export function readQuestPlate() {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem(QUEST_PLATE_STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    return parsed && Array.isArray(parsed.kinds) ? parsed : null;
-  } catch {
-    return null;
-  }
+export function readQuestPlate(userKey) {
+  const parsed = readAccountScopedJson(QUEST_PLATE_STORAGE_KEY, userKey);
+  return parsed && Array.isArray(parsed.kinds) ? parsed : null;
 }
 
-export function writeQuestPlate(langKey, dayKey, kinds) {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(
-      QUEST_PLATE_STORAGE_KEY,
-      JSON.stringify({ langKey, dayKey, kinds }),
-    );
-  } catch {
-    /* ignore */
-  }
+export function writeQuestPlate(userKey, langKey, dayKey, kinds) {
+  writeAccountScopedJson(QUEST_PLATE_STORAGE_KEY, userKey, {
+    langKey,
+    dayKey,
+    kinds,
+  });
 }
 
-export function readQuestPlateKinds(langKey, dayKey) {
-  const stored = readQuestPlate();
+export function readQuestPlateKinds(userKey, langKey, dayKey) {
+  const stored = readQuestPlate(userKey);
   if (stored && stored.langKey === langKey && stored.dayKey === dayKey) {
     return orderQuestKinds(stored.kinds);
   }
@@ -412,13 +408,20 @@ export async function markFirstQuestFlagOnly(npub) {
   }
 }
 
-export async function markFirstQuestSeen(npub) {
+export async function markFirstQuestSeen(
+  npub,
+  { stampMissingDay = false } = {},
+) {
   const dayKey = getDailyPlateDayKey();
   // Patch the local store first so the election effect sees it immediately.
   try {
     const store = useUserStore.getState?.();
     const currentUser = store?.user;
-    if (store?.patchUser && currentUser?.progress?.dailyQuestFirstSeen !== true) {
+    const shouldPatch =
+      currentUser?.progress?.dailyQuestFirstSeen !== true ||
+      (stampMissingDay &&
+        !currentUser?.progress?.dailyQuestFirstDayKey);
+    if (store?.patchUser && shouldPatch) {
       store.patchUser({
         progress: {
           ...(currentUser.progress || {}),
@@ -447,7 +450,10 @@ export async function markFirstQuestSeen(npub) {
     }
     const localFirstDay =
       useUserStore.getState?.()?.user?.progress?.dailyQuestFirstDayKey;
-    if (remoteProgress?.dailyQuestFirstSeen) {
+    if (
+      remoteProgress?.dailyQuestFirstSeen &&
+      !(stampMissingDay && !remoteProgress?.dailyQuestFirstDayKey)
+    ) {
       // The server already knows the intro happened — whether stamped with its
       // real day or deliberately flag-only (markFirstQuestFlagOnly), stamping
       // TODAY would wrongly make today read as the first quest day. Re-sync the
@@ -498,37 +504,26 @@ export async function markFirstQuestSeen(npub) {
 ----------------------------------- */
 const PLATE_SESSION_STORAGE_KEY = "dailyPlateSession";
 
-export function readPlateSession() {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem(PLATE_SESSION_STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === "object" ? parsed : null;
-  } catch {
-    return null;
-  }
+export function readPlateSession(userKey) {
+  return readAccountScopedJson(PLATE_SESSION_STORAGE_KEY, userKey);
 }
 
-export function startPlateSession(langKey, dayKey, now = new Date()) {
+export function startPlateSession(
+  userKey,
+  langKey,
+  dayKey,
+  now = new Date(),
+) {
   if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(
-      PLATE_SESSION_STORAGE_KEY,
-      JSON.stringify({ langKey, dayKey, startedAt: now.toISOString() }),
-    );
-  } catch {
-    /* ignore */
-  }
+  writeAccountScopedJson(PLATE_SESSION_STORAGE_KEY, userKey, {
+    langKey,
+    dayKey,
+    startedAt: now.toISOString(),
+  });
 }
 
-export function clearPlateSession() {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.removeItem(PLATE_SESSION_STORAGE_KEY);
-  } catch {
-    /* ignore */
-  }
+export function clearPlateSession(userKey) {
+  removeAccountScopedValue(PLATE_SESSION_STORAGE_KEY, userKey);
 }
 
 export function isPlateSessionFor(session, langKey, dayKey) {
