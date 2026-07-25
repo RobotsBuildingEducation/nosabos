@@ -471,14 +471,14 @@ export function buildOpenAIQuizTurnInstructions({
   const examples = quoteList((currentQuestion.examples || []).slice(0, 3));
   const isProduction = questionNumber % 2 === 1;
   const feedbackLine = isKickoff
-    ? "Begin the quiz directly with the first question; do not teach or review first."
+    ? "Begin the quiz directly with the first question; do not teach, review, demonstrate, or warm up first."
     : turnVerdict === TUTOR_TURN_VERDICT.ACCEPTED
-      ? "The previous answer was correct. Confirm it briefly without repeating or explaining the answer, then ask the new question."
+      ? "The previous answer was correct. Confirm that only with a brief neutral acknowledgement; do not repeat, translate, define, or explain the previous answer. Then ask the new question."
       : turnVerdict === TUTOR_TURN_VERDICT.REJECTED
         ? `The previous answer was incorrect. Give one concise correction${
             previousCorrection ? ` using this private correction: "${previousCorrection}"` : ""
           }, then ask the new question. Do not make the learner retry the old question.`
-        : "The previous answer was unclear. Do not score it or call it right or wrong; ask the same question again in simpler words without revealing the answer.";
+        : "The previous answer was unclear or was a request for help instead of an answer. Do not score it or call it right or wrong. Do not provide a hint, translation, example, or partial answer. If the learner asked for help, say briefly that you cannot help with answers during the quiz; otherwise say only that you did not catch an answer. Then ask the same question again in clearer words.";
   const attemptLine = previousAttemptResult
     ? completionMode === "xp"
       ? `The previous question round scored ${previousAttemptResult.score}/${previousAttemptResult.total}. State that result briefly in ${supportLanguageName}, then continue with a new round at question 1. Do not describe it as a pass or failure.`
@@ -503,11 +503,15 @@ export function buildOpenAIQuizTurnInstructions({
     targetForms ? `Private accepted ${targetLanguageName} form(s): ${targetForms}.` : "",
     examples ? `Private ${targetLanguageName} reference examples: ${examples}.` : "",
     targetForms
+      ? `HIDDEN ANSWER KEY: the accepted forms and reference examples above are private grading data. Never read their labels, quote their wording, or turn them into an explanation, example, choice, hint, or model for the learner.`
+      : "",
+    targetForms
       ? isProduction
-        ? `Use a production question: describe a meaning or tiny situation naturally in ${supportLanguageName} and ask the learner to supply the ${targetLanguageName} answer. Do not say, spell, translate, paraphrase, or model any accepted form before they answer.`
-        : `Use a recognition question: you may present exactly one accepted ${targetLanguageName} form and ask for its meaning or appropriate situation in ${supportLanguageName}, but do not give away that meaning.`
+        ? `Use a production question: describe only the meaning or a tiny situation naturally in ${supportLanguageName} and ask the learner to supply the ${targetLanguageName} answer. Before their attempt, the spoken turn must contain zero accepted forms and zero answer-equivalent translations, definitions, examples, blanks containing the answer, or leading fragments.`
+        : `Use a recognition question: present exactly one accepted ${targetLanguageName} form, then ask for its meaning or appropriate situation in ${supportLanguageName}. Do not translate, define, paraphrase, contextualize, or otherwise give away that meaning.`
       : `Create one level-appropriate comprehension or communication question from the private objective. Present any needed ${targetLanguageName} material, then ask for one answer; do not quote the curriculum objective or success criterion to the learner.`,
-    "The learner gets one scored attempt. Never add a hint, answer-containing choice, translation, model, repetition drill, or explanation before that attempt.",
+    "The learner gets one scored attempt. Never add a hint, choice, translation, model, repetition drill, explanation, or second easier task before that attempt. Ask the question and stop speaking.",
+    `Never use a teaching label such as "${targetLanguageName}: [answer]" or "this means [meaning]" while asking a question. Warmth is limited to a short acknowledgement; it must not soften the assessment with coaching.`,
     `All instructions and scoring feedback must be natural ${supportLanguageName}; use ${targetLanguageName} only as the material being tested.`,
     completionMode === "xp"
       ? "Do not announce internal state, grading machinery, XP, or curriculum metadata. The app decides correctness, advancement, progress, and completion."

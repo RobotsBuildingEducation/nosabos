@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   getRestorableTutorConversationMessages,
+  getTutorConversationSessionState,
   normalizeTutorConversationDraftMessages,
   TUTOR_CONVERSATION_DRAFT_MAX_MESSAGES,
   TUTOR_CONVERSATION_DRAFT_VERSION,
@@ -62,4 +63,21 @@ test("Tutor conversation drafts restore only for in-progress lessons", () => {
   assert.equal(restored[0].textFinal, "message 1");
   assert.equal(restored[0].textStream, "");
   assert.equal(restored[0].done, true);
+});
+
+test("new Tutor sessions keep saved history private and render an empty transcript", () => {
+  const session = getTutorConversationSessionState({
+    status: "in_progress",
+    conversationDraft: {
+      version: TUTOR_CONVERSATION_DRAFT_VERSION,
+      messages: [message(1), message(2)],
+    },
+  });
+
+  assert.deepEqual(session.visibleMessages, []);
+  assert.deepEqual(
+    session.resumeContextMessages.map((item) => item.id),
+    ["message-1", "message-2"],
+  );
+  assert.equal(session.resumeContextMessages[1].textFinal, "message 2");
 });

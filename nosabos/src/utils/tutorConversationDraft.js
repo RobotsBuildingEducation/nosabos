@@ -87,3 +87,19 @@ export function getRestorableTutorConversationMessages(
     }),
   );
 }
+
+/**
+ * A new realtime connection always starts with a clean visible transcript.
+ * Saved messages remain available only as private context for the tutor's
+ * kickoff, so reconnecting can continue the lesson without showing a stale
+ * bubble or making the UI believe the new session already started.
+ */
+export function getTutorConversationSessionState(lessonProgress, options) {
+  return {
+    visibleMessages: [],
+    resumeContextMessages: getRestorableTutorConversationMessages(
+      lessonProgress,
+      options,
+    ),
+  };
+}
