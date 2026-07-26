@@ -256,9 +256,7 @@ import {
 import { prepareTutorialGameScenario } from "./utils/tutorialGameLoader";
 import { waitForGameLoaderExploration } from "./utils/gameLoaderTiming";
 import { LESSON_COUNTS, getLessonLevelFromId } from "./utils/cefrProgress";
-import {
-  CEFR_LEVEL_COUNTS as FLASHCARD_LEVEL_COUNTS,
-} from "./data/flashcards/common";
+import { CEFR_LEVEL_COUNTS as FLASHCARD_LEVEL_COUNTS } from "./data/flashcards/common";
 import {
   COURSE_PROGRESS_COLLECTION,
   COURSE_PROGRESS_SCHEMA_VERSION,
@@ -273,7 +271,12 @@ import {
 import { hydrateCourseProgress } from "./utils/courseProgressFirestore";
 import { BsCalendar2DateFill } from "react-icons/bs";
 import { TbLanguage } from "react-icons/tb";
-import { sparkleSound, submitActionSound, selectSound, dailyGoalSound } from "./constants/sounds";
+import {
+  sparkleSound,
+  submitActionSound,
+  selectSound,
+  dailyGoalSound,
+} from "./constants/sounds";
 import {
   DAILY_GOAL_PET_HEALTH_GAIN,
   buildDailyGoalResetFields,
@@ -1053,11 +1056,7 @@ async function loadUserObjectFromDB(db, id) {
     const activeTargetLang = String(
       userData?.progress?.targetLang || userData?.targetLang || "es",
     ).toLowerCase();
-    const hydration = await hydrateCourseProgress(
-      db,
-      id,
-      activeTargetLang,
-    );
+    const hydration = await hydrateCourseProgress(db, id, activeTargetLang);
     const existingStoreUser = useUserStore.getState()?.user || null;
     const existingStoreUserId =
       existingStoreUser?.local_npub || existingStoreUser?.id || "";
@@ -5269,8 +5268,7 @@ export default function App({ onBootReady } = {}) {
             ? {
                 earnedXp: Math.max(
                   0,
-                  startedLessonProgress?.earnedXp ??
-                    existingLesson.earnedXp,
+                  startedLessonProgress?.earnedXp ?? existingLesson.earnedXp,
                 ),
               }
             : {}),
@@ -5666,8 +5664,7 @@ export default function App({ onBootReady } = {}) {
         const latestProgress = latestUser.progress || {};
         const languageLessons = latestProgress.languageLessons || {};
         const lessonsForLanguage = languageLessons[languageKey] || {};
-        const priorLessonProgress =
-          lessonsForLanguage[activeLesson.id] || {};
+        const priorLessonProgress = lessonsForLanguage[activeLesson.id] || {};
 
         patchUser?.({
           progress: {
@@ -7116,9 +7113,7 @@ export default function App({ onBootReady } = {}) {
   const activeSkillTreeLessonProgress = activeLesson?.id
     ? userProgress.lessons?.[activeLesson.id]
     : null;
-  const activeLessonEarnedXp = getLessonEarnedXp(
-    activeSkillTreeLessonProgress,
-  );
+  const activeLessonEarnedXp = getLessonEarnedXp(activeSkillTreeLessonProgress);
 
   // Completion is driven by the active lesson's own counter. Shared language
   // XP from Tutor, flashcards, conversations, or other surfaces cannot satisfy
@@ -7135,10 +7130,7 @@ export default function App({ onBootReady } = {}) {
     }
 
     if (
-      hasCompletedLessonXp(
-        activeSkillTreeLessonProgress,
-        activeLesson.xpReward,
-      )
+      hasCompletedLessonXp(activeSkillTreeLessonProgress, activeLesson.xpReward)
     ) {
       triggerLessonCompletion("xp_goal", {
         xpEarned: activeLesson.xpReward,
@@ -7361,11 +7353,7 @@ export default function App({ onBootReady } = {}) {
     });
 
     return status;
-  }, [
-    isTestUnlockActive,
-    userProgress.courseSummary,
-    userProgress.lessons,
-  ]);
+  }, [isTestUnlockActive, userProgress.courseSummary, userProgress.lessons]);
 
   // Calculate flashcard mode completion status (independent from lessons)
   const flashcardLevelCompletionStatus = useMemo(() => {
@@ -7421,11 +7409,7 @@ export default function App({ onBootReady } = {}) {
     });
 
     return status;
-  }, [
-    isTestUnlockActive,
-    userProgress.courseSummary,
-    userProgress.flashcards,
-  ]);
+  }, [isTestUnlockActive, userProgress.courseSummary, userProgress.flashcards]);
 
   // Legacy: Combined completion status (for backwards compatibility)
   const levelCompletionStatus = useMemo(() => {
@@ -8018,8 +8002,9 @@ export default function App({ onBootReady } = {}) {
   const activeCourseSummaryReady =
     user?.progress?.courseProgress?.[normalizedTargetLang]?.migration
       ?.complete === true;
-  const [hydratedLessonProgressKeys, setHydratedLessonProgressKeys] =
-    useState(() => new Set());
+  const [hydratedLessonProgressKeys, setHydratedLessonProgressKeys] = useState(
+    () => new Set(),
+  );
   const [hydratedFlashcardProgressKeys, setHydratedFlashcardProgressKeys] =
     useState(() => new Set());
   const activeLessonProgressKey =
@@ -8040,11 +8025,7 @@ export default function App({ onBootReady } = {}) {
       hydratedFlashcardProgressKeys.has(activeFlashcardProgressKey));
 
   useEffect(() => {
-    if (
-      !activeNpub ||
-      !normalizedTargetLang ||
-      activeCourseSummaryReady
-    ) {
+    if (!activeNpub || !normalizedTargetLang || activeCourseSummaryReady) {
       return undefined;
     }
 
@@ -8079,9 +8060,8 @@ export default function App({ onBootReady } = {}) {
               ...(currentProgress.languageFlashcards || {}),
               [normalizedTargetLang]: hydration.migrated
                 ? hydration.languageFlashcards
-                : currentProgress.languageFlashcards?.[
-                    normalizedTargetLang
-                  ] || {},
+                : currentProgress.languageFlashcards?.[normalizedTargetLang] ||
+                  {},
             },
           },
         });
@@ -8093,12 +8073,7 @@ export default function App({ onBootReady } = {}) {
     return () => {
       cancelled = true;
     };
-  }, [
-    activeCourseSummaryReady,
-    activeNpub,
-    normalizedTargetLang,
-    patchUser,
-  ]);
+  }, [activeCourseSummaryReady, activeNpub, normalizedTargetLang, patchUser]);
 
   // Keep the compact summary live on every learning surface. Detailed
   // proficiency slices subscribe only while their mode is selected; visited
@@ -8162,11 +8137,9 @@ export default function App({ onBootReady } = {}) {
         const latestUser = useUserStore.getState()?.user || {};
         const currentProgress = latestUser?.progress || {};
         const languageLessons = currentProgress.languageLessons || {};
-        const existingForLanguage =
-          languageLessons[normalizedTargetLang] || {};
+        const existingForLanguage = languageLessons[normalizedTargetLang] || {};
         const documents = snapshot.docs.filter(
-          (documentSnapshot) =>
-            !documentSnapshot.data()?.tutorAgendaProgress,
+          (documentSnapshot) => !documentSnapshot.data()?.tutorAgendaProgress,
         );
         const nextForLanguage = replaceProgressLevel({
           existing: existingForLanguage,
@@ -8522,9 +8495,7 @@ export default function App({ onBootReady } = {}) {
     let kinds;
     const previous = readQuestPlate(activeNpub);
     const avoid =
-      previous &&
-      previous.langKey === langKey &&
-      Array.isArray(previous.kinds)
+      previous && previous.langKey === langKey && Array.isArray(previous.kinds)
         ? previous.kinds
         : [];
     kinds = electDailyQuestCourses({
@@ -8631,8 +8602,7 @@ export default function App({ onBootReady } = {}) {
 
     // Did yesterday's quest get finished, and what was left unfinished?
     const yKey = getYesterdayKey();
-    const yKinds =
-      readQuestPlateKinds(activeNpub, plateLangKey, yKey) || [];
+    const yKinds = readQuestPlateKinds(activeNpub, plateLangKey, yKey) || [];
     const ySnap = yKinds.length
       ? getDailyPlateSnapshot(
           currentUser,
@@ -8806,11 +8776,7 @@ export default function App({ onBootReady } = {}) {
       goToSkillTreeMode("tutor");
       return;
     }
-    startPlateSession(
-      activeNpub,
-      plateSnapshot.langKey,
-      plateSnapshot.dayKey,
-    );
+    startPlateSession(activeNpub, plateSnapshot.langKey, plateSnapshot.dayKey);
     setPlateSessionActive(true);
     navigateToPlateCourse(next);
   };

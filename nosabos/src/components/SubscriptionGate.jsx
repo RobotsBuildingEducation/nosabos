@@ -31,24 +31,17 @@ const SUBSCRIBE_COPY = {
       "Full access to the language learning app and a coding education app",
     benefitSubscriberContent:
       "A growing collection of subscriber content oriented around business, engineering and investing education content.",
-    promoHeading: "Extra promo discount",
-    promoBody: "60% off your first month or first year.",
-    copyDiscountCode: "Copy discount code",
-    copiedDiscountCode: "Copied {code}",
-    discountCodeFallback: "Discount code:",
     appsOnlyTitle: "Apps only",
-    appsOnlyPrice: "$60",
+    appsOnlyPrice: "$120",
     appsOnlyDetail: "Pay once for apps only",
     appsOnlyCta: "Pay once",
     annualTitle: "Annual",
-    annualPrice: "$5.50/mo",
+    annualPrice: "$5/mo",
     annualDetail: "Subscribe annually, 50% off",
-    annualPromo: "First year promo $2.20/mo",
     annualCta: "Subscribe annually",
     monthlyTitle: "Monthly",
-    monthlyPrice: "$10.99/mo",
+    monthlyPrice: "$10/mo",
     monthlyDetail: "Subscribe monthly",
-    monthlyPromo: "First month promo $4.40",
     monthlyCta: "Subscribe monthly",
     passcodeHeading: "Enter passcode",
     passcodePlaceholder: "Passcode",
@@ -66,24 +59,17 @@ const SUBSCRIBE_COPY = {
       "Acceso completo a la app de aprendizaje de idiomas y a una app de educación en programación",
     benefitSubscriberContent:
       "Una colección creciente de contenido para miembros sobre educación en negocios, ingeniería e inversión.",
-    promoHeading: "Descuento promocional extra",
-    promoBody: "60% de descuento en tu primer mes o primer año.",
-    copyDiscountCode: "Copiar código de descuento",
-    copiedDiscountCode: "{code} copiado",
-    discountCodeFallback: "Código de descuento:",
     appsOnlyTitle: "Solo apps",
-    appsOnlyPrice: "$60",
+    appsOnlyPrice: "$120",
     appsOnlyDetail: "Pago único solo por las apps",
     appsOnlyCta: "Pagar una vez",
     annualTitle: "Anual",
-    annualPrice: "$5.50/mes",
+    annualPrice: "$5/mes",
     annualDetail: "Suscripción anual, 50% de descuento",
-    annualPromo: "Promo primer año $2.20/mes",
     annualCta: "Suscribirse anual",
     monthlyTitle: "Mensual",
-    monthlyPrice: "$10.99/mes",
+    monthlyPrice: "$10/mes",
     monthlyDetail: "Suscripción mensual",
-    monthlyPromo: "Promo primer mes $4.40",
     monthlyCta: "Suscribirse mensual",
     passcodeHeading: "Ingresa el código",
     passcodePlaceholder: "Código de acceso",
@@ -100,24 +86,17 @@ const SUBSCRIBE_COPY = {
       "Acesso completo ao app de aprendizagem de idiomas e a um app de educação em programação",
     benefitSubscriberContent:
       "Uma coleção crescente de conteúdos para membros sobre educação em negócios, engenharia e investimentos.",
-    promoHeading: "Desconto promocional extra",
-    promoBody: "60% de desconto no seu primeiro mês ou primeiro ano.",
-    copyDiscountCode: "Copiar código de desconto",
-    copiedDiscountCode: "{code} copiado",
-    discountCodeFallback: "Código de desconto:",
     appsOnlyTitle: "Somente apps",
-    appsOnlyPrice: "$60",
+    appsOnlyPrice: "$120",
     appsOnlyDetail: "Pague uma vez somente pelos apps",
     appsOnlyCta: "Pagar uma vez",
     annualTitle: "Anual",
-    annualPrice: "$5.50/mês",
+    annualPrice: "$5/mês",
     annualDetail: "Assine anualmente, 50% de desconto",
-    annualPromo: "Promo do primeiro ano $2.20/mês",
     annualCta: "Assinar anual",
     monthlyTitle: "Mensal",
-    monthlyPrice: "$10.99/mês",
+    monthlyPrice: "$10/mês",
     monthlyDetail: "Assine mensalmente",
-    monthlyPromo: "Promo do primeiro mês $4.40",
     monthlyCta: "Assinar mensal",
     passcodeHeading: "Digite o código",
     passcodePlaceholder: "Código de acesso",
@@ -134,24 +113,17 @@ const SUBSCRIBE_COPY = {
       "Accesso completo all'app per imparare le lingue e a un'app di educazione alla programmazione",
     benefitSubscriberContent:
       "Una raccolta in crescita di contenuti per membri su business, ingegneria e investimenti.",
-    promoHeading: "Sconto promo extra",
-    promoBody: "60% di sconto sul primo mese o sul primo anno.",
-    copyDiscountCode: "Copia codice sconto",
-    copiedDiscountCode: "{code} copiato",
-    discountCodeFallback: "Codice sconto:",
     appsOnlyTitle: "Solo app",
-    appsOnlyPrice: "$60",
+    appsOnlyPrice: "$120",
     appsOnlyDetail: "Paga una volta solo per le app",
     appsOnlyCta: "Paga una volta",
     annualTitle: "Annuale",
-    annualPrice: "$5.50/mese",
+    annualPrice: "$5/mese",
     annualDetail: "Abbonamento annuale, 50% di sconto",
-    annualPromo: "Promo primo anno $2.20/mese",
     annualCta: "Abbonati annualmente",
     monthlyTitle: "Mensile",
-    monthlyPrice: "$10.99/mese",
+    monthlyPrice: "$10/mese",
     monthlyDetail: "Abbonamento mensile",
-    monthlyPromo: "Promo primo mese $4.40",
     monthlyCta: "Abbonati mensilmente",
     passcodeHeading: "Inserisci il codice",
     passcodePlaceholder: "Codice di accesso",
@@ -168,24 +140,17 @@ const SUBSCRIBE_COPY = {
       "Un accès complet à l'appli d'apprentissage des langues et à une appli d'éducation au code",
     benefitSubscriberContent:
       "Une collection croissante de contenus membres sur le business, l'ingénierie et l'investissement.",
-    promoHeading: "Remise promo supplémentaire",
-    promoBody: "60 % de remise sur votre premier mois ou votre première année.",
-    copyDiscountCode: "Copier le code promo",
-    copiedDiscountCode: "{code} copié",
-    discountCodeFallback: "Code promo :",
     appsOnlyTitle: "Apps seulement",
-    appsOnlyPrice: "$60",
+    appsOnlyPrice: "$120",
     appsOnlyDetail: "Payez une seule fois pour les apps",
     appsOnlyCta: "Payer une fois",
     annualTitle: "Annuel",
-    annualPrice: "$5.50/mois",
+    annualPrice: "$5/mois",
     annualDetail: "Abonnement annuel, 50 % de remise",
-    annualPromo: "Promo première année $2.20/mois",
     annualCta: "S'abonner annuel",
     monthlyTitle: "Mensuel",
-    monthlyPrice: "$10.99/mois",
+    monthlyPrice: "$10/mois",
     monthlyDetail: "Abonnement mensuel",
-    monthlyPromo: "Promo premier mois $4.40",
     monthlyCta: "S'abonner mensuel",
     passcodeHeading: "Entrez le code",
     passcodePlaceholder: "Code d'accès",
@@ -202,24 +167,17 @@ const SUBSCRIBE_COPY = {
       "Vollen Zugriff auf die Sprachlern-App und eine App zum Programmierenlernen",
     benefitSubscriberContent:
       "Eine wachsende Sammlung von Mitgliederinhalten zu Business, Engineering und Investieren.",
-    promoHeading: "Zusätzlicher Promo-Rabatt",
-    promoBody: "60 % Rabatt auf deinen ersten Monat oder dein erstes Jahr.",
-    copyDiscountCode: "Rabattcode kopieren",
-    copiedDiscountCode: "{code} kopiert",
-    discountCodeFallback: "Rabattcode:",
     appsOnlyTitle: "Nur Apps",
-    appsOnlyPrice: "$60",
+    appsOnlyPrice: "$120",
     appsOnlyDetail: "Einmalig nur für die Apps zahlen",
     appsOnlyCta: "Einmal zahlen",
     annualTitle: "Jährlich",
-    annualPrice: "$5.50/Monat",
+    annualPrice: "$5/Monat",
     annualDetail: "Jährlich abonnieren, 50 % Rabatt",
-    annualPromo: "Promo im ersten Jahr $2.20/Monat",
     annualCta: "Jährlich abonnieren",
     monthlyTitle: "Monatlich",
-    monthlyPrice: "$10.99/Monat",
+    monthlyPrice: "$10/Monat",
     monthlyDetail: "Monatlich abonnieren",
-    monthlyPromo: "Promo im ersten Monat $4.40",
     monthlyCta: "Monatlich abonnieren",
     passcodeHeading: "Code eingeben",
     passcodePlaceholder: "Mitgliedscode",
@@ -236,24 +194,17 @@ const SUBSCRIBE_COPY = {
       "語学学習アプリとプログラミング教育アプリへのフルアクセス",
     benefitSubscriberContent:
       "ビジネス、エンジニアリング、投資教育に関するメンバー向けコンテンツの追加コレクション。",
-    promoHeading: "追加プロモ割引",
-    promoBody: "初月または初年度が60%オフ。",
-    copyDiscountCode: "割引コードをコピー",
-    copiedDiscountCode: "{code}をコピーしました",
-    discountCodeFallback: "割引コード:",
     appsOnlyTitle: "アプリのみ",
-    appsOnlyPrice: "$60",
+    appsOnlyPrice: "$120",
     appsOnlyDetail: "アプリのみを一度払いで購入",
     appsOnlyCta: "一度払い",
     annualTitle: "年額",
-    annualPrice: "$5.50/月",
+    annualPrice: "$5/月",
     annualDetail: "年額サブスク、50%オフ",
-    annualPromo: "初年度プロモ $2.20/月",
     annualCta: "年額で登録",
     monthlyTitle: "月額",
-    monthlyPrice: "$10.99/月",
+    monthlyPrice: "$10/月",
     monthlyDetail: "月額サブスク",
-    monthlyPromo: "初月プロモ $4.40",
     monthlyCta: "月額で登録",
     passcodeHeading: "パスコードを入力",
     passcodePlaceholder: "パスコード",
@@ -270,24 +221,17 @@ const SUBSCRIBE_COPY = {
       "भाषा सीखने वाले ऐप और कोडिंग शिक्षा ऐप का पूरा एक्सेस",
     benefitSubscriberContent:
       "बिज़नेस, इंजीनियरिंग और निवेश शिक्षा सामग्री पर केंद्रित बढ़ता हुआ सदस्य कंटेंट.",
-    promoHeading: "अतिरिक्त प्रोमो छूट",
-    promoBody: "पहले महीने या पहले वर्ष पर 60% छूट.",
-    copyDiscountCode: "डिस्काउंट कोड कॉपी करें",
-    copiedDiscountCode: "{code} कॉपी हुआ",
-    discountCodeFallback: "डिस्काउंट कोड:",
     appsOnlyTitle: "केवल ऐप्स",
-    appsOnlyPrice: "$60",
+    appsOnlyPrice: "$120",
     appsOnlyDetail: "केवल ऐप्स के लिए एक बार भुगतान करें",
     appsOnlyCta: "एक बार भुगतान",
     annualTitle: "वार्षिक",
-    annualPrice: "$5.50/माह",
+    annualPrice: "$5/माह",
     annualDetail: "वार्षिक सदस्यता, 50% छूट",
-    annualPromo: "पहले वर्ष का प्रोमो $2.20/माह",
     annualCta: "वार्षिक सदस्यता",
     monthlyTitle: "मासिक",
-    monthlyPrice: "$10.99/माह",
+    monthlyPrice: "$10/माह",
     monthlyDetail: "मासिक सदस्यता",
-    monthlyPromo: "पहले महीने का प्रोमो $4.40",
     monthlyCta: "मासिक सदस्यता",
     passcodeHeading: "पासकोड दर्ज करें",
     passcodePlaceholder: "पासकोड",
@@ -303,24 +247,17 @@ const SUBSCRIBE_COPY = {
     benefitLanguageApps: "وصول كامل لتطبيق تعلّم اللغة وتطبيق تعليم البرمجة",
     benefitSubscriberContent:
       "مجموعة متزايدة من محتوى الأعضاء عن تعليم الأعمال والهندسة والاستثمار.",
-    promoHeading: "خصم إضافي",
-    promoBody: "خصم 60% على أول شهر أو أول سنة.",
-    copyDiscountCode: "انسخ كود الخصم",
-    copiedDiscountCode: "تم نسخ {code}",
-    discountCodeFallback: "كود الخصم:",
     appsOnlyTitle: "التطبيقات فقط",
-    appsOnlyPrice: "$60",
+    appsOnlyPrice: "$120",
     appsOnlyDetail: "ادفع مرة واحدة للتطبيقات فقط",
     appsOnlyCta: "ادفع مرة واحدة",
     annualTitle: "سنوي",
-    annualPrice: "$5.50/شهر",
+    annualPrice: "$5/شهر",
     annualDetail: "اشتراك سنوي، خصم 50%",
-    annualPromo: "عرض أول سنة $2.20/شهر",
     annualCta: "اشترك سنويًا",
     monthlyTitle: "شهري",
-    monthlyPrice: "$10.99/شهر",
+    monthlyPrice: "$10/شهر",
     monthlyDetail: "اشتراك شهري",
-    monthlyPromo: "عرض أول شهر $4.40",
     monthlyCta: "اشترك شهريًا",
     passcodeHeading: "اكتب الكود",
     passcodePlaceholder: "كود العضوية",
@@ -335,24 +272,17 @@ const SUBSCRIBE_COPY = {
     benefitsHeading: "成为会员即可获得",
     benefitLanguageApps: "完整访问语言学习应用和编程教育应用",
     benefitSubscriberContent: "持续更新的会员内容，面向商业、工程和投资教育。",
-    promoHeading: "额外优惠折扣",
-    promoBody: "首月或首年 60% 折扣。",
-    copyDiscountCode: "复制折扣码",
-    copiedDiscountCode: "已复制 {code}",
-    discountCodeFallback: "折扣码：",
     appsOnlyTitle: "仅应用",
-    appsOnlyPrice: "$60",
+    appsOnlyPrice: "$120",
     appsOnlyDetail: "一次性购买应用",
     appsOnlyCta: "一次性购买",
     annualTitle: "年度",
-    annualPrice: "$5.50/月",
+    annualPrice: "$5/月",
     annualDetail: "年度订阅，五折优惠",
-    annualPromo: "首年优惠 $2.20/月",
     annualCta: "年度订阅",
     monthlyTitle: "月度",
-    monthlyPrice: "$10.99/月",
+    monthlyPrice: "$10/月",
     monthlyDetail: "按月订阅",
-    monthlyPromo: "首月优惠 $4.40",
     monthlyCta: "月度订阅",
     passcodeHeading: "输入通行码",
     passcodePlaceholder: "通行码",
@@ -377,8 +307,6 @@ export default function SubscriptionGate({
   const isLightTheme = themeMode === "light";
   const [value, setValue] = useState("");
   const [localError, setLocalError] = useState("");
-  const [copiedCode, setCopiedCode] = useState(false);
-  const discountCode = "4DC4D";
   const invalidMessage =
     error ||
     localError ||
@@ -397,22 +325,14 @@ export default function SubscriptionGate({
     await onSubmit?.(normalized, setLocalError);
   };
 
-  const handleCopyDiscountCode = async () => {
-    try {
-      await navigator.clipboard?.writeText(discountCode);
-      setCopiedCode(true);
-      window.setTimeout(() => setCopiedCode(false), 1800);
-    } catch {
-      setLocalError(`${copy.discountCodeFallback} ${discountCode}`);
-    }
-  };
-
   const pricingOptions = [
     {
       title: copy.appsOnlyTitle,
       price: copy.appsOnlyPrice,
       detail: copy.appsOnlyDetail,
       accent: "teal.300",
+      hoverAccent: "teal.400",
+      activeAccent: "teal.500",
       shadow: "#0f766e",
       cta: copy.appsOnlyCta,
       href: "https://www.patreon.com/posts/146522893?forSale=true",
@@ -421,8 +341,9 @@ export default function SubscriptionGate({
       title: copy.annualTitle,
       price: copy.annualPrice,
       detail: copy.annualDetail,
-      promo: copy.annualPromo,
       accent: "purple.300",
+      hoverAccent: "purple.400",
+      activeAccent: "purple.500",
       shadow: "#6b46c1",
       cta: copy.annualCta,
       href: "https://www.patreon.com/NotesAndOtherStuff",
@@ -431,8 +352,9 @@ export default function SubscriptionGate({
       title: copy.monthlyTitle,
       price: copy.monthlyPrice,
       detail: copy.monthlyDetail,
-      promo: copy.monthlyPromo,
-      accent: "orange.300",
+      accent: "orange.400",
+      hoverAccent: "orange.500",
+      activeAccent: "orange.600",
       shadow: "#b7791f",
       cta: copy.monthlyCta,
       href: "https://www.patreon.com/NotesAndOtherStuff",
@@ -455,7 +377,6 @@ export default function SubscriptionGate({
     : "whiteAlpha.100";
   const mutedText = isLightTheme ? "#6f5b46" : "gray.200";
   const secondaryText = isLightTheme ? "#7c6955" : "gray.300";
-  const promoTextColor = isLightTheme ? "#0f766e" : "teal.200";
   const inputBg = isLightTheme ? "rgba(247, 240, 229, 0.98)" : "gray.800";
 
   return (
@@ -536,44 +457,6 @@ export default function SubscriptionGate({
             </Box>
           </Box>
 
-          <Box bg="transparent" color={shellText} borderRadius="18px" p={4}>
-            <HStack
-              justify="space-between"
-              align={{ base: "stretch", sm: "center" }}
-              flexDirection={{ base: "column", sm: "row" }}
-              spacing={3}
-            >
-              <Box>
-                <Text fontWeight="black">{copy.promoHeading}</Text>
-                <Text fontSize="sm" color={mutedText}>
-                  {copy.promoBody}
-                </Text>
-              </Box>
-              <Button
-                type="button"
-                bg="teal.500"
-                color="white"
-                borderRadius="full"
-                px={6}
-                boxShadow="0px 4px 0px #0f766e"
-                _hover={{
-                  bg: "teal.400",
-                  transform: "translateY(-1px)",
-                }}
-                _active={{
-                  transform: "translateY(2px)",
-                  boxShadow: "0px 2px 0px #0f766e",
-                }}
-                onClick={handleCopyDiscountCode}
-                flexShrink={0}
-              >
-                {copiedCode
-                  ? copy.copiedDiscountCode.replace("{code}", discountCode)
-                  : copy.copyDiscountCode}
-              </Button>
-            </HStack>
-          </Box>
-
           <SimpleGrid columns={{ base: 1, md: 3 }} spacing={3}>
             {pricingOptions.map((option) => (
               <Box
@@ -596,16 +479,6 @@ export default function SubscriptionGate({
                 <Text color={secondaryText} fontSize="sm" mt={1}>
                   {option.detail}
                 </Text>
-                {option.promo && (
-                  <Text
-                    color={promoTextColor}
-                    fontSize="sm"
-                    fontWeight="bold"
-                    mt={2}
-                  >
-                    {option.promo}
-                  </Text>
-                )}
                 <Box mt="auto" pt={4}>
                   <Button
                     as="a"
@@ -618,10 +491,13 @@ export default function SubscriptionGate({
                     color="white"
                     boxShadow={`0px 4px 0px ${option.shadow}`}
                     _hover={{
-                      bg: option.accent,
+                      bg: option.hoverAccent,
+                      color: "white",
                       transform: "translateY(-1px)",
                     }}
                     _active={{
+                      bg: option.activeAccent,
+                      color: "white",
                       transform: "translateY(2px)",
                       boxShadow: `0px 2px 0px ${option.shadow}`,
                     }}
