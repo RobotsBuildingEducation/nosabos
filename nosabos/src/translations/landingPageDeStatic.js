@@ -2,7 +2,8 @@ export const LANDING_PAGE_DE_STATIC = {
   nav_signin: "Anmelden",
   hero_title: "Dein persönlicher",
   hero_title_accent: "Sprachcoach",
-  hero_subtitle: "Nutze intelligente Werkzeuge, um neue Sprachen zu üben und zu lernen.",
+  hero_subtitle:
+    "Ein persönlicher Sprachtutor, der strukturierten Lernpfaden folgt, sich deine Fehler merkt und sie in Übungen für morgen verwandelt.",
   cta_start: "Lernen starten",
   cta_signin: "Ich habe schon einen Schlüssel",
   languages_label: "SPRACHEN",

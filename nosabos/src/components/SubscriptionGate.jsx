@@ -19,6 +19,7 @@ import {
   DEFAULT_SUPPORT_LANGUAGE,
   normalizeSupportLanguage,
 } from "../constants/languages";
+import { APP_SQUIRCLE_SHAPE } from "../theme";
 import { useThemeStore } from "../useThemeStore";
 import RandomCharacter from "./RandomCharacter";
 
@@ -31,17 +32,18 @@ const SUBSCRIBE_COPY = {
       "Full access to the language learning app and a coding education app",
     benefitSubscriberContent:
       "A growing collection of subscriber content oriented around business, engineering and investing education content.",
+    recommended: "Recommended",
     appsOnlyTitle: "Apps only",
     appsOnlyPrice: "$120",
     appsOnlyDetail: "Pay once for apps only",
     appsOnlyCta: "Pay once",
     annualTitle: "Annual",
     annualPrice: "$5/mo",
-    annualDetail: "Subscribe annually, 50% off",
+    annualDetail: "50% off",
+    annualBilling: "Billed $60/year",
     annualCta: "Subscribe annually",
     monthlyTitle: "Monthly",
     monthlyPrice: "$10/mo",
-    monthlyDetail: "Subscribe monthly",
     monthlyCta: "Subscribe monthly",
     passcodeHeading: "Enter passcode",
     passcodePlaceholder: "Passcode",
@@ -59,17 +61,18 @@ const SUBSCRIBE_COPY = {
       "Acceso completo a la app de aprendizaje de idiomas y a una app de educación en programación",
     benefitSubscriberContent:
       "Una colección creciente de contenido para miembros sobre educación en negocios, ingeniería e inversión.",
+    recommended: "Recomendado",
     appsOnlyTitle: "Solo apps",
     appsOnlyPrice: "$120",
     appsOnlyDetail: "Pago único solo por las apps",
     appsOnlyCta: "Pagar una vez",
     annualTitle: "Anual",
     annualPrice: "$5/mes",
-    annualDetail: "Suscripción anual, 50% de descuento",
+    annualDetail: "50% de descuento",
+    annualBilling: "Facturado a $60/año",
     annualCta: "Suscribirse anual",
     monthlyTitle: "Mensual",
     monthlyPrice: "$10/mes",
-    monthlyDetail: "Suscripción mensual",
     monthlyCta: "Suscribirse mensual",
     passcodeHeading: "Ingresa el código",
     passcodePlaceholder: "Código de acceso",
@@ -86,17 +89,18 @@ const SUBSCRIBE_COPY = {
       "Acesso completo ao app de aprendizagem de idiomas e a um app de educação em programação",
     benefitSubscriberContent:
       "Uma coleção crescente de conteúdos para membros sobre educação em negócios, engenharia e investimentos.",
+    recommended: "Recomendado",
     appsOnlyTitle: "Somente apps",
     appsOnlyPrice: "$120",
     appsOnlyDetail: "Pague uma vez somente pelos apps",
     appsOnlyCta: "Pagar uma vez",
     annualTitle: "Anual",
     annualPrice: "$5/mês",
-    annualDetail: "Assine anualmente, 50% de desconto",
+    annualDetail: "50% de desconto",
+    annualBilling: "Cobrado $60/ano",
     annualCta: "Assinar anual",
     monthlyTitle: "Mensal",
     monthlyPrice: "$10/mês",
-    monthlyDetail: "Assine mensalmente",
     monthlyCta: "Assinar mensal",
     passcodeHeading: "Digite o código",
     passcodePlaceholder: "Código de acesso",
@@ -113,17 +117,18 @@ const SUBSCRIBE_COPY = {
       "Accesso completo all'app per imparare le lingue e a un'app di educazione alla programmazione",
     benefitSubscriberContent:
       "Una raccolta in crescita di contenuti per membri su business, ingegneria e investimenti.",
+    recommended: "Consigliato",
     appsOnlyTitle: "Solo app",
     appsOnlyPrice: "$120",
     appsOnlyDetail: "Paga una volta solo per le app",
     appsOnlyCta: "Paga una volta",
     annualTitle: "Annuale",
     annualPrice: "$5/mese",
-    annualDetail: "Abbonamento annuale, 50% di sconto",
+    annualDetail: "50% di sconto",
+    annualBilling: "Addebito di $60/anno",
     annualCta: "Abbonati annualmente",
     monthlyTitle: "Mensile",
     monthlyPrice: "$10/mese",
-    monthlyDetail: "Abbonamento mensile",
     monthlyCta: "Abbonati mensilmente",
     passcodeHeading: "Inserisci il codice",
     passcodePlaceholder: "Codice di accesso",
@@ -140,17 +145,18 @@ const SUBSCRIBE_COPY = {
       "Un accès complet à l'appli d'apprentissage des langues et à une appli d'éducation au code",
     benefitSubscriberContent:
       "Une collection croissante de contenus membres sur le business, l'ingénierie et l'investissement.",
+    recommended: "Recommandé",
     appsOnlyTitle: "Apps seulement",
     appsOnlyPrice: "$120",
     appsOnlyDetail: "Payez une seule fois pour les apps",
     appsOnlyCta: "Payer une fois",
     annualTitle: "Annuel",
     annualPrice: "$5/mois",
-    annualDetail: "Abonnement annuel, 50 % de remise",
+    annualDetail: "50 % de remise",
+    annualBilling: "Facturé $60/an",
     annualCta: "S'abonner annuel",
     monthlyTitle: "Mensuel",
     monthlyPrice: "$10/mois",
-    monthlyDetail: "Abonnement mensuel",
     monthlyCta: "S'abonner mensuel",
     passcodeHeading: "Entrez le code",
     passcodePlaceholder: "Code d'accès",
@@ -167,17 +173,18 @@ const SUBSCRIBE_COPY = {
       "Vollen Zugriff auf die Sprachlern-App und eine App zum Programmierenlernen",
     benefitSubscriberContent:
       "Eine wachsende Sammlung von Mitgliederinhalten zu Business, Engineering und Investieren.",
+    recommended: "Empfohlen",
     appsOnlyTitle: "Nur Apps",
     appsOnlyPrice: "$120",
     appsOnlyDetail: "Einmalig nur für die Apps zahlen",
     appsOnlyCta: "Einmal zahlen",
     annualTitle: "Jährlich",
     annualPrice: "$5/Monat",
-    annualDetail: "Jährlich abonnieren, 50 % Rabatt",
+    annualDetail: "50 % Rabatt",
+    annualBilling: "$60/Jahr abgerechnet",
     annualCta: "Jährlich abonnieren",
     monthlyTitle: "Monatlich",
     monthlyPrice: "$10/Monat",
-    monthlyDetail: "Monatlich abonnieren",
     monthlyCta: "Monatlich abonnieren",
     passcodeHeading: "Code eingeben",
     passcodePlaceholder: "Mitgliedscode",
@@ -194,17 +201,18 @@ const SUBSCRIBE_COPY = {
       "語学学習アプリとプログラミング教育アプリへのフルアクセス",
     benefitSubscriberContent:
       "ビジネス、エンジニアリング、投資教育に関するメンバー向けコンテンツの追加コレクション。",
+    recommended: "おすすめ",
     appsOnlyTitle: "アプリのみ",
     appsOnlyPrice: "$120",
     appsOnlyDetail: "アプリのみを一度払いで購入",
     appsOnlyCta: "一度払い",
     annualTitle: "年額",
     annualPrice: "$5/月",
-    annualDetail: "年額サブスク、50%オフ",
+    annualDetail: "50%オフ",
+    annualBilling: "年額$60で請求",
     annualCta: "年額で登録",
     monthlyTitle: "月額",
     monthlyPrice: "$10/月",
-    monthlyDetail: "月額サブスク",
     monthlyCta: "月額で登録",
     passcodeHeading: "パスコードを入力",
     passcodePlaceholder: "パスコード",
@@ -221,17 +229,18 @@ const SUBSCRIBE_COPY = {
       "भाषा सीखने वाले ऐप और कोडिंग शिक्षा ऐप का पूरा एक्सेस",
     benefitSubscriberContent:
       "बिज़नेस, इंजीनियरिंग और निवेश शिक्षा सामग्री पर केंद्रित बढ़ता हुआ सदस्य कंटेंट.",
+    recommended: "अनुशंसित",
     appsOnlyTitle: "केवल ऐप्स",
     appsOnlyPrice: "$120",
     appsOnlyDetail: "केवल ऐप्स के लिए एक बार भुगतान करें",
     appsOnlyCta: "एक बार भुगतान",
     annualTitle: "वार्षिक",
     annualPrice: "$5/माह",
-    annualDetail: "वार्षिक सदस्यता, 50% छूट",
+    annualDetail: "50% छूट",
+    annualBilling: "$60/वर्ष बिल किया जाएगा",
     annualCta: "वार्षिक सदस्यता",
     monthlyTitle: "मासिक",
     monthlyPrice: "$10/माह",
-    monthlyDetail: "मासिक सदस्यता",
     monthlyCta: "मासिक सदस्यता",
     passcodeHeading: "पासकोड दर्ज करें",
     passcodePlaceholder: "पासकोड",
@@ -247,17 +256,18 @@ const SUBSCRIBE_COPY = {
     benefitLanguageApps: "وصول كامل لتطبيق تعلّم اللغة وتطبيق تعليم البرمجة",
     benefitSubscriberContent:
       "مجموعة متزايدة من محتوى الأعضاء عن تعليم الأعمال والهندسة والاستثمار.",
+    recommended: "موصى به",
     appsOnlyTitle: "التطبيقات فقط",
     appsOnlyPrice: "$120",
     appsOnlyDetail: "ادفع مرة واحدة للتطبيقات فقط",
     appsOnlyCta: "ادفع مرة واحدة",
     annualTitle: "سنوي",
     annualPrice: "$5/شهر",
-    annualDetail: "اشتراك سنوي، خصم 50%",
+    annualDetail: "خصم 50%",
+    annualBilling: "تُدفع $60 سنويًا",
     annualCta: "اشترك سنويًا",
     monthlyTitle: "شهري",
     monthlyPrice: "$10/شهر",
-    monthlyDetail: "اشتراك شهري",
     monthlyCta: "اشترك شهريًا",
     passcodeHeading: "اكتب الكود",
     passcodePlaceholder: "كود العضوية",
@@ -272,17 +282,18 @@ const SUBSCRIBE_COPY = {
     benefitsHeading: "成为会员即可获得",
     benefitLanguageApps: "完整访问语言学习应用和编程教育应用",
     benefitSubscriberContent: "持续更新的会员内容，面向商业、工程和投资教育。",
+    recommended: "推荐",
     appsOnlyTitle: "仅应用",
     appsOnlyPrice: "$120",
     appsOnlyDetail: "一次性购买应用",
     appsOnlyCta: "一次性购买",
     annualTitle: "年度",
     annualPrice: "$5/月",
-    annualDetail: "年度订阅，五折优惠",
+    annualDetail: "五折优惠",
+    annualBilling: "每年收费 $60",
     annualCta: "年度订阅",
     monthlyTitle: "月度",
     monthlyPrice: "$10/月",
-    monthlyDetail: "按月订阅",
     monthlyCta: "月度订阅",
     passcodeHeading: "输入通行码",
     passcodePlaceholder: "通行码",
@@ -302,6 +313,8 @@ export default function SubscriptionGate({
 }) {
   const lang = normalizeSupportLanguage(appLanguage, DEFAULT_SUPPORT_LANGUAGE);
   const copy = SUBSCRIBE_COPY[lang] || SUBSCRIBE_COPY.en;
+  const clarifyUsd = (text) =>
+    lang === "en" ? text : text.replace(/(\$\d+(?:\.\d+)?)/, "$1 USD");
   const isRtl = lang === "ar";
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
@@ -327,20 +340,11 @@ export default function SubscriptionGate({
 
   const pricingOptions = [
     {
-      title: copy.appsOnlyTitle,
-      price: copy.appsOnlyPrice,
-      detail: copy.appsOnlyDetail,
-      accent: "teal.300",
-      hoverAccent: "teal.400",
-      activeAccent: "teal.500",
-      shadow: "#0f766e",
-      cta: copy.appsOnlyCta,
-      href: "https://www.patreon.com/posts/146522893?forSale=true",
-    },
-    {
       title: copy.annualTitle,
-      price: copy.annualPrice,
+      price: clarifyUsd(copy.annualPrice),
       detail: copy.annualDetail,
+      billing: clarifyUsd(copy.annualBilling),
+      recommended: copy.recommended,
       accent: "purple.300",
       hoverAccent: "purple.400",
       activeAccent: "purple.500",
@@ -350,14 +354,24 @@ export default function SubscriptionGate({
     },
     {
       title: copy.monthlyTitle,
-      price: copy.monthlyPrice,
-      detail: copy.monthlyDetail,
+      price: clarifyUsd(copy.monthlyPrice),
       accent: "orange.400",
       hoverAccent: "orange.500",
       activeAccent: "orange.600",
       shadow: "#b7791f",
       cta: copy.monthlyCta,
       href: "https://www.patreon.com/NotesAndOtherStuff",
+    },
+    {
+      title: copy.appsOnlyTitle,
+      price: clarifyUsd(copy.appsOnlyPrice),
+      detail: copy.appsOnlyDetail,
+      accent: "teal.300",
+      hoverAccent: "teal.400",
+      activeAccent: "teal.500",
+      shadow: "#0f766e",
+      cta: copy.appsOnlyCta,
+      href: "https://www.patreon.com/posts/146522893?forSale=true",
     },
   ];
 
@@ -388,8 +402,8 @@ export default function SubscriptionGate({
       display="flex"
       alignItems="center"
       justifyContent="center"
-      px={4}
-      py={{ base: 8, md: 12 }}
+      px={{ base: 1, md: 4 }}
+      py={{ base: 2, md: 8 }}
     >
       <Box
         as="form"
@@ -397,17 +411,18 @@ export default function SubscriptionGate({
         bg={shellBg}
         borderWidth="1px"
         borderColor={shellBorder}
-        borderRadius="24px"
-        p={{ base: 6, md: 8 }}
+        borderRadius={{ base: "30px", md: "36px" }}
+        style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
+        p={{ base: 3, md: 6 }}
         maxW="760px"
         w="100%"
-        my={{ base: 4, md: 8 }}
+        my={{ base: 0, md: 4 }}
         boxShadow={shellShadow}
       >
-        <VStack align="stretch" spacing={6}>
+        <VStack align="stretch" spacing={{ base: 4, md: 6 }}>
           <HStack
             align="center"
-            spacing={5}
+            spacing={{ base: 3, sm: 5 }}
             flexDirection={{ base: "column", sm: "row" }}
             textAlign={{ base: "center", sm: isRtl ? "right" : "left" }}
           >
@@ -415,7 +430,8 @@ export default function SubscriptionGate({
               bg={softPanelBg}
               border="1px solid"
               borderColor={shellBorder}
-              borderRadius="20px"
+              borderRadius="28px"
+              style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
               px={4}
               py={1}
               minW="110px"
@@ -425,10 +441,10 @@ export default function SubscriptionGate({
               <RandomCharacter notSoRandomCharacter="31" width="92px" />
             </Box>
             <Box>
-              <Heading size="lg" mb={2}>
+              <Heading size={{ base: "md", md: "lg" }} mb={2}>
                 {copy.title}
               </Heading>
-              <Text color={mutedText} fontSize="md">
+              <Text color={mutedText} fontSize={{ base: "sm", md: "md" }}>
                 {copy.subtitle}
               </Text>
             </Box>
@@ -438,15 +454,21 @@ export default function SubscriptionGate({
             bg={softPanelBg}
             border="1px solid"
             borderColor={shellBorder}
-            borderRadius="16px"
-            p={5}
+            borderRadius="28px"
+            style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
+            p={{ base: 4, md: 5 }}
           >
-            <Text fontWeight="bold" mb={3}>
+            <Text
+              fontWeight="bold"
+              fontSize={{ base: "sm", md: "md" }}
+              mb={3}
+            >
               {copy.benefitsHeading}
             </Text>
             <Box
               as="ul"
               color={mutedText}
+              fontSize={{ base: "sm", md: "md" }}
               pl={isRtl ? 0 : 5}
               pr={isRtl ? 5 : 0}
             >
@@ -464,21 +486,49 @@ export default function SubscriptionGate({
                 bg="transparent"
                 border="1px solid"
                 borderColor={option.accent}
-                borderRadius="16px"
+                borderRadius="28px"
+                style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
                 p={4}
+                position="relative"
                 display="flex"
                 flexDirection="column"
                 minH="230px"
               >
+                {option.recommended && (
+                  <Text
+                    position="absolute"
+                    top="-12px"
+                    left="50%"
+                    transform="translateX(-50%)"
+                    bg={option.activeAccent}
+                    color="white"
+                    borderRadius="full"
+                    px={3}
+                    py={1}
+                    fontSize="xs"
+                    fontWeight="black"
+                    lineHeight="short"
+                    whiteSpace="nowrap"
+                  >
+                    {option.recommended}
+                  </Text>
+                )}
                 <Text color={option.accent} fontWeight="black" fontSize="sm">
                   {option.title}
                 </Text>
                 <Text fontSize="2xl" fontWeight="black" mt={1}>
                   {option.price}
                 </Text>
-                <Text color={secondaryText} fontSize="sm" mt={1}>
-                  {option.detail}
-                </Text>
+                {option.detail && (
+                  <Text color={secondaryText} fontSize="sm" mt={1}>
+                    {option.detail}
+                  </Text>
+                )}
+                {option.billing && (
+                  <Text color={secondaryText} fontSize="sm" mt={1}>
+                    {option.billing}
+                  </Text>
+                )}
                 <Box mt="auto" pt={4}>
                   <Button
                     as="a"
@@ -486,7 +536,9 @@ export default function SubscriptionGate({
                     target="_blank"
                     rel="noreferrer"
                     w="100%"
-                    size="sm"
+                    size="md"
+                    h="auto"
+                    py={5}
                     bg={option.accent}
                     color="white"
                     boxShadow={`0px 4px 0px ${option.shadow}`}

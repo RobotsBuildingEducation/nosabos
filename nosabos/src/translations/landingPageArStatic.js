@@ -3,7 +3,7 @@ export const LANDING_PAGE_AR_STATIC = {
   hero_title: "مدرّسك",
   hero_title_accent: "اللغوي الشخصي",
   hero_subtitle:
-    "استخدم أدوات ذكية علشان تتدرّب وتتعلّم لغات جديدة.",
+    "مدرّس لغات شخصي بيتابع مسارات تعليم منظّمة، وبيفتكر أخطاءك وبيحوّلها لتدريبات لبكرة.",
   cta_start: "ابدأ التعلّم",
   cta_signin: "عندي مفتاح بالفعل",
   languages_label: "اللغات",

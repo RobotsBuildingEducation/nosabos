@@ -2,7 +2,8 @@ export const LANDING_PAGE_ZH_STATIC = {
   nav_signin: "登录",
   hero_title: "你的专属",
   hero_title_accent: "语言导师",
-  hero_subtitle: "使用智能工具练习并学习新语言。",
+  hero_subtitle:
+    "一位沿着结构化学习路径、记住你的错误并把它们转化为明日练习的私人语言导师。",
   cta_start: "开始学习",
   cta_signin: "我已经有密钥",
   languages_label: "语言",

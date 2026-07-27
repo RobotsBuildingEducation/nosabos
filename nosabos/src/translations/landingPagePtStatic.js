@@ -3,7 +3,7 @@ export const LANDING_PAGE_PT_STATIC = {
   hero_title: "Seu tutor",
   hero_title_accent: "de idiomas pessoal",
   hero_subtitle:
-    "Use ferramentas inteligentes para praticar e aprender novos idiomas.",
+    "Um tutor pessoal de idiomas que segue trilhas estruturadas, lembra dos seus erros e os transforma na prática de amanhã.",
   cta_start: "Começar",
   cta_signin: "Já tenho uma chave",
   languages_label: "IDIOMAS",

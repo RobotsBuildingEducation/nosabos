@@ -117,7 +117,8 @@ const translations = {
     nav_signin: "Sign In",
     hero_title: "Your Personal",
     hero_title_accent: "Language Tutor",
-    hero_subtitle: "Use intelligent tools to practice and learn new languages.",
+    hero_subtitle:
+      "A personal language tutor that follows structured paths, remembers your mistakes and turns them into tomorrow’s practice.",
     cta_start: "Start Learning",
     cta_signin: "I Already Have A Key",
     languages_label: "LANGUAGES",
@@ -258,7 +259,7 @@ const translations = {
     hero_title: "Tu Tutor",
     hero_title_accent: "Lingüístico Personal",
     hero_subtitle:
-      "Usa herramientas inteligentes para practicar y aprender nuevos idiomas.",
+      "Un tutor personal de idiomas que sigue rutas estructuradas, recuerda tus errores y los convierte en la práctica de mañana.",
     cta_start: "Comienza",
     cta_signin: "Tengo una Llave",
     languages_label: "IDIOMAS",
@@ -401,7 +402,7 @@ const translations = {
     hero_title: "Il Tuo Tutor",
     hero_title_accent: "Linguistico Personale",
     hero_subtitle:
-      "Usa strumenti intelligenti per praticare e imparare nuove lingue.",
+      "Un tutor linguistico personale che segue percorsi strutturati, ricorda i tuoi errori e li trasforma nella pratica di domani.",
     cta_start: "Inizia",
     cta_signin: "Ho già una Chiave",
     languages_label: "LINGUE",
@@ -553,7 +554,7 @@ translations.fr = {
   hero_title: "Ton Tuteur",
   hero_title_accent: "Linguistique Personnel",
   hero_subtitle:
-    "Utilise des outils intelligents pour pratiquer et apprendre de nouvelles langues.",
+    "Un tuteur linguistique personnel qui suit des parcours structurés, mémorise tes erreurs et les transforme en exercices pour le lendemain.",
   cta_start: "Commencer",
   cta_signin: "J'ai deja une cle",
   languages_label: "LANGUES",
@@ -692,7 +693,8 @@ translations.ja = {
   nav_signin: "サインイン",
   hero_title: "あなた専用の",
   hero_title_accent: "言語チューター",
-  hero_subtitle: "インテリジェントなツールで新しい言語を練習し、学びましょう。",
+  hero_subtitle:
+    "体系的な学習パスに沿って進み、間違いを覚えて翌日の練習に活かす、あなた専属の言語チューターです。",
   cta_start: "学習を始める",
   cta_signin: "キーを持っています",
   languages_label: "言語",
