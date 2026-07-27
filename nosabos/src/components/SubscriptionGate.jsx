@@ -271,8 +271,7 @@ const SUBSCRIBE_COPY = {
     benefitLanguageApps: "وصول كامل لتطبيق تعلّم اللغة وتطبيق تعليم البرمجة",
     benefitSubscriberContent:
       "مجموعة متزايدة من محتوى الأعضاء عن تعليم الأعمال والهندسة والاستثمار.",
-    benefitScholarships:
-      "ادعم رسالة إنشاء منح دراسية من خلال التعلّم.",
+    benefitScholarships: "ادعم رسالة إنشاء منح دراسية من خلال التعلّم.",
     recommended: "موصى به",
     appsOnlyTitle: "التطبيقات فقط",
     appsOnlyPrice: "$120",
@@ -462,7 +461,7 @@ export default function SubscriptionGate({
               <Heading size={{ base: "md", md: "lg" }} mb={2}>
                 {copy.title}
               </Heading>
-              <Text color={mutedText} fontSize={{ base: "sm", md: "md" }}>
+              <Text color={mutedText} fontSize={{ base: "12px", md: "xs" }}>
                 {copy.subtitle}
               </Text>
             </Box>
@@ -476,11 +475,7 @@ export default function SubscriptionGate({
             style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
             p={{ base: 4, md: 5 }}
           >
-            <Text
-              fontWeight="bold"
-              fontSize="sm"
-              mb={3}
-            >
+            <Text fontWeight="bold" fontSize="sm" mb={3}>
               {copy.benefitsHeading}
             </Text>
             <Box
