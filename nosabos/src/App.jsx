@@ -254,6 +254,10 @@ import {
   inferCefrLevelFromLessonId,
 } from "./utils/gameReviewContext";
 import { prepareTutorialGameScenario } from "./utils/tutorialGameLoader";
+import {
+  canSilentlySignPatreonProof,
+  createPatreonNostrProof,
+} from "./utils/patreonNostrProof";
 import { waitForGameLoaderExploration } from "./utils/gameLoaderTiming";
 import { LESSON_COUNTS, getLessonLevelFromId } from "./utils/cefrProgress";
 import { CEFR_LEVEL_COUNTS as FLASHCARD_LEVEL_COUNTS } from "./data/flashcards/common";
@@ -2641,7 +2645,8 @@ function TopBar({
    App root
 --------------------------------------------------------------------------------------------------*/
 const PATREON_STATUS_ENDPOINT = "/api/patreon/status";
-const PATREON_START_ENDPOINT = "/api/patreon/start";
+const PATREON_LINK_START_ENDPOINT = "/api/patreon/link-start";
+const PATREON_KEY_STATUS_ENDPOINT = "/api/patreon/key-status";
 
 export default function App({ onBootReady } = {}) {
   const toast = useToast();
@@ -2967,7 +2972,43 @@ export default function App({ onBootReady } = {}) {
       });
       const payload = await response.json().catch(() => ({}));
       setPatreonAvailable(payload.configured !== false);
-      setPatreonSubscriptionVerified(Boolean(payload.authorized));
+      if (payload.authorized) {
+        setPatreonSubscriptionVerified(true);
+        return;
+      }
+
+      if (
+        isSubscriptionRoute &&
+        activeNpub &&
+        canSilentlySignPatreonProof()
+      ) {
+        const proof = await createPatreonNostrProof({
+          npub: activeNpub,
+          action: "restore",
+          allowExtension: false,
+        });
+        const restoreResponse = await fetch(PATREON_KEY_STATUS_ENDPOINT, {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(proof),
+        });
+        const restorePayload = await restoreResponse.json().catch(() => ({}));
+        setPatreonAvailable(restorePayload.configured !== false);
+        setPatreonSubscriptionVerified(Boolean(restorePayload.authorized));
+        if (
+          !restoreResponse.ok &&
+          restorePayload.error !== "invalid_nostr_proof"
+        ) {
+          setPatreonStatusError("unavailable");
+        }
+        return;
+      }
+
+      setPatreonSubscriptionVerified(false);
       if (!response.ok && !payload.authorized) {
         setPatreonStatusError("unavailable");
       }
@@ -2979,16 +3020,42 @@ export default function App({ onBootReady } = {}) {
     } finally {
       setIsCheckingPatreon(false);
     }
-  }, []);
+  }, [activeNpub, isSubscriptionRoute]);
 
   useEffect(() => {
     void checkPatreonSubscription();
   }, [checkPatreonSubscription]);
 
-  const handlePatreonConnect = useCallback(() => {
-    if (typeof window === "undefined") return;
-    window.location.assign(PATREON_START_ENDPOINT);
-  }, []);
+  const handlePatreonConnect = useCallback(async () => {
+    if (typeof window === "undefined" || !activeNpub) return;
+    setIsCheckingPatreon(true);
+    setPatreonStatusError("");
+    try {
+      const proof = await createPatreonNostrProof({
+        npub: activeNpub,
+        action: "link",
+        allowExtension: true,
+      });
+      const response = await fetch(PATREON_LINK_START_ENDPOINT, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(proof),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload.authorizeUrl) {
+        throw new Error(payload.error || "Unable to start Patreon linking");
+      }
+      window.location.assign(payload.authorizeUrl);
+    } catch (error) {
+      console.warn("Unable to link Patreon to the Piyali key", error);
+      setPatreonStatusError("unavailable");
+      setIsCheckingPatreon(false);
+    }
+  }, [activeNpub]);
 
   const patreonResult = useMemo(
     () => new URLSearchParams(location.search).get("patreon") || "",

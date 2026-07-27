@@ -2,8 +2,15 @@
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const {
+  finalizeEvent,
+  generateSecretKey,
+  getPublicKey,
+  nip19,
+} = require("nostr-tools");
 
 const {
+  buildNostrAuthEvent,
   decodeSessionCookieValue,
   decryptToken,
   encodeSessionCookieValue,
@@ -12,6 +19,7 @@ const {
   getPatreonConfig,
   parseCookies,
   serializeCookie,
+  verifyNostrAuthEvent,
 } = require("./patreon");
 
 function identityWithMembership({
@@ -179,4 +187,49 @@ test("marks Patreon configuration complete only when secrets are present", () =>
   assert.equal(incomplete.configured, false);
   assert.equal(complete.configured, true);
   assert.equal(complete.cookieSecure, true);
+});
+
+test("verifies a one-use Nostr proof bound to the requested Piyali key", () => {
+  const secretKey = generateSecretKey();
+  const hexPubkey = getPublicKey(secretKey);
+  const npub = nip19.npubEncode(hexPubkey);
+  const now = Date.now();
+  const eventTemplate = buildNostrAuthEvent({
+    action: "link",
+    challengeId: "challenge-id",
+    challenge: "random-challenge",
+    expiresAtMs: now + 60_000,
+  });
+  const signedEvent = finalizeEvent(eventTemplate, secretKey);
+  const storedChallenge = {
+    npub,
+    hexPubkey,
+    action: "link",
+    eventTemplateJson: JSON.stringify(eventTemplate),
+    expiresAtMs: now + 60_000,
+    usedAtMs: null,
+  };
+
+  assert.deepEqual(
+    verifyNostrAuthEvent(storedChallenge, signedEvent, "link", now),
+    { valid: true, npub, hexPubkey },
+  );
+  assert.equal(
+    verifyNostrAuthEvent(
+      storedChallenge,
+      { ...signedEvent, content: "tampered" },
+      "link",
+      now,
+    ).valid,
+    false,
+  );
+  assert.equal(
+    verifyNostrAuthEvent(
+      { ...storedChallenge, usedAtMs: now },
+      signedEvent,
+      "link",
+      now,
+    ).reason,
+    "challenge_used",
+  );
 });

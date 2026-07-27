@@ -431,7 +431,12 @@ export default function SubscriptionGate({
       ? copy.patreonUnavailable
       : patreonResult === "not_subscribed"
         ? copy.patreonNotSubscribed
-        : ["oauth_error", "oauth_cancelled", "state_error"].includes(
+        : [
+              "oauth_error",
+              "oauth_cancelled",
+              "state_error",
+              "link_conflict",
+            ].includes(
               patreonResult,
             )
           ? copy.patreonOauthError

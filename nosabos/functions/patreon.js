@@ -1,6 +1,7 @@
 /* global require, Buffer, module, process */
 
 const crypto = require("node:crypto");
+const { nip19, verifyEvent } = require("nostr-tools");
 
 const PATREON_AUTHORIZE_URL = "https://www.patreon.com/oauth2/authorize";
 const PATREON_TOKEN_URL = "https://www.patreon.com/api/oauth2/token";
@@ -11,8 +12,15 @@ const PATREON_IDENTITY_URL =
 // sessions share that transport without being interchangeable.
 const FIREBASE_SESSION_COOKIE = "__session";
 const OAUTH_STATE_COOKIE_KIND = "oauth-state";
+const OAUTH_LINK_STATE_COOKIE_KIND = "oauth-link-state";
 const AUTH_SESSION_COOKIE_KIND = "auth-session";
 const SESSION_COLLECTION = "patreonOAuthSessions";
+const LINK_CHALLENGE_COLLECTION = "patreonLinkChallenges";
+const OAUTH_STATE_COLLECTION = "patreonOAuthStates";
+const ACCOUNT_LINK_COLLECTION = "patreonAccountLinks";
+const PATREON_USER_LINK_COLLECTION = "patreonUserLinks";
+const NOSTR_AUTH_EVENT_KIND = 27235;
+const LINK_CHALLENGE_DURATION_MS = 5 * 60 * 1000;
 const USER_AGENT = "NoSabos - Patreon subscription verification";
 
 function splitIds(value) {
@@ -257,6 +265,110 @@ function sha256(value) {
   return crypto.createHash("sha256").update(String(value)).digest("hex");
 }
 
+function decodeNpub(npub) {
+  try {
+    const decoded = nip19.decode(String(npub || "").trim());
+    if (decoded.type !== "npub" || typeof decoded.data !== "string") return "";
+    return /^[0-9a-f]{64}$/i.test(decoded.data) ? decoded.data.toLowerCase() : "";
+  } catch {
+    return "";
+  }
+}
+
+function buildNostrAuthEvent({ action, challengeId, challenge, expiresAtMs }) {
+  return {
+    kind: NOSTR_AUTH_EVENT_KIND,
+    created_at: Math.floor(Date.now() / 1000),
+    tags: [
+      ["action", action],
+      ["challenge", challengeId],
+      ["expires", new Date(expiresAtMs).toISOString()],
+    ],
+    content: `Authorize Piyali Patreon ${action}: ${challenge}`,
+  };
+}
+
+function verifyNostrAuthEvent(storedChallenge, signedEvent, expectedAction, now) {
+  if (!storedChallenge) {
+    return { valid: false, reason: "challenge_not_found" };
+  }
+  if (storedChallenge.usedAtMs) {
+    return { valid: false, reason: "challenge_used" };
+  }
+  if (Number(storedChallenge.expiresAtMs || 0) <= now) {
+    return { valid: false, reason: "challenge_expired" };
+  }
+  if (storedChallenge.action !== expectedAction) {
+    return { valid: false, reason: "challenge_action_mismatch" };
+  }
+  if (!signedEvent || typeof signedEvent !== "object") {
+    return { valid: false, reason: "missing_signed_event" };
+  }
+  if (String(signedEvent.pubkey || "").toLowerCase() !== storedChallenge.hexPubkey) {
+    return { valid: false, reason: "public_key_mismatch" };
+  }
+
+  let template = storedChallenge.eventTemplate || {};
+  if (storedChallenge.eventTemplateJson) {
+    try {
+      template = JSON.parse(storedChallenge.eventTemplateJson);
+    } catch {
+      return { valid: false, reason: "challenge_content_mismatch" };
+    }
+  }
+  if (
+    signedEvent.kind !== template.kind ||
+    signedEvent.created_at !== template.created_at ||
+    signedEvent.content !== template.content ||
+    JSON.stringify(signedEvent.tags || []) !== JSON.stringify(template.tags || [])
+  ) {
+    return { valid: false, reason: "challenge_content_mismatch" };
+  }
+
+  try {
+    if (!verifyEvent(signedEvent)) {
+      return { valid: false, reason: "invalid_signature" };
+    }
+  } catch {
+    return { valid: false, reason: "invalid_signature" };
+  }
+
+  return {
+    valid: true,
+    npub: storedChallenge.npub,
+    hexPubkey: storedChallenge.hexPubkey,
+  };
+}
+
+async function consumeNostrChallenge({
+  db,
+  challengeId,
+  signedEvent,
+  expectedAction,
+}) {
+  const challengeRef = db
+    .collection(LINK_CHALLENGE_COLLECTION)
+    .doc(sha256(challengeId));
+
+  return db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(challengeRef);
+    const verification = verifyNostrAuthEvent(
+      snapshot.exists ? snapshot.data() : null,
+      signedEvent,
+      expectedAction,
+      Date.now(),
+    );
+    if (!verification.valid) {
+      const error = new Error(verification.reason);
+      error.code = verification.reason;
+      error.isNostrProofError = true;
+      throw error;
+    }
+    transaction.update(challengeRef, { usedAtMs: Date.now() });
+    return verification;
+  });
+}
+
 function encryptionKey(secret) {
   return crypto.createHash("sha256").update(String(secret)).digest();
 }
@@ -385,6 +497,195 @@ async function fetchIdentity(accessToken, fetchImpl) {
   return parseJsonResponse(response, "Patreon identity request");
 }
 
+function buildAuthorizedRecord({ membership, tokens, config, now }) {
+  return {
+    authorized: true,
+    patreonUserId: membership.patreonUserId,
+    memberId: membership.memberId,
+    tierIds: membership.tierIds,
+    entitledAmountCents: membership.entitledAmountCents,
+    lastVerifiedAtMs: now,
+    oauthExpiresAtMs: now + positiveNumber(tokens.expires_in, 3600) * 1000,
+    encryptedAccessToken: encryptToken(
+      tokens.access_token,
+      config.tokenEncryptionKey,
+    ),
+    encryptedRefreshToken: encryptToken(
+      tokens.refresh_token,
+      config.tokenEncryptionKey,
+    ),
+  };
+}
+
+async function evaluateStoredPatreonRecord(record, config, fetchImpl) {
+  const now = Date.now();
+  if (
+    record.authorized &&
+    now - Number(record.lastVerifiedAtMs || 0) < config.statusCacheMs
+  ) {
+    return { authorized: true, stale: false, updates: null };
+  }
+
+  try {
+    let accessToken = decryptToken(
+      record.encryptedAccessToken,
+      config.tokenEncryptionKey,
+    );
+    let refreshToken = decryptToken(
+      record.encryptedRefreshToken,
+      config.tokenEncryptionKey,
+    );
+    let oauthExpiresAtMs = Number(record.oauthExpiresAtMs || 0);
+
+    if (oauthExpiresAtMs <= now + 60_000) {
+      const refreshed = await refreshAccessToken(
+        refreshToken,
+        config,
+        fetchImpl,
+      );
+      if (!refreshed?.access_token) {
+        throw new Error("Patreon refresh response did not include an access token");
+      }
+      accessToken = refreshed.access_token;
+      refreshToken = refreshed.refresh_token || refreshToken;
+      oauthExpiresAtMs =
+        now + positiveNumber(refreshed.expires_in, 3600) * 1000;
+    }
+
+    const identity = await fetchIdentity(accessToken, fetchImpl);
+    const membership = evaluatePatreonIdentity(identity, config);
+    if (!membership.authorized) {
+      return {
+        authorized: false,
+        reason: membership.reason,
+        identity,
+        updates: {
+          authorized: false,
+          lastVerifiedAtMs: now,
+          oauthExpiresAtMs,
+          encryptedAccessToken: encryptToken(
+            accessToken,
+            config.tokenEncryptionKey,
+          ),
+          encryptedRefreshToken: encryptToken(
+            refreshToken,
+            config.tokenEncryptionKey,
+          ),
+        },
+      };
+    }
+
+    return {
+      authorized: true,
+      stale: false,
+      membership,
+      updates: {
+        authorized: true,
+        patreonUserId: membership.patreonUserId,
+        memberId: membership.memberId,
+        tierIds: membership.tierIds,
+        entitledAmountCents: membership.entitledAmountCents,
+        lastVerifiedAtMs: now,
+        oauthExpiresAtMs,
+        encryptedAccessToken: encryptToken(
+          accessToken,
+          config.tokenEncryptionKey,
+        ),
+        encryptedRefreshToken: encryptToken(
+          refreshToken,
+          config.tokenEncryptionKey,
+        ),
+      },
+    };
+  } catch (error) {
+    if (
+      record.authorized &&
+      now - Number(record.lastVerifiedAtMs || 0) <= config.staleGraceMs
+    ) {
+      return { authorized: true, stale: true, updates: null };
+    }
+    throw error;
+  }
+}
+
+async function createBrowserSession({ db, record, config }) {
+  const now = Date.now();
+  const rawSessionId = crypto.randomBytes(32).toString("base64url");
+  await db
+    .collection(SESSION_COLLECTION)
+    .doc(sha256(rawSessionId))
+    .set({
+      authorized: true,
+      patreonUserId: record.patreonUserId,
+      memberId: record.memberId,
+      tierIds: record.tierIds || [],
+      entitledAmountCents: record.entitledAmountCents,
+      linkedNpub: record.npub || "",
+      createdAtMs: now,
+      lastVerifiedAtMs: Number(record.lastVerifiedAtMs || now),
+      expiresAtMs: now + config.sessionDurationMs,
+      oauthExpiresAtMs: record.oauthExpiresAtMs,
+      encryptedAccessToken: record.encryptedAccessToken,
+      encryptedRefreshToken: record.encryptedRefreshToken,
+    });
+  return rawSessionId;
+}
+
+async function linkPatreonAccount({ db, npub, hexPubkey, record }) {
+  const now = Date.now();
+  const npubHash = sha256(npub);
+  const patreonUserHash = sha256(record.patreonUserId);
+  const accountRef = db.collection(ACCOUNT_LINK_COLLECTION).doc(npubHash);
+  const patreonUserRef = db
+    .collection(PATREON_USER_LINK_COLLECTION)
+    .doc(patreonUserHash);
+
+  await db.runTransaction(async (transaction) => {
+    const [accountSnapshot, patreonUserSnapshot] = await Promise.all([
+      transaction.get(accountRef),
+      transaction.get(patreonUserRef),
+    ]);
+    const existingAccount = accountSnapshot.exists
+      ? accountSnapshot.data()
+      : null;
+    const existingPatreonUser = patreonUserSnapshot.exists
+      ? patreonUserSnapshot.data()
+      : null;
+
+    if (
+      existingAccount?.patreonUserId &&
+      existingAccount.patreonUserId !== record.patreonUserId
+    ) {
+      const error = new Error("piyali_key_already_linked");
+      error.code = "piyali_key_already_linked";
+      throw error;
+    }
+    if (
+      existingPatreonUser?.npubHash &&
+      existingPatreonUser.npubHash !== npubHash
+    ) {
+      const error = new Error("patreon_account_already_linked");
+      error.code = "patreon_account_already_linked";
+      throw error;
+    }
+
+    transaction.set(accountRef, {
+      ...record,
+      npub,
+      hexPubkey,
+      linkedAtMs: Number(existingAccount?.linkedAtMs || now),
+      updatedAtMs: now,
+    });
+    transaction.set(patreonUserRef, {
+      npubHash,
+      linkedAtMs: Number(existingPatreonUser?.linkedAtMs || now),
+      updatedAtMs: now,
+    });
+  });
+
+  return accountRef;
+}
+
 function setJsonHeaders(res) {
   res.setHeader("Cache-Control", "no-store, max-age=0");
   res.setHeader("Content-Type", "application/json; charset=utf-8");
@@ -415,6 +716,187 @@ function createPatreonHandler({ db, getConfig, fetchImpl = fetch, logger }) {
     const config = getConfig();
     const path = requestPath(req).replace(/\/+$/, "") || "/";
     res.setHeader("Cache-Control", "no-store, max-age=0");
+
+    if (path.endsWith("/link-challenge")) {
+      if (req.method !== "POST") {
+        return sendJson(res, 405, { error: "method_not_allowed" });
+      }
+      if (!config.configured) {
+        return sendJson(res, 503, { error: "patreon_unavailable" });
+      }
+
+      const npub = String(req.body?.npub || "").trim();
+      const action = String(req.body?.action || "").trim();
+      const hexPubkey = decodeNpub(npub);
+      if (!hexPubkey || !["link", "restore"].includes(action)) {
+        return sendJson(res, 400, { error: "invalid_link_request" });
+      }
+
+      const challengeId = crypto.randomBytes(24).toString("base64url");
+      const challenge = crypto.randomBytes(32).toString("base64url");
+      const expiresAtMs = Date.now() + LINK_CHALLENGE_DURATION_MS;
+      const eventTemplate = buildNostrAuthEvent({
+        action,
+        challengeId,
+        challenge,
+        expiresAtMs,
+      });
+      await db
+        .collection(LINK_CHALLENGE_COLLECTION)
+        .doc(sha256(challengeId))
+        .set({
+          npub,
+          hexPubkey,
+          action,
+          // Firestore does not allow an array nested directly inside another
+          // array, which Nostr tags use. Preserve the exact signed template as
+          // JSON so round-trip verification remains byte-for-byte strict.
+          eventTemplateJson: JSON.stringify(eventTemplate),
+          createdAtMs: Date.now(),
+          expiresAtMs,
+          usedAtMs: null,
+        });
+
+      return sendJson(res, 200, { challengeId, eventTemplate });
+    }
+
+    if (path.endsWith("/link-start")) {
+      if (req.method !== "POST") {
+        return sendJson(res, 405, { error: "method_not_allowed" });
+      }
+      if (!config.configured) {
+        return sendJson(res, 503, { error: "patreon_unavailable" });
+      }
+
+      try {
+        const proof = await consumeNostrChallenge({
+          db,
+          challengeId: String(req.body?.challengeId || ""),
+          signedEvent: req.body?.signedEvent,
+          expectedAction: "link",
+        });
+        const state = crypto.randomBytes(32).toString("base64url");
+        await db
+          .collection(OAUTH_STATE_COLLECTION)
+          .doc(sha256(state))
+          .set({
+            npub: proof.npub,
+            hexPubkey: proof.hexPubkey,
+            createdAtMs: Date.now(),
+            expiresAtMs: Date.now() + 10 * 60 * 1000,
+          });
+
+        const authorizeUrl = new URL(PATREON_AUTHORIZE_URL);
+        authorizeUrl.searchParams.set("response_type", "code");
+        authorizeUrl.searchParams.set("client_id", config.clientId);
+        authorizeUrl.searchParams.set("redirect_uri", config.redirectUri);
+        authorizeUrl.searchParams.set("scope", "identity");
+        authorizeUrl.searchParams.set("state", state);
+        res.setHeader(
+          "Set-Cookie",
+          serializeCookie(
+            FIREBASE_SESSION_COOKIE,
+            encodeSessionCookieValue(OAUTH_LINK_STATE_COOKIE_KIND, state),
+            { maxAge: 10 * 60, secure: config.cookieSecure },
+          ),
+        );
+        return sendJson(res, 200, { authorizeUrl: authorizeUrl.toString() });
+      } catch (error) {
+        if (error?.isNostrProofError) {
+          log.warn("Invalid Patreon link proof", error?.code || error?.message);
+          return sendJson(res, 401, { error: "invalid_nostr_proof" });
+        }
+        log.error("Unable to start Patreon linking", error?.message || error);
+        return sendJson(res, 503, { error: "patreon_unavailable" });
+      }
+    }
+
+    if (path.endsWith("/key-status")) {
+      if (req.method !== "POST") {
+        return sendJson(res, 405, { error: "method_not_allowed" });
+      }
+      if (!config.configured) {
+        return sendJson(res, 503, {
+          authorized: false,
+          configured: false,
+        });
+      }
+
+      try {
+        const proof = await consumeNostrChallenge({
+          db,
+          challengeId: String(req.body?.challengeId || ""),
+          signedEvent: req.body?.signedEvent,
+          expectedAction: "restore",
+        });
+        const accountRef = db
+          .collection(ACCOUNT_LINK_COLLECTION)
+          .doc(sha256(proof.npub));
+        const accountSnapshot = await accountRef.get();
+        if (!accountSnapshot.exists) {
+          return sendJson(res, 200, {
+            authorized: false,
+            configured: true,
+            linked: false,
+          });
+        }
+
+        const account = accountSnapshot.data() || {};
+        const evaluation = await evaluateStoredPatreonRecord(
+          account,
+          config,
+          fetchImpl,
+        );
+        if (evaluation.updates) {
+          await accountRef.set(
+            { ...evaluation.updates, updatedAtMs: Date.now() },
+            { merge: true },
+          );
+        }
+        if (!evaluation.authorized) {
+          return sendJson(res, 200, {
+            authorized: false,
+            configured: true,
+            linked: true,
+            reason: evaluation.reason,
+          });
+        }
+
+        const currentRecord = { ...account, ...(evaluation.updates || {}) };
+        const rawSessionId = await createBrowserSession({
+          db,
+          record: currentRecord,
+          config,
+        });
+        res.setHeader(
+          "Set-Cookie",
+          serializeCookie(
+            FIREBASE_SESSION_COOKIE,
+            encodeSessionCookieValue(AUTH_SESSION_COOKIE_KIND, rawSessionId),
+            {
+              maxAge: config.sessionDurationMs / 1000,
+              secure: config.cookieSecure,
+            },
+          ),
+        );
+        return sendJson(res, 200, {
+          authorized: true,
+          configured: true,
+          linked: true,
+          stale: Boolean(evaluation.stale),
+        });
+      } catch (error) {
+        if (error?.isNostrProofError) {
+          return sendJson(res, 401, { error: "invalid_nostr_proof" });
+        }
+        log.error("Patreon key restore failed", error?.message || error);
+        return sendJson(res, 503, {
+          authorized: false,
+          configured: true,
+          error: "patreon_unavailable",
+        });
+      }
+    }
 
     if (path.endsWith("/status")) {
       if (req.method !== "GET") {
@@ -468,48 +950,16 @@ function createPatreonHandler({ db, getConfig, fetchImpl = fetch, logger }) {
         });
       }
 
-      if (now - Number(session.lastVerifiedAtMs || 0) < config.statusCacheMs) {
-        return sendJson(res, 200, {
-          authorized: true,
-          configured: true,
-          stale: false,
-        });
-      }
-
       try {
-        let accessToken = decryptToken(
-          session.encryptedAccessToken,
-          config.tokenEncryptionKey,
+        const evaluation = await evaluateStoredPatreonRecord(
+          session,
+          config,
+          fetchImpl,
         );
-        let refreshToken = decryptToken(
-          session.encryptedRefreshToken,
-          config.tokenEncryptionKey,
-        );
-        let oauthExpiresAtMs = Number(session.oauthExpiresAtMs || 0);
-
-        if (oauthExpiresAtMs <= now + 60_000) {
-          const refreshed = await refreshAccessToken(
-            refreshToken,
-            config,
-            fetchImpl,
-          );
-          if (!refreshed?.access_token) {
-            throw new Error(
-              "Patreon refresh response did not include an access token",
-            );
-          }
-          accessToken = refreshed.access_token;
-          refreshToken = refreshed.refresh_token || refreshToken;
-          oauthExpiresAtMs =
-            now + positiveNumber(refreshed.expires_in, 3600) * 1000;
-        }
-
-        const identity = await fetchIdentity(accessToken, fetchImpl);
-        const membership = evaluatePatreonIdentity(identity, config);
-        if (!membership.authorized) {
+        if (!evaluation.authorized) {
           log.warn("Patreon session membership rejected", {
-            reason: membership.reason,
-            ...getMembershipDiagnostics(identity, config),
+            reason: evaluation.reason,
+            ...getMembershipDiagnostics(evaluation.identity, config),
           });
           await sessionRef.delete();
           res.setHeader(
@@ -519,48 +969,21 @@ function createPatreonHandler({ db, getConfig, fetchImpl = fetch, logger }) {
           return sendJson(res, 200, {
             authorized: false,
             configured: true,
-            reason: membership.reason,
+            reason: evaluation.reason,
           });
         }
 
-        await sessionRef.set(
-          {
-            authorized: true,
-            patreonUserId: membership.patreonUserId,
-            memberId: membership.memberId,
-            tierIds: membership.tierIds,
-            entitledAmountCents: membership.entitledAmountCents,
-            lastVerifiedAtMs: now,
-            oauthExpiresAtMs,
-            encryptedAccessToken: encryptToken(
-              accessToken,
-              config.tokenEncryptionKey,
-            ),
-            encryptedRefreshToken: encryptToken(
-              refreshToken,
-              config.tokenEncryptionKey,
-            ),
-          },
-          { merge: true },
-        );
+        if (evaluation.updates) {
+          await sessionRef.set(evaluation.updates, { merge: true });
+        }
 
         return sendJson(res, 200, {
           authorized: true,
           configured: true,
-          stale: false,
+          stale: Boolean(evaluation.stale),
         });
       } catch (error) {
         log.error("Patreon status refresh failed", error?.message || error);
-        if (
-          now - Number(session.lastVerifiedAtMs || 0) <=
-          config.staleGraceMs
-        ) {
-          return sendJson(res, 200, {
-            authorized: true,
-            configured: true,
-            stale: true,
-          });
-        }
         return sendJson(res, 503, {
           authorized: false,
           configured: true,
@@ -608,10 +1031,16 @@ function createPatreonHandler({ db, getConfig, fetchImpl = fetch, logger }) {
       }
 
       const cookies = parseCookies(req.headers.cookie);
-      const expectedState = decodeSessionCookieValue(
+      const expectedLinkState = decodeSessionCookieValue(
         cookies[FIREBASE_SESSION_COOKIE],
-        OAUTH_STATE_COOKIE_KIND,
+        OAUTH_LINK_STATE_COOKIE_KIND,
       );
+      const expectedState =
+        expectedLinkState ||
+        decodeSessionCookieValue(
+          cookies[FIREBASE_SESSION_COOKIE],
+          OAUTH_STATE_COOKIE_KIND,
+        );
       const receivedState = String(req.query?.state || "");
       const code = String(req.query?.code || "");
       const oauthError = String(req.query?.error || "");
@@ -620,15 +1049,41 @@ function createPatreonHandler({ db, getConfig, fetchImpl = fetch, logger }) {
         clearCookie(FIREBASE_SESSION_COOKIE, config.cookieSecure),
       );
 
-      if (oauthError) {
-        return res.redirect(302, redirectTarget(config, "oauth_cancelled"));
-      }
       if (
         !expectedState ||
         !receivedState ||
         !safeEqual(expectedState, receivedState)
       ) {
         return res.redirect(302, redirectTarget(config, "state_error"));
+      }
+
+      let linkProof = null;
+      if (expectedLinkState) {
+        try {
+          const oauthStateRef = db
+            .collection(OAUTH_STATE_COLLECTION)
+            .doc(sha256(receivedState));
+          const oauthStateSnapshot = await oauthStateRef.get();
+          const oauthState = oauthStateSnapshot.exists
+            ? oauthStateSnapshot.data() || {}
+            : null;
+          if (oauthStateSnapshot.exists) await oauthStateRef.delete();
+          if (oauthState && Number(oauthState.expiresAtMs || 0) > Date.now()) {
+            linkProof = {
+              npub: String(oauthState.npub || ""),
+              hexPubkey: String(oauthState.hexPubkey || ""),
+            };
+          }
+        } catch (error) {
+          log.error("Unable to read Patreon link state", error?.message || error);
+        }
+        if (!linkProof?.npub || !linkProof?.hexPubkey) {
+          return res.redirect(302, redirectTarget(config, "state_error"));
+        }
+      }
+
+      if (oauthError) {
+        return res.redirect(302, redirectTarget(config, "oauth_cancelled"));
       }
       if (!code) {
         return res.redirect(302, redirectTarget(config, "oauth_error"));
@@ -654,29 +1109,36 @@ function createPatreonHandler({ db, getConfig, fetchImpl = fetch, logger }) {
         }
 
         const now = Date.now();
-        const rawSessionId = crypto.randomBytes(32).toString("base64url");
-        const sessionRef = db
-          .collection(SESSION_COLLECTION)
-          .doc(sha256(rawSessionId));
-        await sessionRef.set({
-          authorized: true,
-          patreonUserId: membership.patreonUserId,
-          memberId: membership.memberId,
-          tierIds: membership.tierIds,
-          entitledAmountCents: membership.entitledAmountCents,
-          createdAtMs: now,
-          lastVerifiedAtMs: now,
-          expiresAtMs: now + config.sessionDurationMs,
-          oauthExpiresAtMs:
-            now + positiveNumber(tokens.expires_in, 3600) * 1000,
-          encryptedAccessToken: encryptToken(
-            tokens.access_token,
-            config.tokenEncryptionKey,
-          ),
-          encryptedRefreshToken: encryptToken(
-            tokens.refresh_token,
-            config.tokenEncryptionKey,
-          ),
+        const authorizedRecord = buildAuthorizedRecord({
+          membership,
+          tokens,
+          config,
+          now,
+        });
+        if (linkProof?.npub && linkProof?.hexPubkey) {
+          try {
+            await linkPatreonAccount({
+              db,
+              npub: linkProof.npub,
+              hexPubkey: linkProof.hexPubkey,
+              record: authorizedRecord,
+            });
+            authorizedRecord.npub = linkProof.npub;
+          } catch (error) {
+            if (
+              error?.code === "piyali_key_already_linked" ||
+              error?.code === "patreon_account_already_linked"
+            ) {
+              return res.redirect(302, redirectTarget(config, "link_conflict"));
+            }
+            throw error;
+          }
+        }
+
+        const rawSessionId = await createBrowserSession({
+          db,
+          record: authorizedRecord,
+          config,
         });
 
         res.setHeader(
@@ -725,7 +1187,9 @@ function createPatreonHandler({ db, getConfig, fetchImpl = fetch, logger }) {
 }
 
 module.exports = {
+  buildNostrAuthEvent,
   createPatreonHandler,
+  decodeNpub,
   decodeSessionCookieValue,
   decryptToken,
   encodeSessionCookieValue,
@@ -735,4 +1199,5 @@ module.exports = {
   parseCookies,
   serializeCookie,
   sha256,
+  verifyNostrAuthEvent,
 };
