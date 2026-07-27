@@ -53,6 +53,14 @@ const SUBSCRIBE_COPY = {
     invalidPasscode: "Invalid passcode. Please try again.",
     verifying: "Verifying",
     submit: "Submit",
+    patreonPrompt: "Already subscribed on Patreon?",
+    connectPatreon: "Connect with Patreon",
+    checkingPatreon: "Checking Patreon",
+    patreonNotSubscribed:
+      "We couldn't find an active paid membership for this Patreon account.",
+    patreonOauthError:
+      "We couldn't connect your Patreon account. Please try again.",
+    patreonUnavailable: "Patreon login is not available yet.",
   },
   es: {
     title: "¡Gracias por probar mi app!",
@@ -84,6 +92,14 @@ const SUBSCRIBE_COPY = {
     invalidPasscode: "Código inválido. Inténtalo de nuevo.",
     verifying: "Verificando",
     submit: "Enviar",
+    patreonPrompt: "¿Ya te suscribiste en Patreon?",
+    connectPatreon: "Conectar con Patreon",
+    checkingPatreon: "Comprobando Patreon",
+    patreonNotSubscribed:
+      "No encontramos una membresía de pago activa para esta cuenta de Patreon.",
+    patreonOauthError:
+      "No pudimos conectar tu cuenta de Patreon. Inténtalo de nuevo.",
+    patreonUnavailable: "El acceso con Patreon aún no está disponible.",
   },
   pt: {
     title: "Obrigado por testar meu app!",
@@ -114,6 +130,14 @@ const SUBSCRIBE_COPY = {
     invalidPasscode: "Código inválido. Tente novamente.",
     verifying: "Verificando",
     submit: "Enviar",
+    patreonPrompt: "Já assinou pelo Patreon?",
+    connectPatreon: "Conectar com o Patreon",
+    checkingPatreon: "Verificando o Patreon",
+    patreonNotSubscribed:
+      "Não encontramos uma assinatura paga ativa para esta conta do Patreon.",
+    patreonOauthError:
+      "Não foi possível conectar sua conta do Patreon. Tente novamente.",
+    patreonUnavailable: "O acesso com o Patreon ainda não está disponível.",
   },
   it: {
     title: "Grazie per aver provato la mia app!",
@@ -144,6 +168,14 @@ const SUBSCRIBE_COPY = {
     invalidPasscode: "Codice non valido. Riprova.",
     verifying: "Verifica in corso",
     submit: "Invia",
+    patreonPrompt: "Hai già un abbonamento su Patreon?",
+    connectPatreon: "Collega Patreon",
+    checkingPatreon: "Verifica di Patreon",
+    patreonNotSubscribed:
+      "Non abbiamo trovato un abbonamento a pagamento attivo per questo account Patreon.",
+    patreonOauthError:
+      "Non è stato possibile collegare il tuo account Patreon. Riprova.",
+    patreonUnavailable: "L'accesso con Patreon non è ancora disponibile.",
   },
   fr: {
     title: "Merci d'avoir essayé mon appli !",
@@ -174,6 +206,14 @@ const SUBSCRIBE_COPY = {
     invalidPasscode: "Code invalide. Réessayez.",
     verifying: "Vérification",
     submit: "Envoyer",
+    patreonPrompt: "Déjà abonné sur Patreon ?",
+    connectPatreon: "Connecter Patreon",
+    checkingPatreon: "Vérification de Patreon",
+    patreonNotSubscribed:
+      "Nous n'avons trouvé aucun abonnement payant actif pour ce compte Patreon.",
+    patreonOauthError:
+      "Impossible de connecter votre compte Patreon. Réessayez.",
+    patreonUnavailable: "La connexion Patreon n'est pas encore disponible.",
   },
   de: {
     title: "Danke, dass du meine App ausprobierst!",
@@ -204,6 +244,14 @@ const SUBSCRIBE_COPY = {
     invalidPasscode: "Ungültiger Code. Bitte versuche es erneut.",
     verifying: "Wird geprüft",
     submit: "Senden",
+    patreonPrompt: "Bereits über Patreon abonniert?",
+    connectPatreon: "Mit Patreon verbinden",
+    checkingPatreon: "Patreon wird geprüft",
+    patreonNotSubscribed:
+      "Für dieses Patreon-Konto wurde keine aktive bezahlte Mitgliedschaft gefunden.",
+    patreonOauthError:
+      "Dein Patreon-Konto konnte nicht verbunden werden. Bitte versuche es erneut.",
+    patreonUnavailable: "Die Patreon-Anmeldung ist noch nicht verfügbar.",
   },
   ja: {
     title: "アプリを試してくれてありがとうございます！",
@@ -233,6 +281,14 @@ const SUBSCRIBE_COPY = {
     invalidPasscode: "パスコードが無効です。もう一度お試しください。",
     verifying: "確認中",
     submit: "送信",
+    patreonPrompt: "Patreonですでに登録済みですか？",
+    connectPatreon: "Patreonと連携",
+    checkingPatreon: "Patreonを確認中",
+    patreonNotSubscribed:
+      "このPatreonアカウントの有効な有料メンバーシップが見つかりませんでした。",
+    patreonOauthError:
+      "Patreonアカウントに接続できませんでした。もう一度お試しください。",
+    patreonUnavailable: "Patreonログインはまだ利用できません。",
   },
   hi: {
     title: "मेरे ऐप को आज़माने के लिए धन्यवाद!",
@@ -263,6 +319,14 @@ const SUBSCRIBE_COPY = {
     invalidPasscode: "पासकोड अमान्य है. कृपया फिर कोशिश करें.",
     verifying: "जांच हो रही है",
     submit: "जमा करें",
+    patreonPrompt: "क्या आपने Patreon पर पहले ही सदस्यता ली है?",
+    connectPatreon: "Patreon से कनेक्ट करें",
+    checkingPatreon: "Patreon की जांच हो रही है",
+    patreonNotSubscribed:
+      "इस Patreon खाते के लिए कोई सक्रिय सशुल्क सदस्यता नहीं मिली।",
+    patreonOauthError:
+      "आपका Patreon खाता कनेक्ट नहीं हो सका। कृपया फिर कोशिश करें।",
+    patreonUnavailable: "Patreon लॉगिन अभी उपलब्ध नहीं है.",
   },
   ar: {
     title: "شكرًا إنك جرّبت تطبيقي!",
@@ -291,6 +355,14 @@ const SUBSCRIBE_COPY = {
     invalidPasscode: "الكود غير صحيح. جرّب تاني.",
     verifying: "جارٍ التحقق",
     submit: "إرسال",
+    patreonPrompt: "مشترك بالفعل عبر Patreon؟",
+    connectPatreon: "الاتصال بـ Patreon",
+    checkingPatreon: "جارٍ التحقق من Patreon",
+    patreonNotSubscribed:
+      "لم نعثر على عضوية مدفوعة نشطة لحساب Patreon ده.",
+    patreonOauthError:
+      "ما قدرناش نوصل حساب Patreon بتاعك. جرّب تاني.",
+    patreonUnavailable: "تسجيل الدخول عبر Patreon غير متاح بعد.",
   },
   zh: {
     title: "感谢你试用我的应用！",
@@ -318,6 +390,12 @@ const SUBSCRIBE_COPY = {
     invalidPasscode: "通行码无效，请重试。",
     verifying: "正在验证",
     submit: "提交",
+    patreonPrompt: "已经在 Patreon 订阅了吗？",
+    connectPatreon: "连接 Patreon",
+    checkingPatreon: "正在检查 Patreon",
+    patreonNotSubscribed: "未找到此 Patreon 账户的有效付费会员资格。",
+    patreonOauthError: "无法连接你的 Patreon 账户，请重试。",
+    patreonUnavailable: "Patreon 登录尚不可用。",
   },
 };
 
@@ -327,6 +405,11 @@ export default function SubscriptionGate({
   onSubmit,
   isSubmitting = false,
   error = "",
+  onPatreonConnect,
+  isPatreonChecking = false,
+  isPatreonAvailable = true,
+  patreonResult = "",
+  patreonStatusError = "",
 }) {
   const lang = normalizeSupportLanguage(appLanguage, DEFAULT_SUPPORT_LANGUAGE);
   const copy = SUBSCRIBE_COPY[lang] || SUBSCRIBE_COPY.en;
@@ -343,6 +426,16 @@ export default function SubscriptionGate({
     t.invalid ||
     t.passcode?.invalid ||
     copy.invalidPasscode;
+  const patreonFeedback =
+    patreonStatusError === "unavailable" || patreonResult === "unavailable"
+      ? copy.patreonUnavailable
+      : patreonResult === "not_subscribed"
+        ? copy.patreonNotSubscribed
+        : ["oauth_error", "oauth_cancelled", "state_error"].includes(
+              patreonResult,
+            )
+          ? copy.patreonOauthError
+          : "";
 
   const handleSubmit = async (e) => {
     e?.preventDefault();
@@ -620,6 +713,58 @@ export default function SubscriptionGate({
               >
                 {copy.submit}
               </Button>
+              <Box
+                mt={2}
+                pt={4}
+                borderTop="1px solid"
+                borderColor={shellBorder}
+              >
+                <Text
+                  color={secondaryText}
+                  fontSize="xs"
+                  textAlign="center"
+                  mb={3}
+                >
+                  {copy.patreonPrompt}
+                </Text>
+                <Button
+                  type="button"
+                  w="100%"
+                  h="auto"
+                  py={3.5}
+                  bg="#ff424d"
+                  color="white"
+                  boxShadow="0px 4px 0px #b92e37"
+                  onClick={onPatreonConnect}
+                  isLoading={isPatreonChecking}
+                  loadingText={copy.checkingPatreon}
+                  isDisabled={!isPatreonAvailable}
+                  _hover={{
+                    bg: "#e93642",
+                    color: "white",
+                    transform: "translateY(-1px)",
+                  }}
+                  _active={{
+                    bg: "#cf2f39",
+                    color: "white",
+                    transform: "translateY(2px)",
+                    boxShadow: "0px 2px 0px #9f2730",
+                  }}
+                >
+                  {copy.connectPatreon}
+                </Button>
+                {patreonFeedback && (
+                  <Text
+                    role="alert"
+                    color={isLightTheme ? "#9f2d36" : "red.200"}
+                    fontSize="xs"
+                    textAlign="center"
+                    mt={3}
+                  >
+                    {patreonFeedback}
+                  </Text>
+                )}
+              </Box>
             </Stack>
           </Box>
         </VStack>

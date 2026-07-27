@@ -29,12 +29,16 @@
     ],
     "rewrites": [
       {
+        "source": "/api/patreon/**",
+        "function": { "region": "us-central1", "functionId": "patreonAuth" }
+      },
+      {
         "source": "/talkTurn",
-        "function": { "region": "us-central1", "name": "talkTurn" }
+        "function": { "region": "us-central1", "functionId": "talkTurn" }
       },
       {
         "source": "/tts",
-        "function": { "region": "us-central1", "name": "tts" }
+        "function": { "region": "us-central1", "functionId": "tts" }
       },
       { "source": "**", "destination": "/index.html" }
     ]

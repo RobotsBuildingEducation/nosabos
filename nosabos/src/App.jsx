@@ -2640,6 +2640,9 @@ function TopBar({
 /* -------------------------------------------------------------------------------------------------
    App root
 --------------------------------------------------------------------------------------------------*/
+const PATREON_STATUS_ENDPOINT = "/api/patreon/status";
+const PATREON_START_ENDPOINT = "/api/patreon/start";
+
 export default function App({ onBootReady } = {}) {
   const toast = useToast();
   const initRef = useRef(false);
@@ -2947,7 +2950,52 @@ export default function App({ onBootReady } = {}) {
   const themeMode = useThemeStore((s) => s.themeMode);
   const syncThemeMode = useThemeStore((s) => s.syncThemeMode);
 
-  const subscriptionVerified = useMemo(() => {
+  const [patreonSubscriptionVerified, setPatreonSubscriptionVerified] =
+    useState(false);
+  const [isCheckingPatreon, setIsCheckingPatreon] = useState(true);
+  const [patreonAvailable, setPatreonAvailable] = useState(true);
+  const [patreonStatusError, setPatreonStatusError] = useState("");
+
+  const checkPatreonSubscription = useCallback(async () => {
+    setIsCheckingPatreon(true);
+    setPatreonStatusError("");
+    try {
+      const response = await fetch(PATREON_STATUS_ENDPOINT, {
+        method: "GET",
+        credentials: "include",
+        headers: { Accept: "application/json" },
+      });
+      const payload = await response.json().catch(() => ({}));
+      setPatreonAvailable(payload.configured !== false);
+      setPatreonSubscriptionVerified(Boolean(payload.authorized));
+      if (!response.ok && !payload.authorized) {
+        setPatreonStatusError("unavailable");
+      }
+    } catch (error) {
+      console.warn("Unable to check Patreon subscription", error);
+      setPatreonAvailable(false);
+      setPatreonSubscriptionVerified(false);
+      setPatreonStatusError("unavailable");
+    } finally {
+      setIsCheckingPatreon(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void checkPatreonSubscription();
+  }, [checkPatreonSubscription]);
+
+  const handlePatreonConnect = useCallback(() => {
+    if (typeof window === "undefined") return;
+    window.location.assign(PATREON_START_ENDPOINT);
+  }, []);
+
+  const patreonResult = useMemo(
+    () => new URLSearchParams(location.search).get("patreon") || "",
+    [location.search],
+  );
+
+  const passcodeSubscriptionVerified = useMemo(() => {
     const matchesLocal =
       storedPasscode &&
       subscriptionPasscode &&
@@ -2958,6 +3006,8 @@ export default function App({ onBootReady } = {}) {
     subscriptionPasscode,
     user?.subscriptionPasscodeVerified,
   ]);
+  const subscriptionVerified =
+    passcodeSubscriptionVerified || patreonSubscriptionVerified;
   const [allowPosts, setAllowPosts] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [soundVolume, setSoundVolume] = useState(100);
@@ -9289,7 +9339,13 @@ export default function App({ onBootReady } = {}) {
     !showAlphabetBootcamp &&
     skillTreeInitialUnits.key !== skillTreeInitialUnitsKey;
 
-  const isBootLoading = isLoadingApp || !user || shouldHoldForInitialSkillTree;
+  const isResolvingSubscription =
+    subscriptionXp >= 300 && !passcodeSubscriptionVerified && isCheckingPatreon;
+  const isBootLoading =
+    isLoadingApp ||
+    !user ||
+    shouldHoldForInitialSkillTree ||
+    isResolvingSubscription;
 
   useEffect(() => {
     if (hasCompletedInitialSkillTreeBoot) return;
@@ -9357,6 +9413,11 @@ export default function App({ onBootReady } = {}) {
         onSubmit={handleSubmitPasscode}
         isSubmitting={isSavingPasscode}
         error={passcodeError}
+        onPatreonConnect={handlePatreonConnect}
+        isPatreonChecking={isCheckingPatreon}
+        isPatreonAvailable={patreonAvailable}
+        patreonResult={patreonResult}
+        patreonStatusError={patreonStatusError}
       />
     );
   }

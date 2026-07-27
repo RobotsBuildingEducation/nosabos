@@ -3,7 +3,12 @@
 // Firebase Functions v2 (Node 20, global fetch available)
 const functions = require("firebase-functions/v2");
 const { onRequest } = require("firebase-functions/v2/https");
+const { defineSecret } = require("firebase-functions/params");
 const admin = require("firebase-admin");
+const {
+  createPatreonHandler,
+  getPatreonConfig,
+} = require("./patreon");
 
 // Initialize Admin SDK once
 try {
@@ -28,6 +33,10 @@ if (!OPENAI_API_KEY) {
 
 // ==== Tunables ====
 const REGION = "us-central1";
+const PATREON_CLIENT_SECRET = defineSecret("PATREON_CLIENT_SECRET");
+const PATREON_TOKEN_ENCRYPTION_KEY = defineSecret(
+  "PATREON_TOKEN_ENCRYPTION_KEY",
+);
 const CORS_ORIGINS = [
   "http://localhost:5173",
   "http://localhost:3000",
@@ -717,6 +726,28 @@ When the story is complete, send:
     res.end();
   }
 }
+
+exports.patreonAuth = onRequest(
+  {
+    region: REGION,
+    timeoutSeconds: 30,
+    memory: "256MiB",
+    secrets: [PATREON_CLIENT_SECRET, PATREON_TOKEN_ENCRYPTION_KEY],
+  },
+  createPatreonHandler({
+    db: admin.firestore(),
+    logger: functions.logger,
+    getConfig: () =>
+      getPatreonConfig({
+        ...process.env,
+        PATREON_CLIENT_SECRET:
+          PATREON_CLIENT_SECRET.value() || process.env.PATREON_CLIENT_SECRET,
+        PATREON_TOKEN_ENCRYPTION_KEY:
+          PATREON_TOKEN_ENCRYPTION_KEY.value() ||
+          process.env.PATREON_TOKEN_ENCRYPTION_KEY,
+      }),
+  }),
+);
 
 // ======================================================
 // 3) Health check (handy for debugging)
