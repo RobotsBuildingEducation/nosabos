@@ -32,6 +32,8 @@ const SUBSCRIBE_COPY = {
       "Full access to the language learning app and a coding education app",
     benefitSubscriberContent:
       "A growing collection of subscriber content oriented around business, engineering and investing education content.",
+    benefitScholarships:
+      "Support the mission to create scholarships with learning.",
     recommended: "Recommended",
     appsOnlyTitle: "Apps only",
     appsOnlyPrice: "$120",
@@ -61,6 +63,8 @@ const SUBSCRIBE_COPY = {
       "Acceso completo a la app de aprendizaje de idiomas y a una app de educación en programación",
     benefitSubscriberContent:
       "Una colección creciente de contenido para miembros sobre educación en negocios, ingeniería e inversión.",
+    benefitScholarships:
+      "Apoya la misión de crear becas mediante el aprendizaje.",
     recommended: "Recomendado",
     appsOnlyTitle: "Solo apps",
     appsOnlyPrice: "$120",
@@ -89,6 +93,8 @@ const SUBSCRIBE_COPY = {
       "Acesso completo ao app de aprendizagem de idiomas e a um app de educação em programação",
     benefitSubscriberContent:
       "Uma coleção crescente de conteúdos para membros sobre educação em negócios, engenharia e investimentos.",
+    benefitScholarships:
+      "Apoie a missão de criar bolsas de estudo por meio da aprendizagem.",
     recommended: "Recomendado",
     appsOnlyTitle: "Somente apps",
     appsOnlyPrice: "$120",
@@ -117,6 +123,8 @@ const SUBSCRIBE_COPY = {
       "Accesso completo all'app per imparare le lingue e a un'app di educazione alla programmazione",
     benefitSubscriberContent:
       "Una raccolta in crescita di contenuti per membri su business, ingegneria e investimenti.",
+    benefitScholarships:
+      "Sostieni la missione di creare borse di studio attraverso l'apprendimento.",
     recommended: "Consigliato",
     appsOnlyTitle: "Solo app",
     appsOnlyPrice: "$120",
@@ -145,6 +153,8 @@ const SUBSCRIBE_COPY = {
       "Un accès complet à l'appli d'apprentissage des langues et à une appli d'éducation au code",
     benefitSubscriberContent:
       "Une collection croissante de contenus membres sur le business, l'ingénierie et l'investissement.",
+    benefitScholarships:
+      "Soutenez la mission visant à créer des bourses grâce à l'apprentissage.",
     recommended: "Recommandé",
     appsOnlyTitle: "Apps seulement",
     appsOnlyPrice: "$120",
@@ -173,6 +183,8 @@ const SUBSCRIBE_COPY = {
       "Vollen Zugriff auf die Sprachlern-App und eine App zum Programmierenlernen",
     benefitSubscriberContent:
       "Eine wachsende Sammlung von Mitgliederinhalten zu Business, Engineering und Investieren.",
+    benefitScholarships:
+      "Unterstütze die Mission, durch Lernen Stipendien zu schaffen.",
     recommended: "Empfohlen",
     appsOnlyTitle: "Nur Apps",
     appsOnlyPrice: "$120",
@@ -201,6 +213,7 @@ const SUBSCRIBE_COPY = {
       "語学学習アプリとプログラミング教育アプリへのフルアクセス",
     benefitSubscriberContent:
       "ビジネス、エンジニアリング、投資教育に関するメンバー向けコンテンツの追加コレクション。",
+    benefitScholarships: "学びを通じて奨学金を生み出す使命を支援します。",
     recommended: "おすすめ",
     appsOnlyTitle: "アプリのみ",
     appsOnlyPrice: "$120",
@@ -229,6 +242,8 @@ const SUBSCRIBE_COPY = {
       "भाषा सीखने वाले ऐप और कोडिंग शिक्षा ऐप का पूरा एक्सेस",
     benefitSubscriberContent:
       "बिज़नेस, इंजीनियरिंग और निवेश शिक्षा सामग्री पर केंद्रित बढ़ता हुआ सदस्य कंटेंट.",
+    benefitScholarships:
+      "सीखने के माध्यम से छात्रवृत्तियाँ बनाने के मिशन का समर्थन करें.",
     recommended: "अनुशंसित",
     appsOnlyTitle: "केवल ऐप्स",
     appsOnlyPrice: "$120",
@@ -256,6 +271,8 @@ const SUBSCRIBE_COPY = {
     benefitLanguageApps: "وصول كامل لتطبيق تعلّم اللغة وتطبيق تعليم البرمجة",
     benefitSubscriberContent:
       "مجموعة متزايدة من محتوى الأعضاء عن تعليم الأعمال والهندسة والاستثمار.",
+    benefitScholarships:
+      "ادعم رسالة إنشاء منح دراسية من خلال التعلّم.",
     recommended: "موصى به",
     appsOnlyTitle: "التطبيقات فقط",
     appsOnlyPrice: "$120",
@@ -282,6 +299,7 @@ const SUBSCRIBE_COPY = {
     benefitsHeading: "成为会员即可获得",
     benefitLanguageApps: "完整访问语言学习应用和编程教育应用",
     benefitSubscriberContent: "持续更新的会员内容，面向商业、工程和投资教育。",
+    benefitScholarships: "支持通过学习创造奖学金机会的使命。",
     recommended: "推荐",
     appsOnlyTitle: "仅应用",
     appsOnlyPrice: "$120",
@@ -460,7 +478,7 @@ export default function SubscriptionGate({
           >
             <Text
               fontWeight="bold"
-              fontSize={{ base: "sm", md: "md" }}
+              fontSize="sm"
               mb={3}
             >
               {copy.benefitsHeading}
@@ -468,14 +486,18 @@ export default function SubscriptionGate({
             <Box
               as="ul"
               color={mutedText}
-              fontSize={{ base: "sm", md: "md" }}
+              fontSize={{ base: "xs", md: "sm" }}
+              lineHeight="tall"
               pl={isRtl ? 0 : 5}
               pr={isRtl ? 5 : 0}
             >
               <Text as="li" mb={2}>
                 {copy.benefitLanguageApps}
               </Text>
-              <Text as="li">{copy.benefitSubscriberContent}</Text>
+              <Text as="li" mb={2}>
+                {copy.benefitSubscriberContent}
+              </Text>
+              <Text as="li">{copy.benefitScholarships}</Text>
             </Box>
           </Box>
 
