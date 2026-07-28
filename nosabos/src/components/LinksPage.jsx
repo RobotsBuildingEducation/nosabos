@@ -1216,7 +1216,7 @@ export default function LinksPage() {
     {
       title: translations.patreonTitle,
       description: translations.patreonDescription,
-      href: "https://patreon.com/NotesAndOtherStuff",
+      href: "https://subscribe.piyali.app/",
       analyticsName: "patreon",
       visual: (
         <Box
