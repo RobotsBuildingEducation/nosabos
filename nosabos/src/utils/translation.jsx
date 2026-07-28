@@ -406,14 +406,14 @@ export const translations = {
             <Button
               onMouseDown={() => {
                 window.open(
-                  "https://www.patreon.com/NotesAndOtherStuff",
+                  "https://subscribe.piyali.app/",
                   "_blank",
                 );
               }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
                   window.open(
-                    "https://www.patreon.com/NotesAndOtherStuff",
+                    "https://subscribe.piyali.app/",
                     "_blank",
                   );
                 }
@@ -1381,7 +1381,7 @@ export const translations = {
               color: "#63b3ed",
               fontWeight: "bold",
             }}
-            href="https://www.patreon.com/NotesAndOtherStuff"
+            href="https://subscribe.piyali.app/"
             target="_blank"
           >
             Ver plataforma de suscripción
@@ -2249,14 +2249,14 @@ translations.it = {
           <Button
             onMouseDown={() => {
               window.open(
-                "https://www.patreon.com/NotesAndOtherStuff",
+                "https://subscribe.piyali.app/",
                 "_blank",
               );
             }}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 window.open(
-                  "https://www.patreon.com/NotesAndOtherStuff",
+                  "https://subscribe.piyali.app/",
                   "_blank",
                 );
               }
@@ -3137,14 +3137,14 @@ translations.fr = {
           <Button
             onMouseDown={() => {
               window.open(
-                "https://www.patreon.com/NotesAndOtherStuff",
+                "https://subscribe.piyali.app/",
                 "_blank",
               );
             }}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 window.open(
-                  "https://www.patreon.com/NotesAndOtherStuff",
+                  "https://subscribe.piyali.app/",
                   "_blank",
                 );
               }
@@ -3675,14 +3675,14 @@ translations.de = {
           <Button
             onMouseDown={() => {
               window.open(
-                "https://www.patreon.com/NotesAndOtherStuff",
+                "https://subscribe.piyali.app/",
                 "_blank",
               );
             }}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 window.open(
-                  "https://www.patreon.com/NotesAndOtherStuff",
+                  "https://subscribe.piyali.app/",
                   "_blank",
                 );
               }
@@ -4102,14 +4102,14 @@ translations.ja = {
           <Button
             onMouseDown={() => {
               window.open(
-                "https://www.patreon.com/NotesAndOtherStuff",
+                "https://subscribe.piyali.app/",
                 "_blank",
               );
             }}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 window.open(
-                  "https://www.patreon.com/NotesAndOtherStuff",
+                  "https://subscribe.piyali.app/",
                   "_blank",
                 );
               }
@@ -4640,14 +4640,14 @@ translations.ar = {
           <Button
             onMouseDown={() => {
               window.open(
-                "https://www.patreon.com/NotesAndOtherStuff",
+                "https://subscribe.piyali.app/",
                 "_blank",
               );
             }}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 window.open(
-                  "https://www.patreon.com/NotesAndOtherStuff",
+                  "https://subscribe.piyali.app/",
                   "_blank",
                 );
               }
@@ -4708,14 +4708,14 @@ translations.hi = {
           <Button
             onMouseDown={() => {
               window.open(
-                "https://www.patreon.com/NotesAndOtherStuff",
+                "https://subscribe.piyali.app/",
                 "_blank",
               );
             }}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 window.open(
-                  "https://www.patreon.com/NotesAndOtherStuff",
+                  "https://subscribe.piyali.app/",
                   "_blank",
                 );
               }
@@ -4900,14 +4900,14 @@ translations.pt = {
           <Button
             onMouseDown={() => {
               window.open(
-                "https://www.patreon.com/NotesAndOtherStuff",
+                "https://subscribe.piyali.app/",
                 "_blank",
               );
             }}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 window.open(
-                  "https://www.patreon.com/NotesAndOtherStuff",
+                  "https://subscribe.piyali.app/",
                   "_blank",
                 );
               }
@@ -4966,14 +4966,14 @@ translations.zh = {
           <Button
             onMouseDown={() => {
               window.open(
-                "https://www.patreon.com/NotesAndOtherStuff",
+                "https://subscribe.piyali.app/",
                 "_blank",
               );
             }}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 window.open(
-                  "https://www.patreon.com/NotesAndOtherStuff",
+                  "https://subscribe.piyali.app/",
                   "_blank",
                 );
               }

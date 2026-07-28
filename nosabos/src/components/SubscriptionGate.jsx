@@ -367,7 +367,7 @@ export default function SubscriptionGate({
       activeAccent: "purple.500",
       shadow: "#6b46c1",
       cta: copy.annualCta,
-      href: "https://www.patreon.com/NotesAndOtherStuff",
+      href: "https://subscribe.piyali.app/",
     },
     {
       title: copy.monthlyTitle,
@@ -377,7 +377,7 @@ export default function SubscriptionGate({
       activeAccent: "orange.600",
       shadow: "#b7791f",
       cta: copy.monthlyCta,
-      href: "https://www.patreon.com/NotesAndOtherStuff",
+      href: "https://subscribe.piyali.app/",
     },
     {
       title: copy.appsOnlyTitle,

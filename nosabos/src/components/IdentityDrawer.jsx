@@ -674,7 +674,7 @@ export function IdentityPanel({
                 boxShadow="0px 0px 4px gray"
                 onClick={() =>
                   window.open(
-                    "https://www.patreon.com/NotesAndOtherStuff",
+                    "https://subscribe.piyali.app/",
                     "_blank",
                   )
                 }

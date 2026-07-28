@@ -11160,7 +11160,7 @@ const PostQuestionnaireResources = ({ language, onSelectSound }) => {
       title: content.supportTitle,
       body: content.supportBody,
       cta: content.supportCta,
-      href: "https://patreon.com/NotesAndOtherStuff",
+      href: "https://subscribe.piyali.app/",
       icon: SiPatreon,
       iconBg: "#111111",
       iconColor: "white",
