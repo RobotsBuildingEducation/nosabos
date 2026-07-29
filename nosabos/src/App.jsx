@@ -326,6 +326,7 @@ import {
   nativeOverlayMotionProps,
 } from "./utils/modalMotion";
 import { scheduleAfterNextPaint } from "./utils/afterPaint";
+import { fetchWithTimeout } from "./utils/fetchWithTimeout";
 import {
   getTutorVoiceOption,
   getTutorVoiceOptions,
@@ -2965,7 +2966,7 @@ export default function App({ onBootReady } = {}) {
     setIsCheckingPatreon(true);
     setPatreonStatusError("");
     try {
-      const response = await fetch(PATREON_STATUS_ENDPOINT, {
+      const response = await fetchWithTimeout(PATREON_STATUS_ENDPOINT, {
         method: "GET",
         credentials: "include",
         headers: { Accept: "application/json" },
@@ -2977,25 +2978,24 @@ export default function App({ onBootReady } = {}) {
         return;
       }
 
-      if (
-        isSubscriptionRoute &&
-        activeNpub &&
-        canSilentlySignPatreonProof()
-      ) {
+      if (isSubscriptionRoute && activeNpub && canSilentlySignPatreonProof()) {
         const proof = await createPatreonNostrProof({
           npub: activeNpub,
           action: "restore",
           allowExtension: false,
         });
-        const restoreResponse = await fetch(PATREON_KEY_STATUS_ENDPOINT, {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
+        const restoreResponse = await fetchWithTimeout(
+          PATREON_KEY_STATUS_ENDPOINT,
+          {
+            method: "POST",
+            credentials: "include",
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(proof),
           },
-          body: JSON.stringify(proof),
-        });
+        );
         const restorePayload = await restoreResponse.json().catch(() => ({}));
         setPatreonAvailable(restorePayload.configured !== false);
         setPatreonSubscriptionVerified(Boolean(restorePayload.authorized));

@@ -8,7 +8,7 @@
 
 ## Objective
 
-Allow a Patreon member who has lost an old Piyali key to replace the old Patreon-to-Piyali link with a newly created Piyali key. Add Patreon webhooks so cancellation, payment, and membership changes invalidate cached access promptly.
+Allow a Patreon member who has lost an old Piyali key to replace the old Patreon-to-Piyali link with a newly created Piyali key. Add Patreon webhooks so cancellation, payment, and membership changes invalidate cached access promptly. Add an Account Settings **Subscription** tab where users can see and manage the parts of their Patreon connection that Piyali controls.
 
 The recovery authority is a fresh, successful Patreon OAuth verification. The old Nostr private key is intentionally not required because the recovery case assumes it is unavailable.
 
@@ -42,6 +42,9 @@ When a member signs into Patreon from a new Piyali key, the Patreon membership i
 8. All new user-facing text must be localized for every supported support language.
 9. Do not add a key-backup warning as part of this work.
 10. Patreon webhooks are a fast invalidation signal, not the sole authorization source. Existing API verification remains the authority and fallback.
+11. Add a **Subscription** tab to the existing Account Settings drawer for connected status, membership status, refresh, reconnect, and disconnection.
+12. Keep billing authority with Patreon. Piyali must not imply that it can change payment methods, tiers, renewal, or cancellation through the member API.
+13. Actions that Patreon owns open the appropriate Patreon-managed page; actions that Piyali owns use authenticated Piyali endpoints.
 
 ## Non-goals
 
@@ -50,6 +53,8 @@ When a member signs into Patreon from a new Piyali key, the Patreon membership i
 - Allowing one Patreon account to authorize multiple Piyali keys simultaneously.
 - Removing the passcode fallback.
 - Building a general account-recovery system unrelated to Patreon.
+- Changing a member's Patreon tier, payment method, renewal, or cancellation directly from Piyali.
+- Reimplementing or embedding Patreon's checkout and billing-management interface.
 
 ## Security Invariants
 
@@ -70,6 +75,9 @@ The implementation must maintain these rules:
 - A webhook for another campaign must never change Piyali access.
 - Duplicate and retried webhook deliveries must be idempotent.
 - A webhook may revoke access or force a fresh Patreon check, but it must never grant access without normal Patreon API verification.
+- Subscription details returned to the frontend must be sanitized and must not expose Patreon tokens, internal document IDs, or raw Patreon user IDs.
+- Disconnecting Patreon from Piyali must require a valid signed proof from the currently linked Nostr key and explicit confirmation.
+- The disconnect UI must clearly state that disconnecting Piyali does not cancel Patreon billing.
 
 ## Proposed User Flow
 
@@ -135,10 +143,60 @@ link | restore
 to:
 
 ```text
-link | restore | replace
+link | restore | replace | disconnect
 ```
 
-The `replace` proof uses the same five-minute, one-use challenge behavior and exact-event verification as the existing actions.
+The `replace` and `disconnect` proofs use the same five-minute, one-use challenge behavior and exact-event verification as the existing actions.
+
+### Existing: `GET /api/patreon/status`
+
+Extend the authenticated response with a sanitized subscription summary suitable for the Account Settings UI. Return only what the user needs to understand their Piyali access:
+
+```json
+{
+  "authorized": true,
+  "configured": true,
+  "linked": true,
+  "stale": false,
+  "subscription": {
+    "provider": "patreon",
+    "status": "active",
+    "entitledAmountCents": 500,
+    "lastChargeStatus": "paid",
+    "lastVerifiedAtMs": 0
+  }
+}
+```
+
+- Use stable, localized-friendly status values such as `active`, `payment_issue`, `inactive`, `expired`, and `unknown`.
+- Include a friendly tier label only if it can be derived from configured tier IDs or an already-authorized Patreon response without requesting unnecessary personal-data scopes.
+- Do not return Patreon access tokens, refresh tokens, Patreon user IDs, member IDs, Firestore document IDs, or internal authorization reasons.
+- Preserve the existing minimal fields relied on by `/subscribe` so this remains backward-compatible.
+
+### New: `POST /api/patreon/refresh-status`
+
+- Require the normal authenticated Patreon session.
+- Bypass the 10-minute success cache and perform an authoritative Patreon API check.
+- Reuse the normal membership evaluator and token-refresh behavior.
+- Return the same sanitized subscription summary as `/status`.
+- Apply a per-session and per-IP cooldown so repeatedly pressing Refresh cannot exhaust Patreon rate limits.
+
+### New: `POST /api/patreon/disconnect`
+
+This disconnects Patreon from Piyali; it does not cancel the user's Patreon membership.
+
+Required checks and behavior:
+
+1. Require a normal authenticated Patreon session.
+2. Require a fresh, one-use signed Nostr challenge with action `disconnect` from the currently linked `npub`.
+3. Confirm the signed key still matches both sides of the stored Patreon/key mapping.
+4. In one transaction, remove the account link and reverse Patreon-user link.
+5. Delete the encrypted Patreon tokens stored with that link.
+6. Revoke every Piyali Patreon session associated with the mapping, including the current session.
+7. Clear the browser session cookie and return `{ "ok": true }`.
+8. Record a sanitized audit event without Patreon tokens, raw IDs, signatures, or private-key material.
+
+The frontend must use an explicit confirmation dialog stating: disconnecting removes Piyali access and persistent restoration, but Patreon will continue billing until the member changes or cancels the membership on Patreon.
 
 ### Existing: `GET /api/patreon/callback`
 
@@ -322,6 +380,8 @@ Add server-only audit records for:
 - `replacement_completed`
 - `replacement_cancelled`
 - `replacement_rejected`
+- `subscription_disconnected`
+- `subscription_disconnect_rejected`
 
 Audit data may include hashed Patreon and `npub` identifiers, timestamps, and rejection reasons. It must not include OAuth tokens, cookie values, private keys, or signed events.
 
@@ -420,6 +480,55 @@ Webhook delivery does not replace focus/reload checks. It updates server state q
 - On success, set Patreon verified and remove recovery query parameters.
 - On expiration or changed state, return to the normal Connect with Patreon flow.
 - Recheck Patreon status on window focus or document visibility restoration with a debounce to prevent excess requests.
+- Add **Subscription** to the existing Account Settings drawer tabs.
+- Pass the current sanitized Patreon status and subscription actions into a dedicated subscription panel instead of placing all of its UI logic directly in `App.jsx`.
+
+### New: `src/components/SubscriptionSettingsPanel.jsx`
+
+Create a localized Account Settings panel with the following states:
+
+**Not connected**
+
+- Explain that no Patreon account is connected to the current Piyali key.
+- Show **Connect with Patreon** using the existing signed-key and OAuth flow.
+- Keep passcode management out of this panel; the passcode fallback remains on `/subscribe`.
+
+**Connected and active**
+
+- Show provider: Patreon.
+- Show a clear **Active** status.
+- Show the paid entitlement amount and friendly tier label when available.
+- Show when Patreon was last verified and whether the result is temporarily stale.
+- Provide **Refresh status**.
+- Provide **Manage membership on Patreon**.
+- Provide **Update payment method on Patreon**.
+- Provide **Disconnect from Piyali** as a visually secondary destructive action.
+
+**Payment problem or inactive**
+
+- Show the sanitized status without exposing internal Patreon identifiers.
+- Explain that Piyali access may be unavailable or may end when the current entitlement ends.
+- Provide **Refresh status**, **Reconnect Patreon**, and the appropriate Patreon-managed billing link.
+
+**Temporarily unavailable**
+
+- Keep the last known status visibly marked as stale when the grace policy applies.
+- Explain that Piyali could not currently reach Patreon.
+- Provide a rate-limited retry action without incorrectly labeling the user canceled.
+
+Action ownership must be visually clear:
+
+- Piyali controls connection, verification refresh, persistent key linkage, key replacement, and disconnection from Piyali.
+- Patreon controls tier changes, payment methods, renewal, cancellation, refunds, and billing history.
+- Patreon-owned actions open Patreon in a new browser context with `noopener,noreferrer` and use allowlisted HTTPS URLs.
+- `https://subscribe.piyali.app/` may be used for the creator membership page, but billing/account settings must open Patreon's current account-management pages.
+
+Disconnect confirmation copy must explicitly state both outcomes:
+
+- Piyali will remove the Patreon-to-key link, revoke Piyali Patreon sessions, and lock subscriber access unless another valid unlock method applies.
+- The Patreon subscription and billing remain active; disconnecting is not cancellation.
+
+The panel must work in the drawer's mobile and desktop layouts, support keyboard navigation and screen readers, and prevent duplicate refresh, reconnect, or disconnect submissions.
 
 ### `src/utils/patreonNostrProof.js`
 
@@ -436,7 +545,7 @@ Webhook delivery does not replace focus/reload checks. It updates server state q
 
 ### Localization requirement
 
-Add complete replacement copy for every language currently represented in `SUBSCRIBE_COPY`. Add a test that fails if any supported language is missing any new recovery key.
+Add complete replacement and Subscription-settings copy for every supported support language. This includes tab labels, status labels, timestamps, errors, Patreon-owned action labels, and disconnect confirmation text. Add a test that fails if any supported language is missing any new key.
 
 ## Rate Limits and Abuse Controls
 
@@ -471,6 +580,9 @@ Add Firestore TTL-compatible timestamp fields for challenge, OAuth-state, recove
 - `piyali_key_already_linked` remains a hard conflict.
 - `patreon_account_already_linked` creates a pending intent instead of changing either link.
 - Recovery cookie types cannot be used as OAuth state or authenticated sessions.
+- A valid `disconnect` event verifies only for the currently linked key.
+- Disconnect rejects a wrong key, wrong action, expired proof, replay, and unauthenticated session.
+- Subscription summaries never serialize tokens or raw Patreon/internal identifiers.
 
 ### Firestore transaction tests
 
@@ -482,6 +594,8 @@ Add Firestore TTL-compatible timestamp fields for challenge, OAuth-state, recove
 - A changed reverse mapping causes `replacement_state_changed`.
 - A new key linked to a different Patreon user cannot be overwritten.
 - Retrying the same completed recovery is safe and does not duplicate state.
+- Successful disconnect removes both sides of the Patreon/key mapping atomically.
+- Failed disconnect leaves both mappings and encrypted credentials unchanged.
 
 ### Session tests
 
@@ -489,6 +603,8 @@ Add Firestore TTL-compatible timestamp fields for challenge, OAuth-state, recove
 - New sessions pass `/status`.
 - Proactive session cleanup does not delete the newly created session.
 - Legacy unlinked sessions follow an explicit compatibility policy and expire normally.
+- Disconnect revokes all sessions for the link and clears the current browser cookie.
+- Forced refresh bypasses the success cache while respecting its rate limit.
 
 ### Webhook tests
 
@@ -514,6 +630,12 @@ Add Firestore TTL-compatible timestamp fields for challenge, OAuth-state, recove
 - Double-clicking cannot submit twice.
 - Every supported language contains complete recovery copy.
 - Focus/visibility rechecks are debounced.
+- Account Settings contains a keyboard-accessible **Subscription** tab.
+- Connected, not-connected, inactive/payment-problem, stale, and unavailable states render correctly.
+- Refresh, reconnect, and disconnect actions cannot be submitted twice.
+- Disconnect requires explicit confirmation and states that Patreon billing continues.
+- Patreon-owned buttons use allowlisted HTTPS destinations and never pretend the action happened inside Piyali.
+- Every supported language contains complete Subscription-settings copy.
 
 ### Local integration tests
 
@@ -527,6 +649,9 @@ Use the Firebase emulators and an injected mock Patreon API to exercise:
 6. Verify key B restores access in a fresh browser.
 7. Verify key A cannot restore access.
 8. Verify an existing key-A session becomes unauthorized.
+9. Open Account Settings and confirm that the Subscription tab shows the sanitized active membership.
+10. Force-refresh the membership and verify the cache is bypassed once.
+11. Disconnect from Piyali, verify both mappings and sessions are removed, and confirm the Patreon membership itself is unchanged.
 
 Use a separate Patreon OAuth test client and callback URL for the final real-provider test before production.
 
@@ -545,6 +670,7 @@ For the webhook staging test:
 - Extract account-link conflict classification from the callback.
 - Extract browser-session record construction so it can participate in a transaction.
 - Add helpers for typed recovery cookies and records.
+- Define the sanitized subscription-status response model.
 - Expand handler-level Firestore mocks or emulator tests.
 
 ### Phase 2: Backend recovery intent
@@ -560,6 +686,7 @@ For the webhook staging test:
 - Add new session linkage fields.
 - Add status-time mapping validation.
 - Add old-session batch cleanup.
+- Add forced status refresh and signed Patreon disconnection endpoints.
 - Add audit events and rate limits.
 
 ### Phase 4: Patreon webhooks
@@ -573,6 +700,9 @@ For the webhook staging test:
 ### Phase 5: Frontend and localization
 
 - Add the replacement panel and actions.
+- Add the Account Settings **Subscription** tab and dedicated panel.
+- Add connected, disconnected, payment-problem, stale, and unavailable states.
+- Add refresh, reconnect, Patreon-management links, and confirmed Piyali disconnection.
 - Add all localized strings.
 - Add focus/visibility status rechecks.
 - Add frontend behavior and localization tests.
@@ -582,6 +712,7 @@ For the webhook staging test:
 - Run backend tests, full app tests, lint, and production build.
 - Exercise the complete flow in Firebase emulators.
 - Exercise one real Patreon replacement with the non-production OAuth client.
+- Exercise subscription status refresh and Piyali disconnection without changing the real Patreon membership.
 - Exercise one signed webhook delivery and replay in staging.
 - Confirm no secrets or private keys appear in browser requests, Firestore, or logs.
 
@@ -619,11 +750,17 @@ The work is complete only when all of the following are true:
 - Expired, replayed, mismatched, or concurrent recovery attempts fail safely.
 - No Nostr private key or plaintext Patreon token is stored or logged.
 - Recovery UI is complete in every supported language.
+- Account Settings includes a localized Subscription tab with accurate connected, active, inactive, payment-problem, stale, and unavailable states.
+- A connected user can force a rate-limited authoritative status refresh.
+- A connected user can disconnect Patreon from Piyali only after explicit confirmation and a valid signed proof.
+- Disconnecting removes the Piyali link and its sessions without canceling or changing the Patreon membership.
+- Tier changes, payment updates, cancellation, renewal, refunds, and billing history are clearly handed off to Patreon-managed pages.
+- Subscription API responses expose no tokens or raw Patreon/internal identifiers.
 - All automated tests, lint checks, and the production build pass.
 
 ## Future Work Outside This Plan
 
-- A user-facing connected-account and session-management page.
+- A detailed device-by-device Patreon session-management page beyond the Subscription tab's connection controls.
 - Progress migration between Piyali identities.
 - Removal or replacement of the shared passcode fallback.
 - Firebase App Check and broader endpoint abuse protection.

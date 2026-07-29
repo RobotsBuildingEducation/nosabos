@@ -1,4 +1,5 @@
 import { finalizeEvent, nip19 } from "nostr-tools";
+import { fetchWithTimeout } from "./fetchWithTimeout.js";
 
 const PATREON_CHALLENGE_ENDPOINT = "/api/patreon/link-challenge";
 
@@ -36,7 +37,7 @@ export async function createPatreonNostrProof({
   action,
   allowExtension = true,
 }) {
-  const response = await fetch(PATREON_CHALLENGE_ENDPOINT, {
+  const response = await fetchWithTimeout(PATREON_CHALLENGE_ENDPOINT, {
     method: "POST",
     credentials: "include",
     headers: {
