@@ -20,6 +20,7 @@ import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import { theme } from "./theme";
 import LandingPage from "./components/LandingPage.jsx";
 import VoiceOrb from "./components/VoiceOrb.jsx";
+import AppLoadBoundary from "./components/AppLoadBoundary.jsx";
 
 const App = lazy(() => import("./App.jsx"));
 const LinksPage = lazy(() => import("./components/LinksPage.jsx"));
@@ -151,12 +152,12 @@ function AppContainer() {
   }
 
   return (
-    <>
+    <AppLoadBoundary>
       <Suspense fallback={null}>
         <App onBootReady={handleAppBootReady} />
       </Suspense>
       {bootOverlayMounted && <BootOverlay visible={bootOverlayVisible} />}
-    </>
+    </AppLoadBoundary>
   );
 }
 

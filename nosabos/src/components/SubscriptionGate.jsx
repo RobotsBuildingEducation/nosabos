@@ -22,6 +22,7 @@ import {
 import { APP_SQUIRCLE_SHAPE } from "../theme";
 import { useThemeStore } from "../useThemeStore";
 import RandomCharacter from "./RandomCharacter";
+import { SUBSCRIPTION_RECOVERY_EXPIRED_COPY } from "./subscriptionRecoveryCopy";
 
 const SUBSCRIBE_COPY = {
   en: {
@@ -399,6 +400,19 @@ const SUBSCRIBE_COPY = {
   },
 };
 
+const RECOVERY_COPY = {
+  en: { title: "Replace your previous Piyali key?", body: "This Patreon membership is already linked to another Piyali key. Confirm to move access to the key currently open in this app. The previous key will lose access.", confirm: "Replace previous key", cancelling: "Cancelling", cancel: "Cancel", replacing: "Replacing key", failed: "We couldn't replace the linked key. Please restart Patreon login." },
+  es: { title: "¿Reemplazar tu clave de Piyali anterior?", body: "Esta membresía de Patreon ya está vinculada a otra clave. Confirma para mover el acceso a la clave abierta actualmente. La clave anterior perderá el acceso.", confirm: "Reemplazar clave anterior", cancelling: "Cancelando", cancel: "Cancelar", replacing: "Reemplazando clave", failed: "No pudimos reemplazar la clave vinculada. Reinicia el acceso con Patreon." },
+  pt: { title: "Substituir sua chave Piyali anterior?", body: "Esta assinatura do Patreon já está vinculada a outra chave. Confirme para mover o acesso para a chave aberta agora. A chave anterior perderá o acesso.", confirm: "Substituir chave anterior", cancelling: "Cancelando", cancel: "Cancelar", replacing: "Substituindo chave", failed: "Não foi possível substituir a chave vinculada. Reinicie o login do Patreon." },
+  it: { title: "Sostituire la chiave Piyali precedente?", body: "Questo abbonamento Patreon è già collegato a un'altra chiave. Conferma per spostare l'accesso alla chiave aperta ora. La chiave precedente perderà l'accesso.", confirm: "Sostituisci chiave precedente", cancelling: "Annullamento", cancel: "Annulla", replacing: "Sostituzione chiave", failed: "Impossibile sostituire la chiave collegata. Riavvia l'accesso Patreon." },
+  fr: { title: "Remplacer votre ancienne clé Piyali ?", body: "Cet abonnement Patreon est déjà lié à une autre clé. Confirmez pour transférer l'accès à la clé actuellement ouverte. L'ancienne clé perdra l'accès.", confirm: "Remplacer l'ancienne clé", cancelling: "Annulation", cancel: "Annuler", replacing: "Remplacement de la clé", failed: "Impossible de remplacer la clé liée. Recommencez la connexion Patreon." },
+  de: { title: "Vorherigen Piyali-Schlüssel ersetzen?", body: "Diese Patreon-Mitgliedschaft ist bereits mit einem anderen Schlüssel verbunden. Bestätige, um den Zugriff auf den aktuell geöffneten Schlüssel zu übertragen. Der vorherige Schlüssel verliert den Zugriff.", confirm: "Vorherigen Schlüssel ersetzen", cancelling: "Abbrechen", cancel: "Abbrechen", replacing: "Schlüssel wird ersetzt", failed: "Der verknüpfte Schlüssel konnte nicht ersetzt werden. Starte die Patreon-Anmeldung neu." },
+  ja: { title: "以前のPiyaliキーを置き換えますか？", body: "このPatreonメンバーシップは別のキーに接続されています。現在開いているキーへアクセスを移すと、以前のキーはアクセスできなくなります。", confirm: "以前のキーを置き換える", cancelling: "キャンセル中", cancel: "キャンセル", replacing: "キーを置き換えています", failed: "接続済みキーを置き換えられませんでした。Patreonログインをやり直してください。" },
+  hi: { title: "पुरानी Piyali कुंजी बदलें?", body: "यह Patreon सदस्यता पहले से दूसरी कुंजी से जुड़ी है। पहुँच को अभी खुली कुंजी पर ले जाने की पुष्टि करें। पुरानी कुंजी की पहुँच हट जाएगी।", confirm: "पुरानी कुंजी बदलें", cancelling: "रद्द हो रहा है", cancel: "रद्द करें", replacing: "कुंजी बदली जा रही है", failed: "जुड़ी कुंजी बदली नहीं जा सकी। Patreon लॉगिन फिर से शुरू करें।" },
+  ar: { title: "هل تريد استبدال مفتاح Piyali السابق؟", body: "عضوية Patreon هذه مرتبطة بمفتاح آخر. أكّد نقل الوصول إلى المفتاح المفتوح حاليًا، وسيفقد المفتاح السابق الوصول.", confirm: "استبدال المفتاح السابق", cancelling: "جارٍ الإلغاء", cancel: "إلغاء", replacing: "جارٍ استبدال المفتاح", failed: "تعذر استبدال المفتاح المرتبط. أعد بدء تسجيل الدخول إلى Patreon." },
+  zh: { title: "要替换以前的 Piyali 密钥吗？", body: "此 Patreon 会员已连接到另一个密钥。确认后，访问权限将移至当前打开的密钥，旧密钥会失去访问权限。", confirm: "替换以前的密钥", cancelling: "正在取消", cancel: "取消", replacing: "正在替换密钥", failed: "无法替换已连接的密钥。请重新开始 Patreon 登录。" },
+};
+
 export default function SubscriptionGate({
   appLanguage = "en",
   t = {},
@@ -410,9 +424,13 @@ export default function SubscriptionGate({
   isPatreonAvailable = true,
   patreonResult = "",
   patreonStatusError = "",
+  onPatreonReplace,
+  onPatreonCancelReplacement,
 }) {
   const lang = normalizeSupportLanguage(appLanguage, DEFAULT_SUPPORT_LANGUAGE);
   const copy = SUBSCRIBE_COPY[lang] || SUBSCRIBE_COPY.en;
+  const recoveryCopy = RECOVERY_COPY[lang] || RECOVERY_COPY.en;
+  const replacementRequired = patreonResult === "replace_required";
   const clarifyUsd = (text) =>
     lang === "en" ? text : text.replace(/(\$\d+(?:\.\d+)?)/, "$1 USD");
   const isRtl = lang === "ar";
@@ -427,20 +445,27 @@ export default function SubscriptionGate({
     t.passcode?.invalid ||
     copy.invalidPasscode;
   const patreonFeedback =
-    patreonStatusError === "unavailable" || patreonResult === "unavailable"
-      ? copy.patreonUnavailable
-      : patreonResult === "not_subscribed"
+    patreonStatusError === "replacement_expired" ||
+    patreonStatusError === "replacement_state_changed"
+      ? SUBSCRIPTION_RECOVERY_EXPIRED_COPY[lang] ||
+        SUBSCRIPTION_RECOVERY_EXPIRED_COPY.en
+      : patreonStatusError === "membership_not_active"
         ? copy.patreonNotSubscribed
-        : [
-              "oauth_error",
-              "oauth_cancelled",
-              "state_error",
-              "link_conflict",
-            ].includes(
-              patreonResult,
-            )
-          ? copy.patreonOauthError
-          : "";
+        : patreonStatusError === "replacement_failed"
+          ? recoveryCopy.failed
+          : patreonStatusError === "unavailable" ||
+              patreonResult === "unavailable"
+            ? copy.patreonUnavailable
+            : patreonResult === "not_subscribed"
+              ? copy.patreonNotSubscribed
+              : [
+                    "oauth_error",
+                    "oauth_cancelled",
+                    "state_error",
+                    "link_conflict",
+                  ].includes(patreonResult)
+                ? copy.patreonOauthError
+                : "";
 
   const handleSubmit = async (e) => {
     e?.preventDefault();
@@ -732,32 +757,41 @@ export default function SubscriptionGate({
                 >
                   {copy.patreonPrompt}
                 </Text>
-                <Button
-                  type="button"
-                  w="100%"
-                  h="auto"
-                  py={3.5}
-                  bg="#ff424d"
-                  color="white"
-                  boxShadow="0px 4px 0px #b92e37"
-                  onClick={onPatreonConnect}
-                  isLoading={isPatreonChecking}
-                  loadingText={copy.checkingPatreon}
-                  isDisabled={!isPatreonAvailable}
-                  _hover={{
-                    bg: "#e93642",
-                    color: "white",
-                    transform: "translateY(-1px)",
-                  }}
-                  _active={{
-                    bg: "#cf2f39",
-                    color: "white",
-                    transform: "translateY(2px)",
-                    boxShadow: "0px 2px 0px #9f2730",
-                  }}
-                >
-                  {copy.connectPatreon}
-                </Button>
+                {replacementRequired ? (
+                  <Alert status="warning" borderRadius="20px" alignItems="flex-start">
+                    <AlertIcon mt={1} />
+                    <Box flex="1">
+                      <Text fontWeight="bold">{recoveryCopy.title}</Text>
+                      <Text fontSize="sm" mt={1}>{recoveryCopy.body}</Text>
+                      <HStack mt={4} flexWrap="wrap">
+                        <Button type="button" colorScheme="purple" onClick={onPatreonReplace} isLoading={isPatreonChecking} loadingText={recoveryCopy.replacing}>
+                          {recoveryCopy.confirm}
+                        </Button>
+                        <Button type="button" variant="ghost" onClick={onPatreonCancelReplacement} isDisabled={isPatreonChecking}>
+                          {recoveryCopy.cancel}
+                        </Button>
+                      </HStack>
+                    </Box>
+                  </Alert>
+                ) : (
+                  <Button
+                    type="button"
+                    w="100%"
+                    h="auto"
+                    py={3.5}
+                    bg="#ff424d"
+                    color="white"
+                    boxShadow="0px 4px 0px #b92e37"
+                    onClick={onPatreonConnect}
+                    isLoading={isPatreonChecking}
+                    loadingText={copy.checkingPatreon}
+                    isDisabled={!isPatreonAvailable}
+                    _hover={{ bg: "#e93642", color: "white", transform: "translateY(-1px)" }}
+                    _active={{ bg: "#cf2f39", color: "white", transform: "translateY(2px)", boxShadow: "0px 2px 0px #9f2730" }}
+                  >
+                    {copy.connectPatreon}
+                  </Button>
+                )}
                 {patreonFeedback && (
                   <Text
                     role="alert"

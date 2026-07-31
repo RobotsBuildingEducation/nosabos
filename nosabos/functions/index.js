@@ -37,6 +37,7 @@ const PATREON_CLIENT_SECRET = defineSecret("PATREON_CLIENT_SECRET");
 const PATREON_TOKEN_ENCRYPTION_KEY = defineSecret(
   "PATREON_TOKEN_ENCRYPTION_KEY",
 );
+const PATREON_WEBHOOK_SECRET = defineSecret("PATREON_WEBHOOK_SECRET");
 const CORS_ORIGINS = [
   "http://localhost:5173",
   "http://localhost:3000",
@@ -732,7 +733,11 @@ exports.patreonAuth = onRequest(
     region: REGION,
     timeoutSeconds: 30,
     memory: "256MiB",
-    secrets: [PATREON_CLIENT_SECRET, PATREON_TOKEN_ENCRYPTION_KEY],
+    secrets: [
+      PATREON_CLIENT_SECRET,
+      PATREON_TOKEN_ENCRYPTION_KEY,
+      PATREON_WEBHOOK_SECRET,
+    ],
   },
   createPatreonHandler({
     db: admin.firestore(),
@@ -745,6 +750,9 @@ exports.patreonAuth = onRequest(
         PATREON_TOKEN_ENCRYPTION_KEY:
           PATREON_TOKEN_ENCRYPTION_KEY.value() ||
           process.env.PATREON_TOKEN_ENCRYPTION_KEY,
+        PATREON_WEBHOOK_SECRET:
+          PATREON_WEBHOOK_SECRET.value() ||
+          process.env.PATREON_WEBHOOK_SECRET,
       }),
   }),
 );

@@ -2,9 +2,11 @@
 
 ## Status
 
-- Planning only. No recovery implementation should begin until this plan is accepted.
+- Accepted and implemented locally on July 28, 2026.
 - Target branch: `codex/patreon-oauth`.
 - This plan builds on the existing Patreon OAuth, Nostr challenge, persistent link, and session implementation.
+- Automated backend, frontend, localization, and production-build checks pass.
+- No Firebase Hosting deployment has been performed. End-to-end emulator and real Patreon staging checks remain rollout gates; the local Firestore emulator requires a Java runtime.
 
 ## Objective
 

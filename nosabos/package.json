@@ -4,7 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "node scripts/startLocalDev.mjs",
+    "dev:ui": "vite",
     "dev:direct": "vite --mode dev-direct",
     "build": "vite build",
     "generate:skill-tree-splits": "node scripts/generateSplitSkillTreeModules.mjs",

@@ -142,6 +142,8 @@ import DailyGoalPetPanel from "./components/DailyGoalPetPanel.jsx";
 import { getCustomizeModalCopy } from "./components/companionCustomizeCopy";
 import { IdentityPanel } from "./components/IdentityDrawer";
 import SubscriptionGate from "./components/SubscriptionGate";
+import SubscriptionSettingsPanel from "./components/SubscriptionSettingsPanel";
+import { SUBSCRIPTION_SETTINGS_COPY } from "./components/subscriptionSettingsCopy";
 import { useNostrWalletStore } from "./hooks/useNostrWalletStore";
 import { LuKey } from "react-icons/lu";
 import AlphabetBootcamp from "./components/AlphabetBootcamp";
@@ -258,6 +260,10 @@ import {
   canSilentlySignPatreonProof,
   createPatreonNostrProof,
 } from "./utils/patreonNostrProof";
+import {
+  classifyPatreonReplacementResponse,
+  createPatreonRecheckGate,
+} from "./utils/patreonRecoveryState";
 import { waitForGameLoaderExploration } from "./utils/gameLoaderTiming";
 import { LESSON_COUNTS, getLessonLevelFromId } from "./utils/cefrProgress";
 import { CEFR_LEVEL_COUNTS as FLASHCARD_LEVEL_COUNTS } from "./data/flashcards/common";
@@ -1213,6 +1219,11 @@ function TopBar({
   onSupportLangChange,
   pendingLangRef,
   subscriptionVerified = false,
+  patreonStatusPayload,
+  isPatreonBusy = false,
+  onPatreonRefresh,
+  onPatreonReconnect,
+  onPatreonDisconnect,
 }) {
   const playSliderTick = useSoundSettings((s) => s.playSliderTick);
   const toast = useToast();
@@ -2147,6 +2158,44 @@ function TopBar({
                     >
                       {t.app_account_title || "Account"}
                     </Tab>
+                    <Tab
+                      px={0}
+                      pt={1}
+                      pb={3}
+                      position="relative"
+                      fontWeight="semibold"
+                      color="var(--app-text-muted)"
+                      borderRadius="0"
+                      bg="transparent"
+                      border="none"
+                      boxShadow="none"
+                      _hover={{ color: "var(--app-text-primary)" }}
+                      _focusVisible={{ boxShadow: "none", outline: "none" }}
+                      _after={{
+                        content: '""',
+                        position: "absolute",
+                        left: 0,
+                        right: 0,
+                        bottom: "-1px",
+                        height: "3px",
+                        borderRadius: "full",
+                        bgGradient: "linear(to-r, cyan.300, teal.400)",
+                        opacity: 0,
+                        transform: "scaleX(0.7)",
+                        transition: "all 0.2s ease",
+                      }}
+                      _selected={{
+                        color: "var(--app-text-primary)",
+                        _after: { opacity: 1, transform: "scaleX(1)" },
+                      }}
+                    >
+                      {
+                        (
+                          SUBSCRIPTION_SETTINGS_COPY[appLanguage] ||
+                          SUBSCRIPTION_SETTINGS_COPY.en
+                        ).tab
+                      }
+                    </Tab>
                   </TabList>
                 </Box>
                 <TabPanels flex={1} minH={0}>
@@ -2632,6 +2681,26 @@ function TopBar({
                       />
                     </Box>
                   </TabPanel>
+                  <TabPanel
+                    px={0}
+                    pt={0}
+                    pb={0}
+                    display="flex"
+                    flexDirection="column"
+                    overflowY="auto"
+                    minH={0}
+                  >
+                    <Box maxW="600px" mx="auto" w="100%">
+                      <SubscriptionSettingsPanel
+                        appLanguage={appLanguage}
+                        statusPayload={patreonStatusPayload}
+                        isBusy={isPatreonBusy}
+                        onRefresh={onPatreonRefresh}
+                        onReconnect={onPatreonReconnect}
+                        onDisconnect={onPatreonDisconnect}
+                      />
+                    </Box>
+                  </TabPanel>
                 </TabPanels>
               </Tabs>
             ) : null}
@@ -2646,8 +2715,12 @@ function TopBar({
    App root
 --------------------------------------------------------------------------------------------------*/
 const PATREON_STATUS_ENDPOINT = "/api/patreon/status";
+const PATREON_REFRESH_STATUS_ENDPOINT = "/api/patreon/refresh-status";
 const PATREON_LINK_START_ENDPOINT = "/api/patreon/link-start";
 const PATREON_KEY_STATUS_ENDPOINT = "/api/patreon/key-status";
+const PATREON_REPLACE_LINK_ENDPOINT = "/api/patreon/replace-link";
+const PATREON_CANCEL_REPLACEMENT_ENDPOINT = "/api/patreon/cancel-replacement";
+const PATREON_DISCONNECT_ENDPOINT = "/api/patreon/disconnect";
 
 export default function App({ onBootReady } = {}) {
   const toast = useToast();
@@ -2961,6 +3034,11 @@ export default function App({ onBootReady } = {}) {
   const [isCheckingPatreon, setIsCheckingPatreon] = useState(true);
   const [patreonAvailable, setPatreonAvailable] = useState(true);
   const [patreonStatusError, setPatreonStatusError] = useState("");
+  const [patreonStatusPayload, setPatreonStatusPayload] = useState({
+    authorized: false,
+    linked: false,
+    subscription: null,
+  });
 
   const checkPatreonSubscription = useCallback(async () => {
     setIsCheckingPatreon(true);
@@ -2972,6 +3050,7 @@ export default function App({ onBootReady } = {}) {
         headers: { Accept: "application/json" },
       });
       const payload = await response.json().catch(() => ({}));
+      setPatreonStatusPayload(payload);
       setPatreonAvailable(payload.configured !== false);
       if (payload.authorized) {
         setPatreonSubscriptionVerified(true);
@@ -2997,6 +3076,7 @@ export default function App({ onBootReady } = {}) {
           },
         );
         const restorePayload = await restoreResponse.json().catch(() => ({}));
+        setPatreonStatusPayload(restorePayload);
         setPatreonAvailable(restorePayload.configured !== false);
         setPatreonSubscriptionVerified(Boolean(restorePayload.authorized));
         if (
@@ -3017,6 +3097,11 @@ export default function App({ onBootReady } = {}) {
       setPatreonAvailable(false);
       setPatreonSubscriptionVerified(false);
       setPatreonStatusError("unavailable");
+      setPatreonStatusPayload((current) => ({
+        ...current,
+        authorized: false,
+        error: "patreon_unavailable",
+      }));
     } finally {
       setIsCheckingPatreon(false);
     }
@@ -3024,6 +3109,21 @@ export default function App({ onBootReady } = {}) {
 
   useEffect(() => {
     void checkPatreonSubscription();
+  }, [checkPatreonSubscription]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const shouldRecheck = createPatreonRecheckGate();
+    const recheck = () => {
+      if (!shouldRecheck(document.visibilityState)) return;
+      void checkPatreonSubscription();
+    };
+    window.addEventListener("focus", recheck);
+    document.addEventListener("visibilitychange", recheck);
+    return () => {
+      window.removeEventListener("focus", recheck);
+      document.removeEventListener("visibilitychange", recheck);
+    };
   }, [checkPatreonSubscription]);
 
   const handlePatreonConnect = useCallback(async () => {
@@ -3056,6 +3156,130 @@ export default function App({ onBootReady } = {}) {
       setIsCheckingPatreon(false);
     }
   }, [activeNpub]);
+
+  const handlePatreonReplacement = useCallback(async () => {
+    if (!activeNpub) return;
+    setIsCheckingPatreon(true);
+    setPatreonStatusError("");
+    try {
+      const proof = await createPatreonNostrProof({
+        npub: activeNpub,
+        action: "replace",
+        allowExtension: true,
+      });
+      const response = await fetchWithTimeout(PATREON_REPLACE_LINK_ENDPOINT, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(proof),
+      });
+      const payload = await response.json().catch(() => ({}));
+      const result = classifyPatreonReplacementResponse(response.ok, payload);
+      if (result.kind !== "success") {
+        if (result.kind === "restart") {
+          await fetchWithTimeout(PATREON_CANCEL_REPLACEMENT_ENDPOINT, {
+            method: "POST",
+            credentials: "include",
+            headers: { Accept: "application/json" },
+          }).catch(() => {});
+          setPatreonStatusError(result.error);
+          navigate("/subscribe", { replace: true });
+          return;
+        }
+        throw new Error(result.error || "Unable to replace Patreon link");
+      }
+      setPatreonStatusPayload(payload);
+      setPatreonSubscriptionVerified(true);
+      navigate("/", { replace: true });
+    } catch (error) {
+      console.warn("Unable to replace Patreon key link", error);
+      setPatreonStatusError("replacement_failed");
+    } finally {
+      setIsCheckingPatreon(false);
+    }
+  }, [activeNpub, navigate]);
+
+  const handlePatreonCancelReplacement = useCallback(async () => {
+    setIsCheckingPatreon(true);
+    try {
+      await fetchWithTimeout(PATREON_CANCEL_REPLACEMENT_ENDPOINT, {
+        method: "POST",
+        credentials: "include",
+        headers: { Accept: "application/json" },
+      });
+    } catch (error) {
+      console.warn("Unable to cancel Patreon key replacement", error);
+    } finally {
+      setIsCheckingPatreon(false);
+      navigate("/subscribe", { replace: true });
+    }
+  }, [navigate]);
+
+  const handlePatreonRefresh = useCallback(async () => {
+    setIsCheckingPatreon(true);
+    setPatreonStatusError("");
+    try {
+      const response = await fetchWithTimeout(PATREON_REFRESH_STATUS_ENDPOINT, {
+        method: "POST",
+        credentials: "include",
+        headers: { Accept: "application/json" },
+      });
+      const payload = await response.json().catch(() => ({}));
+      setPatreonStatusPayload(payload);
+      setPatreonSubscriptionVerified(Boolean(payload.authorized));
+      if (!response.ok && response.status !== 429) {
+        setPatreonStatusError("unavailable");
+      }
+    } catch (error) {
+      console.warn("Unable to refresh Patreon status", error);
+      setPatreonStatusError("unavailable");
+      setPatreonStatusPayload((current) => ({
+        ...current,
+        error: "patreon_unavailable",
+      }));
+    } finally {
+      setIsCheckingPatreon(false);
+    }
+  }, []);
+
+  const handlePatreonDisconnect = useCallback(async () => {
+    if (!activeNpub) return;
+    setIsCheckingPatreon(true);
+    try {
+      const proof = await createPatreonNostrProof({
+        npub: activeNpub,
+        action: "disconnect",
+        allowExtension: true,
+      });
+      const response = await fetchWithTimeout(PATREON_DISCONNECT_ENDPOINT, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(proof),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok)
+        throw new Error(payload.error || "Unable to disconnect Patreon");
+      setPatreonSubscriptionVerified(false);
+      setPatreonStatusPayload({
+        authorized: false,
+        linked: false,
+        subscription: null,
+      });
+      navigate("/subscribe", { replace: true });
+    } catch (error) {
+      console.warn("Unable to disconnect Patreon", error);
+      setPatreonStatusError("unavailable");
+    } finally {
+      setIsCheckingPatreon(false);
+    }
+  }, [activeNpub, navigate]);
 
   const patreonResult = useMemo(
     () => new URLSearchParams(location.search).get("patreon") || "",
@@ -4443,7 +4667,7 @@ export default function App({ onBootReady } = {}) {
   }, [user?.xp, user?.progress, resolvedTargetLang]);
 
   const needsSubscriptionPasscode = useMemo(
-    () => subscriptionXp >= 300 && !subscriptionVerified,
+    () => subscriptionXp >= 0 && !subscriptionVerified,
     [subscriptionXp, subscriptionVerified],
   );
 
@@ -9485,6 +9709,8 @@ export default function App({ onBootReady } = {}) {
         isPatreonAvailable={patreonAvailable}
         patreonResult={patreonResult}
         patreonStatusError={patreonStatusError}
+        onPatreonReplace={handlePatreonReplacement}
+        onPatreonCancelReplacement={handlePatreonCancelReplacement}
       />
     );
   }
@@ -9579,6 +9805,11 @@ export default function App({ onBootReady } = {}) {
           onSupportLangChange={onSupportLangChange}
           pendingLangRef={pendingLangRef}
           subscriptionVerified={subscriptionVerified}
+          patreonStatusPayload={patreonStatusPayload}
+          isPatreonBusy={isCheckingPatreon}
+          onPatreonRefresh={handlePatreonRefresh}
+          onPatreonReconnect={handlePatreonConnect}
+          onPatreonDisconnect={handlePatreonDisconnect}
         />
       )}
 

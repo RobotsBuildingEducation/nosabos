@@ -11,6 +11,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     server: {
+      allowedHosts: [".trycloudflare.com"],
       proxy: {
         "/api/patreon": {
           target: "http://127.0.0.1:5001",
