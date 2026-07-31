@@ -1274,6 +1274,32 @@ async function handleSessionStatus({
 
   const session = sessionSnapshot.data() || {};
   const now = Date.now();
+  const activeNpub = String(
+    req.headers?.["x-piyali-npub"] || req.header?.("X-Piyali-Npub") || "",
+  ).trim();
+  const sessionNpubHash = String(
+    session.linkedNpubHash ||
+      (session.linkedNpub ? sha256(session.linkedNpub) : ""),
+  );
+  if (
+    activeNpub &&
+    (!decodeNpub(activeNpub) ||
+      !sessionNpubHash ||
+      !safeEqual(sessionNpubHash, sha256(activeNpub)))
+  ) {
+    await sessionRef.delete();
+    res.setHeader(
+      "Set-Cookie",
+      clearCookie(FIREBASE_SESSION_COOKIE, config.cookieSecure),
+    );
+    return sendJson(res, 200, {
+      authorized: false,
+      configured: true,
+      linked: false,
+      reason: "active_key_changed",
+      subscription: null,
+    });
+  }
   if (!session.authorized || Number(session.expiresAtMs || 0) <= now) {
     await sessionRef.delete();
     res.setHeader(

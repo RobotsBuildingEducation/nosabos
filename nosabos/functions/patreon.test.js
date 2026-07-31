@@ -797,6 +797,63 @@ test("status invalidates an old session after its Patreon mapping changes", asyn
   assert.equal(db.records.has(`patreonOAuthSessions/${sessionHash}`), false);
 });
 
+test("status rejects a valid browser session when the active Piyali key changes", async () => {
+  const linkedNpub = nip19.npubEncode(getPublicKey(generateSecretKey()));
+  const otherNpub = nip19.npubEncode(getPublicKey(generateSecretKey()));
+  const linkedNpubHash = sha256(linkedNpub);
+  const patreonUserId = "patreon-user-1";
+  const patreonUserHash = sha256(patreonUserId);
+  const rawSessionId = "session-for-another-key";
+  const sessionHash = sha256(rawSessionId);
+  const db = new FakeFirestore({
+    [`patreonOAuthSessions/${sessionHash}`]: {
+      ...storedAuthorization(),
+      linkedNpub,
+      linkedNpubHash,
+      linkedPatreonUserHash: patreonUserHash,
+      expiresAtMs: Date.now() + 60_000,
+    },
+    [`patreonAccountLinks/${linkedNpubHash}`]: {
+      ...storedAuthorization(),
+      npub: linkedNpub,
+    },
+    [`patreonUserLinks/${patreonUserHash}`]: { npubHash: linkedNpubHash },
+  });
+  let patreonFetches = 0;
+  const handler = createPatreonHandler({
+    db,
+    getConfig: () => handlerConfig(),
+    fetchImpl: async () => {
+      patreonFetches += 1;
+      return { ok: true, status: 200, json: async () => identityWithMembership() };
+    },
+    logger: { info() {}, warn() {}, error() {} },
+  });
+  const response = fakeResponse();
+
+  await handler(
+    {
+      method: "GET",
+      url: "/api/patreon/status",
+      headers: {
+        cookie: `__session=${encodeURIComponent(
+          encodeSessionCookieValue("auth-session", rawSessionId),
+        )}`,
+        "x-piyali-npub": otherNpub,
+      },
+    },
+    response,
+  );
+
+  const payload = JSON.parse(response.body);
+  assert.equal(response.statusCode, 200);
+  assert.equal(payload.authorized, false);
+  assert.equal(payload.reason, "active_key_changed");
+  assert.equal(db.records.has(`patreonOAuthSessions/${sessionHash}`), false);
+  assert.match(response.headers["Set-Cookie"], /Max-Age=0/);
+  assert.equal(patreonFetches, 0);
+});
+
 test("first-time OAuth linking creates no recovery intent", async () => {
   const secretKey = generateSecretKey();
   const hexPubkey = getPublicKey(secretKey);

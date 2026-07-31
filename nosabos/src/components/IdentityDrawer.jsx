@@ -73,6 +73,21 @@ import {
   nativeOverlayMotionProps,
 } from "../utils/modalMotion";
 import { rememberAccountSwitch } from "../utils/authSession";
+import { fetchWithTimeout } from "../utils/fetchWithTimeout";
+
+const PATREON_LOGOUT_ENDPOINT = "/api/patreon/logout";
+
+async function endPatreonBrowserSession() {
+  await fetchWithTimeout(
+    PATREON_LOGOUT_ENDPOINT,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: { Accept: "application/json" },
+    },
+    5000,
+  );
+}
 
 const HINDI_SUPPORT_COPY = {
   "Enter a display name": "एक प्रदर्शित नाम दर्ज करें",
@@ -425,18 +440,22 @@ export function IdentityPanel({
     }
   };
 
-  const handleSignOut = useCallback(() => {
+  const handleSignOut = useCallback(async () => {
     if (typeof window === "undefined") return;
 
     try {
+      await endPatreonBrowserSession();
+    } catch (err) {
+      // Local identity logout must still complete if the backend is offline.
+      // The next key-bound status check also rejects a mismatched old session.
+      console.warn("Unable to end Patreon browser session:", err);
+    }
+
+    try {
       localStorage.clear();
-      localStorage.removeItem("local_nsec");
-      localStorage.removeItem("local_npub");
-      window.location.reload();
+      window.location.replace("/");
     } catch (err) {
       console.error("signOut error:", err);
-    } finally {
-      window.location.href = "/";
     }
   }, []);
 
@@ -469,6 +488,9 @@ export function IdentityPanel({
       if (!npub?.startsWith("npub"))
         throw new Error("Could not derive npub from the secret key.");
 
+      await endPatreonBrowserSession().catch((error) => {
+        console.warn("Unable to reset Patreon session before key switch:", error);
+      });
       localStorage.setItem("local_npub", npub);
       localStorage.setItem("local_nsec", nsec);
       rememberAccountSwitch(npub);

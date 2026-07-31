@@ -3047,7 +3047,10 @@ export default function App({ onBootReady } = {}) {
       const response = await fetchWithTimeout(PATREON_STATUS_ENDPOINT, {
         method: "GET",
         credentials: "include",
-        headers: { Accept: "application/json" },
+        headers: {
+          Accept: "application/json",
+          ...(activeNpub ? { "X-Piyali-Npub": activeNpub } : {}),
+        },
       });
       const payload = await response.json().catch(() => ({}));
       setPatreonStatusPayload(payload);
@@ -3106,6 +3109,17 @@ export default function App({ onBootReady } = {}) {
       setIsCheckingPatreon(false);
     }
   }, [activeNpub, isSubscriptionRoute]);
+
+  useEffect(() => {
+    // Never carry a prior key's optimistic unlock across an identity change.
+    // The status request below must establish access for the active key.
+    setPatreonSubscriptionVerified(false);
+    setPatreonStatusPayload({
+      authorized: false,
+      linked: false,
+      subscription: null,
+    });
+  }, [activeNpub]);
 
   useEffect(() => {
     void checkPatreonSubscription();
@@ -3225,7 +3239,10 @@ export default function App({ onBootReady } = {}) {
       const response = await fetchWithTimeout(PATREON_REFRESH_STATUS_ENDPOINT, {
         method: "POST",
         credentials: "include",
-        headers: { Accept: "application/json" },
+        headers: {
+          Accept: "application/json",
+          ...(activeNpub ? { "X-Piyali-Npub": activeNpub } : {}),
+        },
       });
       const payload = await response.json().catch(() => ({}));
       setPatreonStatusPayload(payload);
@@ -3243,7 +3260,7 @@ export default function App({ onBootReady } = {}) {
     } finally {
       setIsCheckingPatreon(false);
     }
-  }, []);
+  }, [activeNpub]);
 
   const handlePatreonDisconnect = useCallback(async () => {
     if (!activeNpub) return;
