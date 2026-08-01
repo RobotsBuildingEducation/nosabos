@@ -30,8 +30,6 @@ const LINK_CHALLENGE_DURATION_MS = 5 * 60 * 1000;
 const OAUTH_STATE_DURATION_MS = 10 * 60 * 1000;
 const RECOVERY_DURATION_MS = 10 * 60 * 1000;
 const WEBHOOK_RECEIPT_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
-const REPLACEMENT_WINDOW_MS = 24 * 60 * 60 * 1000;
-const MAX_REPLACEMENTS_PER_WINDOW = 3;
 const SESSION_REVOCATION_BATCH_SIZE = 250;
 const SESSION_REVOCATION_MAX_BATCHES = 5;
 const SESSION_REVOCATION_RETRY_ATTEMPTS = 2;
@@ -460,7 +458,7 @@ function decryptToken(value, secret) {
   ]).toString("utf8");
 }
 
-function redirectTarget(config, result) {
+function redirectTarget(config, result, searchParams = {}) {
   let baseUrl = config.appUrl;
   if (!baseUrl) {
     try {
@@ -471,9 +469,22 @@ function redirectTarget(config, result) {
     }
   }
 
-  if (!baseUrl) return `/subscribe?patreon=${encodeURIComponent(result)}`;
+  const appendSearchParams = (params) => {
+    Object.entries(searchParams).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== "") {
+        params.set(key, String(value));
+      }
+    });
+  };
+
+  if (!baseUrl) {
+    const params = new URLSearchParams({ patreon: result });
+    appendSearchParams(params);
+    return `/subscribe?${params.toString()}`;
+  }
   const url = new URL("/subscribe", baseUrl);
   url.searchParams.set("patreon", result);
+  appendSearchParams(url.searchParams);
   return url.toString();
 }
 
@@ -573,6 +584,48 @@ function buildAuthorizedRecord({ membership, tokens, config, now }) {
       tokens.refresh_token,
       config.tokenEncryptionKey,
     ),
+  };
+}
+
+function buildPendingCheckoutRecord({
+  identity,
+  membership,
+  tokens,
+  config,
+  now,
+  linkProof,
+}) {
+  const patreonUserId = String(
+    membership?.patreonUserId || identity?.data?.id || "",
+  );
+  if (!patreonUserId) {
+    throw new Error("Patreon identity did not include a user id");
+  }
+
+  return {
+    authorized: false,
+    pendingCheckout: true,
+    selectedPlan: ["annual", "monthly"].includes(linkProof?.selectedPlan)
+      ? linkProof.selectedPlan
+      : "annual",
+    patreonUserId,
+    memberId: String(membership?.memberId || ""),
+    tierIds: Array.isArray(membership?.tierIds) ? membership.tierIds : [],
+    entitledAmountCents: Number(membership?.entitledAmountCents || 0),
+    patronStatus: String(membership?.patronStatus || ""),
+    lastChargeStatus: String(membership?.lastChargeStatus || ""),
+    lastVerifiedAtMs: now,
+    oauthExpiresAtMs: now + positiveNumber(tokens.expires_in, 3600) * 1000,
+    encryptedAccessToken: encryptToken(
+      tokens.access_token,
+      config.tokenEncryptionKey,
+    ),
+    encryptedRefreshToken: encryptToken(
+      tokens.refresh_token,
+      config.tokenEncryptionKey,
+    ),
+    npub: String(linkProof?.npub || ""),
+    hexPubkey: String(linkProof?.hexPubkey || ""),
   };
 }
 
@@ -754,15 +807,18 @@ function buildBrowserSessionRecord({ record, config, now = Date.now() }) {
   const linkedNpub = String(record.npub || "");
   const patreonUserId = String(record.patreonUserId || "");
   return {
-    authorized: true,
+    authorized: Boolean(record.authorized),
+    pendingCheckout: Boolean(record.pendingCheckout),
+    selectedPlan: String(record.selectedPlan || ""),
     patreonUserId,
     memberId: record.memberId,
     tierIds: record.tierIds || [],
     entitledAmountCents: record.entitledAmountCents,
-    patronStatus: record.patronStatus || "active_patron",
-    lastChargeStatus: record.lastChargeStatus || "paid",
+    patronStatus: record.patronStatus || "",
+    lastChargeStatus: record.lastChargeStatus || "",
     linkedNpub,
     linkedNpubHash: linkedNpub ? sha256(linkedNpub) : "",
+    linkedHexPubkey: String(record.hexPubkey || ""),
     linkedPatreonUserHash: patreonUserId ? sha256(patreonUserId) : "",
     createdAtMs: now,
     lastVerifiedAtMs: Number(record.lastVerifiedAtMs || now),
@@ -917,17 +973,11 @@ async function enforceForcedRefreshRateLimit({
 
 async function enforceRecoveryCreationRateLimits({
   db,
-  patreonUserHash,
-  nextNpubHash,
   ipHash,
 }) {
   const now = Date.now();
   const windowMs = 60 * 60 * 1000;
-  const limits = [
-    ["patreon", patreonUserHash, 6],
-    ["npub", nextNpubHash, 6],
-    ["ip", ipHash, 20],
-  ];
+  const limits = [["ip", ipHash, 20]];
   const refs = limits.map(([kind, value]) =>
     db
       .collection(RECOVERY_RATE_LIMIT_COLLECTION)
@@ -979,8 +1029,6 @@ async function createRecoveryIntent({
 
   await enforceRecoveryCreationRateLimits({
     db,
-    patreonUserHash,
-    nextNpubHash,
     ipHash,
   });
 
@@ -1300,7 +1348,10 @@ async function handleSessionStatus({
       subscription: null,
     });
   }
-  if (!session.authorized || Number(session.expiresAtMs || 0) <= now) {
+  if (
+    (!session.authorized && !session.pendingCheckout) ||
+    Number(session.expiresAtMs || 0) <= now
+  ) {
     await sessionRef.delete();
     res.setHeader(
       "Set-Cookie",
@@ -1317,7 +1368,9 @@ async function handleSessionStatus({
     });
   }
 
-  const mapping = await validateLinkedSession(db, session);
+  const mapping = session.pendingCheckout
+    ? { valid: true, linked: false, account: null, accountRef: null }
+    : await validateLinkedSession(db, session);
   if (!mapping.valid) {
     await sessionRef.delete();
     res.setHeader(
@@ -1371,6 +1424,30 @@ async function handleSessionStatus({
         reason: evaluation.reason,
         ...getMembershipDiagnostics(evaluation.identity, config),
       });
+      if (session.pendingCheckout) {
+        if (evaluation.updates) {
+          await sessionRef.set(
+            {
+              ...evaluation.updates,
+              pendingCheckout: true,
+              ...(forceRefresh ? { lastForcedRefreshAtMs: now } : {}),
+            },
+            { merge: true },
+          );
+        }
+        return sendJson(res, 200, {
+          authorized: false,
+          configured: true,
+          linked: false,
+          connected: true,
+          checkoutRequired: true,
+          selectedPlan: session.selectedPlan || "annual",
+          reason: evaluation.reason,
+          subscription: buildSubscriptionSummary(mergedRecord, {
+            reason: evaluation.reason,
+          }),
+        });
+      }
       if (mapping.linked && evaluation.updates) {
         await mapping.accountRef.set(
           { ...evaluation.updates, updatedAtMs: now },
@@ -1392,9 +1469,82 @@ async function handleSessionStatus({
       });
     }
 
+    let linked = Boolean(mapping.linked);
+    if (session.pendingCheckout) {
+      const authorizedRecord = buildStoredAuthorization({
+        ...mergedRecord,
+        authorized: true,
+      });
+      const linkProof = {
+        npub: String(session.linkedNpub || ""),
+        hexPubkey: String(session.linkedHexPubkey || ""),
+      };
+      if (!linkProof.npub || !linkProof.hexPubkey) {
+        throw new Error("Pending Patreon checkout lost its Piyali key link");
+      }
+
+      try {
+        await linkPatreonAccount({
+          db,
+          npub: linkProof.npub,
+          hexPubkey: linkProof.hexPubkey,
+          record: authorizedRecord,
+        });
+        linked = true;
+      } catch (error) {
+        if (error?.code === "patreon_account_already_linked") {
+          const rawRecoveryId = await createRecoveryIntent({
+            db,
+            linkProof,
+            authorizedRecord,
+            ipHash: requestIpHash(req),
+          });
+          await sessionRef.delete();
+          res.setHeader(
+            "Set-Cookie",
+            serializeCookie(
+              FIREBASE_SESSION_COOKIE,
+              encodeSessionCookieValue(
+                OAUTH_RECOVERY_COOKIE_KIND,
+                rawRecoveryId,
+              ),
+              {
+                maxAge: RECOVERY_DURATION_MS / 1000,
+                secure: config.cookieSecure,
+              },
+            ),
+          );
+          return sendJson(res, 200, {
+            authorized: false,
+            configured: true,
+            linked: false,
+            replacementRequired: true,
+            reason: "replace_required",
+            subscription: buildSubscriptionSummary(authorizedRecord),
+          });
+        }
+        if (error?.code === "piyali_key_already_linked") {
+          await sessionRef.delete();
+          res.setHeader(
+            "Set-Cookie",
+            clearCookie(FIREBASE_SESSION_COOKIE, config.cookieSecure),
+          );
+          return sendJson(res, 409, {
+            authorized: false,
+            configured: true,
+            linked: false,
+            reason: "link_conflict",
+            subscription: null,
+          });
+        }
+        throw error;
+      }
+    }
+
     if (evaluation.updates) {
       const update = {
         ...evaluation.updates,
+        pendingCheckout: false,
         ...(forceRefresh ? { lastForcedRefreshAtMs: now } : {}),
       };
       await sessionRef.set(update, { merge: true });
@@ -1409,7 +1559,7 @@ async function handleSessionStatus({
     return sendJson(res, 200, {
       authorized: true,
       configured: true,
-      linked: Boolean(mapping.linked),
+      linked,
       stale: Boolean(evaluation.stale),
       subscription: buildSubscriptionSummary(mergedRecord, {
         stale: Boolean(evaluation.stale),
@@ -1532,21 +1682,17 @@ async function handleReplacement({ req, res, db, config, fetchImpl, log }) {
   const reverseRef = db
     .collection(PATREON_USER_LINK_COLLECTION)
     .doc(patreonUserHash);
-  const rateRef = db
-    .collection(RECOVERY_RATE_LIMIT_COLLECTION)
-    .doc(sha256(`complete:patreon:${patreonUserHash}`));
   const rawSessionId = crypto.randomBytes(32).toString("base64url");
   const sessionRef = db.collection(SESSION_COLLECTION).doc(sha256(rawSessionId));
 
   try {
     await db.runTransaction(async (transaction) => {
-      const [freshRecoverySnapshot, reverseSnapshot, oldSnapshot, newSnapshot, rateSnapshot] =
+      const [freshRecoverySnapshot, reverseSnapshot, oldSnapshot, newSnapshot] =
         await Promise.all([
           transaction.get(recoveryRef),
           transaction.get(reverseRef),
           transaction.get(oldAccountRef),
           transaction.get(newAccountRef),
-          transaction.get(rateRef),
         ]);
       const freshRecovery = freshRecoverySnapshot.exists
         ? freshRecoverySnapshot.data() || {}
@@ -1554,11 +1700,6 @@ async function handleReplacement({ req, res, db, config, fetchImpl, log }) {
       const reverse = reverseSnapshot.exists ? reverseSnapshot.data() || {} : {};
       const oldAccount = oldSnapshot.exists ? oldSnapshot.data() || {} : {};
       const newAccount = newSnapshot.exists ? newSnapshot.data() || {} : null;
-      const recent = (rateSnapshot.exists
-        ? rateSnapshot.data()?.timestampsMs || []
-        : []
-      ).filter((value) => Number(value) > now - REPLACEMENT_WINDOW_MS);
-
       if (
         freshRecovery.status !== "pending" ||
         Number(freshRecovery.expiresAtMs || 0) <= now ||
@@ -1572,12 +1713,6 @@ async function handleReplacement({ req, res, db, config, fetchImpl, log }) {
         error.code = "replacement_state_changed";
         throw error;
       }
-      if (recent.length >= MAX_REPLACEMENTS_PER_WINDOW) {
-        const error = new Error("replacement_rate_limited");
-        error.code = "replacement_rate_limited";
-        throw error;
-      }
-
       transaction.set(newAccountRef, {
         ...currentRecord,
         npub: proof.npub,
@@ -1603,11 +1738,6 @@ async function handleReplacement({ req, res, db, config, fetchImpl, log }) {
         completedAtMs: now,
         expiresAt: new Date(now + WEBHOOK_RECEIPT_DURATION_MS),
       });
-      transaction.set(rateRef, {
-        timestampsMs: [...recent, now],
-        updatedAtMs: now,
-        expiresAt: new Date(now + REPLACEMENT_WINDOW_MS),
-      });
       transaction.set(
         sessionRef,
         buildBrowserSessionRecord({
@@ -1619,12 +1749,6 @@ async function handleReplacement({ req, res, db, config, fetchImpl, log }) {
     });
   } catch (error) {
     const code = String(error?.code || error?.message || "");
-    if (code === "replacement_rate_limited") {
-      return rejectReplacement(429, code, {
-        patreonUserHash,
-        nextNpubHash,
-      });
-    }
     if (code === "replacement_state_changed") {
       return rejectReplacement(409, code, {
         patreonUserHash,
@@ -2110,6 +2234,10 @@ function createPatreonHandler({ db, getConfig, fetchImpl = fetch, logger }) {
           signedEvent: req.body?.signedEvent,
           expectedAction: "link",
         });
+        const requestedPlan = String(req.body?.plan || "").trim();
+        const selectedPlan = ["annual", "monthly"].includes(requestedPlan)
+          ? requestedPlan
+          : "annual";
         const state = crypto.randomBytes(32).toString("base64url");
         await db
           .collection(OAUTH_STATE_COLLECTION)
@@ -2117,6 +2245,7 @@ function createPatreonHandler({ db, getConfig, fetchImpl = fetch, logger }) {
           .set({
             npub: proof.npub,
             hexPubkey: proof.hexPubkey,
+            selectedPlan,
             createdAtMs: Date.now(),
             expiresAtMs: Date.now() + OAUTH_STATE_DURATION_MS,
             expiresAt: new Date(Date.now() + OAUTH_STATE_DURATION_MS),
@@ -2447,6 +2576,7 @@ function createPatreonHandler({ db, getConfig, fetchImpl = fetch, logger }) {
             linkProof = {
               npub: String(oauthState.npub || ""),
               hexPubkey: String(oauthState.hexPubkey || ""),
+              selectedPlan: String(oauthState.selectedPlan || "annual"),
             };
           }
         } catch (error) {
@@ -2477,6 +2607,42 @@ function createPatreonHandler({ db, getConfig, fetchImpl = fetch, logger }) {
             reason: membership.reason,
             ...getMembershipDiagnostics(identity, config),
           });
+          if (linkProof?.npub && linkProof?.hexPubkey) {
+            const now = Date.now();
+            const pendingRecord = buildPendingCheckoutRecord({
+              identity,
+              membership,
+              tokens,
+              config,
+              now,
+              linkProof,
+            });
+            const rawSessionId = await createBrowserSession({
+              db,
+              record: pendingRecord,
+              config,
+            });
+            res.setHeader(
+              "Set-Cookie",
+              serializeCookie(
+                FIREBASE_SESSION_COOKIE,
+                encodeSessionCookieValue(
+                  AUTH_SESSION_COOKIE_KIND,
+                  rawSessionId,
+                ),
+                {
+                  maxAge: config.sessionDurationMs / 1000,
+                  secure: config.cookieSecure,
+                },
+              ),
+            );
+            return res.redirect(
+              302,
+              redirectTarget(config, "checkout_required", {
+                plan: pendingRecord.selectedPlan,
+              }),
+            );
+          }
           return res.redirect(
             302,
             redirectTarget(config, "not_subscribed"),

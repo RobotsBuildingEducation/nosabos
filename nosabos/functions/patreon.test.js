@@ -914,6 +914,154 @@ test("first-time OAuth linking creates no recovery intent", async () => {
   );
 });
 
+test("OAuth keeps a key-bound pending session when checkout is still required", async () => {
+  const secretKey = generateSecretKey();
+  const hexPubkey = getPublicKey(secretKey);
+  const npub = nip19.npubEncode(hexPubkey);
+  const state = "pending-checkout-state";
+  const db = new FakeFirestore({
+    [`patreonOAuthStates/${sha256(state)}`]: {
+      npub,
+      hexPubkey,
+      selectedPlan: "monthly",
+      expiresAtMs: Date.now() + 60_000,
+    },
+  });
+  const handler = createPatreonHandler({
+    db,
+    getConfig: () =>
+      handlerConfig({
+        clientId: "client-id",
+        clientSecret: "client-secret",
+        redirectUri: "https://piyali.app/api/patreon/callback",
+        appUrl: "https://piyali.app",
+      }),
+    fetchImpl: async (url) => ({
+      ok: true,
+      status: 200,
+      json: async () =>
+        String(url).includes("/token")
+          ? {
+              access_token: "pending-access",
+              refresh_token: "pending-refresh",
+              expires_in: 3600,
+            }
+          : {
+              data: {
+                id: "patreon-user-1",
+                type: "user",
+                relationships: { memberships: { data: [] } },
+              },
+              included: [],
+            },
+    }),
+    logger: { info() {}, warn() {}, error() {} },
+  });
+  const response = fakeResponse();
+
+  await handler(
+    {
+      method: "GET",
+      url: "/api/patreon/callback",
+      query: { state, code: "oauth-code" },
+      headers: {
+        cookie: `__session=${encodeURIComponent(
+          encodeSessionCookieValue("oauth-link-state", state),
+        )}`,
+      },
+    },
+    response,
+  );
+
+  assert.equal(response.statusCode, 302);
+  assert.match(
+    response.headers.Location,
+    /patreon=checkout_required&plan=monthly/,
+  );
+  const sessionCookie = parseCookies(response.headers["Set-Cookie"]).__session;
+  const rawSessionId = decodeSessionCookieValue(
+    sessionCookie,
+    "auth-session",
+  );
+  const pendingSession = db.records.get(
+    `patreonOAuthSessions/${sha256(rawSessionId)}`,
+  );
+  assert.equal(pendingSession.authorized, false);
+  assert.equal(pendingSession.pendingCheckout, true);
+  assert.equal(pendingSession.selectedPlan, "monthly");
+  assert.equal(pendingSession.linkedNpub, npub);
+  assert.notEqual(pendingSession.encryptedAccessToken, "pending-access");
+  assert.equal(db.records.has(`patreonAccountLinks/${sha256(npub)}`), false);
+});
+
+test("a pending checkout session links and unlocks after membership becomes active", async () => {
+  const secretKey = generateSecretKey();
+  const hexPubkey = getPublicKey(secretKey);
+  const npub = nip19.npubEncode(hexPubkey);
+  const rawSessionId = "pending-session-that-became-paid";
+  const sessionHash = sha256(rawSessionId);
+  const now = Date.now();
+  const db = new FakeFirestore({
+    [`patreonOAuthSessions/${sessionHash}`]: {
+      authorized: false,
+      pendingCheckout: true,
+      selectedPlan: "annual",
+      patreonUserId: "patreon-user-1",
+      linkedNpub: npub,
+      linkedNpubHash: sha256(npub),
+      linkedHexPubkey: hexPubkey,
+      linkedPatreonUserHash: sha256("patreon-user-1"),
+      lastVerifiedAtMs: now - 1_000,
+      expiresAtMs: now + 60_000,
+      oauthExpiresAtMs: now + 120_000,
+      encryptedAccessToken: encryptToken("access", "encryption-secret"),
+      encryptedRefreshToken: encryptToken("refresh", "encryption-secret"),
+    },
+  });
+  const handler = createPatreonHandler({
+    db,
+    getConfig: () => handlerConfig(),
+    fetchImpl: async () => ({
+      ok: true,
+      status: 200,
+      json: async () => identityWithMembership(),
+    }),
+    logger: { info() {}, warn() {}, error() {} },
+  });
+  const response = fakeResponse();
+
+  await handler(
+    {
+      method: "GET",
+      url: "/api/patreon/status",
+      headers: {
+        cookie: `__session=${encodeURIComponent(
+          encodeSessionCookieValue("auth-session", rawSessionId),
+        )}`,
+        "x-piyali-npub": npub,
+      },
+    },
+    response,
+  );
+
+  const payload = JSON.parse(response.body);
+  assert.equal(response.statusCode, 200);
+  assert.equal(payload.authorized, true);
+  assert.equal(payload.linked, true);
+  assert.equal(
+    db.records.get(`patreonOAuthSessions/${sessionHash}`).pendingCheckout,
+    false,
+  );
+  assert.equal(
+    db.records.get(`patreonAccountLinks/${sha256(npub)}`).authorized,
+    true,
+  );
+  assert.equal(
+    db.records.get(`patreonUserLinks/${sha256("patreon-user-1")}`).npubHash,
+    sha256(npub),
+  );
+});
+
 test("local callback tunnel can recover signed link state without a shared cookie", async () => {
   const secretKey = generateSecretKey();
   const hexPubkey = getPublicKey(secretKey);

@@ -1235,11 +1235,13 @@ export default function LinksPage() {
         </Box>
       ),
       launchAppText: translations.subscribe,
-      secondaryAction: {
-        label: translations.buyApps,
-        href: "https://www.patreon.com/posts/146522893?forSale=true",
-        color: "#4da3ff",
-      },
+      // The one-time "Buy apps" action is intentionally hidden while Patreon
+      // OAuth membership is the supported unlock path.
+      // secondaryAction: {
+      //   label: translations.buyApps,
+      //   href: "https://www.patreon.com/posts/146522893?forSale=true",
+      //   color: "#4da3ff",
+      // },
     },
   ];
 

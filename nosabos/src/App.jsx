@@ -142,8 +142,10 @@ import DailyGoalPetPanel from "./components/DailyGoalPetPanel.jsx";
 import { getCustomizeModalCopy } from "./components/companionCustomizeCopy";
 import { IdentityPanel } from "./components/IdentityDrawer";
 import SubscriptionGate from "./components/SubscriptionGate";
+import PatreonKeyReplacementGate from "./components/PatreonKeyReplacementGate";
 import SubscriptionSettingsPanel from "./components/SubscriptionSettingsPanel";
 import { SUBSCRIPTION_SETTINGS_COPY } from "./components/subscriptionSettingsCopy";
+import { resolveSubscriptionAccess } from "./components/subscriptionAccessModel";
 import { useNostrWalletStore } from "./hooks/useNostrWalletStore";
 import { LuKey } from "react-icons/lu";
 import AlphabetBootcamp from "./components/AlphabetBootcamp";
@@ -2721,6 +2723,7 @@ const PATREON_KEY_STATUS_ENDPOINT = "/api/patreon/key-status";
 const PATREON_REPLACE_LINK_ENDPOINT = "/api/patreon/replace-link";
 const PATREON_CANCEL_REPLACEMENT_ENDPOINT = "/api/patreon/cancel-replacement";
 const PATREON_DISCONNECT_ENDPOINT = "/api/patreon/disconnect";
+const PATREON_CHECKOUT_URL = "https://subscribe.piyali.app/";
 
 export default function App({ onBootReady } = {}) {
   const toast = useToast();
@@ -3039,6 +3042,19 @@ export default function App({ onBootReady } = {}) {
     linked: false,
     subscription: null,
   });
+  const patreonResult = useMemo(
+    () => new URLSearchParams(location.search).get("patreon") || "",
+    [location.search],
+  );
+  const patreonPlan = useMemo(() => {
+    const requestedPlan = new URLSearchParams(location.search).get("plan");
+    return ["annual", "monthly"].includes(requestedPlan)
+      ? requestedPlan
+      : "annual";
+  }, [location.search]);
+  const isPatreonAwaiting =
+    patreonResult === "awaiting_subscription" ||
+    Boolean(patreonStatusPayload.checkoutRequired);
 
   const checkPatreonSubscription = useCallback(async () => {
     setIsCheckingPatreon(true);
@@ -3126,6 +3142,20 @@ export default function App({ onBootReady } = {}) {
   }, [checkPatreonSubscription]);
 
   useEffect(() => {
+    if (
+      typeof window === "undefined" ||
+      patreonResult !== "checkout_required"
+    ) {
+      return;
+    }
+    const waitingUrl = new URL(window.location.href);
+    waitingUrl.searchParams.set("patreon", "awaiting_subscription");
+    waitingUrl.searchParams.set("plan", patreonPlan);
+    window.history.replaceState(null, "", waitingUrl.toString());
+    window.location.assign(PATREON_CHECKOUT_URL);
+  }, [patreonPlan, patreonResult]);
+
+  useEffect(() => {
     if (typeof window === "undefined") return undefined;
     const shouldRecheck = createPatreonRecheckGate();
     const recheck = () => {
@@ -3140,7 +3170,7 @@ export default function App({ onBootReady } = {}) {
     };
   }, [checkPatreonSubscription]);
 
-  const handlePatreonConnect = useCallback(async () => {
+  const handlePatreonConnect = useCallback(async (plan = "annual") => {
     if (typeof window === "undefined" || !activeNpub) return;
     setIsCheckingPatreon(true);
     setPatreonStatusError("");
@@ -3157,7 +3187,10 @@ export default function App({ onBootReady } = {}) {
           Accept: "application/json",
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(proof),
+        body: JSON.stringify({
+          ...proof,
+          plan: ["annual", "monthly"].includes(plan) ? plan : "annual",
+        }),
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok || !payload.authorizeUrl) {
@@ -3171,6 +3204,11 @@ export default function App({ onBootReady } = {}) {
     }
   }, [activeNpub]);
 
+  const handlePatreonCheckout = useCallback(() => {
+    if (typeof window === "undefined") return;
+    window.location.assign(PATREON_CHECKOUT_URL);
+  }, []);
+
   const handlePatreonReplacement = useCallback(async () => {
     if (!activeNpub) return;
     setIsCheckingPatreon(true);
@@ -3181,15 +3219,19 @@ export default function App({ onBootReady } = {}) {
         action: "replace",
         allowExtension: true,
       });
-      const response = await fetchWithTimeout(PATREON_REPLACE_LINK_ENDPOINT, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
+      const response = await fetchWithTimeout(
+        PATREON_REPLACE_LINK_ENDPOINT,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(proof),
         },
-        body: JSON.stringify(proof),
-      });
+        30_000,
+      );
       const payload = await response.json().catch(() => ({}));
       const result = classifyPatreonReplacementResponse(response.ok, payload);
       if (result.kind !== "success") {
@@ -3298,11 +3340,6 @@ export default function App({ onBootReady } = {}) {
     }
   }, [activeNpub, navigate]);
 
-  const patreonResult = useMemo(
-    () => new URLSearchParams(location.search).get("patreon") || "",
-    [location.search],
-  );
-
   const passcodeSubscriptionVerified = useMemo(() => {
     const matchesLocal =
       storedPasscode &&
@@ -3314,8 +3351,17 @@ export default function App({ onBootReady } = {}) {
     subscriptionPasscode,
     user?.subscriptionPasscodeVerified,
   ]);
-  const subscriptionVerified =
-    passcodeSubscriptionVerified || patreonSubscriptionVerified;
+  const subscriptionAccess = useMemo(
+    () =>
+      resolveSubscriptionAccess({
+        patreonVerified: patreonSubscriptionVerified,
+        passcodeVerified: passcodeSubscriptionVerified,
+      }),
+    [passcodeSubscriptionVerified, patreonSubscriptionVerified],
+  );
+  const subscriptionVerified = subscriptionAccess.authorized;
+  const requiresPatreonMigration =
+    subscriptionAccess.requiresPatreonMigration;
   const [allowPosts, setAllowPosts] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [soundVolume, setSoundVolume] = useState(100);
@@ -9648,7 +9694,7 @@ export default function App({ onBootReady } = {}) {
     skillTreeInitialUnits.key !== skillTreeInitialUnitsKey;
 
   const isResolvingSubscription =
-    subscriptionXp >= 300 && !passcodeSubscriptionVerified && isCheckingPatreon;
+    subscriptionXp >= 0 && !patreonSubscriptionVerified && isCheckingPatreon;
   const isBootLoading =
     isLoadingApp ||
     !user ||
@@ -9714,6 +9760,21 @@ export default function App({ onBootReady } = {}) {
       return <Navigate to="/" replace />;
     }
 
+    if (
+      patreonResult === "replace_required" ||
+      patreonStatusPayload.replacementRequired
+    ) {
+      return (
+        <PatreonKeyReplacementGate
+          appLanguage={appLanguage}
+          onConfirm={handlePatreonReplacement}
+          onCancel={handlePatreonCancelReplacement}
+          isChecking={isCheckingPatreon}
+          statusError={patreonStatusError}
+        />
+      );
+    }
+
     return (
       <SubscriptionGate
         appLanguage={appLanguage}
@@ -9726,8 +9787,10 @@ export default function App({ onBootReady } = {}) {
         isPatreonAvailable={patreonAvailable}
         patreonResult={patreonResult}
         patreonStatusError={patreonStatusError}
-        onPatreonReplace={handlePatreonReplacement}
-        onPatreonCancelReplacement={handlePatreonCancelReplacement}
+        onPatreonRefresh={handlePatreonRefresh}
+        onPatreonCheckout={handlePatreonCheckout}
+        isPatreonAwaiting={isPatreonAwaiting}
+        isLegacyPasscodeMigration={requiresPatreonMigration}
       />
     );
   }
