@@ -458,7 +458,12 @@ function decryptToken(value, secret) {
   ]).toString("utf8");
 }
 
-function redirectTarget(config, result, searchParams = {}) {
+function redirectTarget(
+  config,
+  result,
+  searchParams = {},
+  returnMode = "page",
+) {
   let baseUrl = config.appUrl;
   if (!baseUrl) {
     try {
@@ -479,11 +484,17 @@ function redirectTarget(config, result, searchParams = {}) {
 
   if (!baseUrl) {
     const params = new URLSearchParams({ patreon: result });
+    if (returnMode === "drawer") params.set("patreon_drawer", "1");
     appendSearchParams(params);
-    return `/subscribe?${params.toString()}`;
+    const path = returnMode === "drawer" ? "/patreon-return" : "/subscribe";
+    return `${path}?${params.toString()}`;
   }
-  const url = new URL("/subscribe", baseUrl);
+  const url = new URL(
+    returnMode === "drawer" ? "/patreon-return" : "/subscribe",
+    baseUrl,
+  );
   url.searchParams.set("patreon", result);
+  if (returnMode === "drawer") url.searchParams.set("patreon_drawer", "1");
   appendSearchParams(url.searchParams);
   return url.toString();
 }
@@ -2238,6 +2249,10 @@ function createPatreonHandler({ db, getConfig, fetchImpl = fetch, logger }) {
         const selectedPlan = ["annual", "monthly"].includes(requestedPlan)
           ? requestedPlan
           : "annual";
+        const returnMode =
+          String(req.body?.returnMode || "").trim() === "drawer"
+            ? "drawer"
+            : "page";
         const state = crypto.randomBytes(32).toString("base64url");
         await db
           .collection(OAUTH_STATE_COLLECTION)
@@ -2246,6 +2261,7 @@ function createPatreonHandler({ db, getConfig, fetchImpl = fetch, logger }) {
             npub: proof.npub,
             hexPubkey: proof.hexPubkey,
             selectedPlan,
+            returnMode,
             createdAtMs: Date.now(),
             expiresAtMs: Date.now() + OAUTH_STATE_DURATION_MS,
             expiresAt: new Date(Date.now() + OAUTH_STATE_DURATION_MS),
@@ -2577,6 +2593,10 @@ function createPatreonHandler({ db, getConfig, fetchImpl = fetch, logger }) {
               npub: String(oauthState.npub || ""),
               hexPubkey: String(oauthState.hexPubkey || ""),
               selectedPlan: String(oauthState.selectedPlan || "annual"),
+              returnMode:
+                String(oauthState.returnMode || "") === "drawer"
+                  ? "drawer"
+                  : "page",
             };
           }
         } catch (error) {
@@ -2588,10 +2608,21 @@ function createPatreonHandler({ db, getConfig, fetchImpl = fetch, logger }) {
       }
 
       if (oauthError) {
-        return res.redirect(302, redirectTarget(config, "oauth_cancelled"));
+        return res.redirect(
+          302,
+          redirectTarget(
+            config,
+            "oauth_cancelled",
+            {},
+            linkProof?.returnMode,
+          ),
+        );
       }
       if (!code) {
-        return res.redirect(302, redirectTarget(config, "oauth_error"));
+        return res.redirect(
+          302,
+          redirectTarget(config, "oauth_error", {}, linkProof?.returnMode),
+        );
       }
 
       try {
@@ -2638,14 +2669,22 @@ function createPatreonHandler({ db, getConfig, fetchImpl = fetch, logger }) {
             );
             return res.redirect(
               302,
-              redirectTarget(config, "checkout_required", {
-                plan: pendingRecord.selectedPlan,
-              }),
+              redirectTarget(
+                config,
+                "checkout_required",
+                { plan: pendingRecord.selectedPlan },
+                linkProof?.returnMode,
+              ),
             );
           }
           return res.redirect(
             302,
-            redirectTarget(config, "not_subscribed"),
+            redirectTarget(
+              config,
+              "not_subscribed",
+              {},
+              linkProof?.returnMode,
+            ),
           );
         }
 
@@ -2690,7 +2729,12 @@ function createPatreonHandler({ db, getConfig, fetchImpl = fetch, logger }) {
                 );
                 return res.redirect(
                   302,
-                  redirectTarget(config, "replace_required"),
+                  redirectTarget(
+                    config,
+                    "replace_required",
+                    {},
+                    linkProof?.returnMode,
+                  ),
                 );
               } catch (recoveryError) {
                 const recoveryCode = String(
@@ -2699,14 +2743,27 @@ function createPatreonHandler({ db, getConfig, fetchImpl = fetch, logger }) {
                 if (recoveryCode === "recovery_rate_limited") {
                   return res.redirect(
                     302,
-                    redirectTarget(config, "replace_rate_limited"),
+                    redirectTarget(
+                      config,
+                      "replace_rate_limited",
+                      {},
+                      linkProof?.returnMode,
+                    ),
                   );
                 }
                 throw recoveryError;
               }
             }
             if (error?.code === "piyali_key_already_linked") {
-              return res.redirect(302, redirectTarget(config, "link_conflict"));
+              return res.redirect(
+                302,
+                redirectTarget(
+                  config,
+                  "link_conflict",
+                  {},
+                  linkProof?.returnMode,
+                ),
+              );
             }
             throw error;
           }
@@ -2729,10 +2786,16 @@ function createPatreonHandler({ db, getConfig, fetchImpl = fetch, logger }) {
             },
           ),
         );
-        return res.redirect(302, redirectTarget(config, "connected"));
+        return res.redirect(
+          302,
+          redirectTarget(config, "connected", {}, linkProof?.returnMode),
+        );
       } catch (error) {
         log.error("Patreon OAuth callback failed", error?.message || error);
-        return res.redirect(302, redirectTarget(config, "oauth_error"));
+        return res.redirect(
+          302,
+          redirectTarget(config, "oauth_error", {}, linkProof?.returnMode),
+        );
       }
     }
 

@@ -400,6 +400,61 @@ test("browser sessions carry hashed link identifiers and a Firestore TTL", () =>
   assert.equal(record.linkedPatreonUserHash.length, 64);
 });
 
+test("signed link-start stores an authenticated drawer return mode", async () => {
+  const secretKey = generateSecretKey();
+  const hexPubkey = getPublicKey(secretKey);
+  const npub = nip19.npubEncode(hexPubkey);
+  const challengeId = "drawer-link-challenge";
+  const eventTemplate = buildNostrAuthEvent({
+    action: "link",
+    challengeId,
+    challenge: "drawer-return-proof",
+    expiresAtMs: Date.now() + 60_000,
+  });
+  const db = new FakeFirestore({
+    [`patreonLinkChallenges/${sha256(challengeId)}`]: {
+      npub,
+      hexPubkey,
+      action: "link",
+      eventTemplateJson: JSON.stringify(eventTemplate),
+      expiresAtMs: Date.now() + 60_000,
+      usedAtMs: null,
+    },
+  });
+  const handler = createPatreonHandler({
+    db,
+    getConfig: () =>
+      handlerConfig({
+        clientId: "client-id",
+        redirectUri: "https://piyali.app/api/patreon/callback",
+      }),
+    logger: { info() {}, warn() {}, error() {} },
+  });
+  const response = fakeResponse();
+
+  await handler(
+    {
+      method: "POST",
+      url: "/api/patreon/link-start",
+      body: {
+        challengeId,
+        signedEvent: finalizeEvent(eventTemplate, secretKey),
+        plan: "annual",
+        returnMode: "drawer",
+      },
+      headers: {},
+    },
+    response,
+  );
+
+  assert.equal(response.statusCode, 200);
+  const states = [...db.records.entries()].filter(([key]) =>
+    key.startsWith("patreonOAuthStates/"),
+  );
+  assert.equal(states.length, 1);
+  assert.equal(states[0][1].returnMode, "drawer");
+});
+
 test("webhooks revoke explicit inactive states but never grant active state", () => {
   const relationship = {
     campaign: { data: { id: "campaign-1" } },
@@ -1071,6 +1126,7 @@ test("local callback tunnel can recover signed link state without a shared cooki
     [`patreonOAuthStates/${sha256(state)}`]: {
       npub,
       hexPubkey,
+      returnMode: "drawer",
       expiresAtMs: Date.now() + 60_000,
     },
   });
@@ -1111,7 +1167,9 @@ test("local callback tunnel can recover signed link state without a shared cooki
   );
 
   assert.equal(response.statusCode, 302);
+  assert.match(response.headers.Location, /\/patreon-return\?/);
   assert.match(response.headers.Location, /patreon=connected/);
+  assert.match(response.headers.Location, /patreon_drawer=1/);
   assert.equal(db.records.has(`patreonAccountLinks/${sha256(npub)}`), true);
   assert.equal(
     db.records.has(`patreonOAuthStates/${sha256(state)}`),

@@ -10,18 +10,16 @@ import {
 test("subscription settings expose only connection actions before linking", () => {
   const state = getSubscriptionSettingsState({ linked: false });
   assert.equal(state.showConnect, true);
-  assert.equal(state.showRefresh, false);
   assert.equal(state.showManage, false);
   assert.equal(state.showDisconnect, false);
 });
 
-test("active linked subscriptions expose refresh, management, and entitlement", () => {
+test("active linked subscriptions expose management and entitlement", () => {
   const state = getSubscriptionSettingsState({
     linked: true,
     subscription: { status: "active", entitledAmountCents: 500 },
   });
   assert.equal(state.showConnect, false);
-  assert.equal(state.showRefresh, true);
   assert.equal(state.showReconnect, false);
   assert.equal(state.showManage, true);
   assert.equal(state.showPayment, false);
@@ -38,4 +36,19 @@ test("payment problems expose reconnect and Patreon payment management", () => {
   assert.equal(state.showPayment, true);
   assert.equal(PATREON_MEMBERSHIP_URL.startsWith("https://"), true);
   assert.equal(PATREON_PAYMENT_URL.startsWith("https://"), true);
+});
+
+test("checkout and replacement are exclusive drawer presentation states", () => {
+  const checkout = getSubscriptionSettingsState({
+    connected: true,
+    checkoutRequired: true,
+  });
+  assert.equal(checkout.awaitingCheckout, true);
+  assert.equal(checkout.showConnect, false);
+
+  const replacement = getSubscriptionSettingsState({
+    replacementRequired: true,
+  });
+  assert.equal(replacement.replacementRequired, true);
+  assert.equal(replacement.showConnect, false);
 });

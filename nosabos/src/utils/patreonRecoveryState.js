@@ -32,3 +32,20 @@ export function createPatreonRecheckGate({
     return true;
   };
 }
+
+export function shouldAttemptPatreonKeyRestore(statusPayload = {}) {
+  return !(
+    statusPayload.authorized ||
+    statusPayload.connected ||
+    statusPayload.linked ||
+    statusPayload.replacementRequired ||
+    statusPayload.checkoutRequired
+  );
+}
+
+export function shouldHoldForInitialPatreonStatus({
+  isResolved = false,
+  isChecking = false,
+} = {}) {
+  return !isResolved && isChecking;
+}

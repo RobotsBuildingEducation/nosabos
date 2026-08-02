@@ -2,12 +2,12 @@ import React, { useMemo, useState } from "react";
 import {
   Alert,
   AlertIcon,
-  Badge,
   Box,
   Button,
   ButtonGroup,
+  Center,
   Heading,
-  HStack,
+  Spinner,
   Stack,
   Text,
 } from "@chakra-ui/react";
@@ -22,20 +22,37 @@ import {
   PATREON_MEMBERSHIP_URL,
   PATREON_PAYMENT_URL,
 } from "./subscriptionSettingsModel";
+import SubscriptionGate from "./SubscriptionGate";
+import PatreonKeyReplacementGate from "./PatreonKeyReplacementGate";
 
 export default function SubscriptionSettingsPanel({
   appLanguage = "en",
   statusPayload = {},
+  isResolved = true,
   isBusy = false,
+  actionError = "",
+  patreonResult = "",
   onRefresh,
   onReconnect,
   onDisconnect,
+  onCheckout,
+  onReplace,
+  onCancelReplacement,
 }) {
   const lang = normalizeSupportLanguage(appLanguage, DEFAULT_SUPPORT_LANGUAGE);
   const copy = SUBSCRIPTION_SETTINGS_COPY[lang] || SUBSCRIPTION_SETTINGS_COPY.en;
   const [confirmingDisconnect, setConfirmingDisconnect] = useState(false);
   const view = getSubscriptionSettingsState(statusPayload);
-  const { subscription, linked, unavailable, status, entitledAmountCents } = view;
+  const {
+    subscription,
+    linked,
+    authorized,
+    unavailable,
+    status,
+    entitledAmountCents,
+    awaitingCheckout,
+    replacementRequired,
+  } = view;
   const statusText = useMemo(() => {
     if (unavailable || status === "unknown") return copy.unavailable;
     if (status === "active") return copy.active;
@@ -43,21 +60,66 @@ export default function SubscriptionSettingsPanel({
     if (status === "inactive" || status === "expired") return copy.inactive;
     return copy.notLinked;
   }, [copy, status, unavailable]);
-  const colorScheme = status === "active" ? "green" : status === "payment_issue" ? "orange" : "gray";
   const checkedAt = Number(subscription?.lastVerifiedAtMs || 0);
 
+  if (!isResolved) {
+    return (
+      <Center minH="280px" pb="max(24px, env(safe-area-inset-bottom))">
+        <Spinner
+          size="lg"
+          thickness="4px"
+          color="purple.300"
+          aria-label={copy.refreshing}
+        />
+      </Center>
+    );
+  }
+
+  if (
+    !authorized &&
+    (replacementRequired || patreonResult === "replace_required")
+  ) {
+    return (
+      <Box pb="max(24px, env(safe-area-inset-bottom))">
+        <PatreonKeyReplacementGate
+          embedded
+          appLanguage={appLanguage}
+          onConfirm={onReplace}
+          onCancel={onCancelReplacement}
+          isChecking={isBusy}
+          statusError={actionError}
+        />
+      </Box>
+    );
+  }
+
+  if (!linked || awaitingCheckout) {
+    const checkoutPending =
+      awaitingCheckout ||
+      ["checkout_required", "awaiting_subscription"].includes(patreonResult);
+    return (
+      <Box pb="max(24px, env(safe-area-inset-bottom))">
+        <SubscriptionGate
+          embedded
+          appLanguage={appLanguage}
+          onPatreonConnect={onReconnect}
+          isPatreonChecking={isBusy}
+          isPatreonAvailable={statusPayload?.configured !== false}
+          patreonResult={patreonResult}
+          patreonStatusError={actionError || (unavailable ? "unavailable" : "")}
+          onPatreonRefresh={onRefresh}
+          onPatreonCheckout={onCheckout}
+          isPatreonAwaiting={checkoutPending}
+        />
+      </Box>
+    );
+  }
+
   return (
-    <Stack spacing={4} pb={14}>
+    <Stack spacing={4} pb="max(56px, env(safe-area-inset-bottom))">
       <Box bg="gray.800" borderWidth="1px" borderColor="gray.700" borderRadius="24px" p={5}>
-        <HStack justify="space-between" align="start" spacing={3}>
-          <Box>
-            <Heading size="sm">{copy.title}</Heading>
-            <Text mt={2} color="gray.300">{statusText}</Text>
-          </Box>
-          <Badge colorScheme={colorScheme} borderRadius="full" px={3} py={1}>
-            Patreon
-          </Badge>
-        </HStack>
+        <Heading size="sm">{copy.title}</Heading>
+        <Text mt={2} color="gray.300">{statusText}</Text>
         {subscription?.stale && (
           <Alert status="warning" mt={4} borderRadius="16px" bg="orange.900">
             <AlertIcon />
@@ -80,11 +142,6 @@ export default function SubscriptionSettingsPanel({
         {view.showConnect && (
           <Button colorScheme="teal" onClick={onReconnect} isDisabled={isBusy}>
             {copy.connect}
-          </Button>
-        )}
-        {view.showRefresh && (
-          <Button colorScheme="teal" onClick={onRefresh} isLoading={isBusy} loadingText={copy.refreshing}>
-            {copy.refresh}
           </Button>
         )}
         {view.showReconnect && (

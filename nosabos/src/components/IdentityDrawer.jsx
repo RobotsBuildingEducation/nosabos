@@ -40,7 +40,7 @@ import {
 } from "@chakra-ui/react";
 import { QRCodeSVG } from "qrcode.react";
 import { BsQrCode } from "react-icons/bs";
-import { SiCashapp, SiPatreon } from "react-icons/si";
+import { SiCashapp } from "react-icons/si";
 import { IoIosMore } from "react-icons/io";
 import { MdInstallMobile, MdOutlineFileUpload } from "react-icons/md";
 import { CiSquarePlus } from "react-icons/ci";
@@ -265,7 +265,6 @@ export function IdentityPanel({
   postNostrContent,
   showHeader = true,
   showSignOutButton = true,
-  showPatreonSupport = true,
 }) {
   const toast = useToast();
   const themeMode = useThemeStore((s) => s.themeMode);
@@ -652,68 +651,6 @@ export function IdentityPanel({
             {t?.app_copy_secret || "Copy Secret Key"}
           </Button>
         </HStack>
-
-        {showPatreonSupport ? (
-          <Box p={4} bg="gray.800" rounded="lg" maxW="600px" w="100%" mx="auto">
-            <HStack spacing={3} align="center">
-              <Box
-                p={2}
-                bg="black"
-                rounded="lg"
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-              >
-                <SiPatreon size={20} color="white" />
-              </Box>
-              <VStack align="start" spacing={0} flex={1}>
-                <Text fontWeight="semibold" fontSize="sm">
-                  {supportCopy(
-                    lang,
-                    "Join us on Patreon",
-                    "Apóyanos en Patreon",
-                    "Sostienici su Patreon",
-                    "Rejoins-nous sur Patreon",
-                    "Patreonで応援",
-                    "Apoie-nos no Patreon",
-                  )}
-                </Text>
-                <Text fontSize="xs" color="gray.400">
-                  {supportCopy(
-                    lang,
-                    "Get full access to more education apps and content",
-                    "Obtén acceso completo a más apps educativas y contenido",
-                    "Ottieni accesso completo a più app educative e contenuti",
-                    "Obtiens un accès complet à plus d'apps éducatives et de contenu",
-                    "さらに多くの教育アプリとコンテンツにフルアクセス",
-                    "Tenha acesso completo a mais apps educacionais e conteúdo",
-                  )}
-                </Text>
-              </VStack>
-              <Button
-                size="sm"
-                bg="black"
-                boxShadow="0px 0px 4px gray"
-                onClick={() =>
-                  window.open(
-                    "https://subscribe.piyali.app/",
-                    "_blank",
-                  )
-                }
-              >
-                {supportCopy(
-                  lang,
-                  "Join",
-                  "Unirse",
-                  "Unisciti",
-                  "Rejoindre",
-                  "参加",
-                  "Entrar",
-                )}
-              </Button>
-            </HStack>
-          </Box>
-        ) : null}
 
         {/* Display Name + Switch Account Accordions */}
         <Accordion allowMultiple {...accountAccordionProps}>

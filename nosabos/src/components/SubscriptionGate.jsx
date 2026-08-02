@@ -421,6 +421,7 @@ export default function SubscriptionGate({
   onPatreonCheckout,
   isPatreonAwaiting = false,
   isLegacyPasscodeMigration = false,
+  embedded = false,
 }) {
   const lang = normalizeSupportLanguage(appLanguage, DEFAULT_SUPPORT_LANGUAGE);
   const copy = SUBSCRIBE_COPY[lang] || SUBSCRIBE_COPY.en;
@@ -653,36 +654,53 @@ export default function SubscriptionGate({
 
   return (
     <Box
-      minH="100vh"
-      bg={pageBg}
+      minH={embedded ? "auto" : "100vh"}
+      bg={embedded ? "transparent" : pageBg}
       color={shellText}
       dir={isRtl ? "rtl" : "ltr"}
-      display="flex"
+      display={embedded ? "block" : "flex"}
       alignItems="center"
       justifyContent="center"
-      px={{ base: 1, md: 4 }}
-      py={{ base: 2, md: 8 }}
+      px={embedded ? 0 : { base: 1, md: 4 }}
+      py={embedded ? 0 : { base: 2, md: 8 }}
     >
       <Box
-        as="form"
-        onSubmit={handleSubmit}
-        bg={shellBg}
-        borderWidth="1px"
+        as={embedded ? "div" : "form"}
+        onSubmit={embedded ? undefined : handleSubmit}
+        bg={embedded ? "transparent" : shellBg}
+        borderWidth={embedded ? 0 : "1px"}
         borderColor={shellBorder}
         borderRadius={{ base: "30px", md: "36px" }}
         style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
-        p={{ base: 3, md: 6 }}
+        p={embedded ? 0 : { base: 3, md: 6 }}
         maxW="760px"
         w="100%"
-        my={{ base: 0, md: 4 }}
-        boxShadow={shellShadow}
+        my={embedded ? 0 : { base: 0, md: 4 }}
+        boxShadow={embedded ? "none" : shellShadow}
       >
         <VStack align="stretch" spacing={{ base: 4, md: 6 }}>
+          {isPatreonAwaiting ? (
+            <>
+              {renderPatreonAction()}
+              {patreonFeedback && (
+                <Text
+                  role="alert"
+                  color={isLightTheme ? "#9f2d36" : "red.200"}
+                  fontSize="xs"
+                  textAlign="center"
+                >
+                  {patreonFeedback}
+                </Text>
+              )}
+            </>
+          ) : (
+            <>
           <HStack
             align="center"
             spacing={{ base: 3, sm: 5 }}
             flexDirection={{ base: "column", sm: "row" }}
             textAlign={{ base: "center", sm: isRtl ? "right" : "left" }}
+            display={embedded ? "none" : "flex"}
           >
             <Box
               bg={softPanelBg}
@@ -884,21 +902,19 @@ export default function SubscriptionGate({
             </Box>
           )}
 
-          {(isPatreonAwaiting || patreonFeedback) && (
+          {patreonFeedback && (
             <Box pt={4} borderTop="1px solid" borderColor={shellBorder}>
-              {isPatreonAwaiting && renderPatreonAction()}
-              {patreonFeedback && (
-                <Text
-                  role="alert"
-                  color={isLightTheme ? "#9f2d36" : "red.200"}
-                  fontSize="xs"
-                  textAlign="center"
-                  mt={isPatreonAwaiting ? 3 : 0}
-                >
-                  {patreonFeedback}
-                </Text>
-              )}
+              <Text
+                role="alert"
+                color={isLightTheme ? "#9f2d36" : "red.200"}
+                fontSize="xs"
+                textAlign="center"
+              >
+                {patreonFeedback}
+              </Text>
             </Box>
+          )}
+            </>
           )}
         </VStack>
       </Box>

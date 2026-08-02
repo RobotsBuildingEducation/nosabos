@@ -31,6 +31,9 @@ const SquirclePlayground = lazy(
 const CitizenshipGuide = lazy(
   () => import("./components/CitizenshipGuide.jsx"),
 );
+const PatreonOAuthDrawerReturn = lazy(
+  () => import("./components/PatreonOAuthDrawerReturn.jsx"),
+);
 
 const hasStoredKey = () => {
   if (typeof window === "undefined") return false;
@@ -200,6 +203,14 @@ createRoot(document.getElementById("root")).render(
             <Route path="/" element={<AppContainer />} />
             <Route path="/onboarding/*" element={<AppContainer />} />
             <Route path="/subscribe" element={<AppContainer />} />
+            <Route
+              path="/patreon-return"
+              element={
+                <BootReadyBoundary>
+                  <PatreonOAuthDrawerReturn />
+                </BootReadyBoundary>
+              }
+            />
             <Route path="/proficiency" element={<ProficiencyContainer />} />
             <Route
               path="/links"

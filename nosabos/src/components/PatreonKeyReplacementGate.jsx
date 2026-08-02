@@ -16,6 +16,7 @@ export default function PatreonKeyReplacementGate({
   onCancel,
   isChecking = false,
   statusError = "",
+  embedded = false,
 }) {
   const lang = normalizeSupportLanguage(appLanguage, DEFAULT_SUPPORT_LANGUAGE);
   const copy =
@@ -51,29 +52,31 @@ export default function PatreonKeyReplacementGate({
 
   return (
     <Box
-      minH="100vh"
-      bg={pageBg}
+      minH={embedded ? "auto" : "100vh"}
+      bg={embedded ? "transparent" : pageBg}
       color={shellText}
       dir={isRtl ? "rtl" : "ltr"}
-      display="flex"
+      display={embedded ? "block" : "flex"}
       alignItems="center"
       justifyContent="center"
-      px={{ base: 2, md: 4 }}
-      py={{ base: 3, md: 8 }}
+      px={embedded ? 0 : { base: 2, md: 4 }}
+      py={embedded ? 0 : { base: 3, md: 8 }}
     >
       <Box
-        bg={shellBg}
-        borderWidth="1px"
+        bg={embedded ? "transparent" : shellBg}
+        borderWidth={embedded ? 0 : "1px"}
         borderColor={shellBorder}
         borderRadius={{ base: "30px", md: "36px" }}
         style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
-        p={{ base: 4, md: 7 }}
+        p={embedded ? 0 : { base: 4, md: 7 }}
         maxW="620px"
         w="100%"
         boxShadow={
-          isLightTheme
-            ? "0 24px 80px rgba(97, 74, 47, 0.16)"
-            : "0 24px 80px rgba(0,0,0,0.42)"
+          embedded
+            ? "none"
+            : isLightTheme
+              ? "0 24px 80px rgba(97, 74, 47, 0.16)"
+              : "0 24px 80px rgba(0,0,0,0.42)"
         }
       >
         <VStack align="stretch" spacing={{ base: 5, md: 6 }}>
