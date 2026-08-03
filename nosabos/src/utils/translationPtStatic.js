@@ -668,6 +668,7 @@ export const TRANSLATION_PT_STATIC = {
   "timer_modal_start": "Iniciar temporizador",
   "timer_modal_restart": "Reiniciar temporizador",
   "timer_modal_max_hint": "máx 240 minutos (4 horas)",
+  "timer_modal_drag_hint": "Arraste ao redor do relógio ou use uma opção abaixo",
   "timer_times_up_title": "Tempo concluído!",
   "timer_times_up_subtitle": "Sessão de enfoque completa",
   "timer_times_up_duration": "Te mantuviste concentrado durante {minutes} minutos.",

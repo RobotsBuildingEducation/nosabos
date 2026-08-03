@@ -819,6 +819,7 @@ export const translations = {
     timer_modal_start: "Start timer",
     timer_modal_restart: "Restart timer",
     timer_modal_max_hint: "max 240 minutes (4 hours)",
+    timer_modal_drag_hint: "Drag around the clock or use an option below",
     timer_times_up_title: "Time's up!",
     timer_times_up_subtitle: "Focus session complete",
     timer_times_up_duration: "You stayed on task for {minutes} minutes.",
@@ -1742,6 +1743,8 @@ export const translations = {
     timer_modal_start: "Iniciar temporizador",
     timer_modal_restart: "Reiniciar temporizador",
     timer_modal_max_hint: "máx 240 minutos (4 horas)",
+    timer_modal_drag_hint:
+      "Arrastra alrededor del reloj o usa una opción de abajo",
     timer_times_up_title: "¡Tiempo terminado!",
     timer_times_up_subtitle: "Sesión de enfoque completa",
     timer_times_up_duration:
@@ -2636,6 +2639,8 @@ translations.it = {
   timer_modal_start: "Avvia timer",
   timer_modal_restart: "Riavvia timer",
   timer_modal_max_hint: "max 240 minuti (4 ore)",
+  timer_modal_drag_hint:
+    "Trascina intorno all'orologio o usa un'opzione qui sotto",
   timer_times_up_title: "Tempo scaduto!",
   timer_times_up_subtitle: "Sessione di concentrazione completata",
   timer_times_up_duration: "Sei rimasto concentrato per {minutes} minuti.",
@@ -3525,6 +3530,8 @@ translations.fr = {
   timer_modal_start: "Demarrer le minuteur",
   timer_modal_restart: "Redemarrer le minuteur",
   timer_modal_max_hint: "max 240 minutes (4 heures)",
+  timer_modal_drag_hint:
+    "Fais glisser autour de l’horloge ou utilise une option ci-dessous",
   timer_times_up_title: "Temps ecoule !",
   timer_times_up_subtitle: "Session de concentration terminee",
   timer_times_up_duration: "Tu es reste concentre pendant {minutes} minutes.",
@@ -4496,6 +4503,8 @@ translations.ja = {
   timer_modal_start: "タイマー開始",
   timer_modal_restart: "タイマー再開",
   timer_modal_max_hint: "最大240分（4時間）",
+  timer_modal_drag_hint:
+    "時計の周りをドラッグするか、下のオプションを使用してください",
   timer_times_up_title: "時間です！",
   timer_times_up_subtitle: "集中セッション完了",
   timer_times_up_duration: "{minutes}分集中しました。",

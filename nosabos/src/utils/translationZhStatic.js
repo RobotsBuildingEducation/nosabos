@@ -714,7 +714,7 @@ export const TRANSLATION_ZH_STATIC = {
   timer_modal_title: "专注计时器",
   timer_modal_description: "设置你想专注的时长。",
   timer_modal_minutes_label: "分钟",
-  timer_modal_drag_hint: "拖动时钟来设置时间",
+  timer_modal_drag_hint: "拖动时钟，或使用下方选项",
   timer_modal_quick_picks: "快速选择",
   timer_modal_cancel: "取消",
   timer_modal_close: "关闭",
