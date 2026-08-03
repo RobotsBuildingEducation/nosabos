@@ -5,7 +5,10 @@ export const LANDING_PAGE_AR_STATIC = {
   hero_subtitle:
     "مدرّس لغات شخصي بيتابع مسارات تعليم منظّمة، وبيفتكر أخطاءك وبيحوّلها لتدريبات لبكرة.",
   cta_start: "ابدأ التعلّم",
-  cta_signin: "عندي مفتاح بالفعل",
+  cta_signin: "تسجيل الدخول بالمفتاح السري",
+  create_secret_key_detected_prefix: "تم اكتشاف مفتاح سري. استخدم ",
+  create_secret_key_detected_action: "تسجيل الدخول بالمفتاح",
+  create_secret_key_detected_suffix: " بدلًا من ذلك.",
   languages_label: "اللغات",
   languages_title: "اتدرّب على",
   languages_title_accent: "14 لغة",
@@ -113,7 +116,7 @@ export const LANDING_PAGE_AR_STATIC = {
     "الصق المفتاح السري اللي حفظته وقت ما أنشأت الحساب.",
   signin_placeholder: "الصق المفتاح السري",
   signin_button: "سجّل الدخول",
-  signin_extension: "دخول بالإضافة",
+  signin_extension: "تسجيل الدخول بإضافة NIP-07",
   signin_or: "أو",
   signin_error_invalid_key:
     "المفتاح السري غير صالح. راجعه وجرّب تاني.",

@@ -5,7 +5,10 @@ export const LANDING_PAGE_PT_STATIC = {
   hero_subtitle:
     "Um tutor pessoal de idiomas que segue trilhas estruturadas, lembra dos seus erros e os transforma na prática de amanhã.",
   cta_start: "Começar",
-  cta_signin: "Já tenho uma chave",
+  cta_signin: "Entrar com chave secreta",
+  create_secret_key_detected_prefix: "Chave secreta detectada. Use ",
+  create_secret_key_detected_action: "Entrar com chave",
+  create_secret_key_detected_suffix: " em vez disso.",
   languages_label: "IDIOMAS",
   languages_title: "Pratique em",
   languages_title_accent: "14 idiomas",
@@ -113,7 +116,7 @@ export const LANDING_PAGE_PT_STATIC = {
     "Cole a chave secreta que você guardou quando criou a sua conta.",
   signin_placeholder: "Cole sua chave secreta",
   signin_button: "Entrar",
-  signin_extension: "Entrar com extensão",
+  signin_extension: "Entrar com extensão NIP-07",
   signin_or: "ou",
   signin_error_invalid_key:
     "Chave secreta inválida. Confira e tente de novo.",

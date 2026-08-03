@@ -86,6 +86,7 @@ export const LINKS_PAGE_PT_STATIC = {
   usingExtension: "Você está usando uma extensão do navegador para assinar",
   copied: "Copiado!",
   secretKeyCopied: "Chave secreta copiada para a área de transferência",
+  rbeReadyToSignIn: "Você já pode entrar.",
   failedCopy: "Falha ao copiar para a área de transferência",
   invalidKey: "Chave inválida",
   enterValidNsec: "Digite uma chave nsec válida",
