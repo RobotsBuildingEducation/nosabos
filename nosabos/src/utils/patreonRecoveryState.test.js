@@ -76,6 +76,6 @@ test("only the initial unresolved Patreon check can hold the app boot", () => {
       isResolved: false,
       isChecking: false,
     }),
-    false,
+    true,
   );
 });

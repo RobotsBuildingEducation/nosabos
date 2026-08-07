@@ -47,5 +47,6 @@ export function shouldHoldForInitialPatreonStatus({
   isResolved = false,
   isChecking = false,
 } = {}) {
-  return !isResolved && isChecking;
+  return !isResolved;
 }
+

@@ -3097,7 +3097,7 @@ export default function App({ onBootReady } = {}) {
     Boolean(patreonStatusPayload.checkoutRequired);
 
   const checkPatreonSubscription = useCallback(
-    async ({ allowRestore = isSubscriptionRoute } = {}) => {
+    async ({ allowRestore = true } = {}) => {
       setIsCheckingPatreon(true);
       setPatreonStatusError("");
       try {
@@ -3172,7 +3172,7 @@ export default function App({ onBootReady } = {}) {
         setIsCheckingPatreon(false);
       }
     },
-    [activeNpub, isSubscriptionRoute],
+    [activeNpub],
   );
 
   useEffect(() => {
@@ -3188,7 +3188,7 @@ export default function App({ onBootReady } = {}) {
   }, [activeNpub]);
 
   useEffect(() => {
-    void checkPatreonSubscription();
+    void checkPatreonSubscription({ allowRestore: true });
   }, [checkPatreonSubscription]);
 
   const handlePatreonSubscriptionSurfaceOpen = useCallback(() => {
