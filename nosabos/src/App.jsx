@@ -3196,6 +3196,18 @@ export default function App({ onBootReady } = {}) {
   }, [checkPatreonSubscription]);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(location.search);
+    if (params.get("patreon") === "connected") {
+      const returnedNpub = String(params.get("npub") || "").trim();
+      if (returnedNpub.startsWith("npub1") && returnedNpub !== activeNpub) {
+        window.localStorage.setItem("local_npub", returnedNpub);
+        setActiveNpub(returnedNpub);
+      }
+    }
+  }, [location.search, activeNpub]);
+
+  useEffect(() => {
     if (
       typeof window === "undefined" ||
       patreonResult !== "checkout_required"
@@ -3214,7 +3226,7 @@ export default function App({ onBootReady } = {}) {
     const shouldRecheck = createPatreonRecheckGate();
     const recheck = () => {
       if (!shouldRecheck(document.visibilityState)) return;
-      void checkPatreonSubscription();
+      void checkPatreonSubscription({ allowRestore: true });
     };
     window.addEventListener("focus", recheck);
     document.addEventListener("visibilitychange", recheck);
@@ -3223,6 +3235,34 @@ export default function App({ onBootReady } = {}) {
       document.removeEventListener("visibilitychange", recheck);
     };
   }, [checkPatreonSubscription]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const handleOAuthMessage = (event) => {
+      if (event.data?.type === "PATREON_OAUTH_RESPONSE") {
+        const { result, npub } = event.data || {};
+        if (result === "connected") {
+          if (npub && npub.startsWith("npub1") && npub !== activeNpub) {
+            try {
+              window.localStorage.setItem("local_npub", npub);
+            } catch {}
+            setActiveNpub(npub);
+          }
+          void checkPatreonSubscription({ allowRestore: true });
+        } else if (result === "replace_required") {
+          setPatreonStatusPayload((curr) => ({
+            ...curr,
+            replacementRequired: true,
+          }));
+        } else if (result === "oauth_cancelled" || result === "oauth_error") {
+          setPatreonStatusError("unavailable");
+        }
+        setIsCheckingPatreon(false);
+      }
+    };
+    window.addEventListener("message", handleOAuthMessage);
+    return () => window.removeEventListener("message", handleOAuthMessage);
+  }, [activeNpub, checkPatreonSubscription]);
 
   const handlePatreonConnect = useCallback(
     async (plan = "annual", options = {}) => {
@@ -3236,6 +3276,42 @@ export default function App({ onBootReady } = {}) {
       }
       setIsCheckingPatreon(true);
       setPatreonStatusError("");
+
+      let popup = null;
+      try {
+        const width = 540;
+        const height = 720;
+        const left = Math.max(
+          0,
+          (window.innerWidth - width) / 2 + (window.screenX || 0),
+        );
+        const top = Math.max(
+          0,
+          (window.innerHeight - height) / 2 + (window.screenY || 0),
+        );
+        popup = window.open(
+          "about:blank",
+          "piyali_patreon_oauth",
+          `width=${width},height=${height},top=${top},left=${left},scrollbars=yes,resizable=yes`,
+        );
+        if (popup && popup.document) {
+          popup.document.write(`
+            <!DOCTYPE html>
+            <html>
+              <head><title>Piyali Patreon Connect</title></head>
+              <body style="background:#090d16;color:#e2e8f0;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;">
+                <div style="text-align:center;padding:20px;">
+                  <div style="font-size:18px;font-weight:bold;margin-bottom:8px;">Connecting to Patreon...</div>
+                  <div style="font-size:14px;color:#a0aec0;">Please complete authorization in this window.</div>
+                </div>
+              </body>
+            </html>
+          `);
+        }
+      } catch (e) {
+        console.warn("Unable to open OAuth popup", e);
+      }
+
       try {
         const proof = await createPatreonNostrProof({
           npub: activeNpub,
@@ -3259,15 +3335,30 @@ export default function App({ onBootReady } = {}) {
         if (!response.ok || !payload.authorizeUrl) {
           throw new Error(payload.error || "Unable to start Patreon linking");
         }
-        window.location.assign(payload.authorizeUrl);
+
+        if (popup && !popup.closed) {
+          popup.location.href = payload.authorizeUrl;
+          const pollTimer = setInterval(() => {
+            if (popup.closed) {
+              clearInterval(pollTimer);
+              void checkPatreonSubscription({ allowRestore: true });
+              setIsCheckingPatreon(false);
+            }
+          }, 1000);
+        } else {
+          window.location.assign(payload.authorizeUrl);
+        }
       } catch (error) {
         console.warn("Unable to link Patreon to the Piyali key", error);
+        try {
+          popup?.close();
+        } catch {}
         if (returnMode === "drawer") clearPatreonDrawerReturn();
         setPatreonStatusError("unavailable");
         setIsCheckingPatreon(false);
       }
     },
-    [activeNpub],
+    [activeNpub, checkPatreonSubscription],
   );
 
   const handlePatreonDrawerConnect = useCallback(
@@ -9919,7 +10010,11 @@ export default function App({ onBootReady } = {}) {
       user?.onboarding?.draft?.themeMode || user?.themeMode || themeMode,
   };
 
-  if (needsOnboarding) {
+  if (
+    needsOnboarding &&
+    !isSubscriptionRoute &&
+    location.pathname !== "/patreon-return"
+  ) {
     if (!isOnboardingRoute) {
       return <Navigate to="/onboarding" replace />;
     }
@@ -9940,7 +10035,13 @@ export default function App({ onBootReady } = {}) {
   // URL, avoiding a blank Navigate-only frame on mobile.
 
   if (isSubscriptionRoute) {
-    if (!needsSubscriptionPasscode) {
+    const hasPatreonResult = Boolean(
+      patreonResult ||
+      patreonStatusPayload.replacementRequired ||
+      patreonStatusPayload.checkoutRequired,
+    );
+
+    if (!needsSubscriptionPasscode && !hasPatreonResult) {
       return <Navigate to="/" replace />;
     }
 

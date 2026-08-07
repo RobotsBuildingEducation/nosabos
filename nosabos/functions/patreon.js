@@ -1306,7 +1306,42 @@ async function handleSessionStatus({
     cookies[FIREBASE_SESSION_COOKIE],
     AUTH_SESSION_COOKIE_KIND,
   );
+  const activeNpub = String(
+    req.headers?.["x-piyali-npub"] || req.header?.("X-Piyali-Npub") || "",
+  ).trim();
+
+  async function tryAccountLinkFallback() {
+    if (!activeNpub || !decodeNpub(activeNpub)) return null;
+    try {
+      const npubHash = sha256(activeNpub);
+      const accountRef = db.collection(ACCOUNT_LINK_COLLECTION).doc(npubHash);
+      const accountSnapshot = await accountRef.get();
+      if (accountSnapshot.exists) {
+        const account = accountSnapshot.data() || {};
+        const evaluation = await evaluateStoredPatreonRecord(
+          account,
+          config,
+          fetchImpl,
+        );
+        if (evaluation.authorized) {
+          return {
+            authorized: true,
+            configured: true,
+            linked: true,
+            subscription: evaluation.subscription,
+          };
+        }
+      }
+    } catch (error) {
+      log.warn("Unable to evaluate account link status", error?.message || error);
+    }
+    return null;
+  }
+
   if (!rawSessionId) {
+    const fallback = await tryAccountLinkFallback();
+    if (fallback) return sendJson(res, 200, fallback);
+
     return sendJson(res, 200, {
       authorized: false,
       configured: true,
@@ -1319,6 +1354,9 @@ async function handleSessionStatus({
   const sessionRef = db.collection(SESSION_COLLECTION).doc(sessionHash);
   const sessionSnapshot = await sessionRef.get();
   if (!sessionSnapshot.exists) {
+    const fallback = await tryAccountLinkFallback();
+    if (fallback) return sendJson(res, 200, fallback);
+
     res.setHeader(
       "Set-Cookie",
       clearCookie(FIREBASE_SESSION_COOKIE, config.cookieSecure),
@@ -1333,9 +1371,6 @@ async function handleSessionStatus({
 
   const session = sessionSnapshot.data() || {};
   const now = Date.now();
-  const activeNpub = String(
-    req.headers?.["x-piyali-npub"] || req.header?.("X-Piyali-Npub") || "",
-  ).trim();
   const sessionNpubHash = String(
     session.linkedNpubHash ||
       (session.linkedNpub ? sha256(session.linkedNpub) : ""),
@@ -1351,6 +1386,9 @@ async function handleSessionStatus({
       "Set-Cookie",
       clearCookie(FIREBASE_SESSION_COOKIE, config.cookieSecure),
     );
+    const fallback = await tryAccountLinkFallback();
+    if (fallback) return sendJson(res, 200, fallback);
+
     return sendJson(res, 200, {
       authorized: false,
       configured: true,
@@ -1368,6 +1406,9 @@ async function handleSessionStatus({
       "Set-Cookie",
       clearCookie(FIREBASE_SESSION_COOKIE, config.cookieSecure),
     );
+    const fallback = await tryAccountLinkFallback();
+    if (fallback) return sendJson(res, 200, fallback);
+
     return sendJson(res, 200, {
       authorized: false,
       configured: true,
@@ -1388,6 +1429,9 @@ async function handleSessionStatus({
       "Set-Cookie",
       clearCookie(FIREBASE_SESSION_COOKIE, config.cookieSecure),
     );
+    const fallback = await tryAccountLinkFallback();
+    if (fallback) return sendJson(res, 200, fallback);
+
     return sendJson(res, 200, {
       authorized: false,
       configured: true,
@@ -2781,7 +2825,12 @@ function createPatreonHandler({ db, getConfig, fetchImpl = fetch, logger }) {
         );
         return res.redirect(
           302,
-          redirectTarget(config, "connected", {}, linkProof?.returnMode),
+          redirectTarget(
+            config,
+            "connected",
+            { npub: linkProof?.npub },
+            linkProof?.returnMode,
+          ),
         );
       } catch (error) {
         log.error("Patreon OAuth callback failed", error?.message || error);

@@ -438,6 +438,31 @@ export default function SubscriptionGate({
   const isLightTheme = themeMode === "light";
   const [value, setValue] = useState("");
   const [localError, setLocalError] = useState("");
+
+  React.useEffect(() => {
+    if (typeof window === "undefined" || !window.opener) return;
+    const params = new URLSearchParams(window.location.search);
+    const result = params.get("patreon");
+    if (!result) return;
+
+    try {
+      window.opener.postMessage(
+        {
+          type: "PATREON_OAUTH_RESPONSE",
+          result,
+          npub: String(params.get("npub") || "").trim(),
+        },
+        "*",
+      );
+    } catch (e) {
+      console.warn("Unable to postMessage to window.opener", e);
+    }
+    setTimeout(() => {
+      try {
+        window.close();
+      } catch {}
+    }, 400);
+  }, []);
   const invalidMessage =
     error ||
     localError ||
@@ -511,7 +536,17 @@ export default function SubscriptionGate({
   const inputBg = isLightTheme ? "rgba(247, 240, 229, 0.98)" : "gray.800";
 
   const renderPatreonAction = () =>
-    isPatreonAwaiting ? (
+    patreonResult === "connected" ? (
+      <Alert status="success" borderRadius="20px" alignItems="flex-start">
+        <AlertIcon mt={1} />
+        <Box flex="1">
+          <Text fontWeight="bold">Patreon Connected!</Text>
+          <Text fontSize="sm" mt={1}>
+            Your Patreon subscription has been verified and unlocked. You can now access the full app.
+          </Text>
+        </Box>
+      </Alert>
+    ) : isPatreonAwaiting ? (
       <Alert status="info" borderRadius="20px" alignItems="flex-start">
         <AlertIcon mt={1} />
         <Box flex="1">

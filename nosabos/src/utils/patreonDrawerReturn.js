@@ -19,7 +19,7 @@ const ALLOWED_RESULTS = new Set([
 function browserStorage(storage) {
   if (storage) return storage;
   if (typeof window === "undefined") return null;
-  return window.sessionStorage;
+  return window.localStorage || window.sessionStorage;
 }
 
 function parseRecord(value) {
@@ -130,10 +130,25 @@ export function completePatreonDrawerReturn({
   const normalizedResult = ALLOWED_RESULTS.has(requestedResult)
     ? requestedResult
     : "oauth_error";
+  const urlParams =
+    typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search)
+      : null;
+  const returnedNpub = String(urlParams?.get("npub") || "").trim();
+  const targetNpub = String(record?.npub || returnedNpub).trim();
+
+  if (returnedNpub && returnedNpub.startsWith("npub1") && targetStorage) {
+    try {
+      targetStorage.setItem("local_npub", returnedNpub);
+    } catch {
+      // Ignore storage errors in restricted contexts
+    }
+  }
+
   const readyRecord = {
     returnPath,
     result: normalizedResult,
-    npub: String(record?.npub || "").trim(),
+    npub: targetNpub,
     createdAtMs: Number(record?.createdAtMs || now),
   };
   targetStorage.removeItem(PENDING_KEY);
