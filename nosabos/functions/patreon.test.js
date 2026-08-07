@@ -1177,8 +1177,9 @@ test("local callback tunnel can recover signed link state without a shared cooki
   );
 });
 
-test("production callback still rejects a missing OAuth state cookie", async () => {
-  const state = "no-cookie-production-state";
+
+test("callback without state cookie recovers from valid signed Firestore OAuth state", async () => {
+  const state = "no-cookie-mobile-state";
   const db = new FakeFirestore({
     [`patreonOAuthStates/${sha256(state)}`]: {
       npub: "npub1test",
@@ -1191,8 +1192,23 @@ test("production callback still rejects a missing OAuth state cookie", async () 
     getConfig: () =>
       handlerConfig({
         allowStateCookieFallback: false,
+        clientId: "client-id",
+        clientSecret: "client-secret",
+        redirectUri: "https://piyali.app/api/patreon/callback",
         appUrl: "https://piyali.app",
       }),
+    fetchImpl: async (url) => ({
+      ok: true,
+      status: 200,
+      json: async () =>
+        String(url).includes("/token")
+          ? {
+              access_token: "access",
+              refresh_token: "refresh",
+              expires_in: 3600,
+            }
+          : identityWithMembership(),
+    }),
     logger: { info() {}, warn() {}, error() {} },
   });
   const response = fakeResponse();
@@ -1208,10 +1224,10 @@ test("production callback still rejects a missing OAuth state cookie", async () 
   );
 
   assert.equal(response.statusCode, 302);
-  assert.match(response.headers.Location, /patreon=state_error/);
+  assert.match(response.headers.Location, /patreon=connected/);
   assert.equal(
     db.records.has(`patreonOAuthStates/${sha256(state)}`),
-    true,
+    false,
   );
 });
 

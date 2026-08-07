@@ -2530,17 +2530,10 @@ function createPatreonHandler({ db, getConfig, fetchImpl = fetch, logger }) {
       const receivedState = String(req.query?.state || "");
       const code = String(req.query?.code || "");
       const oauthError = String(req.query?.error || "");
-      res.setHeader(
-        "Set-Cookie",
-        clearCookie(FIREBASE_SESSION_COOKIE, config.cookieSecure),
-      );
-
-      // A local HTTPS tunnel and the localhost UI are different cookie
-      // origins. In explicitly enabled local development, recover the state
-      // from the short-lived, signed-Nostr-key-bound Firestore record instead.
-      // Production keeps requiring the same-origin OAuth state cookie.
+      // Mobile browsers (iOS Safari / ITP) often drop cross-site redirect
+      // cookies when Patreon redirects back. Fall back to the short-lived,
+      // signed-Nostr-key-bound Firestore state record.
       if (
-        config.allowStateCookieFallback &&
         receivedState &&
         (!expectedState || !safeEqual(expectedState, receivedState))
       ) {
