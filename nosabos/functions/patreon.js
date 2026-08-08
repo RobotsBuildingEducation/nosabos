@@ -21,6 +21,7 @@ const OAUTH_STATE_COLLECTION = "patreonOAuthStates";
 const ACCOUNT_LINK_COLLECTION = "patreonAccountLinks";
 const PATREON_USER_LINK_COLLECTION = "patreonUserLinks";
 const RECOVERY_COLLECTION = "patreonLinkRecoveries";
+const RECOVERY_RESUME_COLLECTION = "patreonLinkRecoveryResumes";
 const AUDIT_COLLECTION = "patreonOAuthAuditEvents";
 const WEBHOOK_RECEIPT_COLLECTION = "patreonWebhookReceipts";
 const RECOVERY_RATE_LIMIT_COLLECTION = "patreonRecoveryRateLimits";
@@ -486,13 +487,9 @@ function redirectTarget(
     const params = new URLSearchParams({ patreon: result });
     if (returnMode === "drawer") params.set("patreon_drawer", "1");
     appendSearchParams(params);
-    const path = returnMode === "drawer" ? "/patreon-return" : "/subscribe";
-    return `${path}?${params.toString()}`;
+    return `/patreon-return?${params.toString()}`;
   }
-  const url = new URL(
-    returnMode === "drawer" ? "/patreon-return" : "/subscribe",
-    baseUrl,
-  );
+  const url = new URL("/patreon-return", baseUrl);
   url.searchParams.set("patreon", result);
   if (returnMode === "drawer") url.searchParams.set("patreon_drawer", "1");
   appendSearchParams(url.searchParams);
@@ -1037,6 +1034,9 @@ async function createRecoveryIntent({
     .collection(PATREON_USER_LINK_COLLECTION)
     .doc(patreonUserHash);
   const recoveryRef = db.collection(RECOVERY_COLLECTION).doc(recoveryHash);
+  const recoveryResumeRef = db
+    .collection(RECOVERY_RESUME_COLLECTION)
+    .doc(nextNpubHash);
 
   await enforceRecoveryCreationRateLimits({
     db,
@@ -1098,6 +1098,16 @@ async function createRecoveryIntent({
       createdAtMs: now,
       expiresAtMs: now + RECOVERY_DURATION_MS,
       completedAtMs: null,
+      expiresAt: new Date(now + RECOVERY_DURATION_MS),
+    });
+    // This pointer contains no bearer credential. It is only consulted after
+    // the new key signs a one-use Nostr challenge, allowing a PWA or embedded
+    // browser to resume a replacement that Patreon completed in Safari.
+    transaction.set(recoveryResumeRef, {
+      recoveryHash,
+      nextNpubHash,
+      createdAtMs: now,
+      expiresAtMs: now + RECOVERY_DURATION_MS,
       expiresAt: new Date(now + RECOVERY_DURATION_MS),
     });
     transaction.set(
@@ -1310,38 +1320,7 @@ async function handleSessionStatus({
     req.headers?.["x-piyali-npub"] || req.header?.("X-Piyali-Npub") || "",
   ).trim();
 
-  async function tryAccountLinkFallback() {
-    if (!activeNpub || !decodeNpub(activeNpub)) return null;
-    try {
-      const npubHash = sha256(activeNpub);
-      const accountRef = db.collection(ACCOUNT_LINK_COLLECTION).doc(npubHash);
-      const accountSnapshot = await accountRef.get();
-      if (accountSnapshot.exists) {
-        const account = accountSnapshot.data() || {};
-        const evaluation = await evaluateStoredPatreonRecord(
-          account,
-          config,
-          fetchImpl,
-        );
-        if (evaluation.authorized) {
-          return {
-            authorized: true,
-            configured: true,
-            linked: true,
-            subscription: evaluation.subscription,
-          };
-        }
-      }
-    } catch (error) {
-      log.warn("Unable to evaluate account link status", error?.message || error);
-    }
-    return null;
-  }
-
   if (!rawSessionId) {
-    const fallback = await tryAccountLinkFallback();
-    if (fallback) return sendJson(res, 200, fallback);
-
     return sendJson(res, 200, {
       authorized: false,
       configured: true,
@@ -1354,9 +1333,6 @@ async function handleSessionStatus({
   const sessionRef = db.collection(SESSION_COLLECTION).doc(sessionHash);
   const sessionSnapshot = await sessionRef.get();
   if (!sessionSnapshot.exists) {
-    const fallback = await tryAccountLinkFallback();
-    if (fallback) return sendJson(res, 200, fallback);
-
     res.setHeader(
       "Set-Cookie",
       clearCookie(FIREBASE_SESSION_COOKIE, config.cookieSecure),
@@ -1386,9 +1362,6 @@ async function handleSessionStatus({
       "Set-Cookie",
       clearCookie(FIREBASE_SESSION_COOKIE, config.cookieSecure),
     );
-    const fallback = await tryAccountLinkFallback();
-    if (fallback) return sendJson(res, 200, fallback);
-
     return sendJson(res, 200, {
       authorized: false,
       configured: true,
@@ -1406,9 +1379,6 @@ async function handleSessionStatus({
       "Set-Cookie",
       clearCookie(FIREBASE_SESSION_COOKIE, config.cookieSecure),
     );
-    const fallback = await tryAccountLinkFallback();
-    if (fallback) return sendJson(res, 200, fallback);
-
     return sendJson(res, 200, {
       authorized: false,
       configured: true,
@@ -1429,9 +1399,6 @@ async function handleSessionStatus({
       "Set-Cookie",
       clearCookie(FIREBASE_SESSION_COOKIE, config.cookieSecure),
     );
-    const fallback = await tryAccountLinkFallback();
-    if (fallback) return sendJson(res, 200, fallback);
-
     return sendJson(res, 200, {
       authorized: false,
       configured: true,
@@ -1657,10 +1624,6 @@ async function handleReplacement({ req, res, db, config, fetchImpl, log }) {
     cookies[FIREBASE_SESSION_COOKIE],
     OAUTH_RECOVERY_COOKIE_KIND,
   );
-  if (!rawRecoveryId) {
-    return rejectReplacement(401, "replacement_expired");
-  }
-
   let proof;
   try {
     proof = await consumeNostrChallenge({
@@ -1677,8 +1640,30 @@ async function handleReplacement({ req, res, db, config, fetchImpl, log }) {
   }
 
   const now = Date.now();
-  const recoveryHash = sha256(rawRecoveryId);
+  const nextNpubHashFromProof = sha256(proof.npub);
+  let recoveryHash = rawRecoveryId ? sha256(rawRecoveryId) : "";
+  if (!recoveryHash) {
+    const resumeSnapshot = await db
+      .collection(RECOVERY_RESUME_COLLECTION)
+      .doc(nextNpubHashFromProof)
+      .get();
+    const resume = resumeSnapshot.exists ? resumeSnapshot.data() || {} : null;
+    if (
+      resume?.nextNpubHash === nextNpubHashFromProof &&
+      Number(resume.expiresAtMs || 0) > now
+    ) {
+      recoveryHash = String(resume.recoveryHash || "");
+    }
+  }
+  if (!recoveryHash) {
+    return rejectReplacement(401, "replacement_expired", {
+      nextNpubHash: nextNpubHashFromProof,
+    });
+  }
   const recoveryRef = db.collection(RECOVERY_COLLECTION).doc(recoveryHash);
+  const recoveryResumeRef = db
+    .collection(RECOVERY_RESUME_COLLECTION)
+    .doc(nextNpubHashFromProof);
   const recoverySnapshot = await recoveryRef.get();
   const recovery = recoverySnapshot.exists
     ? recoverySnapshot.data() || {}
@@ -1687,7 +1672,7 @@ async function handleReplacement({ req, res, db, config, fetchImpl, log }) {
     !recovery ||
     recovery.status !== "pending" ||
     Number(recovery.expiresAtMs || 0) <= now ||
-    recovery.nextNpubHash !== sha256(proof.npub)
+    recovery.nextNpubHash !== nextNpubHashFromProof
   ) {
     res.setHeader(
       "Set-Cookie",
@@ -1793,6 +1778,7 @@ async function handleReplacement({ req, res, db, config, fetchImpl, log }) {
         completedAtMs: now,
         expiresAt: new Date(now + WEBHOOK_RECEIPT_DURATION_MS),
       });
+      transaction.delete(recoveryResumeRef);
       transaction.set(
         sessionRef,
         buildBrowserSessionRecord({
@@ -1879,6 +1865,13 @@ async function handleCancelReplacement({ req, res, db, config, log }) {
     if (!recoverySnapshot.exists) return;
     const recovery = recoverySnapshot.data() || {};
     if (recovery.status !== "pending") return;
+    if (recovery.nextNpubHash) {
+      transaction.delete(
+        db
+          .collection(RECOVERY_RESUME_COLLECTION)
+          .doc(String(recovery.nextNpubHash)),
+      );
+    }
     auditData = {
       patreonUserHash: recovery.patreonUserHash || null,
       previousNpubHash: recovery.previousNpubHash || null,
@@ -2306,6 +2299,7 @@ function createPatreonHandler({ db, getConfig, fetchImpl = fetch, logger }) {
             hexPubkey: proof.hexPubkey,
             selectedPlan,
             returnMode,
+            status: "pending",
             createdAtMs: Date.now(),
             expiresAtMs: Date.now() + OAUTH_STATE_DURATION_MS,
             expiresAt: new Date(Date.now() + OAUTH_STATE_DURATION_MS),
@@ -2362,6 +2356,40 @@ function createPatreonHandler({ db, getConfig, fetchImpl = fetch, logger }) {
           .doc(sha256(proof.npub));
         const accountSnapshot = await accountRef.get();
         if (!accountSnapshot.exists) {
+          const npubHash = sha256(proof.npub);
+          const resumeSnapshot = await db
+            .collection(RECOVERY_RESUME_COLLECTION)
+            .doc(npubHash)
+            .get();
+          const resume = resumeSnapshot.exists
+            ? resumeSnapshot.data() || {}
+            : null;
+          if (
+            resume?.nextNpubHash === npubHash &&
+            Number(resume.expiresAtMs || 0) > Date.now() &&
+            resume.recoveryHash
+          ) {
+            const recoverySnapshot = await db
+              .collection(RECOVERY_COLLECTION)
+              .doc(String(resume.recoveryHash))
+              .get();
+            const recovery = recoverySnapshot.exists
+              ? recoverySnapshot.data() || {}
+              : null;
+            if (
+              recovery?.status === "pending" &&
+              recovery.nextNpubHash === npubHash &&
+              Number(recovery.expiresAtMs || 0) > Date.now()
+            ) {
+              return sendJson(res, 200, {
+                authorized: false,
+                configured: true,
+                linked: false,
+                replacementRequired: true,
+                reason: "replace_required",
+              });
+            }
+          }
           return sendJson(res, 200, {
             authorized: false,
             configured: true,
@@ -2615,16 +2643,31 @@ function createPatreonHandler({ db, getConfig, fetchImpl = fetch, logger }) {
       }
 
       let linkProof = null;
+      let oauthStateRef = null;
+      let oauthState = null;
       if (expectedLinkState) {
         try {
-          const oauthStateRef = db
+          oauthStateRef = db
             .collection(OAUTH_STATE_COLLECTION)
             .doc(sha256(receivedState));
           const oauthStateSnapshot = await oauthStateRef.get();
-          const oauthState = oauthStateSnapshot.exists
+          oauthState = oauthStateSnapshot.exists
             ? oauthStateSnapshot.data() || {}
             : null;
-          if (oauthStateSnapshot.exists) await oauthStateRef.delete();
+          if (
+            oauthState?.status === "completed" &&
+            oauthState?.completionResult
+          ) {
+            return res.redirect(
+              302,
+              redirectTarget(
+                config,
+                String(oauthState.completionResult),
+                oauthState.completionSearchParams || {},
+                String(oauthState.returnMode || "page"),
+              ),
+            );
+          }
           if (oauthState && Number(oauthState.expiresAtMs || 0) > Date.now()) {
             linkProof = {
               npub: String(oauthState.npub || ""),
@@ -2644,22 +2687,36 @@ function createPatreonHandler({ db, getConfig, fetchImpl = fetch, logger }) {
         }
       }
 
-      if (oauthError) {
+      const finishOAuth = async (result, searchParams = {}) => {
+        if (oauthStateRef) {
+          try {
+            await oauthStateRef.set(
+              {
+                status: "completed",
+                completionResult: result,
+                completionSearchParams: searchParams,
+                completedAtMs: Date.now(),
+              },
+              { merge: true },
+            );
+          } catch (error) {
+            log.warn(
+              "Unable to persist Patreon OAuth completion",
+              error?.message || error,
+            );
+          }
+        }
         return res.redirect(
           302,
-          redirectTarget(
-            config,
-            "oauth_cancelled",
-            {},
-            linkProof?.returnMode,
-          ),
+          redirectTarget(config, result, searchParams, linkProof?.returnMode),
         );
+      };
+
+      if (oauthError) {
+        return finishOAuth("oauth_cancelled");
       }
       if (!code) {
-        return res.redirect(
-          302,
-          redirectTarget(config, "oauth_error", {}, linkProof?.returnMode),
-        );
+        return finishOAuth("oauth_error");
       }
 
       try {
@@ -2704,25 +2761,11 @@ function createPatreonHandler({ db, getConfig, fetchImpl = fetch, logger }) {
                 },
               ),
             );
-            return res.redirect(
-              302,
-              redirectTarget(
-                config,
-                "checkout_required",
-                { plan: pendingRecord.selectedPlan },
-                linkProof?.returnMode,
-              ),
-            );
+            return finishOAuth("checkout_required", {
+              plan: pendingRecord.selectedPlan,
+            });
           }
-          return res.redirect(
-            302,
-            redirectTarget(
-              config,
-              "not_subscribed",
-              {},
-              linkProof?.returnMode,
-            ),
-          );
+          return finishOAuth("not_subscribed");
         }
 
         const now = Date.now();
@@ -2764,43 +2807,19 @@ function createPatreonHandler({ db, getConfig, fetchImpl = fetch, logger }) {
                     },
                   ),
                 );
-                return res.redirect(
-                  302,
-                  redirectTarget(
-                    config,
-                    "replace_required",
-                    {},
-                    linkProof?.returnMode,
-                  ),
-                );
+                return finishOAuth("replace_required");
               } catch (recoveryError) {
                 const recoveryCode = String(
                   recoveryError?.code || recoveryError?.message || "",
                 );
                 if (recoveryCode === "recovery_rate_limited") {
-                  return res.redirect(
-                    302,
-                    redirectTarget(
-                      config,
-                      "replace_rate_limited",
-                      {},
-                      linkProof?.returnMode,
-                    ),
-                  );
+                  return finishOAuth("replace_rate_limited");
                 }
                 throw recoveryError;
               }
             }
             if (error?.code === "piyali_key_already_linked") {
-              return res.redirect(
-                302,
-                redirectTarget(
-                  config,
-                  "link_conflict",
-                  {},
-                  linkProof?.returnMode,
-                ),
-              );
+              return finishOAuth("link_conflict");
             }
             throw error;
           }
@@ -2823,21 +2842,10 @@ function createPatreonHandler({ db, getConfig, fetchImpl = fetch, logger }) {
             },
           ),
         );
-        return res.redirect(
-          302,
-          redirectTarget(
-            config,
-            "connected",
-            { npub: linkProof?.npub },
-            linkProof?.returnMode,
-          ),
-        );
+        return finishOAuth("connected");
       } catch (error) {
         log.error("Patreon OAuth callback failed", error?.message || error);
-        return res.redirect(
-          302,
-          redirectTarget(config, "oauth_error", {}, linkProof?.returnMode),
-        );
+        return finishOAuth("oauth_error");
       }
     }
 

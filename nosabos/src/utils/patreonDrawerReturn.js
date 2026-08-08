@@ -19,7 +19,15 @@ const ALLOWED_RESULTS = new Set([
 function browserStorage(storage) {
   if (storage) return storage;
   if (typeof window === "undefined") return null;
-  return window.localStorage || window.sessionStorage;
+  try {
+    return window.localStorage;
+  } catch {
+    try {
+      return window.sessionStorage;
+    } catch {
+      return null;
+    }
+  }
 }
 
 function parseRecord(value) {
@@ -29,6 +37,31 @@ function parseRecord(value) {
     return parsed && typeof parsed === "object" ? parsed : null;
   } catch {
     return null;
+  }
+}
+
+function storageGet(storage, key) {
+  try {
+    return storage?.getItem(key) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function storageSet(storage, key, value) {
+  try {
+    storage?.setItem(key, value);
+  } catch {
+    // OAuth remains recoverable through the server-bound Nostr key even when
+    // an embedded browser blocks local storage.
+  }
+}
+
+function storageRemove(storage, key) {
+  try {
+    storage?.removeItem(key);
+  } catch {
+    // Ignore restricted browser storage failures.
   }
 }
 
@@ -65,6 +98,7 @@ export function currentPatreonDrawerReturnPath(locationLike = null) {
 export function beginPatreonDrawerReturn({
   returnPath,
   npub,
+  reopenDrawer = true,
   storage,
   now = Date.now(),
 } = {}) {
@@ -73,19 +107,24 @@ export function beginPatreonDrawerReturn({
   const record = {
     returnPath: sanitizePatreonDrawerReturnPath(returnPath),
     npub: String(npub || "").trim(),
+    reopenDrawer: Boolean(reopenDrawer),
     createdAtMs: now,
   };
-  targetStorage.setItem(PENDING_KEY, JSON.stringify(record));
-  targetStorage.removeItem(READY_KEY);
-  targetStorage.setItem(REOPEN_KEY, "1");
+  storageSet(targetStorage, PENDING_KEY, JSON.stringify(record));
+  storageRemove(targetStorage, READY_KEY);
+  if (record.reopenDrawer) {
+    storageSet(targetStorage, REOPEN_KEY, "1");
+  } else {
+    storageRemove(targetStorage, REOPEN_KEY);
+  }
 }
 
 export function clearPatreonDrawerReturn({ storage } = {}) {
   const targetStorage = browserStorage(storage);
   if (!targetStorage) return;
-  targetStorage.removeItem(PENDING_KEY);
-  targetStorage.removeItem(READY_KEY);
-  targetStorage.removeItem(REOPEN_KEY);
+  storageRemove(targetStorage, PENDING_KEY);
+  storageRemove(targetStorage, READY_KEY);
+  storageRemove(targetStorage, REOPEN_KEY);
 }
 
 function matchesNpub(record, npub) {
@@ -96,17 +135,28 @@ function matchesNpub(record, npub) {
 
 export function hasPatreonDrawerReopenRequest({ storage, npub } = {}) {
   const targetStorage = browserStorage(storage);
-  if (targetStorage?.getItem(REOPEN_KEY) !== "1") return false;
+  if (storageGet(targetStorage, REOPEN_KEY) !== "1") return false;
   const record =
-    parseRecord(targetStorage.getItem(READY_KEY)) ||
-    parseRecord(targetStorage.getItem(PENDING_KEY));
+    parseRecord(storageGet(targetStorage, READY_KEY)) ||
+    parseRecord(storageGet(targetStorage, PENDING_KEY));
   return matchesNpub(record, npub);
+}
+
+export function hasPendingPatreonDrawerReturn({
+  storage,
+  npub,
+  now = Date.now(),
+} = {}) {
+  const targetStorage = browserStorage(storage);
+  if (!targetStorage) return false;
+  const record = parseRecord(storageGet(targetStorage, PENDING_KEY));
+  return isFresh(record, now) && matchesNpub(record, npub);
 }
 
 export function readPatreonDrawerReadyResult({ storage, npub } = {}) {
   const targetStorage = browserStorage(storage);
   if (!targetStorage) return "";
-  const ready = parseRecord(targetStorage.getItem(READY_KEY));
+  const ready = parseRecord(storageGet(targetStorage, READY_KEY));
   if (!matchesNpub(ready, npub)) return "";
   return String(ready?.result || "");
 }
@@ -119,9 +169,9 @@ export function completePatreonDrawerReturn({
   const targetStorage = browserStorage(storage);
   if (!targetStorage) return "/";
 
-  let record = parseRecord(targetStorage.getItem(PENDING_KEY));
+  let record = parseRecord(storageGet(targetStorage, PENDING_KEY));
   if (!isFresh(record, now)) {
-    const ready = parseRecord(targetStorage.getItem(READY_KEY));
+    const ready = parseRecord(storageGet(targetStorage, READY_KEY));
     record = isFresh(ready, now) ? ready : null;
   }
 
@@ -130,34 +180,29 @@ export function completePatreonDrawerReturn({
   const normalizedResult = ALLOWED_RESULTS.has(requestedResult)
     ? requestedResult
     : "oauth_error";
-  const urlParams =
-    typeof window !== "undefined"
-      ? new URLSearchParams(window.location.search)
-      : null;
-  const returnedNpub = String(urlParams?.get("npub") || "").trim();
-  const targetNpub = String(record?.npub || returnedNpub).trim();
-
-  if (returnedNpub && returnedNpub.startsWith("npub1") && targetStorage) {
-    try {
-      targetStorage.setItem("local_npub", returnedNpub);
-    } catch {
-      // Ignore storage errors in restricted contexts
-    }
-  }
+  // OAuth callbacks must never select or replace the browser's active Nostr
+  // identity. The key that began the signed transaction remains authoritative.
+  const targetNpub = String(record?.npub || "").trim();
 
   const readyRecord = {
     returnPath,
     result: normalizedResult,
     npub: targetNpub,
+    reopenDrawer: record?.reopenDrawer !== false,
     createdAtMs: Number(record?.createdAtMs || now),
   };
-  targetStorage.removeItem(PENDING_KEY);
-  targetStorage.setItem(READY_KEY, JSON.stringify(readyRecord));
-  targetStorage.setItem(REOPEN_KEY, "1");
+  storageRemove(targetStorage, PENDING_KEY);
+  storageSet(targetStorage, READY_KEY, JSON.stringify(readyRecord));
 
   const parsed = new URL(returnPath, "https://piyali.app");
-  parsed.searchParams.set("patreon_drawer", "1");
-  parsed.searchParams.set("patreon_result", normalizedResult);
+  if (readyRecord.reopenDrawer) {
+    storageSet(targetStorage, REOPEN_KEY, "1");
+    parsed.searchParams.set("patreon_drawer", "1");
+    parsed.searchParams.set("patreon_result", normalizedResult);
+  } else {
+    storageRemove(targetStorage, REOPEN_KEY);
+    parsed.searchParams.set("patreon", normalizedResult);
+  }
   return `${parsed.pathname}${parsed.search}${parsed.hash}`;
 }
 

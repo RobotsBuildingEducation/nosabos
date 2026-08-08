@@ -439,30 +439,6 @@ export default function SubscriptionGate({
   const [value, setValue] = useState("");
   const [localError, setLocalError] = useState("");
 
-  React.useEffect(() => {
-    if (typeof window === "undefined" || !window.opener) return;
-    const params = new URLSearchParams(window.location.search);
-    const result = params.get("patreon");
-    if (!result) return;
-
-    try {
-      window.opener.postMessage(
-        {
-          type: "PATREON_OAUTH_RESPONSE",
-          result,
-          npub: String(params.get("npub") || "").trim(),
-        },
-        "*",
-      );
-    } catch (e) {
-      console.warn("Unable to postMessage to window.opener", e);
-    }
-    setTimeout(() => {
-      try {
-        window.close();
-      } catch {}
-    }, 400);
-  }, []);
   const invalidMessage =
     error ||
     localError ||

@@ -3078,6 +3078,7 @@ export default function App({ onBootReady } = {}) {
     linked: false,
     subscription: null,
   });
+  const patreonCheckGenerationRef = useRef(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [subscriptionDrawerRequested, setSubscriptionDrawerRequested] =
     useState(false);
@@ -3098,6 +3099,8 @@ export default function App({ onBootReady } = {}) {
 
   const checkPatreonSubscription = useCallback(
     async ({ allowRestore = true } = {}) => {
+      const generation = ++patreonCheckGenerationRef.current;
+      const isCurrent = () => patreonCheckGenerationRef.current === generation;
       setIsCheckingPatreon(true);
       setPatreonStatusError("");
       try {
@@ -3110,6 +3113,7 @@ export default function App({ onBootReady } = {}) {
           },
         });
         const payload = await response.json().catch(() => ({}));
+        if (!isCurrent()) return;
         setPatreonStatusPayload(payload);
         setPatreonAvailable(payload.configured !== false);
         if (payload.authorized) {
@@ -3141,6 +3145,7 @@ export default function App({ onBootReady } = {}) {
             },
           );
           const restorePayload = await restoreResponse.json().catch(() => ({}));
+          if (!isCurrent()) return;
           setPatreonStatusPayload(restorePayload);
           setPatreonAvailable(restorePayload.configured !== false);
           setPatreonSubscriptionVerified(Boolean(restorePayload.authorized));
@@ -3158,6 +3163,7 @@ export default function App({ onBootReady } = {}) {
           setPatreonStatusError("unavailable");
         }
       } catch (error) {
+        if (!isCurrent()) return;
         console.warn("Unable to check Patreon subscription", error);
         setPatreonAvailable(false);
         setPatreonSubscriptionVerified(false);
@@ -3168,8 +3174,10 @@ export default function App({ onBootReady } = {}) {
           error: "patreon_unavailable",
         }));
       } finally {
-        setPatreonStatusResolved(true);
-        setIsCheckingPatreon(false);
+        if (isCurrent()) {
+          setPatreonStatusResolved(true);
+          setIsCheckingPatreon(false);
+        }
       }
     },
     [activeNpub],
@@ -3178,6 +3186,7 @@ export default function App({ onBootReady } = {}) {
   useEffect(() => {
     // Never carry a prior key's optimistic unlock across an identity change.
     // The status request below must establish access for the active key.
+    patreonCheckGenerationRef.current += 1;
     setPatreonSubscriptionVerified(false);
     setPatreonStatusResolved(false);
     setPatreonStatusPayload({
@@ -3194,18 +3203,6 @@ export default function App({ onBootReady } = {}) {
   const handlePatreonSubscriptionSurfaceOpen = useCallback(() => {
     void checkPatreonSubscription({ allowRestore: true });
   }, [checkPatreonSubscription]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const params = new URLSearchParams(location.search);
-    if (params.get("patreon") === "connected") {
-      const returnedNpub = String(params.get("npub") || "").trim();
-      if (returnedNpub.startsWith("npub1") && returnedNpub !== activeNpub) {
-        window.localStorage.setItem("local_npub", returnedNpub);
-        setActiveNpub(returnedNpub);
-      }
-    }
-  }, [location.search, activeNpub]);
 
   useEffect(() => {
     if (
@@ -3236,81 +3233,17 @@ export default function App({ onBootReady } = {}) {
     };
   }, [checkPatreonSubscription]);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return undefined;
-    const handleOAuthMessage = (event) => {
-      if (event.data?.type === "PATREON_OAUTH_RESPONSE") {
-        const { result, npub } = event.data || {};
-        if (result === "connected") {
-          if (npub && npub.startsWith("npub1") && npub !== activeNpub) {
-            try {
-              window.localStorage.setItem("local_npub", npub);
-            } catch {}
-            setActiveNpub(npub);
-          }
-          void checkPatreonSubscription({ allowRestore: true });
-        } else if (result === "replace_required") {
-          setPatreonStatusPayload((curr) => ({
-            ...curr,
-            replacementRequired: true,
-          }));
-        } else if (result === "oauth_cancelled" || result === "oauth_error") {
-          setPatreonStatusError("unavailable");
-        }
-        setIsCheckingPatreon(false);
-      }
-    };
-    window.addEventListener("message", handleOAuthMessage);
-    return () => window.removeEventListener("message", handleOAuthMessage);
-  }, [activeNpub, checkPatreonSubscription]);
-
   const handlePatreonConnect = useCallback(
     async (plan = "annual", options = {}) => {
       if (typeof window === "undefined" || !activeNpub) return;
       const returnMode = options?.returnMode === "drawer" ? "drawer" : "page";
-      if (returnMode === "drawer") {
-        beginPatreonDrawerReturn({
-          returnPath: currentPatreonDrawerReturnPath(),
-          npub: activeNpub,
-        });
-      }
+      beginPatreonDrawerReturn({
+        returnPath: currentPatreonDrawerReturnPath(),
+        npub: activeNpub,
+        reopenDrawer: returnMode === "drawer",
+      });
       setIsCheckingPatreon(true);
       setPatreonStatusError("");
-
-      let popup = null;
-      try {
-        const width = 540;
-        const height = 720;
-        const left = Math.max(
-          0,
-          (window.innerWidth - width) / 2 + (window.screenX || 0),
-        );
-        const top = Math.max(
-          0,
-          (window.innerHeight - height) / 2 + (window.screenY || 0),
-        );
-        popup = window.open(
-          "about:blank",
-          "piyali_patreon_oauth",
-          `width=${width},height=${height},top=${top},left=${left},scrollbars=yes,resizable=yes`,
-        );
-        if (popup && popup.document) {
-          popup.document.write(`
-            <!DOCTYPE html>
-            <html>
-              <head><title>Piyali Patreon Connect</title></head>
-              <body style="background:#090d16;color:#e2e8f0;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;">
-                <div style="text-align:center;padding:20px;">
-                  <div style="font-size:18px;font-weight:bold;margin-bottom:8px;">Connecting to Patreon...</div>
-                  <div style="font-size:14px;color:#a0aec0;">Please complete authorization in this window.</div>
-                </div>
-              </body>
-            </html>
-          `);
-        }
-      } catch (e) {
-        console.warn("Unable to open OAuth popup", e);
-      }
 
       try {
         const proof = await createPatreonNostrProof({
@@ -3336,29 +3269,15 @@ export default function App({ onBootReady } = {}) {
           throw new Error(payload.error || "Unable to start Patreon linking");
         }
 
-        if (popup && !popup.closed) {
-          popup.location.href = payload.authorizeUrl;
-          const pollTimer = setInterval(() => {
-            if (popup.closed) {
-              clearInterval(pollTimer);
-              void checkPatreonSubscription({ allowRestore: true });
-              setIsCheckingPatreon(false);
-            }
-          }, 1000);
-        } else {
-          window.location.assign(payload.authorizeUrl);
-        }
+        window.location.assign(payload.authorizeUrl);
       } catch (error) {
         console.warn("Unable to link Patreon to the Piyali key", error);
-        try {
-          popup?.close();
-        } catch {}
-        if (returnMode === "drawer") clearPatreonDrawerReturn();
+        clearPatreonDrawerReturn();
         setPatreonStatusError("unavailable");
         setIsCheckingPatreon(false);
       }
     },
-    [activeNpub, checkPatreonSubscription],
+    [activeNpub],
   );
 
   const handlePatreonDrawerConnect = useCallback(

@@ -5,6 +5,7 @@ import {
   beginPatreonDrawerReturn,
   clearPatreonDrawerReturn,
   completePatreonDrawerReturn,
+  hasPendingPatreonDrawerReturn,
   hasPatreonDrawerReopenRequest,
   readPatreonDrawerReadyResult,
   sanitizePatreonDrawerReturnPath,
@@ -48,6 +49,25 @@ test("OAuth return restores the original query and hash with drawer markers", ()
   assert.equal(hasPatreonDrawerReopenRequest({ storage }), true);
 });
 
+test("page OAuth returns to its page without opening the settings drawer", () => {
+  const storage = memoryStorage();
+  beginPatreonDrawerReturn({
+    returnPath: "/subscribe?plan=annual",
+    npub: "npub-original",
+    reopenDrawer: false,
+    storage,
+    now: 1_000,
+  });
+  const target = completePatreonDrawerReturn({
+    result: "connected",
+    storage,
+    now: 2_000,
+  });
+
+  assert.equal(target, "/subscribe?plan=annual&patreon=connected");
+  assert.equal(hasPatreonDrawerReopenRequest({ storage }), false);
+});
+
 test("completing the callback keeps a durable reopen request until explicit close", () => {
   const storage = memoryStorage();
   beginPatreonDrawerReturn({ returnPath: "/", storage, now: 1_000 });
@@ -56,6 +76,27 @@ test("completing the callback keeps a durable reopen request until explicit clos
   clearPatreonDrawerReturn({ storage });
   assert.equal(hasPatreonDrawerReopenRequest({ storage }), false);
   assert.equal(storage.getItem(PATREON_DRAWER_RETURN_KEYS.ready), null);
+});
+
+test("a callback never changes the browser's active Nostr identity", () => {
+  const storage = memoryStorage();
+  storage.setItem("local_npub", "npub-active");
+  beginPatreonDrawerReturn({
+    returnPath: "/",
+    npub: "npub-active",
+    storage,
+    now: 1_000,
+  });
+  assert.equal(
+    hasPendingPatreonDrawerReturn({
+      storage,
+      npub: "npub-active",
+      now: 1_500,
+    }),
+    true,
+  );
+  completePatreonDrawerReturn({ result: "connected", storage, now: 2_000 });
+  assert.equal(storage.getItem("local_npub"), "npub-active");
 });
 
 test("drawer return requests only reopen for the key that started Patreon", () => {

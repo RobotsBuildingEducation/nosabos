@@ -5,7 +5,11 @@ const PATREON_CHALLENGE_ENDPOINT = "/api/patreon/link-challenge";
 
 function storedNsec() {
   if (typeof window === "undefined") return "";
-  return String(window.localStorage.getItem("local_nsec") || "").trim();
+  try {
+    return String(window.localStorage.getItem("local_nsec") || "").trim();
+  } catch {
+    return "";
+  }
 }
 
 export function canSilentlySignPatreonProof() {

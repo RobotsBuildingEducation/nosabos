@@ -277,6 +277,10 @@ body {
 
 .chakra-slide.chakra-modal__content {
   will-change: transform;
+  /* Chakra drawers reuse the modal content class. Keep their screen-edge
+     corners square without changing the rounded shells used by real modals. */
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
 }
 
 .chakra-modal__content {
