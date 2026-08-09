@@ -7,7 +7,9 @@ import {
 import { getAnalytics } from "firebase/analytics";
 
 import {
+  connectFirestoreEmulator,
   initializeFirestore,
+  memoryLocalCache,
   persistentLocalCache,
   persistentMultipleTabManager,
 } from "firebase/firestore";
@@ -27,20 +29,30 @@ const firebaseConfig = {
 export const app = initializeApp(firebaseConfig);
 
 const APP_CHECK_DEBUG_HOSTNAMES = new Set(["localhost", "127.0.0.1", "::1"]);
+const useFirebaseEmulators =
+  import.meta.env.DEV &&
+  String(import.meta.env.VITE_USE_FIREBASE_EMULATORS).toLowerCase() === "true";
 
 if (
+  !useFirebaseEmulators &&
   typeof window !== "undefined" &&
   APP_CHECK_DEBUG_HOSTNAMES.has(window.location.hostname)
 ) {
   self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
 }
 
-export const appCheck = initializeAppCheck(app, {
-  provider: new ReCaptchaV3Provider(import.meta.env.VITE_RECAPTCHA_SITE_KEY),
-  isTokenAutoRefreshEnabled: true,
-});
+export const appCheck = useFirebaseEmulators
+  ? null
+  : initializeAppCheck(app, {
+      provider: new ReCaptchaV3Provider(
+        import.meta.env.VITE_RECAPTCHA_SITE_KEY,
+      ),
+      isTokenAutoRefreshEnabled: true,
+    });
 
 export async function getAppCheckHeaders() {
+  if (!appCheck) return {};
+
   try {
     const { token } = await getToken(appCheck, false);
     return token ? { "X-Firebase-AppCheck": token } : {};
@@ -62,10 +74,16 @@ export async function appCheckFetch(input, init = {}) {
 }
 
 const database = initializeFirestore(app, {
-  localCache: persistentLocalCache({
-    tabManager: persistentMultipleTabManager(),
-  }),
+  localCache: useFirebaseEmulators
+    ? memoryLocalCache()
+    : persistentLocalCache({
+        tabManager: persistentMultipleTabManager(),
+      }),
 });
+
+if (useFirebaseEmulators) {
+  connectFirestoreEmulator(database, "127.0.0.1", 8080);
+}
 const analytics = getAnalytics(app);
 
 // ✅ IMPORTANT: Gemini 3 Flash Preview is "global", not us-central1

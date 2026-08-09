@@ -40,7 +40,7 @@ import {
 } from "@chakra-ui/react";
 import { QRCodeSVG } from "qrcode.react";
 import { BsQrCode } from "react-icons/bs";
-import { SiCashapp, SiPatreon } from "react-icons/si";
+import { SiCashapp } from "react-icons/si";
 import { IoIosMore } from "react-icons/io";
 import { MdInstallMobile, MdOutlineFileUpload } from "react-icons/md";
 import { CiSquarePlus } from "react-icons/ci";
@@ -73,6 +73,21 @@ import {
   nativeOverlayMotionProps,
 } from "../utils/modalMotion";
 import { rememberAccountSwitch } from "../utils/authSession";
+import { fetchWithTimeout } from "../utils/fetchWithTimeout";
+
+const PATREON_LOGOUT_ENDPOINT = "/api/patreon/logout";
+
+async function endPatreonBrowserSession() {
+  await fetchWithTimeout(
+    PATREON_LOGOUT_ENDPOINT,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: { Accept: "application/json" },
+    },
+    5000,
+  );
+}
 
 const HINDI_SUPPORT_COPY = {
   "Enter a display name": "एक प्रदर्शित नाम दर्ज करें",
@@ -250,7 +265,6 @@ export function IdentityPanel({
   postNostrContent,
   showHeader = true,
   showSignOutButton = true,
-  showPatreonSupport = true,
 }) {
   const toast = useToast();
   const themeMode = useThemeStore((s) => s.themeMode);
@@ -425,18 +439,22 @@ export function IdentityPanel({
     }
   };
 
-  const handleSignOut = useCallback(() => {
+  const handleSignOut = useCallback(async () => {
     if (typeof window === "undefined") return;
 
     try {
+      await endPatreonBrowserSession();
+    } catch (err) {
+      // Local identity logout must still complete if the backend is offline.
+      // The next key-bound status check also rejects a mismatched old session.
+      console.warn("Unable to end Patreon browser session:", err);
+    }
+
+    try {
       localStorage.clear();
-      localStorage.removeItem("local_nsec");
-      localStorage.removeItem("local_npub");
-      window.location.reload();
+      window.location.replace("/");
     } catch (err) {
       console.error("signOut error:", err);
-    } finally {
-      window.location.href = "/";
     }
   }, []);
 
@@ -469,6 +487,9 @@ export function IdentityPanel({
       if (!npub?.startsWith("npub"))
         throw new Error("Could not derive npub from the secret key.");
 
+      await endPatreonBrowserSession().catch((error) => {
+        console.warn("Unable to reset Patreon session before key switch:", error);
+      });
       localStorage.setItem("local_npub", npub);
       localStorage.setItem("local_nsec", nsec);
       rememberAccountSwitch(npub);
@@ -630,68 +651,6 @@ export function IdentityPanel({
             {t?.app_copy_secret || "Copy Secret Key"}
           </Button>
         </HStack>
-
-        {showPatreonSupport ? (
-          <Box p={4} bg="gray.800" rounded="lg" maxW="600px" w="100%" mx="auto">
-            <HStack spacing={3} align="center">
-              <Box
-                p={2}
-                bg="black"
-                rounded="lg"
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-              >
-                <SiPatreon size={20} color="white" />
-              </Box>
-              <VStack align="start" spacing={0} flex={1}>
-                <Text fontWeight="semibold" fontSize="sm">
-                  {supportCopy(
-                    lang,
-                    "Join us on Patreon",
-                    "Apóyanos en Patreon",
-                    "Sostienici su Patreon",
-                    "Rejoins-nous sur Patreon",
-                    "Patreonで応援",
-                    "Apoie-nos no Patreon",
-                  )}
-                </Text>
-                <Text fontSize="xs" color="gray.400">
-                  {supportCopy(
-                    lang,
-                    "Get full access to more education apps and content",
-                    "Obtén acceso completo a más apps educativas y contenido",
-                    "Ottieni accesso completo a più app educative e contenuti",
-                    "Obtiens un accès complet à plus d'apps éducatives et de contenu",
-                    "さらに多くの教育アプリとコンテンツにフルアクセス",
-                    "Tenha acesso completo a mais apps educacionais e conteúdo",
-                  )}
-                </Text>
-              </VStack>
-              <Button
-                size="sm"
-                bg="black"
-                boxShadow="0px 0px 4px gray"
-                onClick={() =>
-                  window.open(
-                    "https://subscribe.piyali.app/",
-                    "_blank",
-                  )
-                }
-              >
-                {supportCopy(
-                  lang,
-                  "Join",
-                  "Unirse",
-                  "Unisciti",
-                  "Rejoindre",
-                  "参加",
-                  "Entrar",
-                )}
-              </Button>
-            </HStack>
-          </Box>
-        ) : null}
 
         {/* Display Name + Switch Account Accordions */}
         <Accordion allowMultiple {...accountAccordionProps}>

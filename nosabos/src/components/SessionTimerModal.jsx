@@ -74,7 +74,7 @@ function ClockVisual({
   maxMinutes = 240,
   playSliderTick,
   isLightTheme = false,
-  dragHint = "Drag around the clock to set time",
+  dragHint = "Drag around the clock or use an option below",
 }) {
   const parsedMinutes = Math.max(0, Math.min(maxMinutes, Number(minutes) || 0));
   const clockRef = useRef(null);
@@ -583,6 +583,20 @@ export default function SessionTimerModal({
         border="1px solid"
         rounded="2xl"
         shadow={isLightTheme ? APP_SHADOW : "xl"}
+        sx={{
+          "& > .chakra-modal__header": {
+            paddingBottom: {
+              base: "12px !important",
+              md: "32px !important",
+            },
+          },
+          "& > .chakra-modal__body": {
+            paddingTop: {
+              base: "8px !important",
+              md: "40px !important",
+            },
+          },
+        }}
       >
         <ModalHeader pl={isRtl ? 12 : undefined} pr={isRtl ? undefined : 12}>
           <HStack spacing={2} align="center">
@@ -608,7 +622,8 @@ export default function SessionTimerModal({
                 playSliderTick={playSliderTick}
                 isLightTheme={isLightTheme}
                 dragHint={
-                  t.timer_modal_drag_hint || "Drag around the clock to set time"
+                  t.timer_modal_drag_hint ||
+                  "Drag around the clock or use an option below"
                 }
               />
 

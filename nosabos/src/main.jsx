@@ -20,6 +20,7 @@ import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import { theme } from "./theme";
 import LandingPage from "./components/LandingPage.jsx";
 import VoiceOrb from "./components/VoiceOrb.jsx";
+import AppLoadBoundary from "./components/AppLoadBoundary.jsx";
 
 const App = lazy(() => import("./App.jsx"));
 const LinksPage = lazy(() => import("./components/LinksPage.jsx"));
@@ -29,6 +30,9 @@ const SquirclePlayground = lazy(
 );
 const CitizenshipGuide = lazy(
   () => import("./components/CitizenshipGuide.jsx"),
+);
+const PatreonOAuthDrawerReturn = lazy(
+  () => import("./components/PatreonOAuthDrawerReturn.jsx"),
 );
 
 const hasStoredKey = () => {
@@ -151,12 +155,12 @@ function AppContainer() {
   }
 
   return (
-    <>
+    <AppLoadBoundary>
       <Suspense fallback={null}>
         <App onBootReady={handleAppBootReady} />
       </Suspense>
       {bootOverlayMounted && <BootOverlay visible={bootOverlayVisible} />}
-    </>
+    </AppLoadBoundary>
   );
 }
 
@@ -199,6 +203,14 @@ createRoot(document.getElementById("root")).render(
             <Route path="/" element={<AppContainer />} />
             <Route path="/onboarding/*" element={<AppContainer />} />
             <Route path="/subscribe" element={<AppContainer />} />
+            <Route
+              path="/patreon-return"
+              element={
+                <BootReadyBoundary>
+                  <PatreonOAuthDrawerReturn />
+                </BootReadyBoundary>
+              }
+            />
             <Route path="/proficiency" element={<ProficiencyContainer />} />
             <Route
               path="/links"

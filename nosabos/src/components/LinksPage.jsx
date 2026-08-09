@@ -896,6 +896,7 @@ export default function LinksPage() {
   ); // Random between 20-40
   const [noSabosOrbState] = useState(pickRandomVoiceOrbState);
   const [roleIndex, setRoleIndex] = useState(0);
+  const [hasCopiedRbeSecretKey, setHasCopiedRbeSecretKey] = useState(false);
 
   // Wallet state
   const [walletHydrating, setWalletHydrating] = useState(true);
@@ -1049,6 +1050,14 @@ export default function LinksPage() {
   }, []);
 
   const rbeUrl = "https://robotsbuildingeducation.com";
+  const handleRbeOpen = () => {
+    setHasCopiedRbeSecretKey(false);
+    onRbeOpen();
+  };
+  const handleRbeClose = () => {
+    setHasCopiedRbeSecretKey(false);
+    onRbeClose();
+  };
   const handleSelectSound = () => playSound(selectSound);
   const handleSubmitActionSound = () => playSound(submitActionSound);
   const handleThemeModeChange = (nextMode) => {
@@ -1161,7 +1170,7 @@ export default function LinksPage() {
       description: translations.rbeDescription,
       href: rbeUrl,
       analyticsName: "robots_building_education",
-      onLaunch: onRbeOpen,
+      onLaunch: handleRbeOpen,
       visual: (
         <Box
           display="flex"
@@ -1235,11 +1244,13 @@ export default function LinksPage() {
         </Box>
       ),
       launchAppText: translations.subscribe,
-      secondaryAction: {
-        label: translations.buyApps,
-        href: "https://www.patreon.com/posts/146522893?forSale=true",
-        color: "#4da3ff",
-      },
+      // The one-time "Buy apps" action is intentionally hidden while Patreon
+      // OAuth membership is the supported unlock path.
+      // secondaryAction: {
+      //   label: translations.buyApps,
+      //   href: "https://www.patreon.com/posts/146522893?forSale=true",
+      //   color: "#4da3ff",
+      // },
     },
   ];
 
@@ -1332,7 +1343,7 @@ export default function LinksPage() {
   };
 
   // Handle copy secret key
-  const handleCopySecretKey = async () => {
+  const handleCopySecretKey = async ({ showSuccessToast = true } = {}) => {
     const nsec = localStorage.getItem("local_nsec");
     if (!nsec || nsec === "nip07") {
       toast({
@@ -1343,19 +1354,22 @@ export default function LinksPage() {
         duration: 3000,
         isClosable: true,
       });
-      return;
+      return false;
     }
 
     try {
       await navigator.clipboard.writeText(nsec);
-      toast({
-        position: "top",
-        title: translations.copied,
-        description: translations.secretKeyCopied,
-        status: "success",
-        duration: 2000,
-        isClosable: true,
-      });
+      if (showSuccessToast) {
+        toast({
+          position: "top",
+          title: translations.copied,
+          description: translations.secretKeyCopied,
+          status: "success",
+          duration: 2000,
+          isClosable: true,
+        });
+      }
+      return true;
     } catch {
       toast({
         title: translations.error,
@@ -1364,6 +1378,7 @@ export default function LinksPage() {
         duration: 3000,
         isClosable: true,
       });
+      return false;
     }
   };
 
@@ -1728,7 +1743,7 @@ export default function LinksPage() {
       {/* Robots Building Education Modal */}
       <Modal
         isOpen={isRbeOpen}
-        onClose={onRbeClose}
+        onClose={handleRbeClose}
         isCentered
         size="md"
         motionPreset="none"
@@ -1772,62 +1787,80 @@ export default function LinksPage() {
                 textAlign={directionalTextAlign}
                 sx={{ unicodeBidi: "plaintext" }}
               >
-                {translations.rbeModalDescription}
+                {hasCopiedRbeSecretKey
+                  ? translations.secretKeyCopied
+                  : translations.rbeModalDescription}
               </Text>
-              <Button
-                onClick={() => {
-                  handleSelectSound();
-                  handleCopySecretKey();
-                }}
-                variant={isLightTheme ? "outline" : "solid"}
-                bg={isLightTheme ? APP_SURFACE : "#00aaff"}
-                w="100%"
-                h="auto"
-                py={4}
-                borderColor={isLightTheme ? linkAccent : undefined}
-                color={isLightTheme ? linkAccent : "white"}
-                _hover={
-                  isLightTheme
-                    ? { bg: APP_SURFACE_MUTED, borderColor: linkAccent }
-                    : undefined
-                }
-              >
-                {translations.copySecretKey}
-              </Button>
-              <Button
-                as="a"
-                href={rbeUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                bg={isLightTheme ? primaryAccent : "#009c9c"}
-                color={isLightTheme ? "#f8fafc" : "white"}
-                w="100%"
-                h="auto"
-                py={4}
-                boxShadow={
-                  isLightTheme
-                    ? "0 8px 18px rgba(15, 118, 110, 0.16)"
-                    : undefined
-                }
-                _hover={{
-                  bg: isLightTheme ? "#0d9488" : "#009c9c",
-                  color: "white",
-                  textDecoration: "none",
-                }}
-                _active={{ color: "white" }}
-                _visited={{ color: "white" }}
-                onClick={() => {
-                  handleSubmitActionSound();
-                  if (!isLocalhost()) {
-                    logEvent(analytics, "links_launch_app", {
-                      app: "robots_building_education",
-                    });
+              {hasCopiedRbeSecretKey && (
+                <Text
+                  fontSize="sm"
+                  fontWeight="bold"
+                  color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
+                  textAlign={directionalTextAlign}
+                >
+                  {translations.rbeReadyToSignIn}
+                </Text>
+              )}
+              {hasCopiedRbeSecretKey ? (
+                <Button
+                  as="a"
+                  href={rbeUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  bg={isLightTheme ? primaryAccent : "#009c9c"}
+                  color={isLightTheme ? "#f8fafc" : "white"}
+                  w="100%"
+                  h="auto"
+                  py={4}
+                  boxShadow={
+                    isLightTheme
+                      ? "0 8px 18px rgba(15, 118, 110, 0.16)"
+                      : undefined
                   }
-                  onRbeClose();
-                }}
-              >
-                {translations.goToApp}
-              </Button>
+                  _hover={{
+                    bg: isLightTheme ? "#0d9488" : "#009c9c",
+                    color: "white",
+                    textDecoration: "none",
+                  }}
+                  _active={{ color: "white" }}
+                  _visited={{ color: "white" }}
+                  onClick={() => {
+                    handleSubmitActionSound();
+                    if (!isLocalhost()) {
+                      logEvent(analytics, "links_launch_app", {
+                        app: "robots_building_education",
+                      });
+                    }
+                    handleRbeClose();
+                  }}
+                >
+                  {translations.goToApp}
+                </Button>
+              ) : (
+                <Button
+                  onClick={async () => {
+                    handleSelectSound();
+                    const copied = await handleCopySecretKey({
+                      showSuccessToast: false,
+                    });
+                    if (copied) setHasCopiedRbeSecretKey(true);
+                  }}
+                  variant={isLightTheme ? "outline" : "solid"}
+                  bg={isLightTheme ? APP_SURFACE : "#00aaff"}
+                  w="100%"
+                  h="auto"
+                  py={4}
+                  borderColor={isLightTheme ? linkAccent : undefined}
+                  color={isLightTheme ? linkAccent : "white"}
+                  _hover={
+                    isLightTheme
+                      ? { bg: APP_SURFACE_MUTED, borderColor: linkAccent }
+                      : undefined
+                  }
+                >
+                  {translations.copySecretKey}
+                </Button>
+              )}
             </VStack>
           </ModalBody>
         </ModalContent>

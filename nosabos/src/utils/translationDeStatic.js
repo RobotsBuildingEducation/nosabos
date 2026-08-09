@@ -838,6 +838,7 @@ export const TRANSLATION_DE_STATIC = {
   timer_modal_start: "Timer starten",
   timer_modal_restart: "Timer neu starten",
   timer_modal_max_hint: "max. 240 Minuten (4 Stunden)",
+  timer_modal_drag_hint: "Ziehe um die Uhr oder nutze eine Option unten",
   timer_times_up_title: "Zeit ist um",
   timer_times_up_subtitle: "Fokussitzung abgeschlossen",
   timer_times_up_duration: "Du warst {minutes} Minuten fokussiert.",

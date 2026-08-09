@@ -81,6 +81,7 @@ export const LINKS_PAGE_ZH_STATIC = {
   usingExtension: "你正在使用浏览器扩展签名",
   copied: "已复制！",
   secretKeyCopied: "私密密钥已复制到剪贴板",
+  rbeReadyToSignIn: "现在可以登录了。",
   failedCopy: "复制到剪贴板失败",
   invalidKey: "密钥无效",
   enterValidNsec: "请输入有效的 nsec 密钥",

@@ -59,6 +59,7 @@ import { LANDING_PAGE_PT_STATIC } from "../translations/landingPagePtStatic";
 import { LANDING_PAGE_ZH_STATIC } from "../translations/landingPageZhStatic";
 import { syncDocumentLanguage } from "../utils/documentLanguage";
 import { rememberSecretKeySignIn } from "../utils/authSession";
+import { isNsecSecretKeyLike } from "../utils/nostrKeyDetection";
 import { selectSound, submitActionSound } from "../constants/sounds";
 
 // Minimal hook stubs for standalone demo - replace with your actual implementations
@@ -120,7 +121,10 @@ const translations = {
     hero_subtitle:
       "A personal language tutor that follows structured paths, remembers your mistakes and turns them into tomorrow’s practice.",
     cta_start: "Start Learning",
-    cta_signin: "I Already Have A Key",
+    cta_signin: "Sign In With Secret Key",
+    create_secret_key_detected_prefix: "Secret key detected. Use ",
+    create_secret_key_detected_action: "Sign In With Key",
+    create_secret_key_detected_suffix: " instead.",
     languages_label: "LANGUAGES",
     languages_title: "Practice in",
     languages_title_accent: "14 Languages",
@@ -229,7 +233,7 @@ const translations = {
       "Paste the secret key you saved when you created your account.",
     signin_placeholder: "Paste your secret key",
     signin_button: "Sign In",
-    signin_extension: "Sign in with Extension",
+    signin_extension: "Sign In With NIP-07 Extension",
     signin_or: "or",
     signin_error_invalid_key:
       "Invalid secret key. Please check it and try again.",
@@ -261,7 +265,10 @@ const translations = {
     hero_subtitle:
       "Un tutor personal de idiomas que sigue rutas estructuradas, recuerda tus errores y los convierte en la práctica de mañana.",
     cta_start: "Comienza",
-    cta_signin: "Tengo una Llave",
+    cta_signin: "Iniciar sesión con clave secreta",
+    create_secret_key_detected_prefix: "Clave secreta detectada. Usa ",
+    create_secret_key_detected_action: "Iniciar sesión con clave",
+    create_secret_key_detected_suffix: " en su lugar.",
     languages_label: "IDIOMAS",
     languages_title: "Practica en",
     languages_title_accent: "14 Idiomas",
@@ -371,7 +378,7 @@ const translations = {
       "Pega la llave secreta que guardaste cuando creaste tu cuenta.",
     signin_placeholder: "Pega tu llave secreta",
     signin_button: "Iniciar Sesión",
-    signin_extension: "Iniciar con Extensión",
+    signin_extension: "Iniciar sesión con extensión NIP-07",
     signin_or: "o",
     signin_error_invalid_key:
       "Llave secreta no válida. Revísala e inténtalo de nuevo.",
@@ -404,7 +411,10 @@ const translations = {
     hero_subtitle:
       "Un tutor linguistico personale che segue percorsi strutturati, ricorda i tuoi errori e li trasforma nella pratica di domani.",
     cta_start: "Inizia",
-    cta_signin: "Ho già una Chiave",
+    cta_signin: "Accedi con la chiave segreta",
+    create_secret_key_detected_prefix: "Chiave segreta rilevata. Usa ",
+    create_secret_key_detected_action: "Accedi con la chiave",
+    create_secret_key_detected_suffix: " invece.",
     languages_label: "LINGUE",
     languages_title: "Pratica in",
     languages_title_accent: "14 Lingue",
@@ -512,7 +522,7 @@ const translations = {
       "Incolla la chiave segreta che hai salvato quando hai creato il tuo account.",
     signin_placeholder: "Incolla la tua chiave segreta",
     signin_button: "Accedi",
-    signin_extension: "Accedi con Estensione",
+    signin_extension: "Accedi con l'estensione NIP-07",
     signin_or: "o",
     signin_error_invalid_key:
       "Chiave segreta non valida. Controllala e riprova.",
@@ -556,7 +566,10 @@ translations.fr = {
   hero_subtitle:
     "Un tuteur linguistique personnel qui suit des parcours structurés, mémorise tes erreurs et les transforme en exercices pour le lendemain.",
   cta_start: "Commencer",
-  cta_signin: "J'ai deja une cle",
+  cta_signin: "Se connecter avec une clé secrète",
+  create_secret_key_detected_prefix: "Clé secrète détectée. Utilise ",
+  create_secret_key_detected_action: "Se connecter avec une clé",
+  create_secret_key_detected_suffix: " à la place.",
   languages_label: "LANGUES",
   languages_title: "Pratique en",
   languages_title_accent: "14 Langues",
@@ -663,7 +676,7 @@ translations.fr = {
     "Colle la cle secrete que tu as sauvegardee lors de la creation du compte.",
   signin_placeholder: "Colle ta cle secrete",
   signin_button: "Connexion",
-  signin_extension: "Connexion avec extension",
+  signin_extension: "Se connecter avec l’extension NIP-07",
   signin_or: "ou",
   signin_error_invalid_key: "Cle secrete invalide. Verifie-la et reessaie.",
   signin_error_extension: "La connexion avec l'extension a echoue. Reessaie.",
@@ -696,7 +709,10 @@ translations.ja = {
   hero_subtitle:
     "体系的な学習パスに沿って進み、間違いを覚えて翌日の練習に活かす、あなた専属の言語チューターです。",
   cta_start: "学習を始める",
-  cta_signin: "キーを持っています",
+  cta_signin: "シークレットキーでサインイン",
+  create_secret_key_detected_prefix: "シークレットキーが検出されました。",
+  create_secret_key_detected_action: "キーでサインイン",
+  create_secret_key_detected_suffix: "を使用してください。",
   languages_label: "言語",
   languages_title: "練習できる",
   languages_title_accent: "14言語",
@@ -806,7 +822,7 @@ translations.ja = {
     "アカウント作成時に保存したシークレットキーを貼り付けてください。",
   signin_placeholder: "シークレットキーを貼り付け",
   signin_button: "サインイン",
-  signin_extension: "拡張機能でサインイン",
+  signin_extension: "NIP-07拡張機能でサインイン",
   signin_or: "または",
   signin_error_invalid_key:
     "シークレットキーが無効です。確認してもう一度お試しください。",
@@ -1910,6 +1926,7 @@ const LandingPage = ({ onAuthenticated }) => {
   });
 
   const copy = translations[lang] || translations.en;
+  const hasSecretKeyInDisplayName = isNsecSecretKeyLike(displayName);
 
   useEffect(() => {
     setHasExtension(isNip07Available());
@@ -1964,7 +1981,12 @@ const LandingPage = ({ onAuthenticated }) => {
   }, [view]);
 
   const handleCreate = useCallback(async () => {
-    if (displayName.trim().length < 2 || isCreating) return;
+    if (
+      displayName.trim().length < 2 ||
+      isNsecSecretKeyLike(displayName) ||
+      isCreating
+    )
+      return;
     playSound(submitActionSound);
     setIsCreating(true);
     try {
@@ -2247,10 +2269,29 @@ const LandingPage = ({ onAuthenticated }) => {
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder={copy.placeholder_name}
             />
+            {hasSecretKeyInDisplayName && (
+              <p
+                role="alert"
+                style={{
+                  color: "#f87171",
+                  fontFamily: theme.fonts.body,
+                  fontSize: "0.875rem",
+                  lineHeight: 1.5,
+                  margin: 0,
+                  textAlign: "center",
+                }}
+              >
+                {copy.create_secret_key_detected_prefix}
+                <strong>{copy.create_secret_key_detected_action}</strong>
+                {copy.create_secret_key_detected_suffix}
+              </p>
+            )}
             <Button
               onClick={handleCreate}
               loading={isCreating}
-              disabled={displayName.trim().length < 2}
+              disabled={
+                displayName.trim().length < 2 || hasSecretKeyInDisplayName
+              }
               fullWidth
               size="lg"
               variant="primary"
@@ -2735,10 +2776,29 @@ const LandingPage = ({ onAuthenticated }) => {
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder={copy.placeholder_name}
             />
+            {hasSecretKeyInDisplayName && (
+              <p
+                role="alert"
+                style={{
+                  color: "#f87171",
+                  fontFamily: theme.fonts.body,
+                  fontSize: "0.875rem",
+                  lineHeight: 1.5,
+                  margin: 0,
+                  textAlign: "center",
+                }}
+              >
+                {copy.create_secret_key_detected_prefix}
+                <strong>{copy.create_secret_key_detected_action}</strong>
+                {copy.create_secret_key_detected_suffix}
+              </p>
+            )}
             <Button
               onClick={handleCreate}
               loading={isCreating}
-              disabled={displayName.trim().length < 2}
+              disabled={
+                displayName.trim().length < 2 || hasSecretKeyInDisplayName
+              }
               fullWidth
               size="lg"
             >

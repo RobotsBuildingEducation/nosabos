@@ -5,7 +5,10 @@ export const LANDING_PAGE_DE_STATIC = {
   hero_subtitle:
     "Ein persönlicher Sprachtutor, der strukturierten Lernpfaden folgt, sich deine Fehler merkt und sie in Übungen für morgen verwandelt.",
   cta_start: "Lernen starten",
-  cta_signin: "Ich habe schon einen Schlüssel",
+  cta_signin: "Mit geheimem Schlüssel anmelden",
+  create_secret_key_detected_prefix: "Geheimer Schlüssel erkannt. Nutze stattdessen ",
+  create_secret_key_detected_action: "Mit Schlüssel anmelden",
+  create_secret_key_detected_suffix: ".",
   languages_label: "SPRACHEN",
   languages_title: "Übe in",
   languages_title_accent: "14 Sprachen",
@@ -113,7 +116,7 @@ export const LANDING_PAGE_DE_STATIC = {
     "Füge den geheimen Schlüssel ein, den du beim Erstellen deines Kontos gespeichert hast.",
   signin_placeholder: "Geheimen Schlüssel einfügen",
   signin_button: "Anmelden",
-  signin_extension: "Mit Erweiterung anmelden",
+  signin_extension: "Mit NIP-07-Erweiterung anmelden",
   signin_or: "oder",
   signin_error_invalid_key:
     "Ungültiger geheimer Schlüssel. Bitte prüfe ihn und versuche es erneut.",

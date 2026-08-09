@@ -104,7 +104,8 @@ export const TRANSLATION_HI_STATIC = {
   timer_modal_start: "टाइमर शुरू करें",
   timer_modal_restart: "फिर से शुरू करें",
   timer_modal_max_hint: "अधिकतम 240 मिनट (4 घंटे)",
-  timer_modal_drag_hint: "समय सेट करने के लिए घड़ी के चारों ओर खींचें",
+  timer_modal_drag_hint:
+    "घड़ी के चारों ओर खींचें या नीचे दिए गए विकल्प का उपयोग करें",
   timer_times_up_subtitle: "ध्यान सत्र पूरा हुआ",
   timer_times_up_duration: "आपने {minutes} मिनट तक ध्यान बनाए रखा।",
   timer_times_up_no_duration: "टाइमर पूरा करने के लिए बहुत बढ़िया।",

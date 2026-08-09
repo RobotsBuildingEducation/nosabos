@@ -638,7 +638,7 @@ export const TRANSLATION_AR_STATIC = {
   timer_modal_start: "ابدأ المؤقت",
   timer_modal_restart: "أعد تشغيل المؤقت",
   timer_modal_max_hint: "الحد الأقصى 240 دقيقة (4 ساعات)",
-  timer_modal_drag_hint: "اسحب حوالين الساعة علشان تحدد الوقت",
+  timer_modal_drag_hint: "اسحب حوالين الساعة أو استخدم اختيار من اللي تحت",
   timer_times_up_title: "الوقت خلص!",
   timer_times_up_subtitle: "جلسة التركيز خلصت",
   timer_times_up_duration: "فضلت مركز لمدة {minutes} دقيقة.",

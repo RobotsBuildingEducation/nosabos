@@ -1,0 +1,80 @@
+export const SUBSCRIPTION_LEGACY_MIGRATION_REQUIRED_KEYS = [
+  "eyebrow",
+  "title",
+  "body",
+  "reassurance",
+  "connectAction",
+];
+
+export const SUBSCRIPTION_LEGACY_MIGRATION_COPY = {
+  en: {
+    eyebrow: "Existing member",
+    title: "One quick update to keep your access",
+    body: "We recognize that you previously unlocked Piyali with a membership passcode. Connect the Patreon account tied to your membership to keep using the app.",
+    reassurance: "You do not need a new subscription or another passcode.",
+    connectAction: "Connect to Patreon",
+  },
+  es: {
+    eyebrow: "Miembro existente",
+    title: "Una actualización rápida para conservar tu acceso",
+    body: "Reconocemos que anteriormente desbloqueaste Piyali con un código de membresía. Conecta la cuenta de Patreon vinculada a tu membresía para seguir usando la app.",
+    reassurance: "No necesitas una nueva suscripción ni otro código.",
+    connectAction: "Conectar a Patreon",
+  },
+  pt: {
+    eyebrow: "Membro existente",
+    title: "Uma atualização rápida para manter seu acesso",
+    body: "Reconhecemos que você desbloqueou o Piyali anteriormente com um código de membro. Conecte a conta do Patreon vinculada à sua assinatura para continuar usando o app.",
+    reassurance: "Você não precisa de uma nova assinatura nem de outro código.",
+    connectAction: "Conectar ao Patreon",
+  },
+  it: {
+    eyebrow: "Membro esistente",
+    title: "Un rapido aggiornamento per mantenere l'accesso",
+    body: "Riconosciamo che in precedenza hai sbloccato Piyali con un codice membro. Collega l'account Patreon associato al tuo abbonamento per continuare a usare l'app.",
+    reassurance: "Non ti serve un nuovo abbonamento né un altro codice.",
+    connectAction: "Collega a Patreon",
+  },
+  fr: {
+    eyebrow: "Membre existant",
+    title: "Une mise à jour rapide pour conserver votre accès",
+    body: "Nous reconnaissons que vous avez déjà déverrouillé Piyali avec un code membre. Connectez le compte Patreon associé à votre adhésion pour continuer à utiliser l'appli.",
+    reassurance: "Vous n'avez pas besoin d'un nouvel abonnement ni d'un autre code.",
+    connectAction: "Se connecter à Patreon",
+  },
+  de: {
+    eyebrow: "Bestehendes Mitglied",
+    title: "Ein kurzes Update, damit dein Zugang erhalten bleibt",
+    body: "Wir erkennen, dass du Piyali zuvor mit einem Mitgliedscode freigeschaltet hast. Verbinde das Patreon-Konto deiner Mitgliedschaft, um die App weiter zu nutzen.",
+    reassurance: "Du brauchst weder ein neues Abo noch einen weiteren Code.",
+    connectAction: "Mit Patreon verbinden",
+  },
+  ja: {
+    eyebrow: "既存メンバー",
+    title: "アクセスを継続するための簡単な更新",
+    body: "以前、メンバー用パスコードでPiyaliを解除したことを確認しています。引き続きアプリを利用するには、メンバーシップに紐づくPatreonアカウントを連携してください。",
+    reassurance: "新しい登録や別のパスコードは必要ありません。",
+    connectAction: "Patreonに接続",
+  },
+  hi: {
+    eyebrow: "मौजूदा सदस्य",
+    title: "अपना एक्सेस बनाए रखने के लिए एक छोटा सा अपडेट",
+    body: "हम पहचानते हैं कि आपने पहले सदस्यता पासकोड से Piyali अनलॉक किया था। ऐप का उपयोग जारी रखने के लिए अपनी सदस्यता से जुड़ा Patreon खाता कनेक्ट करें।",
+    reassurance: "आपको नई सदस्यता या किसी दूसरे पासकोड की आवश्यकता नहीं है।",
+    connectAction: "Patreon से कनेक्ट करें",
+  },
+  ar: {
+    eyebrow: "عضو حالي",
+    title: "تحديث سريع للحفاظ على وصولك",
+    body: "نعرف أنك فتحت Piyali من قبل باستخدام كود العضوية. اربط حساب Patreon المرتبط بعضويتك لمواصلة استخدام التطبيق.",
+    reassurance: "لا تحتاج إلى اشتراك جديد أو كود آخر.",
+    connectAction: "الاتصال بـ Patreon",
+  },
+  zh: {
+    eyebrow: "现有会员",
+    title: "只需快速更新即可保留访问权限",
+    body: "我们知道你之前曾使用会员通行码解锁Piyali。请连接与你的会员资格关联的Patreon账户，以继续使用应用。",
+    reassurance: "你不需要重新订阅，也不需要其他通行码。",
+    connectAction: "连接到 Patreon",
+  },
+};

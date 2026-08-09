@@ -5,7 +5,10 @@ export const LANDING_PAGE_HI_STATIC = {
   hero_subtitle:
     "एक व्यक्तिगत भाषा शिक्षक जो व्यवस्थित सीखने के रास्तों पर चलता है, आपकी गलतियाँ याद रखता है और उन्हें अगले दिन के अभ्यास में बदल देता है।",
   cta_start: "सीखना शुरू करें",
-  cta_signin: "मेरे पास पहले से एक कुंजी है",
+  cta_signin: "सीक्रेट कुंजी से साइन इन करें",
+  create_secret_key_detected_prefix: "सीक्रेट कुंजी मिली। इसके बजाय ",
+  create_secret_key_detected_action: "कुंजी से साइन इन करें",
+  create_secret_key_detected_suffix: "।",
   languages_label: "भाषाएं",
   languages_title: "अभ्यास करें",
   languages_title_accent: "14 भाषाओं में",
@@ -113,7 +116,7 @@ export const LANDING_PAGE_HI_STATIC = {
     "वह सीक्रेट कुंजी पेस्ट करें जिसे आपने खाता बनाते समय सहेजा था।",
   signin_placeholder: "अपनी सीक्रेट कुंजी पेस्ट करें",
   signin_button: "साइन इन",
-  signin_extension: "एक्सटेंशन के साथ साइन इन",
+  signin_extension: "NIP-07 एक्सटेंशन से साइन इन करें",
   signin_or: "या",
   signin_error_invalid_key:
     "सीक्रेट कुंजी अमान्य है। कृपया जांचें और फिर कोशिश करें।",

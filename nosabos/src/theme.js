@@ -331,7 +331,7 @@ export const theme = extendTheme({
           md: "40px !important",
         },
       },
-      ".chakra-modal__body:first-child": {
+      ".chakra-modal__body:first-of-type": {
         paddingTop: {
           base: "28px !important",
           md: "40px !important",

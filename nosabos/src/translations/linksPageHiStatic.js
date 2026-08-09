@@ -86,6 +86,7 @@ export const LINKS_PAGE_HI_STATIC = {
   usingExtension: "आप हस्ताक्षर के लिए ब्राउज़र एक्सटेंशन का उपयोग कर रहे हैं",
   copied: "कॉपी हो गया!",
   secretKeyCopied: "सीक्रेट कुंजी क्लिपबोर्ड पर कॉपी हो गई",
+  rbeReadyToSignIn: "अब आप साइन इन करने के लिए तैयार हैं।",
   failedCopy: "क्लिपबोर्ड पर कॉपी नहीं हो सका",
   invalidKey: "अमान्य कुंजी",
   enterValidNsec: "कृपया एक मान्य nsec कुंजी दर्ज करें",
