@@ -22,6 +22,7 @@ const {
   evaluatePatreonIdentity,
   evaluatePatreonMemberResource,
   getPatreonConfig,
+  normalizePatreonSupportLanguage,
   parseCookies,
   serializeCookie,
   sha256,
@@ -358,6 +359,13 @@ test("marks Patreon configuration complete only when secrets are present", () =>
   );
 });
 
+test("OAuth callback languages are reduced to the supported allowlist", () => {
+  assert.equal(normalizePatreonSupportLanguage("es-MX"), "es");
+  assert.equal(normalizePatreonSupportLanguage("JA"), "ja");
+  assert.equal(normalizePatreonSupportLanguage("../../unexpected"), "");
+  assert.equal(normalizePatreonSupportLanguage(""), "");
+});
+
 test("returns only sanitized subscription status to the browser", () => {
   const summary = buildSubscriptionSummary({
     authorized: true,
@@ -441,6 +449,7 @@ test("signed link-start stores an authenticated drawer return mode", async () =>
         signedEvent: finalizeEvent(eventTemplate, secretKey),
         plan: "annual",
         returnMode: "drawer",
+        supportLanguage: "es-MX",
       },
       headers: {},
     },
@@ -453,6 +462,7 @@ test("signed link-start stores an authenticated drawer return mode", async () =>
   );
   assert.equal(states.length, 1);
   assert.equal(states[0][1].returnMode, "drawer");
+  assert.equal(states[0][1].supportLanguage, "es");
 });
 
 test("webhooks revoke explicit inactive states but never grant active state", () => {
@@ -1286,6 +1296,7 @@ test("callback without state cookie recovers from valid signed Firestore OAuth s
     [`patreonOAuthStates/${sha256(state)}`]: {
       npub: "npub1test",
       hexPubkey: "a".repeat(64),
+      supportLanguage: "es",
       expiresAtMs: Date.now() + 60_000,
     },
   });
@@ -1327,9 +1338,15 @@ test("callback without state cookie recovers from valid signed Firestore OAuth s
 
   assert.equal(response.statusCode, 302);
   assert.match(response.headers.Location, /patreon=connected/);
+  assert.match(response.headers.Location, /lang=es/);
   assert.equal(
     db.records.get(`patreonOAuthStates/${sha256(state)}`).completionResult,
     "connected",
+  );
+  assert.deepEqual(
+    db.records.get(`patreonOAuthStates/${sha256(state)}`)
+      .completionSearchParams,
+    { lang: "es" },
   );
 });
 

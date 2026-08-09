@@ -3262,6 +3262,7 @@ export default function App({ onBootReady } = {}) {
             ...proof,
             plan: ["annual", "monthly"].includes(plan) ? plan : "annual",
             returnMode,
+            supportLanguage: appLanguage,
           }),
         });
         const payload = await response.json().catch(() => ({}));
@@ -3277,7 +3278,7 @@ export default function App({ onBootReady } = {}) {
         setIsCheckingPatreon(false);
       }
     },
-    [activeNpub],
+    [activeNpub, appLanguage],
   );
 
   const handlePatreonDrawerConnect = useCallback(

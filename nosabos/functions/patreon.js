@@ -42,7 +42,29 @@ const WEBHOOK_EVENTS = new Set([
   "members:pledge:update",
   "members:pledge:delete",
 ]);
+const PATREON_SUPPORT_LANGUAGES = new Set([
+  "en",
+  "es",
+  "pt",
+  "it",
+  "fr",
+  "de",
+  "ja",
+  "hi",
+  "ar",
+  "zh",
+]);
 const USER_AGENT = "NoSabos - Patreon subscription verification";
+
+function normalizePatreonSupportLanguage(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  const [base] = normalized.split(/[-_]/);
+  return PATREON_SUPPORT_LANGUAGES.has(normalized)
+    ? normalized
+    : PATREON_SUPPORT_LANGUAGES.has(base)
+      ? base
+      : "";
+}
 
 function splitIds(value) {
   return new Set(
@@ -2290,6 +2312,9 @@ function createPatreonHandler({ db, getConfig, fetchImpl = fetch, logger }) {
           String(req.body?.returnMode || "").trim() === "drawer"
             ? "drawer"
             : "page";
+        const supportLanguage = normalizePatreonSupportLanguage(
+          req.body?.supportLanguage,
+        );
         const state = crypto.randomBytes(32).toString("base64url");
         await db
           .collection(OAUTH_STATE_COLLECTION)
@@ -2299,6 +2324,7 @@ function createPatreonHandler({ db, getConfig, fetchImpl = fetch, logger }) {
             hexPubkey: proof.hexPubkey,
             selectedPlan,
             returnMode,
+            supportLanguage,
             status: "pending",
             createdAtMs: Date.now(),
             expiresAtMs: Date.now() + OAUTH_STATE_DURATION_MS,
@@ -2677,6 +2703,9 @@ function createPatreonHandler({ db, getConfig, fetchImpl = fetch, logger }) {
                 String(oauthState.returnMode || "") === "drawer"
                   ? "drawer"
                   : "page",
+              supportLanguage: normalizePatreonSupportLanguage(
+                oauthState.supportLanguage,
+              ),
             };
           }
         } catch (error) {
@@ -2688,13 +2717,19 @@ function createPatreonHandler({ db, getConfig, fetchImpl = fetch, logger }) {
       }
 
       const finishOAuth = async (result, searchParams = {}) => {
+        const completionSearchParams = {
+          ...searchParams,
+          ...(linkProof?.supportLanguage
+            ? { lang: linkProof.supportLanguage }
+            : {}),
+        };
         if (oauthStateRef) {
           try {
             await oauthStateRef.set(
               {
                 status: "completed",
                 completionResult: result,
-                completionSearchParams: searchParams,
+                completionSearchParams,
                 completedAtMs: Date.now(),
               },
               { merge: true },
@@ -2708,7 +2743,12 @@ function createPatreonHandler({ db, getConfig, fetchImpl = fetch, logger }) {
         }
         return res.redirect(
           302,
-          redirectTarget(config, result, searchParams, linkProof?.returnMode),
+          redirectTarget(
+            config,
+            result,
+            completionSearchParams,
+            linkProof?.returnMode,
+          ),
         );
       };
 
@@ -2889,6 +2929,7 @@ module.exports = {
   evaluatePatreonIdentity,
   evaluatePatreonMemberResource,
   getPatreonConfig,
+  normalizePatreonSupportLanguage,
   parseCookies,
   serializeCookie,
   sha256,

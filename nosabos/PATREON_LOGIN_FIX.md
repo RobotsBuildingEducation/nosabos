@@ -343,6 +343,10 @@ Behavior:
 
 - If the callback occurred in the original browser and a fresh local pending-return record exists, finish the internal navigation and reopen the requested drawer/modal.
 - If the callback occurred in a different browser container, render a standalone result card.
+- Carry the app's selected support language in the short-lived server OAuth
+  state and add only its allowlisted language code to the callback result URL.
+  This preserves localization when private Safari cannot read the original
+  app's local storage; fall back to browser language or English when absent.
 - For `connected`, explain that the membership was linked and ask the user to return to the original app.
 - For action-required results, explain that Patreon was verified and the next step must be completed in the original app.
 - For genuine failures, display a sanitized machine-readable result code in small text for diagnosis.
