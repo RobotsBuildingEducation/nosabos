@@ -1205,6 +1205,7 @@ function TopBar({
   hasTimer,
   isTimerRunning,
   timerPaused,
+  timerDurationSeconds,
   onOpenTimerModal,
   onTogglePauseTimer,
   // 🆕 daily goal modal props
@@ -1916,29 +1917,36 @@ function TopBar({
 
             {/* RIGHT: controls */}
             <HStack
-              spacing={{ base: 1, md: 2 }}
+              spacing={3}
               flexShrink={0}
               ml="auto"
               align="center"
             >
-              {hasTimer && <SessionTimerBadge isRunning={isTimerRunning} />}
-              <IconButton
-                {...topBarControlProps}
-                colorScheme="teal"
-                variant={isTimerRunning ? "solid" : "outline"}
-                icon={<FiClock />}
-                boxShadow={isTimerRunning ? "none" : undefined}
-                aria-label={uiCopy(appLanguage, {
-                  en: "Open timer",
-                  es: "Abrir temporizador",
-                  it: "Apri timer",
-                  ja: "タイマーを開く",
-                  zh: "打开计时器",
-                })}
-                _hover={isTimerRunning ? { boxShadow: "none" } : undefined}
-                _active={{ boxShadow: "none", transform: "none" }}
-                {...getTopBarPressProps("session-timer", onOpenTimerModal)}
-              />
+              <Box position="relative" flexShrink={0}>
+                {hasTimer && (
+                  <SessionTimerBadge
+                    durationSeconds={timerDurationSeconds}
+                    isRunning={isTimerRunning}
+                  />
+                )}
+                <IconButton
+                  {...topBarControlProps}
+                  colorScheme="teal"
+                  variant={isTimerRunning ? "solid" : "outline"}
+                  icon={<FiClock />}
+                  boxShadow={isTimerRunning ? "none" : undefined}
+                  aria-label={uiCopy(appLanguage, {
+                    en: "Open timer",
+                    es: "Abrir temporizador",
+                    it: "Apri timer",
+                    ja: "タイマーを開く",
+                    zh: "打开计时器",
+                  })}
+                  _hover={isTimerRunning ? { boxShadow: "none" } : undefined}
+                  _active={{ boxShadow: "none", transform: "none" }}
+                  {...getTopBarPressProps("session-timer", onOpenTimerModal)}
+                />
+              </Box>
               {hasTimer && (
                 <IconButton
                   {...topBarControlProps}
@@ -10068,6 +10076,7 @@ export default function App({ onBootReady } = {}) {
           hasTimer={hasTimer}
           isTimerRunning={isTimerRunning}
           timerPaused={timerPaused}
+          timerDurationSeconds={timerDurationSeconds}
           onOpenTimerModal={() => {
             setTimerModalImmediateBody(false);
             setTimerModalOpen(true);
