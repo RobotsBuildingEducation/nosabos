@@ -84,6 +84,16 @@ test("guided Patreon checkout copy is localized for every supported language", (
   });
 });
 
+test("guided Patreon checkout advertises the current annual offer", () => {
+  supportedLanguages.forEach((language) => {
+    const copy = SUBSCRIPTION_PATREON_FLOW_COPY[language];
+    assert.match(copy.membershipPrice, /\$8/);
+    assert.match(copy.annualRecommended, /50/);
+    assert.match(copy.annualValue, /\$4/);
+    assert.match(copy.annualValue, /\$48/);
+  });
+});
+
 test("legacy passcode migration copy is localized for every supported language", () => {
   assert.deepEqual(
     Object.keys(SUBSCRIPTION_LEGACY_MIGRATION_COPY),
