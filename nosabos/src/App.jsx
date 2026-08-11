@@ -1934,12 +1934,7 @@ function TopBar({
             <Spacer display={{ base: "none", md: "block" }} />
 
             {/* RIGHT: controls */}
-            <HStack
-              spacing={3}
-              flexShrink={0}
-              ml="auto"
-              align="center"
-            >
+            <HStack spacing={3} flexShrink={0} ml="auto" align="center">
               <Box position="relative" flexShrink={0}>
                 {hasTimer && (
                   <SessionTimerBadge

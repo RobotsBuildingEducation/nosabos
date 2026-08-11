@@ -1281,6 +1281,7 @@ const ThemeModeToggle = ({
 };
 
 const LandingHeader = ({
+  copy,
   themeMode,
   onThemeModeChange,
   onStartLearning,
@@ -1324,7 +1325,7 @@ const LandingHeader = ({
                   whiteSpace: "nowrap",
                 }}
               >
-                Start Learning
+                {copy.cta_start}
               </Button>
               <Button
                 size="sm"
@@ -1335,7 +1336,7 @@ const LandingHeader = ({
                   whiteSpace: "nowrap",
                 }}
               >
-                Sign In
+                {copy.nav_signin}
               </Button>
             </motion.div>
           )}
@@ -2175,6 +2176,7 @@ const LandingPage = ({ onAuthenticated }) => {
       <AnimatedBackground />
 
       <LandingHeader
+        copy={copy}
         themeMode={themeMode}
         onThemeModeChange={handleThemeModeChange}
         onStartLearning={handleInstantCreate}
