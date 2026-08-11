@@ -11,7 +11,7 @@ export const LANDING_PAGE_DE_STATIC = {
   create_secret_key_detected_suffix: ".",
   languages_label: "SPRACHEN",
   languages_title: "Übe in",
-  languages_title_accent: "14 Sprachen",
+  languages_title_accent: "12 Sprachen",
   languages_stable: "Stabil",
   languages_beta: "Beta",
   languages_alpha: "Alpha",
@@ -100,7 +100,7 @@ export const LANDING_PAGE_DE_STATIC = {
     "Nein. Wir kümmern uns um die technischen Details. Du brauchst nur deinen Schlüssel, um zu deinen Lektionen zurückzukehren.",
   faq_q3: "Welche Sprachen kann ich üben?",
   faq_a3:
-    "Starte sofort mit Spanisch, Englisch, Portugiesisch, Französisch, Deutsch oder Italienisch und erkunde später kulturelle Nahuatl-Module.",
+    "Du kannst jede der oben aufgeführten Sprachen üben. Mit der Zeit werden weitere hinzukommen.",
   faq_q4: "Kostet das etwas?",
   faq_a4:
     "Die wichtigsten Übungstools sind kostenlos. Einige fortgeschrittene Labs können Stipendien oder bezahlten Zugang erfordern.",

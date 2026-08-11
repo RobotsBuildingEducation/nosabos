@@ -232,6 +232,7 @@ import {
 import { RiArrowLeftLine } from "react-icons/ri";
 import SessionTimerModal from "./components/SessionTimerModal";
 import SessionTimerBadge from "./components/SessionTimerBadge";
+import CommunityLanguageResourcesModal from "./components/CommunityLanguageResourcesModal";
 import {
   getRemainingSeconds,
   setRemainingSeconds,
@@ -317,6 +318,7 @@ import { APP_ACTION_BAR_RADIUS, APP_SQUIRCLE_SHAPE } from "./theme";
 import {
   DEFAULT_SUPPORT_LANGUAGE,
   DEFAULT_TARGET_LANGUAGE,
+  canAccessSelectorHiddenPracticeLanguages,
   getLanguageLabel,
   getLanguageDirection,
   getLanguageLocale,
@@ -344,6 +346,7 @@ import {
 } from "./utils/modalMotion";
 import { scheduleAfterNextPaint } from "./utils/afterPaint";
 import { fetchWithTimeout } from "./utils/fetchWithTimeout";
+import { isCommunityResourceLanguage } from "./data/communityLanguageResources";
 import {
   getTutorVoiceOption,
   getTutorVoiceOptions,
@@ -1304,6 +1307,7 @@ function TopBar({
   const [targetLang, setTargetLang] = useState(
     normalizePracticeLanguage(p.targetLang, DEFAULT_TARGET_LANGUAGE),
   );
+  const [communityLanguageCode, setCommunityLanguageCode] = useState(null);
   const normalizedTargetLang = String(targetLang || "").toLowerCase();
   const hasProficiencyDecisionForTargetLang =
     Object.prototype.hasOwnProperty.call(
@@ -1391,8 +1395,10 @@ function TopBar({
         ui: t,
         uiLang: appLanguage,
         showJapanese,
+        includeSelectorHidden:
+          canAccessSelectorHiddenPracticeLanguages(activeNpub),
       }),
-    [appLanguage, showJapanese, t],
+    [activeNpub, appLanguage, showJapanese, t],
   );
   const selectedSupportOption =
     supportLanguageOptions.find(
@@ -1488,6 +1494,18 @@ function TopBar({
       });
     },
     [persistSettings],
+  );
+  const handlePracticeLanguageChange = useCallback(
+    (value) => {
+      playSound(selectSound);
+      if (isCommunityResourceLanguage(value)) {
+        setCommunityLanguageCode(value);
+        return;
+      }
+      setTargetLang(value);
+      persistSettingsAfterPaint({ targetLang: value });
+    },
+    [persistSettingsAfterPaint, playSound],
   );
 
   // Debounced persist for text inputs (tutorVoicePersona, helpRequest)
@@ -2447,13 +2465,7 @@ function TopBar({
                                 <MenuOptionGroup
                                   type="radio"
                                   value={targetLang}
-                                  onChange={(value) => {
-                                    playSound(selectSound);
-                                    setTargetLang(value);
-                                    persistSettingsAfterPaint({
-                                      targetLang: value,
-                                    });
-                                  }}
+                                  onChange={handlePracticeLanguageChange}
                                 >
                                   {practiceLanguageOptions.map((option) => (
                                     <MenuItemOption
@@ -2752,6 +2764,12 @@ function TopBar({
           </DrawerBody>
         </DrawerContent>
       </Drawer>
+      <CommunityLanguageResourcesModal
+        isOpen={Boolean(communityLanguageCode)}
+        onClose={() => setCommunityLanguageCode(null)}
+        languageCode={communityLanguageCode}
+        appLanguage={appLanguage}
+      />
     </>
   );
 }
@@ -9953,6 +9971,9 @@ export default function App({ onBootReady } = {}) {
           userLanguage={appLanguage}
           onComplete={handleOnboardingComplete}
           initialDraft={onboardingInitialDraft}
+          includeSelectorHidden={canAccessSelectorHiddenPracticeLanguages(
+            activeNpub,
+          )}
         />
       </Box>
     );

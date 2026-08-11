@@ -20,6 +20,18 @@ import { SUPPORT_LANGUAGE_CODES as CANONICAL_SUPPORT_LANGUAGE_CODES } from "./su
 export const DEFAULT_SUPPORT_LANGUAGE = "en";
 export const DEFAULT_TARGET_LANGUAGE = "es";
 
+const SELECTOR_HIDDEN_LANGUAGE_ACCESS_NPUBS = new Set([
+  "npub1anf7634v6rmwjzjnraf09kudr4nsmwy4ggre74sqgqaljd7c5susc8xpev",
+]);
+
+export function canAccessSelectorHiddenPracticeLanguages(npub) {
+  return SELECTOR_HIDDEN_LANGUAGE_ACCESS_NPUBS.has(
+    String(npub || "")
+      .trim()
+      .toLowerCase(),
+  );
+}
+
 export const LANGUAGE_FALLBACK_LABELS = {
   ar: "Egyptian Arabic",
   zh: "Mandarin Chinese",
@@ -142,6 +154,9 @@ const LANGUAGE_META = [
     languageKey: "language_nah",
     practiceKey: "onboarding_practice_nah",
     tier: "alpha",
+    // Temporarily hidden from practice-language selectors. Keep the language
+    // registered so existing user data and the underlying implementation work.
+    selectorHidden: true,
     flag: mexicanFlag,
   },
   {
@@ -149,6 +164,9 @@ const LANGUAGE_META = [
     languageKey: "language_yua",
     practiceKey: "onboarding_practice_yua",
     tier: "alpha",
+    // Temporarily hidden from practice-language selectors. Keep the language
+    // registered so existing user data and the underlying implementation work.
+    selectorHidden: true,
     flag: mexicanFlag,
   },
   {
@@ -358,6 +376,7 @@ function buildLanguageOptions({
   showJapanese = true,
   mode = "practice",
   includeTierTagInLabel = true,
+  includeSelectorHidden = false,
 }) {
   const sortLocale = getSortLocale(uiLang);
   const collator = new Intl.Collator(sortLocale);
@@ -367,6 +386,12 @@ function buildLanguageOptions({
       mode === "support"
         ? SUPPORT_LANGUAGE_CODES_SET.has(item.value)
         : item.practiceEnabled !== false,
+    )
+    .filter(
+      (item) =>
+        mode !== "practice" ||
+        includeSelectorHidden ||
+        item.selectorHidden !== true,
     )
     .filter((item) => (showJapanese ? true : item.value !== "ja"))
     .map((item) => {

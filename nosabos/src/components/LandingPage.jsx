@@ -127,7 +127,7 @@ const translations = {
     create_secret_key_detected_suffix: " instead.",
     languages_label: "LANGUAGES",
     languages_title: "Practice in",
-    languages_title_accent: "14 Languages",
+    languages_title_accent: "12 Languages",
     languages_stable: "Stable",
     languages_beta: "Beta",
     languages_alpha: "Alpha",
@@ -217,7 +217,7 @@ const translations = {
       "No. We take care of the technical details for you. All you need is your key to come back to your lessons.",
     faq_q3: "Which languages can I practice?",
     faq_a3:
-      "Start with Spanish, English, Portuguese, French, or Italian right away, then explore Nahuatl-inspired cultural modules.",
+      "You can practice any of the languages listed above. We’ll continue adding more over time.",
     faq_q4: "Is there a cost?",
     faq_a4:
       "The core practice tools are free. Some advanced labs may require scholarships or paid access.",
@@ -271,7 +271,7 @@ const translations = {
     create_secret_key_detected_suffix: " en su lugar.",
     languages_label: "IDIOMAS",
     languages_title: "Practica en",
-    languages_title_accent: "14 Idiomas",
+    languages_title_accent: "12 Idiomas",
     languages_stable: "Estable",
     languages_beta: "Beta",
     languages_alpha: "Alfa",
@@ -362,7 +362,7 @@ const translations = {
       "No. Nos encargamos de los detalles técnicos. Solo necesitas tu llave para volver a tus lecciones.",
     faq_q3: "¿Qué idiomas puedo practicar?",
     faq_a3:
-      "Comienza con español, inglés, portugués, francés o italiano, luego explora módulos culturales inspirados en náhuatl.",
+      "Puedes practicar cualquiera de los idiomas de la lista anterior. Seguiremos agregando más con el tiempo.",
     faq_q4: "¿Tiene costo?",
     faq_a4:
       "Las herramientas principales son gratuitas. Algunos laboratorios avanzados pueden requerir becas o acceso de pago.",
@@ -417,7 +417,7 @@ const translations = {
     create_secret_key_detected_suffix: " invece.",
     languages_label: "LINGUE",
     languages_title: "Pratica in",
-    languages_title_accent: "14 Lingue",
+    languages_title_accent: "12 Lingue",
     languages_stable: "Stabile",
     languages_beta: "Beta",
     languages_alpha: "Alfa",
@@ -506,7 +506,7 @@ const translations = {
       "No. Ci occupiamo noi dei dettagli tecnici. Hai solo bisogno della tua chiave per tornare alle lezioni.",
     faq_q3: "Quali lingue posso praticare?",
     faq_a3:
-      "Inizia subito con spagnolo, inglese, portoghese, francese o italiano, poi esplora i moduli culturali ispirati al nahuatl.",
+      "Puoi esercitarti in una qualsiasi delle lingue elencate sopra. Continueremo ad aggiungerne altre nel tempo.",
     faq_q4: "Ha un costo?",
     faq_a4:
       "Gli strumenti principali sono gratuiti. Alcuni laboratori avanzati potrebbero richiedere borse di studio o accesso a pagamento.",
@@ -572,7 +572,7 @@ translations.fr = {
   create_secret_key_detected_suffix: " à la place.",
   languages_label: "LANGUES",
   languages_title: "Pratique en",
-  languages_title_accent: "14 Langues",
+  languages_title_accent: "12 Langues",
   languages_stable: "Stable",
   languages_beta: "Beta",
   languages_alpha: "Alpha",
@@ -661,7 +661,7 @@ translations.fr = {
     "Non. Nous gerons les details techniques pour toi. Tu as seulement besoin de ta cle pour revenir a tes lecons.",
   faq_q3: "Quelles langues puis-je pratiquer ?",
   faq_a3:
-    "Commence avec l'espagnol, l'anglais, le portugais, le francais ou l'italien, puis explore les modules culturels inspires du nahuatl.",
+    "Tu peux pratiquer toutes les langues presentees ci-dessus. Nous continuerons a en ajouter au fil du temps.",
   faq_q4: "Est-ce payant ?",
   faq_a4:
     "Les outils principaux sont gratuits. Certains laboratoires avances peuvent demander une bourse ou un acces payant.",
@@ -715,7 +715,7 @@ translations.ja = {
   create_secret_key_detected_suffix: "を使用してください。",
   languages_label: "言語",
   languages_title: "練習できる",
-  languages_title_accent: "14言語",
+  languages_title_accent: "12言語",
   languages_stable: "安定版",
   languages_beta: "ベータ",
   languages_alpha: "アルファ",
@@ -806,7 +806,7 @@ translations.ja = {
     "いいえ。技術的な部分はこちらで処理します。レッスンに戻るには保存したキーだけが必要です。",
   faq_q3: "どの言語を練習できますか？",
   faq_a3:
-    "スペイン語、英語、ポルトガル語、フランス語、イタリア語から始め、ナワトル語などの文化的モジュールも探索できます。",
+    "上に表示されている言語を練習できます。今後も対応言語を追加していきます。",
   faq_q4: "料金はかかりますか？",
   faq_a4:
     "主要ツールは無料です。一部の高度なラボは奨学金または有料アクセスが必要な場合があります。",

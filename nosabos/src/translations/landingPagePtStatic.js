@@ -11,7 +11,7 @@ export const LANDING_PAGE_PT_STATIC = {
   create_secret_key_detected_suffix: " em vez disso.",
   languages_label: "IDIOMAS",
   languages_title: "Pratique em",
-  languages_title_accent: "14 idiomas",
+  languages_title_accent: "12 idiomas",
   languages_stable: "Estável",
   languages_beta: "Beta",
   languages_alpha: "Alfa",
@@ -100,7 +100,7 @@ export const LANDING_PAGE_PT_STATIC = {
     "Não. Nós cuidamos dos detalhes técnicos para você. Tudo o que você precisa é da sua chave para voltar às suas lições.",
   faq_q3: "Quais idiomas posso praticar?",
   faq_a3:
-    "Comece com espanhol, inglês, português, francês ou italiano e depois explore módulos culturais inspirados no náuatle.",
+    "Você pode praticar qualquer um dos idiomas listados acima. Continuaremos adicionando mais com o tempo.",
   faq_q4: "Tem custo?",
   faq_a4:
     "As ferramentas principais são gratuitas. Alguns laboratórios mais avançados podem exigir bolsas de estudo ou acesso pago.",

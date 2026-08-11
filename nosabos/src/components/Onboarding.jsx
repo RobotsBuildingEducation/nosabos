@@ -50,7 +50,9 @@ import { getGermanCopy } from "../utils/germanCopy";
 import RandomCharacter from "./RandomCharacter";
 import ThemeModeField from "./ThemeModeField";
 import VoicePreferenceField from "./VoicePreferenceField";
+import CommunityLanguageResourcesModal from "./CommunityLanguageResourcesModal";
 import { useThemeStore } from "../useThemeStore";
+import { isCommunityResourceLanguage } from "../data/communityLanguageResources";
 import {
   nativeDrawerMotionProps,
   nativeOverlayMotionProps,
@@ -124,6 +126,7 @@ export default function Onboarding({
   onComplete,
   userLanguage = "en",
   initialDraft = {},
+  includeSelectorHidden = false,
 }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -199,6 +202,7 @@ export default function Onboarding({
 
   const [level] = useState(defaults.level);
   const [targetLang, setTargetLang] = useState(defaults.targetLang);
+  const [communityLanguageCode, setCommunityLanguageCode] = useState(null);
   const [tutorVoice, setTutorVoice] = useState(defaults.tutorVoice);
   const [voicePersona, setVoicePersona] = useState(defaults.voicePersona);
   const [pauseMs, setPauseMs] = useState(defaults.pauseMs);
@@ -259,9 +263,21 @@ export default function Onboarding({
         ui,
         uiLang: supportLang,
         showJapanese,
+        includeSelectorHidden,
       }),
-    [supportLang, ui, showJapanese],
+    [includeSelectorHidden, supportLang, ui, showJapanese],
   );
+
+  const handlePracticeLanguageChange = (value) => {
+    playOnboardingSound(selectSound);
+    if (isCommunityResourceLanguage(value)) {
+      setCommunityLanguageCode(value);
+      return;
+    }
+    setTargetLang(
+      normalizePracticeLanguage(value, DEFAULT_TARGET_LANGUAGE),
+    );
+  };
 
   const handleSupportLanguageChange = (value) => {
     userPickedSupportLangRef.current = true;
@@ -675,15 +691,7 @@ export default function Onboarding({
                             <MenuOptionGroup
                               type="radio"
                               value={targetLang}
-                              onChange={(value) => {
-                                playOnboardingSound(selectSound);
-                                setTargetLang(
-                                  normalizePracticeLanguage(
-                                    value,
-                                    DEFAULT_TARGET_LANGUAGE,
-                                  ),
-                                );
-                              }}
+                              onChange={handlePracticeLanguageChange}
                             >
                               {practiceLanguageOptions.map((option) => (
                                 <MenuItemOption
@@ -912,6 +920,12 @@ export default function Onboarding({
           </Box>
         </DrawerContent>
       </Drawer>
+      <CommunityLanguageResourcesModal
+        isOpen={Boolean(communityLanguageCode)}
+        onClose={() => setCommunityLanguageCode(null)}
+        languageCode={communityLanguageCode}
+        appLanguage={supportLang}
+      />
     </Box>
   );
 }

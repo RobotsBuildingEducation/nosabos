@@ -11,7 +11,7 @@ export const LANDING_PAGE_AR_STATIC = {
   create_secret_key_detected_suffix: " بدلًا من ذلك.",
   languages_label: "اللغات",
   languages_title: "اتدرّب على",
-  languages_title_accent: "14 لغة",
+  languages_title_accent: "12 لغة",
   languages_stable: "مستقرة",
   languages_beta: "بيتا",
   languages_alpha: "ألفا",

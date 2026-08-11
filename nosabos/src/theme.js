@@ -220,7 +220,10 @@ const minimalMenu = definePartsStyle(() => ({
     rounded: "md",
     _hover: { bg: "var(--app-surface-muted)" },
     _focus: { bg: "var(--app-surface-muted)" },
-    _active: { bg: "teal.600", color: "white" },
+    _active: {
+      bg: "var(--app-surface-muted)",
+      color: "var(--app-text-primary)",
+    },
     _expanded: { bg: "var(--app-surface-muted)" },
     _disabled: { opacity: 0.45, cursor: "not-allowed" },
     _checked: {
@@ -228,6 +231,7 @@ const minimalMenu = definePartsStyle(() => ({
       color: "white",
       _hover: { bg: "teal.600" },
       _focus: { bg: "teal.600" },
+      _active: { bg: "teal.600", color: "white" },
     },
   },
 

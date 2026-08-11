@@ -11,7 +11,7 @@ export const LANDING_PAGE_ZH_STATIC = {
   create_secret_key_detected_suffix: "。",
   languages_label: "语言",
   languages_title: "练习",
-  languages_title_accent: "14 种语言",
+  languages_title_accent: "12 种语言",
   languages_stable: "稳定",
   languages_beta: "Beta",
   languages_alpha: "Alpha",
@@ -97,7 +97,7 @@ export const LANDING_PAGE_ZH_STATIC = {
     "不需要。技术细节由我们处理。你只需要密钥就能回到课程。",
   faq_q3: "我可以练习哪些语言？",
   faq_a3:
-    "可以马上开始练习西班牙语、英语、葡萄牙语、法语或意大利语，也可以探索 Nahuatl 启发的文化模块。",
+    "你可以练习上方列出的任一种语言。我们会持续增加更多语言。",
   faq_q4: "需要付费吗？",
   faq_a4:
     "核心练习工具免费。部分高级实验室可能需要奖学金或付费访问。",
