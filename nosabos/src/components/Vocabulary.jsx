@@ -97,6 +97,8 @@ import {
   buildCurriculumPromptContext,
   isCurriculumPayloadGrounded,
 } from "../utils/lessonCurriculum";
+import DelightQuestionLab from "./DelightQuestionLab";
+import { DELIGHT_VARIANT_TEST_GATE } from "../config/delightVariantGate";
 import {
   nativeModalMotionProps,
   nativeOverlayMotionProps,
@@ -1056,7 +1058,7 @@ function ensureAnswersInChoices(choices, answers) {
 /* ---------------------------
    Component
 --------------------------- */
-export default function Vocabulary({
+function VocabularyLegacy({
   userLanguage = "en",
   lesson = null,
   lessonContent = null,
@@ -7091,4 +7093,11 @@ Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
       </Modal>
     </Box>
   );
+}
+
+export default function Vocabulary(props) {
+  if (DELIGHT_VARIANT_TEST_GATE) {
+    return <DelightQuestionLab {...props} moduleType="vocabulary" />;
+  }
+  return <VocabularyLegacy {...props} />;
 }

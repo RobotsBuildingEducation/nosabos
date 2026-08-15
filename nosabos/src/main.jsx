@@ -31,6 +31,9 @@ const SquirclePlayground = lazy(
 const CitizenshipGuide = lazy(
   () => import("./components/CitizenshipGuide.jsx"),
 );
+const DelightVariantLabPage = lazy(
+  () => import("./components/DelightVariantLabPage.jsx"),
+);
 const PatreonOAuthDrawerReturn = lazy(
   () => import("./components/PatreonOAuthDrawerReturn.jsx"),
 );
@@ -233,6 +236,14 @@ createRoot(document.getElementById("root")).render(
               element={
                 <BootReadyBoundary>
                   <CitizenshipGuide />
+                </BootReadyBoundary>
+              }
+            />
+            <Route
+              path="/variant-lab"
+              element={
+                <BootReadyBoundary>
+                  <DelightVariantLabPage />
                 </BootReadyBoundary>
               }
             />

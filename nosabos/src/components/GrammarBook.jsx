@@ -93,6 +93,8 @@ import {
   buildCurriculumPromptContext,
   isCurriculumPayloadGrounded,
 } from "../utils/lessonCurriculum";
+import DelightQuestionLab from "./DelightQuestionLab";
+import { DELIGHT_VARIANT_TEST_GATE } from "../config/delightVariantGate";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -980,7 +982,7 @@ function normalizeMap(map, len) {
 /* ---------------------------
    Component
 --------------------------- */
-export default function GrammarBook({
+function GrammarBookLegacy({
   userLanguage = "en",
   lesson = null,
   lessonContent = null,
@@ -6518,4 +6520,11 @@ Return JSON ONLY:
       />
     </Box>
   );
+}
+
+export default function GrammarBook(props) {
+  if (DELIGHT_VARIANT_TEST_GATE) {
+    return <DelightQuestionLab {...props} moduleType="grammar" />;
+  }
+  return <GrammarBookLegacy {...props} />;
 }
