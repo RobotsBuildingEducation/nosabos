@@ -35,7 +35,7 @@ import {
 import { keyframes } from "@emotion/react";
 import { QRCodeSVG } from "qrcode.react";
 import { BsQrCode } from "react-icons/bs";
-import { SiCashapp } from "react-icons/si";
+import { SiCashapp, SiPatreon } from "react-icons/si";
 import { FaKey, FaInstagram, FaLinkedinIn } from "react-icons/fa";
 import { LuSun } from "react-icons/lu";
 import { RiMoonClearFill } from "react-icons/ri";
@@ -1622,6 +1622,34 @@ export default function LinksPage() {
                 }}
               >
                 <FaLinkedinIn size={18} />
+              </Box>
+              <Box
+                aria-label="Patreon"
+                bg="black"
+                borderRadius="12px"
+                style={{ cornerShape: BUTTON_SQUIRCLE_SHAPE }}
+                w="36px"
+                h="36px"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                color="white"
+                cursor="pointer"
+                onClick={() => {
+                  handleSelectSound();
+                  if (!isLocalhost()) {
+                    logEvent(analytics, "links_social_click", {
+                      platform: "patreon",
+                    });
+                  }
+                  window.open(
+                    "https://subscribe.piyali.app/",
+                    "_blank",
+                    "noopener,noreferrer",
+                  );
+                }}
+              >
+                <SiPatreon size={18} />
               </Box>
               <LanguageMenuFixed
                 language={language}
