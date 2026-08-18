@@ -101,7 +101,7 @@ export const linksPageTranslations = {
       "Find your path to Mexican dual citizenship, save your progress, and organize the documents you need.",
     patreonTitle: "Patreon",
     patreonDescription:
-      "Pay once to own the apps or subscribe to unlock additional content on software engineering, business, finance and other updates.",
+      "Subscribe to unlock full access to the apps and additional content on software engineering, business, finance and other updates.",
 
     // RBE Modal
     rbeModalTitle: "Robots Building Education",
@@ -301,7 +301,7 @@ export const linksPageTranslations = {
       "Trova il tuo percorso verso la doppia cittadinanza messicana, salva i progressi e organizza i documenti necessari.",
     patreonTitle: "Patreon",
     patreonDescription:
-      "Paga una volta per possedere le app o abbonati per sbloccare contenuti aggiuntivi su ingegneria del software, affari, finanza e altri aggiornamenti.",
+      "Abbonati per sbloccare l'accesso completo alle app e contenuti aggiuntivi su ingegneria del software, affari, finanza e altri aggiornamenti.",
 
     // RBE Modal
     rbeModalTitle: "Robots Building Education",
@@ -497,7 +497,7 @@ export const linksPageTranslations = {
       "Encuentra tu ruta hacia la doble ciudadanía mexicana, guarda tu avance y organiza los documentos que necesitas.",
     patreonTitle: "Patreon",
     patreonDescription:
-      "Paga una vez para tener las apps o suscríbete para desbloquear contenido adicional sobre ingeniería de software, negocios, finanzas y otras novedades.",
+      "Suscríbete para desbloquear el acceso completo a las apps y contenido adicional sobre ingeniería de software, negocios, finanzas y otras novedades.",
 
     // RBE Modal
     rbeModalTitle: "Robots Building Education",
@@ -852,7 +852,7 @@ linksPageTranslations.ar = {
     "اعرف مسارك للجنسية المكسيكية المزدوجة، واحفظ تقدمك، ونظّم الوثائق اللي تحتاجها.",
   patreonTitle: "Patreon",
   patreonDescription:
-    "ادفع مرة واحدة علشان تملك التطبيقات، أو اشترك علشان تفتح محتوى إضافي عن هندسة البرمجيات، والأعمال، والتمويل، وتحديثات تانية.",
+    "اشترك علشان تفتح الوصول الكامل للتطبيقات ومحتوى إضافي عن هندسة البرمجيات، والأعمال، والتمويل، وتحديثات تانية.",
   rbeModalTitle: "Robots Building Education",
   rbeModalDescription:
     "هتستخدم المفتاح السري علشان تدخل حسابك. لو دخلت من السوشيال، هتعمل ده مرة واحدة بس.",
@@ -1025,7 +1025,7 @@ linksPageTranslations.fr = {
   citizenshipDescription:
     "Trouve ton parcours vers la double citoyenneté mexicaine, enregistre ta progression et organise les documents nécessaires.",
   patreonDescription:
-    "Paie une fois pour posseder les apps ou abonne-toi pour debloquer du contenu sur l'ingenierie logicielle, les affaires, la finance et d'autres mises a jour.",
+    "Abonne-toi pour debloquer l'acces complet aux apps et du contenu sur l'ingenierie logicielle, les affaires, la finance et d'autres mises a jour.",
   rbeModalDescription:
     "Tu utiliseras ta cle secrete pour te connecter a ton compte. Si tu es arrive par les reseaux sociaux, tu ne devras le faire qu'une seule fois.",
   copySecretKey: "Copier la cle secrete",
@@ -1194,7 +1194,7 @@ linksPageTranslations.ja = {
     "メキシコ二重国籍へのルートを確認し、進捗を保存し、必要書類を整理できます。",
   patreonTitle: "Patreon",
   patreonDescription:
-    "一度支払ってアプリを所有するか、購読してソフトウェア工学、ビジネス、金融などの追加コンテンツを解放できます。",
+    "購読してアプリへのフルアクセスと、ソフトウェア工学、ビジネス、金融などの追加コンテンツを解放できます。",
   rbeModalTitle: "Robots Building Education",
   rbeModalDescription:
     "アカウントにサインインするにはシークレットキーを使います。SNS経由で入った場合も、一度だけで大丈夫です。",
@@ -1372,7 +1372,7 @@ linksPageTranslations.de = {
     "Finde deinen Weg zur mexikanischen Doppelstaatsbürgerschaft, speichere deinen Fortschritt und organisiere die nötigen Dokumente.",
   patreonTitle: "Patreon",
   patreonDescription:
-    "Zahle einmal, um die Apps zu besitzen, oder abonniere zusätzliche Inhalte zu Softwareentwicklung, Business, Finanzen und Updates.",
+    "Abonniere, um vollen Zugriff auf die Apps und zusätzliche Inhalte zu Softwareentwicklung, Business, Finanzen und Updates freizuschalten.",
   rbeModalTitle: "Robots Building Education",
   rbeModalDescription:
     "Du verwendest deinen geheimen Schlüssel, um dich bei deinem Konto anzumelden. Wenn du über soziale Medien eingestiegen bist, musst du das nur einmal tun.",

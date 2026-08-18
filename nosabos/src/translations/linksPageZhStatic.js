@@ -32,7 +32,7 @@ export const LINKS_PAGE_ZH_STATIC = {
     "找到你的墨西哥双重国籍路径，保存进度，并整理所需文件。",
   patreonTitle: "Patreon",
   patreonDescription:
-    "一次性付费拥有这些应用，或订阅以解锁软件工程、商业、金融和其他更新内容。",
+    "订阅以解锁应用的完整访问权限，并获取有关软件工程、商业、金融和其他更新的附加内容。",
   rbeModalTitle: "Robots Building Education",
   rbeModalDescription:
     "你会使用私密密钥登录账户。如果你是从社交媒体进入，只需要这样做一次。",

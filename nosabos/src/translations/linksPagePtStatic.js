@@ -32,7 +32,7 @@ export const LINKS_PAGE_PT_STATIC = {
     "Encontre seu caminho para a dupla cidadania mexicana, salve seu progresso e organize os documentos necessários.",
   patreonTitle: "Patreon",
   patreonDescription:
-    "Pague uma vez para ter os apps ou assine para desbloquear conteúdo adicional sobre engenharia de software, negócios, finanças e outras atualizações.",
+    "Assine para desbloquear o acesso completo aos apps e conteúdo adicional sobre engenharia de software, negócios, finanças e outras atualizações.",
   rbeModalTitle: "Robots Building Education",
   rbeModalDescription:
     "Você vai usar sua chave secreta para entrar na sua conta. Se entrou pelas redes sociais, só precisa fazer isso uma vez.",
