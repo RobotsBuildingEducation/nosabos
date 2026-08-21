@@ -14,19 +14,36 @@ import {
   Input,
   Select,
   SimpleGrid,
+  Skeleton,
   Spinner,
   Text,
+  useToast,
   VStack,
   Wrap,
   WrapItem,
 } from "@chakra-ui/react";
-import { FiArrowRight, FiRefreshCw, FiVolume2 } from "react-icons/fi";
+import {
+  FiArrowLeft,
+  FiArrowRight,
+  FiRefreshCw,
+  FiVolume2,
+} from "react-icons/fi";
+import { MdOutlineSupportAgent } from "react-icons/md";
+import ReactMarkdown from "react-markdown";
 import useUserStore from "../hooks/useUserStore";
 import useSoundSettings from "../hooks/useSoundSettings";
+import useNotesStore from "../hooks/useNotesStore";
+import FeedbackRail from "./FeedbackRail";
+import VoiceOrb from "./VoiceOrb";
+import XpProgressHeader from "./XpProgressHeader";
+import { SortableArea, SortableList, SortableItem } from "./dnd/Sortable";
+import { simplemodel } from "../firebaseResources/firebaseResources";
 import translations from "../utils/translation";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
 import { awardXp } from "../utils/utils";
+import { getLanguageXp } from "../utils/progressTracking";
 import { extractCEFRLevel } from "../utils/cefrUtils";
+import { generateNoteContent, buildNoteObject } from "../utils/noteGeneration";
 import {
   DEFAULT_SUPPORT_LANGUAGE,
   DEFAULT_TARGET_LANGUAGE,
@@ -46,24 +63,67 @@ import {
   submitActionSound,
 } from "../constants/sounds";
 import {
+  getQuestionAssistantPanelProps,
   getQuestionChoiceCardProps,
   getQuestionChipProps,
   getQuestionFeedbackPanelProps,
   getQuestionToolButtonProps,
+  questionAssistantMarkdownStyles,
+  questionAssistantText,
   questionSquircleStyle,
   questionToneText,
 } from "./questionUiStyles";
 import {
   DELIGHT_VARIANTS,
   buildDelightQuestionPrompt,
+  buildSentenceDetectiveJudgePrompt,
   buildThreeWordJudgePrompt,
+  calculateDelightQuestionXp,
   generateSentenceDetectiveQuestion,
   getDelightFallbackQuestion,
+  getDelightLanguageName,
   getInitialDelightResponse,
   gradeDelightResponse,
   isDelightResponseReady,
   normalizeDelightQuestion,
+  parsePartialDelightQuestion,
 } from "../utils/delightQuestionVariants";
+import {
+  formatDialogueForkCopy,
+  getDialogueForkCopy,
+} from "../utils/dialogueForkI18n";
+import {
+  formatSentenceDetectiveCopy,
+  getSentenceDetectiveCopy,
+} from "../utils/sentenceDetectiveI18n";
+import {
+  formatSentenceShapeshifterCopy,
+  getSentenceShapeshifterCopy,
+} from "../utils/sentenceShapeshifterI18n";
+import {
+  formatWordNeighborhoodsCopy,
+  getWordNeighborhoodsCopy,
+} from "../utils/wordNeighborhoodsI18n";
+import {
+  formatMorphologyForgeCopy,
+  getMorphologyForgeCopy,
+} from "../utils/morphologyForgeI18n";
+import {
+  formatThreeClueMysteryCopy,
+  getThreeClueMysteryCopy,
+} from "../utils/threeClueMysteryI18n";
+import {
+  formatListenDifferenceCopy,
+  getListenDifferenceCopy,
+} from "../utils/listenDifferenceI18n";
+import {
+  formatThreeWordChallengeCopy,
+  getThreeWordChallengeCopy,
+} from "../utils/threeWordChallengeI18n";
+import {
+  formatNaturalOrWeirdCopy,
+  getNaturalOrWeirdCopy,
+} from "../utils/naturalOrWeirdI18n";
 import { DELIGHT_VARIANT_TEST_IDS } from "../config/delightVariantGate";
 
 const APP_SURFACE = "var(--app-surface)";
@@ -73,10 +133,12 @@ const APP_BORDER = "var(--app-border)";
 const APP_BORDER_STRONG = "var(--app-border-strong)";
 const APP_TEXT_PRIMARY = "var(--app-text-primary)";
 const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
-const GATED_VARIANTS = DELIGHT_VARIANTS.filter(({ id }) =>
-  DELIGHT_VARIANT_TEST_IDS.includes(id),
-);
-const QUESTION_GENERATION_TIMEOUT_MS = 25000;
+const APP_TEXT_MUTED = "var(--app-text-muted)";
+const GATED_VARIANTS = DELIGHT_VARIANT_TEST_IDS.map((testId) =>
+  DELIGHT_VARIANTS.find(({ id }) => id === testId),
+).filter(Boolean);
+const QUESTION_GENERATION_TIMEOUT_MS = 30000;
+const SENTENCE_DETECTIVE_CACHE_VERSION = "semantic-proof-v2";
 
 async function settleWithin(promise, timeoutMs) {
   let timeoutId;
@@ -96,11 +158,19 @@ async function settleWithin(promise, timeoutMs) {
 }
 
 function useT(uiLang = "en") {
-  return useCallback((key) => {
-    const dict = translations?.[uiLang] || translations?.en || {};
-    const english = translations?.en || {};
-    return String(dict[key] ?? english[key] ?? key);
-  }, [uiLang]);
+  const lang = normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE);
+  const dict = (translations && translations[lang]) || {};
+  const enDict = (translations && translations.en) || {};
+  return useCallback(
+    (key, params) => {
+      const raw = (dict[key] ?? enDict[key] ?? key) + "";
+      if (!params) return raw;
+      return raw.replace(/{(\w+)}/g, (_, k) =>
+        k in params ? String(params[k]) : `{${k}}`,
+      );
+    },
+    [dict, enDict],
+  );
 }
 
 function strongNpub(user) {
@@ -167,7 +237,42 @@ function ChoiceCard({ selected, children, onClick, disabled = false }) {
   );
 }
 
-function Chip({ children, selected = false, onClick, disabled = false }) {
+function Chip({
+  children,
+  selected = false,
+  onClick,
+  disabled = false,
+  status = "default",
+  phase = "find",
+}) {
+  const isRepair = phase === "repair";
+  const phaseStyle = isRepair
+    ? {
+        bg: selected ? "teal.600" : "teal.500",
+        borderColor: selected ? "teal.700" : "teal.500",
+        hoverBg: selected ? "teal.700" : "teal.600",
+      }
+    : {
+        bg: selected ? "purple.600" : "purple.500",
+        borderColor: selected ? "purple.700" : "purple.500",
+        hoverBg: selected ? "purple.700" : "purple.600",
+      };
+  const statusStyle =
+    status === "rejected"
+      ? {
+          borderColor: "var(--question-error-accent)",
+          bg: "var(--question-error-bg)",
+          color: APP_TEXT_PRIMARY,
+          hoverBg: "var(--question-error-bg)",
+        }
+      : status === "confirmed"
+        ? {
+            borderColor: "teal.500",
+            bg: "rgba(49, 151, 149, 0.14)",
+            color: APP_TEXT_PRIMARY,
+            hoverBg: "rgba(49, 151, 149, 0.14)",
+          }
+        : { ...phaseStyle, color: "white" };
   return (
     <Button
       size="md"
@@ -177,29 +282,75 @@ function Chip({ children, selected = false, onClick, disabled = false }) {
       isDisabled={disabled}
       onClick={onClick}
       {...getQuestionChipProps()}
-      borderColor={selected ? "var(--question-chip-accent)" : undefined}
-      bg={selected ? "var(--question-chip-bg-hover)" : undefined}
+      borderColor={statusStyle.borderColor}
+      bg={statusStyle.bg}
+      color={statusStyle.color}
+      _hover={{
+        bg: statusStyle.hoverBg || phaseStyle.hoverBg,
+        borderColor: statusStyle.borderColor,
+      }}
+      _disabled={{
+        opacity: 1,
+        cursor: "default",
+        color: statusStyle.color,
+      }}
     >
       {children}
     </Button>
   );
 }
 
-function QuestionShell({ meta, question, children }) {
+function textFromChunk(chunk) {
+  try {
+    if (!chunk) return "";
+    if (typeof chunk.text === "function") return chunk.text() || "";
+    if (typeof chunk.text === "string") return chunk.text;
+    const cand = chunk.candidates?.[0];
+    if (cand?.content?.parts?.length) {
+      return cand.content.parts.map((p) => p.text || "").join("");
+    }
+  } catch {}
+  return "";
+}
+
+function QuestionShell({
+  meta,
+  question,
+  description,
+  title,
+  language,
+  direction,
+  showIcon = true,
+  showDescription = true,
+  headerAction = null,
+  children,
+}) {
   return (
-    <VStack spacing={5} align="stretch">
+    <VStack
+      spacing={5}
+      align="stretch"
+      lang={language}
+      dir={direction}
+    >
       <Box>
-        <HStack spacing={2} mb={1}>
-          <Text fontSize="2xl" aria-hidden="true">
-            {meta.icon}
-          </Text>
-          <Text fontSize="xl" fontWeight="800" color={APP_TEXT_PRIMARY}>
-            {meta.label}
-          </Text>
+        <HStack spacing={2} mb={showDescription ? 1 : 0} justify="space-between">
+          <HStack spacing={2} minW={0}>
+            {showIcon && (
+              <Text fontSize="2xl" aria-hidden="true">
+                {meta.icon}
+              </Text>
+            )}
+            <Text fontSize="xl" fontWeight="800" color={APP_TEXT_PRIMARY}>
+              {title || meta.label}
+            </Text>
+          </HStack>
+          {headerAction}
         </HStack>
-        <Text fontSize="sm" color={APP_TEXT_SECONDARY}>
-          {question.instruction || meta.description}
-        </Text>
+        {showDescription && (
+          <Text fontSize="sm" color={APP_TEXT_SECONDARY}>
+            {description || question.instruction || meta.description}
+          </Text>
+        )}
       </Box>
       {children}
     </VStack>
@@ -212,13 +363,89 @@ function SentenceDetective({
   setResponse,
   locked,
   targetLang,
+  supportLang,
+  copy,
+  onAskAssistant,
+  isLoadingAssistantSupport = false,
+  assistantSupportText = "",
+  assistantLabel = "Assistant",
 }) {
   const targetDirection = getLanguageDirection(targetLang, "ltr");
+  const supportDirection = getLanguageDirection(supportLang, "ltr");
+  const guidanceJoiner = ["ja", "zh"].includes(supportLang) ? "" : " ";
+  const rejectedTokenIndices = response.rejectedTokenIndices || [];
+  const foundBrokenWord = response.tokenIndex === question.incorrectIndex;
+  const previewTokens = [...question.tokens];
+  if (foundBrokenWord && response.replacement) {
+    previewTokens[question.incorrectIndex] = response.replacement;
+  }
+  const repairedPreview = previewTokens.join(question.joiner);
+
+  const handleTokenClick = (index) => {
+    if (index === question.incorrectIndex) {
+      setResponse((current) => ({
+        ...current,
+        tokenIndex: index,
+        replacement: "",
+        rejectedTokenIndices: [],
+      }));
+      return;
+    }
+    setResponse((current) => ({
+      ...current,
+      tokenIndex: null,
+      replacement: "",
+      rejectedTokenIndices: Array.from(
+        new Set([...(current.rejectedTokenIndices || []), index]),
+      ),
+    }));
+  };
+
   return (
     <QuestionShell
       meta={DELIGHT_VARIANTS[0]}
       question={question}
+      title={copy.title}
+      language={supportLang}
+      direction={supportDirection}
+      showIcon={false}
+      showDescription={false}
+      headerAction={
+        <IconButton
+          aria-label={copy.askForHelp}
+          icon={
+            isLoadingAssistantSupport ? (
+              <VoiceOrb
+                state={
+                  ["idle", "listening", "speaking"][
+                    Math.floor(Math.random() * 3)
+                  ]
+                }
+                size={16}
+              />
+            ) : (
+              <MdOutlineSupportAgent />
+            )
+          }
+          size="sm"
+          fontSize="lg"
+          rounded="xl"
+          onClick={onAskAssistant}
+          isDisabled={
+            isLoadingAssistantSupport ||
+            !!assistantSupportText ||
+            !onAskAssistant
+          }
+          {...getQuestionToolButtonProps()}
+        />
+      }
     >
+      {!foundBrokenWord && (
+        <Text fontSize="sm" color={APP_TEXT_SECONDARY} fontWeight="normal">
+          {`${copy.findTitle}${guidanceJoiner}${copy.findHelp}`}
+        </Text>
+      )}
+
       <Wrap
         spacing={2}
         justify="center"
@@ -230,30 +457,92 @@ function SentenceDetective({
           <WrapItem key={`${token}-${index}`}>
             <Chip
               selected={response.tokenIndex === index}
-              disabled={locked}
-              onClick={() => setResponse({ tokenIndex: index, replacement: "" })}
+              status={
+                response.tokenIndex === index
+                  ? "confirmed"
+                  : rejectedTokenIndices.includes(index)
+                    ? "rejected"
+                    : "default"
+              }
+              disabled={
+                locked ||
+                foundBrokenWord ||
+                rejectedTokenIndices.includes(index)
+              }
+              onClick={() => handleTokenClick(index)}
             >
-              {token}
+              <HStack as="span" spacing={2}>
+                <Text as="span">{token}</Text>
+                {response.tokenIndex === index && (
+                  <Text as="span" aria-hidden="true">✓</Text>
+                )}
+              </HStack>
             </Chip>
           </WrapItem>
         ))}
       </Wrap>
-      {response.tokenIndex !== null && (
+
+      {/* Inline assistant support response */}
+      {(assistantSupportText || isLoadingAssistantSupport) && (
         <Box
           p={4}
+          borderRadius="xl"
+          style={questionSquircleStyle}
+          {...getQuestionAssistantPanelProps()}
+        >
+          <HStack spacing={2} mb={2} align="center">
+            <MdOutlineSupportAgent color={questionAssistantText.accent} />
+            <Text
+              fontSize="xs"
+              fontWeight="800"
+              textTransform="uppercase"
+              letterSpacing="wider"
+              color="var(--question-assistant-accent-strong)"
+            >
+              {assistantLabel}
+            </Text>
+            {isLoadingAssistantSupport && (
+              <VoiceOrb
+                state={
+                  ["idle", "listening", "speaking"][
+                    Math.floor(Math.random() * 3)
+                  ]
+                }
+                size={16}
+                centered={false}
+              />
+            )}
+          </HStack>
+          {assistantSupportText && (
+            <Box
+              fontSize="sm"
+              color="var(--question-assistant-text)"
+              lineHeight="tall"
+              sx={questionAssistantMarkdownStyles}
+            >
+              <ReactMarkdown>{assistantSupportText}</ReactMarkdown>
+            </Box>
+          )}
+        </Box>
+      )}
+
+      {foundBrokenWord && (
+        <Box
+          p={{ base: 4, md: 5 }}
           borderWidth="1px"
-          borderColor={APP_BORDER}
+          borderColor="var(--question-choice-single-accent)"
           bg={APP_SURFACE_MUTED}
           borderRadius="xl"
           style={questionSquircleStyle}
         >
-          <Text fontSize="sm" color={APP_TEXT_SECONDARY} mb={3}>
-            Repair “{question.tokens[response.tokenIndex]}” with:
+          <Text fontSize="sm" color={APP_TEXT_SECONDARY} fontWeight="normal" mb={3}>
+            {copy.chooseRepair}
           </Text>
           <Wrap spacing={2} dir={targetDirection} lang={targetLang}>
             {question.replacements.map((replacement) => (
               <WrapItem key={replacement}>
                 <Chip
+                  phase="repair"
                   selected={response.replacement === replacement}
                   disabled={locked}
                   onClick={() =>
@@ -268,41 +557,764 @@ function SentenceDetective({
               </WrapItem>
             ))}
           </Wrap>
+          {response.replacement && (
+            <Box
+              mt={4}
+              p={3}
+              bg={APP_SURFACE_ELEVATED}
+              borderWidth="1px"
+              borderColor={APP_BORDER}
+              borderRadius="lg"
+              style={questionSquircleStyle}
+            >
+              <Text
+                fontSize="lg"
+                fontWeight="750"
+                color={APP_TEXT_PRIMARY}
+                dir={targetDirection}
+                lang={targetLang}
+              >
+                {repairedPreview}
+              </Text>
+            </Box>
+          )}
         </Box>
       )}
     </QuestionShell>
   );
 }
 
-function DialogueFork({ question, response, setResponse, locked }) {
+function SentenceDetectiveSkeleton({
+  copy,
+  targetLang = "es",
+  supportLang = "en",
+}) {
+  const targetDirection = getLanguageDirection(targetLang, "ltr");
+  const supportDirection = getLanguageDirection(supportLang, "ltr");
+  const guidanceJoiner = ["ja", "zh"].includes(supportLang) ? "" : " ";
+  const placeholderWidths = [85, 110, 65, 95, 75, 100];
+
   return (
-    <QuestionShell meta={DELIGHT_VARIANTS[1]} question={question}>
-      <Box
-        alignSelf="flex-start"
-        maxW="88%"
-        p={4}
-        bg="var(--question-assistant-bg)"
-        borderWidth="1px"
-        borderColor="var(--question-assistant-border)"
-        borderRadius="2xl 2xl 2xl 6px"
-        style={questionSquircleStyle}
-      >
-        <Text
-          fontSize="xs"
-          fontWeight="800"
-          color="var(--question-assistant-accent-strong)"
-          mb={1}
-        >
-          {question.speaker}
-        </Text>
-        <Text color={APP_TEXT_PRIMARY} fontSize="lg">
-          {question.line}
+    <VStack
+      spacing={5}
+      align="stretch"
+      lang={supportLang}
+      dir={supportDirection}
+    >
+      <Box>
+        <HStack spacing={2} mb={1} justify="space-between">
+          <Text fontSize="xl" fontWeight="800" color={APP_TEXT_PRIMARY}>
+            {copy?.title || "Sentence Detective"}
+          </Text>
+          <IconButton
+            aria-label={copy?.askForHelp || "Help"}
+            icon={<MdOutlineSupportAgent />}
+            size="sm"
+            fontSize="lg"
+            rounded="xl"
+            isDisabled
+            {...getQuestionToolButtonProps()}
+          />
+        </HStack>
+        <Text fontSize="sm" color={APP_TEXT_SECONDARY} fontWeight="normal">
+          {`${copy?.findTitle || "Find the error"}${guidanceJoiner}${copy?.findHelp || "Tap the word that feels out of place."}`}
         </Text>
       </Box>
+
+      <Wrap
+        spacing={2}
+        justify="center"
+        py={3}
+        dir={targetDirection}
+        lang={targetLang}
+      >
+        {placeholderWidths.map((width, i) => (
+          <WrapItem key={`skel-${i}`}>
+            <Skeleton
+              height="42px"
+              width={`${width}px`}
+              borderRadius="xl"
+              startColor="rgba(128, 90, 213, 0.12)"
+              endColor="rgba(128, 90, 213, 0.28)"
+              style={questionSquircleStyle}
+            />
+          </WrapItem>
+        ))}
+      </Wrap>
+    </VStack>
+  );
+}
+
+function DialogueForkSkeleton({
+  copy,
+  targetLang = "es",
+  supportLang = "en",
+}) {
+  const targetDirection = getLanguageDirection(targetLang, "ltr");
+  const supportDirection = getLanguageDirection(supportLang, "ltr");
+
+  return (
+    <VStack
+      spacing={5}
+      align="stretch"
+      lang={supportLang}
+      dir={supportDirection}
+    >
+      <Box>
+        <HStack spacing={2} mb={1} justify="space-between">
+          <Text fontSize="xl" fontWeight="800" color={APP_TEXT_PRIMARY}>
+            {copy?.title || "Dialogue Fork"}
+          </Text>
+          <IconButton
+            aria-label={copy?.askForHelp || "Help"}
+            icon={<MdOutlineSupportAgent />}
+            size="sm"
+            fontSize="lg"
+            rounded="xl"
+            isDisabled
+            {...getQuestionToolButtonProps()}
+          />
+        </HStack>
+        <Text fontSize="sm" color={APP_TEXT_SECONDARY} fontWeight="normal">
+          {copy?.instruction || "Choose the natural response to continue the conversation."}
+        </Text>
+      </Box>
+
+      {/* Dialogue Line with TTS Button to the left */}
+      <HStack
+        spacing={3}
+        align="center"
+        dir={targetDirection}
+        lang={targetLang}
+        py={1}
+      >
+        <Skeleton
+          height="32px"
+          width="32px"
+          borderRadius="full"
+          flexShrink={0}
+          startColor="rgba(128, 90, 213, 0.12)"
+          endColor="rgba(128, 90, 213, 0.28)"
+        />
+        <Skeleton
+          height="24px"
+          width="240px"
+          borderRadius="md"
+          startColor="rgba(128, 90, 213, 0.12)"
+          endColor="rgba(128, 90, 213, 0.28)"
+        />
+      </HStack>
+
+      {/* 4 Option Card Skeletons */}
+      <VStack spacing={3} align="stretch" dir={targetDirection} lang={targetLang}>
+        {[1, 2, 3, 4].map((i) => (
+          <Skeleton
+            key={`dialogue-skel-opt-${i}`}
+            height="52px"
+            width="100%"
+            borderRadius="xl"
+            startColor="rgba(128, 90, 213, 0.12)"
+            endColor="rgba(128, 90, 213, 0.28)"
+            style={questionSquircleStyle}
+          />
+        ))}
+      </VStack>
+    </VStack>
+  );
+}
+
+function SentenceShapeshifterSkeleton({
+  copy,
+  targetLang = "es",
+  supportLang = "en",
+}) {
+  const targetDirection = getLanguageDirection(targetLang, "ltr");
+  const supportDirection = getLanguageDirection(supportLang, "ltr");
+
+  return (
+    <VStack
+      spacing={5}
+      align="stretch"
+      lang={supportLang}
+      dir={supportDirection}
+    >
+      <Box>
+        <HStack spacing={2} mb={1} justify="space-between">
+          <Text fontSize="xl" fontWeight="800" color={APP_TEXT_PRIMARY}>
+            {copy?.title || "Sentence Shapeshifter"}
+          </Text>
+          <IconButton
+            aria-label={copy?.askForHelp || "Help"}
+            icon={<MdOutlineSupportAgent />}
+            size="sm"
+            fontSize="lg"
+            rounded="xl"
+            isDisabled
+            {...getQuestionToolButtonProps()}
+          />
+        </HStack>
+        <Text fontSize="sm" color={APP_TEXT_SECONDARY} fontWeight="normal">
+          {copy?.instruction || "Transform the sentence according to the rule."}
+        </Text>
+      </Box>
+
+      {/* Source Sentence Box Skeleton */}
+      <Box
+        p={4}
+        bg={APP_SURFACE_MUTED}
+        borderWidth="1px"
+        borderColor={APP_BORDER}
+        borderRadius="xl"
+        style={questionSquircleStyle}
+      >
+        <HStack spacing={3} align="center" dir={targetDirection} lang={targetLang}>
+          <Skeleton
+            height="32px"
+            width="32px"
+            borderRadius="full"
+            flexShrink={0}
+            startColor="rgba(128, 90, 213, 0.12)"
+            endColor="rgba(128, 90, 213, 0.28)"
+          />
+          <Skeleton
+            height="24px"
+            width="220px"
+            borderRadius="md"
+            startColor="rgba(128, 90, 213, 0.12)"
+            endColor="rgba(128, 90, 213, 0.28)"
+          />
+        </HStack>
+      </Box>
+
+      {/* Constraint Arrow + Text Skeleton */}
+      <HStack justify="center" align="center" spacing={2} maxW="100%" px={2}>
+        <Text fontSize="md" color={APP_TEXT_SECONDARY} fontWeight="bold" flexShrink={0}>
+          ↓
+        </Text>
+        <Skeleton
+          height="18px"
+          width="160px"
+          borderRadius="md"
+          startColor="rgba(128, 90, 213, 0.12)"
+          endColor="rgba(128, 90, 213, 0.28)"
+        />
+      </HStack>
+
+      {/* Input Box Skeleton */}
+      <Skeleton
+        height="50px"
+        width="100%"
+        borderRadius="xl"
+        startColor="rgba(128, 90, 213, 0.12)"
+        endColor="rgba(128, 90, 213, 0.28)"
+        style={questionSquircleStyle}
+      />
+    </VStack>
+  );
+}
+
+function WordNeighborhoodsSkeleton({
+  copy,
+  supportLang = "en",
+}) {
+  const supportDirection = getLanguageDirection(supportLang, "ltr");
+
+  return (
+    <VStack
+      spacing={5}
+      align="stretch"
+      lang={supportLang}
+      dir={supportDirection}
+    >
+      <Box>
+        <HStack spacing={2} mb={1} justify="space-between">
+          <Text fontSize="xl" fontWeight="800" color={APP_TEXT_PRIMARY}>
+            {copy?.title || "Word Neighborhoods"}
+          </Text>
+          <IconButton
+            aria-label={copy?.askForHelp || "Help"}
+            icon={<MdOutlineSupportAgent />}
+            size="sm"
+            fontSize="lg"
+            rounded="xl"
+            isDisabled
+            {...getQuestionToolButtonProps()}
+          />
+        </HStack>
+        <Text fontSize="sm" color={APP_TEXT_SECONDARY} fontWeight="normal">
+          {copy?.instruction || "Sort each word into its matching neighborhood."}
+        </Text>
+      </Box>
+
+      {/* Word bank skeleton */}
+      <Box
+        minH="86px"
+        p={4}
+        borderWidth="1.5px"
+        borderStyle="dashed"
+        borderColor={APP_BORDER_STRONG}
+        bg={APP_SURFACE_MUTED}
+        borderRadius="xl"
+        style={questionSquircleStyle}
+      >
+        <Wrap spacing={2.5}>
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <WrapItem key={`word-bank-skel-${i}`}>
+              <Skeleton
+                height="38px"
+                width="76px"
+                borderRadius="lg"
+                startColor="rgba(128, 90, 213, 0.12)"
+                endColor="rgba(128, 90, 213, 0.28)"
+                style={questionSquircleStyle}
+              />
+            </WrapItem>
+          ))}
+        </Wrap>
+      </Box>
+
+      {/* 2 Column Group Skeletons */}
+      <SimpleGrid columns={{ base: 1, sm: 2 }} spacing={3.5}>
+        {[1, 2].map((i) => (
+          <Box
+            key={`word-group-skel-${i}`}
+            minH="150px"
+            p={4}
+            borderWidth="2px"
+            borderColor={APP_BORDER}
+            bg={APP_SURFACE_ELEVATED}
+            borderRadius="xl"
+            style={questionSquircleStyle}
+          >
+            <Box mb={3}>
+              <Skeleton height="20px" width="110px" borderRadius="md" />
+            </Box>
+            <Wrap spacing={2}>
+              <Skeleton height="32px" width="68px" borderRadius="lg" />
+              <Skeleton height="32px" width="80px" borderRadius="lg" />
+            </Wrap>
+          </Box>
+        ))}
+      </SimpleGrid>
+    </VStack>
+  );
+}
+
+function MorphologyForgeSkeleton() {
+  return (
+    <VStack spacing={5} align="stretch">
+      {/* Header skeleton */}
+      <HStack justify="space-between" align="center">
+        <VStack align="flex-start" spacing={1.5}>
+          <Skeleton height="28px" width="200px" borderRadius="md" />
+          <Skeleton height="16px" width="280px" borderRadius="md" />
+        </VStack>
+        <Skeleton height="36px" width="36px" borderRadius="xl" />
+      </HStack>
+
+      {/* Sentence context box skeleton */}
+      <Box
+        p={5}
+        borderWidth="1.5px"
+        borderColor={APP_BORDER}
+        bg={APP_SURFACE_ELEVATED}
+        borderRadius="xl"
+        style={questionSquircleStyle}
+      >
+        <Skeleton height="24px" width="85%" borderRadius="md" mx="auto" />
+      </Box>
+
+      {/* Forge Slot Box Skeleton */}
+      <Box
+        minH="88px"
+        p={4}
+        borderWidth="2px"
+        borderStyle="dashed"
+        borderColor={APP_BORDER_STRONG}
+        bg={APP_SURFACE_MUTED}
+        borderRadius="xl"
+        style={questionSquircleStyle}
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+      >
+        <HStack spacing={2}>
+          <Skeleton
+            height="40px"
+            width="75px"
+            borderRadius="lg"
+            startColor="rgba(128, 90, 213, 0.12)"
+            endColor="rgba(128, 90, 213, 0.28)"
+            style={questionSquircleStyle}
+          />
+          <Skeleton
+            height="40px"
+            width="65px"
+            borderRadius="lg"
+            startColor="rgba(128, 90, 213, 0.12)"
+            endColor="rgba(128, 90, 213, 0.28)"
+            style={questionSquircleStyle}
+          />
+        </HStack>
+      </Box>
+
+      {/* Available Pieces Bank Skeleton */}
+      <Box
+        p={4}
+        borderWidth="1.5px"
+        borderColor={APP_BORDER}
+        bg={APP_SURFACE_ELEVATED}
+        borderRadius="xl"
+        style={questionSquircleStyle}
+      >
+        <Wrap spacing={2.5} justify="center">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <WrapItem key={`forge-piece-skel-${i}`}>
+              <Skeleton
+                height="38px"
+                width="72px"
+                borderRadius="lg"
+                startColor="rgba(128, 90, 213, 0.12)"
+                endColor="rgba(128, 90, 213, 0.28)"
+                style={questionSquircleStyle}
+              />
+            </WrapItem>
+          ))}
+        </Wrap>
+      </Box>
+    </VStack>
+  );
+}
+
+function ThreeClueMysterySkeleton() {
+  return (
+    <VStack spacing={5} align="stretch">
+      {/* Header skeleton */}
+      <HStack justify="space-between" align="center">
+        <VStack align="flex-start" spacing={1.5}>
+          <Skeleton height="28px" width="210px" borderRadius="md" />
+          <Skeleton height="16px" width="300px" borderRadius="md" />
+        </VStack>
+        <Skeleton height="36px" width="36px" borderRadius="xl" />
+      </HStack>
+
+      {/* Clues Card Skeleton */}
       <VStack spacing={3} align="stretch">
+        <Box
+          p={4}
+          borderWidth="1.5px"
+          borderColor={APP_BORDER}
+          bg={APP_SURFACE_ELEVATED}
+          borderRadius="xl"
+          style={questionSquircleStyle}
+        >
+          <HStack spacing={3} align="flex-start">
+            <Skeleton height="22px" width="60px" borderRadius="full" />
+            <Skeleton height="20px" width="75%" borderRadius="md" />
+          </HStack>
+        </Box>
+      </VStack>
+
+      {/* Reveal Button / Potential XP Skeleton */}
+      <HStack justify="space-between" align="center" px={1}>
+        <Skeleton height="24px" width="130px" borderRadius="full" />
+        <Skeleton height="32px" width="140px" borderRadius="lg" />
+      </HStack>
+
+      {/* Input Skeleton */}
+      <Skeleton
+        height="54px"
+        width="100%"
+        borderRadius="xl"
+        style={questionSquircleStyle}
+      />
+    </VStack>
+  );
+}
+
+function ListenDifferenceSkeleton() {
+  return (
+    <VStack spacing={5} align="stretch">
+      {/* Header Skeleton */}
+      <HStack justify="space-between" align="center">
+        <VStack align="flex-start" spacing={1}>
+          <Skeleton height="28px" width="220px" borderRadius="md" />
+          <Skeleton height="16px" width="310px" borderRadius="md" />
+        </VStack>
+        <Skeleton height="36px" width="36px" borderRadius="xl" />
+      </HStack>
+
+      {/* Prominent Play Audio Button Skeleton */}
+      <Skeleton
+        height="56px"
+        width="100%"
+        borderRadius="xl"
+        style={questionSquircleStyle}
+      />
+
+      {/* Choice Option Cards Skeleton */}
+      <VStack spacing={3} align="stretch">
+        <Skeleton
+          height="54px"
+          width="100%"
+          borderRadius="xl"
+          style={questionSquircleStyle}
+        />
+        <Skeleton
+          height="54px"
+          width="100%"
+          borderRadius="xl"
+          style={questionSquircleStyle}
+        />
+      </VStack>
+    </VStack>
+  );
+}
+
+function ThreeWordChallengeSkeleton() {
+  return (
+    <VStack spacing={5} align="stretch">
+      {/* Header Skeleton */}
+      <HStack justify="space-between" align="center">
+        <VStack align="flex-start" spacing={1}>
+          <Skeleton height="28px" width="230px" borderRadius="md" />
+          <Skeleton height="16px" width="320px" borderRadius="md" />
+        </VStack>
+        <Skeleton height="36px" width="36px" borderRadius="xl" />
+      </HStack>
+
+      {/* 3 Cue Chips Skeleton */}
+      <HStack spacing={3} justify="center" py={2}>
+        <Skeleton
+          height="46px"
+          width="110px"
+          borderRadius="xl"
+          style={questionSquircleStyle}
+        />
+        <Skeleton
+          height="46px"
+          width="120px"
+          borderRadius="xl"
+          style={questionSquircleStyle}
+        />
+        <Skeleton
+          height="46px"
+          width="115px"
+          borderRadius="xl"
+          style={questionSquircleStyle}
+        />
+      </HStack>
+
+      {/* Input Field Skeleton */}
+      <Skeleton
+        height="54px"
+        width="100%"
+        borderRadius="xl"
+        style={questionSquircleStyle}
+      />
+    </VStack>
+  );
+}
+
+function NaturalOrWeirdSkeleton() {
+  return (
+    <VStack spacing={5} align="stretch">
+      {/* Header Skeleton */}
+      <HStack justify="space-between" align="center">
+        <VStack align="flex-start" spacing={1}>
+          <Skeleton height="28px" width="220px" borderRadius="md" />
+          <Skeleton height="16px" width="310px" borderRadius="md" />
+        </VStack>
+        <Skeleton height="36px" width="36px" borderRadius="xl" />
+      </HStack>
+
+      {/* Target Sentence Presentation Card Skeleton */}
+      <Box
+        p={{ base: 5, md: 6 }}
+        borderRadius="2xl"
+        borderWidth="1px"
+        borderColor={APP_BORDER}
+        bg={APP_SURFACE_MUTED}
+        style={questionSquircleStyle}
+        minH="100px"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+      >
+        <Skeleton height="32px" width="75%" borderRadius="md" />
+      </Box>
+
+      {/* 2 Binary Choice Cards Skeleton */}
+      <SimpleGrid columns={{ base: 1, sm: 2 }} spacing={3}>
+        <Skeleton
+          height="58px"
+          borderRadius="xl"
+          style={questionSquircleStyle}
+        />
+        <Skeleton
+          height="58px"
+          borderRadius="xl"
+          style={questionSquircleStyle}
+        />
+      </SimpleGrid>
+    </VStack>
+  );
+}
+
+function DialogueFork({
+  question,
+  response,
+  setResponse,
+  locked,
+  targetLang,
+  supportLang,
+  copy,
+  onAskAssistant,
+  isLoadingAssistantSupport = false,
+  assistantSupportText = "",
+  assistantLabel = "Assistant",
+  onPlayAudio,
+  isLoadingAudio = false,
+  isPlayingAudio = false,
+  isCorrect = false,
+}) {
+  const targetDirection = getLanguageDirection(targetLang, "ltr");
+  const supportDirection = getLanguageDirection(supportLang, "ltr");
+
+  return (
+    <VStack
+      spacing={5}
+      align="stretch"
+      lang={supportLang}
+      dir={supportDirection}
+    >
+      <Box>
+        <HStack spacing={2} mb={1} justify="space-between">
+          <Text fontSize="xl" fontWeight="800" color={APP_TEXT_PRIMARY}>
+            {copy?.title || "Dialogue Fork"}
+          </Text>
+          <IconButton
+            aria-label={copy?.askForHelp || "Help"}
+            icon={
+              isLoadingAssistantSupport ? (
+                <VoiceOrb
+                  state={
+                    ["idle", "listening", "speaking"][
+                      Math.floor(Math.random() * 3)
+                    ]
+                  }
+                  size={16}
+                />
+              ) : (
+                <MdOutlineSupportAgent />
+              )
+            }
+            size="sm"
+            fontSize="lg"
+            rounded="xl"
+            onClick={onAskAssistant}
+            isDisabled={
+              isLoadingAssistantSupport ||
+              !!assistantSupportText ||
+              !onAskAssistant
+            }
+            {...getQuestionToolButtonProps()}
+          />
+        </HStack>
+        <Text fontSize="sm" color={APP_TEXT_SECONDARY} fontWeight="normal">
+          {copy?.instruction || "Choose the natural response to continue the conversation."}
+        </Text>
+      </Box>
+
+      {/* Dialogue Line with TTS Button to the left */}
+      <HStack
+        spacing={3}
+        align="center"
+        dir={targetDirection}
+        lang={targetLang}
+        py={1}
+      >
+        {onPlayAudio && (
+          <IconButton
+            aria-label="Play dialogue audio"
+            icon={
+              isLoadingAudio ? (
+                <Spinner size="xs" />
+              ) : (
+                <FiVolume2 />
+              )
+            }
+            size="sm"
+            variant="ghost"
+            rounded="full"
+            color={
+              isPlayingAudio
+                ? "purple.300"
+                : "var(--question-assistant-accent-strong)"
+            }
+            onClick={() => onPlayAudio(question.line)}
+            isDisabled={isLoadingAudio}
+            flexShrink={0}
+          />
+        )}
+        <Text
+          color={APP_TEXT_PRIMARY}
+          fontSize="xl"
+          fontWeight="semibold"
+        >
+          {question.line}
+        </Text>
+      </HStack>
+
+      {/* Inline Assistant Panel */}
+      {(assistantSupportText || isLoadingAssistantSupport) && (
+        <Box
+          p={4}
+          borderRadius="xl"
+          style={questionSquircleStyle}
+          {...getQuestionAssistantPanelProps()}
+        >
+          <HStack spacing={2} mb={2} align="center">
+            <MdOutlineSupportAgent color={questionAssistantText.accent} />
+            <Text
+              fontSize="xs"
+              fontWeight="800"
+              textTransform="uppercase"
+              letterSpacing="wider"
+              color="var(--question-assistant-accent-strong)"
+            >
+              {assistantLabel}
+            </Text>
+            {isLoadingAssistantSupport && (
+              <VoiceOrb
+                state={
+                  ["idle", "listening", "speaking"][
+                    Math.floor(Math.random() * 3)
+                  ]
+                }
+                size={16}
+                centered={false}
+              />
+            )}
+          </HStack>
+          {assistantSupportText && (
+            <Box
+              fontSize="sm"
+              color="var(--question-assistant-text)"
+              lineHeight="tall"
+              sx={questionAssistantMarkdownStyles}
+            >
+              <ReactMarkdown>{assistantSupportText}</ReactMarkdown>
+            </Box>
+          )}
+        </Box>
+      )}
+
+      {/* Choice Cards */}
+      <VStack spacing={3} align="stretch" dir={targetDirection} lang={targetLang}>
         {question.options.map((option, index) => (
           <ChoiceCard
-            key={option}
+            key={`${option}-${index}`}
             selected={response.selectedIndex === index}
             disabled={locked}
             onClick={() => setResponse({ selectedIndex: index })}
@@ -311,44 +1323,243 @@ function DialogueFork({ question, response, setResponse, locked }) {
           </ChoiceCard>
         ))}
       </VStack>
-    </QuestionShell>
+
+      {/* Reaction Delight Bubble on Correct Answer */}
+      {isCorrect && question.reaction && (
+        <Box
+          alignSelf="flex-start"
+          maxW="88%"
+          mt={1}
+          p={3.5}
+          bg="rgba(56, 161, 105, 0.12)"
+          borderWidth="1px"
+          borderColor="rgba(56, 161, 105, 0.35)"
+          borderRadius="2xl 2xl 2xl 6px"
+          style={questionSquircleStyle}
+        >
+          <Text
+            fontSize="xs"
+            fontWeight="800"
+            color="green.400"
+            mb={0.5}
+          >
+            {question.speaker || "Speaker"}
+          </Text>
+          <Text
+            color={APP_TEXT_PRIMARY}
+            fontSize="md"
+            dir={targetDirection}
+            lang={targetLang}
+          >
+            {question.reaction}
+          </Text>
+        </Box>
+      )}
+    </VStack>
   );
 }
 
-function SentenceShapeshifter({ question, response, setResponse, locked }) {
+function SentenceShapeshifter({
+  question,
+  response,
+  setResponse,
+  locked,
+  targetLang,
+  supportLang,
+  copy,
+  onAskAssistant,
+  isLoadingAssistantSupport = false,
+  assistantSupportText = "",
+  assistantLabel = "Assistant",
+  onPlayAudio,
+  isLoadingAudio = false,
+  isPlayingAudio = false,
+  onSubmit,
+  canSubmit = false,
+  submitting = false,
+}) {
+  const targetDirection = getLanguageDirection(targetLang, "ltr");
+  const supportDirection = getLanguageDirection(supportLang, "ltr");
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && canSubmit && !submitting && !locked) {
+      e.preventDefault();
+      onSubmit?.();
+    }
+  };
+
   return (
-    <QuestionShell meta={DELIGHT_VARIANTS[2]} question={question}>
-      <VStack spacing={3} align="stretch">
-        <Box
-          p={4}
-          bg={APP_SURFACE_MUTED}
-          borderWidth="1px"
-          borderColor={APP_BORDER}
-          borderRadius="xl"
-          style={questionSquircleStyle}
+    <VStack
+      spacing={5}
+      align="stretch"
+      lang={supportLang}
+      dir={supportDirection}
+    >
+      <Box>
+        <HStack spacing={2} mb={1} justify="space-between">
+          <Text fontSize="xl" fontWeight="800" color={APP_TEXT_PRIMARY}>
+            {copy?.title || "Sentence Shapeshifter"}
+          </Text>
+          <IconButton
+            aria-label={copy?.askForHelp || "Help"}
+            icon={
+              isLoadingAssistantSupport ? (
+                <VoiceOrb
+                  state={
+                    ["idle", "listening", "speaking"][
+                      Math.floor(Math.random() * 3)
+                    ]
+                  }
+                  size={16}
+                />
+              ) : (
+                <MdOutlineSupportAgent />
+              )
+            }
+            size="sm"
+            fontSize="lg"
+            rounded="xl"
+            onClick={onAskAssistant}
+            isDisabled={
+              isLoadingAssistantSupport ||
+              !!assistantSupportText ||
+              !onAskAssistant
+            }
+            {...getQuestionToolButtonProps()}
+          />
+        </HStack>
+        <Text fontSize="sm" color={APP_TEXT_SECONDARY} fontWeight="normal">
+          {copy?.instruction || "Transform the sentence according to the rule."}
+        </Text>
+      </Box>
+
+      {/* Source Sentence Card with left-aligned TTS */}
+      <Box
+        p={4}
+        bg={APP_SURFACE_MUTED}
+        borderWidth="1px"
+        borderColor={APP_BORDER}
+        borderRadius="xl"
+        style={questionSquircleStyle}
+      >
+        <HStack
+          spacing={3}
+          align="center"
+          dir={targetDirection}
+          lang={targetLang}
         >
-          <Text fontSize="lg" color={APP_TEXT_PRIMARY} textAlign="center">
+          {onPlayAudio && (
+            <IconButton
+              aria-label="Play source sentence audio"
+              icon={
+                isLoadingAudio ? (
+                  <Spinner size="xs" />
+                ) : (
+                  <FiVolume2 />
+                )
+              }
+              size="sm"
+              variant="ghost"
+              rounded="full"
+              color={
+                isPlayingAudio
+                  ? "purple.300"
+                  : "var(--question-assistant-accent-strong)"
+              }
+              onClick={() => onPlayAudio(question.source)}
+              isDisabled={isLoadingAudio}
+              flexShrink={0}
+            />
+          )}
+          <Text
+            color={APP_TEXT_PRIMARY}
+            fontSize="lg"
+            fontWeight="semibold"
+          >
             {question.source}
           </Text>
-        </Box>
-        <HStack justify="center" spacing={2} color="purple.300">
-          <Text fontSize="xl">↓</Text>
-          <Badge colorScheme="purple" px={3} py={1} borderRadius="full">
-            {question.constraint}
-          </Badge>
         </HStack>
+      </Box>
+
+      {/* Transformation Rule Text */}
+      <HStack justify="center" align="center" spacing={2} maxW="100%" px={2}>
+        <Text fontSize="md" color={APP_TEXT_SECONDARY} fontWeight="bold" flexShrink={0}>
+          ↓
+        </Text>
+        <Text
+          color={APP_TEXT_SECONDARY}
+          fontSize="sm"
+          fontWeight="medium"
+          textAlign="center"
+          wordBreak="break-word"
+          lineHeight="normal"
+        >
+          {question.constraint}
+        </Text>
+      </HStack>
+
+      {/* Inline Assistant Panel */}
+      {(assistantSupportText || isLoadingAssistantSupport) && (
+        <Box
+          p={4}
+          borderRadius="xl"
+          style={questionSquircleStyle}
+          {...getQuestionAssistantPanelProps()}
+        >
+          <HStack spacing={2} mb={2} align="center">
+            <MdOutlineSupportAgent color={questionAssistantText.accent} />
+            <Text
+              fontSize="xs"
+              fontWeight="800"
+              textTransform="uppercase"
+              letterSpacing="wider"
+              color="var(--question-assistant-accent-strong)"
+            >
+              {assistantLabel}
+            </Text>
+            {isLoadingAssistantSupport && (
+              <VoiceOrb
+                state={
+                  ["idle", "listening", "speaking"][
+                    Math.floor(Math.random() * 3)
+                  ]
+                }
+                size={16}
+                centered={false}
+              />
+            )}
+          </HStack>
+          {assistantSupportText && (
+            <Box
+              fontSize="sm"
+              color="var(--question-assistant-text)"
+              lineHeight="tall"
+              sx={questionAssistantMarkdownStyles}
+            >
+              <ReactMarkdown>{assistantSupportText}</ReactMarkdown>
+            </Box>
+          )}
+        </Box>
+      )}
+
+      {/* Text Input */}
+      <Box dir={targetDirection} lang={targetLang}>
         <Input
-          value={response.text}
+          value={response.text || ""}
           onChange={(event) => setResponse({ text: event.target.value })}
+          onKeyDown={handleKeyDown}
           isDisabled={locked}
-          placeholder="Write the transformed sentence…"
+          placeholder={copy?.placeholder || "Type the transformed sentence…"}
           size="lg"
           bg={APP_SURFACE_ELEVATED}
           borderColor={APP_BORDER_STRONG}
+          _hover={{ borderColor: "purple.400" }}
+          _focus={{ borderColor: "purple.400", boxShadow: "0 0 0 1px #9f7aea" }}
           style={questionSquircleStyle}
+          autoFocus
         />
-      </VStack>
-    </QuestionShell>
+      </Box>
+    </VStack>
   );
 }
 
@@ -358,178 +1569,729 @@ function WordNeighborhoods({
   setResponse,
   locked,
   wordOrder,
+  targetLang,
+  supportLang,
+  copy,
+  onAskAssistant,
+  isLoadingAssistantSupport = false,
+  assistantSupportText = "",
+  assistantLabel = "Assistant",
 }) {
   const [selectedWord, setSelectedWord] = useState("");
+  const targetDirection = getLanguageDirection(targetLang, "ltr");
+  const supportDirection = getLanguageDirection(supportLang, "ltr");
+
   const assignments = response.assignments || {};
   const unassigned = wordOrder.filter((word) => assignments[word] === undefined);
 
-  const assign = (groupIndex) => {
-    if (!selectedWord || locked) return;
-    setResponse((current) => ({
-      assignments: {
-        ...(current.assignments || {}),
-        [selectedWord]: groupIndex,
-      },
-    }));
-    setSelectedWord("");
-  };
+  const assign = useCallback(
+    (word, groupIndex) => {
+      if (!word || locked) return;
+      setResponse((current) => ({
+        assignments: {
+          ...(current.assignments || {}),
+          [word]: groupIndex,
+        },
+      }));
+      setSelectedWord((prev) => (prev === word ? "" : prev));
+    },
+    [locked, setResponse],
+  );
 
-  const returnToBank = (word) => {
-    if (locked) return;
-    setResponse((current) => {
-      const assignmentsNext = { ...(current.assignments || {}) };
-      delete assignmentsNext[word];
-      return { assignments: assignmentsNext };
-    });
-  };
+  const returnToBank = useCallback(
+    (word) => {
+      if (!word || locked) return;
+      setResponse((current) => {
+        const assignmentsNext = { ...(current.assignments || {}) };
+        delete assignmentsNext[word];
+        return { assignments: assignmentsNext };
+      });
+      setSelectedWord((prev) => (prev === word ? "" : prev));
+    },
+    [locked, setResponse],
+  );
+
+  const handleDragEnd = useCallback(
+    (dragResult) => {
+      if (locked || !dragResult?.destination) return;
+      const { draggableId, source, destination } = dragResult;
+      if (source.droppableId === destination.droppableId) return;
+
+      if (destination.droppableId === "bank") {
+        returnToBank(draggableId);
+        return;
+      }
+
+      if (destination.droppableId.startsWith("group-")) {
+        const targetGroupIndex = Number(
+          destination.droppableId.replace("group-", ""),
+        );
+        if (!isNaN(targetGroupIndex)) {
+          assign(draggableId, targetGroupIndex);
+        }
+      }
+    },
+    [assign, locked, returnToBank],
+  );
 
   return (
-    <QuestionShell meta={DELIGHT_VARIANTS[3]} question={question}>
-      <Box
-        minH="82px"
-        p={4}
-        borderWidth="1px"
-        borderStyle="dashed"
-        borderColor={APP_BORDER_STRONG}
-        bg={APP_SURFACE_MUTED}
-        borderRadius="xl"
-        style={questionSquircleStyle}
+    <SortableArea onDragEnd={handleDragEnd}>
+      <VStack
+        spacing={5}
+        align="stretch"
+        lang={supportLang}
+        dir={supportDirection}
       >
-        <Text fontSize="xs" color={APP_TEXT_SECONDARY} mb={3}>
-          Word bank · tap a word, then its neighborhood
-        </Text>
-        <Wrap spacing={2}>
-          {unassigned.map((word) => (
-            <WrapItem key={word}>
-              <Chip
-                selected={selectedWord === word}
-                disabled={locked}
-                onClick={() => setSelectedWord(word)}
-              >
-                {word}
-              </Chip>
-            </WrapItem>
-          ))}
-          {!unassigned.length && (
-            <Text fontSize="sm" color={APP_TEXT_SECONDARY}>
-              Every word has a home.
+        <Box>
+          <HStack spacing={2} mb={1} justify="space-between">
+            <Text fontSize="xl" fontWeight="800" color={APP_TEXT_PRIMARY}>
+              {copy?.title || "Word Neighborhoods"}
             </Text>
-          )}
-        </Wrap>
-      </Box>
-      <SimpleGrid columns={{ base: 1, sm: question.groups.length }} spacing={3}>
-        {question.groups.map((group, groupIndex) => {
-          const members = wordOrder.filter(
-            (word) => Number(assignments[word]) === groupIndex,
-          );
-          return (
-            <Box
-              key={group.label}
-              as="button"
-              type="button"
-              textAlign="left"
-              minH="150px"
-              p={4}
-              borderWidth="2px"
-              borderColor={selectedWord ? "purple.300" : APP_BORDER}
-              bg={APP_SURFACE_ELEVATED}
-              borderRadius="xl"
-              style={questionSquircleStyle}
-              transition="all 0.2s ease"
-              _hover={selectedWord && !locked ? { transform: "translateY(-2px)" } : {}}
-              onClick={() => assign(groupIndex)}
-            >
-              <Text fontWeight="800" color={APP_TEXT_PRIMARY} mb={3}>
-                {group.label}
+            <IconButton
+              aria-label={copy?.askForHelp || "Help"}
+              icon={
+                isLoadingAssistantSupport ? (
+                  <VoiceOrb
+                    state={
+                      ["idle", "listening", "speaking"][
+                        Math.floor(Math.random() * 3)
+                      ]
+                    }
+                    size={16}
+                  />
+                ) : (
+                  <MdOutlineSupportAgent />
+                )
+              }
+              size="sm"
+              fontSize="lg"
+              rounded="xl"
+              onClick={onAskAssistant}
+              isDisabled={
+                isLoadingAssistantSupport ||
+                !!assistantSupportText ||
+                !onAskAssistant
+              }
+              {...getQuestionToolButtonProps()}
+            />
+          </HStack>
+          <Text fontSize="sm" color={APP_TEXT_SECONDARY} fontWeight="normal">
+            {copy?.instruction || "Sort each word into its matching neighborhood."}
+          </Text>
+        </Box>
+
+        {/* Inline Assistant Panel */}
+        {(assistantSupportText || isLoadingAssistantSupport) && (
+          <Box
+            p={4}
+            borderRadius="xl"
+            style={questionSquircleStyle}
+            {...getQuestionAssistantPanelProps()}
+          >
+            <HStack spacing={2} mb={2} align="center">
+              <MdOutlineSupportAgent color={questionAssistantText.accent} />
+              <Text
+                fontSize="xs"
+                fontWeight="800"
+                textTransform="uppercase"
+                letterSpacing="wider"
+                color="var(--question-assistant-accent-strong)"
+              >
+                {assistantLabel}
               </Text>
-              <Wrap spacing={2}>
-                {members.map((word) => (
-                  <WrapItem key={word}>
+              {isLoadingAssistantSupport && (
+                <VoiceOrb
+                  state={
+                    ["idle", "listening", "speaking"][
+                      Math.floor(Math.random() * 3)
+                    ]
+                  }
+                  size={16}
+                  centered={false}
+                />
+              )}
+            </HStack>
+            {assistantSupportText && (
+              <Box
+                fontSize="sm"
+                color="var(--question-assistant-text)"
+                lineHeight="tall"
+                sx={questionAssistantMarkdownStyles}
+              >
+                <ReactMarkdown>{assistantSupportText}</ReactMarkdown>
+              </Box>
+            )}
+          </Box>
+        )}
+
+        {/* Word Bank */}
+        <Box
+          minH="86px"
+          p={4}
+          borderWidth="1.5px"
+          borderStyle="dashed"
+          borderColor={selectedWord ? "purple.400" : APP_BORDER_STRONG}
+          bg={APP_SURFACE_MUTED}
+          borderRadius="xl"
+          style={questionSquircleStyle}
+          transition="border-color 0.2s ease"
+        >
+          <SortableList
+            id="bank"
+            items={unassigned}
+            flexWrap="wrap"
+            gap={2.5}
+            minH="42px"
+            dir={targetDirection}
+            lang={targetLang}
+          >
+            {unassigned.map((word) => {
+              const isSelected = selectedWord === word;
+              return (
+                <SortableItem key={word} id={word} disabled={locked}>
+                  {({ setNodeRef, attributes, listeners, style, isDragging }) => (
                     <Box
-                      as="span"
-                      px={3}
+                      ref={setNodeRef}
+                      style={{
+                        ...style,
+                        ...questionSquircleStyle,
+                        cursor: locked ? "default" : isDragging ? "grabbing" : "grab",
+                        userSelect: "none",
+                      }}
+                      {...attributes}
+                      {...listeners}
+                      px={3.5}
                       py={2}
                       borderRadius="lg"
-                      {...getQuestionChipProps()}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        returnToBank(word);
-                      }}
+                      fontSize="md"
+                      fontWeight="semibold"
+                      borderWidth="1.5px"
+                      borderColor={isSelected ? "purple.400" : APP_BORDER}
+                      bg={isSelected ? "purple.500" : APP_SURFACE_ELEVATED}
+                      color={isSelected ? "white" : APP_TEXT_PRIMARY}
+                      boxShadow={
+                        isDragging
+                          ? "0 8px 20px rgba(128,90,213,0.35)"
+                          : isSelected
+                            ? "0 0 0 2px rgba(159, 122, 234, 0.4)"
+                            : "sm"
+                      }
+                      transition="border-color 0.15s ease, background-color 0.15s ease, transform 0.15s ease"
+                      _hover={
+                        !locked && !isSelected
+                          ? {
+                              borderColor: "purple.300",
+                              transform: "translateY(-1px)",
+                            }
+                          : {}
+                      }
+                      onClick={() => setSelectedWord(isSelected ? "" : word)}
                     >
                       {word}
                     </Box>
-                  </WrapItem>
-                ))}
-              </Wrap>
-            </Box>
-          );
-        })}
-      </SimpleGrid>
-    </QuestionShell>
+                  )}
+                </SortableItem>
+              );
+            })}
+          </SortableList>
+        </Box>
+
+        {/* Group Buckets */}
+        <SimpleGrid columns={{ base: 1, sm: question.groups?.length || 2 }} spacing={3.5}>
+          {(question.groups || []).map((group, groupIndex) => {
+            const members = wordOrder.filter(
+              (word) => Number(assignments[word]) === groupIndex,
+            );
+            const isTargetGroup = !!selectedWord;
+            return (
+              <Box
+                key={group.label}
+                textAlign="left"
+                minH="150px"
+                p={4}
+                borderWidth="2px"
+                borderColor={isTargetGroup ? "purple.400" : APP_BORDER}
+                bg={APP_SURFACE_ELEVATED}
+                borderRadius="xl"
+                style={questionSquircleStyle}
+                transition="all 0.2s ease"
+                boxShadow={isTargetGroup ? "0 0 12px rgba(128, 90, 213, 0.15)" : "none"}
+                _hover={
+                  isTargetGroup && !locked
+                    ? {
+                        borderColor: "purple.300",
+                        transform: "translateY(-2px)",
+                        boxShadow: "0 0 16px rgba(128, 90, 213, 0.25)",
+                        cursor: "pointer",
+                      }
+                    : {}
+                }
+                onClick={() => {
+                  if (selectedWord && !locked) {
+                    assign(selectedWord, groupIndex);
+                  }
+                }}
+              >
+                <Text fontWeight="800" fontSize="md" color={APP_TEXT_PRIMARY} mb={3}>
+                  {group.label}
+                </Text>
+                <SortableList
+                  id={`group-${groupIndex}`}
+                  items={members}
+                  flexWrap="wrap"
+                  gap={2}
+                  minH="50px"
+                  dir={targetDirection}
+                  lang={targetLang}
+                >
+                  {members.map((word) => (
+                    <SortableItem key={word} id={word} disabled={locked}>
+                      {({ setNodeRef, attributes, listeners, style, isDragging }) => (
+                        <Box
+                          ref={setNodeRef}
+                          style={{
+                            ...style,
+                            ...questionSquircleStyle,
+                            cursor: locked ? "default" : isDragging ? "grabbing" : "grab",
+                            userSelect: "none",
+                          }}
+                          {...attributes}
+                          {...listeners}
+                          px={3}
+                          py={1.5}
+                          borderRadius="lg"
+                          fontSize="sm"
+                          fontWeight="semibold"
+                          bg={APP_SURFACE_MUTED}
+                          borderWidth="1px"
+                          borderColor={APP_BORDER_STRONG}
+                          color={APP_TEXT_PRIMARY}
+                          title={copy?.tapToReturn}
+                          boxShadow={isDragging ? "0 6px 16px rgba(128,90,213,0.3)" : "none"}
+                          _hover={
+                            !locked
+                              ? {
+                                  borderColor: "red.300",
+                                  color: "red.200",
+                                  bg: "rgba(229, 62, 62, 0.1)",
+                                }
+                              : {}
+                          }
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            returnToBank(word);
+                          }}
+                        >
+                          {word} ✕
+                        </Box>
+                      )}
+                    </SortableItem>
+                  ))}
+                  {!members.length && (
+                    <Text
+                      fontSize="xs"
+                      color={APP_TEXT_SECONDARY}
+                      fontStyle="italic"
+                      py={2}
+                    >
+                      {selectedWord
+                        ? `Tap to place “${selectedWord}”`
+                        : "Drag a word here or tap to place"}
+                    </Text>
+                  )}
+                </SortableList>
+              </Box>
+            );
+          })}
+        </SimpleGrid>
+      </VStack>
+    </SortableArea>
   );
 }
 
-function MorphologyForge({ question, response, setResponse, locked }) {
-  const chosen = response.pieceIndices || [];
-  const available = question.pieces
+function MorphologyForge({
+  question,
+  response,
+  setResponse,
+  locked,
+  targetLang,
+  supportLang,
+  copy,
+  onAskAssistant,
+  isLoadingAssistantSupport = false,
+  assistantSupportText = "",
+  assistantLabel = "Assistant",
+}) {
+  const targetDirection = getLanguageDirection(targetLang, "ltr");
+  const supportDirection = getLanguageDirection(supportLang, "ltr");
+
+  const chosenIndices = response.pieceIndices || [];
+  const pieces = question.pieces || [];
+
+  // Available pieces that haven't been chosen yet
+  const available = pieces
     .map((piece, index) => ({ piece, index }))
-    .filter(({ index }) => !chosen.includes(index));
+    .filter(({ index }) => !chosenIndices.includes(index));
+
+  // The live forged word assembled from chosen pieces in order
+  const forgedWord = chosenIndices
+    .map((idx) => pieces[idx])
+    .filter(Boolean)
+    .join("");
+
+  const addPiece = useCallback(
+    (index) => {
+      if (locked || chosenIndices.includes(index)) return;
+      setResponse((current) => ({
+        pieceIndices: [...(current.pieceIndices || []), index],
+      }));
+    },
+    [chosenIndices, locked, setResponse],
+  );
+
+  const removePiece = useCallback(
+    (position) => {
+      if (locked) return;
+      setResponse((current) => ({
+        pieceIndices: (current.pieceIndices || []).filter(
+          (_, idx) => idx !== position,
+        ),
+      }));
+    },
+    [locked, setResponse],
+  );
+
+  const handleDragEnd = useCallback(
+    (dragResult) => {
+      if (locked || !dragResult?.destination) return;
+      const { draggableId, source, destination } = dragResult;
+      if (source.droppableId === destination.droppableId) return;
+
+      const match = draggableId.match(/piece-(\d+)/);
+      if (!match) return;
+      const pieceIndex = Number(match[1]);
+
+      if (destination.droppableId === "forge") {
+        if (!chosenIndices.includes(pieceIndex)) {
+          addPiece(pieceIndex);
+        }
+      } else if (destination.droppableId === "bank") {
+        const pos = chosenIndices.indexOf(pieceIndex);
+        if (pos !== -1) {
+          removePiece(pos);
+        }
+      }
+    },
+    [addPiece, chosenIndices, locked, removePiece],
+  );
+
+  // Split sentence at "___"
+  const sentenceParts = (question.sentence || "").split("___");
+  const beforeBlank = sentenceParts[0] || "";
+  const afterBlank = sentenceParts.slice(1).join("___");
+
   return (
-    <QuestionShell meta={DELIGHT_VARIANTS[4]} question={question}>
-      <Text fontSize="lg" color={APP_TEXT_PRIMARY} textAlign="center">
-        {question.sentence}
-      </Text>
-      <Flex
-        minH="76px"
-        p={4}
-        align="center"
-        justify="center"
-        borderWidth="2px"
-        borderStyle="dashed"
-        borderColor="orange.300"
-        bg="rgba(237, 137, 54, 0.08)"
-        borderRadius="xl"
-        style={questionSquircleStyle}
+    <SortableArea onDragEnd={handleDragEnd}>
+      <VStack
+        spacing={5}
+        align="stretch"
+        lang={supportLang}
+        dir={supportDirection}
       >
-        {chosen.length ? (
-          <HStack spacing={0} flexWrap="wrap" justify="center">
-            {chosen.map((pieceIndex, position) => (
-              <Button
-                key={`${pieceIndex}-${position}`}
-                size="lg"
-                px={2}
-                variant="ghost"
-                color={APP_TEXT_PRIMARY}
-                isDisabled={locked}
-                onClick={() =>
-                  setResponse({
-                    pieceIndices: chosen.filter((_, index) => index !== position),
-                  })
-                }
-              >
-                {question.pieces[pieceIndex]}
-              </Button>
-            ))}
-          </HStack>
-        ) : (
-          <Text color={APP_TEXT_SECONDARY}>Tap pieces to forge the word</Text>
-        )}
-      </Flex>
-      <Wrap spacing={2} justify="center">
-        {available.map(({ piece, index }) => (
-          <WrapItem key={`${piece}-${index}`}>
-            <Chip
-              disabled={locked}
-              onClick={() =>
-                setResponse({ pieceIndices: [...chosen, index] })
+        {/* Header */}
+        <Box>
+          <HStack spacing={2} mb={1} justify="space-between">
+            <Text fontSize="xl" fontWeight="800" color={APP_TEXT_PRIMARY}>
+              {copy?.title || "Morphology Forge"}
+            </Text>
+            <IconButton
+              aria-label={copy?.askForHelp || "Help"}
+              icon={
+                isLoadingAssistantSupport ? (
+                  <VoiceOrb
+                    state={
+                      ["idle", "listening", "speaking"][
+                        Math.floor(Math.random() * 3)
+                      ]
+                    }
+                    size={16}
+                  />
+                ) : (
+                  <MdOutlineSupportAgent />
+                )
               }
+              size="sm"
+              fontSize="lg"
+              rounded="xl"
+              onClick={onAskAssistant}
+              isDisabled={
+                isLoadingAssistantSupport ||
+                !!assistantSupportText ||
+                !onAskAssistant
+              }
+              {...getQuestionToolButtonProps()}
+            />
+          </HStack>
+          <Text fontSize="sm" color={APP_TEXT_SECONDARY} fontWeight="normal">
+            {copy?.instruction || "Build the missing word piece by piece."}
+          </Text>
+        </Box>
+
+        {/* Inline Assistant Panel */}
+        {(assistantSupportText || isLoadingAssistantSupport) && (
+          <Box
+            p={4}
+            borderRadius="xl"
+            style={questionSquircleStyle}
+            {...getQuestionAssistantPanelProps()}
+          >
+            <HStack spacing={2} mb={2} align="center">
+              <MdOutlineSupportAgent color={questionAssistantText.accent} />
+              <Text
+                fontSize="xs"
+                fontWeight="800"
+                textTransform="uppercase"
+                letterSpacing="wider"
+                color="var(--question-assistant-accent-strong)"
+              >
+                {assistantLabel}
+              </Text>
+              {isLoadingAssistantSupport && (
+                <VoiceOrb
+                  state={
+                    ["idle", "listening", "speaking"][
+                      Math.floor(Math.random() * 3)
+                    ]
+                  }
+                  size={16}
+                  centered={false}
+                />
+              )}
+            </HStack>
+            {assistantSupportText && (
+              <Box
+                fontSize="sm"
+                color="var(--question-assistant-text)"
+                lineHeight="tall"
+                sx={questionAssistantMarkdownStyles}
+              >
+                <ReactMarkdown>{assistantSupportText}</ReactMarkdown>
+              </Box>
+            )}
+          </Box>
+        )}
+
+        {/* Context Sentence Card */}
+        <Box
+          p={5}
+          borderWidth="1.5px"
+          borderColor={APP_BORDER}
+          bg={APP_SURFACE_ELEVATED}
+          borderRadius="xl"
+          style={questionSquircleStyle}
+          textAlign="center"
+          dir={targetDirection}
+          lang={targetLang}
+        >
+          <Text
+            fontSize={{ base: "lg", md: "xl" }}
+            fontWeight="semibold"
+            color={APP_TEXT_PRIMARY}
+            lineHeight="tall"
+          >
+            {beforeBlank}
+            <Box
+              as="span"
+              display="inline-block"
+              minW="70px"
+              px={2.5}
+              py={0.5}
+              mx={1.5}
+              borderBottomWidth="2.5px"
+              borderBottomColor={forgedWord ? "purple.400" : "purple.300"}
+              color={forgedWord ? "purple.600" : APP_TEXT_MUTED}
+              fontWeight="bold"
+              bg={forgedWord ? "rgba(128, 90, 213, 0.08)" : "transparent"}
+              borderRadius="md"
+              transition="all 0.2s ease"
             >
-              {piece}
-            </Chip>
-          </WrapItem>
-        ))}
-      </Wrap>
-    </QuestionShell>
+              {forgedWord || "___"}
+            </Box>
+            {afterBlank}
+          </Text>
+        </Box>
+
+        {/* Forge Slot / Assembled Word Box */}
+        <Box
+          minH="88px"
+          p={4}
+          borderWidth="2px"
+          borderStyle="dashed"
+          borderColor={chosenIndices.length ? "purple.400" : APP_BORDER_STRONG}
+          bg={APP_SURFACE_MUTED}
+          borderRadius="xl"
+          style={questionSquircleStyle}
+          transition="all 0.2s ease"
+          boxShadow={chosenIndices.length ? "0 0 12px rgba(128, 90, 213, 0.12)" : "none"}
+        >
+          <SortableList
+            id="forge"
+            items={chosenIndices.map((idx) => `piece-${idx}`)}
+            flexWrap="wrap"
+            justify="center"
+            align="center"
+            gap={2}
+            minH="48px"
+            dir={targetDirection}
+            lang={targetLang}
+          >
+            {chosenIndices.map((pieceIndex, position) => {
+              const piece = pieces[pieceIndex];
+              return (
+                <SortableItem
+                  key={`chosen-${pieceIndex}-${position}`}
+                  id={`piece-${pieceIndex}`}
+                  disabled={locked}
+                >
+                  {({ setNodeRef, attributes, listeners, style, isDragging }) => (
+                    <Box
+                      ref={setNodeRef}
+                      style={{
+                        ...style,
+                        ...questionSquircleStyle,
+                        cursor: locked ? "default" : isDragging ? "grabbing" : "grab",
+                        userSelect: "none",
+                      }}
+                      {...attributes}
+                      {...listeners}
+                      px={3.5}
+                      py={2}
+                      borderRadius="lg"
+                      fontSize="md"
+                      fontWeight="bold"
+                      bg="purple.500"
+                      color="white"
+                      borderWidth="1.5px"
+                      borderColor="purple.400"
+                      boxShadow={
+                        isDragging
+                          ? "0 8px 20px rgba(128,90,213,0.35)"
+                          : "0 2px 8px rgba(128,90,213,0.2)"
+                      }
+                      title={copy?.tapToRemove}
+                      _hover={
+                        !locked
+                          ? {
+                              bg: "purple.600",
+                              transform: "translateY(-1px)",
+                            }
+                          : {}
+                      }
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        removePiece(position);
+                      }}
+                    >
+                      {piece} ✕
+                    </Box>
+                  )}
+                </SortableItem>
+              );
+            })}
+            {!chosenIndices.length && (
+              <Text
+                fontSize="xs"
+                color={APP_TEXT_SECONDARY}
+                fontStyle="italic"
+                py={2}
+              >
+                {copy?.emptyForge || "Drag or tap pieces below to forge the missing word"}
+              </Text>
+            )}
+          </SortableList>
+        </Box>
+
+        {/* Available Pieces Bank */}
+        <Box
+          p={4}
+          borderWidth="1.5px"
+          borderColor={APP_BORDER}
+          bg={APP_SURFACE_ELEVATED}
+          borderRadius="xl"
+          style={questionSquircleStyle}
+        >
+          <SortableList
+            id="bank"
+            items={available.map(({ index }) => `piece-${index}`)}
+            flexWrap="wrap"
+            justify="center"
+            gap={2.5}
+            minH="42px"
+            dir={targetDirection}
+            lang={targetLang}
+          >
+            {available.map(({ piece, index }) => (
+              <SortableItem
+                key={`avail-${index}`}
+                id={`piece-${index}`}
+                disabled={locked}
+              >
+                {({ setNodeRef, attributes, listeners, style, isDragging }) => (
+                  <Box
+                    ref={setNodeRef}
+                    style={{
+                      ...style,
+                      ...questionSquircleStyle,
+                      cursor: locked ? "default" : isDragging ? "grabbing" : "grab",
+                      userSelect: "none",
+                    }}
+                    {...attributes}
+                    {...listeners}
+                    px={3.5}
+                    py={2}
+                    borderRadius="lg"
+                    fontSize="md"
+                    fontWeight="semibold"
+                    borderWidth="1.5px"
+                    borderColor={APP_BORDER}
+                    bg={APP_SURFACE_MUTED}
+                    color={APP_TEXT_PRIMARY}
+                    boxShadow={
+                      isDragging
+                        ? "0 8px 20px rgba(128,90,213,0.35)"
+                        : "sm"
+                    }
+                    transition="border-color 0.15s ease, background-color 0.15s ease, transform 0.15s ease"
+                    _hover={
+                      !locked
+                        ? {
+                            borderColor: "purple.300",
+                            transform: "translateY(-1px)",
+                            bg: "rgba(128, 90, 213, 0.08)",
+                          }
+                        : {}
+                    }
+                    onClick={() => addPiece(index)}
+                  >
+                    {piece}
+                  </Box>
+                )}
+              </SortableItem>
+            ))}
+            {!available.length && (
+              <Text
+                fontSize="xs"
+                color={APP_TEXT_SECONDARY}
+                fontStyle="italic"
+                py={2}
+              >
+                {copy?.allPiecesUsed || "All pieces placed."}
+              </Text>
+            )}
+          </SortableList>
+        </Box>
+      </VStack>
+    </SortableArea>
   );
 }
 
@@ -538,55 +2300,237 @@ function ThreeClueMystery({
   response,
   setResponse,
   locked,
-  revealedClues,
+  revealedClues = 1,
   setRevealedClues,
+  targetLang,
+  supportLang,
+  copy,
+  onAskAssistant,
+  isLoadingAssistantSupport = false,
+  assistantSupportText = "",
+  assistantLabel = "Assistant",
+  onSubmit,
+  canSubmit = false,
+  submitting = false,
 }) {
-  const reward = Math.max(4, 10 - (revealedClues - 1) * 3);
+  const targetDirection = getLanguageDirection(targetLang, "ltr");
+  const supportDirection = getLanguageDirection(supportLang, "ltr");
+
+  const clues = question.clues || [];
+  const activeClueCount = Math.min(Math.max(1, revealedClues), clues.length);
+  const visibleClues = clues.slice(0, activeClueCount);
+  const potentialXp = Math.max(4, 10 - (activeClueCount - 1) * 3);
+  const hasMoreClues = activeClueCount < clues.length;
+
+  const handleRevealNextClue = useCallback(() => {
+    if (locked || !hasMoreClues || !setRevealedClues) return;
+    setRevealedClues((count) => Math.min(clues.length, count + 1));
+  }, [clues.length, hasMoreClues, locked, setRevealedClues]);
+
+  const handleKeyDown = useCallback(
+    (event) => {
+      if (event.key === "Enter" && !locked && canSubmit && !submitting && onSubmit) {
+        event.preventDefault();
+        onSubmit();
+      }
+    },
+    [canSubmit, locked, onSubmit, submitting],
+  );
+
   return (
-    <QuestionShell meta={DELIGHT_VARIANTS[5]} question={question}>
-      <VStack spacing={3} align="stretch">
-        {question.clues.slice(0, revealedClues).map((clue, index) => (
-          <HStack
-            key={clue}
-            p={4}
-            borderWidth="1px"
-            borderColor={APP_BORDER}
-            bg={index === revealedClues - 1 ? APP_SURFACE_ELEVATED : APP_SURFACE_MUTED}
-            borderRadius="xl"
-            style={questionSquircleStyle}
-          >
-            <Badge colorScheme="purple" borderRadius="full">
-              {index + 1}
-            </Badge>
-            <Text color={APP_TEXT_PRIMARY}>{clue}</Text>
+    <VStack
+      spacing={5}
+      align="stretch"
+      lang={supportLang}
+      dir={supportDirection}
+    >
+      {/* Header */}
+      <Box>
+        <HStack spacing={2} mb={1} justify="space-between">
+          <Text fontSize="xl" fontWeight="800" color={APP_TEXT_PRIMARY}>
+            {copy?.title || "Three-Clue Mystery"}
+          </Text>
+          <IconButton
+            aria-label={copy?.askForHelp || "Help"}
+            icon={
+              isLoadingAssistantSupport ? (
+                <VoiceOrb
+                  state={
+                    ["idle", "listening", "speaking"][
+                      Math.floor(Math.random() * 3)
+                    ]
+                  }
+                  size={16}
+                />
+              ) : (
+                <MdOutlineSupportAgent />
+              )
+            }
+            size="sm"
+            fontSize="lg"
+            rounded="xl"
+            onClick={onAskAssistant}
+            isDisabled={
+              isLoadingAssistantSupport ||
+              !!assistantSupportText ||
+              !onAskAssistant
+            }
+            {...getQuestionToolButtonProps()}
+          />
+        </HStack>
+        <Text fontSize="sm" color={APP_TEXT_SECONDARY} fontWeight="normal">
+          {copy?.instruction || "Deduce the mystery word using as few clues as possible."}
+        </Text>
+      </Box>
+
+      {/* Inline Assistant Panel */}
+      {(assistantSupportText || isLoadingAssistantSupport) && (
+        <Box
+          p={4}
+          borderRadius="xl"
+          style={questionSquircleStyle}
+          {...getQuestionAssistantPanelProps()}
+        >
+          <HStack spacing={2} mb={2} align="center">
+            <MdOutlineSupportAgent color={questionAssistantText.accent} />
+            <Text
+              fontSize="xs"
+              fontWeight="800"
+              textTransform="uppercase"
+              letterSpacing="wider"
+              color="var(--question-assistant-accent-strong)"
+            >
+              {assistantLabel}
+            </Text>
+            {isLoadingAssistantSupport && (
+              <VoiceOrb
+                state={
+                  ["idle", "listening", "speaking"][
+                    Math.floor(Math.random() * 3)
+                  ]
+                }
+                size={16}
+                centered={false}
+              />
+            )}
           </HStack>
-        ))}
+          {assistantSupportText && (
+            <Box
+              fontSize="sm"
+              color="var(--question-assistant-text)"
+              lineHeight="tall"
+              sx={questionAssistantMarkdownStyles}
+            >
+              <ReactMarkdown>{assistantSupportText}</ReactMarkdown>
+            </Box>
+          )}
+        </Box>
+      )}
+
+      {/* Progressive Clue Cards */}
+      <VStack spacing={3} align="stretch">
+        {visibleClues.map((clue, index) => {
+          const isLatest = index === activeClueCount - 1;
+          const badgeText = formatThreeClueMysteryCopy(copy?.clueBadge || "Clue {index}", {
+            index: index + 1,
+          });
+          return (
+            <Box
+              key={`clue-${index}`}
+              p={4}
+              borderWidth="1.5px"
+              borderColor={isLatest ? "purple.400" : APP_BORDER}
+              bg={isLatest ? APP_SURFACE_ELEVATED : APP_SURFACE_MUTED}
+              borderRadius="xl"
+              style={questionSquircleStyle}
+              boxShadow={isLatest ? "0 2px 10px rgba(128, 90, 213, 0.12)" : "none"}
+              transition="all 0.2s ease"
+            >
+              <HStack spacing={3} align="flex-start">
+                <Badge
+                  colorScheme={isLatest ? "purple" : "gray"}
+                  variant={isLatest ? "solid" : "subtle"}
+                  borderRadius="full"
+                  px={2.5}
+                  py={0.5}
+                  fontSize="xs"
+                  fontWeight="bold"
+                  textTransform="none"
+                  flexShrink={0}
+                >
+                  {badgeText}
+                </Badge>
+                <Text
+                  fontSize={{ base: "sm", md: "md" }}
+                  color={APP_TEXT_PRIMARY}
+                  fontWeight={isLatest ? "medium" : "normal"}
+                  lineHeight="tall"
+                >
+                  {clue}
+                </Text>
+              </HStack>
+            </Box>
+          );
+        })}
       </VStack>
-      <HStack justify="space-between" flexWrap="wrap" gap={2}>
-        <Badge colorScheme="yellow" px={3} py={1} borderRadius="full">
-          Solve now · +{reward} XP
-        </Badge>
-        {revealedClues < question.clues.length && !locked && (
+
+      {/* Clue Control Row: Live XP Badge & Reveal Action */}
+      <HStack justify="space-between" align="center" flexWrap="wrap" gap={2} px={1}>
+        <Text
+          fontSize="xs"
+          fontWeight="semibold"
+          color="purple.500"
+          bg="rgba(128, 90, 213, 0.08)"
+          px={3}
+          py={1}
+          borderRadius="full"
+        >
+          {formatThreeClueMysteryCopy(copy?.potentialXp || "+{xp} XP", {
+            xp: potentialXp,
+          })}
+        </Text>
+        {hasMoreClues && !locked && (
           <Button
             size="sm"
             variant="ghost"
-            onClick={() => setRevealedClues((count) => count + 1)}
+            colorScheme="purple"
+            onClick={handleRevealNextClue}
+            style={questionSquircleStyle}
           >
-            Reveal another clue
+            {copy?.revealNext || "Reveal next clue"}
           </Button>
         )}
       </HStack>
-      <Input
-        value={response.text}
-        onChange={(event) => setResponse({ text: event.target.value })}
-        isDisabled={locked}
-        placeholder="What am I?"
-        size="lg"
-        bg={APP_SURFACE_ELEVATED}
-        borderColor={APP_BORDER_STRONG}
-        style={questionSquircleStyle}
-      />
-    </QuestionShell>
+
+      {/* Target Word Input Field */}
+      <Box>
+        <Input
+          value={response?.text || ""}
+          onChange={(event) =>
+            setResponse((current) => ({
+              ...current,
+              text: event.target.value,
+            }))
+          }
+          onKeyDown={handleKeyDown}
+          isDisabled={locked}
+          placeholder={copy?.inputPlaceholder || "Type your answer…"}
+          size="lg"
+          minH="54px"
+          fontSize={{ base: "md", md: "lg" }}
+          fontWeight="semibold"
+          bg={APP_SURFACE_ELEVATED}
+          borderColor={APP_BORDER_STRONG}
+          focusBorderColor="purple.400"
+          style={questionSquircleStyle}
+          dir={targetDirection}
+          lang={targetLang}
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck="false"
+        />
+      </Box>
+    </VStack>
   );
 }
 
@@ -595,26 +2539,154 @@ function ListenDifference({
   response,
   setResponse,
   locked,
-  onPlay,
-  isSpeaking,
+  targetLang,
+  supportLang,
+  copy,
+  onAskAssistant,
+  isLoadingAssistantSupport = false,
+  assistantSupportText = "",
+  assistantLabel = "Assistant",
+  onPlayAudio,
+  isSpeaking = false,
+  isSynthesizingAudio = false,
+  onSubmit,
+  canSubmit = false,
+  submitting = false,
 }) {
+  const targetDirection = getLanguageDirection(targetLang, "ltr");
+  const supportDirection = getLanguageDirection(supportLang, "ltr");
+
+  const handleKeyDown = useCallback(
+    (event) => {
+      if (event.key === "Enter" && !locked && canSubmit && !submitting && onSubmit) {
+        event.preventDefault();
+        onSubmit();
+      }
+    },
+    [canSubmit, locked, onSubmit, submitting],
+  );
+
   return (
-    <QuestionShell meta={DELIGHT_VARIANTS[6]} question={question}>
+    <VStack
+      spacing={5}
+      align="stretch"
+      lang={supportLang}
+      dir={supportDirection}
+      onKeyDown={handleKeyDown}
+    >
+      {/* Minimalist Question Header */}
+      <Box>
+        <HStack spacing={2} mb={1} justify="space-between">
+          <Text fontSize="xl" fontWeight="800" color={APP_TEXT_PRIMARY}>
+            {copy?.title || "Listen for the Difference"}
+          </Text>
+          <IconButton
+            aria-label={copy?.askForHelp || "Help"}
+            icon={
+              isLoadingAssistantSupport ? (
+                <VoiceOrb
+                  state={
+                    ["idle", "listening", "speaking"][
+                      Math.floor(Math.random() * 3)
+                    ]
+                  }
+                  size={16}
+                />
+              ) : (
+                <MdOutlineSupportAgent />
+              )
+            }
+            size="sm"
+            fontSize="lg"
+            rounded="xl"
+            onClick={onAskAssistant}
+            isDisabled={
+              isLoadingAssistantSupport ||
+              !!assistantSupportText ||
+              !onAskAssistant
+            }
+            {...getQuestionToolButtonProps()}
+          />
+        </HStack>
+        <Text fontSize="sm" color={APP_TEXT_SECONDARY} fontWeight="normal">
+          {copy?.instruction || "Listen carefully. Which sentence did you hear?"}
+        </Text>
+      </Box>
+
+      {/* Inline Assistant Panel */}
+      {(assistantSupportText || isLoadingAssistantSupport) && (
+        <Box
+          p={4}
+          borderRadius="xl"
+          style={questionSquircleStyle}
+          {...getQuestionAssistantPanelProps()}
+        >
+          <HStack spacing={2} mb={2} align="center">
+            <MdOutlineSupportAgent color={questionAssistantText.accent} />
+            <Text
+              fontSize="xs"
+              fontWeight="800"
+              textTransform="uppercase"
+              letterSpacing="wider"
+              color="var(--question-assistant-accent-strong)"
+            >
+              {assistantLabel}
+            </Text>
+            {isLoadingAssistantSupport && (
+              <VoiceOrb
+                state={
+                  ["idle", "listening", "speaking"][
+                    Math.floor(Math.random() * 3)
+                  ]
+                }
+                size={16}
+                centered={false}
+              />
+            )}
+          </HStack>
+          {assistantSupportText && (
+            <Box
+              fontSize="sm"
+              color="var(--question-assistant-text)"
+              lineHeight="tall"
+              sx={questionAssistantMarkdownStyles}
+            >
+              <ReactMarkdown>{assistantSupportText}</ReactMarkdown>
+            </Box>
+          )}
+        </Box>
+      )}
+
+      {/* Prominent Play Audio Button */}
       <Button
-        leftIcon={isSpeaking ? <Spinner size="sm" /> : <FiVolume2 />}
+        leftIcon={
+          isSpeaking || isSynthesizingAudio ? (
+            <Spinner size="sm" color="purple.500" />
+          ) : (
+            <FiVolume2 size={22} />
+          )
+        }
         size="lg"
         py={7}
-        onClick={onPlay}
-        isDisabled={isSpeaking}
-        {...getQuestionToolButtonProps({ active: isSpeaking })}
+        onClick={() => onPlayAudio?.(question.audioText)}
+        isDisabled={isSpeaking || isSynthesizingAudio}
+        {...getQuestionToolButtonProps({ active: isSpeaking || isSynthesizingAudio })}
+        style={questionSquircleStyle}
+        fontSize="md"
+        fontWeight="semibold"
+        boxShadow="0 2px 12px rgba(128, 90, 213, 0.15)"
       >
-        {isSpeaking ? "Preparing audio…" : "Play sentence"}
+        {isSpeaking || isSynthesizingAudio
+          ? (copy?.playingAudio || "Playing…")
+          : (copy?.playAudio || "Play audio")}
       </Button>
-      <VStack spacing={3} align="stretch">
-        {question.options.map((option, index) => (
+
+      {/* Options List */}
+      <VStack spacing={3} align="stretch" dir={targetDirection} lang={targetLang}>
+        {(question.options || []).map((option, index) => (
           <ChoiceCard
-            key={option}
-            selected={response.selectedIndex === index}
+            key={`${option}-${index}`}
+            selected={response?.selectedIndex === index}
             disabled={locked}
             onClick={() => setResponse({ selectedIndex: index })}
           >
@@ -622,214 +2694,378 @@ function ListenDifference({
           </ChoiceCard>
         ))}
       </VStack>
-    </QuestionShell>
-  );
-}
-
-function ThreeWordChallenge({ question, response, setResponse, locked }) {
-  return (
-    <QuestionShell meta={DELIGHT_VARIANTS[7]} question={question}>
-      <Wrap spacing={3} justify="center" py={2}>
-        {question.cues.map((cue, index) => (
-          <WrapItem key={cue}>
-            <Box
-              px={4}
-              py={3}
-              borderRadius="xl"
-              borderWidth="1px"
-              borderColor="purple.300"
-              bg="rgba(128, 90, 213, 0.12)"
-              color={APP_TEXT_PRIMARY}
-              style={questionSquircleStyle}
-            >
-              <Text as="span" fontSize="xs" color="purple.300" mr={2}>
-                {index + 1}
-              </Text>
-              <Text as="span" fontWeight="800">
-                {cue}
-              </Text>
-            </Box>
-          </WrapItem>
-        ))}
-      </Wrap>
-      <Input
-        value={response.text}
-        onChange={(event) => setResponse({ text: event.target.value })}
-        isDisabled={locked}
-        placeholder="Make the three ideas meet…"
-        size="lg"
-        bg={APP_SURFACE_ELEVATED}
-        borderColor={APP_BORDER_STRONG}
-        style={questionSquircleStyle}
-      />
-      <Text fontSize="xs" color={APP_TEXT_SECONDARY} textAlign="center">
-        Original answers are judged for meaning, not exact wording.
-      </Text>
-    </QuestionShell>
-  );
-}
-
-function NaturalOrWeird({ question, response, setResponse, locked }) {
-  return (
-    <QuestionShell meta={DELIGHT_VARIANTS[8]} question={question}>
-      <Box
-        p={6}
-        bg={APP_SURFACE_MUTED}
-        borderWidth="1px"
-        borderColor={APP_BORDER}
-        borderRadius="xl"
-        style={questionSquircleStyle}
-      >
-        <Text fontSize="xl" color={APP_TEXT_PRIMARY} textAlign="center">
-          “{question.sentence}”
-        </Text>
-      </Box>
-      <SimpleGrid columns={2} spacing={3}>
-        <Button
-          minH="76px"
-          fontSize="lg"
-          colorScheme={response.choice === false ? "pink" : undefined}
-          variant={response.choice === false ? "solid" : "outline"}
-          isDisabled={locked}
-          onClick={() => setResponse({ choice: false })}
-          style={questionSquircleStyle}
-        >
-          🌀 Sounds weird
-        </Button>
-        <Button
-          minH="76px"
-          fontSize="lg"
-          colorScheme={response.choice === true ? "green" : undefined}
-          variant={response.choice === true ? "solid" : "outline"}
-          isDisabled={locked}
-          onClick={() => setResponse({ choice: true })}
-          style={questionSquircleStyle}
-        >
-          ✨ Sounds natural
-        </Button>
-      </SimpleGrid>
-    </QuestionShell>
-  );
-}
-
-function getAnswerReveal(question) {
-  switch (question.variant) {
-    case "sentence_detective":
-      return question.correctedSentence;
-    case "dialogue_fork":
-      return question.options[question.answerIndex];
-    case "sentence_shapeshifter":
-      return question.answer;
-    case "word_neighborhoods":
-      return question.groups
-        .map((group) => `${group.label}: ${group.items.join(", ")}`)
-        .join(" · ");
-    case "morphology_forge":
-      return question.answerWord;
-    case "three_clue_mystery":
-      return question.answer;
-    case "listen_difference":
-      return question.options[question.answerIndex];
-    case "three_word_challenge":
-      return question.sampleAnswers[0];
-    case "natural_or_weird":
-      return question.isNatural ? question.sentence : question.correction;
-    default:
-      return "";
-  }
-}
-
-function ResultPanel({
-  ok,
-  xp,
-  question,
-  onRetry,
-  onNext,
-  isLastQuizQuestion,
-  allowRetry,
-}) {
-  const answer = getAnswerReveal(question);
-  const delight =
-    question.variant === "dialogue_fork" && ok
-      ? question.reaction
-      : question.variant === "three_word_challenge" && ok
-        ? question.reaction
-        : question.variant === "three_clue_mystery" && ok
-          ? question.example
-          : question.variant === "listen_difference"
-            ? question.contrast
-            : "";
-
-  return (
-    <VStack
-      spacing={3}
-      align="stretch"
-      p={4}
-      borderRadius="xl"
-      {...getQuestionFeedbackPanelProps({ ok })}
-    >
-      <HStack align="flex-start" spacing={3}>
-        <Flex
-          w="42px"
-          h="42px"
-          borderRadius="full"
-          align="center"
-          justify="center"
-          flexShrink={0}
-          bg={ok ? "var(--question-success-accent)" : "var(--question-error-accent)"}
-          color="white"
-          fontWeight="900"
-        >
-          {ok ? "✓" : "✕"}
-        </Flex>
-        <Box flex="1">
-          <Text fontWeight="800" color={questionToneText.primary}>
-            {ok ? "That works!" : "Not quite—here’s the pattern."}
-          </Text>
-          <Text fontSize="sm" color={questionToneText.secondary}>
-            {ok && xp > 0 ? `+${xp} XP` : question.explanation}
-          </Text>
-        </Box>
-      </HStack>
-      {(answer || delight) && (
-        <Box
-          p={3}
-          bg="rgba(255,255,255,0.08)"
-          borderRadius="lg"
-          style={questionSquircleStyle}
-        >
-          {!ok && answer && (
-            <Text fontWeight="700" color={questionToneText.primary}>
-              {answer}
-            </Text>
-          )}
-          {delight && (
-            <Text color={questionToneText.primary}>{delight}</Text>
-          )}
-          {ok && question.explanation && (
-            <Text fontSize="sm" color={questionToneText.secondary} mt={1}>
-              {question.explanation}
-            </Text>
-          )}
-        </Box>
-      )}
-      <HStack justify="flex-end" flexWrap="wrap">
-        {!ok && allowRetry && (
-          <Button variant="ghost" onClick={onRetry}>
-            Try again
-          </Button>
-        )}
-        <Button
-          rightIcon={<FiArrowRight />}
-          colorScheme="cyan"
-          onClick={onNext}
-        >
-          {isLastQuizQuestion ? "See results" : "Next question"}
-        </Button>
-      </HStack>
     </VStack>
   );
 }
+
+function ThreeWordChallenge({
+  question,
+  response,
+  setResponse,
+  locked,
+  targetLang,
+  supportLang,
+  copy,
+  onAskAssistant,
+  isLoadingAssistantSupport = false,
+  assistantSupportText = "",
+  assistantLabel = "Assistant",
+  onSubmit,
+  canSubmit = false,
+  submitting = false,
+  isCorrect = false,
+}) {
+  const targetDirection = getLanguageDirection(targetLang, "ltr");
+  const supportDirection = getLanguageDirection(supportLang, "ltr");
+
+  const handleKeyDown = useCallback(
+    (event) => {
+      if (event.key === "Enter" && !locked && canSubmit && !submitting && onSubmit) {
+        event.preventDefault();
+        onSubmit();
+      }
+    },
+    [canSubmit, locked, onSubmit, submitting],
+  );
+
+  return (
+    <VStack
+      spacing={5}
+      align="stretch"
+      lang={supportLang}
+      dir={supportDirection}
+      onKeyDown={handleKeyDown}
+    >
+      {/* Minimalist Question Header */}
+      <Box>
+        <HStack spacing={2} mb={1} justify="space-between">
+          <Text fontSize="xl" fontWeight="800" color={APP_TEXT_PRIMARY}>
+            {copy?.title || "Three-Word Challenge"}
+          </Text>
+          <IconButton
+            aria-label={copy?.askForHelp || "Help"}
+            icon={
+              isLoadingAssistantSupport ? (
+                <VoiceOrb
+                  state={
+                    ["idle", "listening", "speaking"][
+                      Math.floor(Math.random() * 3)
+                    ]
+                  }
+                  size={16}
+                />
+              ) : (
+                <MdOutlineSupportAgent />
+              )
+            }
+            size="sm"
+            fontSize="lg"
+            rounded="xl"
+            onClick={onAskAssistant}
+            isDisabled={
+              isLoadingAssistantSupport ||
+              !!assistantSupportText ||
+              !onAskAssistant
+            }
+            {...getQuestionToolButtonProps()}
+          />
+        </HStack>
+        <Text fontSize="sm" color={APP_TEXT_SECONDARY} fontWeight="normal">
+          {copy?.instruction || "Create an original sentence using all three words."}
+        </Text>
+      </Box>
+
+      {/* Inline Assistant Panel */}
+      {(assistantSupportText || isLoadingAssistantSupport) && (
+        <Box
+          p={4}
+          borderRadius="xl"
+          style={questionSquircleStyle}
+          {...getQuestionAssistantPanelProps()}
+        >
+          <HStack spacing={2} mb={2} align="center">
+            <MdOutlineSupportAgent color={questionAssistantText.accent} />
+            <Text
+              fontSize="xs"
+              fontWeight="800"
+              textTransform="uppercase"
+              letterSpacing="wider"
+              color="var(--question-assistant-accent-strong)"
+            >
+              {assistantLabel}
+            </Text>
+            {isLoadingAssistantSupport && (
+              <VoiceOrb
+                state={
+                  ["idle", "listening", "speaking"][
+                    Math.floor(Math.random() * 3)
+                  ]
+                }
+                size={16}
+                centered={false}
+              />
+            )}
+          </HStack>
+          {assistantSupportText && (
+            <Box
+              fontSize="sm"
+              color="var(--question-assistant-text)"
+              lineHeight="tall"
+              sx={questionAssistantMarkdownStyles}
+            >
+              <ReactMarkdown>{assistantSupportText}</ReactMarkdown>
+            </Box>
+          )}
+        </Box>
+      )}
+
+      {/* 3 Cue Chips */}
+      <HStack
+        spacing={3}
+        justify="center"
+        flexWrap="wrap"
+        py={2}
+        dir={targetDirection}
+        lang={targetLang}
+      >
+        {(question.cues || []).map((cue, index) => (
+          <Box
+            key={`${cue}-${index}`}
+            px={4}
+            py={2.5}
+            borderRadius="xl"
+            borderWidth="1.5px"
+            borderColor="purple.300"
+            bg="rgba(128, 90, 213, 0.12)"
+            color={APP_TEXT_PRIMARY}
+            style={questionSquircleStyle}
+            boxShadow="0 2px 8px rgba(128, 90, 213, 0.1)"
+          >
+            <Text
+              as="span"
+              fontWeight="800"
+              fontSize={{ base: "md", md: "lg" }}
+            >
+              {cue}
+            </Text>
+          </Box>
+        ))}
+      </HStack>
+
+      {/* Target Language Input Field */}
+      <Box>
+        <Input
+          value={response?.text || ""}
+          onChange={(event) =>
+            setResponse((current) => ({
+              ...current,
+              text: event.target.value,
+            }))
+          }
+          isDisabled={locked}
+          placeholder={copy?.inputPlaceholder || "Write your sentence here…"}
+          size="lg"
+          minH="54px"
+          fontSize={{ base: "md", md: "lg" }}
+          fontWeight="semibold"
+          bg={APP_SURFACE_ELEVATED}
+          borderColor={APP_BORDER_STRONG}
+          focusBorderColor="purple.400"
+          style={questionSquircleStyle}
+          dir={targetDirection}
+          lang={targetLang}
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck="false"
+        />
+      </Box>
+    </VStack>
+  );
+}
+
+function NaturalOrWeird({
+  question,
+  response,
+  setResponse,
+  locked,
+  targetLang,
+  supportLang,
+  copy,
+  onAskAssistant,
+  isLoadingAssistantSupport = false,
+  assistantSupportText = "",
+  assistantLabel = "Assistant",
+  onPlayAudio,
+  isLoadingAudio = false,
+  isPlayingAudio = false,
+  onSubmit,
+  canSubmit = false,
+  submitting = false,
+}) {
+  const targetDirection = getLanguageDirection(targetLang, "ltr");
+  const supportDirection = getLanguageDirection(supportLang, "ltr");
+
+  const handleKeyDown = useCallback(
+    (event) => {
+      if (event.key === "Enter" && !locked && canSubmit && !submitting && onSubmit) {
+        event.preventDefault();
+        onSubmit();
+      }
+    },
+    [canSubmit, locked, onSubmit, submitting],
+  );
+
+  return (
+    <VStack
+      spacing={5}
+      align="stretch"
+      lang={supportLang}
+      dir={supportDirection}
+      onKeyDown={handleKeyDown}
+    >
+      {/* Minimalist Question Header */}
+      <Box>
+        <HStack spacing={2} mb={1} justify="space-between">
+          <Text fontSize="xl" fontWeight="800" color={APP_TEXT_PRIMARY}>
+            {copy?.title || "Natural or Weird?"}
+          </Text>
+          <IconButton
+            aria-label={copy?.askForHelp || "Help"}
+            icon={
+              isLoadingAssistantSupport ? (
+                <VoiceOrb
+                  state={
+                    ["idle", "listening", "speaking"][
+                      Math.floor(Math.random() * 3)
+                    ]
+                  }
+                  size={16}
+                />
+              ) : (
+                <MdOutlineSupportAgent />
+              )
+            }
+            size="sm"
+            fontSize="lg"
+            rounded="xl"
+            onClick={onAskAssistant}
+            isDisabled={
+              isLoadingAssistantSupport ||
+              !!assistantSupportText ||
+              !onAskAssistant
+            }
+            {...getQuestionToolButtonProps()}
+          />
+        </HStack>
+        <Text fontSize="sm" color={APP_TEXT_SECONDARY} fontWeight="normal">
+          {copy?.instruction || "Decide if this sentence sounds natural in everyday use."}
+        </Text>
+      </Box>
+
+      {/* Inline Assistant Panel */}
+      {(assistantSupportText || isLoadingAssistantSupport) && (
+        <Box
+          p={4}
+          borderRadius="xl"
+          style={questionSquircleStyle}
+          {...getQuestionAssistantPanelProps()}
+        >
+          <HStack spacing={2} mb={2} align="center">
+            <MdOutlineSupportAgent color={questionAssistantText.accent} />
+            <Text
+              fontSize="xs"
+              fontWeight="800"
+              textTransform="uppercase"
+              letterSpacing="wider"
+              color="var(--question-assistant-accent-strong)"
+            >
+              {assistantLabel}
+            </Text>
+            {isLoadingAssistantSupport && (
+              <VoiceOrb
+                state={
+                  ["idle", "listening", "speaking"][
+                    Math.floor(Math.random() * 3)
+                  ]
+                }
+                size={16}
+                centered={false}
+              />
+            )}
+          </HStack>
+          {assistantSupportText && (
+            <Box
+              fontSize="sm"
+              color="var(--question-assistant-text)"
+              lineHeight="tall"
+              sx={questionAssistantMarkdownStyles}
+            >
+              <ReactMarkdown>{assistantSupportText}</ReactMarkdown>
+            </Box>
+          )}
+        </Box>
+      )}
+
+      {/* Sentence Presentation Card with Audio Button */}
+      <Box
+        p={{ base: 5, md: 6 }}
+        bg={APP_SURFACE_MUTED}
+        borderWidth="1px"
+        borderColor={APP_BORDER}
+        borderRadius="2xl"
+        style={questionSquircleStyle}
+      >
+        <HStack justify="space-between" align="center" spacing={3}>
+          <Text
+            fontSize={{ base: "lg", md: "xl" }}
+            fontWeight="bold"
+            color={APP_TEXT_PRIMARY}
+            textAlign="left"
+            dir={targetDirection}
+            lang={targetLang}
+            flex="1"
+          >
+            “{question.sentence}”
+          </Text>
+          {onPlayAudio && (
+            <IconButton
+              aria-label={copy?.playAudio || "Listen to sentence"}
+              icon={<FiVolume2 />}
+              size="md"
+              rounded="xl"
+              variant="ghost"
+              color={APP_TEXT_PRIMARY}
+              isLoading={isPlayingAudio || isLoadingAudio}
+              onClick={() => onPlayAudio(question.sentence)}
+              isDisabled={locked}
+              {...getQuestionToolButtonProps()}
+            />
+          )}
+        </HStack>
+      </Box>
+
+      {/* Binary Choice Cards (Weird vs. Natural) */}
+      <SimpleGrid columns={{ base: 1, sm: 2 }} spacing={3}>
+        <ChoiceCard
+          selected={response?.choice === false}
+          disabled={locked}
+          onClick={() => setResponse({ choice: false })}
+        >
+          {copy?.soundsWeird || "Sounds weird"}
+        </ChoiceCard>
+        <ChoiceCard
+          selected={response?.choice === true}
+          disabled={locked}
+          onClick={() => setResponse({ choice: true })}
+        >
+          {copy?.soundsNatural || "Sounds natural"}
+        </ChoiceCard>
+      </SimpleGrid>
+    </VStack>
+  );
+}
+
+
 
 export default function DelightQuestionLab({
   moduleType = "grammar",
@@ -840,6 +3076,7 @@ export default function DelightQuestionLab({
   quizConfig = { questionsRequired: 10, passingScore: 8 },
   onSkip = null,
   onExitQuiz = null,
+  lessonEarnedXp = 0,
 }) {
   const t = useT(userLanguage);
   const user = useUserStore((state) => state.user);
@@ -856,6 +3093,16 @@ export default function DelightQuestionLab({
           progress.supportLang,
           DEFAULT_SUPPORT_LANGUAGE,
         );
+  const detectiveCopy = getSentenceDetectiveCopy(supportLang);
+  const dialogueForkCopy = getDialogueForkCopy(supportLang);
+  const sentenceShapeshifterCopy = getSentenceShapeshifterCopy(supportLang);
+  const wordNeighborhoodsCopy = getWordNeighborhoodsCopy(supportLang);
+  const morphologyForgeCopy = getMorphologyForgeCopy(supportLang);
+  const threeClueMysteryCopy = getThreeClueMysteryCopy(supportLang);
+  const listenDifferenceCopy = getListenDifferenceCopy(supportLang);
+  const threeWordChallengeCopy = getThreeWordChallengeCopy(supportLang);
+  const naturalOrWeirdCopy = getNaturalOrWeirdCopy(supportLang);
+  const supportDirection = getLanguageDirection(supportLang, "ltr");
   const cefrLevel =
     lesson?.cefrLevel ||
     lessonContent?.cefrLevel ||
@@ -874,13 +3121,75 @@ export default function DelightQuestionLab({
   const [revealedClues, setRevealedClues] = useState(1);
   const [wordOrder, setWordOrder] = useState([]);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isSynthesizingAudio, setIsSynthesizingAudio] = useState(false);
   const [quizHistory, setQuizHistory] = useState([]);
   const [quizFinished, setQuizFinished] = useState(false);
+  const [assistantSupportText, setAssistantSupportText] = useState("");
+  const [isLoadingAssistantSupport, setIsLoadingAssistantSupport] = useState(false);
+  const [explanationText, setExplanationText] = useState("");
+  const [isLoadingExplanation, setIsLoadingExplanation] = useState(false);
+  const [sessionEarnedXp, setSessionEarnedXp] = useState(0);
+  const [isCreatingNote, setIsCreatingNote] = useState(false);
+  const [noteCreated, setNoteCreated] = useState(false);
+  const [streamingQuestion, setStreamingQuestion] = useState(null);
+
+  const addNote = useNotesStore((s) => s.addNote);
+  const setNotesLoading = useNotesStore((s) => s.setLoading);
+  const triggerDoneAnimation = useNotesStore((s) => s.triggerDoneAnimation);
+  const toast = useToast();
+
+  const rawLanguageXp = getLanguageXp(progress, targetLang);
+  const totalUserXp =
+    (Number.isFinite(rawLanguageXp) ? rawLanguageXp : 0) + sessionEarnedXp;
+  const levelNumber = Math.floor(totalUserXp / 100) + 1;
+  const xpProgressPct = Math.min(100, totalUserXp % 100);
+
+  const lessonXpGoal = lesson?.xpReward || 0;
+  const normalizedLessonEarnedXp = Math.max(0, Number(lessonEarnedXp) || 0);
+  const currentEarnedXp = normalizedLessonEarnedXp + sessionEarnedXp;
+  const lessonProgressPct =
+    lessonXpGoal > 0
+      ? Math.min(100, (currentEarnedXp / lessonXpGoal) * 100)
+      : 0;
+  const lessonProgress =
+    lesson &&
+    !lesson.isTutorial &&
+    !isFinalQuiz &&
+    lessonXpGoal > 0
+      ? {
+          pct: lessonProgressPct,
+          earned: Math.min(currentEarnedXp, lessonXpGoal),
+          total: lessonXpGoal,
+          label:
+            t("vocab_lesson_progress") === "vocab_lesson_progress"
+              ? "Lesson progress"
+              : t("vocab_lesson_progress"),
+        }
+      : null;
+
   const cacheRef = useRef(new Map());
   const requestRef = useRef(0);
   const audioPlayerRef = useRef(null);
 
   const variantMeta = GATED_VARIANTS[variantIndex] || GATED_VARIANTS[0];
+  const activeVariantCopy =
+    variantMeta?.id === "natural_or_weird"
+      ? naturalOrWeirdCopy
+      : variantMeta?.id === "three_word_challenge"
+        ? threeWordChallengeCopy
+        : variantMeta?.id === "listen_difference"
+          ? listenDifferenceCopy
+          : variantMeta?.id === "three_clue_mystery"
+            ? threeClueMysteryCopy
+            : variantMeta?.id === "morphology_forge"
+              ? morphologyForgeCopy
+              : variantMeta?.id === "word_neighborhoods"
+                ? wordNeighborhoodsCopy
+                : variantMeta?.id === "sentence_shapeshifter"
+                  ? sentenceShapeshifterCopy
+                  : variantMeta?.id === "dialogue_fork"
+                    ? dialogueForkCopy
+                    : detectiveCopy;
 
   const resetForQuestion = useCallback((nextQuestion) => {
     setQuestion(nextQuestion);
@@ -888,12 +3197,236 @@ export default function DelightQuestionLab({
     setResult(null);
     setRecentXp(0);
     setRevealedClues(1);
+    setAssistantSupportText("");
+    setIsLoadingAssistantSupport(false);
+    setIsSpeaking(false);
+    setIsSynthesizingAudio(false);
+    setExplanationText("");
+    setIsLoadingExplanation(false);
+    setNoteCreated(false);
+    setIsCreatingNote(false);
+    setStreamingQuestion(null);
     setWordOrder(
       nextQuestion?.variant === "word_neighborhoods"
         ? shuffle(nextQuestion.groups.flatMap((group) => group.items))
         : [],
     );
   }, []);
+
+  const setResponse = useCallback((updater) => {
+    setResponseState(updater);
+    if (result === false) {
+      setResult(null);
+      setExplanationText("");
+    }
+  }, [result]);
+
+  const handleAskAssistant = useCallback(async () => {
+    if (!question || isLoadingAssistantSupport || assistantSupportText) return;
+    playSound(clickSound);
+    setIsLoadingAssistantSupport(true);
+    setAssistantSupportText("");
+
+    try {
+      const targetName = getDelightLanguageName(targetLang);
+      const supportName = getDelightLanguageName(supportLang);
+      const levelHint = cefrLevel
+        ? `The learner's proficiency is CEFR ${cefrLevel}.`
+        : "";
+
+      const instruction = [
+        "You are a helpful, encouraging language study buddy for quick questions.",
+        `The learner is practicing ${targetName}; their support/UI language is ${supportName}.`,
+        levelHint,
+        `Explain and guide in ${supportName}. Give a concise hint that helps the learner identify the issue or understand the sentence without immediately giving away the entire solution. Include examples in ${targetName} only when helpful, but keep the explanation in ${supportName}.`,
+        "Keep replies ≤ 60 words.",
+        "Use concise Markdown when helpful (bullets, **bold**).",
+      ].join(" ");
+
+      const questionContext =
+        question.variant === "sentence_detective"
+          ? formatSentenceDetectiveCopy(detectiveCopy.helpRequest, {
+              sentence: question.sentence,
+            })
+          : question.variant === "dialogue_fork"
+            ? formatDialogueForkCopy(dialogueForkCopy.helpRequest, {
+                speaker: question.speaker || "Speaker",
+                line: question.line || "",
+              })
+            : question.variant === "sentence_shapeshifter"
+              ? formatSentenceShapeshifterCopy(sentenceShapeshifterCopy.helpRequest, {
+                  source: question.source || "",
+                  constraint: question.constraint || "",
+                })
+              : question.variant === "word_neighborhoods"
+                ? formatWordNeighborhoodsCopy(wordNeighborhoodsCopy.helpRequest, {
+                    groups: (question.groups || []).map((g) => g.label).join(", "),
+                  })
+                : question.variant === "morphology_forge"
+                  ? formatMorphologyForgeCopy(morphologyForgeCopy.helpRequest, {
+                      sentence: question.sentence || "",
+                    })
+                  : question.variant === "three_clue_mystery"
+                    ? formatThreeClueMysteryCopy(threeClueMysteryCopy.helpRequest, {
+                        clues: (question.clues || []).slice(0, revealedClues || 1).join(" | "),
+                      })
+                  : question.variant === "listen_difference"
+                    ? listenDifferenceCopy.helpRequest
+                  : question.variant === "three_word_challenge"
+                    ? threeWordChallengeCopy.helpRequest
+                  : question.variant === "natural_or_weird"
+                    ? naturalOrWeirdCopy.helpRequest
+                  : question.instruction || "Help me with this question.";
+
+      let variantContext = "";
+      if (question.variant === "sentence_detective") {
+        variantContext = [
+          `Exercise: Sentence Detective`,
+          `Sentence with error: "${question.sentence || ""}"`,
+          `Incorrect word: "${question.wrongToken || ""}"`,
+          `Correct repair: "${question.answer || ""}"`,
+          `Task: Guide the learner to spot why "${question.wrongToken || ""}" is unnatural or incorrect in the sentence without stating "${question.answer || ""}" directly.`,
+        ].join("\n");
+      } else if (question.variant === "dialogue_fork") {
+        variantContext = [
+          `Exercise: Dialogue Fork (Conversational Reply)`,
+          `Speaker prompt: ${question.speaker ? `${question.speaker}: ` : ""}"${question.line || ""}"`,
+          `Options: ${(question.options || []).map((opt, i) => `${i + 1}. "${opt}"`).join(", ")}`,
+          `Correct reply: "${question.options?.[question.answerIndex] || ""}"`,
+          `Task: Give a contextual or pragmatic hint to help the learner pick the most natural reply without directly naming option ${typeof question.answerIndex === "number" ? question.answerIndex + 1 : ""}.`,
+        ].join("\n");
+      } else if (question.variant === "sentence_shapeshifter") {
+        variantContext = [
+          `Exercise: Sentence Shapeshifter`,
+          `Original sentence: "${question.source || ""}"`,
+          `Transformation rule: "${question.constraint || ""}"`,
+          `Expected answer: "${question.answer || ""}"`,
+          `Task: Explain how to apply the transformation rule ("${question.constraint || ""}") in ${targetName} without typing out the full solution "${question.answer || ""}".`,
+        ].join("\n");
+      } else if (question.variant === "word_neighborhoods") {
+        const groupsDesc = (question.groups || [])
+          .map((g) => `- "${g.label}": [${(g.items || []).join(", ")}]`)
+          .join("\n");
+        variantContext = [
+          `Exercise: Word Neighborhoods (Sorting words into categories)`,
+          `Categories & target words:`,
+          groupsDesc,
+          `Task: Explain the difference between these categories and give a gentle tip on how to categorize the words without giving away all the answers.`,
+        ].join("\n");
+      } else if (question.variant === "morphology_forge") {
+        variantContext = [
+          `Exercise: Morphology Forge (Building words from morphemes)`,
+          `Sentence: "${question.sentence || ""}"`,
+          `Target word to build: "${question.answerWord || ""}"`,
+          `Correct morpheme pieces: ${(question.answerPieces || []).join(" + ")}`,
+          `Available pieces: ${(question.pieces || []).join(", ")}`,
+          `Task: Give a hint about the meaning or grammar of the missing word to help the learner assemble the correct pieces, without directly spelling "${question.answerWord || ""}".`,
+        ].join("\n");
+      } else if (question.variant === "three_clue_mystery") {
+        const revealedList = (question.clues || []).slice(0, revealedClues || 1);
+        const cluesDesc = revealedList
+          .map((c, i) => `Clue ${i + 1}: "${c}"`)
+          .join("\n");
+        variantContext = [
+          `Exercise: Three-Clue Mystery`,
+          `The learner is trying to deduce the secret mystery word in ${targetName}.`,
+          `Mystery word (secret answer): "${question.answer || ""}"`,
+          `Example sentence with answer: "${question.example || ""}"`,
+          `Clues currently revealed to the learner:`,
+          cluesDesc,
+          `CRITICAL RULE: DO NOT state or give away the mystery word "${question.answer || ""}". Give a subtle, friendly nudge or question that connects the clues above to help them deduce "${question.answer || ""}".`,
+        ].join("\n");
+      } else if (question.variant === "listen_difference") {
+        variantContext = [
+          `Exercise: Listen for the Difference (Minimal Pairs & Phonetics)`,
+          `Spoken target audio: "${question.audioText || ""}"`,
+          `Available options: ${(question.options || []).map((opt, i) => `${i + 1}. "${opt}"`).join(", ")}`,
+          `Correct option index: Option ${typeof question.answerIndex === "number" ? question.answerIndex + 1 : 1} ("${question.options?.[question.answerIndex] || ""}")`,
+          `Key phonetic/grammatical distinction: "${question.contrast || ""}"`,
+          `Task: Give a subtle hint about what sound, syllable stress, or grammatical ending to listen for without naming option ${typeof question.answerIndex === "number" ? question.answerIndex + 1 : 1} or stating the answer directly.`,
+        ].join("\n");
+      } else if (question.variant === "three_word_challenge") {
+        variantContext = [
+          `Exercise: Three-Word Challenge (Creative Sentence Construction)`,
+          `Required cue words: ${(question.cues || []).map((c, i) => `${i + 1}. "${c}"`).join(", ")}`,
+          `Valid sample answers: ${(question.sampleAnswers || []).map((a) => `"${a}"`).join(", ")}`,
+          `Task: Give an encouraging, creative hint or grammar tip on how the learner could logically connect these three words into a natural sentence in ${targetName}. DO NOT write the full sentence for them.`,
+        ].join("\n");
+      } else if (question.variant === "natural_or_weird") {
+        variantContext = [
+          `Exercise: Natural or Weird? (Intuition & Idiomatic Nuance)`,
+          `Target sentence: "${question.sentence || ""}"`,
+          `Correct status: ${question.isNatural ? "NATURAL (authentic everyday phrasing)" : "WEIRD / AWKWARD (unnatural phrasing or grammatical mistake)"}`,
+          question.correction ? `Proper correction/repair if weird: "${question.correction}"` : "",
+          question.explanation ? `Nuance explanation: "${question.explanation}"` : "",
+          `Task: Give a subtle hint about the phrasing, register, or grammatical intuition in ${targetName} to help the learner decide if native speakers would say this, without directly stating "It's natural" or "It's weird".`,
+        ].filter(Boolean).join("\n");
+      } else {
+        variantContext = `Exercise: ${question.variant || "General practice"}\nContent: "${question.line || question.sentence || question.source || question.instruction || ""}"`;
+      }
+
+      const prompt = `${instruction}\n\n${variantContext}\n\nLearner request:\n${questionContext}`;
+
+      if (simplemodel) {
+        const resp = await simplemodel.generateContentStream({
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+        });
+        let accumulatedText = "";
+        for await (const chunk of resp.stream) {
+          const piece = textFromChunk(chunk);
+          if (piece) {
+            accumulatedText += piece;
+            setAssistantSupportText(accumulatedText);
+          }
+        }
+        const finalAgg = await resp.response;
+        const finalText =
+          (typeof finalAgg?.text === "function"
+            ? finalAgg.text()
+            : finalAgg?.text) || accumulatedText;
+        if (finalText) {
+          setAssistantSupportText(finalText);
+        }
+      } else {
+        const response = await callResponses({
+          model: DEFAULT_RESPONSES_MODEL,
+          input: prompt,
+        });
+        setAssistantSupportText(
+          response ||
+            t("vocab_assistant_error") ||
+            "I couldn't load help right now. Please try again.",
+        );
+      }
+    } catch (error) {
+      console.error("Failed to generate assistant support:", error);
+      setAssistantSupportText(
+        t("vocab_assistant_error") ||
+          "I couldn't load help right now. Please try again.",
+      );
+    } finally {
+      setIsLoadingAssistantSupport(false);
+    }
+  }, [
+    assistantSupportText,
+    cefrLevel,
+    detectiveCopy.helpRequest,
+    dialogueForkCopy.helpRequest,
+    isLoadingAssistantSupport,
+    listenDifferenceCopy.helpRequest,
+    morphologyForgeCopy.helpRequest,
+    naturalOrWeirdCopy.helpRequest,
+    playSound,
+    question,
+    revealedClues,
+    sentenceShapeshifterCopy.helpRequest,
+    supportLang,
+    t,
+    targetLang,
+    threeClueMysteryCopy.helpRequest,
+    threeWordChallengeCopy.helpRequest,
+    wordNeighborhoodsCopy.helpRequest,
+  ]);
 
   useEffect(() => {
     const requestId = ++requestRef.current;
@@ -904,6 +3437,9 @@ export default function DelightQuestionLab({
       supportLang,
       cefrLevel,
       variantMeta.id,
+      variantMeta.id === "sentence_detective"
+        ? SENTENCE_DETECTIVE_CACHE_VERSION
+        : "v1",
     ].join(":");
     const cached = cacheRef.current.get(cacheKey);
     if (cached && generationNonce === 0) {
@@ -913,10 +3449,47 @@ export default function DelightQuestionLab({
     }
 
     setLoading(true);
+    setStreamingQuestion(null);
     setGenerationError("");
     setQuestion(null);
-    const generate = (input) =>
-      callResponses({ model: DEFAULT_RESPONSES_MODEL, input });
+
+    const onStreamChunk = (accumulated) => {
+      if (requestId !== requestRef.current) return;
+      const partial = parsePartialDelightQuestion(accumulated);
+      if (partial) {
+        setStreamingQuestion(partial);
+      }
+    };
+
+    const generate = async (input, onStream) => {
+      if (simplemodel) {
+        const resp = await simplemodel.generateContentStream({
+          contents: [{ role: "user", parts: [{ text: input }] }],
+        });
+        let accumulated = "";
+        for await (const chunk of resp.stream) {
+          if (requestId !== requestRef.current) break;
+          const piece = textFromChunk(chunk);
+          if (piece) {
+            accumulated += piece;
+            onStream?.(accumulated);
+          }
+        }
+        const finalAgg = await resp.response;
+        return (
+          (typeof finalAgg?.text === "function"
+            ? finalAgg.text()
+            : finalAgg?.text) || accumulated
+        );
+      }
+      const result = await callResponses({
+        model: DEFAULT_RESPONSES_MODEL,
+        input,
+      });
+      onStream?.(result);
+      return result;
+    };
+
     const generationTask =
       variantMeta.id === "sentence_detective"
         ? generateSentenceDetectiveQuestion({
@@ -926,6 +3499,7 @@ export default function DelightQuestionLab({
             supportLang,
             cefrLevel,
             lessonContent,
+            onStream: onStreamChunk,
           })
         : generate(
             buildDelightQuestionPrompt({
@@ -936,6 +3510,7 @@ export default function DelightQuestionLab({
               cefrLevel,
               lessonContent,
             }),
+            onStreamChunk,
           );
     const generation = settleWithin(
       generationTask,
@@ -957,11 +3532,17 @@ export default function DelightQuestionLab({
         cacheRef.current.set(cacheKey, nextQuestion);
         resetForQuestion(nextQuestion);
       })
-      .catch(() => {
+      .catch((error) => {
         if (requestId !== requestRef.current) return;
         if (variantMeta.id === "sentence_detective") {
+          if (import.meta.env.DEV && error?.issues?.length) {
+            console.warn(
+              "Sentence Detective draft rejected:",
+              JSON.stringify(error.issues),
+            );
+          }
           setGenerationError(
-            "We couldn't build a clear Sentence Detective question this time.",
+            detectiveCopy.generationFailed,
           );
           setQuestion(null);
           return;
@@ -971,10 +3552,14 @@ export default function DelightQuestionLab({
         resetForQuestion(fallback);
       })
       .finally(() => {
-        if (requestId === requestRef.current) setLoading(false);
+        if (requestId === requestRef.current) {
+          setLoading(false);
+          setStreamingQuestion(null);
+        }
       });
   }, [
     cefrLevel,
+    detectiveCopy,
     generationNonce,
     lesson?.id,
     lessonContent,
@@ -994,15 +3579,7 @@ export default function DelightQuestionLab({
     [],
   );
 
-  const setResponse = useCallback(
-    (next) => {
-      if (result !== null) return;
-      setResponseState((current) =>
-        typeof next === "function" ? next(current) : next,
-      );
-    },
-    [result],
-  );
+
 
   const moveToVariant = useCallback(
     (index) => {
@@ -1025,6 +3602,9 @@ export default function DelightQuestionLab({
       supportLang,
       cefrLevel,
       variantMeta.id,
+      variantMeta.id === "sentence_detective"
+        ? SENTENCE_DETECTIVE_CACHE_VERSION
+        : "v1",
     ].join(":");
     cacheRef.current.delete(cacheKey);
     setGenerationNonce((value) => value + 1);
@@ -1037,28 +3617,57 @@ export default function DelightQuestionLab({
     variantMeta.id,
   ]);
 
-  const handlePlay = useCallback(async () => {
-    if (!question?.audioText || isSpeaking) return;
-    stopAllTTSPlayback();
-    audioPlayerRef.current?.cleanup?.();
-    setIsSpeaking(true);
-    try {
-      const player = await getTTSPlayer({
-        text: question.audioText,
-        langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
-        voice: getPreferredTTSVoice(),
-      });
-      audioPlayerRef.current = player;
-      await player.ready;
-      await player.audio.play();
-      player.audio.onended = () => {
-        setIsSpeaking(false);
-        player.cleanup?.();
-      };
-    } catch {
-      setIsSpeaking(false);
+  const handleSkipQuestion = useCallback(() => {
+    if (isFinalQuiz || loading || submitting) return;
+    playSound(clickSound);
+    if (onSkip) {
+      onSkip();
+      return;
     }
-  }, [isSpeaking, question?.audioText, targetLang]);
+    handleRefresh();
+  }, [handleRefresh, isFinalQuiz, loading, onSkip, playSound, submitting]);
+
+  const handlePlay = useCallback(
+    async (customText = null) => {
+      const textToPlay =
+        (typeof customText === "string" ? customText : null) ||
+        question?.audioText ||
+        question?.line ||
+        question?.source ||
+        question?.sentence;
+      if (!textToPlay || isSpeaking || isSynthesizingAudio) return;
+      stopAllTTSPlayback();
+      audioPlayerRef.current?.cleanup?.();
+      setIsSynthesizingAudio(true);
+      setIsSpeaking(true);
+      try {
+        const player = await getTTSPlayer({
+          text: textToPlay,
+          langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
+          voice: getPreferredTTSVoice(),
+        });
+        audioPlayerRef.current = player;
+
+        const onDone = () => {
+          setIsSpeaking(false);
+          setIsSynthesizingAudio(false);
+          player.cleanup?.();
+        };
+
+        player.audio.onended = onDone;
+        player.audio.onerror = onDone;
+        player.finalize?.then(onDone).catch(onDone);
+
+        await player.ready;
+        setIsSynthesizingAudio(false);
+        await player.audio.play();
+      } catch {
+        setIsSynthesizingAudio(false);
+        setIsSpeaking(false);
+      }
+    },
+    [isSpeaking, isSynthesizingAudio, question?.audioText, question?.line, question?.sentence, targetLang],
+  );
 
   const handleSubmit = useCallback(async () => {
     if (!question || !isDelightResponseReady(question, response) || submitting)
@@ -1067,14 +3676,26 @@ export default function DelightQuestionLab({
     setSubmitting(true);
     let ok = gradeDelightResponse(question, response);
     if (ok === null) {
+      const judgeInput =
+        question.variant === "sentence_detective"
+          ? buildSentenceDetectiveJudgePrompt({
+              question,
+              response,
+              targetLang,
+              supportLang,
+              cefrLevel,
+              moduleType,
+            })
+          : buildThreeWordJudgePrompt({
+              question,
+              response,
+              targetLang,
+              supportLang,
+            });
+
       const verdict = await callResponses({
         model: DEFAULT_RESPONSES_MODEL,
-        input: buildThreeWordJudgePrompt({
-          question,
-          response,
-          targetLang,
-          supportLang,
-        }),
+        input: judgeInput,
       });
       ok = String(verdict || "")
         .trim()
@@ -1083,12 +3704,17 @@ export default function DelightQuestionLab({
     }
 
     const xp = ok
-      ? question.variant === "three_clue_mystery"
-        ? Math.max(4, 10 - (revealedClues - 1) * 3)
-        : 6
+      ? calculateDelightQuestionXp(question, response, {
+          revealedClues,
+          isFinalQuiz,
+        })
       : 0;
     setResult(Boolean(ok));
     setRecentXp(isFinalQuiz ? 0 : xp);
+    if (ok) {
+      setExplanationText("");
+      setSessionEarnedXp((prev) => prev + xp);
+    }
     playSound(ok ? deliciousSound : clickSound);
 
     if (isFinalQuiz) {
@@ -1100,8 +3726,10 @@ export default function DelightQuestionLab({
     }
     setSubmitting(false);
   }, [
+    cefrLevel,
     isFinalQuiz,
     lesson?.id,
+    moduleType,
     npub,
     playSound,
     question,
@@ -1116,6 +3744,230 @@ export default function DelightQuestionLab({
     if (!question) return;
     resetForQuestion(question);
   }, [question, resetForQuestion]);
+
+  const handleExplainAnswer = useCallback(async () => {
+    if (!question || isLoadingExplanation || explanationText) return;
+    playSound(submitActionSound);
+    setIsLoadingExplanation(true);
+    setExplanationText("");
+
+    try {
+      const targetName = getDelightLanguageName(targetLang);
+      const supportName = getDelightLanguageName(supportLang);
+      const variantDetails =
+        question.variant === "sentence_detective"
+          ? [
+              `Original sentence with error: "${question.sentence || ""}"`,
+              `The incorrect word was: "${question.wrongToken || question.tokens?.[question.incorrectIndex] || ""}"`,
+              `The student selected: "${question.tokens?.[response?.tokenIndex] || ""}" replaced with "${response?.replacement || ""}"`,
+              `The correct repair is: "${question.answer || ""}"`,
+              question.correctedSentence ? `Full correct sentence: "${question.correctedSentence}"` : "",
+            ]
+          : question.variant === "dialogue_fork"
+            ? [
+                `Speaker "${question.speaker || "Speaker"}" said: "${question.line || ""}"`,
+                `The student selected: "${question.options?.[response?.selectedIndex] || ""}"`,
+                `The natural and correct reply is: "${question.options?.[question.answerIndex] || ""}"`,
+              ]
+            : question.variant === "sentence_shapeshifter"
+              ? [
+                  `Original source sentence: "${question.source || ""}"`,
+                  `Transformation constraint: "${question.constraint || ""}"`,
+                  `The student typed: "${response?.text || ""}"`,
+                  `Expected correct transformation: "${question.answer || ""}"`,
+                  question.acceptableAnswers?.length
+                    ? `Acceptable alternatives: ${question.acceptableAnswers.map((a) => `"${a}"`).join(", ")}`
+                    : "",
+                ]
+            : question.variant === "word_neighborhoods"
+              ? [
+                  `Category groups: ${(question.groups || []).map((g) => `${g.label}: ${g.items.join(", ")}`).join("; ")}`,
+                  `Student placed words as: ${(question.groups || []).map((g, idx) => `${g.label}: ${Object.entries(response?.assignments || {}).filter(([, groupIndex]) => Number(groupIndex) === idx).map(([word]) => word).join(", ") || "(empty)"}`).join("; ")}`,
+                ]
+              : question.variant === "morphology_forge"
+                ? [
+                    `Sentence with blank: "${question.sentence || ""}"`,
+                    `Expected correct forged word: "${question.answerWord || (question.answerPieces || []).join("")}"`,
+                    `Target word morphemes: ${(question.answerPieces || []).join(" + ")}`,
+                    `Student assembled pieces: ${(response?.pieceIndices || []).map((idx) => question.pieces?.[idx]).join(" + ") || "(none)"}`,
+                    `Student formed word: "${(response?.pieceIndices || []).map((idx) => question.pieces?.[idx]).join("")}"`,
+                  ]
+              : question.variant === "three_clue_mystery"
+                ? [
+                    `Mystery Clues: ${(question.clues || []).map((c, i) => `Clue ${i + 1}: "${c}"`).join("; ")}`,
+                    `Expected correct target word: "${question.answer || ""}"`,
+                    question.example ? `Example sentence: "${question.example}"` : "",
+                    `Student guessed: "${response?.text || ""}"`,
+                  ]
+              : [
+                  `Question: "${question.sentence || question.source || question.line || ""}"`,
+                  `Correct answer: "${question.answer || question.options?.[question.answerIndex] || ""}"`,
+                ];
+
+      const prompt = [
+        `You are a helpful language tutor teaching ${targetName}. A student answered an exercise incorrectly.`,
+        `Question variant: ${question.variant || "Dialogue Fork"}`,
+        ...variantDetails,
+        "",
+        `IMPORTANT: Provide your entire explanation in ${supportName}.`,
+        `Provide a brief, encouraging explanation (2-3 sentences) in ${supportName} that:`,
+        `1. Explains why the student's selected answer was not the best choice`,
+        `2. Clarifies why the correct response fits best naturally`,
+        `3. Gives a friendly tip to remember it`,
+        `Keep it concise, supportive, and focused on learning. Write in ${supportName}.`,
+      ].filter(Boolean).join("\n");
+
+      if (simplemodel) {
+        const resp = await simplemodel.generateContentStream({
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+        });
+        let accumulatedText = "";
+        for await (const chunk of resp.stream) {
+          const piece = textFromChunk(chunk);
+          if (piece) {
+            accumulatedText += piece;
+            setExplanationText(accumulatedText);
+          }
+        }
+        const finalAgg = await resp.response;
+        const finalText =
+          (typeof finalAgg?.text === "function"
+            ? finalAgg.text()
+            : finalAgg?.text) || accumulatedText;
+        if (finalText) {
+          setExplanationText(finalText);
+        }
+      } else {
+        const explanation = await callResponses({
+          model: DEFAULT_RESPONSES_MODEL,
+          input: prompt,
+        });
+        setExplanationText(
+          explanation ||
+            t("vocab_explanation_error") ||
+            "I couldn't load an explanation right now. Please try again.",
+        );
+      }
+    } catch (error) {
+      console.error("Failed to generate explanation:", error);
+      setExplanationText(
+        t("vocab_explanation_error") ||
+          "I couldn't load an explanation right now. Please try again.",
+      );
+    } finally {
+      setIsLoadingExplanation(false);
+    }
+  }, [
+    explanationText,
+    isLoadingExplanation,
+    playSound,
+    question,
+    response?.assignments,
+    response?.replacement,
+    response?.selectedIndex,
+    response?.text,
+    response?.tokenIndex,
+    supportLang,
+    t,
+    targetLang,
+  ]);
+
+  const handleCreateNote = useCallback(async () => {
+    if (isCreatingNote || noteCreated || !question) return;
+
+    setIsCreatingNote(true);
+    setNotesLoading(true);
+
+    try {
+      const concept =
+        question.variant === "three_clue_mystery"
+          ? `${question.answer || "Mystery Word"}${question.example ? ` — ${question.example}` : ""}`
+          : question.variant === "morphology_forge"
+            ? `${question.answerWord || "Word"}: ${(question.answerPieces || []).join(" + ")}`
+            : question.variant === "word_neighborhoods"
+              ? (question.groups || []).map((g) => `${g.label}: ${g.items.join(", ")}`).join(" | ")
+              : question.variant === "sentence_shapeshifter"
+                ? `${question.source || "Sentence"} → ${question.constraint || "Rule"}`
+                : question.correctedSentence ||
+                  question.sentence ||
+                  (question.speaker && question.line ? `${question.speaker}: ${question.line}` : "") ||
+                  question.source ||
+                  question.answer ||
+                  "Exercise";
+
+      const userAnswer =
+        question.variant === "three_clue_mystery"
+          ? response?.text || ""
+          : question.variant === "morphology_forge"
+            ? (response?.pieceIndices || []).map((idx) => question.pieces?.[idx]).join("")
+            : question.variant === "word_neighborhoods"
+              ? (question.groups || []).map((g, idx) => `${g.label}: ${Object.entries(response?.assignments || {}).filter(([, groupIndex]) => Number(groupIndex) === idx).map(([word]) => word).join(", ")}`).join(" | ")
+              : question.variant === "dialogue_fork"
+                ? question.options?.[response?.selectedIndex] || ""
+                : question.variant === "sentence_shapeshifter"
+                  ? response?.text || ""
+                  : response?.replacement || response?.text || "";
+
+      const { example, summary } = await generateNoteContent({
+        concept,
+        userAnswer,
+        wasCorrect: result,
+        targetLang,
+        supportLang,
+        cefrLevel,
+        moduleType,
+      });
+
+      const lessonTitle = lesson?.title || {
+        en: moduleType === "grammar" ? "Grammar" : "Vocabulary",
+        es: moduleType === "grammar" ? "Gramática" : "Vocabulario",
+      };
+
+      const note = buildNoteObject({
+        lessonTitle,
+        cefrLevel,
+        example,
+        summary,
+        targetLang,
+        supportLang,
+        moduleType,
+        wasCorrect: result,
+      });
+
+      addNote(note);
+      setNoteCreated(true);
+      triggerDoneAnimation?.();
+    } catch (error) {
+      console.error("Error creating note:", error);
+      toast({
+        title:
+          t("vocab_create_note_error") === "vocab_create_note_error"
+            ? "Could not create note"
+            : t("vocab_create_note_error"),
+        status: "error",
+        duration: 2500,
+      });
+    } finally {
+      setIsCreatingNote(false);
+      setNotesLoading(false);
+    }
+  }, [
+    addNote,
+    cefrLevel,
+    isCreatingNote,
+    lesson?.title,
+    moduleType,
+    noteCreated,
+    question,
+    response?.replacement,
+    result,
+    setNotesLoading,
+    supportLang,
+    t,
+    targetLang,
+    toast,
+    triggerDoneAnimation,
+  ]);
 
   const handleNext = useCallback(() => {
     if (isFinalQuiz && quizHistory.length >= quizConfig.questionsRequired) {
@@ -1137,12 +3989,20 @@ export default function DelightQuestionLab({
   ]);
 
   const ready = question && isDelightResponseReady(question, response);
+  const isSentenceDetective = question?.variant === "sentence_detective";
+  const isLastQuizQuestion =
+    isFinalQuiz && quizHistory.length >= quizConfig.questionsRequired;
   const quizCorrect = quizHistory.filter(Boolean).length;
 
   if (quizFinished) {
     const passed = quizCorrect >= quizConfig.passingScore;
     return (
-      <Box p={4} color={APP_TEXT_PRIMARY}>
+      <Box
+        p={4}
+        color={APP_TEXT_PRIMARY}
+        lang={supportLang}
+        dir={supportDirection}
+      >
         <VStack
           maxW="620px"
           mx="auto"
@@ -1156,16 +4016,19 @@ export default function DelightQuestionLab({
         >
           <Text fontSize="4xl">{passed ? "🎉" : "🌱"}</Text>
           <Text fontSize="2xl" fontWeight="900">
-            {passed ? "Variant quiz complete!" : "Keep exploring the patterns"}
+            {passed ? detectiveCopy.quizComplete : detectiveCopy.keepExploring}
           </Text>
           <Text color={APP_TEXT_SECONDARY}>
-            {quizCorrect}/{quizHistory.length} correct
+            {formatSentenceDetectiveCopy(detectiveCopy.correctCount, {
+              correct: quizCorrect,
+              total: quizHistory.length,
+            })}
           </Text>
           <Button
             colorScheme="cyan"
             onClick={onExitQuiz || onSkip || (() => setQuizFinished(false))}
           >
-            Continue
+            {detectiveCopy.continue}
           </Button>
         </VStack>
       </Box>
@@ -1173,8 +4036,104 @@ export default function DelightQuestionLab({
   }
 
   return (
-    <Box p={4} color={APP_TEXT_PRIMARY}>
+    <Box
+      p={4}
+      color={APP_TEXT_PRIMARY}
+      lang={supportLang}
+      dir={supportDirection}
+    >
       <VStack spacing={4} align="stretch" maxW="720px" mx="auto">
+        {/* Shared progress header */}
+        <Box display="flex" justifyContent="center">
+          <Box w={{ base: "100%", md: "60%" }} justifyContent="center">
+            {isFinalQuiz ? (
+              // Quiz progress display with animated bars
+              <VStack spacing={2} w="100%">
+                <HStack justify="space-between" w="100%" mb={1}>
+                  <Badge colorScheme="purple" fontSize="md">
+                    {t("vocab_final_quiz") === "vocab_final_quiz"
+                      ? "Final Quiz"
+                      : t("vocab_final_quiz")}
+                  </Badge>
+                  <Badge
+                    colorScheme={
+                      quizCorrect >= quizConfig.passingScore
+                        ? "green"
+                        : "yellow"
+                    }
+                    fontSize="md"
+                  >
+                    {quizHistory.length}/{quizConfig.questionsRequired}
+                  </Badge>
+                </HStack>
+
+                {/* Animated progress bar showing correct (blue) and wrong (red) answers */}
+                <HStack spacing="2px" w="100%" h="16px">
+                  {Array.from({ length: quizConfig.questionsRequired }).map(
+                    (_, i) => {
+                      const hasAnswer = i < quizHistory.length;
+                      const isCorrect = hasAnswer ? quizHistory[i] : null;
+
+                      return (
+                        <Box
+                          key={i}
+                          flex="1"
+                          h="100%"
+                          bg={
+                            !hasAnswer
+                              ? "gray.700"
+                              : isCorrect
+                                ? "blue.400"
+                                : "red.400"
+                          }
+                          borderRadius="sm"
+                          position="relative"
+                          overflow="hidden"
+                          opacity={hasAnswer ? 1 : 0.5}
+                        />
+                      );
+                    },
+                  )}
+                </HStack>
+
+                <Text fontSize="xs" color="gray.400" textAlign="center">
+                  {t("vocab_quiz_score_failed", {
+                    correct: quizCorrect,
+                    needed: quizConfig.passingScore,
+                  })}
+                </Text>
+              </VStack>
+            ) : (
+              // Normal XP progress display
+              <XpProgressHeader
+                levelText={
+                  moduleType === "grammar"
+                    ? t("grammar_badge_level", { level: levelNumber }) ===
+                      "grammar_badge_level"
+                      ? `Level ${levelNumber}`
+                      : t("grammar_badge_level", { level: levelNumber })
+                    : t("vocab_badge_level", { level: levelNumber }) ===
+                        "vocab_badge_level"
+                      ? `Level ${levelNumber}`
+                      : t("vocab_badge_level", { level: levelNumber })
+                }
+                xpText={
+                  moduleType === "grammar"
+                    ? t("grammar_badge_xp", { xp: totalUserXp }) ===
+                      "grammar_badge_xp"
+                      ? `${totalUserXp} XP`
+                      : t("grammar_badge_xp", { xp: totalUserXp })
+                    : t("vocab_badge_xp", { xp: totalUserXp }) ===
+                        "vocab_badge_xp"
+                      ? `${totalUserXp} XP`
+                      : t("vocab_badge_xp", { xp: totalUserXp })
+                }
+                progressPct={xpProgressPct}
+              />
+            )}
+          </Box>
+        </Box>
+
         <Box
           p={3}
           bg="rgba(128, 90, 213, 0.10)"
@@ -1185,7 +4144,7 @@ export default function DelightQuestionLab({
         >
           <Flex gap={3} align="center" flexWrap="wrap">
             <Badge colorScheme="purple" flexShrink={0}>
-              Testing gate
+              {detectiveCopy.testingGate}
             </Badge>
             {GATED_VARIANTS.length > 1 ? (
               <>
@@ -1218,11 +4177,15 @@ export default function DelightQuestionLab({
               </>
             ) : (
               <Text flex="1" fontSize="sm" fontWeight="800">
-                {variantMeta.label}
+                {activeVariantCopy.title}
               </Text>
             )}
             <IconButton
-              aria-label="Generate another example"
+              aria-label={
+                activeVariantCopy.generateAnother ||
+                activeVariantCopy.tryAnother ||
+                "Generate another"
+              }
               icon={<FiRefreshCw />}
               size="sm"
               onClick={handleRefresh}
@@ -1231,33 +4194,14 @@ export default function DelightQuestionLab({
             />
           </Flex>
           <Text fontSize="xs" color={APP_TEXT_SECONDARY} mt={2}>
-            Only Sentence Detective renders while we refine its {moduleType} experience.
+            {moduleType === "vocabulary"
+              ? detectiveCopy.testingVocabulary
+              : detectiveCopy.testingGrammar}
           </Text>
         </Box>
 
-        {isFinalQuiz && (
-          <HStack spacing="2px" w="100%" h="12px">
-            {Array.from({ length: quizConfig.questionsRequired }).map((_, index) => (
-              <Box
-                key={index}
-                flex="1"
-                h="100%"
-                borderRadius="full"
-                bg={
-                  index >= quizHistory.length
-                    ? APP_SURFACE_MUTED
-                    : quizHistory[index]
-                      ? "var(--question-success-accent)"
-                      : "var(--question-error-accent)"
-                }
-              />
-            ))}
-          </HStack>
-        )}
-
         <Box
           p={{ base: 4, md: 6 }}
-          minH="360px"
           bg={APP_SURFACE_ELEVATED}
           borderWidth="1px"
           borderColor={APP_BORDER}
@@ -1266,23 +4210,53 @@ export default function DelightQuestionLab({
           style={questionSquircleStyle}
         >
           {loading ? (
-            <VStack minH="310px" justify="center" spacing={4}>
-              <Spinner size="lg" color="purple.300" thickness="3px" />
-              <Text color={APP_TEXT_SECONDARY}>
-                Building {variantMeta.label.toLowerCase()}…
-              </Text>
-            </VStack>
+            variantMeta.id === "natural_or_weird" ? (
+              <NaturalOrWeirdSkeleton />
+            ) : variantMeta.id === "three_word_challenge" ? (
+              <ThreeWordChallengeSkeleton />
+            ) : variantMeta.id === "listen_difference" ? (
+              <ListenDifferenceSkeleton />
+            ) : variantMeta.id === "three_clue_mystery" ? (
+              <ThreeClueMysterySkeleton
+                copy={threeClueMysteryCopy}
+                targetLang={targetLang}
+                supportLang={supportLang}
+              />
+            ) : variantMeta.id === "morphology_forge" ? (
+              <MorphologyForgeSkeleton
+                copy={morphologyForgeCopy}
+                targetLang={targetLang}
+                supportLang={supportLang}
+              />
+            ) : variantMeta.id === "word_neighborhoods" ? (
+              <WordNeighborhoodsSkeleton
+                copy={wordNeighborhoodsCopy}
+                targetLang={targetLang}
+                supportLang={supportLang}
+              />
+            ) : variantMeta.id === "sentence_shapeshifter" ? (
+              <SentenceShapeshifterSkeleton
+                copy={sentenceShapeshifterCopy}
+                targetLang={targetLang}
+                supportLang={supportLang}
+              />
+            ) : variantMeta.id === "dialogue_fork" ? (
+              <DialogueForkSkeleton
+                copy={dialogueForkCopy}
+                targetLang={targetLang}
+                supportLang={supportLang}
+              />
+            ) : (
+              <SentenceDetectiveSkeleton
+                copy={detectiveCopy}
+                targetLang={targetLang}
+                supportLang={supportLang}
+              />
+            )
           ) : !question ? (
-            <VStack minH="310px" justify="center" spacing={4} textAlign="center">
-              <Text fontSize="3xl" aria-hidden="true">
-                🔎
-              </Text>
-              <Text fontWeight="800" color={APP_TEXT_PRIMARY}>
-                No clear case was generated
-              </Text>
-              <Text maxW="420px" fontSize="sm" color={APP_TEXT_SECONDARY}>
-                {generationError ||
-                  "Sentence Detective couldn't create an unambiguous question."}
+            <VStack justify="center" align="center" minH="200px" spacing={4}>
+              <Text fontSize="sm" color={APP_TEXT_SECONDARY}>
+                {generationError || activeVariantCopy.generationFailed}
               </Text>
               <Button
                 leftIcon={<FiRefreshCw />}
@@ -1290,7 +4264,7 @@ export default function DelightQuestionLab({
                 onClick={handleRefresh}
                 style={questionSquircleStyle}
               >
-                Try another case
+                {activeVariantCopy.tryAnother}
               </Button>
             </VStack>
           ) : (
@@ -1305,8 +4279,14 @@ export default function DelightQuestionLab({
                   question={question}
                   response={response}
                   setResponse={setResponse}
-                  locked={result !== null}
+                  locked={result === true}
                   targetLang={targetLang}
+                  supportLang={supportLang}
+                  copy={detectiveCopy}
+                  onAskAssistant={handleAskAssistant}
+                  isLoadingAssistantSupport={isLoadingAssistantSupport}
+                  assistantSupportText={assistantSupportText}
+                  assistantLabel={t("vocab_assistant") || "Assistant"}
                 />
               )}
               {question.variant === "dialogue_fork" && (
@@ -1314,7 +4294,18 @@ export default function DelightQuestionLab({
                   question={question}
                   response={response}
                   setResponse={setResponse}
-                  locked={result !== null}
+                  locked={result === true}
+                  targetLang={targetLang}
+                  supportLang={supportLang}
+                  copy={dialogueForkCopy}
+                  onAskAssistant={handleAskAssistant}
+                  isLoadingAssistantSupport={isLoadingAssistantSupport}
+                  assistantSupportText={assistantSupportText}
+                  assistantLabel={t("vocab_assistant") || "Assistant"}
+                  onPlayAudio={handlePlay}
+                  isLoadingAudio={isSynthesizingAudio}
+                  isPlayingAudio={isSpeaking}
+                  isCorrect={result === true}
                 />
               )}
               {question.variant === "sentence_shapeshifter" && (
@@ -1322,7 +4313,20 @@ export default function DelightQuestionLab({
                   question={question}
                   response={response}
                   setResponse={setResponse}
-                  locked={result !== null}
+                  locked={result === true}
+                  targetLang={targetLang}
+                  supportLang={supportLang}
+                  copy={sentenceShapeshifterCopy}
+                  onAskAssistant={handleAskAssistant}
+                  isLoadingAssistantSupport={isLoadingAssistantSupport}
+                  assistantSupportText={assistantSupportText}
+                  assistantLabel={t("vocab_assistant") || "Assistant"}
+                  onPlayAudio={handlePlay}
+                  isLoadingAudio={isSynthesizingAudio}
+                  isPlayingAudio={isSpeaking}
+                  onSubmit={handleSubmit}
+                  canSubmit={ready}
+                  submitting={submitting}
                 />
               )}
               {question.variant === "word_neighborhoods" && (
@@ -1330,8 +4334,15 @@ export default function DelightQuestionLab({
                   question={question}
                   response={response}
                   setResponse={setResponse}
-                  locked={result !== null}
+                  locked={result === true}
                   wordOrder={wordOrder}
+                  targetLang={targetLang}
+                  supportLang={supportLang}
+                  copy={wordNeighborhoodsCopy}
+                  onAskAssistant={handleAskAssistant}
+                  isLoadingAssistantSupport={isLoadingAssistantSupport}
+                  assistantSupportText={assistantSupportText}
+                  assistantLabel={t("vocab_assistant") || "Assistant"}
                 />
               )}
               {question.variant === "morphology_forge" && (
@@ -1339,7 +4350,14 @@ export default function DelightQuestionLab({
                   question={question}
                   response={response}
                   setResponse={setResponse}
-                  locked={result !== null}
+                  locked={result === true}
+                  targetLang={targetLang}
+                  supportLang={supportLang}
+                  copy={morphologyForgeCopy}
+                  onAskAssistant={handleAskAssistant}
+                  isLoadingAssistantSupport={isLoadingAssistantSupport}
+                  assistantSupportText={assistantSupportText}
+                  assistantLabel={t("vocab_assistant") || "Assistant"}
                 />
               )}
               {question.variant === "three_clue_mystery" && (
@@ -1347,9 +4365,19 @@ export default function DelightQuestionLab({
                   question={question}
                   response={response}
                   setResponse={setResponse}
-                  locked={result !== null}
+                  locked={result === true}
                   revealedClues={revealedClues}
                   setRevealedClues={setRevealedClues}
+                  targetLang={targetLang}
+                  supportLang={supportLang}
+                  copy={threeClueMysteryCopy}
+                  onAskAssistant={handleAskAssistant}
+                  isLoadingAssistantSupport={isLoadingAssistantSupport}
+                  assistantSupportText={assistantSupportText}
+                  assistantLabel={t("vocab_assistant") || "Assistant"}
+                  onSubmit={handleSubmit}
+                  canSubmit={ready}
+                  submitting={submitting}
                 />
               )}
               {question.variant === "listen_difference" && (
@@ -1357,9 +4385,20 @@ export default function DelightQuestionLab({
                   question={question}
                   response={response}
                   setResponse={setResponse}
-                  locked={result !== null}
-                  onPlay={handlePlay}
+                  locked={result === true}
+                  targetLang={targetLang}
+                  supportLang={supportLang}
+                  copy={listenDifferenceCopy}
+                  onAskAssistant={handleAskAssistant}
+                  isLoadingAssistantSupport={isLoadingAssistantSupport}
+                  assistantSupportText={assistantSupportText}
+                  assistantLabel={t("vocab_assistant") || "Assistant"}
+                  onPlayAudio={handlePlay}
                   isSpeaking={isSpeaking}
+                  isSynthesizingAudio={isSynthesizingAudio}
+                  onSubmit={handleSubmit}
+                  canSubmit={ready}
+                  submitting={submitting}
                 />
               )}
               {question.variant === "three_word_challenge" && (
@@ -1367,7 +4406,18 @@ export default function DelightQuestionLab({
                   question={question}
                   response={response}
                   setResponse={setResponse}
-                  locked={result !== null}
+                  locked={result === true}
+                  targetLang={targetLang}
+                  supportLang={supportLang}
+                  copy={threeWordChallengeCopy}
+                  onAskAssistant={handleAskAssistant}
+                  isLoadingAssistantSupport={isLoadingAssistantSupport}
+                  assistantSupportText={assistantSupportText}
+                  assistantLabel={t("vocab_assistant") || "Assistant"}
+                  onSubmit={handleSubmit}
+                  canSubmit={ready}
+                  submitting={submitting}
+                  isCorrect={result === true}
                 />
               )}
               {question.variant === "natural_or_weird" && (
@@ -1375,49 +4425,81 @@ export default function DelightQuestionLab({
                   question={question}
                   response={response}
                   setResponse={setResponse}
-                  locked={result !== null}
+                  locked={result === true}
+                  targetLang={targetLang}
+                  supportLang={supportLang}
+                  copy={naturalOrWeirdCopy}
+                  onAskAssistant={handleAskAssistant}
+                  isLoadingAssistantSupport={isLoadingAssistantSupport}
+                  assistantSupportText={assistantSupportText}
+                  assistantLabel={t("vocab_assistant") || "Assistant"}
+                  onPlayAudio={handlePlay}
+                  isSpeaking={isSpeaking}
+                  isSynthesizingAudio={isSynthesizingAudio}
+                  onSubmit={handleSubmit}
+                  canSubmit={ready}
+                  submitting={submitting}
                 />
               )}
             </>
           )}
         </Box>
 
-        {!loading && question && result === null && (
-          <VStack spacing={2} align="stretch">
-            {question.hint && (
-              <Text fontSize="sm" color={APP_TEXT_SECONDARY} textAlign="center">
-                Hint: {question.hint}
-              </Text>
-            )}
-            <Button
-              colorScheme="cyan"
-              size="lg"
-              py={6}
-              isLoading={submitting}
-              isDisabled={!ready || submitting}
-              onClick={handleSubmit}
-              style={questionSquircleStyle}
-            >
-              {submitting
-                ? "Checking…"
-                : t("vocab_submit") === "vocab_submit"
-                  ? "Check answer"
-                  : t("vocab_submit")}
-            </Button>
+        {!loading && question && (result === null || (!isFinalQuiz && result === false)) && (
+          <VStack spacing={3} align="stretch" pt={1}>
+            <HStack justify="flex-end" spacing={3} flexWrap="wrap">
+              {!isFinalQuiz && (
+                <Button
+                  variant="ghost"
+                  size="lg"
+                  onClick={handleSkipQuestion}
+                  isDisabled={loading || submitting}
+                  style={questionSquircleStyle}
+                >
+                  {activeVariantCopy.skip}
+                </Button>
+              )}
+              <Button
+                colorScheme="purple"
+                size="lg"
+                px={{ base: 7, md: 10 }}
+                isLoading={submitting}
+                isDisabled={!ready || submitting}
+                onClick={handleSubmit}
+                style={questionSquircleStyle}
+              >
+                {submitting
+                  ? activeVariantCopy.checking
+                  : activeVariantCopy.submit}
+              </Button>
+            </HStack>
           </VStack>
         )}
 
         {question && result !== null && (
-          <ResultPanel
+          <FeedbackRail
             ok={result}
             xp={recentXp}
-            question={question}
-            onRetry={handleRetry}
+            showNext={result === true || isFinalQuiz}
             onNext={handleNext}
-            isLastQuizQuestion={
-              isFinalQuiz && quizHistory.length >= quizConfig.questionsRequired
+            nextLabel={
+              isLastQuizQuestion
+                ? t("vocab_see_results") === "vocab_see_results"
+                  ? "See results"
+                  : t("vocab_see_results")
+                : t("vocab_next_question") === "vocab_next_question"
+                  ? "Next question"
+                  : t("vocab_next_question")
             }
-            allowRetry={!isFinalQuiz}
+            t={t}
+            userLanguage={supportLang}
+            onExplainAnswer={handleExplainAnswer}
+            explanationText={explanationText}
+            isLoadingExplanation={isLoadingExplanation}
+            lessonProgress={lessonProgress}
+            onCreateNote={handleCreateNote}
+            isCreatingNote={isCreatingNote}
+            noteCreated={noteCreated}
           />
         )}
       </VStack>

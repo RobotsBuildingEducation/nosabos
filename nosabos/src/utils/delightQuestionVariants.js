@@ -59,13 +59,13 @@ export const DELIGHT_VARIANT_IDS = DELIGHT_VARIANTS.map(({ id }) => id);
 
 const SCHEMAS = {
   sentence_detective:
-    '{"instruction":"...","sentence":"...","correctedSentence":"...","tokens":["..."],"joiner":" ","incorrectIndex":0,"wrongToken":"...","replacements":["...","...","...","..."],"answer":"...","slotType":"noun|verb|adjective|adverb|other","errorCategory":"...","targetSkill":"...","sourceEvidence":"...","hint":"...","explanation":"..."}',
+    '{"instruction":"...","sentence":"...","correctedSentence":"...","tokens":["..."],"joiner":" ","incorrectIndex":0,"wrongToken":"...","replacements":["...","...","...","..."],"answer":"...","slotType":"noun|verb|adjective|adverb|other","cueTokens":["..."],"errorEvidence":"...","repairEvidence":"...","errorCategory":"...","targetSkill":"...","sourceEvidence":"...","hint":"...","explanation":"..."}',
   dialogue_fork:
     '{"instruction":"...","speaker":"...","line":"...","options":["..."],"answerIndex":0,"reaction":"...","hint":"...","explanation":"..."}',
   sentence_shapeshifter:
     '{"instruction":"...","source":"...","constraint":"...","answer":"...","acceptableAnswers":["..."],"hint":"...","explanation":"..."}',
   word_neighborhoods:
-    '{"instruction":"...","groups":[{"label":"...","items":["...","..."]},{"label":"...","items":["...","..."]}],"hint":"...","explanation":"..."}',
+    '{"instruction":"...","groups":[{"label":"...","items":["...","...","..."]},{"label":"...","items":["...","...","..."]}],"hint":"...","explanation":"..."}',
   morphology_forge:
     '{"instruction":"...","sentence":"... ___ ...","pieces":["..."],"answerPieces":["..."],"answerWord":"...","hint":"...","explanation":"..."}',
   three_clue_mystery:
@@ -83,41 +83,60 @@ const VARIANT_RULES = {
     "Write one short sentence containing exactly one wrong word.",
     "tokens must reproduce sentence in reading order, with punctuation attached where natural.",
     "incorrectIndex is zero-based and points to the wrong token.",
-    "replacements contains 3 or 4 options including answer.",
-    "The answer must have the same gender, number, and syntactic compatibility as the token it replaces so repairing one token produces a fully natural sentence.",
-    "Avoid stereotypes and debatable real-world claims; use a context where the intended lexical or grammatical repair is unambiguous.",
-    "instruction must only ask the learner to tap the incorrect word and then choose its replacement.",
+    "replacements contains exactly 4 options: the correct repair and 3 distractors.",
+    "Distractors must be clearly wrong in this context, not alternative valid ways to say it.",
+    "cueTokens must be 1-3 tokens from sentence that prove why wrongToken is incorrect.",
+    "errorEvidence must quote the exact cue tokens from the sentence.",
+    "instruction must be a concise general prompt to find the wrong word. Never prepend 'Clue:' or include hints/clues in the instruction.",
   ],
   dialogue_fork: [
-    "Create a two-line everyday micro-conversation.",
-    "Exactly one of 4 options is the most natural response.",
-    "reaction is the speaker's brief response after the correct choice.",
-    "instruction must only ask the learner to choose one response.",
+    "Write a natural conversational exchange with exactly 4 plausible replies.",
+    "Exactly one option must be the pragmatically, culturally, and grammatically correct response.",
+    "Distractors must represent common learner errors (wrong register, false friend, literal translation).",
+    "reaction is a short follow-up utterance by the original speaker acknowledging the correct reply.",
+    "instruction must be a concise general prompt to choose the natural response. Never prepend 'Clue:' or include hints/clues in the instruction.",
   ],
   sentence_shapeshifter: [
-    "Give a short source sentence and one explicit transformation constraint.",
-    "The learner must type the complete transformed sentence.",
-    "Include reasonable acceptableAnswers when more than one surface form works.",
-    "instruction must ask the learner to type the complete transformed sentence.",
+    "Give a short source sentence in the target language and one explicit transformation constraint in the support language.",
+    "The learner must type the complete transformed sentence in the target language.",
+    "constraint MUST be written in the support/UI language (e.g. Spanish, French, German). Keep it concise (≤ 8 words).",
+    "CRITICAL ANTI-SPOILER RULE: constraint MUST NEVER contain the target-language answer word or translated solution. Describe the transformation rule or semantic change conceptually in the support language (e.g. for Spanish support learning English: write 'Cambia al femenino' or 'Cambia a la palabra para hermana', NEVER write the English target word 'sister' in the constraint!).",
+    "For grammar: specify tense, aspect, negation, question form, mood, subject pronoun, or pluralization (e.g. 'Haz la oración en pasado', 'Make it negative', 'Cambia el sujeto a nosotros').",
+    "For vocabulary: specify semantic opposite, category shift, or description in the support language WITHOUT revealing the target language word.",
+    "Include reasonable acceptableAnswers when more than one valid surface form or word order works in the target language.",
+    "instruction must be a concise prompt in the support language asking the learner to type the complete transformed sentence.",
   ],
   word_neighborhoods: [
-    "Create exactly 2 clearly distinct groups with 3 unique items each.",
-    "For grammar, group forms or structures. For vocabulary, group by meaning, use, or register.",
-    "Do not put the category answer inside the instruction.",
-    "instruction must only ask the learner to sort every word into a group.",
+    "Create exactly 2 clearly distinct, mutually exclusive semantic or grammatical groups with exactly 3 unique items each (6 items total).",
+    "Each group label MUST be in the learner's support language (e.g., 'Comida' vs 'Ropa', 'Familia' vs 'Profesiones', 'Verbos en pasado' vs 'Verbos en presente').",
+    "Each item MUST be a single word or short lexical item in the target language.",
+    "CRITICAL VALIDITY RULE: Every item in Group A must clearly, unambiguously, and exclusively belong to Group A. Every item in Group B must clearly, unambiguously, and exclusively belong to Group B. There must be zero overlap or ambiguity between the two categories.",
+    "CRITICAL CONTENT WORD RULE: Every item MUST be a meaningful vocabulary word (noun, verb, adjective) fitting the category. NEVER use generic articles, pronouns, or prepositions (e.g. 'the', 'a', 'in', 'to', 'it') as category items.",
+    "If the provided lesson words are insufficient to form two clean, balanced 3-item categories, introduce familiar, level-appropriate target-language words to complete the categories naturally.",
+    "For grammar, group distinct forms or structures (e.g. 'Verbos en pasado' vs 'Verbos en presente', 'Singular' vs 'Plural').",
+    "For vocabulary, group distinct semantic fields or contexts (e.g. 'Frutas' vs 'Verduras', 'Ropa' vs 'Muebles', 'Familia' vs 'Trabajos').",
+    "ANTI-SPOILER RULE: Never put the item words or category answers inside the instruction. The instruction must only ask the learner to sort every word into its matching group.",
   ],
   morphology_forge: [
     "Put ___ where the forged word belongs in sentence.",
-    "pieces contains the correct pieces plus 2 plausible distractor pieces.",
-    "answerPieces gives exactly 2 or 3 morpheme pieces in order; never use a complete word as one answer piece.",
-    "pieces must be reusable-looking stems, prefixes, suffixes, or endings—not a list of complete conjugated words.",
-    "instruction must only ask the learner to tap pieces to build the missing word.",
+    "sentence MUST be a natural, complete sentence in the target language containing exactly one '___' placeholder.",
+    "answerWord is the single correct word that fills the '___' blank.",
+    "answerPieces gives exactly 2 or 3 morpheme pieces in order that assemble directly into answerWord (e.g., ['escrib', 'ió'] for 'escribió' or ['re', 'organiz', 'ar'] for 'reorganizar'); never use a complete word as one answer piece.",
+    "pieces contains all elements of answerPieces PLUS 2 or 3 plausible distractor pieces (prefixes, stems, suffixes, or endings).",
+    "pieces must be authentic morphemes (stems, roots, prefixes, suffixes, endings)—not complete words.",
+    "ANTI-SPOILER RULE: Never include the target answerWord or solution morphemes inside learner-facing instructions, hints, or support text.",
+    "instruction must be a concise general prompt in the support language asking the learner to build the missing word.",
   ],
   three_clue_mystery: [
-    "Create exactly 3 clues, ordered from subtle to obvious.",
-    "The answer is one useful target-language word or short lexical phrase.",
-    "example uses the answer naturally but is only revealed after grading.",
-    "instruction may ask the learner to reveal clues and type a guess.",
+    "Create exactly 3 short, engaging clues in the learner's support language, ordered from subtle/conceptual to specific.",
+    "Clue 1: A subtle, clever contextual description or broad clue that requires deductive thought.",
+    "Clue 2: A more direct descriptive characteristic, usage, or context.",
+    "Clue 3: An unmistakable description or obvious giveaway.",
+    "The answer is a single target-language word or concise lexical item appropriate to the lesson level.",
+    "acceptableAnswers may contain common spelling/accent variants, synonyms, or base forms in the target language.",
+    "example MUST be a complete, natural sentence in the target language demonstrating the answer word naturally.",
+    "ANTI-SPOILER RULE: Never include or leak the target answer word inside the clues, instruction, or hint text.",
+    "instruction must be a concise general prompt in the support language asking the learner to deduce the mystery word.",
   ],
   listen_difference: [
     "Create two short target-language options that differ by one meaningful sound, ending, word, or agreement feature.",
@@ -225,6 +244,76 @@ export function parseDelightQuestion(raw = "") {
   }
 }
 
+export function parsePartialDelightQuestion(buffer = "") {
+  if (!buffer || typeof buffer !== "string") return null;
+  const result = {};
+
+  const matchField = (field) => {
+    const m = buffer.match(
+      new RegExp(`"${field}"\\s*:\\s*"([^"\\\\]*(?:\\\\.[^"\\\\]*)*)"`),
+    );
+    return m ? m[1] : undefined;
+  };
+
+  const matchNumber = (field) => {
+    const m = buffer.match(new RegExp(`"${field}"\\s*:\\s*(\\d+)`));
+    return m ? Number(m[1]) : undefined;
+  };
+
+  const matchArray = (field) => {
+    const m = buffer.match(new RegExp(`"${field}"\\s*:\\s*\\[([^\\]]*)\\]?`));
+    if (!m) return undefined;
+    const items = [];
+    const itemRegex = /"([^"\\]*(?:\\.[^"\\]*)*)"/g;
+    let itemMatch;
+    while ((itemMatch = itemRegex.exec(m[1])) !== null) {
+      items.push(itemMatch[1]);
+    }
+    return items.length ? items : undefined;
+  };
+
+  const instruction = matchField("instruction");
+  if (instruction) result.instruction = instruction;
+
+  const sentence = matchField("sentence");
+  if (sentence) result.sentence = sentence;
+
+  const tokens = matchArray("tokens");
+  if (tokens) result.tokens = tokens;
+
+  const wrongToken = matchField("wrongToken");
+  if (wrongToken) result.wrongToken = wrongToken;
+
+  const incorrectIndex = matchNumber("incorrectIndex");
+  if (incorrectIndex !== undefined) result.incorrectIndex = incorrectIndex;
+
+  const replacements = matchArray("replacements");
+  if (replacements) result.replacements = replacements;
+
+  const speaker = matchField("speaker");
+  if (speaker) result.speaker = speaker;
+
+  const line = matchField("line");
+  if (line) result.line = line;
+
+  const options = matchArray("options");
+  if (options) result.options = options;
+
+  const reaction = matchField("reaction");
+  if (reaction) result.reaction = reaction;
+
+  const answer = matchField("answer");
+  if (answer) result.answer = answer;
+
+  const hint = matchField("hint");
+  if (hint) result.hint = hint;
+
+  const explanation = matchField("explanation");
+  if (explanation) result.explanation = explanation;
+
+  return Object.keys(result).length ? result : null;
+}
+
 function stringList(value, limit = 12) {
   return Array.isArray(value)
     ? value
@@ -250,6 +339,7 @@ export function normalizeDelightQuestion(variant, raw) {
     const incorrectIndex = Number(source.incorrectIndex);
     const answer = String(source.answer || "").trim();
     const slotType = String(source.slotType || "").trim().toLowerCase();
+    const cueTokens = stringList(source.cueTokens, 8);
     const joiner = source.joiner === "" ? "" : " ";
     const sentence = tokens.join(joiner);
     const correctedTokens = [...tokens];
@@ -285,6 +375,16 @@ export function normalizeDelightQuestion(variant, raw) {
       !["noun", "verb", "adjective", "adverb", "other"].includes(slotType) ||
       !String(source.hint || "").trim() ||
       !String(source.explanation || "").trim() ||
+      !cueTokens.length ||
+      cueTokens.some(
+        (cueToken) =>
+          !tokens.some(
+            (token) =>
+              normalizeDelightText(token) === normalizeDelightText(cueToken),
+          ),
+      ) ||
+      !String(source.errorEvidence || "").trim() ||
+      !String(source.repairEvidence || "").trim() ||
       !String(source.errorCategory || "").trim() ||
       !String(source.targetSkill || "").trim() ||
       !String(source.sourceEvidence || "").trim()
@@ -301,6 +401,9 @@ export function normalizeDelightQuestion(variant, raw) {
       replacements,
       answer,
       slotType,
+      cueTokens,
+      errorEvidence: String(source.errorEvidence).trim(),
+      repairEvidence: String(source.repairEvidence).trim(),
       errorCategory: String(source.errorCategory).trim(),
       targetSkill: String(source.targetSkill).trim(),
       sourceEvidence: String(source.sourceEvidence || "").trim(),
@@ -475,6 +578,7 @@ export function buildDelightQuestionPrompt({
     moduleFocus,
     `Write learner-facing instructions, hints, category labels, constraints, speaker labels, and explanations in ${support}.`,
     `Write sentences, answer options, cue words, word pieces, and dialogue utterances in ${target}, except when a short ${support} context is pedagogically necessary.`,
+    `ANTI-SPOILER RULE: Never include the target-language answer word or solution inside learner-facing instructions, hints, or constraints in ${support}. Describe transformation rules or semantic changes conceptually in ${support}.`,
     "Keep the interaction compact, natural, culturally neutral, and suitable for a mobile card.",
     "There must be exactly one defensible grading outcome unless the schema explicitly allows acceptableAnswers.",
     "Do not use markdown. Return one JSON object only.",
@@ -520,8 +624,13 @@ export function buildSentenceDetectivePrompt({
         "Do not use factual plausibility, stereotypes, common behavior, or world knowledge to make a token seem wrong.",
         "Keep all non-target vocabulary familiar so vocabulary knowledge is not the grading distinction.",
       ]
-    : [
-        "The original sentence must remain grammatically well formed but contain one contextually incompatible lexical token.",
+      : [
+        "First create a completely natural corrected sentence with an explicit local meaning cue. Then replace exactly one content word or phrase to create the original broken sentence.",
+        "The original sentence must remain grammatically well formed but be clearly semantically false, self-contradictory, or incoherent because wrongToken directly conflicts with that explicit local cue.",
+        "If a fluent speaker could naturally say the original in any ordinary interpretation, the draft is invalid. Do not rely on a preferred interpretation when a natural one exists.",
+        "cueTokens must quote one or more exact tokens from sentence that prove the conflict without requiring an imagined situation or unstated fact.",
+        "General greetings such as hello, hi, hola, or bonjour are compatible with time-specific greetings. Never mark a general greeting wrong merely because good morning, good afternoon, or good evening also appears.",
+        "For greeting lessons, use an explicit situation inside the sentence, such as going to bed versus saying good morning. Do not place two compatible greeting phrases together and pretend one is wrong.",
         "The answer and all distractors must be the same part of speech and must fit the same grammatical slot, including gender, number, inflection, article agreement, and punctuation.",
         "For EVERY noun slot, include the complete determiner+noun phrase as the single replaceable token and in every replacement (for example, 'el libro' / 'la mesa'). Never leave an article or determiner in the preceding token. This is required even when every noun happens to share a gender.",
         "Use a direct definition, function, category, or strong collocation so exactly one option restores the intended meaning.",
@@ -533,8 +642,10 @@ export function buildSentenceDetectivePrompt({
     `Create one production-ready Sentence Detective exercise for a ${cefrLevel} learner of ${target}.`,
     `This is a ${isGrammar ? "GRAMMAR" : "VOCABULARY"} exercise.`,
     ...focusRules,
-    `Write instruction, hint, explanation, errorCategory, and targetSkill in ${support}.`,
+    `Write instruction, hint, explanation, errorEvidence, repairEvidence, errorCategory, and targetSkill in ${support}.`,
     `Write sentence, correctedSentence, tokens, wrongToken, replacements, and answer in ${target}.`,
+    `Do not translate or mix the ${target} exercise content into the ${support} guidance fields. A quoted ${target} token may appear in guidance only when needed to explain the answer.`,
+    `Do not put ${support} translations, glosses, or instructions inside sentence, correctedSentence, tokens, wrongToken, replacements, or answer.`,
     "The learner first taps the single broken token and then chooses its replacement.",
     "Return tokens in exact reading order. sentence MUST equal tokens joined with joiner.",
     'Set joiner to "" only for languages normally written without spaces (such as Chinese or Japanese); otherwise set it to " ".',
@@ -544,6 +655,7 @@ export function buildSentenceDetectivePrompt({
     "Exactly one replacement—the answer—may produce a correct, natural sentence in the supplied context.",
     "wrongToken must exactly equal tokens[incorrectIndex]. incorrectIndex is zero-based.",
     "slotType must classify the replaceable token as noun, verb, adjective, adverb, or other. A determiner+noun phrase is slotType noun.",
+    "cueTokens must contain exact surface tokens copied from tokens. errorEvidence must explain why wrongToken conflicts with those cues; repairEvidence must explain why answer uniquely resolves the conflict.",
     "Keep the sentence concise, culturally neutral, mobile-friendly, and appropriate to the CEFR level.",
     "instruction must only tell the learner to find the incorrect word and replace it; do not reveal the answer or rule.",
     "hint should guide attention without giving the answer. explanation should briefly teach why the answer repairs the sentence.",
@@ -587,16 +699,20 @@ export function buildSentenceDetectiveValidationPrompt({
     "For a noun slot, the complete determiner+noun phrase must be inside the replaceable token and each replacement; a preceding token must not hold the governing determiner.",
     isGrammar
       ? "4. The original and every distractor-substituted sentence are truly ungrammatical. A distractor cannot pass merely because it changes tense, aspect, nuance, or intended meaning. The distinction tests the supplied grammar objective, never factual plausibility or world knowledge."
-      : "4. The original stays grammatical; the distinction is lexical meaning or collocation, and every option is morphologically and syntactically compatible with the slot.",
+      : "4. The original stays grammatical but is unmistakably semantically false, self-contradictory, or incoherent because wrongToken conflicts with the explicit cueTokens. If the original has any ordinary natural interpretation, reject it. The distinction is lexical meaning or collocation, and every option is morphologically and syntactically compatible with the slot.",
+    isGrammar
+      ? ""
+      : "A general greeting (hello/hi/hola/bonjour) naturally coexists with good morning/afternoon/evening. Such co-occurrence is NOT a semantic error and must be rejected.",
     hasLessonScope
       ? "5. The question is directly grounded in the supplied lesson scope, and sourceEvidence accurately identifies that grounding."
       : `5. The question tests a common ${cefrLevel} ${moduleType} skill, and sourceEvidence accurately names that general-practice skill.`,
-    `6. Target-language content is in ${getDelightLanguageName(targetLang)}; learner guidance is in ${getDelightLanguageName(supportLang)}.`,
+    `6. Target-language fields (sentence, correctedSentence, tokens, wrongToken, replacements, and answer) are in ${getDelightLanguageName(targetLang)}; learner-guidance fields (instruction, hint, explanation, errorEvidence, repairEvidence, errorCategory, and targetSkill) are in ${getDelightLanguageName(supportLang)}. Quoted target tokens inside guidance are allowed, but translations, glosses, or mixed-language leakage are not.`,
     "7. The content is culturally neutral, free of stereotypes, and suitable for the CEFR level.",
     `Lesson scope: ${JSON.stringify(lessonScope)}`,
     `Question: ${JSON.stringify(question)}`,
     "For each replacement, explicitly test whether any fluent speaker could accept the complete substituted sentence in the written context. grammarFits means the full sentence has correct morphology, agreement, syntax, tense/aspect compatibility, and punctuation—not merely that it matches the author's preferred reading. meaningFits means it satisfies the sentence's intended lexical context.",
-    'Return JSON only: {"valid":true,"issues":[],"grammarFits":[true,false,false,false],"meaningFits":[true,false,false,false]}. Both boolean arrays must contain exactly four entries in the same order as replacements.',
+    "For vocabulary, actively try to rescue the original with its strongest ordinary interpretation. originalAcceptable must be true if a fluent speaker could say it naturally without treating it as a joke, metaphor, or special scenario. explicitCuePresent is true only when cueTokens alone establish the constraint. wrongTokenConflictsWithCue is true only when the conflict is real, not merely less preferred.",
+    'Return JSON only: {"valid":true,"issues":[],"grammarFits":[true,false,false,false],"meaningFits":[true,false,false,false],"originalAcceptable":false,"correctedAcceptable":true,"explicitCuePresent":true,"wrongTokenConflictsWithCue":true}. Both boolean arrays must contain exactly four entries in the same order as replacements.',
   ].join("\n");
 }
 
@@ -612,6 +728,22 @@ export function parseSentenceDetectiveValidation(raw = "") {
     issues: stringList(source.issues, 8),
     grammarFits: booleanList(source.grammarFits),
     meaningFits: booleanList(source.meaningFits),
+    originalAcceptable:
+      typeof source.originalAcceptable === "boolean"
+        ? source.originalAcceptable
+        : null,
+    correctedAcceptable:
+      typeof source.correctedAcceptable === "boolean"
+        ? source.correctedAcceptable
+        : null,
+    explicitCuePresent:
+      typeof source.explicitCuePresent === "boolean"
+        ? source.explicitCuePresent
+        : null,
+    wrongTokenConflictsWithCue:
+      typeof source.wrongTokenConflictsWithCue === "boolean"
+        ? source.wrongTokenConflictsWithCue
+        : null,
   };
 }
 
@@ -651,6 +783,14 @@ export function sentenceDetectiveAuditPasses(
 
   if (hasDetachedNounDeterminer(question, targetLang)) return false;
 
+  if (
+    validation.originalAcceptable !== false ||
+    validation.correctedAcceptable !== true ||
+    validation.explicitCuePresent !== true ||
+    validation.wrongTokenConflictsWithCue !== true
+  )
+    return false;
+
   return question.replacements.every(
     (replacement, index) =>
       validation.grammarFits[index] &&
@@ -666,7 +806,8 @@ export async function generateSentenceDetectiveQuestion({
   supportLang,
   cefrLevel = "A1",
   lessonContent = null,
-  maxAttempts = 2,
+  maxAttempts = 3,
+  onStream = null,
 }) {
   if (typeof generate !== "function") {
     throw new TypeError("A Sentence Detective generator is required.");
@@ -684,6 +825,7 @@ export async function generateSentenceDetectiveQuestion({
         lessonContent,
         previousIssues,
       }),
+      onStream,
     );
     const question = normalizeDelightQuestion(
       "sentence_detective",
@@ -742,7 +884,11 @@ export async function generateSentenceDetectiveQuestion({
 export function getInitialDelightResponse(question) {
   switch (question?.variant) {
     case "sentence_detective":
-      return { tokenIndex: null, replacement: "" };
+      return {
+        tokenIndex: null,
+        replacement: "",
+        rejectedTokenIndices: [],
+      };
     case "dialogue_fork":
     case "listen_difference":
       return { selectedIndex: null };
@@ -775,11 +921,8 @@ export function gradeDelightResponse(question, response) {
   if (!question || !response) return false;
   switch (question.variant) {
     case "sentence_detective":
-      return (
-        response.tokenIndex === question.incorrectIndex &&
-        normalizeDelightText(response.replacement) ===
-          normalizeDelightText(question.answer)
-      );
+    case "three_word_challenge":
+      return null;
     case "dialogue_fork":
     case "listen_difference":
       return response.selectedIndex === question.answerIndex;
@@ -807,8 +950,6 @@ export function gradeDelightResponse(question, response) {
         .filter(Boolean);
       return accepted.includes(normalizeDelightText(response.text));
     }
-    case "three_word_challenge":
-      return null;
     case "natural_or_weird":
       return response.choice === question.isNatural;
     default:
@@ -840,6 +981,84 @@ export function isDelightResponseReady(question, response) {
     default:
       return false;
   }
+}
+
+export function calculateDelightQuestionXp(question, response, options = {}) {
+  if (!question) return 6;
+  const { revealedClues = 1, isFinalQuiz = false } = options;
+  if (isFinalQuiz) return 0;
+
+  switch (question.variant) {
+    case "sentence_detective": {
+      const rejectedCount = (response?.rejectedTokenIndices || []).length;
+      if (rejectedCount === 0) return 7; // Clean first-try detective solve
+      if (rejectedCount === 1) return 6;
+      return 5;
+    }
+    case "three_clue_mystery": {
+      return Math.max(4, 10 - (revealedClues - 1) * 3);
+    }
+    case "three_word_challenge":
+    case "sentence_shapeshifter": {
+      // Generative sentence construction
+      return 7;
+    }
+    case "word_neighborhoods":
+    case "morphology_forge": {
+      // Multi-element assembly and categorization
+      return 6;
+    }
+    case "dialogue_fork":
+    case "listen_difference":
+    case "natural_or_weird":
+    default: {
+      return 6;
+    }
+  }
+}
+
+export function buildSentenceDetectiveJudgePrompt({
+  question,
+  response,
+  targetLang,
+  supportLang,
+  cefrLevel = "A1",
+  moduleType = "grammar",
+}) {
+  const target = getDelightLanguageName(targetLang);
+  const support = getDelightLanguageName(supportLang);
+  const selectedToken = question.tokens?.[response?.tokenIndex] ?? "";
+  const replacement = response?.replacement ?? "";
+  const previewTokens = [...(question.tokens || [])];
+  if (response?.tokenIndex !== null && response?.tokenIndex !== undefined) {
+    previewTokens[response.tokenIndex] = replacement;
+  }
+  const reconstructed = previewTokens.join(question.joiner || " ");
+
+  return [
+    `Judge a Sentence Detective answer for a ${cefrLevel} learner of ${target}.`,
+    `Focus: ${moduleType === "grammar" ? "Grammar & Syntax" : "Vocabulary & Meaning"}.`,
+    "",
+    "Original Sentence with error:",
+    `"${question.sentence}"`,
+    "",
+    `Target error token: "${question.wrongToken || question.tokens?.[question.incorrectIndex] || ""}"`,
+    `Expected repair: "${question.answer}"`,
+    `Target corrected sentence: "${question.correctedSentence || ""}"`,
+    "",
+    "Learner submission:",
+    `- Identified broken word: "${selectedToken}"`,
+    `- Chosen replacement: "${replacement}"`,
+    `- Reconstructed sentence: "${reconstructed}"`,
+    "",
+    "Grading criteria:",
+    "- Say YES if the learner correctly identified the broken/incorrect word and replaced it with a valid word that makes the sentence grammatically correct, natural, and meaningful.",
+    "- Accept valid alternatives or synonyms that fully repair the sentence in this context.",
+    "- Ignore minor capitalization, punctuation, or missing diacritics.",
+    "- Say NO if the learner selected a word that was already correct, or if the chosen replacement leaves the sentence ungrammatical, awkward, or meaningless.",
+    "",
+    `Use ${support} only internally; reply with ONE word only: YES or NO.`,
+  ].join("\n");
 }
 
 export function buildThreeWordJudgePrompt({
@@ -888,6 +1107,13 @@ export function getDelightFallbackQuestion(variant, moduleType = "grammar") {
         : ["una llave.", "una cuchara.", "una almohada.", "una ventana."],
       answer: grammar ? "fue" : "una llave.",
       slotType: grammar ? "verb" : "noun",
+      cueTokens: grammar ? ["Ayer", "ella"] : ["abrir", "puerta,"],
+      errorEvidence: grammar
+        ? "Ella requires a third-person singular verb form."
+        : "A key, not a spoon, is the object defined by opening a door lock.",
+      repairEvidence: grammar
+        ? "Fue agrees with ella and expresses the completed past action."
+        : "Una llave directly satisfies the explicit door-opening function.",
       errorCategory: grammar
         ? "past-tense subject agreement"
         : "word meaning",

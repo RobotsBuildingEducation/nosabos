@@ -823,8 +823,8 @@ export default function LessonFlashcard({
       player.audio.onerror = cleanup;
       await player.ready;
       setLoadingTts(false);
+      setIsPlayingAudio(true);
       await player.audio.play();
-      setIsPlayingAudio(false);
     } catch {
       stopAnswerAudio();
     }

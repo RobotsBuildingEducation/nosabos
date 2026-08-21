@@ -5,4 +5,14 @@ export const DELIGHT_VARIANT_TEST_GATE = true;
 
 // Work through the new formats one at a time. Keep dormant implementations out
 // of the testing rotation until their generator and UX have been approved.
-export const DELIGHT_VARIANT_TEST_IDS = ["sentence_detective"];
+export const DELIGHT_VARIANT_TEST_IDS = [
+  "sentence_detective",
+  "dialogue_fork",
+  "sentence_shapeshifter",
+  "word_neighborhoods",
+  "morphology_forge",
+  "three_clue_mystery",
+  "listen_difference",
+  "three_word_challenge",
+  "natural_or_weird",
+];

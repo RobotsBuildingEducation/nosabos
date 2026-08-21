@@ -33,15 +33,35 @@ const useFirebaseEmulators =
   import.meta.env.DEV &&
   String(import.meta.env.VITE_USE_FIREBASE_EMULATORS).toLowerCase() === "true";
 
+const configuredDebugToken =
+  import.meta.env.VITE_FIREBASE_APPCHECK_DEBUG_TOKEN ||
+  import.meta.env.VITE_APPCHECK_DEBUG_TOKEN;
+
+const isLiveFunctionsConfigured =
+  typeof import.meta.env.VITE_REALTIME_URL === "string" &&
+  Boolean(import.meta.env.VITE_REALTIME_URL) &&
+  !import.meta.env.VITE_REALTIME_URL.includes("localhost") &&
+  !import.meta.env.VITE_REALTIME_URL.includes("127.0.0.1");
+
+// Initialize App Check whenever we are not using full emulators, or when calling live Cloud Functions
+const shouldInitializeAppCheck = !useFirebaseEmulators || isLiveFunctionsConfigured;
+
 if (
-  !useFirebaseEmulators &&
+  shouldInitializeAppCheck &&
   typeof window !== "undefined" &&
-  APP_CHECK_DEBUG_HOSTNAMES.has(window.location.hostname)
+  (import.meta.env.DEV ||
+    APP_CHECK_DEBUG_HOSTNAMES.has(window.location.hostname) ||
+    window.location.hostname.endsWith(".local") ||
+    /^192\.168\.\d+\.\d+$/.test(window.location.hostname) ||
+    /^10\.\d+\.\d+\.\d+$/.test(window.location.hostname))
 ) {
-  self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+  self.FIREBASE_APPCHECK_DEBUG_TOKEN =
+    configuredDebugToken && String(configuredDebugToken).trim()
+      ? String(configuredDebugToken).trim()
+      : true;
 }
 
-export const appCheck = useFirebaseEmulators
+export const appCheck = !shouldInitializeAppCheck
   ? null
   : initializeAppCheck(app, {
       provider: new ReCaptchaV3Provider(

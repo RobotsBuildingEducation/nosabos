@@ -154,3 +154,22 @@ export const questionAssistantText = {
   accent: "var(--question-assistant-accent)",
   accentStrong: "var(--question-assistant-accent-strong)",
 };
+
+export const questionAssistantMarkdownStyles = {
+  "& p": { mb: 2, unicodeBidi: "plaintext" },
+  "& p:last-child": { mb: 0 },
+  "& strong": {
+    fontWeight: "bold",
+    color: questionAssistantText.accentStrong,
+  },
+  "& em": { fontStyle: "italic" },
+  "& ul, & ol": { pl: 4, mb: 2 },
+  "& li": { mb: 1, unicodeBidi: "plaintext" },
+  "& code": {
+    bg: APP_SURFACE_MUTED,
+    px: 1,
+    py: 0.5,
+    borderRadius: "sm",
+    fontFamily: "mono",
+  },
+};

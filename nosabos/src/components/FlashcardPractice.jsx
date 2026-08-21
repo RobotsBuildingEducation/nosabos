@@ -1028,8 +1028,8 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
 
       await player.ready;
       setLoadingTts(false);
+      setIsPlayingAudio(true);
       await player.audio.play();
-      setIsPlayingAudio(false);
     } catch (error) {
       console.error("TTS error:", error);
       setLoadingTts(false);

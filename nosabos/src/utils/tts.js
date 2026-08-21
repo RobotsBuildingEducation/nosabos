@@ -474,12 +474,6 @@ export function stopTTSPlayback(audio) {
   unregisterActiveTTSPlayer(audio, cleanup);
 
   try {
-    cleanup?.();
-  } catch {
-    // Best-effort media cleanup.
-  }
-
-  try {
     audio.pause?.();
   } catch {
     // Best-effort media cleanup.
@@ -487,6 +481,12 @@ export function stopTTSPlayback(audio) {
 
   try {
     audio.currentTime = 0;
+  } catch {
+    // Best-effort media cleanup.
+  }
+
+  try {
+    cleanup?.();
   } catch {
     // Best-effort media cleanup.
   }
@@ -1146,13 +1146,25 @@ if (typeof window !== "undefined") {
   });
 }
 
+const blobUrlCache = new WeakMap();
+
+function getOrCreateBlobUrl(blob) {
+  if (!blob) return "";
+  let url = blobUrlCache.get(blob);
+  if (!url) {
+    url = URL.createObjectURL(blob);
+    blobUrlCache.set(blob, url);
+  }
+  return url;
+}
+
 function addToCache(cacheKey, blob) {
   memoryCache.set(cacheKey, blob);
   saveToIndexedDB(cacheKey, blob); // async
 }
 
 function createAudioFromBlob(blob, warmAudio = null) {
-  const audioUrl = URL.createObjectURL(blob);
+  const audioUrl = getOrCreateBlobUrl(blob);
   const audio = warmAudio || new Audio();
   try {
     audio.pause?.();
@@ -1173,11 +1185,6 @@ function createAudioFromBlob(blob, warmAudio = null) {
     if (cleanedUp) return;
     cleanedUp = true;
     unregisterActiveTTSPlayer(audio, cleanup);
-    try {
-      URL.revokeObjectURL(audioUrl);
-    } catch {
-      // Object URL may already be gone.
-    }
   };
   registerActiveTTSPlayer(audio, cleanup);
   audio._ttsCleanup = cleanup;
