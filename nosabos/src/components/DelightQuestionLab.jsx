@@ -28,11 +28,13 @@ import {
   FiRefreshCw,
   FiVolume2,
 } from "react-icons/fi";
+import { FaMicrophone, FaStop } from "react-icons/fa";
 import { MdOutlineSupportAgent } from "react-icons/md";
 import ReactMarkdown from "react-markdown";
 import useUserStore from "../hooks/useUserStore";
 import useSoundSettings from "../hooks/useSoundSettings";
 import useNotesStore from "../hooks/useNotesStore";
+import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import FeedbackRail from "./FeedbackRail";
 import VoiceOrb from "./VoiceOrb";
 import XpProgressHeader from "./XpProgressHeader";
@@ -41,9 +43,16 @@ import { simplemodel } from "../firebaseResources/firebaseResources";
 import translations from "../utils/translation";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
 import { awardXp } from "../utils/utils";
+import { captureCompanionMemory } from "../utils/companionMemory";
 import { getLanguageXp } from "../utils/progressTracking";
 import { extractCEFRLevel } from "../utils/cefrUtils";
 import { generateNoteContent, buildNoteObject } from "../utils/noteGeneration";
+import { buildAssistantLanguagePolicy } from "../utils/assistantLanguagePolicy";
+import {
+  getDelightQuizOutcome,
+  normalizeDelightQuizProgress,
+  serializeDelightQuizProgress,
+} from "../utils/delightQuizProgress";
 import {
   DEFAULT_SUPPORT_LANGUAGE,
   DEFAULT_TARGET_LANGUAGE,
@@ -61,31 +70,32 @@ import {
   clickSound,
   deliciousSound,
   submitActionSound,
+  submitSound,
 } from "../constants/sounds";
 import {
   getQuestionAssistantPanelProps,
   getQuestionChoiceCardProps,
   getQuestionChipProps,
-  getQuestionFeedbackPanelProps,
   getQuestionToolButtonProps,
   questionAssistantMarkdownStyles,
   questionAssistantText,
   questionSquircleStyle,
-  questionToneText,
 } from "./questionUiStyles";
 import {
   DELIGHT_VARIANTS,
+  DELIGHT_VARIANT_IDS,
   buildDelightQuestionPrompt,
-  buildSentenceDetectiveJudgePrompt,
-  buildThreeWordJudgePrompt,
+  buildDelightQuestionRepairPrompt,
+  buildDelightResponseJudgePrompt,
   calculateDelightQuestionXp,
   generateSentenceDetectiveQuestion,
-  getDelightFallbackQuestion,
   getDelightLanguageName,
   getInitialDelightResponse,
   gradeDelightResponse,
+  isDelightQuestionLessonGrounded,
   isDelightResponseReady,
   normalizeDelightQuestion,
+  parseDelightJudgeVerdict,
   parsePartialDelightQuestion,
 } from "../utils/delightQuestionVariants";
 import {
@@ -112,19 +122,13 @@ import {
   formatThreeClueMysteryCopy,
   getThreeClueMysteryCopy,
 } from "../utils/threeClueMysteryI18n";
+import { getListenDifferenceCopy } from "../utils/listenDifferenceI18n";
+import { getThreeWordChallengeCopy } from "../utils/threeWordChallengeI18n";
+import { getNaturalOrWeirdCopy } from "../utils/naturalOrWeirdI18n";
 import {
-  formatListenDifferenceCopy,
-  getListenDifferenceCopy,
-} from "../utils/listenDifferenceI18n";
-import {
-  formatThreeWordChallengeCopy,
-  getThreeWordChallengeCopy,
-} from "../utils/threeWordChallengeI18n";
-import {
-  formatNaturalOrWeirdCopy,
-  getNaturalOrWeirdCopy,
-} from "../utils/naturalOrWeirdI18n";
-import { DELIGHT_VARIANT_TEST_IDS } from "../config/delightVariantGate";
+  SOFT_STOP_BUTTON_BG,
+  SOFT_STOP_BUTTON_HOVER_BG,
+} from "../utils/softStopButton";
 
 const APP_SURFACE = "var(--app-surface)";
 const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
@@ -134,11 +138,20 @@ const APP_BORDER_STRONG = "var(--app-border-strong)";
 const APP_TEXT_PRIMARY = "var(--app-text-primary)";
 const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
 const APP_TEXT_MUTED = "var(--app-text-muted)";
-const GATED_VARIANTS = DELIGHT_VARIANT_TEST_IDS.map((testId) =>
-  DELIGHT_VARIANTS.find(({ id }) => id === testId),
+const AVAILABLE_VARIANTS = DELIGHT_VARIANT_IDS.map((variantId) =>
+  DELIGHT_VARIANTS.find(({ id }) => id === variantId),
 ).filter(Boolean);
 const QUESTION_GENERATION_TIMEOUT_MS = 30000;
 const SENTENCE_DETECTIVE_CACHE_VERSION = "semantic-proof-v2";
+const DELIGHT_JSON_GENERATION_CONFIG = {
+  thinkingConfig: { thinkingBudget: 0 },
+  responseMimeType: "application/json",
+};
+const SPEECH_RESPONSE_VARIANTS = new Set([
+  "sentence_shapeshifter",
+  "three_clue_mystery",
+  "three_word_challenge",
+]);
 
 async function settleWithin(promise, timeoutMs) {
   let timeoutId;
@@ -193,6 +206,41 @@ function shuffle(items = []) {
   return result;
 }
 
+function QuestionAssistantButton({
+  label,
+  onAskAssistant,
+  isLoading = false,
+  hasResponse = false,
+}) {
+  if (!onAskAssistant) return null;
+
+  return (
+    <IconButton
+      aria-label={label || "Help"}
+      icon={
+        isLoading ? (
+          <VoiceOrb
+            state={
+              ["idle", "listening", "speaking"][
+                Math.floor(Math.random() * 3)
+              ]
+            }
+            size={16}
+          />
+        ) : (
+          <MdOutlineSupportAgent />
+        )
+      }
+      size="sm"
+      fontSize="lg"
+      rounded="xl"
+      onClick={onAskAssistant}
+      isDisabled={isLoading || hasResponse}
+      {...getQuestionToolButtonProps()}
+    />
+  );
+}
+
 function ChoiceCard({ selected, children, onClick, disabled = false }) {
   return (
     <Box
@@ -234,6 +282,58 @@ function ChoiceCard({ selected, children, onClick, disabled = false }) {
         </Text>
       </HStack>
     </Box>
+  );
+}
+
+function SpeechAnswerButton({
+  onClick,
+  isRecording = false,
+  isConnecting = false,
+  isSupported = false,
+  isDisabled = false,
+  labels = {},
+}) {
+  const label = isConnecting
+    ? labels.connecting || "Connecting…"
+    : isRecording
+      ? labels.stop || "Stop recording"
+      : labels.record || "Record answer";
+
+  return (
+    <IconButton
+      type="button"
+      aria-label={label}
+      title={label}
+      icon={
+        isConnecting ? (
+          <Spinner size="xs" thickness="2px" color="currentColor" />
+        ) : isRecording ? (
+          <FaStop size={16} />
+        ) : (
+          <FaMicrophone size={18} />
+        )
+      }
+      size="lg"
+      minW="54px"
+      minH="54px"
+      flexShrink={0}
+      rounded="xl"
+      colorScheme={isRecording ? undefined : "teal"}
+      variant={isRecording ? "solid" : "outline"}
+      onClick={onClick}
+      isDisabled={isDisabled || isConnecting || !isSupported}
+      {...getQuestionToolButtonProps({
+        active: isRecording || isConnecting,
+      })}
+      bg={isRecording ? SOFT_STOP_BUTTON_BG : undefined}
+      color={isRecording ? "white" : undefined}
+      _hover={
+        isRecording
+          ? { bg: SOFT_STOP_BUTTON_HOVER_BG }
+          : undefined
+      }
+      style={questionSquircleStyle}
+    />
   );
 }
 
@@ -309,7 +409,9 @@ function textFromChunk(chunk) {
     if (cand?.content?.parts?.length) {
       return cand.content.parts.map((p) => p.text || "").join("");
     }
-  } catch {}
+  } catch {
+    // Ignore malformed provider chunks until more text arrives.
+  }
   return "";
 }
 
@@ -411,32 +513,11 @@ function SentenceDetective({
       showIcon={false}
       showDescription={false}
       headerAction={
-        <IconButton
-          aria-label={copy.askForHelp}
-          icon={
-            isLoadingAssistantSupport ? (
-              <VoiceOrb
-                state={
-                  ["idle", "listening", "speaking"][
-                    Math.floor(Math.random() * 3)
-                  ]
-                }
-                size={16}
-              />
-            ) : (
-              <MdOutlineSupportAgent />
-            )
-          }
-          size="sm"
-          fontSize="lg"
-          rounded="xl"
-          onClick={onAskAssistant}
-          isDisabled={
-            isLoadingAssistantSupport ||
-            !!assistantSupportText ||
-            !onAskAssistant
-          }
-          {...getQuestionToolButtonProps()}
+        <QuestionAssistantButton
+          label={copy.askForHelp}
+          onAskAssistant={onAskAssistant}
+          isLoading={isLoadingAssistantSupport}
+          hasResponse={!!assistantSupportText}
         />
       }
     >
@@ -585,6 +666,7 @@ function SentenceDetective({
 }
 
 function SentenceDetectiveSkeleton({
+  streamingQuestion = null,
   copy,
   targetLang = "es",
   supportLang = "en",
@@ -593,6 +675,11 @@ function SentenceDetectiveSkeleton({
   const supportDirection = getLanguageDirection(supportLang, "ltr");
   const guidanceJoiner = ["ja", "zh"].includes(supportLang) ? "" : " ";
   const placeholderWidths = [85, 110, 65, 95, 75, 100];
+  const streamingTokens =
+    streamingQuestion?.tokens ||
+    (streamingQuestion?.sentence
+      ? streamingQuestion.sentence.split(/\s+/).filter(Boolean)
+      : null);
 
   return (
     <VStack
@@ -628,24 +715,33 @@ function SentenceDetectiveSkeleton({
         dir={targetDirection}
         lang={targetLang}
       >
-        {placeholderWidths.map((width, i) => (
-          <WrapItem key={`skel-${i}`}>
-            <Skeleton
-              height="42px"
-              width={`${width}px`}
-              borderRadius="xl"
-              startColor="rgba(128, 90, 213, 0.12)"
-              endColor="rgba(128, 90, 213, 0.28)"
-              style={questionSquircleStyle}
-            />
-          </WrapItem>
-        ))}
+        {streamingTokens && streamingTokens.length > 0
+          ? streamingTokens.map((token, i) => (
+              <WrapItem key={`stream-tok-${i}`}>
+                <Chip disabled status="default">
+                  {token}
+                </Chip>
+              </WrapItem>
+            ))
+          : placeholderWidths.map((width, i) => (
+              <WrapItem key={`skel-${i}`}>
+                <Skeleton
+                  height="44px"
+                  width={`${width}px`}
+                  borderRadius="xl"
+                  startColor="rgba(128, 90, 213, 0.12)"
+                  endColor="rgba(128, 90, 213, 0.28)"
+                  style={questionSquircleStyle}
+                />
+              </WrapItem>
+            ))}
       </Wrap>
     </VStack>
   );
 }
 
 function DialogueForkSkeleton({
+  streamingQuestion = null,
   copy,
   targetLang = "es",
   supportLang = "en",
@@ -688,48 +784,70 @@ function DialogueForkSkeleton({
         lang={targetLang}
         py={1}
       >
-        <Skeleton
-          height="32px"
-          width="32px"
-          borderRadius="full"
+        <IconButton
+          aria-label="Play dialogue audio"
+          icon={<FiVolume2 />}
+          size="sm"
+          variant="ghost"
+          rounded="full"
+          color="var(--question-assistant-accent-strong)"
+          isDisabled
           flexShrink={0}
-          startColor="rgba(128, 90, 213, 0.12)"
-          endColor="rgba(128, 90, 213, 0.28)"
         />
-        <Skeleton
-          height="24px"
-          width="240px"
-          borderRadius="md"
-          startColor="rgba(128, 90, 213, 0.12)"
-          endColor="rgba(128, 90, 213, 0.28)"
-        />
-      </HStack>
-
-      {/* 4 Option Card Skeletons */}
-      <VStack spacing={3} align="stretch" dir={targetDirection} lang={targetLang}>
-        {[1, 2, 3, 4].map((i) => (
+        {streamingQuestion?.line ? (
+          <Text
+            color={APP_TEXT_PRIMARY}
+            fontSize="xl"
+            fontWeight="semibold"
+          >
+            {streamingQuestion.line}
+          </Text>
+        ) : (
           <Skeleton
-            key={`dialogue-skel-opt-${i}`}
-            height="52px"
-            width="100%"
-            borderRadius="xl"
+            height="24px"
+            width="240px"
+            borderRadius="md"
             startColor="rgba(128, 90, 213, 0.12)"
             endColor="rgba(128, 90, 213, 0.28)"
-            style={questionSquircleStyle}
           />
-        ))}
+        )}
+      </HStack>
+
+      {/* 4 Option Cards */}
+      <VStack spacing={3} align="stretch" dir={targetDirection} lang={targetLang}>
+        {[0, 1, 2, 3].map((i) => {
+          const opt = streamingQuestion?.options?.[i];
+          return opt ? (
+            <ChoiceCard key={`dialogue-opt-${i}`} disabled selected={false}>
+              {opt}
+            </ChoiceCard>
+          ) : (
+            <Skeleton
+              key={`dialogue-skel-opt-${i}`}
+              height="52px"
+              width="100%"
+              borderRadius="xl"
+              startColor="rgba(128, 90, 213, 0.12)"
+              endColor="rgba(128, 90, 213, 0.28)"
+              style={questionSquircleStyle}
+            />
+          );
+        })}
       </VStack>
     </VStack>
   );
 }
 
 function SentenceShapeshifterSkeleton({
+  streamingQuestion = null,
   copy,
   targetLang = "es",
   supportLang = "en",
 }) {
   const targetDirection = getLanguageDirection(targetLang, "ltr");
   const supportDirection = getLanguageDirection(supportLang, "ltr");
+  const sentenceText =
+    streamingQuestion?.source || streamingQuestion?.sentence;
 
   return (
     <VStack
@@ -758,7 +876,7 @@ function SentenceShapeshifterSkeleton({
         </Text>
       </Box>
 
-      {/* Source Sentence Box Skeleton */}
+      {/* Source Sentence Card with left-aligned TTS */}
       <Box
         p={4}
         bg={APP_SURFACE_MUTED}
@@ -767,37 +885,66 @@ function SentenceShapeshifterSkeleton({
         borderRadius="xl"
         style={questionSquircleStyle}
       >
-        <HStack spacing={3} align="center" dir={targetDirection} lang={targetLang}>
-          <Skeleton
-            height="32px"
-            width="32px"
-            borderRadius="full"
+        <HStack
+          spacing={3}
+          align="center"
+          dir={targetDirection}
+          lang={targetLang}
+        >
+          <IconButton
+            aria-label="Play source sentence audio"
+            icon={<FiVolume2 />}
+            size="sm"
+            variant="ghost"
+            rounded="full"
+            color="var(--question-assistant-accent-strong)"
+            isDisabled
             flexShrink={0}
-            startColor="rgba(128, 90, 213, 0.12)"
-            endColor="rgba(128, 90, 213, 0.28)"
           />
-          <Skeleton
-            height="24px"
-            width="220px"
-            borderRadius="md"
-            startColor="rgba(128, 90, 213, 0.12)"
-            endColor="rgba(128, 90, 213, 0.28)"
-          />
+          {sentenceText ? (
+            <Text
+              color={APP_TEXT_PRIMARY}
+              fontSize="lg"
+              fontWeight="semibold"
+            >
+              {sentenceText}
+            </Text>
+          ) : (
+            <Skeleton
+              height="24px"
+              width="220px"
+              borderRadius="md"
+              startColor="rgba(128, 90, 213, 0.12)"
+              endColor="rgba(128, 90, 213, 0.28)"
+            />
+          )}
         </HStack>
       </Box>
 
-      {/* Constraint Arrow + Text Skeleton */}
+      {/* Transformation Rule Text */}
       <HStack justify="center" align="center" spacing={2} maxW="100%" px={2}>
         <Text fontSize="md" color={APP_TEXT_SECONDARY} fontWeight="bold" flexShrink={0}>
           ↓
         </Text>
-        <Skeleton
-          height="18px"
-          width="160px"
-          borderRadius="md"
-          startColor="rgba(128, 90, 213, 0.12)"
-          endColor="rgba(128, 90, 213, 0.28)"
-        />
+        {streamingQuestion?.constraint ? (
+          <Text
+            color={APP_TEXT_SECONDARY}
+            fontSize="sm"
+            fontWeight="medium"
+            textAlign="center"
+            noOfLines={2}
+          >
+            {streamingQuestion.constraint}
+          </Text>
+        ) : (
+          <Skeleton
+            height="18px"
+            width="160px"
+            borderRadius="md"
+            startColor="rgba(128, 90, 213, 0.12)"
+            endColor="rgba(128, 90, 213, 0.28)"
+          />
+        )}
       </HStack>
 
       {/* Input Box Skeleton */}
@@ -814,10 +961,15 @@ function SentenceShapeshifterSkeleton({
 }
 
 function WordNeighborhoodsSkeleton({
+  streamingQuestion = null,
   copy,
+  targetLang = "es",
   supportLang = "en",
 }) {
+  const targetDirection = getLanguageDirection(targetLang, "ltr");
   const supportDirection = getLanguageDirection(supportLang, "ltr");
+  const groups = streamingQuestion?.groups || [];
+  const streamingItems = groups.flatMap((g) => g.items || []);
 
   return (
     <VStack
@@ -846,7 +998,7 @@ function WordNeighborhoodsSkeleton({
         </Text>
       </Box>
 
-      {/* Word bank skeleton */}
+      {/* Word Bank */}
       <Box
         minH="86px"
         p={4}
@@ -857,62 +1009,137 @@ function WordNeighborhoodsSkeleton({
         borderRadius="xl"
         style={questionSquircleStyle}
       >
-        <Wrap spacing={2.5}>
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <WrapItem key={`word-bank-skel-${i}`}>
-              <Skeleton
-                height="38px"
-                width="76px"
-                borderRadius="lg"
-                startColor="rgba(128, 90, 213, 0.12)"
-                endColor="rgba(128, 90, 213, 0.28)"
-                style={questionSquircleStyle}
-              />
-            </WrapItem>
-          ))}
+        <Wrap spacing={2.5} justify="center" dir={targetDirection} lang={targetLang}>
+          {streamingItems.length > 0
+            ? streamingItems.map((item, i) => (
+                <WrapItem key={`stream-wn-item-${i}`}>
+                  <Box
+                    style={questionSquircleStyle}
+                    px={3.5}
+                    py={2}
+                    borderRadius="lg"
+                    fontSize="md"
+                    fontWeight="semibold"
+                    borderWidth="1.5px"
+                    borderColor={APP_BORDER}
+                    bg={APP_SURFACE_ELEVATED}
+                    color={APP_TEXT_PRIMARY}
+                    boxShadow="sm"
+                  >
+                    {item}
+                  </Box>
+                </WrapItem>
+              ))
+            : [1, 2, 3, 4, 5, 6].map((i) => (
+                <WrapItem key={`word-bank-skel-${i}`}>
+                  <Skeleton
+                    height="38px"
+                    width="76px"
+                    borderRadius="lg"
+                    startColor="rgba(128, 90, 213, 0.12)"
+                    endColor="rgba(128, 90, 213, 0.28)"
+                    style={questionSquircleStyle}
+                  />
+                </WrapItem>
+              ))}
         </Wrap>
       </Box>
 
-      {/* 2 Column Group Skeletons */}
+      {/* 2 Column Group Cards */}
       <SimpleGrid columns={{ base: 1, sm: 2 }} spacing={3.5}>
-        {[1, 2].map((i) => (
-          <Box
-            key={`word-group-skel-${i}`}
-            minH="150px"
-            p={4}
-            borderWidth="2px"
-            borderColor={APP_BORDER}
-            bg={APP_SURFACE_ELEVATED}
-            borderRadius="xl"
-            style={questionSquircleStyle}
-          >
-            <Box mb={3}>
-              <Skeleton height="20px" width="110px" borderRadius="md" />
+        {[0, 1].map((i) => {
+          const grp = groups[i];
+          return (
+            <Box
+              key={`word-group-skel-${i}`}
+              minH="150px"
+              p={4}
+              borderWidth="2px"
+              borderColor={APP_BORDER}
+              bg={APP_SURFACE_ELEVATED}
+              borderRadius="xl"
+              style={questionSquircleStyle}
+              textAlign="left"
+            >
+              {grp?.label ? (
+                <Text fontWeight="800" fontSize="md" color={APP_TEXT_PRIMARY} mb={3}>
+                  {grp.label}
+                </Text>
+              ) : (
+                <Box mb={3}>
+                  <Skeleton height="20px" width="110px" borderRadius="md" />
+                </Box>
+              )}
+              <Wrap spacing={2} dir={targetDirection} lang={targetLang}>
+                {grp?.items?.length ? (
+                  grp.items.map((it, idx) => (
+                    <WrapItem key={`grp-${i}-it-${idx}`}>
+                      <Box
+                        style={questionSquircleStyle}
+                        px={3}
+                        py={1.5}
+                        borderRadius="lg"
+                        fontSize="sm"
+                        fontWeight="medium"
+                        borderWidth="1px"
+                        borderColor={APP_BORDER}
+                        bg={APP_SURFACE_MUTED}
+                        color={APP_TEXT_PRIMARY}
+                      >
+                        {it}
+                      </Box>
+                    </WrapItem>
+                  ))
+                ) : (
+                  <>
+                    <Skeleton height="32px" width="68px" borderRadius="lg" />
+                    <Skeleton height="32px" width="80px" borderRadius="lg" />
+                  </>
+                )}
+              </Wrap>
             </Box>
-            <Wrap spacing={2}>
-              <Skeleton height="32px" width="68px" borderRadius="lg" />
-              <Skeleton height="32px" width="80px" borderRadius="lg" />
-            </Wrap>
-          </Box>
-        ))}
+          );
+        })}
       </SimpleGrid>
     </VStack>
   );
 }
 
-function MorphologyForgeSkeleton() {
-  return (
-    <VStack spacing={5} align="stretch">
-      {/* Header skeleton */}
-      <HStack justify="space-between" align="center">
-        <VStack align="flex-start" spacing={1.5}>
-          <Skeleton height="28px" width="200px" borderRadius="md" />
-          <Skeleton height="16px" width="280px" borderRadius="md" />
-        </VStack>
-        <Skeleton height="36px" width="36px" borderRadius="xl" />
-      </HStack>
+function MorphologyForgeSkeleton({
+  streamingQuestion = null,
+  copy,
+  targetLang = "es",
+  supportLang = "en",
+}) {
+  const targetDirection = getLanguageDirection(targetLang, "ltr");
+  const supportDirection = getLanguageDirection(supportLang, "ltr");
+  const pieces = streamingQuestion?.pieces || [];
+  const sentence = streamingQuestion?.sentence || "";
 
-      {/* Sentence context box skeleton */}
+  return (
+    <VStack spacing={5} align="stretch" lang={supportLang} dir={supportDirection}>
+      {/* Header */}
+      <Box>
+        <HStack spacing={2} mb={1} justify="space-between">
+          <Text fontSize="xl" fontWeight="800" color={APP_TEXT_PRIMARY}>
+            {copy?.title || "Morphology Forge"}
+          </Text>
+          <IconButton
+            aria-label={copy?.askForHelp || "Help"}
+            icon={<MdOutlineSupportAgent />}
+            size="sm"
+            fontSize="lg"
+            rounded="xl"
+            isDisabled
+            {...getQuestionToolButtonProps()}
+          />
+        </HStack>
+        <Text fontSize="sm" color={APP_TEXT_SECONDARY} fontWeight="normal">
+          {copy?.instruction || "Build the missing word from meaningful morphemes."}
+        </Text>
+      </Box>
+
+      {/* Context Sentence Card */}
       <Box
         p={5}
         borderWidth="1.5px"
@@ -920,11 +1147,25 @@ function MorphologyForgeSkeleton() {
         bg={APP_SURFACE_ELEVATED}
         borderRadius="xl"
         style={questionSquircleStyle}
+        textAlign="center"
+        dir={targetDirection}
+        lang={targetLang}
       >
-        <Skeleton height="24px" width="85%" borderRadius="md" mx="auto" />
+        {sentence ? (
+          <Text
+            fontSize={{ base: "lg", md: "xl" }}
+            fontWeight="semibold"
+            color={APP_TEXT_PRIMARY}
+            lineHeight="tall"
+          >
+            {sentence}
+          </Text>
+        ) : (
+          <Skeleton height="24px" width="85%" borderRadius="md" mx="auto" />
+        )}
       </Box>
 
-      {/* Forge Slot Box Skeleton */}
+      {/* Forge Slot Box */}
       <Box
         minH="88px"
         p={4}
@@ -938,27 +1179,17 @@ function MorphologyForgeSkeleton() {
         alignItems="center"
         justifyContent="center"
       >
-        <HStack spacing={2}>
-          <Skeleton
-            height="40px"
-            width="75px"
-            borderRadius="lg"
-            startColor="rgba(128, 90, 213, 0.12)"
-            endColor="rgba(128, 90, 213, 0.28)"
-            style={questionSquircleStyle}
-          />
-          <Skeleton
-            height="40px"
-            width="65px"
-            borderRadius="lg"
-            startColor="rgba(128, 90, 213, 0.12)"
-            endColor="rgba(128, 90, 213, 0.28)"
-            style={questionSquircleStyle}
-          />
-        </HStack>
+        <Text
+          fontSize="xs"
+          color={APP_TEXT_SECONDARY}
+          fontStyle="italic"
+          py={2}
+        >
+          {copy?.emptyForge || "Drag or tap pieces below to forge the missing word"}
+        </Text>
       </Box>
 
-      {/* Available Pieces Bank Skeleton */}
+      {/* Available Pieces Bank */}
       <Box
         p={4}
         borderWidth="1.5px"
@@ -967,195 +1198,416 @@ function MorphologyForgeSkeleton() {
         borderRadius="xl"
         style={questionSquircleStyle}
       >
-        <Wrap spacing={2.5} justify="center">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <WrapItem key={`forge-piece-skel-${i}`}>
-              <Skeleton
-                height="38px"
-                width="72px"
-                borderRadius="lg"
-                startColor="rgba(128, 90, 213, 0.12)"
-                endColor="rgba(128, 90, 213, 0.28)"
-                style={questionSquircleStyle}
-              />
-            </WrapItem>
-          ))}
+        <Wrap spacing={2.5} justify="center" dir={targetDirection} lang={targetLang}>
+          {pieces.length > 0
+            ? pieces.map((piece, i) => (
+                <WrapItem key={`stream-piece-${i}`}>
+                  <Box
+                    style={questionSquircleStyle}
+                    px={3.5}
+                    py={2}
+                    borderRadius="lg"
+                    fontSize="md"
+                    fontWeight="semibold"
+                    borderWidth="1.5px"
+                    borderColor={APP_BORDER}
+                    bg={APP_SURFACE_MUTED}
+                    color={APP_TEXT_PRIMARY}
+                    boxShadow="sm"
+                  >
+                    {piece}
+                  </Box>
+                </WrapItem>
+              ))
+            : [1, 2, 3, 4, 5].map((i) => (
+                <WrapItem key={`forge-piece-skel-${i}`}>
+                  <Skeleton
+                    height="38px"
+                    width="72px"
+                    borderRadius="lg"
+                    startColor="rgba(128, 90, 213, 0.12)"
+                    endColor="rgba(128, 90, 213, 0.28)"
+                    style={questionSquircleStyle}
+                  />
+                </WrapItem>
+              ))}
         </Wrap>
       </Box>
     </VStack>
   );
 }
 
-function ThreeClueMysterySkeleton() {
-  return (
-    <VStack spacing={5} align="stretch">
-      {/* Header skeleton */}
-      <HStack justify="space-between" align="center">
-        <VStack align="flex-start" spacing={1.5}>
-          <Skeleton height="28px" width="210px" borderRadius="md" />
-          <Skeleton height="16px" width="300px" borderRadius="md" />
-        </VStack>
-        <Skeleton height="36px" width="36px" borderRadius="xl" />
-      </HStack>
+function ThreeClueMysterySkeleton({
+  streamingQuestion = null,
+  copy,
+  targetLang = "es",
+  supportLang = "en",
+}) {
+  const supportDirection = getLanguageDirection(supportLang, "ltr");
+  const targetDirection = getLanguageDirection(targetLang, "ltr");
+  const clues = streamingQuestion?.clues || [];
+  const firstClue = clues[0] || "";
 
-      {/* Clues Card Skeleton */}
+  return (
+    <VStack spacing={5} align="stretch" lang={supportLang} dir={supportDirection}>
+      {/* Header */}
+      <Box>
+        <HStack spacing={2} mb={1} justify="space-between">
+          <Text fontSize="xl" fontWeight="800" color={APP_TEXT_PRIMARY}>
+            {copy?.title || "Three-Clue Mystery"}
+          </Text>
+          <IconButton
+            aria-label={copy?.askForHelp || "Help"}
+            icon={<MdOutlineSupportAgent />}
+            size="sm"
+            fontSize="lg"
+            rounded="xl"
+            isDisabled
+            {...getQuestionToolButtonProps()}
+          />
+        </HStack>
+        <Text fontSize="sm" color={APP_TEXT_SECONDARY} fontWeight="normal">
+          {copy?.instruction || "Deduce the mystery word using as few clues as possible."}
+        </Text>
+      </Box>
+
+      {/* Clues Card Stack: Strictly show only Clue 1 during loading to prevent spoilers */}
       <VStack spacing={3} align="stretch">
         <Box
           p={4}
           borderWidth="1.5px"
-          borderColor={APP_BORDER}
+          borderColor="purple.400"
           bg={APP_SURFACE_ELEVATED}
           borderRadius="xl"
           style={questionSquircleStyle}
+          boxShadow="0 2px 10px rgba(128, 90, 213, 0.12)"
         >
           <HStack spacing={3} align="flex-start">
-            <Skeleton height="22px" width="60px" borderRadius="full" />
-            <Skeleton height="20px" width="75%" borderRadius="md" />
+            <Badge
+              colorScheme="purple"
+              variant="solid"
+              borderRadius="full"
+              px={2.5}
+              py={0.5}
+              fontSize="xs"
+              fontWeight="bold"
+              textTransform="none"
+              flexShrink={0}
+            >
+              {formatThreeClueMysteryCopy(copy?.clueBadge || "Clue {index}", {
+                index: 1,
+              })}
+            </Badge>
+            {firstClue ? (
+              <Text
+                fontSize={{ base: "sm", md: "md" }}
+                color={APP_TEXT_PRIMARY}
+                fontWeight="medium"
+                lineHeight="tall"
+              >
+                {firstClue}
+              </Text>
+            ) : (
+              <Skeleton height="20px" width="75%" borderRadius="md" />
+            )}
           </HStack>
         </Box>
       </VStack>
 
-      {/* Reveal Button / Potential XP Skeleton */}
-      <HStack justify="space-between" align="center" px={1}>
-        <Skeleton height="24px" width="130px" borderRadius="full" />
-        <Skeleton height="32px" width="140px" borderRadius="lg" />
+      {/* Clue Control Row: Live XP Badge & Reveal Action */}
+      <HStack justify="space-between" align="center" flexWrap="wrap" gap={2} px={1}>
+        <Text
+          fontSize="xs"
+          fontWeight="semibold"
+          color="purple.500"
+          bg="rgba(128, 90, 213, 0.08)"
+          px={3}
+          py={1}
+          borderRadius="full"
+        >
+          {formatThreeClueMysteryCopy(copy?.potentialXp || "+{xp} XP", {
+            xp: 10,
+          })}
+        </Text>
+        <Button
+          size="sm"
+          variant="ghost"
+          colorScheme="purple"
+          isDisabled
+          style={questionSquircleStyle}
+        >
+          {copy?.revealNext || "Reveal next clue"}
+        </Button>
       </HStack>
 
-      {/* Input Skeleton */}
-      <Skeleton
-        height="54px"
-        width="100%"
-        borderRadius="xl"
-        style={questionSquircleStyle}
-      />
+      {/* Target Word Input Field Skeleton */}
+      <Box>
+        <Input
+          value=""
+          isDisabled
+          placeholder={copy?.inputPlaceholder || "Type your answer…"}
+          size="lg"
+          variant="filled"
+          borderRadius="xl"
+          bg={APP_SURFACE_MUTED}
+          borderColor={APP_BORDER}
+          dir={targetDirection}
+          lang={targetLang}
+          style={questionSquircleStyle}
+        />
+      </Box>
     </VStack>
   );
 }
 
-function ListenDifferenceSkeleton() {
+function ListenDifferenceSkeleton({
+  streamingQuestion = null,
+  copy,
+  targetLang = "es",
+  supportLang = "en",
+}) {
+  const targetDirection = getLanguageDirection(targetLang, "ltr");
+  const supportDirection = getLanguageDirection(supportLang, "ltr");
+  const options = streamingQuestion?.options || [];
+
   return (
-    <VStack spacing={5} align="stretch">
-      {/* Header Skeleton */}
-      <HStack justify="space-between" align="center">
-        <VStack align="flex-start" spacing={1}>
-          <Skeleton height="28px" width="220px" borderRadius="md" />
-          <Skeleton height="16px" width="310px" borderRadius="md" />
-        </VStack>
-        <Skeleton height="36px" width="36px" borderRadius="xl" />
-      </HStack>
+    <VStack spacing={5} align="stretch" lang={supportLang} dir={supportDirection}>
+      {/* Header */}
+      <Box>
+        <HStack spacing={2} mb={1} justify="space-between">
+          <Text fontSize="xl" fontWeight="800" color={APP_TEXT_PRIMARY}>
+            {copy?.title || "Listen for the Difference"}
+          </Text>
+          <IconButton
+            aria-label={copy?.askForHelp || "Help"}
+            icon={<MdOutlineSupportAgent />}
+            size="sm"
+            fontSize="lg"
+            rounded="xl"
+            isDisabled
+            {...getQuestionToolButtonProps()}
+          />
+        </HStack>
+        <Text fontSize="sm" color={APP_TEXT_SECONDARY} fontWeight="normal">
+          {copy?.instruction || "Listen carefully. Which sentence did you hear?"}
+        </Text>
+      </Box>
 
-      {/* Prominent Play Audio Button Skeleton */}
-      <Skeleton
-        height="56px"
-        width="100%"
-        borderRadius="xl"
+      {/* Prominent Play Audio Button */}
+      <Button
+        leftIcon={<FiVolume2 size={22} />}
+        size="lg"
+        py={7}
+        isDisabled
+        {...getQuestionToolButtonProps({ active: false })}
         style={questionSquircleStyle}
-      />
+        fontSize="md"
+        fontWeight="semibold"
+        boxShadow="0 2px 12px rgba(128, 90, 213, 0.15)"
+      >
+        {copy?.playAudio || "Play audio"}
+      </Button>
 
-      {/* Choice Option Cards Skeleton */}
-      <VStack spacing={3} align="stretch">
-        <Skeleton
-          height="54px"
-          width="100%"
-          borderRadius="xl"
-          style={questionSquircleStyle}
-        />
-        <Skeleton
-          height="54px"
-          width="100%"
-          borderRadius="xl"
-          style={questionSquircleStyle}
-        />
+      {/* Options Cards */}
+      <VStack spacing={3} align="stretch" dir={targetDirection} lang={targetLang}>
+        {[0, 1].map((i) => {
+          const opt = options[i];
+          return opt ? (
+            <ChoiceCard key={`stream-ld-opt-${i}`} disabled selected={false}>
+              {opt}
+            </ChoiceCard>
+          ) : (
+            <Skeleton
+              key={`ld-skel-${i}`}
+              height="54px"
+              width="100%"
+              borderRadius="xl"
+              startColor="rgba(128, 90, 213, 0.12)"
+              endColor="rgba(128, 90, 213, 0.28)"
+              style={questionSquircleStyle}
+            />
+          );
+        })}
       </VStack>
     </VStack>
   );
 }
 
-function ThreeWordChallengeSkeleton() {
-  return (
-    <VStack spacing={5} align="stretch">
-      {/* Header Skeleton */}
-      <HStack justify="space-between" align="center">
-        <VStack align="flex-start" spacing={1}>
-          <Skeleton height="28px" width="230px" borderRadius="md" />
-          <Skeleton height="16px" width="320px" borderRadius="md" />
-        </VStack>
-        <Skeleton height="36px" width="36px" borderRadius="xl" />
-      </HStack>
+function ThreeWordChallengeSkeleton({
+  streamingQuestion = null,
+  copy,
+  targetLang = "es",
+  supportLang = "en",
+}) {
+  const targetDirection = getLanguageDirection(targetLang, "ltr");
+  const supportDirection = getLanguageDirection(supportLang, "ltr");
+  const cues = streamingQuestion?.cues || [];
 
-      {/* 3 Cue Chips Skeleton */}
-      <HStack spacing={3} justify="center" py={2}>
-        <Skeleton
-          height="46px"
-          width="110px"
-          borderRadius="xl"
-          style={questionSquircleStyle}
-        />
-        <Skeleton
-          height="46px"
-          width="120px"
-          borderRadius="xl"
-          style={questionSquircleStyle}
-        />
-        <Skeleton
-          height="46px"
-          width="115px"
-          borderRadius="xl"
-          style={questionSquircleStyle}
-        />
+  return (
+    <VStack spacing={5} align="stretch" lang={supportLang} dir={supportDirection}>
+      {/* Header */}
+      <Box>
+        <HStack spacing={2} mb={1} justify="space-between">
+          <Text fontSize="xl" fontWeight="800" color={APP_TEXT_PRIMARY}>
+            {copy?.title || "Three-Word Challenge"}
+          </Text>
+          <IconButton
+            aria-label={copy?.askForHelp || "Help"}
+            icon={<MdOutlineSupportAgent />}
+            size="sm"
+            fontSize="lg"
+            rounded="xl"
+            isDisabled
+            {...getQuestionToolButtonProps()}
+          />
+        </HStack>
+        <Text fontSize="sm" color={APP_TEXT_SECONDARY} fontWeight="normal">
+          {copy?.instruction || "Create an original sentence using all three words."}
+        </Text>
+      </Box>
+
+      {/* 3 Cue Chips */}
+      <HStack
+        spacing={3}
+        justify="center"
+        flexWrap="wrap"
+        py={2}
+        dir={targetDirection}
+        lang={targetLang}
+      >
+        {cues.length > 0
+          ? cues.map((cue, index) => (
+              <Box
+                key={`stream-cue-${index}`}
+                px={4}
+                py={2.5}
+                borderRadius="xl"
+                borderWidth="1.5px"
+                borderColor="purple.300"
+                bg="rgba(128, 90, 213, 0.12)"
+                color={APP_TEXT_PRIMARY}
+                style={questionSquircleStyle}
+                boxShadow="0 2px 8px rgba(128, 90, 213, 0.1)"
+              >
+                <Text
+                  as="span"
+                  fontWeight="800"
+                  fontSize={{ base: "md", md: "lg" }}
+                >
+                  {cue}
+                </Text>
+              </Box>
+            ))
+          : [1, 2, 3].map((i) => (
+              <Skeleton
+                key={`skel-cue-${i}`}
+                height="46px"
+                width="115px"
+                borderRadius="xl"
+                startColor="rgba(128, 90, 213, 0.12)"
+                endColor="rgba(128, 90, 213, 0.28)"
+                style={questionSquircleStyle}
+              />
+            ))}
       </HStack>
 
       {/* Input Field Skeleton */}
       <Skeleton
-        height="54px"
+        height="50px"
         width="100%"
         borderRadius="xl"
+        startColor="rgba(128, 90, 213, 0.12)"
+        endColor="rgba(128, 90, 213, 0.28)"
         style={questionSquircleStyle}
       />
     </VStack>
   );
 }
 
-function NaturalOrWeirdSkeleton() {
-  return (
-    <VStack spacing={5} align="stretch">
-      {/* Header Skeleton */}
-      <HStack justify="space-between" align="center">
-        <VStack align="flex-start" spacing={1}>
-          <Skeleton height="28px" width="220px" borderRadius="md" />
-          <Skeleton height="16px" width="310px" borderRadius="md" />
-        </VStack>
-        <Skeleton height="36px" width="36px" borderRadius="xl" />
-      </HStack>
+function NaturalOrWeirdSkeleton({
+  streamingQuestion = null,
+  copy,
+  targetLang = "es",
+  supportLang = "en",
+}) {
+  const targetDirection = getLanguageDirection(targetLang, "ltr");
+  const supportDirection = getLanguageDirection(supportLang, "ltr");
 
-      {/* Target Sentence Presentation Card Skeleton */}
-      <Box
-        p={{ base: 5, md: 6 }}
-        borderRadius="2xl"
-        borderWidth="1px"
-        borderColor={APP_BORDER}
-        bg={APP_SURFACE_MUTED}
-        style={questionSquircleStyle}
-        minH="100px"
-        display="flex"
-        alignItems="center"
-        justifyContent="center"
-      >
-        <Skeleton height="32px" width="75%" borderRadius="md" />
+  return (
+    <VStack spacing={5} align="stretch" lang={supportLang} dir={supportDirection}>
+      {/* Header */}
+      <Box>
+        <HStack spacing={2} mb={1} justify="space-between">
+          <Text fontSize="xl" fontWeight="800" color={APP_TEXT_PRIMARY}>
+            {copy?.title || "Natural or Weird?"}
+          </Text>
+          <IconButton
+            aria-label={copy?.askForHelp || "Help"}
+            icon={<MdOutlineSupportAgent />}
+            size="sm"
+            fontSize="lg"
+            rounded="xl"
+            isDisabled
+            {...getQuestionToolButtonProps()}
+          />
+        </HStack>
+        <Text fontSize="sm" color={APP_TEXT_SECONDARY} fontWeight="normal">
+          {copy?.instruction || "Decide if this sentence sounds natural in everyday use."}
+        </Text>
       </Box>
 
-      {/* 2 Binary Choice Cards Skeleton */}
+      {/* Sentence Presentation Card with Audio Button */}
+      <Box
+        p={{ base: 5, md: 6 }}
+        bg={APP_SURFACE_MUTED}
+        borderWidth="1px"
+        borderColor={APP_BORDER}
+        borderRadius="2xl"
+        style={questionSquircleStyle}
+      >
+        <HStack justify="space-between" align="center" spacing={3}>
+          <Text
+            fontSize={{ base: "lg", md: "xl" }}
+            fontWeight="bold"
+            color={APP_TEXT_PRIMARY}
+            textAlign="left"
+            dir={targetDirection}
+            lang={targetLang}
+            flex="1"
+          >
+            {streamingQuestion?.sentence ? (
+              `“${streamingQuestion.sentence}”`
+            ) : (
+              <Skeleton
+                height="28px"
+                width="75%"
+                borderRadius="md"
+                startColor="rgba(128, 90, 213, 0.12)"
+                endColor="rgba(128, 90, 213, 0.28)"
+              />
+            )}
+          </Text>
+          <IconButton
+            aria-label="Listen to sentence"
+            icon={<FiVolume2 />}
+            size="md"
+            rounded="xl"
+            variant="ghost"
+            color={APP_TEXT_PRIMARY}
+            isDisabled
+            {...getQuestionToolButtonProps()}
+          />
+        </HStack>
+      </Box>
+
+      {/* Binary Choice Cards */}
       <SimpleGrid columns={{ base: 1, sm: 2 }} spacing={3}>
-        <Skeleton
-          height="58px"
-          borderRadius="xl"
-          style={questionSquircleStyle}
-        />
-        <Skeleton
-          height="58px"
-          borderRadius="xl"
-          style={questionSquircleStyle}
-        />
+        <ChoiceCard disabled selected={false}>
+          {copy?.soundsWeird || "Sounds weird"}
+        </ChoiceCard>
+        <ChoiceCard disabled selected={false}>
+          {copy?.soundsNatural || "Sounds natural"}
+        </ChoiceCard>
       </SimpleGrid>
     </VStack>
   );
@@ -1176,7 +1628,6 @@ function DialogueFork({
   onPlayAudio,
   isLoadingAudio = false,
   isPlayingAudio = false,
-  isCorrect = false,
 }) {
   const targetDirection = getLanguageDirection(targetLang, "ltr");
   const supportDirection = getLanguageDirection(supportLang, "ltr");
@@ -1193,32 +1644,11 @@ function DialogueFork({
           <Text fontSize="xl" fontWeight="800" color={APP_TEXT_PRIMARY}>
             {copy?.title || "Dialogue Fork"}
           </Text>
-          <IconButton
-            aria-label={copy?.askForHelp || "Help"}
-            icon={
-              isLoadingAssistantSupport ? (
-                <VoiceOrb
-                  state={
-                    ["idle", "listening", "speaking"][
-                      Math.floor(Math.random() * 3)
-                    ]
-                  }
-                  size={16}
-                />
-              ) : (
-                <MdOutlineSupportAgent />
-              )
-            }
-            size="sm"
-            fontSize="lg"
-            rounded="xl"
-            onClick={onAskAssistant}
-            isDisabled={
-              isLoadingAssistantSupport ||
-              !!assistantSupportText ||
-              !onAskAssistant
-            }
-            {...getQuestionToolButtonProps()}
+          <QuestionAssistantButton
+            label={copy?.askForHelp}
+            onAskAssistant={onAskAssistant}
+            isLoading={isLoadingAssistantSupport}
+            hasResponse={!!assistantSupportText}
           />
         </HStack>
         <Text fontSize="sm" color={APP_TEXT_SECONDARY} fontWeight="normal">
@@ -1236,10 +1666,10 @@ function DialogueFork({
       >
         {onPlayAudio && (
           <IconButton
-            aria-label="Play dialogue audio"
+            aria-label={copy?.playAudio || "Play dialogue audio"}
             icon={
               isLoadingAudio ? (
-                <Spinner size="xs" />
+                <Spinner size="xs" color="purple.500" />
               ) : (
                 <FiVolume2 />
               )
@@ -1249,12 +1679,13 @@ function DialogueFork({
             rounded="full"
             color={
               isPlayingAudio
-                ? "purple.300"
+                ? "purple.400"
                 : "var(--question-assistant-accent-strong)"
             }
             onClick={() => onPlayAudio(question.line)}
-            isDisabled={isLoadingAudio}
+            isDisabled={locked || isLoadingAudio}
             flexShrink={0}
+            {...getQuestionToolButtonProps({ active: isLoadingAudio || isPlayingAudio })}
           />
         )}
         <Text
@@ -1324,37 +1755,6 @@ function DialogueFork({
         ))}
       </VStack>
 
-      {/* Reaction Delight Bubble on Correct Answer */}
-      {isCorrect && question.reaction && (
-        <Box
-          alignSelf="flex-start"
-          maxW="88%"
-          mt={1}
-          p={3.5}
-          bg="rgba(56, 161, 105, 0.12)"
-          borderWidth="1px"
-          borderColor="rgba(56, 161, 105, 0.35)"
-          borderRadius="2xl 2xl 2xl 6px"
-          style={questionSquircleStyle}
-        >
-          <Text
-            fontSize="xs"
-            fontWeight="800"
-            color="green.400"
-            mb={0.5}
-          >
-            {question.speaker || "Speaker"}
-          </Text>
-          <Text
-            color={APP_TEXT_PRIMARY}
-            fontSize="md"
-            dir={targetDirection}
-            lang={targetLang}
-          >
-            {question.reaction}
-          </Text>
-        </Box>
-      )}
     </VStack>
   );
 }
@@ -1374,6 +1774,11 @@ function SentenceShapeshifter({
   onPlayAudio,
   isLoadingAudio = false,
   isPlayingAudio = false,
+  onToggleSpeech,
+  isSpeechRecording = false,
+  isSpeechConnecting = false,
+  supportsSpeech = false,
+  speechLabels,
   onSubmit,
   canSubmit = false,
   submitting = false,
@@ -1400,32 +1805,11 @@ function SentenceShapeshifter({
           <Text fontSize="xl" fontWeight="800" color={APP_TEXT_PRIMARY}>
             {copy?.title || "Sentence Shapeshifter"}
           </Text>
-          <IconButton
-            aria-label={copy?.askForHelp || "Help"}
-            icon={
-              isLoadingAssistantSupport ? (
-                <VoiceOrb
-                  state={
-                    ["idle", "listening", "speaking"][
-                      Math.floor(Math.random() * 3)
-                    ]
-                  }
-                  size={16}
-                />
-              ) : (
-                <MdOutlineSupportAgent />
-              )
-            }
-            size="sm"
-            fontSize="lg"
-            rounded="xl"
-            onClick={onAskAssistant}
-            isDisabled={
-              isLoadingAssistantSupport ||
-              !!assistantSupportText ||
-              !onAskAssistant
-            }
-            {...getQuestionToolButtonProps()}
+          <QuestionAssistantButton
+            label={copy?.askForHelp}
+            onAskAssistant={onAskAssistant}
+            isLoading={isLoadingAssistantSupport}
+            hasResponse={!!assistantSupportText}
           />
         </HStack>
         <Text fontSize="sm" color={APP_TEXT_SECONDARY} fontWeight="normal">
@@ -1450,10 +1834,10 @@ function SentenceShapeshifter({
         >
           {onPlayAudio && (
             <IconButton
-              aria-label="Play source sentence audio"
+              aria-label={copy?.playAudio || "Play source sentence audio"}
               icon={
                 isLoadingAudio ? (
-                  <Spinner size="xs" />
+                  <Spinner size="xs" color="purple.500" />
                 ) : (
                   <FiVolume2 />
                 )
@@ -1463,12 +1847,15 @@ function SentenceShapeshifter({
               rounded="full"
               color={
                 isPlayingAudio
-                  ? "purple.300"
+                  ? "purple.400"
                   : "var(--question-assistant-accent-strong)"
               }
               onClick={() => onPlayAudio(question.source)}
-              isDisabled={isLoadingAudio}
+              isDisabled={
+                isLoadingAudio || isSpeechRecording || isSpeechConnecting
+              }
               flexShrink={0}
+              {...getQuestionToolButtonProps({ active: isLoadingAudio || isPlayingAudio })}
             />
           )}
           <Text
@@ -1543,21 +1930,34 @@ function SentenceShapeshifter({
       )}
 
       {/* Text Input */}
-      <Box dir={targetDirection} lang={targetLang}>
-        <Input
-          value={response.text || ""}
-          onChange={(event) => setResponse({ text: event.target.value })}
-          onKeyDown={handleKeyDown}
-          isDisabled={locked}
-          placeholder={copy?.placeholder || "Type the transformed sentence…"}
-          size="lg"
-          bg={APP_SURFACE_ELEVATED}
-          borderColor={APP_BORDER_STRONG}
-          _hover={{ borderColor: "purple.400" }}
-          _focus={{ borderColor: "purple.400", boxShadow: "0 0 0 1px #9f7aea" }}
-          style={questionSquircleStyle}
-          autoFocus
-        />
+      <Box lang={targetLang}>
+        <HStack align="stretch" spacing={2} dir="ltr">
+          <SpeechAnswerButton
+            onClick={onToggleSpeech}
+            isRecording={isSpeechRecording}
+            isConnecting={isSpeechConnecting}
+            isSupported={supportsSpeech}
+            isDisabled={locked || submitting}
+            labels={speechLabels}
+          />
+          <Input
+            value={response.text || ""}
+            onChange={(event) => setResponse({ text: event.target.value })}
+            onKeyDown={handleKeyDown}
+            isDisabled={locked || submitting || isSpeechConnecting || isSpeechRecording}
+            placeholder="Write or record your answer"
+            dir={targetDirection}
+            lang={targetLang}
+            size="lg"
+            minH="54px"
+            bg={APP_SURFACE_ELEVATED}
+            borderColor={APP_BORDER_STRONG}
+            _hover={{ borderColor: "purple.400" }}
+            _focus={{ borderColor: "purple.400", boxShadow: "0 0 0 1px #9f7aea" }}
+            style={questionSquircleStyle}
+            autoFocus
+          />
+        </HStack>
       </Box>
     </VStack>
   );
@@ -1647,32 +2047,11 @@ function WordNeighborhoods({
             <Text fontSize="xl" fontWeight="800" color={APP_TEXT_PRIMARY}>
               {copy?.title || "Word Neighborhoods"}
             </Text>
-            <IconButton
-              aria-label={copy?.askForHelp || "Help"}
-              icon={
-                isLoadingAssistantSupport ? (
-                  <VoiceOrb
-                    state={
-                      ["idle", "listening", "speaking"][
-                        Math.floor(Math.random() * 3)
-                      ]
-                    }
-                    size={16}
-                  />
-                ) : (
-                  <MdOutlineSupportAgent />
-                )
-              }
-              size="sm"
-              fontSize="lg"
-              rounded="xl"
-              onClick={onAskAssistant}
-              isDisabled={
-                isLoadingAssistantSupport ||
-                !!assistantSupportText ||
-                !onAskAssistant
-              }
-              {...getQuestionToolButtonProps()}
+            <QuestionAssistantButton
+              label={copy?.askForHelp}
+              onAskAssistant={onAskAssistant}
+              isLoading={isLoadingAssistantSupport}
+              hasResponse={!!assistantSupportText}
             />
           </HStack>
           <Text fontSize="sm" color={APP_TEXT_SECONDARY} fontWeight="normal">
@@ -1871,9 +2250,10 @@ function WordNeighborhoods({
                           _hover={
                             !locked
                               ? {
-                                  borderColor: "red.300",
-                                  color: "red.200",
-                                  bg: "rgba(229, 62, 62, 0.1)",
+                                  borderColor: "purple.300",
+                                  color: APP_TEXT_PRIMARY,
+                                  bg: "var(--question-chip-bg-hover)",
+                                  transform: "translateY(-1px)",
                                 }
                               : {}
                           }
@@ -1882,7 +2262,7 @@ function WordNeighborhoods({
                             returnToBank(word);
                           }}
                         >
-                          {word} ✕
+                          {word}
                         </Box>
                       )}
                     </SortableItem>
@@ -1895,8 +2275,11 @@ function WordNeighborhoods({
                       py={2}
                     >
                       {selectedWord
-                        ? `Tap to place “${selectedWord}”`
-                        : "Drag a word here or tap to place"}
+                        ? formatWordNeighborhoodsCopy(copy?.tapToPlace, {
+                            word: selectedWord,
+                          }) || `Tap to place “${selectedWord}”`
+                        : copy?.dropPlaceholder ||
+                          "Drag a word here or tap to place"}
                     </Text>
                   )}
                 </SortableList>
@@ -2004,32 +2387,11 @@ function MorphologyForge({
             <Text fontSize="xl" fontWeight="800" color={APP_TEXT_PRIMARY}>
               {copy?.title || "Morphology Forge"}
             </Text>
-            <IconButton
-              aria-label={copy?.askForHelp || "Help"}
-              icon={
-                isLoadingAssistantSupport ? (
-                  <VoiceOrb
-                    state={
-                      ["idle", "listening", "speaking"][
-                        Math.floor(Math.random() * 3)
-                      ]
-                    }
-                    size={16}
-                  />
-                ) : (
-                  <MdOutlineSupportAgent />
-                )
-              }
-              size="sm"
-              fontSize="lg"
-              rounded="xl"
-              onClick={onAskAssistant}
-              isDisabled={
-                isLoadingAssistantSupport ||
-                !!assistantSupportText ||
-                !onAskAssistant
-              }
-              {...getQuestionToolButtonProps()}
+            <QuestionAssistantButton
+              label={copy?.askForHelp}
+              onAskAssistant={onAskAssistant}
+              isLoading={isLoadingAssistantSupport}
+              hasResponse={!!assistantSupportText}
             />
           </HStack>
           <Text fontSize="sm" color={APP_TEXT_SECONDARY} fontWeight="normal">
@@ -2309,6 +2671,11 @@ function ThreeClueMystery({
   isLoadingAssistantSupport = false,
   assistantSupportText = "",
   assistantLabel = "Assistant",
+  onToggleSpeech,
+  isSpeechRecording = false,
+  isSpeechConnecting = false,
+  supportsSpeech = false,
+  speechLabels,
   onSubmit,
   canSubmit = false,
   submitting = false,
@@ -2350,32 +2717,11 @@ function ThreeClueMystery({
           <Text fontSize="xl" fontWeight="800" color={APP_TEXT_PRIMARY}>
             {copy?.title || "Three-Clue Mystery"}
           </Text>
-          <IconButton
-            aria-label={copy?.askForHelp || "Help"}
-            icon={
-              isLoadingAssistantSupport ? (
-                <VoiceOrb
-                  state={
-                    ["idle", "listening", "speaking"][
-                      Math.floor(Math.random() * 3)
-                    ]
-                  }
-                  size={16}
-                />
-              ) : (
-                <MdOutlineSupportAgent />
-              )
-            }
-            size="sm"
-            fontSize="lg"
-            rounded="xl"
-            onClick={onAskAssistant}
-            isDisabled={
-              isLoadingAssistantSupport ||
-              !!assistantSupportText ||
-              !onAskAssistant
-            }
-            {...getQuestionToolButtonProps()}
+          <QuestionAssistantButton
+            label={copy?.askForHelp}
+            onAskAssistant={onAskAssistant}
+            isLoading={isLoadingAssistantSupport}
+            hasResponse={!!assistantSupportText}
           />
         </HStack>
         <Text fontSize="sm" color={APP_TEXT_SECONDARY} fontWeight="normal">
@@ -2504,31 +2850,41 @@ function ThreeClueMystery({
 
       {/* Target Word Input Field */}
       <Box>
-        <Input
-          value={response?.text || ""}
-          onChange={(event) =>
-            setResponse((current) => ({
-              ...current,
-              text: event.target.value,
-            }))
-          }
-          onKeyDown={handleKeyDown}
-          isDisabled={locked}
-          placeholder={copy?.inputPlaceholder || "Type your answer…"}
-          size="lg"
-          minH="54px"
-          fontSize={{ base: "md", md: "lg" }}
-          fontWeight="semibold"
-          bg={APP_SURFACE_ELEVATED}
-          borderColor={APP_BORDER_STRONG}
-          focusBorderColor="purple.400"
-          style={questionSquircleStyle}
-          dir={targetDirection}
-          lang={targetLang}
-          autoComplete="off"
-          autoCorrect="off"
-          spellCheck="false"
-        />
+        <HStack align="stretch" spacing={2} dir="ltr" lang={targetLang}>
+          <SpeechAnswerButton
+            onClick={onToggleSpeech}
+            isRecording={isSpeechRecording}
+            isConnecting={isSpeechConnecting}
+            isSupported={supportsSpeech}
+            isDisabled={locked || submitting}
+            labels={speechLabels}
+          />
+          <Input
+            value={response?.text || ""}
+            onChange={(event) =>
+              setResponse((current) => ({
+                ...current,
+                text: event.target.value,
+              }))
+            }
+            onKeyDown={handleKeyDown}
+            isDisabled={locked || submitting || isSpeechConnecting || isSpeechRecording}
+            placeholder="Write or record your answer"
+            dir={targetDirection}
+            lang={targetLang}
+            size="lg"
+            minH="54px"
+            fontSize={{ base: "md", md: "lg" }}
+            fontWeight="semibold"
+            bg={APP_SURFACE_ELEVATED}
+            borderColor={APP_BORDER_STRONG}
+            focusBorderColor="purple.400"
+            style={questionSquircleStyle}
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck="false"
+          />
+        </HStack>
       </Box>
     </VStack>
   );
@@ -2547,8 +2903,8 @@ function ListenDifference({
   assistantSupportText = "",
   assistantLabel = "Assistant",
   onPlayAudio,
-  isSpeaking = false,
-  isSynthesizingAudio = false,
+  isLoadingAudio = false,
+  isPlayingAudio = false,
   onSubmit,
   canSubmit = false,
   submitting = false,
@@ -2580,32 +2936,11 @@ function ListenDifference({
           <Text fontSize="xl" fontWeight="800" color={APP_TEXT_PRIMARY}>
             {copy?.title || "Listen for the Difference"}
           </Text>
-          <IconButton
-            aria-label={copy?.askForHelp || "Help"}
-            icon={
-              isLoadingAssistantSupport ? (
-                <VoiceOrb
-                  state={
-                    ["idle", "listening", "speaking"][
-                      Math.floor(Math.random() * 3)
-                    ]
-                  }
-                  size={16}
-                />
-              ) : (
-                <MdOutlineSupportAgent />
-              )
-            }
-            size="sm"
-            fontSize="lg"
-            rounded="xl"
-            onClick={onAskAssistant}
-            isDisabled={
-              isLoadingAssistantSupport ||
-              !!assistantSupportText ||
-              !onAskAssistant
-            }
-            {...getQuestionToolButtonProps()}
+          <QuestionAssistantButton
+            label={copy?.askForHelp}
+            onAskAssistant={onAskAssistant}
+            isLoading={isLoadingAssistantSupport}
+            hasResponse={!!assistantSupportText}
           />
         </HStack>
         <Text fontSize="sm" color={APP_TEXT_SECONDARY} fontWeight="normal">
@@ -2660,7 +2995,7 @@ function ListenDifference({
       {/* Prominent Play Audio Button */}
       <Button
         leftIcon={
-          isSpeaking || isSynthesizingAudio ? (
+          isLoadingAudio ? (
             <Spinner size="sm" color="purple.500" />
           ) : (
             <FiVolume2 size={22} />
@@ -2669,16 +3004,18 @@ function ListenDifference({
         size="lg"
         py={7}
         onClick={() => onPlayAudio?.(question.audioText)}
-        isDisabled={isSpeaking || isSynthesizingAudio}
-        {...getQuestionToolButtonProps({ active: isSpeaking || isSynthesizingAudio })}
+        isDisabled={isLoadingAudio}
+        {...getQuestionToolButtonProps({ active: isLoadingAudio || isPlayingAudio })}
         style={questionSquircleStyle}
         fontSize="md"
         fontWeight="semibold"
         boxShadow="0 2px 12px rgba(128, 90, 213, 0.15)"
       >
-        {isSpeaking || isSynthesizingAudio
+        {isLoadingAudio
           ? (copy?.playingAudio || "Playing…")
-          : (copy?.playAudio || "Play audio")}
+          : isPlayingAudio
+            ? (copy?.playingAudio || "Playing…")
+            : (copy?.playAudio || "Play audio")}
       </Button>
 
       {/* Options List */}
@@ -2710,10 +3047,14 @@ function ThreeWordChallenge({
   isLoadingAssistantSupport = false,
   assistantSupportText = "",
   assistantLabel = "Assistant",
+  onToggleSpeech,
+  isSpeechRecording = false,
+  isSpeechConnecting = false,
+  supportsSpeech = false,
+  speechLabels,
   onSubmit,
   canSubmit = false,
   submitting = false,
-  isCorrect = false,
 }) {
   const targetDirection = getLanguageDirection(targetLang, "ltr");
   const supportDirection = getLanguageDirection(supportLang, "ltr");
@@ -2742,32 +3083,11 @@ function ThreeWordChallenge({
           <Text fontSize="xl" fontWeight="800" color={APP_TEXT_PRIMARY}>
             {copy?.title || "Three-Word Challenge"}
           </Text>
-          <IconButton
-            aria-label={copy?.askForHelp || "Help"}
-            icon={
-              isLoadingAssistantSupport ? (
-                <VoiceOrb
-                  state={
-                    ["idle", "listening", "speaking"][
-                      Math.floor(Math.random() * 3)
-                    ]
-                  }
-                  size={16}
-                />
-              ) : (
-                <MdOutlineSupportAgent />
-              )
-            }
-            size="sm"
-            fontSize="lg"
-            rounded="xl"
-            onClick={onAskAssistant}
-            isDisabled={
-              isLoadingAssistantSupport ||
-              !!assistantSupportText ||
-              !onAskAssistant
-            }
-            {...getQuestionToolButtonProps()}
+          <QuestionAssistantButton
+            label={copy?.askForHelp}
+            onAskAssistant={onAskAssistant}
+            isLoading={isLoadingAssistantSupport}
+            hasResponse={!!assistantSupportText}
           />
         </HStack>
         <Text fontSize="sm" color={APP_TEXT_SECONDARY} fontWeight="normal">
@@ -2854,30 +3174,40 @@ function ThreeWordChallenge({
 
       {/* Target Language Input Field */}
       <Box>
-        <Input
-          value={response?.text || ""}
-          onChange={(event) =>
-            setResponse((current) => ({
-              ...current,
-              text: event.target.value,
-            }))
-          }
-          isDisabled={locked}
-          placeholder={copy?.inputPlaceholder || "Write your sentence here…"}
-          size="lg"
-          minH="54px"
-          fontSize={{ base: "md", md: "lg" }}
-          fontWeight="semibold"
-          bg={APP_SURFACE_ELEVATED}
-          borderColor={APP_BORDER_STRONG}
-          focusBorderColor="purple.400"
-          style={questionSquircleStyle}
-          dir={targetDirection}
-          lang={targetLang}
-          autoComplete="off"
-          autoCorrect="off"
-          spellCheck="false"
-        />
+        <HStack align="stretch" spacing={2} dir="ltr" lang={targetLang}>
+          <SpeechAnswerButton
+            onClick={onToggleSpeech}
+            isRecording={isSpeechRecording}
+            isConnecting={isSpeechConnecting}
+            isSupported={supportsSpeech}
+            isDisabled={locked || submitting}
+            labels={speechLabels}
+          />
+          <Input
+            value={response?.text || ""}
+            onChange={(event) =>
+              setResponse((current) => ({
+                ...current,
+                text: event.target.value,
+              }))
+            }
+            isDisabled={locked || submitting || isSpeechConnecting || isSpeechRecording}
+            placeholder="Write or record your answer"
+            dir={targetDirection}
+            lang={targetLang}
+            size="lg"
+            minH="54px"
+            fontSize={{ base: "md", md: "lg" }}
+            fontWeight="semibold"
+            bg={APP_SURFACE_ELEVATED}
+            borderColor={APP_BORDER_STRONG}
+            focusBorderColor="purple.400"
+            style={questionSquircleStyle}
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck="false"
+          />
+        </HStack>
       </Box>
     </VStack>
   );
@@ -2929,32 +3259,11 @@ function NaturalOrWeird({
           <Text fontSize="xl" fontWeight="800" color={APP_TEXT_PRIMARY}>
             {copy?.title || "Natural or Weird?"}
           </Text>
-          <IconButton
-            aria-label={copy?.askForHelp || "Help"}
-            icon={
-              isLoadingAssistantSupport ? (
-                <VoiceOrb
-                  state={
-                    ["idle", "listening", "speaking"][
-                      Math.floor(Math.random() * 3)
-                    ]
-                  }
-                  size={16}
-                />
-              ) : (
-                <MdOutlineSupportAgent />
-              )
-            }
-            size="sm"
-            fontSize="lg"
-            rounded="xl"
-            onClick={onAskAssistant}
-            isDisabled={
-              isLoadingAssistantSupport ||
-              !!assistantSupportText ||
-              !onAskAssistant
-            }
-            {...getQuestionToolButtonProps()}
+          <QuestionAssistantButton
+            label={copy?.askForHelp}
+            onAskAssistant={onAskAssistant}
+            isLoading={isLoadingAssistantSupport}
+            hasResponse={!!assistantSupportText}
           />
         </HStack>
         <Text fontSize="sm" color={APP_TEXT_SECONDARY} fontWeight="normal">
@@ -3030,15 +3339,20 @@ function NaturalOrWeird({
           {onPlayAudio && (
             <IconButton
               aria-label={copy?.playAudio || "Listen to sentence"}
-              icon={<FiVolume2 />}
+              icon={
+                isLoadingAudio ? (
+                  <Spinner size="xs" color="purple.500" />
+                ) : (
+                  <FiVolume2 />
+                )
+              }
               size="md"
               rounded="xl"
               variant="ghost"
-              color={APP_TEXT_PRIMARY}
-              isLoading={isPlayingAudio || isLoadingAudio}
+              color={isPlayingAudio ? "purple.400" : APP_TEXT_PRIMARY}
               onClick={() => onPlayAudio(question.sentence)}
-              isDisabled={locked}
-              {...getQuestionToolButtonProps()}
+              isDisabled={locked || isLoadingAudio}
+              {...getQuestionToolButtonProps({ active: isLoadingAudio || isPlayingAudio })}
             />
           )}
         </HStack>
@@ -3067,9 +3381,128 @@ function NaturalOrWeird({
 
 
 
+function extractDelightMemoryItem(question, response) {
+  if (!question) return { concept: "", userAnswer: "", expectedAnswer: "" };
+  switch (question.variant) {
+    case "sentence_detective": {
+      const selectedWord =
+        response?.tokenIndex != null
+          ? question.tokens?.[response.tokenIndex] || ""
+          : "";
+      return {
+        concept: question.sentence || question.wrongToken || question.answer || "",
+        userAnswer: selectedWord
+          ? `${selectedWord} → ${response?.replacement || ""}`
+          : response?.replacement || "",
+        expectedAnswer: `${question.wrongToken || question.tokens?.[question.incorrectIndex] || ""} → ${question.answer || ""}`,
+      };
+    }
+    case "dialogue_fork": {
+      const selected =
+        response?.selectedIndex != null
+          ? question.options?.[response.selectedIndex] || ""
+          : "";
+      return {
+        concept: question.prompt || question.targetRole || "",
+        userAnswer: selected,
+        expectedAnswer: question.options?.[question.correctIndex] || "",
+      };
+    }
+    case "sentence_shapeshifter": {
+      return {
+        concept: `${question.source || ""} (${question.constraint || ""})`.trim(),
+        userAnswer: response?.text || "",
+        expectedAnswer: question.answer || "",
+      };
+    }
+    case "word_neighborhoods": {
+      const summary = (question.groups || [])
+        .map((g) => `${g.label}: ${(g.items || []).join(", ")}`)
+        .join(" | ");
+      return {
+        concept: summary,
+        userAnswer: JSON.stringify(response?.assignments || {}),
+        expectedAnswer: summary,
+      };
+    }
+    case "morphology_forge": {
+      return {
+        concept: question.sentence || question.root || question.answer || "",
+        userAnswer: (response?.assembled || []).join(""),
+        expectedAnswer: question.answer || "",
+      };
+    }
+    case "three_clue_mystery": {
+      return {
+        concept: (question.clues || []).join(" • "),
+        userAnswer: response?.guess || "",
+        expectedAnswer: question.answer || "",
+      };
+    }
+    case "listen_difference": {
+      const selectedPair =
+        response?.selectedIndex != null
+          ? question.pairs?.[response.selectedIndex]?.wordA || ""
+          : "";
+      const correctPair =
+        question.pairs?.find((p) => p.isCorrect)?.wordA || question.answer || "";
+      return {
+        concept: question.sentence || "Listening discrimination",
+        userAnswer: selectedPair,
+        expectedAnswer: correctPair,
+      };
+    }
+    case "three_word_challenge": {
+      return {
+        concept: (question.cues || []).join(", "),
+        userAnswer: response?.text || "",
+        expectedAnswer: (question.cues || []).join(", "),
+      };
+    }
+    case "natural_or_weird": {
+      return {
+        concept: question.sentence || "",
+        userAnswer: response?.choice ? "Sounds natural" : "Sounds weird",
+        expectedAnswer: question.isNatural ? "Sounds natural" : "Sounds weird",
+      };
+    }
+    default: {
+      return {
+        concept: question.sentence || question.prompt || question.instruction || "",
+        userAnswer: String(response?.text || response?.replacement || response?.guess || ""),
+        expectedAnswer: String(question.answer || ""),
+      };
+    }
+  }
+}
+
+function getDelightQuestionVarietySummary(question) {
+  if (!question) return "";
+  const content =
+    question.correctedSentence ||
+    question.sentence ||
+    question.line ||
+    question.source ||
+    question.audioText ||
+    question.example ||
+    question.answerWord ||
+    question.answer ||
+    (question.cues || []).join(" / ") ||
+    (question.groups || [])
+      .map((group) => `${group.label}: ${(group.items || []).join(", ")}`)
+      .join(" / ");
+
+  return `${question.variant || "question"}: ${String(content || "")}`.slice(
+    0,
+    280,
+  );
+}
+
 export default function DelightQuestionLab({
   moduleType = "grammar",
   userLanguage = "en",
+  targetLang: propTargetLang,
+  supportLang: propSupportLang,
   lesson = null,
   lessonContent = null,
   isFinalQuiz = false,
@@ -3077,22 +3510,29 @@ export default function DelightQuestionLab({
   onSkip = null,
   onExitQuiz = null,
   lessonEarnedXp = 0,
+  embedded = false,
+  variantId = null,
+  onNextQuestion = null,
+  onQuizAnswer = null,
 }) {
-  const t = useT(userLanguage);
   const user = useUserStore((state) => state.user);
   const playSound = useSoundSettings((state) => state.playSound);
   const progress = user?.progress || {};
   const targetLang = normalizePracticeLanguage(
-    progress.targetLang,
+    propTargetLang ||
+      lesson?.targetLang ||
+      lessonContent?.targetLang ||
+      progress.targetLang,
     DEFAULT_TARGET_LANGUAGE,
   );
-  const supportLang =
-    progress.supportLang === "bilingual"
-      ? normalizeSupportLanguage(userLanguage, DEFAULT_SUPPORT_LANGUAGE)
-      : normalizeSupportLanguage(
-          progress.supportLang,
-          DEFAULT_SUPPORT_LANGUAGE,
-        );
+  const supportLang = normalizeSupportLanguage(
+    propSupportLang ||
+      (progress.supportLang === "bilingual"
+        ? userLanguage
+        : progress.supportLang || userLanguage),
+    DEFAULT_SUPPORT_LANGUAGE,
+  );
+  const t = useT(supportLang);
   const detectiveCopy = getSentenceDetectiveCopy(supportLang);
   const dialogueForkCopy = getDialogueForkCopy(supportLang);
   const sentenceShapeshifterCopy = getSentenceShapeshifterCopy(supportLang);
@@ -3169,9 +3609,68 @@ export default function DelightQuestionLab({
 
   const cacheRef = useRef(new Map());
   const requestRef = useRef(0);
+  const audioRequestRef = useRef(0);
   const audioPlayerRef = useRef(null);
+  const companionCapturedRef = useRef(null);
+  const pendingSpeechSubmissionRef = useRef(null);
+  const recentQuestionSummariesRef = useRef([]);
 
-  const variantMeta = GATED_VARIANTS[variantIndex] || GATED_VARIANTS[0];
+  const usesExternalQuiz =
+    isFinalQuiz && typeof onQuizAnswer === "function";
+  const quizStorageKey = lesson?.id ? `quiz-progress:${lesson.id}` : null;
+  const quizOutcome = getDelightQuizOutcome(quizHistory, quizConfig);
+
+  useEffect(() => {
+    if (!isFinalQuiz || usesExternalQuiz || !quizStorageKey) return;
+    try {
+      const stored = localStorage.getItem(quizStorageKey);
+      if (!stored) return;
+      const restored = normalizeDelightQuizProgress(
+        JSON.parse(stored),
+        quizConfig,
+      );
+      setQuizHistory(restored.history);
+      setQuizFinished(restored.completed);
+    } catch (error) {
+      console.warn("Failed to load delight quiz progress", error);
+    }
+  }, [
+    isFinalQuiz,
+    quizConfig.passingScore,
+    quizConfig.questionsRequired,
+    quizStorageKey,
+    usesExternalQuiz,
+  ]);
+
+  useEffect(() => {
+    if (!isFinalQuiz || usesExternalQuiz || !quizStorageKey) return;
+    try {
+      localStorage.setItem(
+        quizStorageKey,
+        JSON.stringify(serializeDelightQuizProgress(quizHistory, quizConfig)),
+      );
+    } catch (error) {
+      console.warn("Failed to save delight quiz progress", error);
+    }
+  }, [
+    isFinalQuiz,
+    quizConfig.passingScore,
+    quizConfig.questionsRequired,
+    quizHistory,
+    quizStorageKey,
+    usesExternalQuiz,
+  ]);
+
+  useEffect(() => {
+    recentQuestionSummariesRef.current = [];
+    cacheRef.current.clear();
+  }, [lesson?.id, moduleType, supportLang, targetLang]);
+
+  const forcedVariantMeta = variantId
+    ? DELIGHT_VARIANTS.find(({ id }) => id === variantId)
+    : null;
+  const variantMeta =
+    forcedVariantMeta || AVAILABLE_VARIANTS[variantIndex] || AVAILABLE_VARIANTS[0];
   const activeVariantCopy =
     variantMeta?.id === "natural_or_weird"
       ? naturalOrWeirdCopy
@@ -3191,7 +3690,77 @@ export default function DelightQuestionLab({
                     ? dialogueForkCopy
                     : detectiveCopy;
 
+  const speechInputEnabled = SPEECH_RESPONSE_VARIANTS.has(question?.variant);
+  const speechTargetText = speechInputEnabled
+    ? question?.answer ||
+      question?.sampleAnswers?.[0] ||
+      (question?.cues || []).join(" ") ||
+      "spoken answer"
+    : "";
+  const handleSpeechPracticeResult = useCallback(
+    ({ recognizedText, error }) => {
+      if (error) {
+        pendingSpeechSubmissionRef.current = null;
+        toast({
+          title: t("flashcard_eval_error_title") || "Speech error",
+          description:
+            t("flashcard_eval_error_desc") ||
+            "Please check microphone access and try again.",
+          status: "error",
+          duration: 2800,
+        });
+        return;
+      }
+
+      const transcript = String(recognizedText || "").trim();
+      if (!transcript) {
+        pendingSpeechSubmissionRef.current = null;
+        toast({
+          title: t("flashcard_eval_error_title") || "Speech not detected",
+          status: "warning",
+          duration: 2200,
+        });
+        return;
+      }
+
+      pendingSpeechSubmissionRef.current = transcript;
+      setResponseState((current) => ({ ...current, text: transcript }));
+    },
+    [t, toast],
+  );
+  const {
+    startRecording: startSpeechRecording,
+    stopRecording: stopSpeechRecording,
+    cancelRecording: cancelSpeechRecording,
+    isRecording: isSpeechRecording,
+    isConnecting: isSpeechConnecting,
+    supportsSpeech,
+  } = useSpeechPractice({
+    targetText: speechTargetText,
+    targetLang,
+    onResult: handleSpeechPracticeResult,
+    timeoutMs: 2000,
+  });
+  const cancelQuestionSpeech = useCallback(() => {
+    pendingSpeechSubmissionRef.current = null;
+    cancelSpeechRecording();
+  }, [cancelSpeechRecording]);
+
+  const stopQuestionAudio = useCallback((resetState = true) => {
+    audioRequestRef.current += 1;
+    stopAllTTSPlayback();
+    audioPlayerRef.current?.cleanup?.();
+    audioPlayerRef.current = null;
+    if (resetState) {
+      setIsSpeaking(false);
+      setIsSynthesizingAudio(false);
+    }
+  }, []);
+
   const resetForQuestion = useCallback((nextQuestion) => {
+    stopQuestionAudio();
+    cancelQuestionSpeech();
+    companionCapturedRef.current = null;
     setQuestion(nextQuestion);
     setResponseState(getInitialDelightResponse(nextQuestion));
     setResult(null);
@@ -3199,8 +3768,6 @@ export default function DelightQuestionLab({
     setRevealedClues(1);
     setAssistantSupportText("");
     setIsLoadingAssistantSupport(false);
-    setIsSpeaking(false);
-    setIsSynthesizingAudio(false);
     setExplanationText("");
     setIsLoadingExplanation(false);
     setNoteCreated(false);
@@ -3211,7 +3778,7 @@ export default function DelightQuestionLab({
         ? shuffle(nextQuestion.groups.flatMap((group) => group.items))
         : [],
     );
-  }, []);
+  }, [cancelQuestionSpeech, stopQuestionAudio]);
 
   const setResponse = useCallback((updater) => {
     setResponseState(updater);
@@ -3222,8 +3789,14 @@ export default function DelightQuestionLab({
   }, [result]);
 
   const handleAskAssistant = useCallback(async () => {
-    if (!question || isLoadingAssistantSupport || assistantSupportText) return;
-    playSound(clickSound);
+    if (
+      isFinalQuiz ||
+      !question ||
+      isLoadingAssistantSupport ||
+      assistantSupportText
+    )
+      return;
+    playSound(submitSound);
     setIsLoadingAssistantSupport(true);
     setAssistantSupportText("");
 
@@ -3235,11 +3808,15 @@ export default function DelightQuestionLab({
         : "";
 
       const instruction = [
-        "You are a helpful, encouraging language study buddy for quick questions.",
+        "You are a helpful, encouraging language study buddy.",
         `The learner is practicing ${targetName}; their support/UI language is ${supportName}.`,
         levelHint,
-        `Explain and guide in ${supportName}. Give a concise hint that helps the learner identify the issue or understand the sentence without immediately giving away the entire solution. Include examples in ${targetName} only when helpful, but keep the explanation in ${supportName}.`,
-        "Keep replies ≤ 60 words.",
+        buildAssistantLanguagePolicy({
+          supportLanguageName: supportName,
+          targetLanguageName: targetName,
+        }),
+        `Explain and guide directly in ${supportName}. Clearly explain the required grammar or vocabulary, provide the relevant words/phrases in ${targetName} with translations in ${supportName}, and guide the learner to successfully answer the question.`,
+        "Keep replies concise (≤ 60 words).",
         "Use concise Markdown when helpful (bullets, **bold**).",
       ].join(" ");
 
@@ -3285,7 +3862,7 @@ export default function DelightQuestionLab({
           `Sentence with error: "${question.sentence || ""}"`,
           `Incorrect word: "${question.wrongToken || ""}"`,
           `Correct repair: "${question.answer || ""}"`,
-          `Task: Guide the learner to spot why "${question.wrongToken || ""}" is unnatural or incorrect in the sentence without stating "${question.answer || ""}" directly.`,
+          `Task: Explain which word is incorrect ("${question.wrongToken || ""}"), why it is wrong, and provide the correct repair word ("${question.answer || ""}") with a clear explanation.`,
         ].join("\n");
       } else if (question.variant === "dialogue_fork") {
         variantContext = [
@@ -3293,7 +3870,7 @@ export default function DelightQuestionLab({
           `Speaker prompt: ${question.speaker ? `${question.speaker}: ` : ""}"${question.line || ""}"`,
           `Options: ${(question.options || []).map((opt, i) => `${i + 1}. "${opt}"`).join(", ")}`,
           `Correct reply: "${question.options?.[question.answerIndex] || ""}"`,
-          `Task: Give a contextual or pragmatic hint to help the learner pick the most natural reply without directly naming option ${typeof question.answerIndex === "number" ? question.answerIndex + 1 : ""}.`,
+          `Task: Recommend the best reply ("${question.options?.[question.answerIndex] || ""}") and explain why it is the most natural and appropriate conversational response in ${targetName}.`,
         ].join("\n");
       } else if (question.variant === "sentence_shapeshifter") {
         variantContext = [
@@ -3301,7 +3878,7 @@ export default function DelightQuestionLab({
           `Original sentence: "${question.source || ""}"`,
           `Transformation rule: "${question.constraint || ""}"`,
           `Expected answer: "${question.answer || ""}"`,
-          `Task: Explain how to apply the transformation rule ("${question.constraint || ""}") in ${targetName} without typing out the full solution "${question.answer || ""}".`,
+          `Task: Guide the learner on how to transform the sentence according to the rule ("${question.constraint || ""}") in ${targetName}. Provide the target words/phrases and guide them to form the complete sentence ("${question.answer || ""}").`,
         ].join("\n");
       } else if (question.variant === "word_neighborhoods") {
         const groupsDesc = (question.groups || [])
@@ -3311,7 +3888,7 @@ export default function DelightQuestionLab({
           `Exercise: Word Neighborhoods (Sorting words into categories)`,
           `Categories & target words:`,
           groupsDesc,
-          `Task: Explain the difference between these categories and give a gentle tip on how to categorize the words without giving away all the answers.`,
+          `Task: Explain the categories clearly and guide the learner on where the words belong with helpful definitions or translations.`,
         ].join("\n");
       } else if (question.variant === "morphology_forge") {
         variantContext = [
@@ -3320,7 +3897,7 @@ export default function DelightQuestionLab({
           `Target word to build: "${question.answerWord || ""}"`,
           `Correct morpheme pieces: ${(question.answerPieces || []).join(" + ")}`,
           `Available pieces: ${(question.pieces || []).join(", ")}`,
-          `Task: Give a hint about the meaning or grammar of the missing word to help the learner assemble the correct pieces, without directly spelling "${question.answerWord || ""}".`,
+          `Task: Explain how to build the target word ("${question.answerWord || ""}") using the morpheme pieces (${(question.answerPieces || []).join(" + ")}), explaining their grammatical function or meaning.`,
         ].join("\n");
       } else if (question.variant === "three_clue_mystery") {
         const revealedList = (question.clues || []).slice(0, revealedClues || 1);
@@ -3329,28 +3906,27 @@ export default function DelightQuestionLab({
           .join("\n");
         variantContext = [
           `Exercise: Three-Clue Mystery`,
-          `The learner is trying to deduce the secret mystery word in ${targetName}.`,
           `Mystery word (secret answer): "${question.answer || ""}"`,
           `Example sentence with answer: "${question.example || ""}"`,
           `Clues currently revealed to the learner:`,
           cluesDesc,
-          `CRITICAL RULE: DO NOT state or give away the mystery word "${question.answer || ""}". Give a subtle, friendly nudge or question that connects the clues above to help them deduce "${question.answer || ""}".`,
+          `Task: Guide the learner to deduce the mystery word ("${question.answer || ""}") by explaining how the clues connect and providing a helpful hint or definition in ${supportName}.`,
         ].join("\n");
       } else if (question.variant === "listen_difference") {
         variantContext = [
           `Exercise: Listen for the Difference (Minimal Pairs & Phonetics)`,
           `Spoken target audio: "${question.audioText || ""}"`,
           `Available options: ${(question.options || []).map((opt, i) => `${i + 1}. "${opt}"`).join(", ")}`,
-          `Correct option index: Option ${typeof question.answerIndex === "number" ? question.answerIndex + 1 : 1} ("${question.options?.[question.answerIndex] || ""}")`,
+          `Correct option: Option ${typeof question.answerIndex === "number" ? question.answerIndex + 1 : 1} ("${question.options?.[question.answerIndex] || ""}")`,
           `Key phonetic/grammatical distinction: "${question.contrast || ""}"`,
-          `Task: Give a subtle hint about what sound, syllable stress, or grammatical ending to listen for without naming option ${typeof question.answerIndex === "number" ? question.answerIndex + 1 : 1} or stating the answer directly.`,
+          `Task: Explain the correct option ("${question.options?.[question.answerIndex] || ""}") and point out the key sound or grammatical distinction to listen for.`,
         ].join("\n");
       } else if (question.variant === "three_word_challenge") {
         variantContext = [
           `Exercise: Three-Word Challenge (Creative Sentence Construction)`,
           `Required cue words: ${(question.cues || []).map((c, i) => `${i + 1}. "${c}"`).join(", ")}`,
           `Valid sample answers: ${(question.sampleAnswers || []).map((a) => `"${a}"`).join(", ")}`,
-          `Task: Give an encouraging, creative hint or grammar tip on how the learner could logically connect these three words into a natural sentence in ${targetName}. DO NOT write the full sentence for them.`,
+          `Task: Provide a natural example sentence in ${targetName} connecting all 3 words with its translation in ${supportName} to guide the learner.`,
         ].join("\n");
       } else if (question.variant === "natural_or_weird") {
         variantContext = [
@@ -3359,7 +3935,7 @@ export default function DelightQuestionLab({
           `Correct status: ${question.isNatural ? "NATURAL (authentic everyday phrasing)" : "WEIRD / AWKWARD (unnatural phrasing or grammatical mistake)"}`,
           question.correction ? `Proper correction/repair if weird: "${question.correction}"` : "",
           question.explanation ? `Nuance explanation: "${question.explanation}"` : "",
-          `Task: Give a subtle hint about the phrasing, register, or grammatical intuition in ${targetName} to help the learner decide if native speakers would say this, without directly stating "It's natural" or "It's weird".`,
+          `Task: Explain clearly whether the sentence is natural or weird in everyday ${targetName}, why native speakers say it that way, and provide the natural phrasing.`,
         ].filter(Boolean).join("\n");
       } else {
         variantContext = `Exercise: ${question.variant || "General practice"}\nContent: "${question.line || question.sentence || question.source || question.instruction || ""}"`;
@@ -3413,6 +3989,7 @@ export default function DelightQuestionLab({
     detectiveCopy.helpRequest,
     dialogueForkCopy.helpRequest,
     isLoadingAssistantSupport,
+    isFinalQuiz,
     listenDifferenceCopy.helpRequest,
     morphologyForgeCopy.helpRequest,
     naturalOrWeirdCopy.helpRequest,
@@ -3463,45 +4040,83 @@ export default function DelightQuestionLab({
 
     const generate = async (input, onStream) => {
       if (simplemodel) {
-        const resp = await simplemodel.generateContentStream({
-          contents: [{ role: "user", parts: [{ text: input }] }],
-        });
-        let accumulated = "";
-        for await (const chunk of resp.stream) {
-          if (requestId !== requestRef.current) break;
-          const piece = textFromChunk(chunk);
-          if (piece) {
-            accumulated += piece;
-            onStream?.(accumulated);
+        try {
+          const resp = await simplemodel.generateContentStream({
+            contents: [{ role: "user", parts: [{ text: input }] }],
+            generationConfig: DELIGHT_JSON_GENERATION_CONFIG,
+          });
+          let accumulated = "";
+          for await (const chunk of resp.stream) {
+            if (requestId !== requestRef.current) break;
+            const piece = textFromChunk(chunk);
+            if (piece) {
+              accumulated += piece;
+              onStream?.(accumulated);
+            }
           }
+          const finalAgg = await resp.response;
+          const output =
+            (typeof finalAgg?.text === "function"
+              ? finalAgg.text()
+              : finalAgg?.text) || accumulated;
+          if (String(output || "").trim()) return output;
+          throw new Error("Question generation returned an empty response.");
+        } catch (primaryError) {
+          if (requestId !== requestRef.current) throw primaryError;
+          const fallback = await callResponses({
+            model: DEFAULT_RESPONSES_MODEL,
+            input,
+            generationConfig: DELIGHT_JSON_GENERATION_CONFIG,
+            skipGemini: true,
+          });
+          if (String(fallback || "").trim()) {
+            onStream?.(fallback);
+            return fallback;
+          }
+          throw primaryError;
         }
-        const finalAgg = await resp.response;
-        return (
-          (typeof finalAgg?.text === "function"
-            ? finalAgg.text()
-            : finalAgg?.text) || accumulated
-        );
       }
       const result = await callResponses({
         model: DEFAULT_RESPONSES_MODEL,
         input,
+        generationConfig: DELIGHT_JSON_GENERATION_CONFIG,
       });
+      if (!String(result || "").trim()) {
+        throw new Error("Question generation returned an empty response.");
+      }
       onStream?.(result);
       return result;
     };
 
-    const generationTask =
-      variantMeta.id === "sentence_detective"
-        ? generateSentenceDetectiveQuestion({
+    const normalizeCandidate = (raw) =>
+      normalizeDelightQuestion(variantMeta.id, raw);
+    const candidateIsGrounded = (candidate) =>
+      candidate &&
+      isDelightQuestionLessonGrounded(
+        candidate,
+        lessonContent,
+        moduleType,
+      );
+
+    const generationTask = (async () => {
+      let firstRaw = "";
+      let firstCandidate = null;
+      let rejectionReason = "The first response did not match the required schema.";
+
+      try {
+        if (variantMeta.id === "sentence_detective") {
+          firstCandidate = await generateSentenceDetectiveQuestion({
             generate,
             moduleType,
             targetLang,
             supportLang,
             cefrLevel,
             lessonContent,
+            recentQuestions: recentQuestionSummariesRef.current,
             onStream: onStreamChunk,
-          })
-        : generate(
+          });
+        } else {
+          firstRaw = await generate(
             buildDelightQuestionPrompt({
               variant: variantMeta.id,
               moduleType,
@@ -3509,9 +4124,64 @@ export default function DelightQuestionLab({
               supportLang,
               cefrLevel,
               lessonContent,
+              recentQuestions: recentQuestionSummariesRef.current,
             }),
             onStreamChunk,
           );
+          firstCandidate = normalizeCandidate(firstRaw);
+        }
+      } catch (error) {
+        rejectionReason =
+          error?.issues?.join(" ") ||
+          error?.message ||
+          rejectionReason;
+      }
+
+      if (candidateIsGrounded(firstCandidate)) return firstCandidate;
+      if (firstCandidate) {
+        rejectionReason = "The first response drifted outside the active lesson curriculum.";
+      }
+
+      // One bounded repair attempt lives inside this request. It cannot be
+      // triggered again by rendering or state updates.
+      let repairedCandidate = null;
+      if (variantMeta.id === "sentence_detective") {
+        repairedCandidate = await generateSentenceDetectiveQuestion({
+          generate,
+          moduleType,
+          targetLang,
+          supportLang,
+          cefrLevel,
+          lessonContent,
+          recentQuestions: recentQuestionSummariesRef.current,
+          previousIssues: [rejectionReason],
+          onStream: onStreamChunk,
+        });
+      } else {
+        const repairedRaw = await generate(
+          buildDelightQuestionRepairPrompt({
+            variant: variantMeta.id,
+            moduleType,
+            targetLang,
+            supportLang,
+            cefrLevel,
+            lessonContent,
+            recentQuestions: recentQuestionSummariesRef.current,
+            rejectedResponse: firstRaw,
+            reason: rejectionReason,
+          }),
+          onStreamChunk,
+        );
+        repairedCandidate = normalizeCandidate(repairedRaw);
+      }
+
+      if (candidateIsGrounded(repairedCandidate)) return repairedCandidate;
+      throw new Error(
+        repairedCandidate
+          ? "The repaired question did not match the active lesson curriculum."
+          : "The repaired question did not match the required schema.",
+      );
+    })();
     const generation = settleWithin(
       generationTask,
       QUESTION_GENERATION_TIMEOUT_MS,
@@ -3520,36 +4190,24 @@ export default function DelightQuestionLab({
     generation
       .then((raw) => {
         if (requestId !== requestRef.current) return;
-        const normalized =
-          variantMeta.id === "sentence_detective"
-            ? raw
-            : normalizeDelightQuestion(variantMeta.id, raw);
-        const nextQuestion =
-          normalized || getDelightFallbackQuestion(variantMeta.id, moduleType);
-        if (!normalized) {
-          setGenerationError("Showing a local sample because generation was unavailable.");
+        const normalized = raw;
+        const summary = getDelightQuestionVarietySummary(normalized);
+        if (summary) {
+          recentQuestionSummariesRef.current = [
+            ...recentQuestionSummariesRef.current,
+            summary,
+          ].slice(-5);
         }
-        cacheRef.current.set(cacheKey, nextQuestion);
-        resetForQuestion(nextQuestion);
+        cacheRef.current.set(cacheKey, normalized);
+        resetForQuestion(normalized);
       })
       .catch((error) => {
         if (requestId !== requestRef.current) return;
-        if (variantMeta.id === "sentence_detective") {
-          if (import.meta.env.DEV && error?.issues?.length) {
-            console.warn(
-              "Sentence Detective draft rejected:",
-              JSON.stringify(error.issues),
-            );
-          }
-          setGenerationError(
-            detectiveCopy.generationFailed,
-          );
-          setQuestion(null);
-          return;
+        if (import.meta.env.DEV) {
+          console.warn("Delight question generation failed:", error?.message);
         }
-        const fallback = getDelightFallbackQuestion(variantMeta.id, moduleType);
-        setGenerationError("Showing a local sample because generation was unavailable.");
-        resetForQuestion(fallback);
+        setGenerationError("");
+        setQuestion(null);
       })
       .finally(() => {
         if (requestId === requestRef.current) {
@@ -3573,28 +4231,28 @@ export default function DelightQuestionLab({
   useEffect(
     () => () => {
       requestRef.current += 1;
-      stopAllTTSPlayback();
-      audioPlayerRef.current?.cleanup?.();
+      stopQuestionAudio(false);
     },
-    [],
+    [stopQuestionAudio],
   );
-
-
 
   const moveToVariant = useCallback(
     (index) => {
-      stopAllTTSPlayback();
-      audioPlayerRef.current?.cleanup?.();
-      setIsSpeaking(false);
-      setGenerationNonce(0);
+      stopQuestionAudio();
+      cancelQuestionSpeech();
+      // Revisiting a format should generate fresh lesson material rather than
+      // revive that format's first cached testing sample.
+      setGenerationNonce((value) => value + 1);
       setVariantIndex(
-        (index + GATED_VARIANTS.length) % GATED_VARIANTS.length,
+        (index + AVAILABLE_VARIANTS.length) % AVAILABLE_VARIANTS.length,
       );
     },
-    [],
+    [cancelQuestionSpeech, stopQuestionAudio],
   );
 
   const handleRefresh = useCallback(() => {
+    stopQuestionAudio();
+    cancelQuestionSpeech();
     const cacheKey = [
       moduleType,
       lesson?.id || "free",
@@ -3615,17 +4273,29 @@ export default function DelightQuestionLab({
     supportLang,
     targetLang,
     variantMeta.id,
+    cancelQuestionSpeech,
+    stopQuestionAudio,
   ]);
 
   const handleSkipQuestion = useCallback(() => {
-    if (isFinalQuiz || loading || submitting) return;
+    if (isFinalQuiz || submitting) return;
     playSound(clickSound);
     if (onSkip) {
+      stopQuestionAudio();
+      cancelQuestionSpeech();
       onSkip();
       return;
     }
     handleRefresh();
-  }, [handleRefresh, isFinalQuiz, loading, onSkip, playSound, submitting]);
+  }, [
+    handleRefresh,
+    isFinalQuiz,
+    onSkip,
+    playSound,
+    cancelQuestionSpeech,
+    stopQuestionAudio,
+    submitting,
+  ]);
 
   const handlePlay = useCallback(
     async (customText = null) => {
@@ -3635,76 +4305,154 @@ export default function DelightQuestionLab({
         question?.line ||
         question?.source ||
         question?.sentence;
-      if (!textToPlay || isSpeaking || isSynthesizingAudio) return;
-      stopAllTTSPlayback();
-      audioPlayerRef.current?.cleanup?.();
+      if (!textToPlay || isSynthesizingAudio) return;
+
+      stopQuestionAudio();
+      const requestId = ++audioRequestRef.current;
+
       setIsSynthesizingAudio(true);
-      setIsSpeaking(true);
+      setIsSpeaking(false);
+
       try {
         const player = await getTTSPlayer({
           text: textToPlay,
           langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
           voice: getPreferredTTSVoice(),
         });
-        audioPlayerRef.current = player;
 
+        if (requestId !== audioRequestRef.current) {
+          player.cleanup?.();
+          return;
+        }
+
+        audioPlayerRef.current = player;
+        const audio = player.audio;
+        const audioTracks = audio.srcObject?.getAudioTracks?.() || [];
+        let responseHasCompleted = false;
+        const handleTrackMute = () => {
+          if (requestId === audioRequestRef.current) {
+            setIsSpeaking(false);
+          }
+        };
+
+        let isDone = false;
         const onDone = () => {
-          setIsSpeaking(false);
-          setIsSynthesizingAudio(false);
+          if (isDone) return;
+          isDone = true;
+          audioTracks.forEach((track) =>
+            track.removeEventListener("mute", handleTrackMute),
+          );
+          if (requestId === audioRequestRef.current) {
+            setIsSpeaking(false);
+            setIsSynthesizingAudio(false);
+            audioPlayerRef.current = null;
+          }
           player.cleanup?.();
         };
 
-        player.audio.onended = onDone;
-        player.audio.onerror = onDone;
-        player.finalize?.then(onDone).catch(onDone);
+        audio.onended = onDone;
+        audio.onerror = onDone;
+        audio.onpause = onDone;
+
+        audioTracks.forEach((track) => {
+          if (track.muted) {
+            handleTrackMute();
+          } else {
+            track.addEventListener("mute", handleTrackMute, { once: true });
+          }
+        });
+
+        // Cached blob players expose an already-resolved finalize promise, so
+        // only realtime streams use it as the playback-completion signal.
+        if (audio.srcObject && player.finalize) {
+          player.finalize.then(onDone).catch(onDone);
+        }
+        if (audio.srcObject && player.responseComplete) {
+          player.responseComplete
+            .then(() => {
+              responseHasCompleted = true;
+              if (requestId === audioRequestRef.current) {
+                setIsSpeaking(false);
+              }
+            })
+            .catch(onDone);
+        }
 
         await player.ready;
+        if (requestId !== audioRequestRef.current || isDone) {
+          player.cleanup?.();
+          return;
+        }
         setIsSynthesizingAudio(false);
-        await player.audio.play();
+        setIsSpeaking(!responseHasCompleted);
+        await audio.play().catch(onDone);
       } catch {
-        setIsSynthesizingAudio(false);
-        setIsSpeaking(false);
+        if (requestId === audioRequestRef.current) {
+          setIsSynthesizingAudio(false);
+          setIsSpeaking(false);
+          audioPlayerRef.current = null;
+        }
       }
     },
-    [isSpeaking, isSynthesizingAudio, question?.audioText, question?.line, question?.sentence, targetLang],
+    [
+      isSynthesizingAudio,
+      question?.audioText,
+      question?.line,
+      question?.sentence,
+      question?.source,
+      stopQuestionAudio,
+      targetLang,
+    ],
   );
 
-  const handleSubmit = useCallback(async () => {
-    if (!question || !isDelightResponseReady(question, response) || submitting)
+  const handleSubmit = useCallback(async (responseOverride = null) => {
+    const submittedResponse = responseOverride || response;
+    if (
+      !question ||
+      !isDelightResponseReady(question, submittedResponse) ||
+      submitting
+    )
       return;
     playSound(submitActionSound);
     setSubmitting(true);
-    let ok = gradeDelightResponse(question, response);
+    let ok = gradeDelightResponse(question, submittedResponse);
     if (ok === null) {
-      const judgeInput =
-        question.variant === "sentence_detective"
-          ? buildSentenceDetectiveJudgePrompt({
-              question,
-              response,
-              targetLang,
-              supportLang,
-              cefrLevel,
-              moduleType,
-            })
-          : buildThreeWordJudgePrompt({
-              question,
-              response,
-              targetLang,
-              supportLang,
-            });
-
-      const verdict = await callResponses({
-        model: DEFAULT_RESPONSES_MODEL,
-        input: judgeInput,
+      const judgeInput = buildDelightResponseJudgePrompt({
+        question,
+        response: submittedResponse,
+        targetLang,
+        supportLang,
+        cefrLevel,
+        moduleType,
       });
-      ok = String(verdict || "")
-        .trim()
-        .toUpperCase()
-        .startsWith("Y");
+
+      try {
+        const verdict = await callResponses({
+          model: DEFAULT_RESPONSES_MODEL,
+          input: judgeInput,
+        });
+        const parsedVerdict = parseDelightJudgeVerdict(verdict);
+        if (parsedVerdict === null) {
+          throw new Error("Semantic grader returned no explicit verdict.");
+        }
+        ok = parsedVerdict;
+      } catch (error) {
+        console.error("Delight semantic grading error:", error);
+        toast({
+          title: t("flashcard_eval_error_title") || "Could not grade answer",
+          description:
+            t("flashcard_eval_error_desc") ||
+            "Please check your connection and try again.",
+          status: "error",
+          duration: 3000,
+        });
+        setSubmitting(false);
+        return;
+      }
     }
 
     const xp = ok
-      ? calculateDelightQuestionXp(question, response, {
+      ? calculateDelightQuestionXp(question, submittedResponse, {
           revealedClues,
           isFinalQuiz,
         })
@@ -3714,11 +4462,54 @@ export default function DelightQuestionLab({
     if (ok) {
       setExplanationText("");
       setSessionEarnedXp((prev) => prev + xp);
+    } else {
+      const mem = extractDelightMemoryItem(question, submittedResponse);
+      const sig = `${question.variant || ""}|${mem.concept}|${mem.userAnswer}`;
+      if (companionCapturedRef.current !== sig) {
+        companionCapturedRef.current = sig;
+        void captureCompanionMemory({
+          npub,
+          targetLang,
+          supportLang,
+          sourceMode: moduleType === "vocabulary" ? "vocabulary" : "grammar",
+          concept:
+            mem.concept ||
+            question.sentence ||
+            question.prompt ||
+            "Missed practice item",
+          userAnswer: mem.userAnswer,
+          expectedAnswer: mem.expectedAnswer,
+          cefrLevel,
+          sourceContext: question.variant || moduleType || "delight_question",
+        }).catch((err) => {
+          console.warn("Delight question memory capture error:", err);
+        });
+        triggerDoneAnimation?.();
+      }
     }
     playSound(ok ? deliciousSound : clickSound);
 
     if (isFinalQuiz) {
-      setQuizHistory((history) => [...history, Boolean(ok)]);
+      if (usesExternalQuiz) {
+        onQuizAnswer(Boolean(ok), {
+          question:
+            question.sentence ||
+            question.line ||
+            question.source ||
+            question.instruction ||
+            question.variant,
+          userAnswer: JSON.stringify(submittedResponse),
+          correctAnswer:
+            question.answer ||
+            question.answerWord ||
+            question.options?.[question.answerIndex] ||
+            question.correction ||
+            "",
+          questionType: question.variant,
+        });
+      } else {
+        setQuizHistory((history) => [...history, Boolean(ok)]);
+      }
     } else if (xp > 0) {
       await awardXp(npub, xp, targetLang, {
         skillTreeLessonId: lesson?.id,
@@ -3737,16 +4528,87 @@ export default function DelightQuestionLab({
     revealedClues,
     submitting,
     supportLang,
+    t,
     targetLang,
+    toast,
+    triggerDoneAnimation,
+    usesExternalQuiz,
+    onQuizAnswer,
   ]);
 
-  const handleRetry = useCallback(() => {
-    if (!question) return;
-    resetForQuestion(question);
-  }, [question, resetForQuestion]);
+  useEffect(() => {
+    const transcript = pendingSpeechSubmissionRef.current;
+    if (
+      !transcript ||
+      submitting ||
+      response?.text !== transcript ||
+      !speechInputEnabled
+    ) {
+      return;
+    }
+
+    pendingSpeechSubmissionRef.current = null;
+    void handleSubmit({ ...response, text: transcript });
+  }, [
+    handleSubmit,
+    response,
+    speechInputEnabled,
+    submitting,
+  ]);
+
+  const handleToggleSpeech = useCallback(async () => {
+    if (isSpeechRecording) {
+      playSound(clickSound);
+      stopSpeechRecording();
+      return;
+    }
+    if (
+      !speechInputEnabled ||
+      isSpeechConnecting ||
+      submitting ||
+      result === true
+    ) {
+      return;
+    }
+
+    pendingSpeechSubmissionRef.current = null;
+    stopQuestionAudio();
+    setResult(null);
+    setExplanationText("");
+    playSound(submitActionSound);
+
+    try {
+      await startSpeechRecording();
+    } catch (error) {
+      const isMicDenied = error?.code === "mic-denied";
+      toast({
+        title: isMicDenied
+          ? t("flashcard_mic_denied_title")
+          : t("flashcard_eval_error_title"),
+        description: isMicDenied
+          ? t("flashcard_mic_denied_desc")
+          : t("flashcard_eval_error_desc"),
+        status: isMicDenied ? "warning" : "error",
+        duration: 3000,
+      });
+    }
+  }, [
+    isSpeechConnecting,
+    isSpeechRecording,
+    playSound,
+    result,
+    speechInputEnabled,
+    startSpeechRecording,
+    stopQuestionAudio,
+    stopSpeechRecording,
+    submitting,
+    t,
+    toast,
+  ]);
 
   const handleExplainAnswer = useCallback(async () => {
-    if (!question || isLoadingExplanation || explanationText) return;
+    if (isFinalQuiz || !question || isLoadingExplanation || explanationText)
+      return;
     playSound(submitActionSound);
     setIsLoadingExplanation(true);
     setExplanationText("");
@@ -3806,6 +4668,10 @@ export default function DelightQuestionLab({
 
       const prompt = [
         `You are a helpful language tutor teaching ${targetName}. A student answered an exercise incorrectly.`,
+        buildAssistantLanguagePolicy({
+          supportLanguageName: supportName,
+          targetLanguageName: targetName,
+        }),
         `Question variant: ${question.variant || "Dialogue Fork"}`,
         ...variantDetails,
         "",
@@ -3859,10 +4725,12 @@ export default function DelightQuestionLab({
     }
   }, [
     explanationText,
+    isFinalQuiz,
     isLoadingExplanation,
     playSound,
     question,
     response?.assignments,
+    response?.pieceIndices,
     response?.replacement,
     response?.selectedIndex,
     response?.text,
@@ -3873,7 +4741,7 @@ export default function DelightQuestionLab({
   ]);
 
   const handleCreateNote = useCallback(async () => {
-    if (isCreatingNote || noteCreated || !question) return;
+    if (isFinalQuiz || isCreatingNote || noteCreated || !question) return;
 
     setIsCreatingNote(true);
     setNotesLoading(true);
@@ -3955,11 +4823,16 @@ export default function DelightQuestionLab({
     addNote,
     cefrLevel,
     isCreatingNote,
+    isFinalQuiz,
     lesson?.title,
     moduleType,
     noteCreated,
     question,
+    response?.assignments,
+    response?.pieceIndices,
     response?.replacement,
+    response?.selectedIndex,
+    response?.text,
     result,
     setNotesLoading,
     supportLang,
@@ -3970,11 +4843,15 @@ export default function DelightQuestionLab({
   ]);
 
   const handleNext = useCallback(() => {
-    if (isFinalQuiz && quizHistory.length >= quizConfig.questionsRequired) {
+    if (onNextQuestion) {
+      onNextQuestion();
+      return;
+    }
+    if (isFinalQuiz && quizOutcome.completed) {
       setQuizFinished(true);
       return;
     }
-    if (GATED_VARIANTS.length === 1) {
+    if (AVAILABLE_VARIANTS.length === 1) {
       handleRefresh();
       return;
     }
@@ -3983,19 +4860,41 @@ export default function DelightQuestionLab({
     handleRefresh,
     isFinalQuiz,
     moveToVariant,
-    quizConfig.questionsRequired,
-    quizHistory.length,
+    onNextQuestion,
+    quizOutcome.completed,
     variantIndex,
   ]);
 
   const ready = question && isDelightResponseReady(question, response);
-  const isSentenceDetective = question?.variant === "sentence_detective";
+  const speechLabels = {
+    record: t("flashcard_record_answer"),
+    stop: t("flashcard_stop_recording"),
+    connecting: t("vocab_connecting"),
+  };
   const isLastQuizQuestion =
-    isFinalQuiz && quizHistory.length >= quizConfig.questionsRequired;
-  const quizCorrect = quizHistory.filter(Boolean).length;
+    isFinalQuiz && quizOutcome.completed;
+  const quizCorrect = quizOutcome.correct;
+
+  const handleExitQuiz = useCallback(() => {
+    if (quizStorageKey && typeof window !== "undefined") {
+      localStorage.removeItem(quizStorageKey);
+    }
+    setQuizHistory([]);
+    setQuizFinished(false);
+    (onExitQuiz || onSkip)?.();
+  }, [onExitQuiz, onSkip, quizStorageKey]);
+
+  const handleRetryQuiz = useCallback(() => {
+    if (quizStorageKey && typeof window !== "undefined") {
+      localStorage.removeItem(quizStorageKey);
+    }
+    setQuizHistory([]);
+    setQuizFinished(false);
+    handleRefresh();
+  }, [handleRefresh, quizStorageKey]);
 
   if (quizFinished) {
-    const passed = quizCorrect >= quizConfig.passingScore;
+    const passed = quizOutcome.passed;
     return (
       <Box
         p={4}
@@ -4024,12 +4923,31 @@ export default function DelightQuestionLab({
               total: quizHistory.length,
             })}
           </Text>
-          <Button
-            colorScheme="cyan"
-            onClick={onExitQuiz || onSkip || (() => setQuizFinished(false))}
-          >
-            {detectiveCopy.continue}
-          </Button>
+          <VStack spacing={3} width="100%">
+            {!passed && (
+              <Button
+                width="100%"
+                colorScheme="purple"
+                onClick={handleRetryQuiz}
+              >
+                {t("flashcard_try_again") === "flashcard_try_again"
+                  ? "Try again"
+                  : t("flashcard_try_again")}
+              </Button>
+            )}
+            <Button
+              width="100%"
+              colorScheme="cyan"
+              variant={passed ? "solid" : "outline"}
+              onClick={handleExitQuiz}
+            >
+              {passed
+                ? detectiveCopy.continue
+                : t("vocab_back_to_skill_tree") === "vocab_back_to_skill_tree"
+                  ? "Back to skill tree"
+                  : t("vocab_back_to_skill_tree")}
+            </Button>
+          </VStack>
         </VStack>
       </Box>
     );
@@ -4037,14 +4955,19 @@ export default function DelightQuestionLab({
 
   return (
     <Box
-      p={4}
+      p={embedded ? 0 : 4}
       color={APP_TEXT_PRIMARY}
       lang={supportLang}
       dir={supportDirection}
     >
-      <VStack spacing={4} align="stretch" maxW="720px" mx="auto">
+      <VStack
+        spacing={4}
+        align="stretch"
+        maxW={embedded ? "none" : "720px"}
+        mx="auto"
+      >
         {/* Shared progress header */}
-        <Box display="flex" justifyContent="center">
+        {!embedded && <Box display="flex" justifyContent="center">
           <Box w={{ base: "100%", md: "60%" }} justifyContent="center">
             {isFinalQuiz ? (
               // Quiz progress display with animated bars
@@ -4132,73 +5055,75 @@ export default function DelightQuestionLab({
               />
             )}
           </Box>
-        </Box>
+        </Box>}
 
-        <Box
-          p={3}
-          bg="rgba(128, 90, 213, 0.10)"
-          borderWidth="1px"
-          borderColor="rgba(128, 90, 213, 0.35)"
-          borderRadius="xl"
-          style={questionSquircleStyle}
-        >
-          <Flex gap={3} align="center" flexWrap="wrap">
-            <Badge colorScheme="purple" flexShrink={0}>
-              {detectiveCopy.testingGate}
-            </Badge>
-            {GATED_VARIANTS.length > 1 ? (
-              <>
-                <Select
-                  aria-label="Choose delight variant"
-                  size="sm"
-                  flex="1"
-                  minW="210px"
-                  value={variantMeta.id}
-                  onChange={(event) =>
-                    moveToVariant(
-                      GATED_VARIANTS.findIndex(
-                        ({ id }) => id === event.target.value,
-                      ),
-                    )
-                  }
-                  bg={APP_SURFACE}
-                  borderColor={APP_BORDER}
-                  style={questionSquircleStyle}
-                >
-                  {GATED_VARIANTS.map((variant, index) => (
-                    <option key={variant.id} value={variant.id}>
-                      {index + 1}. {variant.label}
-                    </option>
-                  ))}
-                </Select>
-                <Badge variant="outline" colorScheme="purple">
-                  {variantIndex + 1}/{GATED_VARIANTS.length}
-                </Badge>
-              </>
-            ) : (
-              <Text flex="1" fontSize="sm" fontWeight="800">
-                {activeVariantCopy.title}
-              </Text>
-            )}
-            <IconButton
-              aria-label={
-                activeVariantCopy.generateAnother ||
-                activeVariantCopy.tryAnother ||
-                "Generate another"
-              }
-              icon={<FiRefreshCw />}
-              size="sm"
-              onClick={handleRefresh}
-              isDisabled={loading}
-              {...getQuestionToolButtonProps()}
-            />
-          </Flex>
-          <Text fontSize="xs" color={APP_TEXT_SECONDARY} mt={2}>
-            {moduleType === "vocabulary"
-              ? detectiveCopy.testingVocabulary
-              : detectiveCopy.testingGrammar}
-          </Text>
-        </Box>
+        {!embedded && !isFinalQuiz && (
+          <Box
+            p={3}
+            bg="rgba(128, 90, 213, 0.10)"
+            borderWidth="1px"
+            borderColor="rgba(128, 90, 213, 0.35)"
+            borderRadius="xl"
+            style={questionSquircleStyle}
+          >
+            <Flex gap={3} align="center" flexWrap="wrap">
+              <Badge colorScheme="purple" flexShrink={0}>
+                {detectiveCopy.testingGate}
+              </Badge>
+              {AVAILABLE_VARIANTS.length > 1 ? (
+                <>
+                  <Select
+                    aria-label="Choose delight variant"
+                    size="sm"
+                    flex="1"
+                    minW="210px"
+                    value={variantMeta.id}
+                    onChange={(event) =>
+                      moveToVariant(
+                        AVAILABLE_VARIANTS.findIndex(
+                          ({ id }) => id === event.target.value,
+                        ),
+                      )
+                    }
+                    bg={APP_SURFACE}
+                    borderColor={APP_BORDER}
+                    style={questionSquircleStyle}
+                  >
+                    {AVAILABLE_VARIANTS.map((variant, index) => (
+                      <option key={variant.id} value={variant.id}>
+                        {index + 1}. {variant.label}
+                      </option>
+                    ))}
+                  </Select>
+                  <Badge variant="outline" colorScheme="purple">
+                    {variantIndex + 1}/{AVAILABLE_VARIANTS.length}
+                  </Badge>
+                </>
+              ) : (
+                <Text flex="1" fontSize="sm" fontWeight="800">
+                  {activeVariantCopy.title}
+                </Text>
+              )}
+              <IconButton
+                aria-label={
+                  activeVariantCopy.generateAnother ||
+                  activeVariantCopy.tryAnother ||
+                  "Generate another"
+                }
+                icon={<FiRefreshCw />}
+                size="sm"
+                onClick={handleRefresh}
+                isDisabled={loading}
+                {...getQuestionToolButtonProps()}
+              />
+            </Flex>
+            <Text fontSize="xs" color={APP_TEXT_SECONDARY} mt={2}>
+              {moduleType === "vocabulary"
+                ? detectiveCopy.testingVocabulary
+                : detectiveCopy.testingGrammar}
+            </Text>
+          </Box>
+        )}
 
         <Box
           p={{ base: 4, md: 6 }}
@@ -4211,43 +5136,64 @@ export default function DelightQuestionLab({
         >
           {loading ? (
             variantMeta.id === "natural_or_weird" ? (
-              <NaturalOrWeirdSkeleton />
+              <NaturalOrWeirdSkeleton
+                streamingQuestion={streamingQuestion}
+                copy={naturalOrWeirdCopy}
+                targetLang={targetLang}
+                supportLang={supportLang}
+              />
             ) : variantMeta.id === "three_word_challenge" ? (
-              <ThreeWordChallengeSkeleton />
+              <ThreeWordChallengeSkeleton
+                streamingQuestion={streamingQuestion}
+                copy={threeWordChallengeCopy}
+                targetLang={targetLang}
+                supportLang={supportLang}
+              />
             ) : variantMeta.id === "listen_difference" ? (
-              <ListenDifferenceSkeleton />
+              <ListenDifferenceSkeleton
+                streamingQuestion={streamingQuestion}
+                copy={listenDifferenceCopy}
+                targetLang={targetLang}
+                supportLang={supportLang}
+              />
             ) : variantMeta.id === "three_clue_mystery" ? (
               <ThreeClueMysterySkeleton
+                streamingQuestion={streamingQuestion}
                 copy={threeClueMysteryCopy}
                 targetLang={targetLang}
                 supportLang={supportLang}
               />
             ) : variantMeta.id === "morphology_forge" ? (
               <MorphologyForgeSkeleton
+                streamingQuestion={streamingQuestion}
                 copy={morphologyForgeCopy}
                 targetLang={targetLang}
                 supportLang={supportLang}
               />
             ) : variantMeta.id === "word_neighborhoods" ? (
               <WordNeighborhoodsSkeleton
+                streamingQuestion={streamingQuestion}
                 copy={wordNeighborhoodsCopy}
                 targetLang={targetLang}
                 supportLang={supportLang}
               />
             ) : variantMeta.id === "sentence_shapeshifter" ? (
               <SentenceShapeshifterSkeleton
+                streamingQuestion={streamingQuestion}
                 copy={sentenceShapeshifterCopy}
                 targetLang={targetLang}
                 supportLang={supportLang}
               />
             ) : variantMeta.id === "dialogue_fork" ? (
               <DialogueForkSkeleton
+                streamingQuestion={streamingQuestion}
                 copy={dialogueForkCopy}
                 targetLang={targetLang}
                 supportLang={supportLang}
               />
             ) : (
               <SentenceDetectiveSkeleton
+                streamingQuestion={streamingQuestion}
                 copy={detectiveCopy}
                 targetLang={targetLang}
                 supportLang={supportLang}
@@ -4283,7 +5229,7 @@ export default function DelightQuestionLab({
                   targetLang={targetLang}
                   supportLang={supportLang}
                   copy={detectiveCopy}
-                  onAskAssistant={handleAskAssistant}
+                  onAskAssistant={isFinalQuiz ? null : handleAskAssistant}
                   isLoadingAssistantSupport={isLoadingAssistantSupport}
                   assistantSupportText={assistantSupportText}
                   assistantLabel={t("vocab_assistant") || "Assistant"}
@@ -4298,14 +5244,13 @@ export default function DelightQuestionLab({
                   targetLang={targetLang}
                   supportLang={supportLang}
                   copy={dialogueForkCopy}
-                  onAskAssistant={handleAskAssistant}
+                  onAskAssistant={isFinalQuiz ? null : handleAskAssistant}
                   isLoadingAssistantSupport={isLoadingAssistantSupport}
                   assistantSupportText={assistantSupportText}
                   assistantLabel={t("vocab_assistant") || "Assistant"}
                   onPlayAudio={handlePlay}
                   isLoadingAudio={isSynthesizingAudio}
                   isPlayingAudio={isSpeaking}
-                  isCorrect={result === true}
                 />
               )}
               {question.variant === "sentence_shapeshifter" && (
@@ -4317,13 +5262,18 @@ export default function DelightQuestionLab({
                   targetLang={targetLang}
                   supportLang={supportLang}
                   copy={sentenceShapeshifterCopy}
-                  onAskAssistant={handleAskAssistant}
+                  onAskAssistant={isFinalQuiz ? null : handleAskAssistant}
                   isLoadingAssistantSupport={isLoadingAssistantSupport}
                   assistantSupportText={assistantSupportText}
                   assistantLabel={t("vocab_assistant") || "Assistant"}
                   onPlayAudio={handlePlay}
                   isLoadingAudio={isSynthesizingAudio}
                   isPlayingAudio={isSpeaking}
+                  onToggleSpeech={handleToggleSpeech}
+                  isSpeechRecording={isSpeechRecording}
+                  isSpeechConnecting={isSpeechConnecting}
+                  supportsSpeech={supportsSpeech}
+                  speechLabels={speechLabels}
                   onSubmit={handleSubmit}
                   canSubmit={ready}
                   submitting={submitting}
@@ -4339,7 +5289,7 @@ export default function DelightQuestionLab({
                   targetLang={targetLang}
                   supportLang={supportLang}
                   copy={wordNeighborhoodsCopy}
-                  onAskAssistant={handleAskAssistant}
+                  onAskAssistant={isFinalQuiz ? null : handleAskAssistant}
                   isLoadingAssistantSupport={isLoadingAssistantSupport}
                   assistantSupportText={assistantSupportText}
                   assistantLabel={t("vocab_assistant") || "Assistant"}
@@ -4354,7 +5304,7 @@ export default function DelightQuestionLab({
                   targetLang={targetLang}
                   supportLang={supportLang}
                   copy={morphologyForgeCopy}
-                  onAskAssistant={handleAskAssistant}
+                  onAskAssistant={isFinalQuiz ? null : handleAskAssistant}
                   isLoadingAssistantSupport={isLoadingAssistantSupport}
                   assistantSupportText={assistantSupportText}
                   assistantLabel={t("vocab_assistant") || "Assistant"}
@@ -4371,10 +5321,15 @@ export default function DelightQuestionLab({
                   targetLang={targetLang}
                   supportLang={supportLang}
                   copy={threeClueMysteryCopy}
-                  onAskAssistant={handleAskAssistant}
+                  onAskAssistant={isFinalQuiz ? null : handleAskAssistant}
                   isLoadingAssistantSupport={isLoadingAssistantSupport}
                   assistantSupportText={assistantSupportText}
                   assistantLabel={t("vocab_assistant") || "Assistant"}
+                  onToggleSpeech={handleToggleSpeech}
+                  isSpeechRecording={isSpeechRecording}
+                  isSpeechConnecting={isSpeechConnecting}
+                  supportsSpeech={supportsSpeech}
+                  speechLabels={speechLabels}
                   onSubmit={handleSubmit}
                   canSubmit={ready}
                   submitting={submitting}
@@ -4389,13 +5344,13 @@ export default function DelightQuestionLab({
                   targetLang={targetLang}
                   supportLang={supportLang}
                   copy={listenDifferenceCopy}
-                  onAskAssistant={handleAskAssistant}
+                  onAskAssistant={isFinalQuiz ? null : handleAskAssistant}
                   isLoadingAssistantSupport={isLoadingAssistantSupport}
                   assistantSupportText={assistantSupportText}
                   assistantLabel={t("vocab_assistant") || "Assistant"}
                   onPlayAudio={handlePlay}
-                  isSpeaking={isSpeaking}
-                  isSynthesizingAudio={isSynthesizingAudio}
+                  isLoadingAudio={isSynthesizingAudio}
+                  isPlayingAudio={isSpeaking}
                   onSubmit={handleSubmit}
                   canSubmit={ready}
                   submitting={submitting}
@@ -4410,14 +5365,18 @@ export default function DelightQuestionLab({
                   targetLang={targetLang}
                   supportLang={supportLang}
                   copy={threeWordChallengeCopy}
-                  onAskAssistant={handleAskAssistant}
+                  onAskAssistant={isFinalQuiz ? null : handleAskAssistant}
                   isLoadingAssistantSupport={isLoadingAssistantSupport}
                   assistantSupportText={assistantSupportText}
                   assistantLabel={t("vocab_assistant") || "Assistant"}
+                  onToggleSpeech={handleToggleSpeech}
+                  isSpeechRecording={isSpeechRecording}
+                  isSpeechConnecting={isSpeechConnecting}
+                  supportsSpeech={supportsSpeech}
+                  speechLabels={speechLabels}
                   onSubmit={handleSubmit}
                   canSubmit={ready}
                   submitting={submitting}
-                  isCorrect={result === true}
                 />
               )}
               {question.variant === "natural_or_weird" && (
@@ -4429,13 +5388,13 @@ export default function DelightQuestionLab({
                   targetLang={targetLang}
                   supportLang={supportLang}
                   copy={naturalOrWeirdCopy}
-                  onAskAssistant={handleAskAssistant}
+                  onAskAssistant={isFinalQuiz ? null : handleAskAssistant}
                   isLoadingAssistantSupport={isLoadingAssistantSupport}
                   assistantSupportText={assistantSupportText}
                   assistantLabel={t("vocab_assistant") || "Assistant"}
                   onPlayAudio={handlePlay}
-                  isSpeaking={isSpeaking}
-                  isSynthesizingAudio={isSynthesizingAudio}
+                  isLoadingAudio={isSynthesizingAudio}
+                  isPlayingAudio={isSpeaking}
                   onSubmit={handleSubmit}
                   canSubmit={ready}
                   submitting={submitting}
@@ -4445,7 +5404,7 @@ export default function DelightQuestionLab({
           )}
         </Box>
 
-        {!loading && question && (result === null || (!isFinalQuiz && result === false)) && (
+        {(result === null || (!isFinalQuiz && result === false)) && (
           <VStack spacing={3} align="stretch" pt={1}>
             <HStack justify="flex-end" spacing={3} flexWrap="wrap">
               {!isFinalQuiz && (
@@ -4453,10 +5412,10 @@ export default function DelightQuestionLab({
                   variant="ghost"
                   size="lg"
                   onClick={handleSkipQuestion}
-                  isDisabled={loading || submitting}
+                  isDisabled={submitting}
                   style={questionSquircleStyle}
                 >
-                  {activeVariantCopy.skip}
+                  {activeVariantCopy.skip || "Skip"}
                 </Button>
               )}
               <Button
@@ -4464,13 +5423,19 @@ export default function DelightQuestionLab({
                 size="lg"
                 px={{ base: 7, md: 10 }}
                 isLoading={submitting}
-                isDisabled={!ready || submitting}
-                onClick={handleSubmit}
+                isDisabled={
+                  loading ||
+                  !ready ||
+                  submitting ||
+                  isSpeechRecording ||
+                  isSpeechConnecting
+                }
+                onClick={() => handleSubmit()}
                 style={questionSquircleStyle}
               >
                 {submitting
-                  ? activeVariantCopy.checking
-                  : activeVariantCopy.submit}
+                  ? activeVariantCopy.checking || "Checking…"
+                  : activeVariantCopy.submit || "Check"}
               </Button>
             </HStack>
           </VStack>
@@ -4484,20 +5449,30 @@ export default function DelightQuestionLab({
             onNext={handleNext}
             nextLabel={
               isLastQuizQuestion
-                ? t("vocab_see_results") === "vocab_see_results"
-                  ? "See results"
-                  : t("vocab_see_results")
-                : t("vocab_next_question") === "vocab_next_question"
-                  ? "Next question"
-                  : t("vocab_next_question")
+                ? t("vocab_see_results") !== "vocab_see_results"
+                  ? t("vocab_see_results")
+                  : (supportLang === "es"
+                      ? "Ver resultados"
+                      : supportLang === "it"
+                        ? "Vedi i risultati"
+                        : supportLang === "fr"
+                          ? "Voir les résultats"
+                          : supportLang === "de"
+                            ? "Ergebnisse ansehen"
+                            : "See results")
+                : activeVariantCopy?.nextQuestion
+                  ? activeVariantCopy.nextQuestion.replace(/\s*→\s*$/, "")
+                  : t("practice_next_question") !== "practice_next_question"
+                    ? t("practice_next_question")
+                    : "Next question"
             }
             t={t}
             userLanguage={supportLang}
-            onExplainAnswer={handleExplainAnswer}
+            onExplainAnswer={isFinalQuiz ? undefined : handleExplainAnswer}
             explanationText={explanationText}
             isLoadingExplanation={isLoadingExplanation}
             lessonProgress={lessonProgress}
-            onCreateNote={handleCreateNote}
+            onCreateNote={isFinalQuiz ? undefined : handleCreateNote}
             isCreatingNote={isCreatingNote}
             noteCreated={noteCreated}
           />

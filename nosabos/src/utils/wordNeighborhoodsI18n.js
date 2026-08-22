@@ -18,6 +18,8 @@ export const WORD_NEIGHBORHOODS_COPY = Object.freeze({
     tryAnother: "Try another set",
     testingVocabulary: "Testing lexical relationships & categories",
     testingGrammar: "Testing grammatical structures & patterns",
+    dropPlaceholder: "Drag a word here or tap to place",
+    tapToPlace: "Tap to place “{word}”",
   },
   es: {
     title: "Vecindarios de palabras",
@@ -38,6 +40,8 @@ export const WORD_NEIGHBORHOODS_COPY = Object.freeze({
     tryAnother: "Probar otro conjunto",
     testingVocabulary: "Evaluando categorías y relaciones léxicas",
     testingGrammar: "Evaluando patrones y estructuras gramaticales",
+    dropPlaceholder: "Arrastra una palabra aquí o toca para colocar",
+    tapToPlace: "Toca para colocar «{word}»",
   },
   fr: {
     title: "Quartiers de mots",
@@ -58,6 +62,8 @@ export const WORD_NEIGHBORHOODS_COPY = Object.freeze({
     tryAnother: "Essayer un autre ensemble",
     testingVocabulary: "Évaluation des catégories et relations lexicales",
     testingGrammar: "Évaluation des structures et régularités grammaticales",
+    dropPlaceholder: "Glissez un mot ici ou touchez pour placer",
+    tapToPlace: "Touchez pour placer « {word} »",
   },
   de: {
     title: "Wort-Nachbarschaften",
@@ -78,6 +84,8 @@ export const WORD_NEIGHBORHOODS_COPY = Object.freeze({
     tryAnother: "Anderes Set probieren",
     testingVocabulary: "Prüfung von Wortfeldern und Kategorien",
     testingGrammar: "Prüfung grammatischer Muster und Strukturen",
+    dropPlaceholder: "Ziehe ein Wort hierher oder tippe zum Platzieren",
+    tapToPlace: "Tippe, um „{word}“ zu platzieren",
   },
   it: {
     title: "Quartieri di parole",
@@ -98,6 +106,8 @@ export const WORD_NEIGHBORHOODS_COPY = Object.freeze({
     tryAnother: "Prova un altro gruppo",
     testingVocabulary: "Verifica di categorie e relazioni lessicali",
     testingGrammar: "Verifica di schemi e strutture grammaticali",
+    dropPlaceholder: "Trascina una parola qui o tocca per posizionarla",
+    tapToPlace: "Tocca per posizionare «{word}»",
   },
   pt: {
     title: "Bairros de palavras",
@@ -118,6 +128,8 @@ export const WORD_NEIGHBORHOODS_COPY = Object.freeze({
     tryAnother: "Tentar outro conjunto",
     testingVocabulary: "Avaliando categorias e relações lexicais",
     testingGrammar: "Avaliando padrões e estruturas gramaticais",
+    dropPlaceholder: "Arraste uma palavra aqui ou toque para posicionar",
+    tapToPlace: "Toque para posicionar “{word}”",
   },
   ja: {
     title: "言葉のグループ分け",
@@ -137,6 +149,8 @@ export const WORD_NEIGHBORHOODS_COPY = Object.freeze({
     tryAnother: "別の組み合わせを試す",
     testingVocabulary: "語彙の意味関係とカテゴリーの確認",
     testingGrammar: "文法構造とパターンの確認",
+    dropPlaceholder: "単語をドラッグまたはタップして配置",
+    tapToPlace: "タップして「{word}」を配置",
   },
   ru: {
     title: "Группы слов",
@@ -157,6 +171,8 @@ export const WORD_NEIGHBORHOODS_COPY = Object.freeze({
     tryAnother: "Попробовать другой набор",
     testingVocabulary: "Проверка лексических категорий и связей",
     testingGrammar: "Проверка грамматических структур и моделей",
+    dropPlaceholder: "Перетащите слово сюда или нажмите, чтобы разместить",
+    tapToPlace: "Нажмите, чтобы разместить «{word}»",
   },
   el: {
     title: "Γειτονιές λέξεων",
@@ -177,6 +193,8 @@ export const WORD_NEIGHBORHOODS_COPY = Object.freeze({
     tryAnother: "Δοκιμάστε άλλο σύνολο",
     testingVocabulary: "Αξιολόγηση λεξιλογικών κατηγοριών και σχέσεων",
     testingGrammar: "Αξιολόγηση γραμματικών μοτίβων και δομών",
+    dropPlaceholder: "Σύρετε μια λέξη εδώ ή πατήστε για τοποθέτηση",
+    tapToPlace: "Πατήστε για τοποθέτηση του «{word}»",
   },
   nl: {
     title: "Woordbuurten",
@@ -197,6 +215,8 @@ export const WORD_NEIGHBORHOODS_COPY = Object.freeze({
     tryAnother: "Probeer een andere set",
     testingVocabulary: "Toetsing van woordvelden en categorieën",
     testingGrammar: "Toetsing van grammaticale structuren en patronen",
+    dropPlaceholder: "Sleep een woord hierheen of tik om te plaatsen",
+    tapToPlace: "Tik om “{word}” te plaatsen",
   },
   pl: {
     title: "Sąsiedztwa słów",
@@ -217,6 +237,8 @@ export const WORD_NEIGHBORHOODS_COPY = Object.freeze({
     tryAnother: "Wypróbuj inny zestaw",
     testingVocabulary: "Ocena kategorii i powiązań leksykalnych",
     testingGrammar: "Ocena struktur i wzorców gramatycznych",
+    dropPlaceholder: "Przeciągnij słowo tutaj lub dotknij, aby umieścić",
+    tapToPlace: "Dotknij, aby umieścić „{word}”",
   },
   ga: {
     title: "Comharsanachtaí Focal",
@@ -237,6 +259,8 @@ export const WORD_NEIGHBORHOODS_COPY = Object.freeze({
     tryAnother: "Bain triail as sraith eile",
     testingVocabulary: "Tástáil ar réimsí agus catagóirí foclóra",
     testingGrammar: "Tástáil ar phatrúin agus struchtúir ghramadaí",
+    dropPlaceholder: "Tarraing focal anseo nó tapáil le cur ann",
+    tapToPlace: "Tapáil chun “{word}” a chur ann",
   },
   ar: {
     title: "مجموعات الكلمات",
@@ -256,6 +280,8 @@ export const WORD_NEIGHBORHOODS_COPY = Object.freeze({
     tryAnother: "جرب مجموعة أخرى",
     testingVocabulary: "اختبار الفئات والعلاقات المعجمية",
     testingGrammar: "اختبار التراكيب والأنماط النحوية",
+    dropPlaceholder: "اسحب كلمة هنا أو اضغط لوضعها",
+    tapToPlace: "اضغط لوضع «{word}»",
   },
   hi: {
     title: "शब्द समूह",
@@ -275,6 +301,8 @@ export const WORD_NEIGHBORHOODS_COPY = Object.freeze({
     tryAnother: "दूसरा सेट आज़माएं",
     testingVocabulary: "शब्दावली श्रेणियों और संबंधों का परीक्षण",
     testingGrammar: "व्याकरणिक संरचनाओं और पैटर्नों का परीक्षण",
+    dropPlaceholder: "यहाँ एक शब्द खींचें या रखने के लिए टैप करें",
+    tapToPlace: "“{word}” रखने के लिए टैप करें",
   },
   zh: {
     title: "词汇分类",
@@ -294,6 +322,8 @@ export const WORD_NEIGHBORHOODS_COPY = Object.freeze({
     tryAnother: "尝试另一组",
     testingVocabulary: "测试词汇类别与语义关联",
     testingGrammar: "测试语法结构与句法模式",
+    dropPlaceholder: "拖放词汇至此处或点击放置",
+    tapToPlace: "点击放置“{word}”",
   },
   nah: {
     title: "Tlahtolcenquizaliztli",
@@ -312,6 +342,8 @@ export const WORD_NEIGHBORHOODS_COPY = Object.freeze({
     tryAnother: "Ocse tlahtolli",
     testingVocabulary: "Yehyecoliztli tlahtolmatiliztli",
     testingGrammar: "Yehyecoliztli tlahtolmelahualiztli",
+    dropPlaceholder: "Xikhuilana ce tlahtolli nican noso xikpachiuh",
+    tapToPlace: "Xikpachiuh inic tictlalis “{word}”",
   },
   yua: {
     title: "Much'kabil T'aano'ob",
@@ -330,6 +362,8 @@ export const WORD_NEIGHBORHOODS_COPY = Object.freeze({
     tryAnother: "Yóolt u láak' t'aan",
     testingVocabulary: "Xak'al tsoolil t'aano'ob",
     testingGrammar: "Xak'al nu'ukbesajil t'aano'ob",
+    dropPlaceholder: "Jats' jump'éel t'aan waye' wa mach utia'al a ts'áaik",
+    tapToPlace: "Mach utia'al a ts'áaik “{word}”",
   },
 });
 

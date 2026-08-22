@@ -139,12 +139,11 @@ Nosabos serves a global audience learning across 15+ support languages. Every qu
 
 ---
 
-### 7. Testing Gate & Active Variant Defaulting
-During active feature development and iterative QA:
-- **Testing Gate Config**: Controlled via `src/config/delightVariantGate.js`.
-- **Default Variant Rule**: The variant currently under active development/refinement **MUST be placed FIRST** in `DELIGHT_VARIANT_TEST_IDS` (e.g., `["dialogue_fork", "sentence_detective"]`).
-- **Seamless QA**: This ensures that when opening `DelightQuestionLab`, exercises immediately default to the variant being developed, avoiding manual switching across test runs.
-- **Controlled Rotation**: Keep dormant/unimplemented variants gated out until their generator, skeleton, and UI interaction have passed validation.
+### 7. Integrated Variant Rotation
+The approved variants are exported through `DELIGHT_VARIANT_IDS` and participate
+as individual entries in the Grammar and Vocabulary shuffle bags. The host module
+owns question order, lesson navigation, and quiz progress; `DelightQuestionLab`
+owns generation, interaction, and grading for the selected variant.
 
 ---
 
@@ -170,6 +169,5 @@ When implementing or refining any of the 9 question variants:
 7. [ ] **FeedbackRail**: Uses `<FeedbackRail>` for correct/incorrect feedback with dynamic XP scaling, progress wavebar, and on-demand explanation.
 8. [ ] **Note Creation**: Supports `handleCreateNote` with localized summary and example sentences.
 9. [ ] **Skeleton Loader**: Dedicated skeleton component with zero layout shift during generation.
-10. [ ] **Testing Gate Placement**: Position the active variant first in `DELIGHT_VARIANT_TEST_IDS` in `src/config/delightVariantGate.js`.
+10. [ ] **Host Integration**: Add the approved variant ID to `DELIGHT_VARIANTS`; the shared Grammar and Vocabulary rotations consume `DELIGHT_VARIANT_IDS` automatically.
 11. [ ] **Audio & Spinner Lifecycle**: Spinner stops immediately when speaking starts, and resets cleanly on completion via `player.finalize`.
-

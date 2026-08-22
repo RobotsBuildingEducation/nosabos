@@ -133,6 +133,7 @@ import VoicePreferenceField from "./components/VoicePreferenceField";
 import { translations } from "./utils/translation";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "./utils/llm";
 import { clampCefrLevel, maxCefrLevel } from "./utils/phonicsLevel";
+import { isMasterUnlockActive } from "./utils/masterUnlock";
 import Vocabulary from "./components/Vocabulary";
 import StoryMode from "./components/Stories";
 import History from "./components/History";
@@ -318,7 +319,6 @@ import { APP_ACTION_BAR_RADIUS, APP_SQUIRCLE_SHAPE } from "./theme";
 import {
   DEFAULT_SUPPORT_LANGUAGE,
   DEFAULT_TARGET_LANGUAGE,
-  canAccessSelectorHiddenPracticeLanguages,
   getLanguageLabel,
   getLanguageDirection,
   getLanguageLocale,
@@ -491,8 +491,6 @@ const getPersistedOnboardingCompletion = (data) => {
 
 const CEFR_LEVELS = new Set(["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"]);
 const ONBOARDING_TOTAL_STEPS = 1;
-const TEST_UNLOCK_NSEC =
-  "nsec1akcvuhtemz3kw58gvvfg38uucu30zfsahyt6ulqapx44lype6a9q42qevv";
 
 const DEFAULT_VOICE_PAUSE_MS = 1200;
 const LOADING_ORB_STATES = ["idle", "listening", "speaking"];
@@ -1395,10 +1393,8 @@ function TopBar({
         ui: t,
         uiLang: appLanguage,
         showJapanese,
-        includeSelectorHidden:
-          canAccessSelectorHiddenPracticeLanguages(activeNpub),
       }),
-    [activeNpub, appLanguage, showJapanese, t],
+    [appLanguage, showJapanese, t],
   );
   const selectedSupportOption =
     supportLanguageOptions.find(
@@ -3000,15 +2996,10 @@ export default function App({ onBootReady } = {}) {
       : "",
   );
 
-  const isTestUnlockActive = useMemo(() => {
-    if (activeNsec === TEST_UNLOCK_NSEC) return true;
-
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("local_nsec") === TEST_UNLOCK_NSEC;
-    }
-
-    return false;
-  }, [activeNsec]);
+  const isTestUnlockActive = useMemo(
+    () => isMasterUnlockActive(activeNpub),
+    [activeNpub],
+  );
 
   useEffect(() => {
     if (!activeNpub) {
@@ -3515,8 +3506,10 @@ export default function App({ onBootReady } = {}) {
       }),
     [passcodeSubscriptionVerified, patreonSubscriptionVerified],
   );
-  const subscriptionVerified = subscriptionAccess.authorized;
-  const requiresPatreonMigration = subscriptionAccess.requiresPatreonMigration;
+  const subscriptionVerified =
+    isTestUnlockActive || subscriptionAccess.authorized;
+  const requiresPatreonMigration =
+    !isTestUnlockActive && subscriptionAccess.requiresPatreonMigration;
   const [allowPosts, setAllowPosts] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [soundVolume, setSoundVolume] = useState(100);
@@ -9966,9 +9959,6 @@ export default function App({ onBootReady } = {}) {
           userLanguage={appLanguage}
           onComplete={handleOnboardingComplete}
           initialDraft={onboardingInitialDraft}
-          includeSelectorHidden={canAccessSelectorHiddenPracticeLanguages(
-            activeNpub,
-          )}
         />
       </Box>
     );
@@ -10488,6 +10478,7 @@ export default function App({ onBootReady } = {}) {
                             }
                           }
                           onSkip={switchToRandomLessonMode}
+                          onExitQuiz={handleReturnToSkillTree}
                           onSendHelpRequest={handleSendToHelpChat}
                           lessonEarnedXp={activeLessonEarnedXp}
                         />

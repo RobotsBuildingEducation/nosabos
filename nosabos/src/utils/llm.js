@@ -25,8 +25,9 @@ export async function callResponses({
   model = DEFAULT_RESPONSES_MODEL,
   input,
   generationConfig = null,
+  skipGemini = false,
 }) {
-  if (simplemodel) {
+  if (simplemodel && !skipGemini) {
     try {
       const request = {
         contents: [{ role: "user", parts: [{ text: input }] }],

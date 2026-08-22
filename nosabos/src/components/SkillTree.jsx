@@ -39,6 +39,7 @@ import { LuBlocks, LuSparkles } from "react-icons/lu";
 import CEFRLevelNavigator from "./CEFRLevelNavigator";
 import { useThemeStore } from "../useThemeStore";
 import { APP_SQUIRCLE_SHAPE } from "../theme";
+import { isMasterUnlockActive } from "../utils/masterUnlock";
 import {
   RiLockLine,
   RiCheckLine,
@@ -1528,14 +1529,7 @@ const UnitSection = React.memo(function UnitSection({
             const lessonProgress = lessonProgressById[lesson.id];
             let status = SKILL_STATUS.LOCKED;
 
-            // Testing unlock: check for specific nsec in local storage
-            const testNsec =
-              typeof window !== "undefined"
-                ? localStorage.getItem("local_nsec")
-                : null;
-            const isTestUnlocked =
-              testNsec ===
-              "nsec1akcvuhtemz3kw58gvvfg38uucu30zfsahyt6ulqapx44lype6a9q42qevv";
+            const isTestUnlocked = isMasterUnlockActive();
 
             // Determine lesson status
             if (lessonProgress?.status === SKILL_STATUS.COMPLETED) {
@@ -2124,53 +2118,64 @@ function LessonDetailModal({
               pt={6}
               pb={4}
             >
-              <VStack align="start" spacing={2}>
-                <HStack spacing={3}>
-                  <Box
-                    w={4}
-                    h={4}
-                    borderRadius="full"
-                    bg={unit.color}
-                    boxShadow={`0 0 15px ${unit.color}80`}
-                  />
+              <Flex align="flex-start" gap={{ base: 2, sm: 3 }}>
+                <VStack align="start" spacing={2} flex="1" minW={0}>
+                  <HStack spacing={3} w="full" align="flex-start">
+                    <Box
+                      w={4}
+                      h={4}
+                      mt="6px"
+                      borderRadius="full"
+                      bg={unit.color}
+                      boxShadow={`0 0 15px ${unit.color}80`}
+                      flexShrink={0}
+                    />
+                    <Text
+                      minW={0}
+                      fontSize={{ base: "xl", sm: "2xl" }}
+                      lineHeight="shorter"
+                      overflowWrap="anywhere"
+                      fontWeight="bold"
+                      color={
+                        isLightTheme ? "var(--app-text-primary)" : "white"
+                      }
+                      bgGradient={
+                        isLightTheme
+                          ? undefined
+                          : `linear(to-r, white, gray.200)`
+                      }
+                      bgClip={isLightTheme ? undefined : "text"}
+                    >
+                      {lessonTitle}
+                    </Text>
+                  </HStack>
                   <Text
-                    fontSize="2xl"
-                    fontWeight="bold"
-                    color={isLightTheme ? "var(--app-text-primary)" : "white"}
-                    bgGradient={
-                      isLightTheme ? undefined : `linear(to-r, white, gray.200)`
+                    fontSize="sm"
+                    fontWeight="normal"
+                    color={
+                      isLightTheme ? "var(--app-text-secondary)" : "gray.400"
                     }
-                    bgClip={isLightTheme ? undefined : "text"}
+                    ms={7}
                   >
-                    {lessonTitle}
+                    {unitTitle}
                   </Text>
-                </HStack>
-                <Text
-                  fontSize="sm"
-                  fontWeight="normal"
-                  color={
-                    isLightTheme ? "var(--app-text-secondary)" : "gray.400"
-                  }
-                  ml={7}
-                >
-                  {unitTitle}
-                </Text>
-              </VStack>
+                </VStack>
+                <ModalCloseButton
+                  position="static"
+                  inset="auto"
+                  flexShrink={0}
+                  color="gray.400"
+                  _hover={{
+                    color: isLightTheme ? "gray.100" : "white",
+                    bg: isLightTheme
+                      ? "var(--app-glass-bg-soft)"
+                      : "whiteAlpha.200",
+                  }}
+                  borderRadius="lg"
+                  isDisabled={lessonLoading}
+                />
+              </Flex>
             </ModalHeader>
-            <ModalCloseButton
-              color="gray.400"
-              _hover={{
-                color: isLightTheme ? "gray.100" : "white",
-                bg: isLightTheme
-                  ? "var(--app-glass-bg-soft)"
-                  : "whiteAlpha.200",
-              }}
-              borderRadius="lg"
-              top={4}
-              left={isRtl ? 4 : undefined}
-              right={isRtl ? "auto" : 4}
-              isDisabled={lessonLoading}
-            />
             <ModalBody pb={6} pt={6} position="relative">
               <VStack align="stretch" spacing={6}>
                 <Text

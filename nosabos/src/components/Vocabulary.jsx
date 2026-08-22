@@ -65,6 +65,7 @@ import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import { shuffle } from "./quiz/utils";
 import useNotesStore from "../hooks/useNotesStore";
 import { generateNoteContent, buildNoteObject } from "../utils/noteGeneration";
+import { buildAssistantLanguagePolicy } from "../utils/assistantLanguagePolicy";
 import { captureCompanionMemory } from "../utils/companionMemory";
 import VirtualKeyboard from "./VirtualKeyboard";
 import { MdKeyboard } from "react-icons/md";
@@ -98,7 +99,7 @@ import {
   isCurriculumPayloadGrounded,
 } from "../utils/lessonCurriculum";
 import DelightQuestionLab from "./DelightQuestionLab";
-import { DELIGHT_VARIANT_TEST_GATE } from "../config/delightVariantGate";
+import { DELIGHT_VARIANT_IDS } from "../utils/delightQuestionVariants";
 import {
   nativeModalMotionProps,
   nativeOverlayMotionProps,
@@ -235,6 +236,7 @@ const LANG_NAME = (code) =>
     pt: "Brazilian Portuguese",
     fr: "French",
     it: "Italian",
+    hi: "Hindi",
     ja: "Japanese",
     nl: "Dutch",
     nah: "Eastern Huasteca Nahuatl",
@@ -1237,6 +1239,8 @@ function VocabularyLegacy({
       pt: t("language_pt"),
       fr: t("language_fr"),
       it: t("language_it"),
+      hi: t("language_hi"),
+      zh: t("language_zh"),
       nl: t("language_nl"),
       nah: t("language_nah"),
       ja: t("language_ja"),
@@ -1254,7 +1258,10 @@ function VocabularyLegacy({
 
   const recentCorrectRef = useRef([]);
 
-  const [mode, setMode] = useState("fill"); // "fill" | "mc" | "ma" | "speak" | "match" | "translate" | "flashcard"
+  const [mode, setMode] = useState("fill"); // legacy modes plus "delight"
+  const [delightVariantId, setDelightVariantId] = useState(
+    DELIGHT_VARIANT_IDS[0],
+  );
   // ✅ always randomize (no manual lock controls in the UI)
   const lockedType = null;
 
@@ -1400,6 +1407,10 @@ function VocabularyLegacy({
         "You are a helpful language study buddy for quick questions.",
         `The learner is practicing ${targetName}; their support/UI language is ${supportName}.`,
         levelHint,
+        buildAssistantLanguagePolicy({
+          supportLanguageName: supportName,
+          targetLanguageName: targetName,
+        }),
         `Explain and guide in ${supportName}. Include examples or phrases in ${targetName} only when they help, but keep the explanation in ${supportName}.`,
         "Keep replies ≤ 60 words.",
         "Use concise Markdown when helpful (bullets, **bold**).",
@@ -1930,7 +1941,7 @@ Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Ant
     // Start a new question
     const runner = lockedType
       ? generatorFor(lockedType)
-      : pickRandomGenerator();
+      : generateRandomRef.current;
     if (runner) runner();
   }
 
@@ -2122,7 +2133,16 @@ Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Ant
 
   // Flashcards are excluded from quiz mode (isFinalQuiz)
   const types = isFinalQuiz
-    ? ["fill", "mc", "ma", "speak", "match", "translate", "repeat"] // no flashcard in quiz
+    ? [
+        "fill",
+        "mc",
+        "ma",
+        "speak",
+        "match",
+        "translate",
+        "repeat",
+        ...DELIGHT_VARIANT_IDS.map((variantId) => `delight:${variantId}`),
+      ] // no flashcard in quiz
     : [
         "fill",
         "mc",
@@ -2132,6 +2152,7 @@ Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Ant
         "translate",
         "repeat",
         "flashcard",
+        ...DELIGHT_VARIANT_IDS.map((variantId) => `delight:${variantId}`),
       ];
   const typeDeckRef = useRef([]);
   const generateRandomRef = useRef(() => {});
@@ -2143,6 +2164,10 @@ Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Ant
   const prevPicksMARef = useRef([]);
   const prevMSlotsRef = useRef([]);
   function generatorFor(type) {
+    if (String(type).startsWith("delight:")) {
+      const variantId = String(type).slice("delight:".length);
+      return () => generateDelight(variantId);
+    }
     switch (type) {
       case "fill":
         return generateFill;
@@ -2161,8 +2186,26 @@ Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Ant
       case "flashcard":
         return generateFlashcard;
       default:
-        return generateFill;
+        return generateRandom;
     }
+  }
+
+  function generateDelight(variantId) {
+    stopModuleTTS();
+    setMode("delight");
+    setDelightVariantId(
+      DELIGHT_VARIANT_IDS.includes(variantId)
+        ? variantId
+        : DELIGHT_VARIANT_IDS[0],
+    );
+    setLastOk(null);
+    setQuizCurrentQuestionAttempted(false);
+    setRecentXp(0);
+    setExplanationText("");
+    setAssistantSupportText("");
+    setCurrentQuestionData(null);
+    setNoteCreated(false);
+    setNextAction(() => () => generateRandomRef.current());
   }
   function drawType() {
     if (!typeDeckRef.current.length) {
@@ -5465,6 +5508,25 @@ Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
           </Box>
         </Box>
 
+        {mode === "delight" ? (
+          <DelightQuestionLab
+            embedded
+            moduleType="vocabulary"
+            variantId={delightVariantId}
+            userLanguage={userLanguage}
+            targetLang={targetLang}
+            supportLang={supportCode}
+            lesson={lesson}
+            lessonContent={lessonContent}
+            isFinalQuiz={isFinalQuiz}
+            quizConfig={quizConfig}
+            onSkip={handleSkip}
+            onNextQuestion={handleNext}
+            onQuizAnswer={isFinalQuiz ? handleQuizAnswer : null}
+            lessonEarnedXp={lessonEarnedXp}
+          />
+        ) : null}
+
         {/* ---- FILL UI ---- */}
         {mode === "fill" && (qFill || loadingQFill) ? (
           <VStack align="stretch" spacing={4}>
@@ -7096,8 +7158,5 @@ Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
 }
 
 export default function Vocabulary(props) {
-  if (DELIGHT_VARIANT_TEST_GATE) {
-    return <DelightQuestionLab {...props} moduleType="vocabulary" />;
-  }
   return <VocabularyLegacy {...props} />;
 }

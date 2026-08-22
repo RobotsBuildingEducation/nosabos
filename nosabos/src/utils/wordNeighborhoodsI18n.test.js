@@ -46,4 +46,14 @@ test("Word Neighborhoods copy interpolates localized placeholders", () => {
     }),
     "Groups: Food, Clothing",
   );
+  assert.equal(
+    formatWordNeighborhoodsCopy(getWordNeighborhoodsCopy("es").tapToPlace, {
+      word: "manzana",
+    }),
+    "Toca para colocar «manzana»",
+  );
+  assert.equal(
+    formatWordNeighborhoodsCopy(getWordNeighborhoodsCopy("fr").dropPlaceholder),
+    "Glissez un mot ici ou touchez pour placer",
+  );
 });

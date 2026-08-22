@@ -527,5 +527,12 @@ export function useSpeechPractice({
     cleanup();
   }, [report, cleanup]);
 
-  return { startRecording, stopRecording, isRecording, isConnecting, supportsSpeech };
+  return {
+    startRecording,
+    stopRecording,
+    cancelRecording: cleanup,
+    isRecording,
+    isConnecting,
+    supportsSpeech,
+  };
 }

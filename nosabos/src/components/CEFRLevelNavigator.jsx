@@ -9,6 +9,7 @@ import {
 import { APP_SQUIRCLE_SHAPE } from "../theme";
 import { translations } from "../utils/translation";
 import { normalizeSupportLanguage } from "../constants/languages";
+import { isMasterUnlockActive } from "../utils/masterUnlock";
 
 // Get app language from localStorage (UI language setting)
 const getAppLanguage = () => {
@@ -193,12 +194,7 @@ export default function CEFRLevelNavigator({
   const nextLevel = hasNext ? CEFR_LEVELS[currentLevelIndex + 1] : null;
   const previousLevel = hasPrevious ? CEFR_LEVELS[currentLevelIndex - 1] : null;
 
-  // Test unlock: check for specific nsec in local storage
-  const testNsec =
-    typeof window !== "undefined" ? localStorage.getItem("local_nsec") : null;
-  const isTestUnlocked =
-    testNsec ===
-    "nsec1akcvuhtemz3kw58gvvfg38uucu30zfsahyt6ulqapx44lype6a9q42qevv";
+  const isTestUnlocked = isMasterUnlockActive();
 
   // A level is unlocked if:
   // 1. Test mode is active, OR

@@ -26,6 +26,7 @@ import {
   normalizeTutorConversationDraftMessages,
   TUTOR_CONVERSATION_DRAFT_VERSION,
 } from "./tutorConversationDraft.js";
+import { isMasterUnlockActive } from "./masterUnlock.js";
 
 // Version the Tutor agenda checkpoint so full-XP records written before the
 // app-owned agenda gate can be migrated without weakening completion rules for
@@ -667,14 +668,7 @@ export function getLessonStatus(userProgress, lesson, targetLang) {
     return SKILL_STATUS.IN_PROGRESS;
   }
 
-  // Test unlock: check for specific nsec in local storage
-  const testNsec =
-    typeof window !== "undefined" ? localStorage.getItem("local_nsec") : null;
-  const isTestUnlocked =
-    testNsec ===
-    "nsec1akcvuhtemz3kw58gvvfg38uucu30zfsahyt6ulqapx44lype6a9q42qevv";
-
-  if (isTestUnlocked) {
+  if (isMasterUnlockActive()) {
     return SKILL_STATUS.AVAILABLE;
   }
 

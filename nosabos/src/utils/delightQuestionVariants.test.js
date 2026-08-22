@@ -2,22 +2,27 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   DELIGHT_VARIANT_IDS,
+  buildDelightQuestionPrompt,
+  buildDelightQuestionRepairPrompt,
+  buildDelightResponseJudgePrompt,
   buildSentenceDetectiveJudgePrompt,
   buildSentenceDetectivePrompt,
+  buildSentenceShapeshifterJudgePrompt,
+  buildThreeClueMysteryJudgePrompt,
   calculateDelightQuestionXp,
   generateSentenceDetectiveQuestion,
   getDelightFallbackQuestion,
-  getInitialDelightResponse,
   gradeDelightResponse,
+  isDelightQuestionLessonGrounded,
   isDelightResponseReady,
   normalizeDelightQuestion,
+  parseDelightJudgeVerdict,
   parseDelightQuestion,
   parsePartialDelightQuestion,
   parseSentenceDetectiveValidation,
   sentenceDetectiveAuditPasses,
 } from "./delightQuestionVariants.js";
 import { getDialogueForkCopy } from "./dialogueForkI18n.js";
-import { DELIGHT_VARIANT_TEST_IDS } from "../config/delightVariantGate.js";
 
 function validDetective(overrides = {}) {
   return {
@@ -43,6 +48,43 @@ function validDetective(overrides = {}) {
   };
 }
 
+function buildReferenceResponse(question) {
+  switch (question.variant) {
+    case "sentence_detective":
+      return {
+        tokenIndex: question.incorrectIndex,
+        replacement: question.answer,
+      };
+    case "dialogue_fork":
+    case "listen_difference":
+      return { selectedIndex: question.answerIndex };
+    case "sentence_shapeshifter":
+    case "three_clue_mystery":
+      return { text: question.answer };
+    case "three_word_challenge":
+      return { text: question.sampleAnswers[0] };
+    case "word_neighborhoods": {
+      const assignments = {};
+      question.groups.forEach((group, groupIndex) => {
+        group.items.forEach((item) => {
+          assignments[item] = groupIndex;
+        });
+      });
+      return { assignments };
+    }
+    case "morphology_forge":
+      return {
+        pieceIndices: question.answerPieces.map((piece) =>
+          question.pieces.indexOf(piece),
+        ),
+      };
+    case "natural_or_weird":
+      return { choice: question.isNatural };
+    default:
+      return {};
+  }
+}
+
 test("all delight variants have valid normalized fallbacks", () => {
   for (const variant of DELIGHT_VARIANT_IDS) {
     const fallback = getDelightFallbackQuestion(variant, "grammar");
@@ -60,43 +102,21 @@ test("parses JSON surrounded by model commentary", () => {
   });
 });
 
-test("grades deterministic interactions", () => {
-  const groups = getDelightFallbackQuestion("word_neighborhoods", "grammar");
-  const response = getInitialDelightResponse(groups);
-  groups.groups.forEach((group, groupIndex) => {
-    group.items.forEach((item) => {
-      response.assignments[item] = groupIndex;
-    });
-  });
-  assert.equal(gradeDelightResponse(groups, response), true);
-
-  const forge = getDelightFallbackQuestion("morphology_forge", "grammar");
-  assert.equal(
-    gradeDelightResponse(forge, { pieceIndices: [0, 1] }),
-    true,
-  );
-});
-
-test("sentence detective and three-word challenge delegate grading to the AI language judge", () => {
-  const detective = getDelightFallbackQuestion(
-    "sentence_detective",
-    "grammar",
-  );
-  assert.equal(
-    gradeDelightResponse(detective, { tokenIndex: 2, replacement: "fue" }),
-    null,
-  );
-
-  const challenge = getDelightFallbackQuestion(
-    "three_word_challenge",
-    "vocabulary",
-  );
-  assert.equal(
-    gradeDelightResponse(challenge, {
-      text: "Ayer fui al parque con mis amigos.",
-    }),
-    null,
-  );
+test("every completed variant delegates grading to semantic judgment", () => {
+  for (const variant of DELIGHT_VARIANT_IDS) {
+    const question = getDelightFallbackQuestion(variant, "grammar");
+    const response = buildReferenceResponse(question);
+    assert.equal(
+      isDelightResponseReady(question, response),
+      true,
+      `${variant} reference response should be ready`,
+    );
+    assert.equal(
+      gradeDelightResponse(question, response),
+      null,
+      `${variant} should delegate instead of grading deterministically`,
+    );
+  }
 });
 
 test("buildSentenceDetectiveJudgePrompt formats context for AI grading", () => {
@@ -118,8 +138,76 @@ test("buildSentenceDetectiveJudgePrompt formats context for AI grading", () => {
   assert.ok(prompt.includes("reply with ONE word only: YES or NO."));
 });
 
-test("testing gate exposes active delight variant under development", () => {
-  assert.deepEqual(DELIGHT_VARIANT_TEST_IDS, [
+test("open-response judge prompts treat reference answers as non-exhaustive", () => {
+  const shapeshifter = getDelightFallbackQuestion(
+    "sentence_shapeshifter",
+    "grammar",
+  );
+  const shapeshifterPrompt = buildSentenceShapeshifterJudgePrompt({
+    question: shapeshifter,
+    response: { text: "Otra transformación válida." },
+    targetLang: "es",
+    supportLang: "en",
+    cefrLevel: "A1",
+  });
+  assert.ok(shapeshifterPrompt.includes("not an exhaustive answer key"));
+  assert.ok(shapeshifterPrompt.includes("required transformation"));
+
+  const mystery = getDelightFallbackQuestion(
+    "three_clue_mystery",
+    "vocabulary",
+  );
+  const mysteryPrompt = buildThreeClueMysteryJudgePrompt({
+    question: mystery,
+    response: { text: `The mystery word is ${mystery.answer}` },
+    targetLang: "es",
+    supportLang: "en",
+    cefrLevel: "A1",
+  });
+  assert.ok(mysteryPrompt.includes("natural spoken wrappers"));
+  assert.ok(mysteryPrompt.includes("Judge the meaning"));
+  assert.ok(mysteryPrompt.includes(`The mystery word is ${mystery.answer}`));
+});
+
+test("Morphology Forge judges the forged word inside the completed sentence", () => {
+  const question = {
+    variant: "morphology_forge",
+    sentence: "My ___ is playing with me.",
+    pieces: ["broth", "er", "sist", "fam", "ily"],
+    answerPieces: ["fam", "ily"],
+    answerWord: "family",
+  };
+  const prompt = buildDelightResponseJudgePrompt({
+    question,
+    response: { pieceIndices: [0, 1] },
+    targetLang: "en",
+    supportLang: "en",
+    cefrLevel: "A1",
+    moduleType: "vocabulary",
+  });
+  assert.ok(prompt.includes('Learner\'s forged word: "brother"'));
+  assert.ok(prompt.includes('Completed learner sentence: "My brother is playing with me."'));
+  assert.ok(prompt.includes("reference word is not exclusive"));
+});
+
+test("every variant has a task-specific semantic judge prompt", () => {
+  for (const variant of DELIGHT_VARIANT_IDS) {
+    const question = getDelightFallbackQuestion(variant, "grammar");
+    const prompt = buildDelightResponseJudgePrompt({
+      question,
+      response: buildReferenceResponse(question),
+      targetLang: "es",
+      supportLang: "en",
+      cefrLevel: "A1",
+      moduleType: "grammar",
+    });
+    assert.match(prompt, /YES or NO/);
+    assert.doesNotMatch(prompt, /^Judge this Spanish learning response/);
+  }
+});
+
+test("integrated delight rotation exposes all approved variants", () => {
+  assert.deepEqual(DELIGHT_VARIANT_IDS, [
     "sentence_detective",
     "dialogue_fork",
     "sentence_shapeshifter",
@@ -130,6 +218,13 @@ test("testing gate exposes active delight variant under development", () => {
     "three_word_challenge",
     "natural_or_weird",
   ]);
+});
+
+test("semantic judge accepts only explicit YES or NO verdicts", () => {
+  assert.equal(parseDelightJudgeVerdict("YES — this is natural."), true);
+  assert.equal(parseDelightJudgeVerdict("NO, the tense is wrong."), false);
+  assert.equal(parseDelightJudgeVerdict("The answer may be acceptable."), null);
+  assert.equal(parseDelightJudgeVerdict(""), null);
 });
 
 test("Sentence Detective normalization enforces exact reconstruction", () => {
@@ -170,6 +265,90 @@ test("Sentence Detective prompt distinguishes vocabulary from grammar", () => {
   assert.doesNotMatch(prompt, /genuinely ungrammatical in the target language/i);
 });
 
+test("delight prompts carry authoritative lesson context and recent-question variety", () => {
+  const prompt = buildDelightQuestionPrompt({
+    variant: "three_word_challenge",
+    moduleType: "vocabulary",
+    targetLang: "es",
+    supportLang: "en",
+    lessonContent: {
+      topic: "things around the home",
+      words: ["llave", "mesa", "puerta"],
+      focusPoints: ["household objects in context"],
+      curriculumContext: {
+        lessonId: "a1-household-objects",
+        agendaItems: [
+          {
+            id: "household-keys",
+            modes: ["vocabulary"],
+            targetConcept: "llave",
+            targetExamples: ["Necesito la llave."],
+          },
+        ],
+      },
+    },
+    recentQuestions: ["three_word_challenge: llave / puerta / casa"],
+  });
+
+  assert.match(prompt, /CURRICULUM OBJECTIVES \(authoritative\)/);
+  assert.match(prompt, /exact lesson vocabulary list/i);
+  assert.match(prompt, /llave/);
+  assert.match(prompt, /Do not repeat or closely paraphrase/i);
+  assert.match(prompt, /references rather than exhaustive answer keys/i);
+});
+
+test("invalid delight drafts get one schema-preserving lesson repair prompt", () => {
+  const prompt = buildDelightQuestionRepairPrompt({
+    variant: "dialogue_fork",
+    moduleType: "grammar",
+    targetLang: "es",
+    supportLang: "en",
+    lessonContent: {
+      topic: "subjunctive doubt and desire",
+      focusPoints: ["use the present subjunctive after expressions of doubt"],
+    },
+    rejectedResponse: '{"line":"Dudo que viene."}',
+    reason: "answerIndex was missing",
+  });
+
+  assert.match(prompt, /REPAIR TASK/);
+  assert.match(prompt, /answerIndex was missing/);
+  assert.match(prompt, /subjunctive doubt and desire/);
+  assert.match(prompt, /Return only a complete JSON object/);
+  assert.match(prompt, /"answerIndex":0/);
+});
+
+test("delight questions reject generated payloads outside the lesson curriculum", () => {
+  const lessonContent = {
+    curriculumContext: {
+      agendaItems: [
+        {
+          modes: ["vocabulary"],
+          targetConcept: "llave",
+          targetExamples: ["Necesito la llave."],
+        },
+      ],
+    },
+  };
+
+  assert.equal(
+    isDelightQuestionLessonGrounded(
+      { sentence: "Necesito la llave para abrir la puerta." },
+      lessonContent,
+      "vocabulary",
+    ),
+    true,
+  );
+  assert.equal(
+    isDelightQuestionLessonGrounded(
+      { sentence: "El perro corre por el parque." },
+      lessonContent,
+      "vocabulary",
+    ),
+    false,
+  );
+});
+
 test("Sentence Detective prompt assigns target and support languages by field", () => {
   const prompt = buildSentenceDetectivePrompt({
     moduleType: "grammar",
@@ -189,22 +368,12 @@ test("Sentence Detective prompt assigns target and support languages by field", 
   assert.match(prompt, /Do not put Egyptian Arabic translations/i);
 });
 
-test("Sentence Detective retries invalid drafts and requires audit approval", async () => {
+test("Sentence Detective uses one generation call and local structural validation", async () => {
   const prompts = [];
-  const outputs = [
-    { sentence: "not enough fields" },
-    validDetective(),
-    {
-      valid: true,
-      issues: [],
-      grammarFits: [true, false, false, false],
-      meaningFits: [true, false, false, false],
-    },
-  ];
   const question = await generateSentenceDetectiveQuestion({
     generate: async (prompt) => {
       prompts.push(prompt);
-      return outputs.shift();
+      return validDetective();
     },
     moduleType: "grammar",
     targetLang: "es",
@@ -213,9 +382,8 @@ test("Sentence Detective retries invalid drafts and requires audit approval", as
   });
 
   assert.equal(question.answer, "fue");
-  assert.equal(prompts.length, 3);
-  assert.match(prompts[1], /prior draft was rejected/i);
-  assert.match(prompts[2], /fail closed/i);
+  assert.equal(prompts.length, 1);
+  assert.doesNotMatch(prompts[0], /audit this sentence detective/i);
 });
 
 test("Sentence Detective validation responses fail closed", () => {
@@ -271,7 +439,7 @@ test("vocabulary audits require every choice to fit the same grammar slot", () =
   );
 });
 
-test("vocabulary generation repairs detached noun determiners before auditing", async () => {
+test("vocabulary generation rejects detached noun determiners without retrying", async () => {
   const externalDeterminer = validDetective({
     sentence: "Uso el paraguas para escribir.",
     correctedSentence: "Uso el lápiz para escribir.",
@@ -285,48 +453,22 @@ test("vocabulary generation repairs detached noun determiners before auditing", 
     errorEvidence: "An umbrella conflicts with the explicit writing function.",
     repairEvidence: "A pencil satisfies the writing function.",
   });
-  const repaired = validDetective({
-    sentence: "Uso un paraguas para escribir.",
-    correctedSentence: "Uso un lápiz para escribir.",
-    tokens: ["Uso", "un paraguas", "para", "escribir."],
-    incorrectIndex: 1,
-    wrongToken: "un paraguas",
-    replacements: ["un lápiz", "un paraguas", "una cuchara", "una llave"],
-    answer: "un lápiz",
-    slotType: "noun",
-    cueTokens: ["escribir."],
-    errorEvidence: "An umbrella conflicts with the explicit writing function.",
-    repairEvidence: "A pencil satisfies the writing function.",
-  });
-  const outputs = [
-    externalDeterminer,
-    repaired,
-    {
-      valid: true,
-      issues: [],
-      grammarFits: [true, true, true, true],
-      meaningFits: [true, false, false, false],
-      originalAcceptable: false,
-      correctedAcceptable: true,
-      explicitCuePresent: true,
-      wrongTokenConflictsWithCue: true,
-    },
-  ];
   const prompts = [];
-  const question = await generateSentenceDetectiveQuestion({
-    generate: async (prompt) => {
-      prompts.push(prompt);
-      return outputs.shift();
-    },
-    moduleType: "vocabulary",
-    targetLang: "es",
-    supportLang: "en",
-    lessonContent: { words: ["lápiz"] },
-  });
+  await assert.rejects(
+    generateSentenceDetectiveQuestion({
+      generate: async (prompt) => {
+        prompts.push(prompt);
+        return externalDeterminer;
+      },
+      moduleType: "vocabulary",
+      targetLang: "es",
+      supportLang: "en",
+      lessonContent: { words: ["lápiz"] },
+    }),
+    /structurally valid question/i,
+  );
 
-  assert.equal(question.answer, "un lápiz");
-  assert.equal(prompts.length, 3);
-  assert.match(prompts[1], /article\/determiner was outside/i);
+  assert.equal(prompts.length, 1);
 });
 
 test("vocabulary audits reject an original sentence with a natural reading", () => {
@@ -380,14 +522,6 @@ test("parsePartialDelightQuestion extracts tokens and fields from streaming chun
 test("generateSentenceDetectiveQuestion notifies onStream during generation", async () => {
   const streamedChunks = [];
   const validJson = JSON.stringify(validDetective());
-  const validationJson = JSON.stringify({
-    valid: true,
-    issues: [],
-    grammarFits: [true, false, false, false],
-    meaningFits: [true, false, false, false],
-    originalAcceptable: false,
-    correctedAcceptable: true,
-  });
 
   let callCount = 0;
   const question = await generateSentenceDetectiveQuestion({
@@ -397,7 +531,7 @@ test("generateSentenceDetectiveQuestion notifies onStream during generation", as
         onStream?.('{"instruction":"Find the error","tokens":["Ayer","ella"');
         return validJson;
       }
-      return validationJson;
+      throw new Error("Sentence Detective must not make a second call.");
     },
     moduleType: "grammar",
     targetLang: "es",
@@ -406,6 +540,7 @@ test("generateSentenceDetectiveQuestion notifies onStream during generation", as
   });
 
   assert.ok(question);
+  assert.equal(callCount, 1);
   assert.equal(streamedChunks.length, 1);
   assert.match(streamedChunks[0], /"tokens"/);
 });
@@ -495,8 +630,88 @@ test("normalizes and grades dialogue_fork responses correctly", () => {
   assert.equal(isDelightResponseReady(normalized, { selectedIndex: null }), false);
   assert.equal(isDelightResponseReady(normalized, { selectedIndex: 0 }), true);
 
-  // Grade check
-  assert.equal(gradeDelightResponse(normalized, { selectedIndex: 0 }), true);
-  assert.equal(gradeDelightResponse(normalized, { selectedIndex: 1 }), false);
+  // Every complete choice is evaluated semantically in context.
+  assert.equal(gradeDelightResponse(normalized, { selectedIndex: 0 }), null);
+  assert.equal(gradeDelightResponse(normalized, { selectedIndex: 1 }), null);
 });
 
+test("parsePartialDelightQuestion parses in-flight streaming fields across all variants", () => {
+  // In-flight sentence & open string
+  const streamShapeshifter = parsePartialDelightQuestion(
+    '{"source":"Yo hablo español","constraint":"Hazlo en pasado"',
+  );
+  assert.equal(streamShapeshifter?.source, "Yo hablo español");
+  assert.equal(streamShapeshifter?.constraint, "Hazlo en pasado");
+
+  // In-flight groups
+  const streamGroups = parsePartialDelightQuestion(
+    '{"groups":[{"label":"Animales","items":["perro","gato"]},{"label":"Comida","items":["manzana"',
+  );
+  assert.equal(streamGroups?.groups?.length, 2);
+  assert.equal(streamGroups.groups[0].label, "Animales");
+  assert.deepEqual(streamGroups.groups[0].items, ["perro", "gato"]);
+  assert.equal(streamGroups.groups[1].label, "Comida");
+  assert.deepEqual(streamGroups.groups[1].items, ["manzana"]);
+
+  // In-flight cues & clues
+  const streamCues = parsePartialDelightQuestion('{"cues":["sol","playa","verano"');
+  assert.deepEqual(streamCues?.cues, ["sol", "playa", "verano"]);
+
+  const streamClues = parsePartialDelightQuestion(
+    '{"clues":["Vive en el agua","Tiene escamas"',
+  );
+  assert.deepEqual(streamClues?.clues, ["Vive en el agua", "Tiene escamas"]);
+
+  // In-flight pieces & natural or weird boolean
+  const streamPieces = parsePartialDelightQuestion(
+    '{"sentence":"Ella ___ una carta.","pieces":["escrib","ió","aron"]',
+  );
+  assert.equal(streamPieces?.sentence, "Ella ___ una carta.");
+  assert.deepEqual(streamPieces?.pieces, ["escrib", "ió", "aron"]);
+
+  const streamNatural = parsePartialDelightQuestion(
+    '{"sentence":"Yo tengo mucho hambre.","isNatural":false',
+  );
+  assert.equal(streamNatural?.sentence, "Yo tengo mucho hambre.");
+  assert.equal(streamNatural?.isNatural, false);
+});
+
+test("buildDelightQuestionPrompt strictly enforces practice and support language roles", () => {
+  const prompt = buildDelightQuestionPrompt({
+    variant: "sentence_shapeshifter",
+    moduleType: "grammar",
+    targetLang: "fr",
+    supportLang: "en",
+    cefrLevel: "A1",
+    lessonContent: { topic: "past tense" },
+  });
+
+  assert.match(prompt, /learner studying French \(fr\)/i);
+  assert.match(prompt, /support language is English \(en\)/i);
+  assert.match(prompt, /PRACTICE TARGET LANGUAGE \(French\)/i);
+  assert.match(prompt, /LEARNER SUPPORT LANGUAGE \(English\)/i);
+  assert.match(prompt, /STRICT CONSTRAINT\/LABEL RULE.*English/i);
+  assert.doesNotMatch(prompt, /Spanish/i);
+});
+
+test("getDelightFallbackQuestion generates valid normalized fallbacks across multiple languages", () => {
+  const frenchTarget = getDelightFallbackQuestion(
+    "sentence_shapeshifter",
+    "grammar",
+    "fr",
+    "en",
+  );
+  assert.equal(frenchTarget.source, "Elle mange avec sa famille.");
+  assert.equal(frenchTarget.constraint, "Make it happen yesterday.");
+  assert.ok(normalizeDelightQuestion("sentence_shapeshifter", frenchTarget));
+
+  const germanTarget = getDelightFallbackQuestion(
+    "word_neighborhoods",
+    "grammar",
+    "de",
+    "es",
+  );
+  assert.equal(germanTarget.groups[0].label, "Pasado");
+  assert.deepEqual(germanTarget.groups[0].items, ["ging", "aß", "sprachen"]);
+  assert.ok(normalizeDelightQuestion("word_neighborhoods", germanTarget));
+});
