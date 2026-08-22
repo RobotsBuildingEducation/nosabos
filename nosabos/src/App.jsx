@@ -239,7 +239,6 @@ import {
   setRemainingSeconds,
 } from "./provider/SessionTimerProvider";
 import ProficiencyTestModal from "./components/ProficiencyTestModal";
-import ModesCarouselModal from "./components/ModesCarouselModal";
 import GettingStartedModal from "./components/GettingStartedModal";
 import BitcoinSupportModal from "./components/BitcoinSupportModal";
 import RandomCharacter from "./components/RandomCharacter";
@@ -249,7 +248,6 @@ import {
   getLatestUnlockedLesson,
 } from "./data/skillTree/index.js";
 import TutorialStepper from "./components/TutorialStepper";
-import TutorialActionBarPopovers from "./components/TutorialActionBarPopovers";
 import AnimatedBackground from "./components/AnimatedBackground";
 import useAppUpdate from "./hooks/useAppUpdate";
 import GlassContainer from "./components/GlassContainer";
@@ -446,10 +444,11 @@ const rememberLocalOnboardingCompletion = (id, completedAt) => {
 const hasCompletedOnboarding = (data) =>
   isTrue(data?.onboarding?.completed) || isTrue(data?.onboardingCompleted);
 
-// Onboarding writes this full progress profile only when the final step is
-// submitted. In-progress answers live under onboarding.draft instead. This is
-// therefore durable, cross-origin evidence for accounts whose completion flag
-// was lost or was incorrectly reset by an older bootstrap path.
+// Onboarding writes this full progress profile only when its language screen is
+// submitted. Older incomplete accounts may still have answers in
+// onboarding.draft. The full profile is therefore durable, cross-origin
+// evidence for accounts whose completion flag was lost or was incorrectly reset
+// by an older bootstrap path.
 const hasPersistedOnboardingProfile = (data) => {
   const progress = data?.progress;
   if (!progress || typeof progress !== "object") return false;
@@ -3800,10 +3799,6 @@ export default function App({ onBootReady } = {}) {
   const showAlphabetBootcamp =
     ALPHABET_LANGS.includes(resolvedTargetLang) && pathMode === "alphabet";
 
-  // Skill tree tutorial state (shows on first login)
-  const [showSkillTreeTutorial, setShowSkillTreeTutorial] = useState(false);
-  const skillTreeTutorialCheckedRef = useRef(false);
-
   // Lesson completion celebration modal
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [completedLessonData, setCompletedLessonData] = useState(null);
@@ -4000,44 +3995,8 @@ export default function App({ onBootReady } = {}) {
     }
   }, [activeNpub, patchUser, user?.tutorialBitcoinModalShown]);
 
-  // Check if skill tree tutorial was completed
-  const hasCompletedSkillTreeTutorial = useMemo(() => {
-    return user?.skillTreeTutorialCompleted === true;
-  }, [user?.skillTreeTutorialCompleted]);
-
-  // Handler for completing the skill tree tutorial
-  const handleSkillTreeTutorialComplete = useCallback(async () => {
-    setShowSkillTreeTutorial(false);
-
-    if (!activeNpub) return;
-
-    // Synchronous local flag too: the Firestore field can lag behind a refresh
-    // (user doc loads after the show-effect runs), which would briefly re-trigger
-    // onboarding. localStorage is read synchronously on the next mount, so the
-    // tutorial never re-shows once completed on this device.
-    try {
-      window.localStorage.setItem(
-        `skillTreeTutorialCompleted:${activeNpub}`,
-        "1",
-      );
-    } catch {
-      /* ignore quota/availability */
-    }
-
-    try {
-      setDoc(
-        doc(database, "users", activeNpub),
-        {
-          skillTreeTutorialCompleted: true,
-          updatedAt: new Date().toISOString(),
-        },
-        { merge: true },
-      );
-      patchUser?.({ skillTreeTutorialCompleted: true });
-    } catch (e) {
-      console.error("Failed to save skill tree tutorial state:", e);
-    }
-  }, [activeNpub, patchUser]);
+  // The removed bottom action-bar tour no longer gates lesson availability.
+  const hasCompletedSkillTreeTutorial = true;
 
   // Helper mapping for keys/index
   const TAB_KEYS = [
@@ -4445,44 +4404,8 @@ export default function App({ onBootReady } = {}) {
 
   const needsOnboarding = useMemo(() => !onboardingDone, [onboardingDone]);
 
-  // Show the action bar tutorial on first login (only once per session)
-  useEffect(() => {
-    if (skillTreeTutorialCheckedRef.current) return;
-    if (!user || !activeNpub) return;
-    if (isLoadingApp || needsOnboarding) return;
-    if (
-      viewMode !== "skillTree" ||
-      !["plate", "path", "tutor"].includes(pathMode)
-    )
-      return;
-
-    skillTreeTutorialCheckedRef.current = true;
-
-    // Treat the tutorial as done if EITHER the synced user flag or the local
-    // device flag is set. The local flag guards the refresh race where the user
-    // doc (with skillTreeTutorialCompleted) hasn't loaded yet when this runs.
-    let locallyCompleted = false;
-    try {
-      locallyCompleted =
-        window.localStorage.getItem(
-          `skillTreeTutorialCompleted:${activeNpub}`,
-        ) === "1";
-    } catch {
-      locallyCompleted = false;
-    }
-
-    // Show tutorial if not completed
-    if (!user.skillTreeTutorialCompleted && !locallyCompleted) {
-      // Small delay to let UI settle
-      setTimeout(() => {
-        setShowSkillTreeTutorial(true);
-      }, 500);
-    }
-  }, [user, activeNpub, isLoadingApp, needsOnboarding, viewMode, pathMode]);
-
   /* -----------------------------------
      Daily goal modals (open logic)
-     - Only open DailyGoalModal right after onboarding completes
   ----------------------------------- */
   // dailyGoalOpen lives in useModalStore so tapping the top-bar button
   // doesn't re-render this huge App component before the modal can open.
@@ -4518,15 +4441,8 @@ export default function App({ onBootReady } = {}) {
     openDailyGoalCelebration(pending);
     return true;
   }, [openDailyGoalCelebration]);
-  const [shouldShowTimerAfterGoal, setShouldShowTimerAfterGoal] =
-    useState(false);
-  const [shouldShowProficiencyAfterTimer, setShouldShowProficiencyAfterTimer] =
-    useState(false);
   const [proficiencyTestOpen, setProficiencyTestOpen] = useState(false);
-  // Modes intro carousel — onboarding step right after the proficiency modal
-  const [modesIntroOpen, setModesIntroOpen] = useState(false);
-  const modesIntroCheckDoneRef = useRef(false);
-  const proficiencyCheckDoneRef = useRef(false);
+  const proficiencyPromptOpenedForRef = useRef("");
   const [gettingStartedOpen, setGettingStartedOpen] = useState(false);
   const [
     pendingInstallModalAfterTutorial,
@@ -4595,161 +4511,15 @@ export default function App({ onBootReady } = {}) {
     [activeNpub],
   );
   const isTimerRunning = timerActive && !timerPaused && hasTimer;
-  // App-owned half of the onboarding chain (proficiencyTestOpen +
-  // gettingStartedOpen still useState here). dailyGoal + timer live in
-  // useModalStore, so the shared backdrop component and modal Gates combine
-  // both sides themselves — this keeps App's render free of subscriptions
-  // to the two store-backed booleans.
-  const appOnboardingChainOpen =
-    proficiencyTestOpen || gettingStartedOpen || modesIntroOpen;
+  // App-owned modals that share the persistent dim with the store-backed
+  // daily-goal and timer modals when users open those tools intentionally.
+  const appOnboardingChainOpen = proficiencyTestOpen || gettingStartedOpen;
 
   useEffect(() => {
     if (timeUpOpen) {
       playSound(sparkleSound);
     }
   }, [timeUpOpen, playSound]);
-
-  // Show proficiency modal for returning users only when the user document
-  // does NOT contain a proficiency decision flag yet.
-  //
-  // dailyGoalOpen/timerModalOpen aren't in the dep array because they live in
-  // useModalStore — instead we read them with getState() inside the check and
-  // subscribe to the store below to re-fire when they flip closed. This is
-  // what keeps a "open timer modal" tap from re-rendering App.
-  useEffect(() => {
-    let cancelled = false;
-
-    const isProficiencyBlocked = () => {
-      const m = useModalStore.getState();
-      return (
-        m.dailyGoalOpen ||
-        m.timerModalOpen ||
-        proficiencyTestOpen ||
-        shouldShowTimerAfterGoal ||
-        shouldShowProficiencyAfterTimer
-      );
-    };
-
-    const checkProficiencyDecision = async () => {
-      if (cancelled) return;
-      if (proficiencyCheckDoneRef.current) return;
-      if (isLoadingApp || !user || !activeNpub) return;
-      if (needsOnboarding) return;
-      if (isProficiencyBlocked()) return;
-
-      try {
-        const snap = await getDoc(doc(database, "users", activeNpub));
-        const data = snap.exists() ? snap.data() || {} : {};
-        const hasDecision = Object.prototype.hasOwnProperty.call(
-          data,
-          "proficiencyPlacement",
-        );
-
-        if (hasDecision) {
-          proficiencyCheckDoneRef.current = true;
-          return;
-        }
-        if (cancelled || isProficiencyBlocked()) return;
-
-        proficiencyCheckDoneRef.current = true;
-        setProficiencyTestOpen(true);
-      } catch (error) {
-        console.warn("Failed to check proficiency decision flag:", error);
-
-        const fallbackHasDecision = Object.prototype.hasOwnProperty.call(
-          user || {},
-          "proficiencyPlacement",
-        );
-        if (fallbackHasDecision) {
-          proficiencyCheckDoneRef.current = true;
-          return;
-        }
-        if (cancelled || isProficiencyBlocked()) return;
-
-        proficiencyCheckDoneRef.current = true;
-        setProficiencyTestOpen(true);
-      }
-    };
-
-    checkProficiencyDecision();
-
-    // Re-run when dailyGoalOpen or timerModalOpen change in the store.
-    // Using subscribe (not the hook) so this effect doesn't re-render App.
-    const unsubscribe = useModalStore.subscribe((state, prev) => {
-      if (
-        state.dailyGoalOpen !== prev.dailyGoalOpen ||
-        state.timerModalOpen !== prev.timerModalOpen
-      ) {
-        checkProficiencyDecision();
-      }
-    });
-
-    return () => {
-      cancelled = true;
-      unsubscribe();
-    };
-  }, [
-    isLoadingApp,
-    user,
-    activeNpub,
-    needsOnboarding,
-    proficiencyTestOpen,
-    shouldShowTimerAfterGoal,
-    shouldShowProficiencyAfterTimer,
-  ]);
-
-  // Modes intro carousel: opens once per user, right after the proficiency
-  // step resolves (skipped in the modal, or completed via /proficiency).
-  // Mirrors the proficiency check's gating so it never opens over the daily
-  // goal / timer / proficiency modals.
-  useEffect(() => {
-    const checkModesIntro = () => {
-      if (modesIntroCheckDoneRef.current) return;
-      if (isLoadingApp || !user || !activeNpub) return;
-      if (needsOnboarding) return;
-      if (
-        proficiencyTestOpen ||
-        shouldShowTimerAfterGoal ||
-        shouldShowProficiencyAfterTimer
-      )
-        return;
-      const m = useModalStore.getState();
-      if (m.dailyGoalOpen || m.timerModalOpen) return;
-
-      // The proficiency step must be decided (taken or skipped) first.
-      const hasProficiencyDecision = Object.prototype.hasOwnProperty.call(
-        user,
-        "proficiencyPlacement",
-      );
-      if (!hasProficiencyDecision) return;
-
-      modesIntroCheckDoneRef.current = true;
-      if (!user.modesIntroShown) {
-        setModesIntroOpen(true);
-      }
-    };
-
-    checkModesIntro();
-
-    const unsubscribe = useModalStore.subscribe((state, prev) => {
-      if (
-        state.dailyGoalOpen !== prev.dailyGoalOpen ||
-        state.timerModalOpen !== prev.timerModalOpen
-      ) {
-        checkModesIntro();
-      }
-    });
-
-    return () => unsubscribe();
-  }, [
-    isLoadingApp,
-    user,
-    activeNpub,
-    needsOnboarding,
-    proficiencyTestOpen,
-    shouldShowTimerAfterGoal,
-    shouldShowProficiencyAfterTimer,
-  ]);
 
   useEffect(() => {
     timerHydratedRef.current = false;
@@ -4928,16 +4698,9 @@ export default function App({ onBootReady } = {}) {
           Number.isFinite(parsedSource) && parsedSource > 0 ? parsedSource : 10,
         ),
       );
-      const shouldOpenProficiency = shouldShowProficiencyAfterTimer;
-
       flushSync(() => {
         setTimerModalOpen(false);
         setTimerModalImmediateBody(false);
-        if (shouldOpenProficiency) {
-          proficiencyCheckDoneRef.current = true;
-          setShouldShowProficiencyAfterTimer(false);
-          setProficiencyTestOpen(true);
-        }
       });
 
       runAfterNextPaint(() => {
@@ -4953,12 +4716,7 @@ export default function App({ onBootReady } = {}) {
         setHasTimer(true);
       });
     },
-    [
-      handleResetTimer,
-      runAfterNextPaint,
-      timerMinutes,
-      shouldShowProficiencyAfterTimer,
-    ],
+    [handleResetTimer, runAfterNextPaint, setTimerModalOpen, timerMinutes],
   );
 
   const handleCloseTimeUp = useCallback(() => {
@@ -5643,14 +5401,6 @@ export default function App({ onBootReady } = {}) {
       );
 
       rememberLocalOnboardingCompletion(id, now);
-
-      // Arm the entire first-run modal chain before releasing the onboarding
-      // route gate. Otherwise the returning-user proficiency effect can run in
-      // the gap before the post-write hydration finishes and open over the goal.
-      proficiencyCheckDoneRef.current = true;
-      setShouldShowTimerAfterGoal(true);
-      setShouldShowProficiencyAfterTimer(true);
-      setDailyGoalOpen(true);
 
       // The write above is the durable completion point. Release the route
       // gate immediately instead of depending on another full DB hydration.
@@ -6620,7 +6370,6 @@ export default function App({ onBootReady } = {}) {
         m.dailyGoalOpen ||
         m.timerModalOpen ||
         proficiencyTestOpen ||
-        modesIntroOpen ||
         gettingStartedOpen
       ) {
         return;
@@ -6661,7 +6410,6 @@ export default function App({ onBootReady } = {}) {
   }, [
     celebrateOpen,
     gettingStartedOpen,
-    modesIntroOpen,
     pendingInstallModalAfterTutorial,
     proficiencyTestOpen,
     showCompletionModal,
@@ -6887,18 +6635,9 @@ export default function App({ onBootReady } = {}) {
   );
 
   const handleDailyGoalClose = useCallback(() => {
-    const shouldOpenTimer = shouldShowTimerAfterGoal;
     blurActiveElement();
-
-    flushSync(() => {
-      setDailyGoalOpen(false);
-      if (shouldOpenTimer) {
-        setShouldShowTimerAfterGoal(false);
-        setTimerModalImmediateBody(true);
-        setTimerModalOpen(true);
-      }
-    });
-  }, [blurActiveElement, shouldShowTimerAfterGoal]);
+    setDailyGoalOpen(false);
+  }, [blurActiveElement, setDailyGoalOpen]);
 
   const handleDailyGoalSave = useCallback(
     (goalValue) => {
@@ -6908,17 +6647,8 @@ export default function App({ onBootReady } = {}) {
       );
       const now = new Date();
 
-      const shouldOpenTimer = shouldShowTimerAfterGoal;
       blurActiveElement();
-
-      flushSync(() => {
-        setDailyGoalOpen(false);
-        if (shouldOpenTimer) {
-          setShouldShowTimerAfterGoal(false);
-          setTimerModalImmediateBody(true);
-          setTimerModalOpen(true);
-        }
-      });
+      setDailyGoalOpen(false);
 
       const commitDailyGoal = () => {
         // Only change the target for the day. Never reset XP already earned,
@@ -6981,7 +6711,7 @@ export default function App({ onBootReady } = {}) {
       blurActiveElement,
       patchUser,
       runAfterNextPaint,
-      shouldShowTimerAfterGoal,
+      setDailyGoalOpen,
       toast,
     ],
   );
@@ -7057,28 +6787,35 @@ export default function App({ onBootReady } = {}) {
   }, [companionUnlockModal, playSound]);
 
   const handleTimerModalClose = useCallback(() => {
-    const shouldOpenProficiency = shouldShowProficiencyAfterTimer;
+    setTimerModalOpen(false);
+    setTimerModalImmediateBody(false);
+  }, [setTimerModalOpen]);
 
-    flushSync(() => {
-      setTimerModalOpen(false);
-      setTimerModalImmediateBody(false);
-      if (shouldOpenProficiency) {
-        proficiencyCheckDoneRef.current = true;
-        setShouldShowProficiencyAfterTimer(false);
-        setProficiencyTestOpen(true);
-      }
-    });
-  }, [shouldShowProficiencyAfterTimer]);
+  const handleCompanionContinue = useCallback(() => {
+    const latestUser = useUserStore.getState()?.user || user || {};
+    const hasProficiencyDecision = Object.prototype.hasOwnProperty.call(
+      latestUser,
+      "proficiencyPlacement",
+    );
+    const accountKey = activeNpub || "local";
+
+    if (
+      hasProficiencyDecision ||
+      proficiencyPromptOpenedForRef.current === accountKey
+    ) {
+      return;
+    }
+
+    proficiencyPromptOpenedForRef.current = accountKey;
+    setProficiencyTestOpen(true);
+  }, [activeNpub, user]);
 
   const handleProficiencySkip = useCallback(async () => {
     flushSync(() => {
       setProficiencyTestOpen(false);
     });
-    // Record the decision locally FIRST so the next modal in the chain (the
-    // modes-intro "How it works" carousel, which waits for proficiencyPlacement)
-    // opens immediately — don't make it wait on the Firestore round-trip.
-    // "skipped" is a sentinel — treated as falsy by the placement check but
-    // truthy enough to prevent the modal from re-opening.
+    // Record the decision locally first. "skipped" prevents the prompt from
+    // reappearing after later companion messages or on another session.
     patchUser?.({
       proficiencyPlacement: "skipped",
       proficiencyPlacements: {
@@ -7106,27 +6843,9 @@ export default function App({ onBootReady } = {}) {
   }, [resolveNpub, patchUser, user?.proficiencyPlacements, resolvedTargetLang]);
 
   const handleProficiencyTakeTest = useCallback(() => {
-    proficiencyCheckDoneRef.current = true;
     setProficiencyTestOpen(false);
     navigate("/proficiency");
   }, [navigate]);
-
-  // Modes intro carousel: close + persist so it only ever shows once.
-  const handleModesIntroClose = useCallback(async () => {
-    setModesIntroOpen(false);
-    const id = resolveNpub();
-    if (!id) return;
-    try {
-      await setDoc(
-        doc(database, "users", id),
-        { modesIntroShown: true, updatedAt: new Date().toISOString() },
-        { merge: true },
-      );
-      patchUser?.({ modesIntroShown: true });
-    } catch (e) {
-      console.warn("Failed to persist modes intro shown flag:", e);
-    }
-  }, [resolveNpub, patchUser]);
 
   // Install modal: mark as shown and persist to Firestore.
   const markGettingStartedShown = useCallback(async () => {
@@ -9408,7 +9127,6 @@ export default function App({ onBootReady } = {}) {
     celebrateOpen,
     companionUnlockModalOpen: Boolean(companionUnlockModal),
     gettingStartedOpen,
-    modesIntroOpen,
     pendingInstallModalAfterTutorial,
     pendingTutorialBitcoinModal,
     plateCelebrationOpen: Boolean(plateCelebration),
@@ -10221,18 +9939,6 @@ export default function App({ onBootReady } = {}) {
         />
       )}
 
-      {/* Tutorial Action Bar Popovers - shows on first login on main learning surfaces */}
-      <TutorialActionBarPopovers
-        isActive={
-          showSkillTreeTutorial &&
-          viewMode === "skillTree" &&
-          ["plate", "path", "tutor"].includes(pathMode)
-        }
-        lang={appLanguage}
-        onComplete={handleSkillTreeTutorialComplete}
-        isOnSkillTree={true}
-      />
-
       {/* Skill Tree Scene - Full Screen */}
       {viewMode === "skillTree" && (
         <Box pb={skillTreeSceneBottomPadding} w="100%">
@@ -10247,7 +9953,7 @@ export default function App({ onBootReady } = {}) {
               onStartPractice={handleStartDailyPractice}
               onResetPlate={handleResetQuestPlate}
               questKinds={questKinds}
-              ctaDisabled={showSkillTreeTutorial}
+              onCompanionContinue={handleCompanionContinue}
               petHealth={dailyGoalPetHealth}
               petName={user?.dailyGoalPetName || ""}
               petType={dailyGoalPetType}
@@ -10599,15 +10305,6 @@ export default function App({ onBootReady } = {}) {
         onClose={handleGettingStartedSkip}
         secretKey={activeNsec}
         lang={appLanguage}
-      />
-
-      {/* Modes intro carousel — onboarding step after the proficiency modal */}
-      <ModesCarouselModal
-        isOpen={modesIntroOpen}
-        onClose={handleModesIntroClose}
-        includePhonics={ALPHABET_LANGS.includes(resolvedTargetLang)}
-        lang={appLanguage}
-        useSharedBackdrop={modesIntroOpen || appOnboardingChainOpen}
       />
 
       <BitcoinSupportModal
