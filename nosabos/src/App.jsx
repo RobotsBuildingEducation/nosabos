@@ -6798,17 +6798,46 @@ export default function App({ onBootReady } = {}) {
       "proficiencyPlacement",
     );
     const accountKey = activeNpub || "local";
+    const localShownKey = `proficiencyPromptShown:${accountKey}`;
+    let locallyShown = false;
+
+    try {
+      locallyShown = window.localStorage.getItem(localShownKey) === "1";
+    } catch {
+      locallyShown = false;
+    }
 
     if (
       hasProficiencyDecision ||
+      latestUser.proficiencyPromptShown === true ||
+      locallyShown ||
       proficiencyPromptOpenedForRef.current === accountKey
     ) {
       return;
     }
 
     proficiencyPromptOpenedForRef.current = accountKey;
+    try {
+      window.localStorage.setItem(localShownKey, "1");
+    } catch {
+      /* The Firestore flag remains the cross-device source of truth. */
+    }
+    patchUser?.({ proficiencyPromptShown: true });
     setProficiencyTestOpen(true);
-  }, [activeNpub, user]);
+
+    if (activeNpub) {
+      void setDoc(
+        doc(database, "users", activeNpub),
+        {
+          proficiencyPromptShown: true,
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true },
+      ).catch((error) => {
+        console.warn("Failed to persist proficiency prompt state:", error);
+      });
+    }
+  }, [activeNpub, patchUser, user]);
 
   const handleProficiencySkip = useCallback(async () => {
     flushSync(() => {
