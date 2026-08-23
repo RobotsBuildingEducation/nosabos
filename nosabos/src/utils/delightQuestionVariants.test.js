@@ -15,6 +15,7 @@ import {
   gradeDelightResponse,
   isDelightQuestionLessonGrounded,
   isDelightResponseReady,
+  isSingleDelightCueWord,
   normalizeDelightQuestion,
   parseDelightJudgeVerdict,
   parseDelightQuestion,
@@ -273,7 +274,7 @@ test("delight prompts carry authoritative lesson context and recent-question var
     supportLang: "en",
     lessonContent: {
       topic: "things around the home",
-      words: ["llave", "mesa", "puerta"],
+      words: ["llave", "mesa"],
       focusPoints: ["household objects in context"],
       curriculumContext: {
         lessonId: "a1-household-objects",
@@ -281,8 +282,10 @@ test("delight prompts carry authoritative lesson context and recent-question var
           {
             id: "household-keys",
             modes: ["vocabulary"],
-            targetConcept: "llave",
-            targetExamples: ["Necesito la llave."],
+            targetConcept: "puerta",
+            targetRole: "form",
+            targetForms: ["puerta"],
+            targetExamples: ["Abro la puerta."],
           },
         ],
       },
@@ -293,8 +296,53 @@ test("delight prompts carry authoritative lesson context and recent-question var
   assert.match(prompt, /CURRICULUM OBJECTIVES \(authoritative\)/);
   assert.match(prompt, /exact lesson vocabulary list/i);
   assert.match(prompt, /llave/);
-  assert.match(prompt, /Do not repeat or closely paraphrase/i);
+  assert.match(prompt, /\["llave","mesa","puerta"\]/);
+  assert.match(prompt, /Reuse its three required words/i);
   assert.match(prompt, /references rather than exhaustive answer keys/i);
+  assert.match(prompt, /THREE-WORD CUE INVENTORY \(REQUIRED\)/);
+  assert.match(prompt, /exactly 3 distinct entries verbatim/i);
+  assert.match(prompt, /Never replace an entry with its definition/i);
+});
+
+test("Three-Word Challenge requires three distinct words rather than phrases", () => {
+  const base = {
+    instruction: "Use all three words.",
+    cues: ["amiga", "amigo", "familia"],
+    sampleAnswers: ["Mi amiga y mi amigo conocen a mi familia."],
+    reaction: "Nice sentence!",
+    hint: "Connect the people in one sentence.",
+    explanation: "The sentence uses all three cues.",
+  };
+
+  assert.ok(normalizeDelightQuestion("three_word_challenge", base));
+  assert.equal(
+    normalizeDelightQuestion("three_word_challenge", {
+      ...base,
+      cues: [
+        "una persona muy cercana a ti, mujer",
+        "una persona muy cercana a ti, hombre",
+        "grupo de personas que comparten parentesco",
+      ],
+    }),
+    null,
+  );
+  assert.equal(
+    normalizeDelightQuestion("three_word_challenge", {
+      ...base,
+      cues: ["amiga", "amiga", "familia"],
+    }),
+    null,
+  );
+  assert.equal(
+    normalizeDelightQuestion("three_word_challenge", {
+      ...base,
+      cues: ["amiga", "amigo", "familia", "vecina"],
+    }),
+    null,
+  );
+  assert.equal(isSingleDelightCueWord("amiga"), true);
+  assert.equal(isSingleDelightCueWord("arc-en-ciel"), true);
+  assert.equal(isSingleDelightCueWord("close friend"), false);
 });
 
 test("invalid delight drafts get one schema-preserving lesson repair prompt", () => {
@@ -347,6 +395,20 @@ test("delight questions reject generated payloads outside the lesson curriculum"
     ),
     false,
   );
+  assert.equal(
+    isDelightQuestionLessonGrounded(
+      {
+        variant: "sentence_detective",
+        sentence: "El perro corre por el parque.",
+        correctedSentence: "El gato corre por el parque.",
+        answer: "gato",
+        sourceEvidence: "This tests llave.",
+      },
+      lessonContent,
+      "vocabulary",
+    ),
+    false,
+  );
 });
 
 test("Sentence Detective prompt assigns target and support languages by field", () => {
@@ -366,6 +428,33 @@ test("Sentence Detective prompt assigns target and support languages by field", 
   );
   assert.match(prompt, /Do not translate or mix/i);
   assert.match(prompt, /Do not put Egyptian Arabic translations/i);
+});
+
+test("Sentence Detective receives exact target forms from its active objective", () => {
+  const prompt = buildSentenceDetectivePrompt({
+    moduleType: "vocabulary",
+    targetLang: "es",
+    supportLang: "en",
+    lessonContent: {
+      words: ["amigo", "amiga"],
+      curriculumContext: {
+        lessonId: "lesson-pre-a1-1-3",
+        agendaItems: [
+          {
+            id: "people-family",
+            modes: ["vocabulary"],
+            targetRole: "form",
+            targetConcept: "familia",
+            targetForms: ["familia"],
+          },
+        ],
+      },
+    },
+  });
+
+  assert.match(prompt, /SENTENCE DETECTIVE TARGET WORDS \(REQUIRED\)/);
+  assert.match(prompt, /\["amigo","amiga","familia"\]/);
+  assert.match(prompt, /Do not replace the lesson item with a definition/i);
 });
 
 test("Sentence Detective uses one generation call and local structural validation", async () => {
@@ -508,10 +597,10 @@ test("vocabulary audits reject an original sentence with a natural reading", () 
 });
 
 test("parsePartialDelightQuestion extracts tokens and fields from streaming chunk buffers", () => {
-  const partial1 = parsePartialDelightQuestion('{"instruction":"Find the error","tokens":["Hello,","good"');
+  const partial1 = parsePartialDelightQuestion('{"instruction":"Find the error","tokens":["Hello,","good');
   assert.ok(partial1);
   assert.equal(partial1.instruction, "Find the error");
-  assert.deepEqual(partial1.tokens, ["Hello,", "good"]);
+  assert.deepEqual(partial1.tokens, ["Hello,"]);
 
   const partial2 = parsePartialDelightQuestion('{"tokens":["Ayer","ella","fuimos"],"replacements":["fue","fui"');
   assert.ok(partial2);
@@ -654,8 +743,13 @@ test("parsePartialDelightQuestion parses in-flight streaming fields across all v
   assert.deepEqual(streamGroups.groups[1].items, ["manzana"]);
 
   // In-flight cues & clues
-  const streamCues = parsePartialDelightQuestion('{"cues":["sol","playa","verano"');
-  assert.deepEqual(streamCues?.cues, ["sol", "playa", "verano"]);
+  const streamCues = parsePartialDelightQuestion('{"cues":["sol","playa","verano');
+  assert.deepEqual(streamCues?.cues, ["sol", "playa"]);
+
+  const completedStreamCues = parsePartialDelightQuestion(
+    '{"cues":["sol","playa","verano"',
+  );
+  assert.deepEqual(completedStreamCues?.cues, ["sol", "playa", "verano"]);
 
   const streamClues = parsePartialDelightQuestion(
     '{"clues":["Vive en el agua","Tiene escamas"',

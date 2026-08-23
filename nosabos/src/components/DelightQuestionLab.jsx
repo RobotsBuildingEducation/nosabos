@@ -69,6 +69,8 @@ import {
 import {
   clickSound,
   deliciousSound,
+  nextButtonSound,
+  selectSound,
   submitActionSound,
   submitSound,
 } from "../constants/sounds";
@@ -94,7 +96,10 @@ import {
   gradeDelightResponse,
   isDelightQuestionLessonGrounded,
   isDelightResponseReady,
+  isSingleDelightCueWord,
+  normalizeDelightText,
   normalizeDelightQuestion,
+  normalizeSentenceSurface,
   parseDelightJudgeVerdict,
   parsePartialDelightQuestion,
 } from "../utils/delightQuestionVariants";
@@ -106,6 +111,7 @@ import {
   formatSentenceDetectiveCopy,
   getSentenceDetectiveCopy,
 } from "../utils/sentenceDetectiveI18n";
+import { sanitizeGeminiResponseSchema } from "../utils/geminiResponseSchema";
 import {
   formatSentenceShapeshifterCopy,
   getSentenceShapeshifterCopy,
@@ -142,10 +148,107 @@ const AVAILABLE_VARIANTS = DELIGHT_VARIANT_IDS.map((variantId) =>
   DELIGHT_VARIANTS.find(({ id }) => id === variantId),
 ).filter(Boolean);
 const QUESTION_GENERATION_TIMEOUT_MS = 30000;
-const SENTENCE_DETECTIVE_CACHE_VERSION = "semantic-proof-v2";
+const SENTENCE_DETECTIVE_CACHE_VERSION = "semantic-proof-v3";
 const DELIGHT_JSON_GENERATION_CONFIG = {
   thinkingConfig: { thinkingBudget: 0 },
   responseMimeType: "application/json",
+};
+const schemaString = { type: "string" };
+const schemaInteger = { type: "integer" };
+const schemaBoolean = { type: "boolean" };
+const schemaStringArray = { type: "array", items: schemaString };
+const requiredObjectSchema = (properties) => ({
+  type: "object",
+  properties,
+  required: Object.keys(properties),
+});
+const sharedQuestionSchema = {
+  instruction: schemaString,
+  hint: schemaString,
+  explanation: schemaString,
+};
+const DELIGHT_RESPONSE_SCHEMAS = {
+  sentence_detective: requiredObjectSchema({
+    sentence: schemaString,
+    correctedSentence: schemaString,
+    tokens: schemaStringArray,
+    // Gemini rejects empty strings inside response-schema enums. The prompt
+    // and local reconstruction validator still constrain this to "" or " ".
+    joiner: schemaString,
+    incorrectIndex: schemaInteger,
+    wrongToken: schemaString,
+    replacements: schemaStringArray,
+    answer: schemaString,
+    slotType: {
+      ...schemaString,
+      enum: ["noun", "verb", "adjective", "adverb", "other"],
+    },
+    cueTokens: schemaStringArray,
+    errorEvidence: schemaString,
+    repairEvidence: schemaString,
+    errorCategory: schemaString,
+    targetSkill: schemaString,
+    sourceEvidence: schemaString,
+    ...sharedQuestionSchema,
+  }),
+  dialogue_fork: requiredObjectSchema({
+    ...sharedQuestionSchema,
+    speaker: schemaString,
+    line: schemaString,
+    options: schemaStringArray,
+    answerIndex: schemaInteger,
+    reaction: schemaString,
+  }),
+  sentence_shapeshifter: requiredObjectSchema({
+    ...sharedQuestionSchema,
+    source: schemaString,
+    constraint: schemaString,
+    answer: schemaString,
+    acceptableAnswers: schemaStringArray,
+  }),
+  word_neighborhoods: requiredObjectSchema({
+    ...sharedQuestionSchema,
+    groups: {
+      type: "array",
+      items: requiredObjectSchema({
+        label: schemaString,
+        items: schemaStringArray,
+      }),
+    },
+  }),
+  morphology_forge: requiredObjectSchema({
+    ...sharedQuestionSchema,
+    sentence: schemaString,
+    pieces: schemaStringArray,
+    answerPieces: schemaStringArray,
+    answerWord: schemaString,
+  }),
+  three_clue_mystery: requiredObjectSchema({
+    ...sharedQuestionSchema,
+    clues: schemaStringArray,
+    answer: schemaString,
+    acceptableAnswers: schemaStringArray,
+    example: schemaString,
+  }),
+  listen_difference: requiredObjectSchema({
+    ...sharedQuestionSchema,
+    audioText: schemaString,
+    options: schemaStringArray,
+    answerIndex: schemaInteger,
+    contrast: schemaString,
+  }),
+  three_word_challenge: requiredObjectSchema({
+    ...sharedQuestionSchema,
+    cues: schemaStringArray,
+    sampleAnswers: schemaStringArray,
+    reaction: schemaString,
+  }),
+  natural_or_weird: requiredObjectSchema({
+    ...sharedQuestionSchema,
+    sentence: schemaString,
+    isNatural: schemaBoolean,
+    correction: schemaString,
+  }),
 };
 const SPEECH_RESPONSE_VARIANTS = new Set([
   "sentence_shapeshifter",
@@ -197,13 +300,17 @@ function strongNpub(user) {
   ).trim();
 }
 
-function shuffle(items = []) {
-  const result = [...items];
-  for (let index = result.length - 1; index > 0; index -= 1) {
-    const other = Math.floor(Math.random() * (index + 1));
-    [result[index], result[other]] = [result[other], result[index]];
-  }
-  return result;
+function stableShuffle(items = []) {
+  const score = (value) => {
+    let hash = 2166136261;
+    for (const char of String(value || "")) {
+      hash ^= char.codePointAt(0);
+      hash = Math.imul(hash, 16777619);
+    }
+    return hash >>> 0;
+  };
+
+  return [...items].sort((left, right) => score(left) - score(right));
 }
 
 function QuestionAssistantButton({
@@ -471,6 +578,7 @@ function SentenceDetective({
   isLoadingAssistantSupport = false,
   assistantSupportText = "",
   assistantLabel = "Assistant",
+  onSelectSound = () => {},
 }) {
   const targetDirection = getLanguageDirection(targetLang, "ltr");
   const supportDirection = getLanguageDirection(supportLang, "ltr");
@@ -484,6 +592,7 @@ function SentenceDetective({
   const repairedPreview = previewTokens.join(question.joiner);
 
   const handleTokenClick = (index) => {
+    onSelectSound();
     if (index === question.incorrectIndex) {
       setResponse((current) => ({
         ...current,
@@ -626,12 +735,13 @@ function SentenceDetective({
                   phase="repair"
                   selected={response.replacement === replacement}
                   disabled={locked}
-                  onClick={() =>
+                  onClick={() => {
+                    onSelectSound();
                     setResponse((current) => ({
                       ...current,
                       replacement,
-                    }))
-                  }
+                    }));
+                  }}
                 >
                   {replacement}
                 </Chip>
@@ -675,11 +785,10 @@ function SentenceDetectiveSkeleton({
   const supportDirection = getLanguageDirection(supportLang, "ltr");
   const guidanceJoiner = ["ja", "zh"].includes(supportLang) ? "" : " ";
   const placeholderWidths = [85, 110, 65, 95, 75, 100];
-  const streamingTokens =
-    streamingQuestion?.tokens ||
-    (streamingQuestion?.sentence
-      ? streamingQuestion.sentence.split(/\s+/).filter(Boolean)
-      : null);
+  // `sentence` arrives before the fields that prove the draft reconstructs
+  // correctly. Stream completed token chips instead, so prose that is later
+  // rejected never presents itself as a finished question.
+  const streamingTokens = streamingQuestion?.tokens || null;
 
   return (
     <VStack
@@ -969,7 +1078,8 @@ function WordNeighborhoodsSkeleton({
   const targetDirection = getLanguageDirection(targetLang, "ltr");
   const supportDirection = getLanguageDirection(supportLang, "ltr");
   const groups = streamingQuestion?.groups || [];
-  const streamingItems = groups.flatMap((g) => g.items || []);
+  const streamingItems = stableShuffle(groups.flatMap((g) => g.items || []));
+  const groupCount = Math.max(2, groups.length);
 
   return (
     <VStack
@@ -1045,9 +1155,9 @@ function WordNeighborhoodsSkeleton({
         </Wrap>
       </Box>
 
-      {/* 2 Column Group Cards */}
-      <SimpleGrid columns={{ base: 1, sm: 2 }} spacing={3.5}>
-        {[0, 1].map((i) => {
+      {/* Group cards stay empty while their labels stream in. */}
+      <SimpleGrid columns={{ base: 1, sm: groupCount }} spacing={3.5}>
+        {Array.from({ length: groupCount }, (_, i) => {
           const grp = groups[i];
           return (
             <Box
@@ -1070,33 +1180,15 @@ function WordNeighborhoodsSkeleton({
                   <Skeleton height="20px" width="110px" borderRadius="md" />
                 </Box>
               )}
-              <Wrap spacing={2} dir={targetDirection} lang={targetLang}>
-                {grp?.items?.length ? (
-                  grp.items.map((it, idx) => (
-                    <WrapItem key={`grp-${i}-it-${idx}`}>
-                      <Box
-                        style={questionSquircleStyle}
-                        px={3}
-                        py={1.5}
-                        borderRadius="lg"
-                        fontSize="sm"
-                        fontWeight="medium"
-                        borderWidth="1px"
-                        borderColor={APP_BORDER}
-                        bg={APP_SURFACE_MUTED}
-                        color={APP_TEXT_PRIMARY}
-                      >
-                        {it}
-                      </Box>
-                    </WrapItem>
-                  ))
-                ) : (
-                  <>
-                    <Skeleton height="32px" width="68px" borderRadius="lg" />
-                    <Skeleton height="32px" width="80px" borderRadius="lg" />
-                  </>
-                )}
-              </Wrap>
+              <Text
+                fontSize="xs"
+                color={APP_TEXT_SECONDARY}
+                fontStyle="italic"
+                py={2}
+                dir={supportDirection}
+              >
+                {copy?.dropPlaceholder || "Drag a word here or tap to place"}
+              </Text>
             </Box>
           );
         })}
@@ -1441,7 +1533,9 @@ function ThreeWordChallengeSkeleton({
 }) {
   const targetDirection = getLanguageDirection(targetLang, "ltr");
   const supportDirection = getLanguageDirection(supportLang, "ltr");
-  const cues = streamingQuestion?.cues || [];
+  const cues = (streamingQuestion?.cues || [])
+    .filter(isSingleDelightCueWord)
+    .slice(0, 3);
 
   return (
     <VStack spacing={5} align="stretch" lang={supportLang} dir={supportDirection}>
@@ -1475,40 +1569,40 @@ function ThreeWordChallengeSkeleton({
         dir={targetDirection}
         lang={targetLang}
       >
-        {cues.length > 0
-          ? cues.map((cue, index) => (
-              <Box
-                key={`stream-cue-${index}`}
-                px={4}
-                py={2.5}
-                borderRadius="xl"
-                borderWidth="1.5px"
-                borderColor="purple.300"
-                bg="rgba(128, 90, 213, 0.12)"
-                color={APP_TEXT_PRIMARY}
-                style={questionSquircleStyle}
-                boxShadow="0 2px 8px rgba(128, 90, 213, 0.1)"
+        {[0, 1, 2].map((index) =>
+          cues[index] ? (
+            <Box
+              key={`stream-cue-${index}`}
+              px={4}
+              py={2.5}
+              borderRadius="xl"
+              borderWidth="1.5px"
+              borderColor="purple.300"
+              bg="rgba(128, 90, 213, 0.12)"
+              color={APP_TEXT_PRIMARY}
+              style={questionSquircleStyle}
+              boxShadow="0 2px 8px rgba(128, 90, 213, 0.1)"
+            >
+              <Text
+                as="span"
+                fontWeight="800"
+                fontSize={{ base: "md", md: "lg" }}
               >
-                <Text
-                  as="span"
-                  fontWeight="800"
-                  fontSize={{ base: "md", md: "lg" }}
-                >
-                  {cue}
-                </Text>
-              </Box>
-            ))
-          : [1, 2, 3].map((i) => (
-              <Skeleton
-                key={`skel-cue-${i}`}
-                height="46px"
-                width="115px"
-                borderRadius="xl"
-                startColor="rgba(128, 90, 213, 0.12)"
-                endColor="rgba(128, 90, 213, 0.28)"
-                style={questionSquircleStyle}
-              />
-            ))}
+                {cues[index]}
+              </Text>
+            </Box>
+          ) : (
+            <Skeleton
+              key={`skel-cue-${index}`}
+              height="46px"
+              width="115px"
+              borderRadius="xl"
+              startColor="rgba(128, 90, 213, 0.12)"
+              endColor="rgba(128, 90, 213, 0.28)"
+              style={questionSquircleStyle}
+            />
+          ),
+        )}
       </HStack>
 
       {/* Input Field Skeleton */}
@@ -1628,6 +1722,7 @@ function DialogueFork({
   onPlayAudio,
   isLoadingAudio = false,
   isPlayingAudio = false,
+  onSelectSound = () => {},
 }) {
   const targetDirection = getLanguageDirection(targetLang, "ltr");
   const supportDirection = getLanguageDirection(supportLang, "ltr");
@@ -1748,7 +1843,10 @@ function DialogueFork({
             key={`${option}-${index}`}
             selected={response.selectedIndex === index}
             disabled={locked}
-            onClick={() => setResponse({ selectedIndex: index })}
+            onClick={() => {
+              onSelectSound();
+              setResponse({ selectedIndex: index });
+            }}
           >
             {option}
           </ChoiceCard>
@@ -1976,6 +2074,7 @@ function WordNeighborhoods({
   isLoadingAssistantSupport = false,
   assistantSupportText = "",
   assistantLabel = "Assistant",
+  onSelectSound = () => {},
 }) {
   const [selectedWord, setSelectedWord] = useState("");
   const targetDirection = getLanguageDirection(targetLang, "ltr");
@@ -1987,6 +2086,7 @@ function WordNeighborhoods({
   const assign = useCallback(
     (word, groupIndex) => {
       if (!word || locked) return;
+      onSelectSound();
       setResponse((current) => ({
         assignments: {
           ...(current.assignments || {}),
@@ -1995,12 +2095,13 @@ function WordNeighborhoods({
       }));
       setSelectedWord((prev) => (prev === word ? "" : prev));
     },
-    [locked, setResponse],
+    [locked, onSelectSound, setResponse],
   );
 
   const returnToBank = useCallback(
     (word) => {
       if (!word || locked) return;
+      onSelectSound();
       setResponse((current) => {
         const assignmentsNext = { ...(current.assignments || {}) };
         delete assignmentsNext[word];
@@ -2008,7 +2109,7 @@ function WordNeighborhoods({
       });
       setSelectedWord((prev) => (prev === word ? "" : prev));
     },
-    [locked, setResponse],
+    [locked, onSelectSound, setResponse],
   );
 
   const handleDragEnd = useCallback(
@@ -2164,7 +2265,10 @@ function WordNeighborhoods({
                             }
                           : {}
                       }
-                      onClick={() => setSelectedWord(isSelected ? "" : word)}
+                      onClick={() => {
+                        onSelectSound();
+                        setSelectedWord(isSelected ? "" : word);
+                      }}
                     >
                       {word}
                     </Box>
@@ -2304,6 +2408,7 @@ function MorphologyForge({
   isLoadingAssistantSupport = false,
   assistantSupportText = "",
   assistantLabel = "Assistant",
+  onSelectSound = () => {},
 }) {
   const targetDirection = getLanguageDirection(targetLang, "ltr");
   const supportDirection = getLanguageDirection(supportLang, "ltr");
@@ -2325,23 +2430,25 @@ function MorphologyForge({
   const addPiece = useCallback(
     (index) => {
       if (locked || chosenIndices.includes(index)) return;
+      onSelectSound();
       setResponse((current) => ({
         pieceIndices: [...(current.pieceIndices || []), index],
       }));
     },
-    [chosenIndices, locked, setResponse],
+    [chosenIndices, locked, onSelectSound, setResponse],
   );
 
   const removePiece = useCallback(
     (position) => {
       if (locked) return;
+      onSelectSound();
       setResponse((current) => ({
         pieceIndices: (current.pieceIndices || []).filter(
           (_, idx) => idx !== position,
         ),
       }));
     },
-    [locked, setResponse],
+    [locked, onSelectSound, setResponse],
   );
 
   const handleDragEnd = useCallback(
@@ -2554,7 +2661,7 @@ function MorphologyForge({
                         removePiece(position);
                       }}
                     >
-                      {piece} ✕
+                      {piece}
                     </Box>
                   )}
                 </SortableItem>
@@ -2679,6 +2786,7 @@ function ThreeClueMystery({
   onSubmit,
   canSubmit = false,
   submitting = false,
+  onSelectSound = () => {},
 }) {
   const targetDirection = getLanguageDirection(targetLang, "ltr");
   const supportDirection = getLanguageDirection(supportLang, "ltr");
@@ -2691,8 +2799,9 @@ function ThreeClueMystery({
 
   const handleRevealNextClue = useCallback(() => {
     if (locked || !hasMoreClues || !setRevealedClues) return;
+    onSelectSound();
     setRevealedClues((count) => Math.min(clues.length, count + 1));
-  }, [clues.length, hasMoreClues, locked, setRevealedClues]);
+  }, [clues.length, hasMoreClues, locked, onSelectSound, setRevealedClues]);
 
   const handleKeyDown = useCallback(
     (event) => {
@@ -2908,6 +3017,7 @@ function ListenDifference({
   onSubmit,
   canSubmit = false,
   submitting = false,
+  onSelectSound = () => {},
 }) {
   const targetDirection = getLanguageDirection(targetLang, "ltr");
   const supportDirection = getLanguageDirection(supportLang, "ltr");
@@ -3025,7 +3135,10 @@ function ListenDifference({
             key={`${option}-${index}`}
             selected={response?.selectedIndex === index}
             disabled={locked}
-            onClick={() => setResponse({ selectedIndex: index })}
+            onClick={() => {
+              onSelectSound();
+              setResponse({ selectedIndex: index });
+            }}
           >
             {option}
           </ChoiceCard>
@@ -3231,6 +3344,7 @@ function NaturalOrWeird({
   onSubmit,
   canSubmit = false,
   submitting = false,
+  onSelectSound = () => {},
 }) {
   const targetDirection = getLanguageDirection(targetLang, "ltr");
   const supportDirection = getLanguageDirection(supportLang, "ltr");
@@ -3363,14 +3477,20 @@ function NaturalOrWeird({
         <ChoiceCard
           selected={response?.choice === false}
           disabled={locked}
-          onClick={() => setResponse({ choice: false })}
+          onClick={() => {
+            onSelectSound();
+            setResponse({ choice: false });
+          }}
         >
           {copy?.soundsWeird || "Sounds weird"}
         </ChoiceCard>
         <ChoiceCard
           selected={response?.choice === true}
           disabled={locked}
-          onClick={() => setResponse({ choice: true })}
+          onClick={() => {
+            onSelectSound();
+            setResponse({ choice: true });
+          }}
         >
           {copy?.soundsNatural || "Sounds natural"}
         </ChoiceCard>
@@ -3498,6 +3618,75 @@ function getDelightQuestionVarietySummary(question) {
   );
 }
 
+function getStableSentenceDetectivePreview(
+  partial,
+  lessonContent,
+  moduleType,
+  targetLang,
+  buffer,
+) {
+  const tokens = Array.isArray(partial?.tokens) ? partial.tokens : [];
+  const replacements = Array.isArray(partial?.replacements)
+    ? partial.replacements
+    : [];
+  const incorrectIndex = Number(partial?.incorrectIndex);
+  const answer = String(partial?.answer || "").trim();
+  const wrongToken = String(partial?.wrongToken || "").trim();
+  const joiner = ["ja", "zh"].includes(targetLang) ? "" : " ";
+  const replacementKeys = replacements.map(normalizeDelightText);
+  const hasCompleteTokens = /"tokens"\s*:\s*\[[^\]]*\]/s.test(buffer);
+  const hasCompleteReplacements = /"replacements"\s*:\s*\[[^\]]*\]/s.test(
+    buffer,
+  );
+
+  if (
+    !hasCompleteTokens ||
+    !hasCompleteReplacements ||
+    tokens.length < 3 ||
+    replacements.length !== 4 ||
+    new Set(replacementKeys).size !== replacements.length ||
+    !Number.isInteger(incorrectIndex) ||
+    incorrectIndex < 0 ||
+    incorrectIndex >= tokens.length ||
+    !answer ||
+    !wrongToken ||
+    normalizeDelightText(tokens[incorrectIndex]) !==
+      normalizeDelightText(wrongToken) ||
+    !replacements.some(
+      (replacement) =>
+        normalizeDelightText(replacement) === normalizeDelightText(answer),
+    )
+  ) {
+    return null;
+  }
+
+  const correctedTokens = [...tokens];
+  correctedTokens[incorrectIndex] = answer;
+  if (
+    partial.sentence &&
+    normalizeSentenceSurface(partial.sentence) !==
+      normalizeSentenceSurface(tokens.join(joiner))
+  ) {
+    return null;
+  }
+  if (
+    partial.correctedSentence &&
+    normalizeSentenceSurface(partial.correctedSentence) !==
+      normalizeSentenceSurface(correctedTokens.join(joiner))
+  ) {
+    return null;
+  }
+
+  const preview = { ...partial, variant: "sentence_detective" };
+  return isDelightQuestionLessonGrounded(
+    preview,
+    lessonContent,
+    moduleType,
+  )
+    ? preview
+    : null;
+}
+
 export default function DelightQuestionLab({
   moduleType = "grammar",
   userLanguage = "en",
@@ -3517,6 +3706,9 @@ export default function DelightQuestionLab({
 }) {
   const user = useUserStore((state) => state.user);
   const playSound = useSoundSettings((state) => state.playSound);
+  const playSelectSound = useCallback(() => {
+    void playSound(selectSound);
+  }, [playSound]);
   const progress = user?.progress || {};
   const targetLang = normalizePracticeLanguage(
     propTargetLang ||
@@ -3775,7 +3967,7 @@ export default function DelightQuestionLab({
     setStreamingQuestion(null);
     setWordOrder(
       nextQuestion?.variant === "word_neighborhoods"
-        ? shuffle(nextQuestion.groups.flatMap((group) => group.items))
+        ? stableShuffle(nextQuestion.groups.flatMap((group) => group.items))
         : [],
     );
   }, [cancelQuestionSpeech, stopQuestionAudio]);
@@ -4007,6 +4199,12 @@ export default function DelightQuestionLab({
 
   useEffect(() => {
     const requestId = ++requestRef.current;
+    const generationConfig = {
+      ...DELIGHT_JSON_GENERATION_CONFIG,
+      responseSchema: sanitizeGeminiResponseSchema(
+        DELIGHT_RESPONSE_SCHEMAS[variantMeta.id],
+      ),
+    };
     const cacheKey = [
       moduleType,
       lesson?.id || "free",
@@ -4034,7 +4232,23 @@ export default function DelightQuestionLab({
       if (requestId !== requestRef.current) return;
       const partial = parsePartialDelightQuestion(accumulated);
       if (partial) {
-        setStreamingQuestion(partial);
+        const preview =
+          variantMeta.id === "sentence_detective"
+            ? getStableSentenceDetectivePreview(
+                partial,
+                lessonContent,
+                moduleType,
+                targetLang,
+                accumulated,
+              )
+            : partial;
+        if (preview) setStreamingQuestion(preview);
+      }
+    };
+
+    const resetStreamingPreview = () => {
+      if (requestId === requestRef.current) {
+        setStreamingQuestion(null);
       }
     };
 
@@ -4043,7 +4257,7 @@ export default function DelightQuestionLab({
         try {
           const resp = await simplemodel.generateContentStream({
             contents: [{ role: "user", parts: [{ text: input }] }],
-            generationConfig: DELIGHT_JSON_GENERATION_CONFIG,
+            generationConfig,
           });
           let accumulated = "";
           for await (const chunk of resp.stream) {
@@ -4063,10 +4277,13 @@ export default function DelightQuestionLab({
           throw new Error("Question generation returned an empty response.");
         } catch (primaryError) {
           if (requestId !== requestRef.current) throw primaryError;
+          // The provider fallback is a new draft. Return to the skeleton first
+          // so it cannot silently overwrite fields from the failed stream.
+          resetStreamingPreview();
           const fallback = await callResponses({
             model: DEFAULT_RESPONSES_MODEL,
             input,
-            generationConfig: DELIGHT_JSON_GENERATION_CONFIG,
+            generationConfig,
             skipGemini: true,
           });
           if (String(fallback || "").trim()) {
@@ -4079,7 +4296,7 @@ export default function DelightQuestionLab({
       const result = await callResponses({
         model: DEFAULT_RESPONSES_MODEL,
         input,
-        generationConfig: DELIGHT_JSON_GENERATION_CONFIG,
+        generationConfig,
       });
       if (!String(result || "").trim()) {
         throw new Error("Question generation returned an empty response.");
@@ -4144,6 +4361,9 @@ export default function DelightQuestionLab({
 
       // One bounded repair attempt lives inside this request. It cannot be
       // triggered again by rendering or state updates.
+      // Clear the rejected draft before streaming the replacement so the UI
+      // communicates a fresh attempt instead of morphing one question into another.
+      resetStreamingPreview();
       let repairedCandidate = null;
       if (variantMeta.id === "sentence_detective") {
         repairedCandidate = await generateSentenceDetectiveQuestion({
@@ -4279,7 +4499,7 @@ export default function DelightQuestionLab({
 
   const handleSkipQuestion = useCallback(() => {
     if (isFinalQuiz || submitting) return;
-    playSound(clickSound);
+    playSound(nextButtonSound);
     if (onSkip) {
       stopQuestionAudio();
       cancelQuestionSpeech();
@@ -5233,6 +5453,7 @@ export default function DelightQuestionLab({
                   isLoadingAssistantSupport={isLoadingAssistantSupport}
                   assistantSupportText={assistantSupportText}
                   assistantLabel={t("vocab_assistant") || "Assistant"}
+                  onSelectSound={playSelectSound}
                 />
               )}
               {question.variant === "dialogue_fork" && (
@@ -5251,6 +5472,7 @@ export default function DelightQuestionLab({
                   onPlayAudio={handlePlay}
                   isLoadingAudio={isSynthesizingAudio}
                   isPlayingAudio={isSpeaking}
+                  onSelectSound={playSelectSound}
                 />
               )}
               {question.variant === "sentence_shapeshifter" && (
@@ -5293,6 +5515,7 @@ export default function DelightQuestionLab({
                   isLoadingAssistantSupport={isLoadingAssistantSupport}
                   assistantSupportText={assistantSupportText}
                   assistantLabel={t("vocab_assistant") || "Assistant"}
+                  onSelectSound={playSelectSound}
                 />
               )}
               {question.variant === "morphology_forge" && (
@@ -5308,6 +5531,7 @@ export default function DelightQuestionLab({
                   isLoadingAssistantSupport={isLoadingAssistantSupport}
                   assistantSupportText={assistantSupportText}
                   assistantLabel={t("vocab_assistant") || "Assistant"}
+                  onSelectSound={playSelectSound}
                 />
               )}
               {question.variant === "three_clue_mystery" && (
@@ -5333,6 +5557,7 @@ export default function DelightQuestionLab({
                   onSubmit={handleSubmit}
                   canSubmit={ready}
                   submitting={submitting}
+                  onSelectSound={playSelectSound}
                 />
               )}
               {question.variant === "listen_difference" && (
@@ -5354,6 +5579,7 @@ export default function DelightQuestionLab({
                   onSubmit={handleSubmit}
                   canSubmit={ready}
                   submitting={submitting}
+                  onSelectSound={playSelectSound}
                 />
               )}
               {question.variant === "three_word_challenge" && (
@@ -5398,6 +5624,7 @@ export default function DelightQuestionLab({
                   onSubmit={handleSubmit}
                   canSubmit={ready}
                   submitting={submitting}
+                  onSelectSound={playSelectSound}
                 />
               )}
             </>

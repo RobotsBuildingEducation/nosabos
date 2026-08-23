@@ -64,7 +64,7 @@ export const DELIGHT_VARIANT_IDS = DELIGHT_VARIANTS.map(({ id }) => id);
 
 const SCHEMAS = {
   sentence_detective:
-    '{"instruction":"...","sentence":"...","correctedSentence":"...","tokens":["..."],"joiner":" ","incorrectIndex":0,"wrongToken":"...","replacements":["...","...","...","..."],"answer":"...","slotType":"noun|verb|adjective|adverb|other","cueTokens":["..."],"errorEvidence":"...","repairEvidence":"...","errorCategory":"...","targetSkill":"...","sourceEvidence":"...","hint":"...","explanation":"..."}',
+    '{"sentence":"...","correctedSentence":"...","tokens":["..."],"joiner":" ","incorrectIndex":0,"wrongToken":"...","replacements":["...","...","...","..."],"answer":"...","slotType":"noun|verb|adjective|adverb|other","cueTokens":["..."],"errorEvidence":"...","repairEvidence":"...","errorCategory":"...","targetSkill":"...","sourceEvidence":"...","instruction":"...","hint":"...","explanation":"..."}',
   dialogue_fork:
     '{"instruction":"...","speaker":"...","line":"...","options":["..."],"answerIndex":0,"reaction":"...","hint":"...","explanation":"..."}',
   sentence_shapeshifter:
@@ -148,8 +148,11 @@ const VARIANT_RULES = {
     "instruction, hint, and explanation must be in the support language.",
   ],
   three_word_challenge: [
-    "Give exactly 3 target-language cue words appropriate to the level.",
+    "Give exactly 3 distinct target-language cue words appropriate to the level.",
+    "Each cue MUST be one orthographic word with no whitespace. Never use a definition, description, gloss, clause, sentence fragment, or comma-separated explanation as a cue.",
+    "When a THREE-WORD CUE INVENTORY is provided, copy exactly 3 entries from it verbatim; do not paraphrase or define them.",
     "The cues and sampleAnswers MUST be in the target language.",
+    "Every sample answer must be one natural sentence that uses all 3 cue words.",
     "reaction must be a short encouraging reaction in the support language acknowledging a creative response.",
     "instruction, hint, and explanation must be in the support language.",
   ],
@@ -219,6 +222,11 @@ export function normalizeDelightText(value = "") {
     .trim();
 }
 
+export function isSingleDelightCueWord(value = "") {
+  const text = String(value).normalize("NFC").trim();
+  return /^[\p{L}\p{M}\p{N}]+(?:[-'’ʼ][\p{L}\p{M}\p{N}]+)*$/u.test(text);
+}
+
 export function normalizeSentenceSurface(value = "") {
   return String(value)
     .normalize("NFC")
@@ -272,7 +280,7 @@ export function parsePartialDelightQuestion(buffer = "") {
     return m ? m[1] === "true" : undefined;
   };
 
-  const matchArray = (field) => {
+  const matchArray = (field, { includeOpen = true } = {}) => {
     const m = buffer.match(new RegExp(`"${field}"\\s*:\\s*\\[([^\\]]*)\\]?`));
     if (!m) return undefined;
     const items = [];
@@ -281,13 +289,15 @@ export function parsePartialDelightQuestion(buffer = "") {
     while ((itemMatch = itemRegex.exec(m[1])) !== null) {
       items.push(itemMatch[1]);
     }
-    const trailingOpen = m[1].match(/,\s*"([^"\\]*(?:\\.[^"\\]*)*)$/);
-    if (trailingOpen && trailingOpen[1]) {
-      items.push(trailingOpen[1]);
-    } else if (!items.length) {
-      const singleOpen = m[1].match(/^\s*"([^"\\]*(?:\\.[^"\\]*)*)$/);
-      if (singleOpen && singleOpen[1]) {
-        items.push(singleOpen[1]);
+    if (includeOpen) {
+      const trailingOpen = m[1].match(/,\s*"([^"\\]*(?:\\.[^"\\]*)*)$/);
+      if (trailingOpen && trailingOpen[1]) {
+        items.push(trailingOpen[1]);
+      } else if (!items.length) {
+        const singleOpen = m[1].match(/^\s*"([^"\\]*(?:\\.[^"\\]*)*)$/);
+        if (singleOpen && singleOpen[1]) {
+          items.push(singleOpen[1]);
+        }
       }
     }
     return items.length ? items : undefined;
@@ -386,16 +396,21 @@ export function parsePartialDelightQuestion(buffer = "") {
   const explanation = matchField("explanation");
   if (explanation) result.explanation = explanation;
 
-  const tokens = matchArray("tokens");
+  // Tokens become visible one completed JSON string at a time. An unfinished
+  // word should remain a skeleton rather than flickering on the card.
+  const tokens = matchArray("tokens", { includeOpen: false });
   if (tokens) result.tokens = tokens;
 
-  const replacements = matchArray("replacements");
+  const replacements = matchArray("replacements", { includeOpen: false });
   if (replacements) result.replacements = replacements;
 
   const options = matchArray("options");
   if (options) result.options = options;
 
-  const cues = matchArray("cues");
+  // Cue chips should arrive one complete word at a time. Rendering an open
+  // string here exposes half-written text (and formerly exposed definitions)
+  // before the completed draft can be validated.
+  const cues = matchArray("cues", { includeOpen: false });
   if (cues) result.cues = cues;
 
   const clues = matchArray("clues");
@@ -623,7 +638,15 @@ export function normalizeDelightQuestion(variant, raw) {
   if (variant === "three_word_challenge") {
     const cues = stringList(source.cues, 3);
     const sampleAnswers = stringList(source.sampleAnswers, 5);
-    if (cues.length !== 3 || !sampleAnswers.length) return null;
+    if (
+      !Array.isArray(source.cues) ||
+      source.cues.length !== 3 ||
+      cues.length !== 3 ||
+      cues.some((cue) => !isSingleDelightCueWord(cue)) ||
+      new Set(cues.map(normalizeDelightText)).size !== cues.length ||
+      !sampleAnswers.length
+    )
+      return null;
     return {
       ...base,
       cues,
@@ -676,6 +699,14 @@ export function buildDelightQuestionPrompt({
     levelGuard: lessonContent?.levelGuard || "",
     curriculumContext: lessonContent?.curriculumContext || null,
   };
+  const threeWordCueInventory = getLessonTargetInventory(
+    lessonScope,
+    moduleType,
+  ).filter(isSingleDelightCueWord);
+  const threeWordInventoryRule =
+    variant === "three_word_challenge" && threeWordCueInventory.length >= 3
+      ? `THREE-WORD CUE INVENTORY (REQUIRED): Choose exactly 3 distinct entries verbatim from this list: ${JSON.stringify(threeWordCueInventory)}. Never replace an entry with its definition, description, translation, or a phrase. One cue must directly serve the selected primary objective; the other two are familiar same-lesson supports for building the sentence.`
+      : "";
   const curriculumScope = buildCurriculumPromptContext(
     lessonContent?.curriculumContext,
     { mode: isGrammar ? "grammar" : "vocabulary" },
@@ -701,7 +732,9 @@ export function buildDelightQuestionPrompt({
             : "",
         ];
   const recentRule = recentQuestions.length
-    ? `VARIETY: Do not repeat or closely paraphrase these recent questions from this lesson: ${JSON.stringify(recentQuestions.slice(-5))}. Test a different supplied word, focus point, sentence, or situation.`
+    ? variant === "three_word_challenge" && threeWordCueInventory.length >= 3
+      ? `VARIETY: Recent questions: ${JSON.stringify(recentQuestions.slice(-5))}. The THREE-WORD CUE INVENTORY remains authoritative. ${threeWordCueInventory.length === 3 ? "Reuse its three required words, but create a different natural sample sentence and situation." : "Prefer a different combination of three inventory words when possible."}`
+      : `VARIETY: Do not repeat or closely paraphrase these recent questions from this lesson: ${JSON.stringify(recentQuestions.slice(-5))}. Test a different supplied word, focus point, sentence, or situation.`
     : "";
 
   return [
@@ -710,6 +743,7 @@ export function buildDelightQuestionPrompt({
     moduleFocus,
     ...groundingRules,
     curriculumScope,
+    threeWordInventoryRule,
     recentRule,
     `LANGUAGE ASSIGNMENTS (STRICT):`,
     `- PRACTICE TARGET LANGUAGE (${target}): Every questioned sentence, source sentence, option, dialogue line, cue word, morpheme piece, audio text, example sentence, correction, and answer MUST be written in ${target}. Do not produce exercises in any other language.`,
@@ -763,8 +797,19 @@ export function isDelightQuestionLessonGrounded(
   lessonContent,
   moduleType = "vocabulary",
 ) {
+  const groundingPayload =
+    question?.variant === "sentence_detective"
+      ? {
+          sentence: question.sentence,
+          correctedSentence: question.correctedSentence,
+          tokens: question.tokens,
+          replacements: question.replacements,
+          answer: question.answer,
+          cueTokens: question.cueTokens,
+        }
+      : question;
   return isCurriculumPayloadGrounded(
-    question,
+    groundingPayload,
     lessonContent?.curriculumContext,
     { mode: moduleType === "grammar" ? "grammar" : "vocabulary" },
   );
@@ -778,6 +823,47 @@ function getLessonScope(lessonContent = null) {
     levelGuard: lessonContent?.levelGuard || "",
     curriculumContext: lessonContent?.curriculumContext || null,
   };
+}
+
+function getLessonTargetInventory(
+  lessonScope,
+  moduleType,
+  { includeLessonWords = true } = {},
+) {
+  const agendaItems = Array.isArray(lessonScope?.curriculumContext?.agendaItems)
+    ? lessonScope.curriculumContext.agendaItems
+    : [];
+  const lessonId = String(
+    lessonScope?.curriculumContext?.lessonId || "",
+  ).toLowerCase();
+  const combineAcrossModes =
+    lessonId.includes("integrated-practice") ||
+    lessonScope?.curriculumContext?.isGameReview === true;
+  const relevantItems = agendaItems.filter(
+    (item) =>
+      combineAcrossModes ||
+      !Array.isArray(item?.modes) ||
+      item.modes.length === 0 ||
+      item.modes.includes(moduleType),
+  );
+  const values = [
+    ...(includeLessonWords && Array.isArray(lessonScope?.words)
+      ? lessonScope.words
+      : []),
+    ...relevantItems.flatMap((item) => [
+      ...(Array.isArray(item?.targetForms) ? item.targetForms : []),
+      ...(item?.targetRole === "form" ? [item.targetConcept] : []),
+    ]),
+  ];
+
+  return Array.from(
+    new Map(
+      values
+        .map((value) => String(value || "").normalize("NFC").trim())
+        .filter(Boolean)
+        .map((value) => [normalizeDelightText(value), value]),
+    ).values(),
+  );
 }
 
 export function buildSentenceDetectivePrompt({
@@ -826,6 +912,16 @@ export function buildSentenceDetectivePrompt({
   );
   const isTutorial =
     lessonContent?.topic === "tutorial" || lessonContent?.isTutorial === true;
+  const targetInventory = getLessonTargetInventory(
+    lessonScope,
+    moduleType,
+    { includeLessonWords: !isGrammar },
+  );
+  const targetInventoryRule = targetInventory.length
+    ? isGrammar
+      ? `SENTENCE DETECTIVE TARGET FORMS (REQUIRED): The corrected sentence and one-token repair must directly demonstrate at least one exact supplied form from ${JSON.stringify(targetInventory)}. Do not replace it with a definition or an adjacent grammar objective.`
+      : `SENTENCE DETECTIVE TARGET WORDS (REQUIRED): The answer must contain at least one exact supplied lesson item from ${JSON.stringify(targetInventory)}. A grammatically required article or inflection may remain attached inside the same replaceable token. Do not replace the lesson item with a definition, description, or related word.`
+    : "";
 
   return [
     `Create one production-ready Sentence Detective exercise for a ${cefrLevel} learner of ${target}.`,
@@ -835,6 +931,7 @@ export function buildSentenceDetectivePrompt({
       ? "TUTORIAL MODE: use only the supplied absolute-beginner greeting material and keep the sentence exceptionally short and clear."
       : "",
     curriculumScope,
+    targetInventoryRule,
     recentQuestions.length
       ? `VARIETY: Do not repeat or closely paraphrase these recent Sentence Detective questions: ${JSON.stringify(recentQuestions.slice(-5))}. Use a different supplied word, focus point, sentence, or situation.`
       : "",

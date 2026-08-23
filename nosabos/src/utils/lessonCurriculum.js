@@ -233,6 +233,49 @@ const getGroundingTerms = (value) =>
     ),
   );
 
+const getStructuralGroundingTerms = (items = []) => {
+  const terms = new Set();
+
+  items.forEach((item) => {
+    const values = [
+      item?.targetConcept,
+      ...(Array.isArray(item?.targetForms) ? item.targetForms : []),
+      ...(Array.isArray(item?.targetExamples) ? item.targetExamples : []),
+    ];
+
+    values.forEach((value) => {
+      const normalized = normalizeObjectiveKey(value);
+      if (!normalized) return;
+
+      // Preserve short forms when the curriculum explicitly presents a
+      // contrast ("el/la") or repeats a pattern ("mi mamá, mi papá"). The
+      // general grounding tokenizer intentionally drops one- and two-letter
+      // words, but those words can be the grammar objective itself.
+      const slashPairs = String(value || "").matchAll(
+        /([\p{L}\p{M}]{1,2})\s*\/\s*([\p{L}\p{M}]{1,2})/gu,
+      );
+      for (const pair of slashPairs) {
+        terms.add(normalizeObjectiveKey(pair[1]));
+        terms.add(normalizeObjectiveKey(pair[2]));
+      }
+
+      const tokens = normalized.match(/[\p{L}\p{M}\p{N}]+/gu) || [];
+      const counts = new Map();
+      tokens.forEach((token) => counts.set(token, (counts.get(token) || 0) + 1));
+      counts.forEach((count, token) => {
+        if (token.length <= 2 && count > 1) terms.add(token);
+      });
+    });
+
+    (Array.isArray(item?.targetForms) ? item.targetForms : []).forEach((form) => {
+      const normalized = normalizeObjectiveKey(form);
+      if (/^[\p{L}\p{M}]{1,2}$/u.test(normalized)) terms.add(normalized);
+    });
+  });
+
+  return Array.from(terms).filter(Boolean);
+};
+
 export function isCurriculumPayloadGrounded(
   payload,
   curriculumContext,
@@ -253,7 +296,11 @@ export function isCurriculumPayloadGrounded(
   const objectiveTerms = getGroundingTerms(
     relevantItems.flatMap((item) => [
       item?.targetConcept,
+      ...(Array.isArray(item?.targetForms) ? item.targetForms : []),
       ...(Array.isArray(item?.targetExamples) ? item.targetExamples : []),
+      ...(Array.isArray(item?.targetCurriculumAliases)
+        ? item.targetCurriculumAliases
+        : []),
     ]),
   );
   if (!objectiveTerms.length) return true;
@@ -261,7 +308,37 @@ export function isCurriculumPayloadGrounded(
   const candidateText = normalizeObjectiveKey(
     collectTextValues(payload).join(" "),
   );
-  return objectiveTerms.some((term) => candidateText.includes(term));
+  if (objectiveTerms.some((term) => candidateText.includes(term))) return true;
+
+  if (mode !== "grammar") return false;
+
+  const relevantLessonIds = new Set(
+    relevantItems.map((item) => item?.sourceLessonId).filter(Boolean),
+  );
+  const supportingVocabularyItems = agendaItems.filter(
+    (item) =>
+      item?.kind === "vocabulary" &&
+      (!relevantLessonIds.size || relevantLessonIds.has(item?.sourceLessonId)),
+  );
+  if (!supportingVocabularyItems.length) return false;
+
+  const vocabularyTerms = getGroundingTerms(
+    supportingVocabularyItems.flatMap((item) => [
+      item?.targetConcept,
+      ...(Array.isArray(item?.targetForms) ? item.targetForms : []),
+      ...(Array.isArray(item?.targetExamples) ? item.targetExamples : []),
+    ]),
+  );
+  const structuralTerms = getStructuralGroundingTerms(relevantItems);
+  if (!vocabularyTerms.length || !structuralTerms.length) return false;
+
+  const candidateTokens = new Set(
+    candidateText.match(/[\p{L}\p{M}\p{N}]+/gu) || [],
+  );
+  return (
+    vocabularyTerms.some((term) => candidateText.includes(term)) &&
+    structuralTerms.some((term) => candidateTokens.has(term))
+  );
 }
 
 const slugify = (value) =>
@@ -1293,10 +1370,34 @@ export function buildCurriculumPromptContext(
       ? { examples: item.targetExamples.slice(0, 3) }
       : {}),
   }));
+  const relevantSourceLessonIds = new Set(
+    relevantItems.map((item) => item?.sourceLessonId).filter(Boolean),
+  );
+  const supportingTargetForms =
+    mode === "grammar" && !shouldCombineAcrossModes
+      ? Array.from(
+          new Set(
+            agendaItems
+              .filter(
+                (item) =>
+                  item?.kind === "vocabulary" &&
+                  (!relevantSourceLessonIds.size ||
+                    relevantSourceLessonIds.has(item?.sourceLessonId)),
+              )
+              .flatMap((item) => getAgendaTargetForms(item))
+              .map(cleanText)
+              .filter(Boolean),
+          ),
+        ).slice(0, 32)
+      : [];
 
   return [
     "CURRICULUM OBJECTIVES (authoritative):",
     JSON.stringify(objectives),
+    "Choose exactly one objective above as the primary tested distinction for this exercise. Do not blend it with or substitute an adjacent objective.",
+    supportingTargetForms.length
+      ? `APPROVED SUPPORTING TARGET-LANGUAGE FORMS (context only): ${JSON.stringify(supportingTargetForms)}. Use these as familiar content while testing the chosen grammar objective; they are not separate grammar objectives.`
+      : "",
     curriculumContext?.reviewStrategy
       ? `REVIEW STRATEGY (format only): ${JSON.stringify(curriculumContext.reviewStrategy)}`
       : "",
@@ -1306,7 +1407,7 @@ export function buildCurriculumPromptContext(
     curriculumContext?.targetLanguageAdapted
       ? "The source curriculum was authored for another practice language. Ignore legacy source-language examples in lesson content and create all examples in the selected target language."
       : "",
-    "Build the activity from these curriculum goals. Only targetForms are exact language for the learner to produce; goals and activityBriefs are private instructions and must never be presented as phrases to repeat. Do not introduce unrelated curriculum.",
+    "Build the activity from the chosen curriculum goal. Only targetForms and approved supporting target-language forms are exact language for the learner to produce; goals and activityBriefs are private instructions and must never be presented as phrases to repeat. Do not introduce unrelated curriculum.",
   ]
     .filter(Boolean)
     .join("\n");

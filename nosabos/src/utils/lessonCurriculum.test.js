@@ -5,6 +5,7 @@ import {
   applyAuthoredTargetCurriculum,
   buildLessonCurriculumAudit,
   buildLessonAgenda,
+  buildCurriculumPromptContext,
   buildUnitQuizBlueprint,
   getLessonQuizSettings,
   buildUnitCurriculumSnapshot,
@@ -108,6 +109,103 @@ test("quiz payload grounding rejects unrelated grammar families", () => {
     ),
     true,
   );
+});
+
+test("grammar grounding accepts lesson vocabulary used with its short structural forms", () => {
+  const curriculumContext = {
+    agendaItems: [
+      {
+        id: "vocabulary-hermano",
+        sourceLessonId: "family-1",
+        kind: "vocabulary",
+        modes: ["vocabulary"],
+        targetConcept: "hermano",
+        targetRole: "form",
+        targetForms: ["hermano"],
+      },
+      {
+        id: "vocabulary-hermana",
+        sourceLessonId: "family-1",
+        kind: "vocabulary",
+        modes: ["vocabulary"],
+        targetConcept: "hermana",
+        targetRole: "form",
+        targetForms: ["hermana"],
+      },
+      {
+        id: "grammar-family-articles",
+        sourceLessonId: "family-1",
+        kind: "grammar",
+        modes: ["grammar"],
+        targetConcept: "el/la with family nouns",
+      },
+    ],
+  };
+
+  assert.equal(
+    isCurriculumPayloadGrounded(
+      {
+        source: "el hermano",
+        constraint: "Change the article to feminine singular",
+        answer: "la hermana",
+      },
+      curriculumContext,
+      { mode: "grammar" },
+    ),
+    true,
+  );
+  assert.equal(
+    isCurriculumPayloadGrounded(
+      {
+        source: "el libro",
+        constraint: "Change the article to feminine singular",
+        answer: "la casa",
+      },
+      curriculumContext,
+      { mode: "grammar" },
+    ),
+    false,
+  );
+});
+
+test("grammar generation receives one objective plus same-lesson support forms", () => {
+  const prompt = buildCurriculumPromptContext(
+    {
+      agendaItems: [
+        {
+          id: "vocabulary-hermano",
+          sourceLessonId: "family-1",
+          kind: "vocabulary",
+          modes: ["vocabulary"],
+          targetConcept: "hermano",
+          targetRole: "form",
+          targetForms: ["hermano"],
+        },
+        {
+          id: "grammar-family-articles",
+          sourceLessonId: "family-1",
+          kind: "grammar",
+          modes: ["grammar"],
+          targetConcept: "el/la with family nouns",
+        },
+        {
+          id: "vocabulary-unrelated",
+          sourceLessonId: "food-1",
+          kind: "vocabulary",
+          modes: ["vocabulary"],
+          targetConcept: "manzana",
+          targetRole: "form",
+          targetForms: ["manzana"],
+        },
+      ],
+    },
+    { mode: "grammar" },
+  );
+
+  assert.match(prompt, /Choose exactly one objective/);
+  assert.match(prompt, /APPROVED SUPPORTING TARGET-LANGUAGE FORMS/);
+  assert.match(prompt, /hermano/);
+  assert.doesNotMatch(prompt, /manzana/);
 });
 
 test("agenda derivation ignores placeholders and uses concrete mode prompts", () => {
