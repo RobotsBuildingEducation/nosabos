@@ -1,26 +1,15 @@
 // src/components/Onboarding.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { keyframes } from "@emotion/react";
 import {
   Box,
   Button,
   Drawer,
   DrawerBody,
   DrawerContent,
-  DrawerHeader,
   DrawerOverlay,
   HStack,
-  Input,
-  Switch,
   Text,
   VStack,
-  Wrap,
-  WrapItem,
-  Spacer,
-  Slider,
-  SliderTrack,
-  SliderFilledTrack,
-  SliderThumb,
   Menu,
   MenuButton,
   MenuList,
@@ -28,7 +17,7 @@ import {
   MenuOptionGroup,
 } from "@chakra-ui/react";
 import { ChevronDownIcon } from "@chakra-ui/icons";
-import { submitActionSound, selectSound, nextButtonSound } from "../constants/sounds";
+import { submitActionSound, selectSound } from "../constants/sounds";
 import useSoundSettings, {
   DEFAULT_TUTOR_VOLUME,
 } from "../hooks/useSoundSettings";
@@ -39,17 +28,13 @@ import {
   DEFAULT_SUPPORT_LANGUAGE,
   DEFAULT_TARGET_LANGUAGE,
   getDefaultTargetForSupport,
-  getLanguageLocale,
   getPracticeLanguageOptions,
   getSupportLanguageOptions,
   normalizePracticeLanguage,
   normalizeSupportLanguage,
 } from "../constants/languages";
 import { syncDocumentLanguage } from "../utils/documentLanguage";
-import { getGermanCopy } from "../utils/germanCopy";
 import RandomCharacter from "./RandomCharacter";
-import ThemeModeField from "./ThemeModeField";
-import VoicePreferenceField from "./VoicePreferenceField";
 import CommunityLanguageResourcesModal from "./CommunityLanguageResourcesModal";
 import { useThemeStore } from "../useThemeStore";
 import { isCommunityResourceLanguage } from "../data/communityLanguageResources";
@@ -57,26 +42,10 @@ import {
   nativeDrawerMotionProps,
   nativeOverlayMotionProps,
 } from "../utils/modalMotion";
-import {
-  getTutorVoiceOption,
-  getTutorVoiceOptions,
-  getTutorVoicePreviewProvider,
-  isOpenAITutorProvider,
-  normalizeTutorVoice,
-} from "../utils/tutorRealtime";
+import { normalizeTutorVoice } from "../utils/tutorRealtime";
 
 const BASE_PATH = "/onboarding";
 const DEFAULT_VOICE_PAUSE_MS = 1200;
-const stepContentReveal = keyframes`
-  0% {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-`;
 
 const personaDefaultFor = (lang) =>
   translations?.[lang]?.DEFAULT_PERSONA ||
@@ -114,14 +83,6 @@ const personaForSupportLanguage = (currentPersona, supportLang) => {
   return personaDefaultFor(supportLang) || currentPersona || "";
 };
 
-const STEPS = ["languages", "voice", "extra"];
-const uiCopy = (lang, copy) => {
-  const normalized = normalizeSupportLanguage(lang, DEFAULT_SUPPORT_LANGUAGE);
-  if (copy[normalized]) return copy[normalized];
-  if (normalized === "de") return getGermanCopy(copy.en) || copy.en;
-  return copy.en;
-};
-
 export default function Onboarding({
   onComplete,
   userLanguage = "en",
@@ -130,7 +91,6 @@ export default function Onboarding({
 }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const [step, setStep] = useState(0);
 
   const normalizedUserLang = normalizeSupportLanguage(
     userLanguage,
@@ -155,7 +115,6 @@ export default function Onboarding({
   }, [userLanguage]);
   const ui = translations[supportLang] || translations.en;
   const storedThemeMode = useThemeStore((s) => s.themeMode);
-  const syncThemeMode = useThemeStore((s) => s.syncThemeMode);
 
   const defaults = useMemo(() => {
     return {
@@ -200,53 +159,29 @@ export default function Onboarding({
     };
   }, [initialDraft, initialSupportLang, storedThemeMode]);
 
-  const [level] = useState(defaults.level);
+  const {
+    level,
+    tutorVoice,
+    pauseMs,
+    soundEnabled,
+    soundVolume,
+    tutorVolume,
+    themeMode,
+  } = defaults;
   const [targetLang, setTargetLang] = useState(defaults.targetLang);
   const [communityLanguageCode, setCommunityLanguageCode] = useState(null);
-  const [tutorVoice, setTutorVoice] = useState(defaults.tutorVoice);
   const [voicePersona, setVoicePersona] = useState(defaults.voicePersona);
-  const [pauseMs, setPauseMs] = useState(defaults.pauseMs);
-  const [soundEnabled, setSoundEnabled] = useState(defaults.soundEnabled);
-  const [soundVolume, setSoundVolume] = useState(defaults.soundVolume);
-  const [tutorVolume, setTutorVolume] = useState(defaults.tutorVolume);
-  const [themeMode, setThemeMode] = useState(defaults.themeMode);
   const playSound = useSoundSettings((s) => s.playSound);
-  const setGlobalSoundEnabled = useSoundSettings((s) => s.setSoundEnabled);
-  const setGlobalVolume = useSoundSettings((s) => s.setVolume);
-  const setGlobalTutorVolume = useSoundSettings((s) => s.setTutorVolume);
-  const playSliderTick = useSoundSettings((s) => s.playSliderTick);
 
   const [isSaving, setIsSaving] = useState(false);
-  const showTutorVolumeControl = !isOpenAITutorProvider();
-
-  useEffect(() => {
-    syncThemeMode(themeMode);
-  }, [syncThemeMode, themeMode]);
 
   useEffect(() => {
     syncDocumentLanguage(supportLang);
   }, [supportLang]);
 
-  useEffect(() => {
-    setGlobalSoundEnabled(soundEnabled);
-  }, [setGlobalSoundEnabled, soundEnabled]);
-
-  useEffect(() => {
-    setGlobalVolume(soundVolume);
-  }, [setGlobalVolume, soundVolume]);
-
-  useEffect(() => {
-    setGlobalTutorVolume(tutorVolume);
-  }, [setGlobalTutorVolume, tutorVolume]);
-
   const playOnboardingSound = (sound) => {
     if (!soundEnabled) return;
     void playSound(sound);
-  };
-
-  const playOnboardingSliderTick = (value, min, max) => {
-    if (!soundEnabled) return;
-    void playSliderTick(value, min, max);
   };
 
   // Japanese is visible for everyone (beta label applied in UI)
@@ -340,61 +275,12 @@ export default function Onboarding({
     }
   }
 
-  const personaPlaceholder = (
-    ui.onboarding_persona_input_placeholder || 'e.g., "{example}"'
-  ).replace(
-    "{example}",
-    ui.onboarding_persona_default_example || "patient, encouraging, playful",
-  );
-
-  const VAD_HINT =
-    ui.onboarding_vad_hint ||
-    uiCopy(supportLang, {
-      en: "Shorter = more responsive; longer = gives you time to finish speaking. 0.6 seconds is recommended for a quick response.",
-      es: "Más corta = más sensible; más larga = te deja terminar de hablar. 0.6 segundos es lo recomendado para una respuesta rápida.",
-      pt: "Mais curta = mais responsiva; mais longa = dá tempo para terminar de falar. 0,6 segundos é o recomendado para uma resposta rápida.",
-      it: "Più breve = più reattiva; più lunga = ti lascia finire di parlare. 0,6 secondi è consigliato per una risposta rapida.",
-      fr: "Plus court = plus reactif ; plus long = te laisse finir de parler. 0,6 seconde est recommande pour une reponse rapide.",
-      ja: "短いほど反応が速く、長いほど話し終える時間ができます。素早い応答には0.6秒がおすすめです。",
-      ar: "الأقصر = استجابة أسرع، والأطول = يديك وقت تخلص كلامك. 0.6 ثانية مناسبة لرد سريع.",
-      zh: "更短 = 反应更快；更长 = 给你更多时间说完。快速回应建议 0.6 秒。",
-      hi: "छोटा = ज़्यादा तेज़ प्रतिक्रिया; लंबा = बोलना पूरा करने का समय देता है। तेज़ जवाब के लिए 0.6 सेकंड की सलाह दी जाती है।",
-    });
-  const pauseSeconds = new Intl.NumberFormat(getLanguageLocale(supportLang), {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1,
-  }).format(pauseMs / 1000);
-  const secondsLabel = uiCopy(supportLang, {
-    en: "seconds",
-    es: "segundos",
-    pt: "segundos",
-    it: "secondi",
-    fr: "secondes",
-    de: "Sekunden",
-    ja: "秒",
-    ar: "ثانية",
-    zh: "秒",
-    hi: "सेकंड",
-  });
   const supportOption =
     supportLanguageOptions.find((option) => option.value === supportLang) ||
     supportLanguageOptions[0];
   const selectedPracticeOption =
     practiceLanguageOptions.find((option) => option.value === targetLang) ||
     practiceLanguageOptions[0];
-  const stepLabels = uiCopy(supportLang, {
-    en: ["Languages", "Voice", "Effects"],
-    es: ["Idiomas", "Voz", "Efectos"],
-    pt: ["Idiomas", "Voz", "Efeitos"],
-    it: ["Lingue", "Voce", "Effetti"],
-    fr: ["Langues", "Voix", "Effets"],
-    de: ["Sprachen", "Stimme", "Effekte"],
-    ja: ["言語", "音声", "効果"],
-    ar: ["اللغات", "الصوت", "المؤثرات"],
-    zh: ["语言", "声音", "效果"],
-    hi: ["भाषाएँ", "आवाज़", "प्रभाव"],
-  });
-
   return (
     <Box
       minH="100vh"
@@ -452,80 +338,18 @@ export default function Onboarding({
                 </Text>
               </VStack>
 
-              {/* Step indicator */}
-              <VStack
-                align="stretch"
-                spacing={2}
-                mt={5}
-                mb={5}
-              >
-                <HStack align="stretch" spacing={3}>
-                  {STEPS.map((s, i) => {
-                    const isComplete = i < step;
-                    const isCurrent = i === step;
-                    const isActive = isComplete || isCurrent;
-
-                    return (
-                      <Box key={s} flex={1} minW={0}>
-                        <Box
-                          h="8px"
-                          borderRadius="full"
-                          bg="var(--app-border)"
-                          position="relative"
-                          overflow="hidden"
-                        >
-                          <Box
-                            position="absolute"
-                            inset="0"
-                            borderRadius="inherit"
-                            bgGradient={
-                              isCurrent
-                                ? "linear(to-r, teal.200, blue.200)"
-                                : "linear(to-r, teal.300, cyan.300)"
-                            }
-                            transform={isActive ? "scaleX(1)" : "scaleX(0)"}
-                            transformOrigin="left center"
-                            transition={`transform 0.38s cubic-bezier(0.22, 1, 0.36, 1) ${i * 80}ms, background 0.2s ease`}
-                            boxShadow={
-                              isCurrent
-                                ? "0 0 16px rgba(125, 211, 252, 0.35)"
-                                : "none"
-                            }
-                          />
-                        </Box>
-                        <Text
-                          mt={2}
-                          fontSize="xs"
-                          fontWeight={isCurrent ? "semibold" : "medium"}
-                          letterSpacing="0.08em"
-                          textTransform="uppercase"
-                          color={isCurrent ? "gray.100" : isComplete ? "gray.300" : "gray.500"}
-                          transition="color 0.2s ease"
-                        >
-                          {stepLabels[i]}
-                        </Text>
-                      </Box>
-                    );
-                  })}
-                </HStack>
-              </VStack>
-
               <Box
                 flex="1"
                 minH={{ base: "240px", md: "280px" }}
                 display="flex"
                 flexDirection="column"
                 justifyContent="center"
+                mt={5}
                 mb={{ base: 4, md: 5 }}
-                animation={`${stepContentReveal} 0.28s ease`}
-                key={step}
               >
                 <VStack align="stretch" spacing={4} w="100%">
-                  {/* ── Step 1: Languages ── */}
-                  {step === 0 && (
-                    <>
-                      {/* Support Language */}
-                      <Box
+                  {/* Support Language */}
+                  <Box
                         bg="gray.800"
                         p={3}
                         rounded="md"
@@ -615,10 +439,10 @@ export default function Onboarding({
                             </MenuOptionGroup>
                           </MenuList>
                         </Menu>
-                      </Box>
+                  </Box>
 
-                      {/* Practice Language */}
-                      <Box
+                  {/* Practice Language */}
+                  <Box
                         bg="gray.800"
                         p={3}
                         rounded="md"
@@ -709,143 +533,13 @@ export default function Onboarding({
                             </MenuOptionGroup>
                           </MenuList>
                         </Menu>
-                      </Box>
-                    </>
-                  )}
-
-                  {/* ── Step 2: Voice ── */}
-                  {step === 1 && (
-                    <>
-                      <VoicePreferenceField
-                        t={ui}
-                        voice={tutorVoice}
-                        voicePersona={voicePersona}
-                        targetLang={targetLang}
-                        supportLang={supportLang}
-                        voiceOptions={getTutorVoiceOptions()}
-                        normalizeVoice={normalizeTutorVoice}
-                        getVoiceOption={getTutorVoiceOption}
-                        previewProvider={getTutorVoicePreviewProvider()}
-                        onVoiceChange={setTutorVoice}
-                        onVoicePersonaChange={setVoicePersona}
-                        onSelectSound={() => playOnboardingSound(selectSound)}
-                        heading={ui.onboarding_section_voice_persona}
-                        description={
-                          ui.onboarding_voice_desc ||
-                          ui.onboarding_persona_help_text
-                        }
-                        personaPlaceholder={personaPlaceholder}
-                      />
-
-                      {showTutorVolumeControl && (
-                        <Box bg="gray.800" p={3} rounded="md">
-                          <HStack justifyContent="space-between">
-                            <Text
-                              fontSize="sm"
-                              fontWeight="semibold"
-                              color="var(--app-text-primary)"
-                            >
-                              {ui.tutor_volume_label || "Tutor volume"}
-                            </Text>
-                            <Text fontSize="sm" opacity={0.8}>
-                              ×{Number(tutorVolume).toFixed(1)}
-                            </Text>
-                          </HStack>
-                          <Slider
-                            aria-label="onboarding-tutor-volume-slider"
-                            mt={3}
-                            min={0}
-                            max={4}
-                            step={0.1}
-                            value={tutorVolume}
-                            onChange={(val) => {
-                              setTutorVolume(val);
-                              setGlobalTutorVolume(val);
-                              playOnboardingSliderTick(val, 0, 4);
-                            }}
-                          >
-                            <SliderTrack bg="gray.700" h={4} borderRadius="full">
-                              <SliderFilledTrack bg="linear-gradient(90deg, #5dade2, #9370DB)" />
-                            </SliderTrack>
-                            <SliderThumb boxSize={6} />
-                          </Slider>
-                        </Box>
-                      )}
-
-                      {/* Voice Activity Pause Slider */}
-                      <Box bg="gray.800" p={3} rounded="md">
-                        <Text fontSize="sm" fontWeight="semibold" mb={1}>
-                          {ui.onboarding_vad_title}
-                        </Text>
-                        <Text fontSize="xs" opacity={0.7} mb={3}>
-                          {ui.onboarding_vad_explanation}
-                        </Text>
-                        <Text fontSize="sm" opacity={0.8} textAlign="right" mb={2}>
-                          {pauseSeconds} {secondsLabel}
-                        </Text>
-                        <Slider
-                          aria-label="onboarding-pause-slider"
-                          min={200}
-                          max={4000}
-                          step={100}
-                          value={pauseMs}
-                          onChange={(val) => {
-                            setPauseMs(val);
-                            playOnboardingSliderTick(val, 200, 4000);
-                          }}
-                        >
-                          <SliderTrack bg="gray.700" h={3} borderRadius="full">
-                            <SliderFilledTrack bg="linear-gradient(90deg, #3CB371, #5dade2)" />
-                          </SliderTrack>
-                          <SliderThumb boxSize={6} />
-                        </Slider>
-                      </Box>
-                    </>
-                  )}
-
-                  {/* ── Step 3: Extra ── */}
-                  {step === 2 && (
-                    <>
-                      <Box bg="gray.800" p={3} rounded="md">
-                        <HStack justifyContent="space-between">
-                          <Text fontSize="sm" fontWeight="semibold" color="var(--app-text-primary)">
-                            {ui.sound_effects_label || "Sound effects"}
-                          </Text>
-                          <Switch
-                            id="onboarding-sound-effects-switch"
-                            isChecked={soundEnabled}
-                            onChange={(e) => {
-                              const nextSoundEnabled = e.target.checked;
-                              setSoundEnabled(nextSoundEnabled);
-                              setGlobalSoundEnabled(nextSoundEnabled);
-                            }}
-                          />
-                        </HStack>
-                        <Text fontSize="xs" opacity={0.6} mt={2}>
-                          {soundEnabled
-                            ? ui.sound_effects_enabled ||
-                              "Sound effects are enabled."
-                            : ui.sound_effects_disabled ||
-                              "Sound effects are muted."}
-                        </Text>
-                      </Box>
-
-                      <ThemeModeField
-                        value={themeMode}
-                        onChange={(nextMode) => {
-                          playOnboardingSound(selectSound);
-                          setThemeMode(nextMode);
-                        }}
-                        t={ui}
-                      />
-                    </>
-                  )}
+                  </Box>
                 </VStack>
               </Box>
             </Box>
           </DrawerBody>
 
-          {/* Navigation buttons */}
+          {/* Complete onboarding with the saved defaults for voice and effects. */}
           <Box
             px={6}
             pt={4}
@@ -855,67 +549,16 @@ export default function Onboarding({
             alignItems="center"
           >
             <Box maxW="600px" mx="auto" w="100%">
-              <HStack spacing={3}>
-                {step > 0 && (
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    onClick={() => {
-                      playOnboardingSound(selectSound);
-                      setStep((s) => s - 1);
-                    }}
-                    w="100%"
-                  >
-                    {uiCopy(supportLang, {
-                      en: "Back",
-                      es: "Atrás",
-                      pt: "Voltar",
-                      it: "Indietro",
-                      fr: "Retour",
-                      de: "Zurück",
-                      ja: "戻る",
-                      ar: "رجوع",
-                      zh: "返回",
-                      hi: "वापस",
-                    })}
-                  </Button>
-                )}
-                {step < STEPS.length - 1 ? (
-                  <Button
-                    size="lg"
-                    colorScheme="teal"
-                    onClick={() => {
-                      playOnboardingSound(nextButtonSound);
-                      setStep((s) => s + 1);
-                    }}
-                    w="100%"
-                  >
-                    {ui.onboarding_cta_next ||
-                      uiCopy(supportLang, {
-                        en: "Next",
-                        es: "Siguiente",
-                        pt: "Próximo",
-                        it: "Avanti",
-                        fr: "Suivant",
-                        ja: "次へ",
-                        ar: "التالي",
-                        zh: "下一步",
-                        hi: "आगे",
-                      })}
-                  </Button>
-                ) : (
-                  <Button
-                    size="lg"
-                    colorScheme="teal"
-                    onClick={handleStart}
-                    isLoading={isSaving}
-                    loadingText={ui.common_saving}
-                    w="100%"
-                  >
-                    {ui.onboarding_cta_start}
-                  </Button>
-                )}
-              </HStack>
+              <Button
+                size="lg"
+                colorScheme="teal"
+                onClick={handleStart}
+                isLoading={isSaving}
+                loadingText={ui.common_saving}
+                w="100%"
+              >
+                {ui.onboarding_cta_start}
+              </Button>
             </Box>
           </Box>
         </DrawerContent>

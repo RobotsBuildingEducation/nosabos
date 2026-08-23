@@ -61,6 +61,7 @@ import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import { shuffle } from "./quiz/utils";
 import useNotesStore from "../hooks/useNotesStore";
 import { generateNoteContent, buildNoteObject } from "../utils/noteGeneration";
+import { buildAssistantLanguagePolicy } from "../utils/assistantLanguagePolicy";
 import { captureCompanionMemory } from "../utils/companionMemory";
 import VirtualKeyboard from "./VirtualKeyboard";
 import { MdKeyboard } from "react-icons/md";
@@ -93,6 +94,8 @@ import {
   buildCurriculumPromptContext,
   isCurriculumPayloadGrounded,
 } from "../utils/lessonCurriculum";
+import DelightQuestionLab from "./DelightQuestionLab";
+import { DELIGHT_VARIANT_IDS } from "../utils/delightQuestionVariants";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -226,6 +229,7 @@ const LANG_NAME = (code) =>
     pt: "Brazilian Portuguese",
     fr: "French",
     it: "Italian",
+    hi: "Hindi",
     ja: "Japanese",
     nl: "Dutch",
     nah: "Eastern Huasteca Nahuatl",
@@ -980,13 +984,14 @@ function normalizeMap(map, len) {
 /* ---------------------------
    Component
 --------------------------- */
-export default function GrammarBook({
+function GrammarBookLegacy({
   userLanguage = "en",
   lesson = null,
   lessonContent = null,
   isFinalQuiz = false,
   quizConfig = { questionsRequired: 10, passingScore: 8 },
   onSkip = null,
+  onExitQuiz = null,
   pauseMs = 2000,
   onSendHelpRequest = null,
   lessonEarnedXp = 0,
@@ -1137,6 +1142,8 @@ export default function GrammarBook({
       pt: t("language_pt"),
       fr: t("language_fr"),
       it: t("language_it"),
+      hi: t("language_hi"),
+      zh: t("language_zh"),
       nl: t("language_nl"),
       nah: t("language_nah"),
       ja: t("language_ja"),
@@ -1155,7 +1162,10 @@ export default function GrammarBook({
 
   const recentCorrectRef = useRef([]);
 
-  const [mode, setMode] = useState("fill"); // "fill" | "mc" | "ma" | "speak" | "match" | "translate" | "flashcard"
+  const [mode, setMode] = useState("fill"); // legacy modes plus "delight"
+  const [delightVariantId, setDelightVariantId] = useState(
+    DELIGHT_VARIANT_IDS[0],
+  );
 
   // random-by-default (no manual lock controls)
   const modeLocked = false;
@@ -1306,6 +1316,10 @@ export default function GrammarBook({
         "You are a helpful language study buddy for quick questions.",
         `The learner is practicing ${targetName}; their support/UI language is ${supportName}.`,
         levelHint,
+        buildAssistantLanguagePolicy({
+          supportLanguageName: supportName,
+          targetLanguageName: targetName,
+        }),
         `Explain and guide in ${supportName}. Include examples or phrases in ${targetName} only when they help, but keep the explanation in ${supportName}.`,
         "Keep replies ≤ 60 words.",
         "Use concise Markdown when helpful (bullets, **bold**).",
@@ -1390,6 +1404,41 @@ export default function GrammarBook({
       const passed = newCorrectAnswers >= quizConfig.passingScore;
       setQuizCompleted(true);
       setQuizPassed(passed);
+    }
+  }
+
+  function resetQuizState() {
+    setQuizQuestionsAnswered(0);
+    setQuizCorrectAnswers(0);
+    setQuizCompleted(false);
+    setQuizPassed(false);
+    setQuizCurrentQuestionAttempted(false);
+    setQuizAnswerHistory([]);
+    setLastOk(null);
+    setRecentXp(0);
+    setNextAction(null);
+    if (quizStorageKey && typeof window !== "undefined") {
+      localStorage.removeItem(quizStorageKey);
+    }
+  }
+
+  function handleRetryQuiz() {
+    resetQuizState();
+    generateRandomRef.current();
+  }
+
+  function handleExitQuiz() {
+    resetQuizState();
+    if (onExitQuiz) {
+      onExitQuiz();
+      return;
+    }
+    if (onSkip) {
+      onSkip();
+      return;
+    }
+    if (typeof window !== "undefined") {
+      window.history.back();
     }
   }
 
@@ -2143,6 +2192,9 @@ Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Ant
             generateMatch,
             generateTranslate,
             generateRepeatTranslate,
+            ...DELIGHT_VARIANT_IDS.map(
+              (variantId) => () => generateDelight(variantId),
+            ),
           ]
         : [
             generateFill,
@@ -2153,6 +2205,9 @@ Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Ant
             generateTranslate,
             generateRepeatTranslate,
             generateFlashcard,
+            ...DELIGHT_VARIANT_IDS.map(
+              (variantId) => () => generateDelight(variantId),
+            ),
           ];
       for (let i = order.length - 1; i > 0; i -= 1) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -2171,6 +2226,10 @@ Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Ant
   }
 
   function generatorFor(kind) {
+    if (String(kind).startsWith("delight:")) {
+      const variantId = String(kind).slice("delight:".length);
+      return () => generateDelight(variantId);
+    }
     switch (kind) {
       case "fill":
         return generateFill;
@@ -2191,6 +2250,24 @@ Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Ant
       default:
         return generateRandom;
     }
+  }
+
+  function generateDelight(variantId) {
+    stopModuleTTS();
+    setMode("delight");
+    setDelightVariantId(
+      DELIGHT_VARIANT_IDS.includes(variantId)
+        ? variantId
+        : DELIGHT_VARIANT_IDS[0],
+    );
+    setLastOk(null);
+    setQuizCurrentQuestionAttempted(false);
+    setRecentXp(0);
+    setExplanationText("");
+    setAssistantSupportText("");
+    setCurrentQuestionData(null);
+    setNoteCreated(false);
+    setNextAction(() => () => generateRandomRef.current());
   }
 
   useEffect(() => {
@@ -5063,6 +5140,55 @@ Return JSON ONLY:
     return nodes;
   };
 
+  if (isFinalQuiz && quizCompleted) {
+    return (
+      <Box p={4} color={APP_TEXT_PRIMARY}>
+        <VStack
+          maxW="620px"
+          mx="auto"
+          spacing={5}
+          p={6}
+          bg={APP_SURFACE_ELEVATED}
+          borderWidth="1px"
+          borderColor={APP_BORDER}
+          borderRadius="2xl"
+          style={questionSquircleStyle}
+        >
+          <Text fontSize="4xl">{quizPassed ? "🎉" : "🌱"}</Text>
+          <Text fontSize="2xl" fontWeight="900" textAlign="center">
+            {quizPassed ? t("vocab_quiz_passed") : t("vocab_quiz_not_passed")}
+          </Text>
+          <Text color={APP_TEXT_SECONDARY} textAlign="center">
+            {t(
+              quizPassed
+                ? "vocab_quiz_score_passed"
+                : "vocab_quiz_score_failed",
+              {
+                correct: quizCorrectAnswers,
+                needed: quizConfig.passingScore,
+              },
+            )}
+          </Text>
+          <VStack spacing={3} width="100%">
+            {!quizPassed ? (
+              <Button width="100%" colorScheme="purple" onClick={handleRetryQuiz}>
+                {t("flashcard_try_again")}
+              </Button>
+            ) : null}
+            <Button
+              width="100%"
+              colorScheme="cyan"
+              variant={quizPassed ? "solid" : "outline"}
+              onClick={handleExitQuiz}
+            >
+              {t("vocab_back_to_skill_tree")}
+            </Button>
+          </VStack>
+        </VStack>
+      </Box>
+    );
+  }
+
   return (
     <Box p={4} color={APP_TEXT_PRIMARY}>
       <VStack spacing={4} align="stretch" maxW="720px" mx="auto">
@@ -5165,6 +5291,25 @@ Return JSON ONLY:
             )}
           </Box>
         </Box>
+
+        {mode === "delight" ? (
+          <DelightQuestionLab
+            embedded
+            moduleType="grammar"
+            variantId={delightVariantId}
+            userLanguage={userLanguage}
+            targetLang={targetLang}
+            supportLang={supportCode}
+            lesson={lesson}
+            lessonContent={lessonContent}
+            isFinalQuiz={isFinalQuiz}
+            quizConfig={quizConfig}
+            onSkip={handleSkip}
+            onNextQuestion={handleNext}
+            onQuizAnswer={isFinalQuiz ? handleQuizAnswer : null}
+            lessonEarnedXp={lessonEarnedXp}
+          />
+        ) : null}
 
         {/* ---- Fill UI ---- */}
         {mode === "fill" && (question || loadingQ) ? (
@@ -6518,4 +6663,8 @@ Return JSON ONLY:
       />
     </Box>
   );
+}
+
+export default function GrammarBook(props) {
+  return <GrammarBookLegacy {...props} />;
 }

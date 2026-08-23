@@ -20,18 +20,6 @@ import { SUPPORT_LANGUAGE_CODES as CANONICAL_SUPPORT_LANGUAGE_CODES } from "./su
 export const DEFAULT_SUPPORT_LANGUAGE = "en";
 export const DEFAULT_TARGET_LANGUAGE = "es";
 
-const SELECTOR_HIDDEN_LANGUAGE_ACCESS_NPUBS = new Set([
-  "npub1anf7634v6rmwjzjnraf09kudr4nsmwy4ggre74sqgqaljd7c5susc8xpev",
-]);
-
-export function canAccessSelectorHiddenPracticeLanguages(npub) {
-  return SELECTOR_HIDDEN_LANGUAGE_ACCESS_NPUBS.has(
-    String(npub || "")
-      .trim()
-      .toLowerCase(),
-  );
-}
-
 export const LANGUAGE_FALLBACK_LABELS = {
   ar: "Egyptian Arabic",
   zh: "Mandarin Chinese",

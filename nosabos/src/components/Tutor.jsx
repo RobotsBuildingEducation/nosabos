@@ -115,6 +115,7 @@ import {
   replaceProgressLevel,
 } from "../utils/courseProgress";
 import { getLessonLevelFromId } from "../utils/cefrProgress";
+import { isMasterUnlockActive } from "../utils/masterUnlock";
 import {
   getTutorConversationSessionState,
   normalizeTutorConversationDraftMessages,
@@ -1791,12 +1792,7 @@ function getTutorLevelIndex(level) {
 }
 
 function isTutorTestUnlockActive() {
-  const testNsec =
-    typeof window !== "undefined" ? localStorage.getItem("local_nsec") : null;
-  return (
-    testNsec ===
-    "nsec1akcvuhtemz3kw58gvvfg38uucu30zfsahyt6ulqapx44lype6a9q42qevv"
-  );
+  return isMasterUnlockActive();
 }
 
 function getUnlockedTutorLevel(maxProficiencyLevel) {

@@ -35,7 +35,9 @@ export const DEFAULT_TTS_VOICE = "alloy";
 // Default to opus for size efficiency; allow callers to request lower-latency formats
 export const DEFAULT_TTS_FORMAT = "opus";
 export const LOW_LATENCY_TTS_FORMAT = "wav";
-const REALTIME_CACHE_FORMAT = "realtime-v2";
+// v3 recordings stop at the server's end-of-audio signal instead of waiting
+// for the longer WebRTC connection finalizer, avoiding cached trailing silence.
+const REALTIME_CACHE_FORMAT = "realtime-v3";
 const REALTIME_CACHE_MIME_TYPES = [
   "audio/webm;codecs=opus",
   "audio/webm",
@@ -474,12 +476,6 @@ export function stopTTSPlayback(audio) {
   unregisterActiveTTSPlayer(audio, cleanup);
 
   try {
-    cleanup?.();
-  } catch {
-    // Best-effort media cleanup.
-  }
-
-  try {
     audio.pause?.();
   } catch {
     // Best-effort media cleanup.
@@ -487,6 +483,12 @@ export function stopTTSPlayback(audio) {
 
   try {
     audio.currentTime = 0;
+  } catch {
+    // Best-effort media cleanup.
+  }
+
+  try {
+    cleanup?.();
   } catch {
     // Best-effort media cleanup.
   }
@@ -613,9 +615,14 @@ async function getRealtimePlayer({
   let audioStarted = false;
   let audioEnded = false;
   let responseDone = false;
+  let resolveResponseComplete;
+  const responseComplete = new Promise((resolve) => {
+    resolveResponseComplete = resolve;
+  });
   let finalizeResolved = false;
   let playbackMonitorTimer = null;
   let responseDoneWatchTimer = null;
+  let cacheRecorderStopTimer = null;
   let hardFallbackTimer = null;
   let shouldCacheRealtimeAudio = false;
   let cacheRecorder = null;
@@ -723,6 +730,10 @@ async function getRealtimePlayer({
       clearTimeout(responseDoneWatchTimer);
       responseDoneWatchTimer = null;
     }
+    if (cacheRecorderStopTimer) {
+      clearTimeout(cacheRecorderStopTimer);
+      cacheRecorderStopTimer = null;
+    }
     if (hardFallbackTimer) {
       clearTimeout(hardFallbackTimer);
       hardFallbackTimer = null;
@@ -731,8 +742,21 @@ async function getRealtimePlayer({
   const finishFinalize = () => {
     if (finalizeResolved) return;
     finalizeResolved = true;
+    resolveResponseComplete?.();
     clearFinalizeTimers();
     resolveFinalize?.();
+  };
+
+  const markResponseComplete = () => {
+    if (responseDone) return;
+    responseDone = true;
+    shouldCacheRealtimeAudio = true;
+    resolveResponseComplete?.();
+    cacheRecorderStopTimer = setTimeout(() => {
+      cacheRecorderStopTimer = null;
+      void stopRealtimeCacheRecording();
+    }, 220);
+    schedulePlaybackCompletionWatch(180);
   };
   const startPlaybackCompletionWatch = () => {
     if (responseDoneWatchTimer) {
@@ -927,11 +951,14 @@ async function getRealtimePlayer({
         // Narration instructions are now applied — safe to request the turn.
         requestNarration();
       }
-      // Wait for live playback to actually settle before cleaning up.
-      if (msg.type === "response.done") {
-        responseDone = true;
-        shouldCacheRealtimeAudio = true;
-        schedulePlaybackCompletionWatch(180);
+      // Expose the server's exact end-of-audio signal separately from
+      // `finalize`, which may remain pending while the WebRTC track settles.
+      if (
+        msg.type === "response.output_audio.done" ||
+        msg.type === "output_audio.done" ||
+        msg.type === "response.done"
+      ) {
+        markResponseComplete();
       }
     } catch {
       // Ignore malformed data-channel events.
@@ -1010,7 +1037,14 @@ async function getRealtimePlayer({
   registerActiveTTSPlayer(audio, cleanupFn);
   audio._ttsCleanup = cleanupFn;
 
-  return { audio, audioUrl: null, ready, finalize, cleanup: cleanupFn };
+  return {
+    audio,
+    audioUrl: null,
+    ready,
+    responseComplete,
+    finalize,
+    cleanup: cleanupFn,
+  };
 }
 
 /**
@@ -1146,13 +1180,25 @@ if (typeof window !== "undefined") {
   });
 }
 
+const blobUrlCache = new WeakMap();
+
+function getOrCreateBlobUrl(blob) {
+  if (!blob) return "";
+  let url = blobUrlCache.get(blob);
+  if (!url) {
+    url = URL.createObjectURL(blob);
+    blobUrlCache.set(blob, url);
+  }
+  return url;
+}
+
 function addToCache(cacheKey, blob) {
   memoryCache.set(cacheKey, blob);
   saveToIndexedDB(cacheKey, blob); // async
 }
 
 function createAudioFromBlob(blob, warmAudio = null) {
-  const audioUrl = URL.createObjectURL(blob);
+  const audioUrl = getOrCreateBlobUrl(blob);
   const audio = warmAudio || new Audio();
   try {
     audio.pause?.();
@@ -1173,11 +1219,6 @@ function createAudioFromBlob(blob, warmAudio = null) {
     if (cleanedUp) return;
     cleanedUp = true;
     unregisterActiveTTSPlayer(audio, cleanup);
-    try {
-      URL.revokeObjectURL(audioUrl);
-    } catch {
-      // Object URL may already be gone.
-    }
   };
   registerActiveTTSPlayer(audio, cleanup);
   audio._ttsCleanup = cleanup;

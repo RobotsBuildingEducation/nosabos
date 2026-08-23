@@ -102,6 +102,7 @@ import {
   nativeAnchoredDrawerMotionProps,
   nativeOverlayMotionProps,
 } from "../utils/modalMotion";
+import { buildAssistantLanguagePolicy } from "../utils/assistantLanguagePolicy";
 import {
   buildMorphemeBreakdownPrompt,
   buildMorphemeTranslationPlanPrompt,
@@ -807,6 +808,7 @@ const HelpChatFab = forwardRef(
           pt: "Portuguese (português brasileiro)",
           fr: "French (français)",
           it: "Italian (italiano)",
+          hi: "Hindi (हिंदी)",
           ja: "Japanese (日本語)",
           ar: "Egyptian Arabic (العربية المصرية)",
           zh: "Mandarin Chinese (普通话中文)",
@@ -1099,6 +1101,10 @@ const HelpChatFab = forwardRef(
         `The learner practices ${nameForLanguage(
           targetLang,
         )}; their support/UI language is ${nameForLanguage(primaryLang)}.`,
+        buildAssistantLanguagePolicy({
+          supportLanguageName: nameForLanguage(primaryLang),
+          targetLanguageName: nameForLanguage(targetLang),
+        }),
         levelHint,
         focus ? `Focus area: ${focus}.` : "",
         supportNote,
@@ -1455,6 +1461,7 @@ const HelpChatFab = forwardRef(
           pt: "Portuguese",
           fr: "French",
           it: "Italian",
+          hi: "Hindi",
           ja: "Japanese",
           ar: "Egyptian Arabic",
           zh: "Mandarin Chinese",
@@ -1479,6 +1486,10 @@ const HelpChatFab = forwardRef(
         "You are a helpful language study buddy for quick voice conversations.",
         `The learner is practicing ${nameFor(targetLang)}.`,
         `Their native/support language is ${nameFor(supportLang)}.`,
+        buildAssistantLanguagePolicy({
+          supportLanguageName: nameFor(supportLang),
+          targetLanguageName: nameFor(targetLang),
+        }),
         `Level: ${lvl}. ${levelHint}`,
         focus ? `Focus area: ${focus}.` : "",
         "Keep responses brief (under 30 seconds of speech).",

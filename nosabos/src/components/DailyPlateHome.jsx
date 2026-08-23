@@ -110,8 +110,7 @@ export default function DailyPlateHome({
   onStartPractice,
   onResetPlate,
   questKinds,
-  // Disable the primary CTA until the post-onboarding popover tour is finished.
-  ctaDisabled = false,
+  onCompanionContinue,
   // Daily-goal modal data, mirrored here for at-a-glance context
   petHealth,
   completedGoalDates = [],
@@ -183,6 +182,7 @@ export default function DailyPlateHome({
     } catch {
       /* ignore quota/availability errors — dismissal still holds this session */
     }
+    onCompanionContinue?.();
   };
 
   /* --- Companion quest bubble ------------------------------------------
@@ -258,14 +258,9 @@ export default function DailyPlateHome({
         : bubble.long
       : "";
 
-  // The companion bubble waits for the post-onboarding action-bar tour to finish
-  // (ctaDisabled tracks that tour) so it doesn't compete with the stepper, then
-  // shows until the user taps "Continue" to dismiss it.
-  const showBubble = !!bubbleText && !bubbleDismissed && !ctaDisabled;
-  // The task list (and CTA) stay locked continuously: first while the stepper
-  // tour runs, then while the bubble is up — only freeing once the bubble is
-  // dismissed (or, when there's no bubble, once the tour ends).
-  const tasksLocked = ctaDisabled || showBubble;
+  // Keep the task list locked until the learner acknowledges the companion.
+  const showBubble = !!bubbleText && !bubbleDismissed;
+  const tasksLocked = showBubble;
 
   // Persist the day's explanation to the user doc once (quest history /
   // diary / notifications can read it later). Active-quest framing only — the
