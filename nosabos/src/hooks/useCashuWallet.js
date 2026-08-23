@@ -347,7 +347,7 @@ export function useCashuWallet() {
       // Create new NDKCashuWallet
       const newWallet = new NDKCashuWallet(ndk);
       newWallet.relays = DEFAULT_RELAYS;
-      newWallet.setPublicTag("relay", "wss://relay.damus.io");
+      newWallet.setPublicTag("relay", "wss://relay.ditto.pub");
       newWallet.setPublicTag("relay", "wss://relay.primal.net");
 
       // Set wallet ID

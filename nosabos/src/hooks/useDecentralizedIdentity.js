@@ -11,7 +11,7 @@ import NDK, {
 } from "@nostr-dev-kit/ndk";
 
 const ndk = new NDK({
-  explicitRelayUrls: ["wss://relay.damus.io", "wss://relay.primal.net"],
+  explicitRelayUrls: ["wss://relay.ditto.pub", "wss://relay.primal.net"],
 });
 
 console.log("ndk created:", ndk);
@@ -55,7 +55,7 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
         ) {
           const { words: nsecWords } = bech32.decode(storedNsec);
           const hexNsec = Buffer.from(bech32.fromWords(nsecWords)).toString(
-            "hex"
+            "hex",
           );
           const signer = new NDKPrivateKeySigner(hexNsec);
           await signer.blockUntilReady();
@@ -85,7 +85,7 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
 
     const encodedNsec = bech32.encode(
       "nsec",
-      bech32.toWords(Buffer.from(privateKey, "hex"))
+      bech32.toWords(Buffer.from(privateKey, "hex")),
     );
     setNostrPrivKey(encodedNsec);
     setNostrPubKey(publicKey);
@@ -104,7 +104,7 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
         }),
         0,
         publicKey,
-        encodedNsec
+        encodedNsec,
       );
 
       // setLoadingMessage("createAccount.isCreatingProfilePicture");
@@ -127,7 +127,7 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
         "gm nostr! I've joined #LearnWithNostr from Tiktok by creating an account with https://robotsbuildingeducation.com so I can learn how to code with AI.",
         1,
         publicKey,
-        encodedNsec
+        encodedNsec,
       );
       // }
       // await followUserOnNostr(
@@ -168,12 +168,15 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
         // Decode the npub from Bech32
         const { words: npubWords } = bech32.decode(npub);
         const hexNpub = Buffer.from(bech32.fromWords(npubWords)).toString(
-          "hex"
+          "hex",
         );
 
         // Create a new NDK instance
         const ndkInstance = new NDK({
-          explicitRelayUrls: ["wss://relay.damus.io", "wss://relay.primal.net"],
+          explicitRelayUrls: [
+            "wss://relay.ditto.pub",
+            "wss://relay.primal.net",
+          ],
         });
 
         await ndkInstance.connect();
@@ -191,7 +194,7 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
         if (nsec && nsec.startsWith("nsec")) {
           const { words: nsecWords } = bech32.decode(nsec);
           const hexNsec = Buffer.from(bech32.fromWords(nsecWords)).toString(
-            "hex"
+            "hex",
           );
           return {
             ndkInstance,
@@ -208,12 +211,15 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
         return null;
       }
     },
-    [nostrPrivKey, nostrPubKey]
+    [nostrPrivKey, nostrPubKey],
   );
 
   const auth = async (nsec) => {
     try {
-      console.log("[AUTH] Starting auth with nsec:", nsec?.substring(0, 20) + "...");
+      console.log(
+        "[AUTH] Starting auth with nsec:",
+        nsec?.substring(0, 20) + "...",
+      );
 
       // Decode nsec to hex
       const { words: nsecWords } = bech32.decode(nsec);
@@ -273,7 +279,7 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
       try {
         const { words: nsecWords } = bech32.decode(storedNsec);
         const hexNsec = Buffer.from(bech32.fromWords(nsecWords)).toString(
-          "hex"
+          "hex",
         );
         const signer = new NDKPrivateKeySigner(hexNsec);
         await signer.blockUntilReady();
@@ -291,7 +297,7 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
     try {
       if (!isNip07Available()) {
         throw new Error(
-          "No Nostr extension found. Please install a NIP-07 compatible extension like nos2x or Alby."
+          "No Nostr extension found. Please install a NIP-07 compatible extension like nos2x or Alby.",
         );
       }
 
@@ -324,7 +330,7 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
     kind = NDKKind.Text,
     npubRef = null,
     nsecRef = null,
-    tags = []
+    tags = [],
   ) => {
     try {
       // If a nsecRef is provided and it's a valid nsec, login with it
@@ -374,7 +380,7 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
   const assignExistingBadgeToNpub = async (
     badgeNaddr, //name or address
     awardeeNpub = localStorage.getItem("local_npub"), // The public key of the user being awarded
-    ownerNsec = import.meta.env.VITE_SECRET_KEY // Your private key to sign the event
+    ownerNsec = import.meta.env.VITE_SECRET_KEY, // Your private key to sign the event
   ) => {
     if (!awardeeNpub) {
       console.error("Awardee public key is required to award the badge.");
@@ -383,7 +389,7 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
 
     if (!ownerNsec) {
       console.error(
-        "Owner's private key is required to sign the badge award event."
+        "Owner's private key is required to sign the badge award event.",
       );
       return;
     }
@@ -407,7 +413,7 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
         [
           "a",
           `${NDKKind.BadgeDefinition}:${getHexNPub(
-            "npub14vskcp90k6gwp6sxjs2jwwqpcmahg6wz3h5vzq0yn6crrsq0utts52axlt"
+            "npub14vskcp90k6gwp6sxjs2jwwqpcmahg6wz3h5vzq0yn6crrsq0utts52axlt",
           )}:${badgeNaddr}`,
         ],
         ["p", getHexNPub(localStorage.getItem("local_npub"))],
@@ -519,13 +525,13 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
             (badge) =>
               badge.tags
                 .filter((tag) => tag[0] === "a" && tag[1]) // Find tags where the first element is "a"
-                .map((tag) => tag[1]) // Extract the naddress
-          )
+                .map((tag) => tag[1]), // Extract the naddress
+          ),
         ),
       ];
 
       let badgeData = uniqueNAddresses.map((naddress) =>
-        getBadgeData(naddress)
+        getBadgeData(naddress),
       );
 
       let resolvedBadges = await Promise.all(badgeData);
@@ -568,7 +574,7 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
   };
 
   const getLastNotesByNpub = async (
-    npub = localStorage.getItem("local_npub")
+    npub = localStorage.getItem("local_npub"),
   ) => {
     try {
       const connection = await connectToNostr();
@@ -641,7 +647,7 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
             pubkey: event.pubkey, // Store the pubkey for later use
             npub: bech32.encode(
               "npub",
-              bech32.toWords(Buffer.from(event.pubkey, "hex"))
+              bech32.toWords(Buffer.from(event.pubkey, "hex")),
             ),
             profile: null, // Placeholder for profile data
           });
@@ -672,7 +678,7 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
         });
 
         await new Promise((resolve) =>
-          profilesSubscription.on("eose", resolve)
+          profilesSubscription.on("eose", resolve),
         );
 
         // Step 3: Merge notes with profiles
@@ -691,7 +697,7 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
         return [];
       }
     },
-    [connectToNostr]
+    [connectToNostr],
   );
 
   return {
