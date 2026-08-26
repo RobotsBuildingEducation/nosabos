@@ -61,6 +61,7 @@ import { getGermanCopy } from "../utils/germanCopy";
 import BottomDrawerDragHandle from "./BottomDrawerDragHandle";
 import useBottomDrawerSwipeDismiss from "../hooks/useBottomDrawerSwipeDismiss";
 import VoiceOrb from "./VoiceOrb";
+import NutzapTransactionsDrawer from "./NutzapTransactionsDrawer";
 import { useThemeStore } from "../useThemeStore";
 import {
   DEFAULT_SUPPORT_LANGUAGE,
@@ -1170,6 +1171,7 @@ export function BitcoinWalletSection({
   const [selectedIdentity, setSelectedIdentity] = useState(identity || "");
   const [noWalletFound, setNoWalletFound] = useState(false);
   const [nsecForWallet, setNsecForWallet] = useState("");
+  const [transactionsDrawerOpen, setTransactionsDrawerOpen] = useState(false);
 
   // Detect if user is logged in via NIP-07 extension
   const isNip07Mode =
@@ -2021,14 +2023,28 @@ export function BitcoinWalletSection({
             />
           </Box>
           <Link
-            href="https://nutlife.lol"
-            target="_blank"
-            textDecoration="underline"
+            as="button"
+            type="button"
+            onClick={() => setTransactionsDrawerOpen(true)}
             fontSize="sm"
             color={walletTheme.link}
             textAlign="center"
+            textDecoration="underline"
+            textUnderlineOffset="2px"
+            bg="transparent"
+            border="0"
+            boxShadow="none"
+            p={0}
             mx="auto"
             mt={2}
+            _hover={{ textDecoration: "underline" }}
+            _active={{ bg: "transparent", boxShadow: "none" }}
+            _focus={{ boxShadow: "none" }}
+            _focusVisible={{
+              boxShadow: "none",
+              outline: "none",
+              textDecorationThickness: "2px",
+            }}
           >
             {W("verifyTransactions")}
           </Link>
@@ -2147,6 +2163,13 @@ export function BitcoinWalletSection({
       {showIdentitySelector && identitySelectorPlacement === "bottom"
         ? identitySelector
         : null}
+
+      <NutzapTransactionsDrawer
+        isOpen={transactionsDrawerOpen}
+        onClose={() => setTransactionsDrawerOpen(false)}
+        userLanguage={walletLang}
+        visualStyle={visualStyle}
+      />
     </Box>
   );
 }

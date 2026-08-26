@@ -32,6 +32,7 @@
     "@nostr-dev-kit/ndk-wallet": "^0.7.0",
     "bech32": "^2.0.0",
     "buffer": "^6.0.3",
+    "cashu-ts-v4": "npm:@cashu/cashu-ts@4.9.0",
     "firebase": "^12.13.0",
     "framer-motion": "^12.23.12",
     "lucide-react": "^0.544.0",

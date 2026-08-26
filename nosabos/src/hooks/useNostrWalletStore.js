@@ -10,6 +10,15 @@ import NDK, {
 import { NDKCashuWallet } from "@nostr-dev-kit/ndk-wallet";
 import { Buffer } from "buffer";
 import { bech32 } from "bech32";
+import {
+  CashuDepositError,
+  createBolt11DepositQuote,
+  getCashuMintWallet,
+  getUnspentCashuProofs,
+  mintPaidBolt11Quote,
+  toNdkProofs,
+  waitForPaidMintQuote,
+} from "../utils/cashuMintClient";
 
 // Polyfill Buffer for browser
 if (typeof window !== "undefined") {
@@ -25,6 +34,50 @@ const DEFAULT_RELAYS = [
 ];
 const DEFAULT_RECEIVER =
   "npub14vskcp90k6gwp6sxjs2jwwqpcmahg6wz3h5vzq0yn6crrsq0utts52axlt";
+const PENDING_DEPOSIT_STORAGE_PREFIX = "nosabos:cashu-pending-deposit:v1";
+const activeDepositMonitors = new Map();
+
+function pendingDepositStorageKey(pubkey) {
+  return `${PENDING_DEPOSIT_STORAGE_PREFIX}:${pubkey}`;
+}
+
+function loadPendingDeposit(pubkey) {
+  if (typeof localStorage === "undefined" || !pubkey) return null;
+
+  try {
+    const value = localStorage.getItem(pendingDepositStorageKey(pubkey));
+    return value ? JSON.parse(value) : null;
+  } catch (error) {
+    console.warn("[Wallet] Could not read pending deposit:", error);
+    return null;
+  }
+}
+
+function savePendingDeposit(pubkey, deposit) {
+  if (typeof localStorage === "undefined" || !pubkey) return false;
+
+  try {
+    localStorage.setItem(
+      pendingDepositStorageKey(pubkey),
+      JSON.stringify(deposit),
+    );
+    return true;
+  } catch (error) {
+    console.warn("[Wallet] Could not persist pending deposit:", error);
+    return false;
+  }
+}
+
+function removePendingDeposit(pubkey) {
+  if (typeof localStorage === "undefined" || !pubkey) return;
+  localStorage.removeItem(pendingDepositStorageKey(pubkey));
+}
+
+function stopDepositMonitor(pubkey) {
+  const monitor = activeDepositMonitors.get(pubkey);
+  monitor?.controller.abort();
+  activeDepositMonitors.delete(pubkey);
+}
 
 /**
  * Safely extract total balance from wallet.balance response
@@ -64,13 +117,8 @@ async function verifyBalanceWithMint(wallet, mintUrl) {
       return 0;
     }
 
-    const cashuWallet = await wallet.getCashuWallet(mintUrl);
-    const proofStates = await cashuWallet.checkProofsStates(proofs);
-
-    const unspentProofs = proofs.filter((proof, i) => {
-      const state = proofStates[i];
-      return state?.state === "UNSPENT";
-    });
+    const cashuWallet = await getCashuMintWallet(mintUrl);
+    const unspentProofs = await getUnspentCashuProofs(cashuWallet, proofs);
 
     const balance = unspentProofs.reduce((sum, p) => sum + p.amount, 0);
     console.log("[Wallet] Verified balance from mint:", balance);
@@ -115,7 +163,8 @@ export const useNostrWalletStore = create((set, get) => ({
 
   // Connect to Nostr relays
   connectToNostr: async (npubRef = null, nsecRef = null) => {
-    const { setError, nostrPrivKey, nostrPubKey } = get();
+    void npubRef; // Retained for compatibility with existing two-argument callers.
+    const { setError, nostrPrivKey } = get();
 
     const storedNsec = localStorage.getItem("local_nsec");
     const isNip07 = localStorage.getItem("nip07_signer") === "true";
@@ -266,6 +315,7 @@ export const useNostrWalletStore = create((set, get) => ({
       set({ cashuWallet: wallet, isWalletReady: true });
 
       await verifyAndUpdateBalance();
+      await get().resumePendingDeposit();
 
       return wallet;
     } catch (err) {
@@ -330,6 +380,7 @@ export const useNostrWalletStore = create((set, get) => ({
       });
 
       await verifyAndUpdateBalance();
+      await get().resumePendingDeposit();
 
       return wallet;
     } catch (err) {
@@ -389,53 +440,175 @@ export const useNostrWalletStore = create((set, get) => ({
     }
   },
 
-  // Deposit sats
-  initiateDeposit: async (amountInSats = 10, options = {}) => {
-    const { cashuWallet, setError, setInvoice, verifyAndUpdateBalance } = get();
+  monitorPendingDeposit: (pendingDeposit, options = {}) => {
+    const { ownerPubkey } = pendingDeposit;
+    const existingMonitor = activeDepositMonitors.get(ownerPubkey);
+    if (existingMonitor) return existingMonitor.promise;
+
+    const controller = new AbortController();
     const { onSuccess, onError } = options;
 
-    if (!cashuWallet) {
+    const monitorPromise = (async () => {
+      try {
+        let proofs = pendingDeposit.proofs;
+
+        if (!Array.isArray(proofs) || proofs.length === 0) {
+          const mintWallet = await getCashuMintWallet(pendingDeposit.mint);
+          const paidQuote = await waitForPaidMintQuote(
+            mintWallet,
+            pendingDeposit.quote,
+            { signal: controller.signal },
+          );
+          proofs = await mintPaidBolt11Quote(
+            mintWallet,
+            pendingDeposit.amount,
+            paidQuote,
+          );
+
+          // Persist issued proofs before relay storage so a refresh in between
+          // cannot strand an already-paid quote.
+          savePendingDeposit(ownerPubkey, {
+            ...pendingDeposit,
+            proofs,
+          });
+        }
+
+        const currentWallet = get().cashuWallet;
+        if (!currentWallet) {
+          throw new CashuDepositError(
+            "Deposit was paid, but the wallet is no longer open",
+            "WALLET_CLOSED",
+          );
+        }
+
+        const storedProofs =
+          currentWallet.state?.getProofs({ mint: pendingDeposit.mint }) || [];
+        const storedSecrets = new Set(storedProofs.map((proof) => proof.secret));
+        const unstoredProofs = proofs.filter(
+          (proof) => !storedSecrets.has(proof.secret),
+        );
+
+        if (unstoredProofs.length > 0) {
+          await currentWallet.state.update({
+            store: unstoredProofs,
+            mint: pendingDeposit.mint,
+          });
+        }
+
+        removePendingDeposit(ownerPubkey);
+        set({ invoice: "", errorMessage: null });
+        const newBalance = await get().verifyAndUpdateBalance();
+        console.log("[Wallet] Deposit successful!", proofs);
+
+        if (typeof onSuccess === "function") onSuccess(newBalance);
+        return proofs;
+      } catch (error) {
+        if (error?.code === "ABORTED") return null;
+
+        if (error?.code === "ISSUED") {
+          removePendingDeposit(ownerPubkey);
+          set({ invoice: "" });
+          await get().verifyAndUpdateBalance();
+          return null;
+        }
+
+        if (error?.code === "EXPIRED") {
+          removePendingDeposit(ownerPubkey);
+          set({ invoice: "" });
+        }
+
+        console.error("[Wallet] Deposit monitor error:", error);
+        get().setError(error.message || "Deposit failed");
+        if (typeof onError === "function") onError(error);
+        return null;
+      } finally {
+        const activeMonitor = activeDepositMonitors.get(ownerPubkey);
+        if (activeMonitor?.controller === controller) {
+          activeDepositMonitors.delete(ownerPubkey);
+        }
+      }
+    })();
+
+    activeDepositMonitors.set(ownerPubkey, {
+      controller,
+      promise: monitorPromise,
+    });
+    return monitorPromise;
+  },
+
+  resumePendingDeposit: async (options = {}) => {
+    const { signer, cashuWallet, monitorPendingDeposit } = get();
+    if (!signer || !cashuWallet) return null;
+
+    try {
+      const user = await signer.user();
+      const pendingDeposit = loadPendingDeposit(user.pubkey);
+      if (!pendingDeposit || pendingDeposit.mint !== DEFAULT_MINT) return null;
+
+      set({ invoice: pendingDeposit.quote.request, errorMessage: null });
+      monitorPendingDeposit(pendingDeposit, options);
+      return pendingDeposit.quote.request;
+    } catch (error) {
+      console.error("[Wallet] Error resuming deposit:", error);
+      get().setError(error.message || "Could not resume deposit");
+      return null;
+    }
+  },
+
+  // Deposit sats using Cashu TS v4 directly. NDK remains the proof store.
+  initiateDeposit: async (amountInSats = 10, options = {}) => {
+    const {
+      cashuWallet,
+      signer,
+      setError,
+      setInvoice,
+      monitorPendingDeposit,
+    } = get();
+    const { onError } = options;
+
+    if (!cashuWallet || !signer) {
       setError("Wallet not initialized");
       return null;
     }
 
     try {
-      const deposit = cashuWallet.deposit(amountInSats, DEFAULT_MINT);
+      const user = await signer.user();
+      const existingDeposit = loadPendingDeposit(user.pubkey);
 
-      deposit.on("success", async (token) => {
-        console.log("[Wallet] Deposit successful!", token.proofs);
+      if (
+        existingDeposit?.mint === DEFAULT_MINT &&
+        existingDeposit?.quote?.request
+      ) {
+        set({ invoice: existingDeposit.quote.request, errorMessage: null });
+        monitorPendingDeposit(existingDeposit, options);
+        return existingDeposit.quote.request;
+      }
 
-        // Save proofs to relay
-        await cashuWallet.state.update({
-          store: token.proofs,
-          mint: DEFAULT_MINT,
-        });
+      const mintWallet = await getCashuMintWallet(DEFAULT_MINT);
+      const quote = await createBolt11DepositQuote(mintWallet, amountInSats);
+      const pendingDeposit = {
+        ownerPubkey: user.pubkey,
+        mint: DEFAULT_MINT,
+        amount: amountInSats,
+        createdAt: Date.now(),
+        quote: {
+          quote: quote.quote,
+          request: quote.request,
+          state: quote.state,
+          expiry: quote.expiry,
+        },
+      };
 
-        // Verify balance with mint
-        const newBalance = await verifyAndUpdateBalance();
-        set({ invoice: "" });
-
-        if (typeof onSuccess === "function") {
-          onSuccess(newBalance);
-        }
-      });
-
-      deposit.on("error", (e) => {
-        console.error("[Wallet] Deposit error:", e);
-        setError(e.message || "Deposit failed");
-        setInvoice("");
-        if (typeof onError === "function") {
-          onError(e);
-        }
-      });
-
-      const pr = await deposit.start();
-      console.log("[Wallet] Invoice created");
-      setInvoice(pr);
-      return pr;
-    } catch (e) {
-      console.error("[Wallet] Error initiating deposit:", e);
-      setError(e.message);
+      savePendingDeposit(user.pubkey, pendingDeposit);
+      set({ invoice: quote.request, errorMessage: null });
+      monitorPendingDeposit(pendingDeposit, options);
+      console.log("[Wallet] Invoice created with modern Cashu client");
+      return quote.request;
+    } catch (error) {
+      console.error("[Wallet] Error initiating deposit:", error);
+      setError(error.message || "Unable to create deposit invoice");
+      setInvoice("");
+      if (typeof onError === "function") onError(error);
       return null;
     }
   },
@@ -484,8 +657,7 @@ export const useNostrWalletStore = create((set, get) => ({
       const { p2pkPubkey } = await fetchUserPaymentInfo(recipientNpub);
       console.log("[Wallet] Sending 1 sat to:", recipientNpub);
 
-      const cashuWalletInstance =
-        await freshWallet.getCashuWallet(DEFAULT_MINT);
+      const cashuWalletInstance = await getCashuMintWallet(DEFAULT_MINT);
 
       // Get proofs from wallet state
       let proofs = freshWallet.state?.getProofs({ mint: DEFAULT_MINT }) || [];
@@ -494,13 +666,10 @@ export const useNostrWalletStore = create((set, get) => ({
       }
 
       // Check which proofs are actually still spendable at the mint
-      const proofStates = await cashuWalletInstance.checkProofsStates(proofs);
-
-      // Filter to only unspent proofs
-      const validProofs = proofs.filter((proof, index) => {
-        const state = proofStates[index];
-        return state?.state === "UNSPENT";
-      });
+      const validProofs = await getUnspentCashuProofs(
+        cashuWalletInstance,
+        proofs,
+      );
 
       console.log("[Wallet] Total proofs:", proofs.length);
       console.log("[Wallet] Valid proofs:", validProofs.length);
@@ -518,13 +687,14 @@ export const useNostrWalletStore = create((set, get) => ({
       const recipientHex = decodeKey(recipientNpub);
 
       // Use only valid proofs for the send
-      const { keep, send } = await cashuWalletInstance.send(
-        amount,
-        validProofs,
-        {
-          pubkey: p2pkPubkey,
-        },
-      );
+      const sendResult = p2pkPubkey
+        ? await cashuWalletInstance.ops
+            .send(amount, validProofs)
+            .asP2PK({ pubkey: p2pkPubkey })
+            .run()
+        : await cashuWalletInstance.send(amount, validProofs);
+      const keep = toNdkProofs(sendResult.keep);
+      const send = toNdkProofs(sendResult.send);
 
       console.log("[Wallet] Keep proofs:", keep);
       console.log("[Wallet] Send proofs:", send);
@@ -583,6 +753,10 @@ export const useNostrWalletStore = create((set, get) => ({
 
   // Reset state (logout)
   resetState: () => {
+    for (const pubkey of activeDepositMonitors.keys()) {
+      stopDepositMonitor(pubkey);
+    }
+
     set({
       isConnected: false,
       errorMessage: null,
