@@ -1252,7 +1252,7 @@ export function BitcoinWalletSection({
       copyAddress: "Copy address",
       ps: "Use a compatible Lightning wallet to pay the invoice.",
       activeWalletTitle: "Your wallet is active",
-      verifyTransactions: "Verify your transactions",
+      verifyTransactions: "Verify transaction",
       generateNew: "Generate New Address",
       balanceLabel: "Balance",
       cardNameLabel: "Wallet",

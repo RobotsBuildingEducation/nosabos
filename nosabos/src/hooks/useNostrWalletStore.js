@@ -33,7 +33,7 @@ const DEFAULT_RELAYS = [
   "wss://nos.lol",
 ];
 const DEFAULT_RECEIVER =
-  "npub14vskcp90k6gwp6sxjs2jwwqpcmahg6wz3h5vzq0yn6crrsq0utts52axlt";
+  "npub1auhch9697q3jxjjtj7jq3glqtl2eyf7quu357ppja2fr5fvvhlxsqla9n5";
 const PENDING_DEPOSIT_STORAGE_PREFIX = "nosabos:cashu-pending-deposit:v1";
 const activeDepositMonitors = new Map();
 
@@ -483,7 +483,9 @@ export const useNostrWalletStore = create((set, get) => ({
 
         const storedProofs =
           currentWallet.state?.getProofs({ mint: pendingDeposit.mint }) || [];
-        const storedSecrets = new Set(storedProofs.map((proof) => proof.secret));
+        const storedSecrets = new Set(
+          storedProofs.map((proof) => proof.secret),
+        );
         const unstoredProofs = proofs.filter(
           (proof) => !storedSecrets.has(proof.secret),
         );
@@ -557,13 +559,8 @@ export const useNostrWalletStore = create((set, get) => ({
 
   // Deposit sats using Cashu TS v4 directly. NDK remains the proof store.
   initiateDeposit: async (amountInSats = 10, options = {}) => {
-    const {
-      cashuWallet,
-      signer,
-      setError,
-      setInvoice,
-      monitorPendingDeposit,
-    } = get();
+    const { cashuWallet, signer, setError, setInvoice, monitorPendingDeposit } =
+      get();
     const { onError } = options;
 
     if (!cashuWallet || !signer) {
