@@ -130,6 +130,21 @@ const simplemodel = getGenerativeModel(vertexAI, {
   },
 });
 
+// Question generation has a deliberately short network deadline. Firebase's
+// default is 180 seconds; using a dedicated model instance lets its internal
+// AbortController cancel timed-out fetches instead of merely ignoring them in
+// the UI while they continue consuming quota in the background.
+const questionModel = getGenerativeModel(
+  vertexAI,
+  {
+    model: "gemini-3.5-flash-lite",
+    generationConfig: {
+      thinkingConfig: { thinkingBudget: 0 },
+    },
+  },
+  { timeout: 6000 },
+);
+
 const simplemodel3 = getGenerativeModel(vertexAI, {
   model: "gemini-3.5-flash-lite",
   generationConfig: {
@@ -168,6 +183,7 @@ export {
   Schema,
   analytics,
   simplemodel,
+  questionModel,
   gradingModel,
   gradingLiteModel,
   citizenshipAssistantModel,

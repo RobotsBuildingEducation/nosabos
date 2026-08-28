@@ -1,7 +1,10 @@
 import {
   buildCurriculumPromptContext,
-  isCurriculumPayloadGrounded,
 } from "./lessonCurriculum.js";
+import {
+  TUTOR_STARTER_AGENDA_IDS,
+  getTutorStarterTargetExamples,
+} from "./tutorStarterAgenda.js";
 
 export const DELIGHT_VARIANTS = [
   {
@@ -64,35 +67,31 @@ export const DELIGHT_VARIANT_IDS = DELIGHT_VARIANTS.map(({ id }) => id);
 
 const SCHEMAS = {
   sentence_detective:
-    '{"sentence":"...","correctedSentence":"...","tokens":["..."],"joiner":" ","incorrectIndex":0,"wrongToken":"...","replacements":["...","...","...","..."],"answer":"...","slotType":"noun|verb|adjective|adverb|other","cueTokens":["..."],"errorEvidence":"...","repairEvidence":"...","errorCategory":"...","targetSkill":"...","sourceEvidence":"...","instruction":"...","hint":"...","explanation":"..."}',
+    '{"tokens":["..."],"incorrectIndex":0,"replacements":["...","...","...","..."],"answer":"..."}',
   dialogue_fork:
-    '{"instruction":"...","speaker":"...","line":"...","options":["..."],"answerIndex":0,"reaction":"...","hint":"...","explanation":"..."}',
+    '{"speaker":"...","line":"...","options":["..."],"answerIndex":0,"reaction":"..."}',
   sentence_shapeshifter:
-    '{"instruction":"...","source":"...","constraint":"...","answer":"...","acceptableAnswers":["..."],"hint":"...","explanation":"..."}',
+    '{"source":"...","constraint":"...","answer":"...","acceptableAnswers":["..."]}',
   word_neighborhoods:
-    '{"instruction":"...","groups":[{"label":"...","items":["...","...","..."]},{"label":"...","items":["...","...","..."]}],"hint":"...","explanation":"..."}',
+    '{"groups":[{"label":"...","items":["...","...","..."]},{"label":"...","items":["...","...","..."]}]}',
   morphology_forge:
-    '{"instruction":"...","sentence":"... ___ ...","pieces":["..."],"answerPieces":["..."],"answerWord":"...","hint":"...","explanation":"..."}',
+    '{"sentence":"... ___ ...","pieces":["..."],"answerPieces":["..."],"answerWord":"..."}',
   three_clue_mystery:
-    '{"instruction":"...","clues":["...","...","..."],"answer":"...","acceptableAnswers":["..."],"example":"...","hint":"...","explanation":"..."}',
+    '{"clues":["...","...","..."],"answer":"...","acceptableAnswers":["..."],"example":"..."}',
   listen_difference:
-    '{"instruction":"...","audioText":"...","options":["...","..."],"answerIndex":0,"contrast":"...","hint":"...","explanation":"..."}',
+    '{"audioText":"...","options":["...","..."],"answerIndex":0,"contrast":"..."}',
   three_word_challenge:
-    '{"instruction":"...","cues":["...","...","..."],"sampleAnswers":["...","..."],"reaction":"...","hint":"...","explanation":"..."}',
+    '{"cues":["...","...","..."],"sampleAnswers":["..."],"reaction":"..."}',
   natural_or_weird:
-    '{"instruction":"...","sentence":"...","isNatural":false,"correction":"...","hint":"...","explanation":"..."}',
+    '{"sentence":"...","isNatural":false,"correction":"..."}',
 };
 
 const VARIANT_RULES = {
   sentence_detective: [
-    "Write one short sentence in the target language containing exactly one wrong word.",
-    "tokens must reproduce sentence in reading order, with punctuation attached where natural.",
-    "incorrectIndex is zero-based and points to the wrong token.",
-    "replacements contains exactly 4 options in the target language: the correct repair and 3 distractors.",
-    "Distractors must be clearly wrong in this context, not alternative valid ways to say it.",
-    "cueTokens must be 1-3 tokens from sentence that prove why wrongToken is incorrect.",
-    "errorEvidence and repairEvidence must be in the support language and quote the exact cue tokens from the sentence.",
-    "instruction, hint, and explanation must be in the support language. Never reveal the answer in the instruction.",
+    "Return the broken sentence as tokens in reading order.",
+    "incorrectIndex is zero-based and points to its one wrong token.",
+    "replacements contains the correct answer and three clearly wrong distractors.",
+    "The application derives all sentence surfaces and display copy from those fields.",
   ],
   dialogue_fork: [
     "Write a natural conversational exchange with a prompt line in the target language and exactly 4 plausible replies in the target language.",
@@ -184,30 +183,6 @@ const LANGUAGE_NAMES = {
   yua: "Yucatec Maya",
 };
 
-const DETACHED_NOUN_DETERMINERS = {
-  de: [
-    "der",
-    "die",
-    "das",
-    "den",
-    "dem",
-    "des",
-    "ein",
-    "eine",
-    "einen",
-    "einem",
-    "einer",
-  ],
-  el: ["ο", "η", "το", "οι", "τα", "ένας", "μια", "ένα"],
-  en: ["a", "an", "the"],
-  es: ["el", "la", "los", "las", "un", "una", "unos", "unas"],
-  fr: ["le", "la", "les", "un", "une", "des", "du"],
-  ga: ["an", "na"],
-  it: ["il", "lo", "la", "i", "gli", "le", "un", "uno", "una"],
-  nl: ["de", "het", "een"],
-  pt: ["o", "a", "os", "as", "um", "uma", "uns", "umas"],
-};
-
 export function getDelightLanguageName(code = "en") {
   return LANGUAGE_NAMES[code] || code;
 }
@@ -227,13 +202,173 @@ export function isSingleDelightCueWord(value = "") {
   return /^[\p{L}\p{M}\p{N}]+(?:[-'’ʼ][\p{L}\p{M}\p{N}]+)*$/u.test(text);
 }
 
-export function normalizeSentenceSurface(value = "") {
-  return String(value)
-    .normalize("NFC")
-    .trim()
+const COPIED_META_INSTRUCTION_PATTERN =
+  /\b(?:choose exactly|objective for testing|lesson scope|required schema|mandatory lesson|create one|return exactly|practice target language)\b/i;
+const OBVIOUS_ENGLISH_INSTRUCTION_PATTERN =
+  /\b(?:make it|change (?:the|this|it)|write (?:a|the|your)|type (?:a|the|your)|find the|sort (?:the|each)|listen (?:for|to)|use all|according to the rule)\b/i;
+const TARGET_SCRIPT_RULES = {
+  ar: {
+    required: /\p{Script=Arabic}/u,
+    forbidden: /[A-Za-z]/,
+  },
+  hi: {
+    required: /\p{Script=Devanagari}/u,
+    forbidden: /[A-Za-z]/,
+  },
+  ja: {
+    required: /[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}]/u,
+    forbidden: /[A-Za-z]/,
+  },
+  ru: {
+    required: /\p{Script=Cyrillic}/u,
+    forbidden: /[A-Za-z]/,
+  },
+  el: {
+    required: /\p{Script=Greek}/u,
+    forbidden: /[A-Za-z]/,
+  },
+  zh: {
+    required: /\p{Script=Han}/u,
+    forbidden: /[A-Za-z]/,
+  },
+};
+
+function cleanTargetScriptValue(value, targetLang) {
+  let text = String(value || "").normalize("NFC").trim();
+  const rule = TARGET_SCRIPT_RULES[targetLang];
+  if (!text || !rule) return text;
+
+  // Providers commonly append a romanization or translation to an otherwise
+  // valid target-language value. That annotation is not part of the exercise
+  // answer and should not make the entire structured draft unusable.
+  text = text
+    .replace(
+      /\s*(?:\[[^\]]*[A-Za-z][^\]]*\]|\([^)]*[A-Za-z][^)]*\)|（[^）]*[A-Za-z][^）]*）)\s*/gu,
+      " ",
+    )
     .replace(/\s+/g, " ")
-    .replace(/\s+([,.;:!?،。！？；：])/g, "$1")
-    .replace(/([¿¡])\s+/g, "$1");
+    .trim();
+
+  const candidates = text
+    .split(/\s*(?:\/|\||—|–)\s*/u)
+    .map((candidate) => candidate.trim())
+    .filter(Boolean);
+  const compatible = candidates.find(
+    (candidate) =>
+      !rule.forbidden.test(candidate) && rule.required.test(candidate),
+  );
+  return compatible || text;
+}
+
+function isTargetScriptValueCompatible(value, targetLang) {
+  const text = String(value || "").trim();
+  const rule = TARGET_SCRIPT_RULES[targetLang];
+  if (!text || !rule) return Boolean(text);
+  return !rule.forbidden.test(text) && rule.required.test(text);
+}
+
+function getQuestionLanguageFields(question) {
+  const sharedSupport = [
+    question?.instruction,
+    question?.hint,
+    question?.explanation,
+  ];
+  let target = [];
+  const support = [...sharedSupport];
+
+  switch (question?.variant) {
+    case "sentence_detective":
+      target = [
+        ...(question.tokens || []),
+        ...(question.replacements || []),
+        question.answer,
+      ];
+      break;
+    case "dialogue_fork":
+      target = [question.line, ...(question.options || []), question.reaction];
+      support.push(question.speaker);
+      break;
+    case "sentence_shapeshifter":
+      target = [
+        question.source,
+        question.answer,
+        ...(question.acceptableAnswers || []),
+      ];
+      support.push(question.constraint);
+      break;
+    case "word_neighborhoods":
+      target = (question.groups || []).flatMap((group) => group.items || []);
+      support.push(...(question.groups || []).map((group) => group.label));
+      break;
+    case "morphology_forge":
+      target = [
+        question.sentence,
+        ...(question.pieces || []),
+        ...(question.answerPieces || []),
+        question.answerWord,
+      ];
+      break;
+    case "three_clue_mystery":
+      target = [
+        question.answer,
+        ...(question.acceptableAnswers || []),
+        question.example,
+      ];
+      support.push(...(question.clues || []));
+      break;
+    case "listen_difference":
+      target = [question.audioText, ...(question.options || [])];
+      support.push(question.contrast);
+      break;
+    case "three_word_challenge":
+      target = [
+        ...(question.cues || []),
+        ...(question.sampleAnswers || []),
+      ];
+      support.push(question.reaction);
+      break;
+    case "natural_or_weird":
+      target = [question.sentence, question.correction];
+      break;
+    default:
+      break;
+  }
+
+  const clean = (values) =>
+    values.map((value) => String(value || "").trim()).filter(Boolean);
+  return { target: clean(target), support: clean(support) };
+}
+
+export function isDelightQuestionLanguageConsistent(
+  question,
+  { targetLang = "es", supportLang = "en" } = {},
+) {
+  if (!question) return false;
+  const fields = getQuestionLanguageFields(question);
+
+  if (
+    targetLang !== "en" &&
+    fields.target.some((value) => COPIED_META_INSTRUCTION_PATTERN.test(value))
+  ) {
+    return false;
+  }
+  if (
+    supportLang !== "en" &&
+    fields.support.some(
+      (value) =>
+        COPIED_META_INSTRUCTION_PATTERN.test(value) ||
+        OBVIOUS_ENGLISH_INSTRUCTION_PATTERN.test(value),
+    )
+  ) {
+    return false;
+  }
+
+  const scriptRule = TARGET_SCRIPT_RULES[targetLang];
+  if (!scriptRule || !fields.target.length) return true;
+  if (fields.target.some((value) => scriptRule.forbidden.test(value))) {
+    return false;
+  }
+  return scriptRule.required.test(fields.target.join(" "));
 }
 
 export function parseDelightQuestion(raw = "") {
@@ -443,9 +578,28 @@ function stringList(value, limit = 12) {
     : [];
 }
 
-export function normalizeDelightQuestion(variant, raw) {
+function uniqueStringList(value, limit = 12) {
+  return Array.from(
+    new Map(
+      stringList(value, limit).map((item) => [normalizeDelightText(item), item]),
+    ).values(),
+  );
+}
+
+export function normalizeDelightQuestion(
+  variant,
+  raw,
+  { targetLang = "" } = {},
+) {
   const source = parseDelightQuestion(raw);
   if (!source || !DELIGHT_VARIANT_IDS.includes(variant)) return null;
+  const cleanTarget = (value) => cleanTargetScriptValue(value, targetLang);
+  const cleanTargetList = (value, limit = 12) =>
+    stringList(value, limit).map(cleanTarget).filter(Boolean);
+  const cleanOptionalTargetList = (value, limit = 12) =>
+    cleanTargetList(value, limit).filter((item) =>
+      isTargetScriptValueCompatible(item, targetLang),
+    );
   const base = {
     variant,
     instruction: String(source.instruction || "").trim(),
@@ -454,60 +608,94 @@ export function normalizeDelightQuestion(variant, raw) {
   };
 
   if (variant === "sentence_detective") {
-    const tokens = stringList(source.tokens, 30);
-    const replacements = stringList(source.replacements, 6);
-    const incorrectIndex = Number(source.incorrectIndex);
-    const answer = String(source.answer || "").trim();
-    const slotType = String(source.slotType || "").trim().toLowerCase();
-    const cueTokens = stringList(source.cueTokens, 8);
-    const joiner = source.joiner === "" ? "" : " ";
+    const compactScript = ["ja", "zh"].includes(targetLang);
+    const joiner = source.joiner === "" || compactScript ? "" : " ";
+    let tokens = cleanTargetList(source.tokens, 30);
+    const answer = cleanTarget(source.answer);
+    const rawReplacements = cleanTargetList(source.replacements, 6);
+    const replacementsByKey = new Map(
+      rawReplacements.map((replacement) => [
+        normalizeDelightText(replacement),
+        replacement,
+      ]),
+    );
+    if (answer && !replacementsByKey.has(normalizeDelightText(answer))) {
+      if (replacementsByKey.size >= 6) {
+        const lastKey = Array.from(replacementsByKey.keys()).at(-1);
+        replacementsByKey.delete(lastKey);
+      }
+      replacementsByKey.set(normalizeDelightText(answer), answer);
+    }
+    const replacements = Array.from(replacementsByKey.values()).slice(0, 6);
+    let incorrectIndex = Number(source.incorrectIndex);
+    if (
+      (!Number.isInteger(incorrectIndex) ||
+        incorrectIndex < 0 ||
+        incorrectIndex >= tokens.length) &&
+      answer
+    ) {
+      // Providers occasionally point outside the token list while still
+      // returning the corrected answer in the intended slot. Recover that
+      // unambiguous relationship locally instead of discarding the question.
+      incorrectIndex = tokens.findIndex(
+        (token) =>
+          normalizeDelightText(token) === normalizeDelightText(answer),
+      );
+    }
+    if (
+      Number.isInteger(incorrectIndex) &&
+      incorrectIndex >= 0 &&
+      incorrectIndex < tokens.length &&
+      normalizeDelightText(tokens[incorrectIndex]) ===
+        normalizeDelightText(answer)
+    ) {
+      // A common provider draft returns the corrected sentence in `tokens`
+      // instead of the requested broken sentence. The same response already
+      // supplies its distractors, so use the first distinct provider-authored
+      // replacement as the broken token and keep `answer` as the repair.
+      const wrongReplacement = replacements.find(
+        (replacement) =>
+          normalizeDelightText(replacement) !== normalizeDelightText(answer),
+      );
+      if (wrongReplacement) {
+        tokens = [...tokens];
+        tokens[incorrectIndex] = wrongReplacement;
+      }
+    }
     const sentence = tokens.join(joiner);
     const correctedTokens = [...tokens];
     if (Number.isInteger(incorrectIndex) && correctedTokens[incorrectIndex]) {
       correctedTokens[incorrectIndex] = answer;
     }
     const correctedSentence = correctedTokens.join(joiner);
-    const replacementKeys = replacements.map(normalizeDelightText);
+    const slotType = ["noun", "verb", "adjective", "adverb"].includes(
+      String(source.slotType || "").trim().toLowerCase(),
+    )
+      ? String(source.slotType).trim().toLowerCase()
+      : "other";
+    const sourceCueTokens = stringList(source.cueTokens, 8).filter((cueToken) =>
+      tokens.some(
+        (token) =>
+          normalizeDelightText(token) === normalizeDelightText(cueToken),
+      ),
+    );
+    const nearbyCue =
+      tokens[incorrectIndex > 0 ? incorrectIndex - 1 : incorrectIndex + 1] ||
+      "";
+    const cueTokens = sourceCueTokens.length
+      ? sourceCueTokens
+      : nearbyCue
+        ? [nearbyCue]
+        : [];
     if (
-      tokens.length < 3 ||
+      tokens.length < 2 ||
       !Number.isInteger(incorrectIndex) ||
       incorrectIndex < 0 ||
       incorrectIndex >= tokens.length ||
-      replacements.length !== 4 ||
-      new Set(replacementKeys).size !== replacements.length ||
+      replacements.length < 2 ||
       !answer ||
-      !replacements.some(
-        (replacement) =>
-          normalizeDelightText(replacement) === normalizeDelightText(answer),
-      ) ||
       normalizeDelightText(tokens[incorrectIndex]) ===
-        normalizeDelightText(answer) ||
-      (source.wrongToken &&
-        normalizeDelightText(source.wrongToken) !==
-          normalizeDelightText(tokens[incorrectIndex])) ||
-      (source.sentence &&
-        normalizeSentenceSurface(source.sentence) !==
-          normalizeSentenceSurface(sentence)) ||
-      !source.correctedSentence ||
-      normalizeSentenceSurface(source.correctedSentence) !==
-        normalizeSentenceSurface(correctedSentence) ||
-      !String(source.instruction || "").trim() ||
-      !["noun", "verb", "adjective", "adverb", "other"].includes(slotType) ||
-      !String(source.hint || "").trim() ||
-      !String(source.explanation || "").trim() ||
-      !cueTokens.length ||
-      cueTokens.some(
-        (cueToken) =>
-          !tokens.some(
-            (token) =>
-              normalizeDelightText(token) === normalizeDelightText(cueToken),
-          ),
-      ) ||
-      !String(source.errorEvidence || "").trim() ||
-      !String(source.repairEvidence || "").trim() ||
-      !String(source.errorCategory || "").trim() ||
-      !String(source.targetSkill || "").trim() ||
-      !String(source.sourceEvidence || "").trim()
+        normalizeDelightText(answer)
     )
       return null;
     return {
@@ -522,19 +710,34 @@ export function normalizeDelightQuestion(variant, raw) {
       answer,
       slotType,
       cueTokens,
-      errorEvidence: String(source.errorEvidence).trim(),
-      repairEvidence: String(source.repairEvidence).trim(),
-      errorCategory: String(source.errorCategory).trim(),
-      targetSkill: String(source.targetSkill).trim(),
+      errorEvidence: String(source.errorEvidence || "").trim(),
+      repairEvidence: String(source.repairEvidence || "").trim(),
+      errorCategory: String(source.errorCategory || "").trim(),
+      targetSkill: String(source.targetSkill || "").trim(),
       sourceEvidence: String(source.sourceEvidence || "").trim(),
     };
   }
 
   if (variant === "dialogue_fork") {
-    const options = stringList(source.options, 6);
-    const answerIndex = Number(source.answerIndex);
+    const rawOptions = cleanTargetList(source.options, 6);
+    const rawAnswerIndex = Number(source.answerIndex);
+    const answerValue = Number.isInteger(rawAnswerIndex)
+      ? rawOptions[rawAnswerIndex]
+      : "";
+    const options = uniqueStringList(rawOptions, 6);
+    const answerIndex = answerValue
+      ? options.findIndex(
+          (option) =>
+            normalizeDelightText(option) === normalizeDelightText(answerValue),
+        )
+      : -1;
+    const line = cleanTarget(source.line);
+    const rawReaction = cleanTarget(source.reaction);
+    const reaction = isTargetScriptValueCompatible(rawReaction, targetLang)
+      ? rawReaction
+      : "";
     if (
-      !source.line ||
+      !line ||
       options.length < 2 ||
       !Number.isInteger(answerIndex) ||
       answerIndex < 0 ||
@@ -544,22 +747,26 @@ export function normalizeDelightQuestion(variant, raw) {
     return {
       ...base,
       speaker: String(source.speaker || "Speaker").trim(),
-      line: String(source.line).trim(),
+      line,
       options,
       answerIndex,
-      reaction: String(source.reaction || "").trim(),
+      reaction,
     };
   }
 
   if (variant === "sentence_shapeshifter") {
-    const answer = String(source.answer || "").trim();
-    if (!source.source || !source.constraint || !answer) return null;
+    const sourceSentence = cleanTarget(source.source);
+    const answer = cleanTarget(source.answer);
+    if (!sourceSentence || !source.constraint || !answer) return null;
     return {
       ...base,
-      source: String(source.source).trim(),
+      source: sourceSentence,
       constraint: String(source.constraint).trim(),
       answer,
-      acceptableAnswers: stringList(source.acceptableAnswers, 8),
+      acceptableAnswers: cleanOptionalTargetList(
+        source.acceptableAnswers,
+        8,
+      ),
     };
   }
 
@@ -568,7 +775,7 @@ export function normalizeDelightQuestion(variant, raw) {
       ? source.groups
           .map((group) => ({
             label: String(group?.label || "").trim(),
-            items: stringList(group?.items, 6),
+            items: cleanTargetList(group?.items, 6),
           }))
           .filter((group) => group.label && group.items.length >= 2)
           .slice(0, 3)
@@ -583,43 +790,88 @@ export function normalizeDelightQuestion(variant, raw) {
   }
 
   if (variant === "morphology_forge") {
-    const pieces = stringList(source.pieces, 10);
-    const answerPieces = stringList(source.answerPieces, 6);
+    const answerPieces = cleanTargetList(source.answerPieces, 3);
+    const pieces = cleanTargetList(source.pieces, 10);
+    const availableCounts = new Map();
+    pieces.forEach((piece) => {
+      const key = normalizeDelightText(piece);
+      availableCounts.set(key, (availableCounts.get(key) || 0) + 1);
+    });
+    const requiredCounts = new Map();
+    answerPieces.forEach((piece) => {
+      const key = normalizeDelightText(piece);
+      const required = (requiredCounts.get(key) || 0) + 1;
+      requiredCounts.set(key, required);
+      if ((availableCounts.get(key) || 0) < required) {
+        pieces.push(piece);
+        availableCounts.set(key, (availableCounts.get(key) || 0) + 1);
+      }
+    });
+    const sentence = cleanTarget(source.sentence);
     if (
-      !source.sentence ||
-      pieces.length < 4 ||
+      !sentence ||
+      pieces.length < 3 ||
       answerPieces.length < 2 ||
       answerPieces.length > 3
     )
       return null;
     return {
       ...base,
-      sentence: String(source.sentence).trim(),
+      sentence,
       pieces,
       answerPieces,
       answerWord:
-        String(source.answerWord || "").trim() || answerPieces.join(""),
+        cleanTarget(source.answerWord) || answerPieces.join(""),
     };
   }
 
   if (variant === "three_clue_mystery") {
     const clues = stringList(source.clues, 3);
-    const answer = String(source.answer || "").trim();
+    const answer = cleanTarget(source.answer);
     if (clues.length !== 3 || !answer) return null;
+    const acceptableAnswers = uniqueStringList(
+      stringList(source.acceptableAnswers, 8)
+        .map(cleanTarget)
+        .filter(
+          (value) =>
+            value &&
+            normalizeDelightText(value) !== normalizeDelightText(answer) &&
+            isTargetScriptValueCompatible(value, targetLang),
+        ),
+      8,
+    );
+    const rawExample = cleanTarget(source.example);
+    const example = isTargetScriptValueCompatible(rawExample, targetLang)
+      ? rawExample
+      : "";
     return {
       ...base,
       clues,
       answer,
-      acceptableAnswers: stringList(source.acceptableAnswers, 8),
-      example: String(source.example || "").trim(),
+      acceptableAnswers,
+      example,
     };
   }
 
   if (variant === "listen_difference") {
-    const options = stringList(source.options, 4);
-    const answerIndex = Number(source.answerIndex);
+    const options = uniqueStringList(cleanTargetList(source.options, 4), 4);
+    const providedAnswerIndex = Number(source.answerIndex);
+    const providedAudioText = cleanTarget(source.audioText);
+    const audioMatchIndex = options.findIndex(
+      (option) =>
+        normalizeDelightText(option) ===
+        normalizeDelightText(providedAudioText),
+    );
+    const answerIndex =
+      audioMatchIndex >= 0
+        ? audioMatchIndex
+        : Number.isInteger(providedAnswerIndex) &&
+            providedAnswerIndex >= 0 &&
+            providedAnswerIndex < options.length
+          ? providedAnswerIndex
+          : -1;
     if (
-      !source.audioText ||
+      !providedAudioText ||
       options.length < 2 ||
       !Number.isInteger(answerIndex) ||
       answerIndex < 0 ||
@@ -628,7 +880,9 @@ export function normalizeDelightQuestion(variant, raw) {
       return null;
     return {
       ...base,
-      audioText: String(source.audioText).trim(),
+      // The audio must speak the selected option. If the provider supplied a
+      // harmless mismatch, trust its answer index and derive the audio text.
+      audioText: options[answerIndex],
       options,
       answerIndex,
       contrast: String(source.contrast || "").trim(),
@@ -636,11 +890,9 @@ export function normalizeDelightQuestion(variant, raw) {
   }
 
   if (variant === "three_word_challenge") {
-    const cues = stringList(source.cues, 3);
-    const sampleAnswers = stringList(source.sampleAnswers, 5);
+    const cues = cleanTargetList(source.cues, 3);
+    const sampleAnswers = cleanTargetList(source.sampleAnswers, 5);
     if (
-      !Array.isArray(source.cues) ||
-      source.cues.length !== 3 ||
       cues.length !== 3 ||
       cues.some((cue) => !isSingleDelightCueWord(cue)) ||
       new Set(cues.map(normalizeDelightText)).size !== cues.length ||
@@ -656,12 +908,14 @@ export function normalizeDelightQuestion(variant, raw) {
   }
 
   if (variant === "natural_or_weird") {
-    if (!source.sentence || typeof source.isNatural !== "boolean") return null;
+    const sentence = cleanTarget(source.sentence);
+    const correction = cleanTarget(source.correction || source.sentence);
+    if (!sentence || typeof source.isNatural !== "boolean") return null;
     return {
       ...base,
-      sentence: String(source.sentence).trim(),
+      sentence,
       isNatural: source.isNatural,
-      correction: String(source.correction || source.sentence).trim(),
+      correction,
     };
   }
 
@@ -692,13 +946,10 @@ export function buildDelightQuestionPrompt({
         "The grading distinction MUST depend on word meaning, lexical choice, semantic category, collocation, or register—not an unrelated grammar trick.",
         "Use direct functional contexts, definitions, collocations, or category knowledge; never rely on stereotypes about what a type of person usually owns, eats, drinks, or does.",
       ].join(" ");
-  const lessonScope = {
-    topic: lessonContent?.topic || "",
-    words: lessonContent?.words || [],
-    focusPoints: lessonContent?.focusPoints || [],
-    levelGuard: lessonContent?.levelGuard || "",
-    curriculumContext: lessonContent?.curriculumContext || null,
-  };
+  const lessonScope = getLessonScope(lessonContent, {
+    targetLang,
+    moduleType,
+  });
   const threeWordCueInventory = getLessonTargetInventory(
     lessonScope,
     moduleType,
@@ -750,6 +1001,7 @@ export function buildDelightQuestionPrompt({
     `- LEARNER SUPPORT LANGUAGE (${support}): Every instruction, hint, explanation, transformation constraint, category group label, clue description, and speaker label MUST be written in ${support}.`,
     `- STRICT CONSTRAINT/LABEL RULE: The 'constraint' in Sentence Shapeshifter, group 'label' in Word Neighborhoods, clues in Three-Clue Mystery, and explanations MUST be written in ${support} (NOT in ${target}, and NOT in any other language).`,
     `ANTI-SPOILER RULE: Never include the target-language (${target}) answer word or solution inside learner-facing instructions, hints, or constraints in ${support}. Describe transformation rules or semantic changes conceptually in ${support}.`,
+    `CURRICULUM TEXT IS META-CONTEXT: Some curriculum directives below are written in English. Never copy a directive such as "Choose exactly one objective" into an exercise field. Every target field must be natural ${target} content, not an instruction, schema label, or objective label.`,
     "Keep the interaction compact, natural, culturally neutral, and suitable for a mobile card.",
     "Make correctness defensible. Open-ended variants may have multiple valid answers; any provided answer, acceptableAnswers, or sampleAnswers are references rather than exhaustive answer keys.",
     "Do not use markdown. Return one JSON object only.",
@@ -759,69 +1011,40 @@ export function buildDelightQuestionPrompt({
   ].join("\n");
 }
 
-export function buildDelightQuestionRepairPrompt({
-  variant,
-  moduleType,
-  targetLang,
-  supportLang,
-  cefrLevel = "A1",
+function getLessonScope(
   lessonContent = null,
-  recentQuestions = [],
-  rejectedResponse = "",
-  reason = "The response was not valid for the required schema.",
-}) {
-  const rejected =
-    typeof rejectedResponse === "string"
-      ? rejectedResponse
-      : JSON.stringify(rejectedResponse);
-  return [
-    buildDelightQuestionPrompt({
-      variant,
-      moduleType,
-      targetLang,
-      supportLang,
-      cefrLevel,
-      lessonContent,
-      recentQuestions,
-    }),
-    "",
-    "REPAIR TASK: The previous draft was rejected. Produce one corrected replacement, not commentary about the draft.",
-    `Rejection reason: ${reason}`,
-    `Rejected response: ${String(rejected || "(empty response)").slice(0, 8000)}`,
-    `Return only a complete JSON object matching this schema: ${SCHEMAS[variant]}`,
-  ].join("\n");
-}
-
-export function isDelightQuestionLessonGrounded(
-  question,
-  lessonContent,
-  moduleType = "vocabulary",
+  { targetLang = "es", moduleType = "vocabulary" } = {},
 ) {
-  const groundingPayload =
-    question?.variant === "sentence_detective"
-      ? {
-          sentence: question.sentence,
-          correctedSentence: question.correctedSentence,
-          tokens: question.tokens,
-          replacements: question.replacements,
-          answer: question.answer,
-          cueTokens: question.cueTokens,
-        }
-      : question;
-  return isCurriculumPayloadGrounded(
-    groundingPayload,
-    lessonContent?.curriculumContext,
-    { mode: moduleType === "grammar" ? "grammar" : "vocabulary" },
-  );
-}
-
-function getLessonScope(lessonContent = null) {
-  return {
+  const base = {
     topic: lessonContent?.topic || "",
     words: lessonContent?.words || [],
     focusPoints: lessonContent?.focusPoints || [],
     levelGuard: lessonContent?.levelGuard || "",
     curriculumContext: lessonContent?.curriculumContext || null,
+  };
+
+  const isTutorial =
+    base.topic === "tutorial" || lessonContent?.isTutorial === true;
+  if (!isTutorial) return base;
+
+  // The skill-tree tutorial content is Spanish-authored even when the learner
+  // selected another practice language. Reuse the deterministic starter
+  // phrase inventory that already powers the Tutor so question generation
+  // never receives Spanish focus points alongside a non-Spanish target.
+  const tutorialInventory = Array.from(
+    new Set(
+      TUTOR_STARTER_AGENDA_IDS.flatMap((itemId) =>
+        getTutorStarterTargetExamples(itemId, targetLang),
+      )
+        .map((value) => String(value || "").trim())
+        .filter(Boolean),
+    ),
+  );
+
+  return {
+    ...base,
+    words: moduleType === "vocabulary" ? tutorialInventory : [],
+    focusPoints: tutorialInventory,
   };
 }
 
@@ -852,7 +1075,11 @@ function getLessonTargetInventory(
       : []),
     ...relevantItems.flatMap((item) => [
       ...(Array.isArray(item?.targetForms) ? item.targetForms : []),
-      ...(item?.targetRole === "form" ? [item.targetConcept] : []),
+      ...(Array.isArray(item?.targetExamples) ? item.targetExamples : []),
+      ...(Array.isArray(item?.targetCurriculumAliases)
+        ? item.targetCurriculumAliases
+        : []),
+      item?.targetConcept,
     ]),
   ];
 
@@ -869,43 +1096,16 @@ function getLessonTargetInventory(
 export function buildSentenceDetectivePrompt({
   moduleType,
   targetLang,
-  supportLang,
   cefrLevel = "A1",
   lessonContent = null,
-  previousIssues = [],
   recentQuestions = [],
 }) {
   const target = getDelightLanguageName(targetLang);
-  const support = getDelightLanguageName(supportLang);
   const isGrammar = moduleType === "grammar";
-  const lessonScope = getLessonScope(lessonContent);
-  const hasLessonScope = Boolean(
-    lessonScope.topic ||
-      lessonScope.words.length ||
-      lessonScope.focusPoints.length ||
-      lessonScope.curriculumContext,
-  );
-  const focusRules = isGrammar
-    ? [
-        "The original sentence MUST be genuinely ungrammatical in the target language.",
-        "The one-token correction must directly test the lesson grammar objective: morphology, syntax, agreement, tense, mood, case, article, pronoun, or word order.",
-        "Every distractor must make the complete sentence genuinely ungrammatical, not merely change its meaning, nuance, tense, or aspect. Prefer person, number, gender, case, or agreement contrasts within one paradigm. Never offer an alternative tense/aspect that could also fit the sentence context.",
-        "Do not use factual plausibility, stereotypes, common behavior, or world knowledge to make a token seem wrong.",
-        "Keep all non-target vocabulary familiar so vocabulary knowledge is not the grading distinction.",
-      ]
-      : [
-        "First create a completely natural corrected sentence with an explicit local meaning cue. Then replace exactly one content word or phrase to create the original broken sentence.",
-        "The original sentence must remain grammatically well formed but be clearly semantically false, self-contradictory, or incoherent because wrongToken directly conflicts with that explicit local cue.",
-        "If a fluent speaker could naturally say the original in any ordinary interpretation, the draft is invalid. Do not rely on a preferred interpretation when a natural one exists.",
-        "cueTokens must quote one or more exact tokens from sentence that prove the conflict without requiring an imagined situation or unstated fact.",
-        "General greetings such as hello, hi, hola, or bonjour are compatible with time-specific greetings. Never mark a general greeting wrong merely because good morning, good afternoon, or good evening also appears.",
-        "For greeting lessons, use an explicit situation inside the sentence, such as going to bed versus saying good morning. Do not place two compatible greeting phrases together and pretend one is wrong.",
-        "The answer and all distractors must be the same part of speech and must fit the same grammatical slot, including gender, number, inflection, article agreement, and punctuation.",
-        "For EVERY noun slot, include the complete determiner+noun phrase as the single replaceable token and in every replacement (for example, 'el libro' / 'la mesa'). Never leave an article or determiner in the preceding token. This is required even when every noun happens to share a gender.",
-        "Use a direct definition, function, category, or strong collocation so exactly one option restores the intended meaning.",
-        "Do not use stereotypes, personal preferences, typical behavior, or debatable real-world expectations as evidence.",
-        "When lesson words are supplied, use one of those exact words (or its grammatically required inflection) as the answer.",
-      ];
+  const lessonScope = getLessonScope(lessonContent, {
+    targetLang,
+    moduleType,
+  });
   const curriculumScope = buildCurriculumPromptContext(
     lessonContent?.curriculumContext,
     { mode: isGrammar ? "grammar" : "vocabulary" },
@@ -924,172 +1124,33 @@ export function buildSentenceDetectivePrompt({
     : "";
 
   return [
-    `Create one production-ready Sentence Detective exercise for a ${cefrLevel} learner of ${target}.`,
-    `This is a ${isGrammar ? "GRAMMAR" : "VOCABULARY"} exercise.`,
-    ...focusRules,
+    `Create one short Sentence Detective exercise for a ${cefrLevel} learner of ${target}.`,
+    `Focus: ${isGrammar ? "grammar" : "vocabulary"}.`,
+    "Build a natural corrected sentence first, then replace exactly one token with a clearly wrong token.",
+    isGrammar
+      ? "The one-token repair must test the active grammar objective. Every distractor must remain wrong in the same sentence."
+      : "The sentence must contain an explicit local meaning cue, and the answer must test the active lesson word. Do not rely on stereotypes or unstated context.",
     isTutorial
-      ? "TUTORIAL MODE: use only the supplied absolute-beginner greeting material and keep the sentence exceptionally short and clear."
+      ? "TUTORIAL MODE: use only the supplied absolute-beginner greetings. Use an explicit situation such as bedtime versus morning so the wrong greeting is genuinely wrong."
       : "",
     curriculumScope,
     targetInventoryRule,
     recentQuestions.length
       ? `VARIETY: Do not repeat or closely paraphrase these recent Sentence Detective questions: ${JSON.stringify(recentQuestions.slice(-5))}. Use a different supplied word, focus point, sentence, or situation.`
       : "",
-    `Write instruction, hint, explanation, errorEvidence, repairEvidence, errorCategory, and targetSkill in ${support}.`,
-    `Write sentence, correctedSentence, tokens, wrongToken, replacements, and answer in ${target}.`,
-    `Do not translate or mix the ${target} exercise content into the ${support} guidance fields. A quoted ${target} token may appear in guidance only when needed to explain the answer.`,
-    `Do not put ${support} translations, glosses, or instructions inside sentence, correctedSentence, tokens, wrongToken, replacements, or answer.`,
-    "The learner first taps the single broken token and then chooses its replacement.",
-    "Return tokens in exact reading order. sentence MUST equal tokens joined with joiner.",
-    'Set joiner to "" only for languages normally written without spaces (such as Chinese or Japanese); otherwise set it to " ".',
-    "The corrected sentence must differ from the original at incorrectIndex only. correctedSentence MUST equal tokens with answer substituted at incorrectIndex, joined with joiner.",
-    "Attach punctuation consistently to the token and every replacement for that slot.",
-    "Return exactly 4 unique replacements including answer. The wrong token may be one distractor, but answer must differ from it.",
+    `Write every token, replacement, and answer in ${target}.`,
+    `Curriculum directives may be written in English as meta-context. Never copy them into tokens, replacements, or answer; those fields must contain only natural ${target} exercise content.`,
+    "tokens is the complete broken sentence in reading order, with punctuation attached naturally.",
+    "incorrectIndex is zero-based and identifies the one broken token.",
+    "Return four unique replacements including answer. The wrong token may be one distractor.",
     "Exactly one replacement—the answer—may produce a correct, natural sentence in the supplied context.",
-    "wrongToken must exactly equal tokens[incorrectIndex]. incorrectIndex is zero-based.",
-    "slotType must classify the replaceable token as noun, verb, adjective, adverb, or other. A determiner+noun phrase is slotType noun.",
-    "cueTokens must contain exact surface tokens copied from tokens. errorEvidence must explain why wrongToken conflicts with those cues; repairEvidence must explain why answer uniquely resolves the conflict.",
-    "Keep the sentence concise, culturally neutral, mobile-friendly, and appropriate to the CEFR level.",
-    "instruction must only tell the learner to find the incorrect word and replace it; do not reveal the answer or rule.",
-    "hint should guide attention without giving the answer. explanation should briefly teach why the answer repairs the sentence.",
-    hasLessonScope
-      ? "sourceEvidence must briefly name the supplied lesson word, focus point, or topic used to ground the question; never invent a lesson source."
-      : `No lesson-specific scope was supplied. Use a common ${cefrLevel} ${moduleType} skill and set sourceEvidence to that exact general-practice skill.`,
+    "Do not return sentence, correctedSentence, wrongToken, joiner, evidence, category, skill, or source fields; the application derives those locally.",
     `Lesson scope: ${JSON.stringify(lessonScope)}`,
-    previousIssues.length
-      ? `A prior draft was rejected. Fix every issue: ${JSON.stringify(previousIssues)}`
-      : "",
     "Do not use markdown or commentary. Return one JSON object only.",
     `Required schema: ${SCHEMAS.sentence_detective}`,
   ]
     .filter(Boolean)
     .join("\n");
-}
-
-export function buildSentenceDetectiveValidationPrompt({
-  question,
-  moduleType,
-  targetLang,
-  supportLang,
-  cefrLevel = "A1",
-  lessonContent = null,
-}) {
-  const isGrammar = moduleType === "grammar";
-  const lessonScope = getLessonScope(lessonContent);
-  const hasLessonScope = Boolean(
-    lessonScope.topic ||
-      lessonScope.words.length ||
-      lessonScope.focusPoints.length ||
-      lessonScope.curriculumContext,
-  );
-  return [
-    `Audit this Sentence Detective for a ${cefrLevel} learner of ${getDelightLanguageName(targetLang)}.`,
-    `It is a ${isGrammar ? "GRAMMAR" : "VOCABULARY"} exercise. Be strict and fail closed.`,
-    "Return valid=true only when every condition below passes:",
-    "1. The original contains exactly one intended error and correctedSentence is completely natural.",
-    "2. The correction changes only tokens[incorrectIndex], and all surface fields reconstruct exactly.",
-    "3. There are exactly four unique replacements and only answer works in the stated sentence context; every distractor is plausible-looking but invalid there.",
-    "For a noun slot, the complete determiner+noun phrase must be inside the replaceable token and each replacement; a preceding token must not hold the governing determiner.",
-    isGrammar
-      ? "4. The original and every distractor-substituted sentence are truly ungrammatical. A distractor cannot pass merely because it changes tense, aspect, nuance, or intended meaning. The distinction tests the supplied grammar objective, never factual plausibility or world knowledge."
-      : "4. The original stays grammatical but is unmistakably semantically false, self-contradictory, or incoherent because wrongToken conflicts with the explicit cueTokens. If the original has any ordinary natural interpretation, reject it. The distinction is lexical meaning or collocation, and every option is morphologically and syntactically compatible with the slot.",
-    isGrammar
-      ? ""
-      : "A general greeting (hello/hi/hola/bonjour) naturally coexists with good morning/afternoon/evening. Such co-occurrence is NOT a semantic error and must be rejected.",
-    hasLessonScope
-      ? "5. The question is directly grounded in the supplied lesson scope, and sourceEvidence accurately identifies that grounding."
-      : `5. The question tests a common ${cefrLevel} ${moduleType} skill, and sourceEvidence accurately names that general-practice skill.`,
-    `6. Target-language fields (sentence, correctedSentence, tokens, wrongToken, replacements, and answer) are in ${getDelightLanguageName(targetLang)}; learner-guidance fields (instruction, hint, explanation, errorEvidence, repairEvidence, errorCategory, and targetSkill) are in ${getDelightLanguageName(supportLang)}. Quoted target tokens inside guidance are allowed, but translations, glosses, or mixed-language leakage are not.`,
-    "7. The content is culturally neutral, free of stereotypes, and suitable for the CEFR level.",
-    `Lesson scope: ${JSON.stringify(lessonScope)}`,
-    `Question: ${JSON.stringify(question)}`,
-    "For each replacement, explicitly test whether any fluent speaker could accept the complete substituted sentence in the written context. grammarFits means the full sentence has correct morphology, agreement, syntax, tense/aspect compatibility, and punctuation—not merely that it matches the author's preferred reading. meaningFits means it satisfies the sentence's intended lexical context.",
-    "For vocabulary, actively try to rescue the original with its strongest ordinary interpretation. originalAcceptable must be true if a fluent speaker could say it naturally without treating it as a joke, metaphor, or special scenario. explicitCuePresent is true only when cueTokens alone establish the constraint. wrongTokenConflictsWithCue is true only when the conflict is real, not merely less preferred.",
-    'Return JSON only: {"valid":true,"issues":[],"grammarFits":[true,false,false,false],"meaningFits":[true,false,false,false],"originalAcceptable":false,"correctedAcceptable":true,"explicitCuePresent":true,"wrongTokenConflictsWithCue":true}. Both boolean arrays must contain exactly four entries in the same order as replacements.',
-  ].join("\n");
-}
-
-export function parseSentenceDetectiveValidation(raw = "") {
-  const source = parseDelightQuestion(raw);
-  if (!source || typeof source.valid !== "boolean") return null;
-  const booleanList = (value) =>
-    Array.isArray(value)
-      ? value.filter((item) => typeof item === "boolean").slice(0, 6)
-      : [];
-  return {
-    valid: source.valid,
-    issues: stringList(source.issues, 8),
-    grammarFits: booleanList(source.grammarFits),
-    meaningFits: booleanList(source.meaningFits),
-    originalAcceptable:
-      typeof source.originalAcceptable === "boolean"
-        ? source.originalAcceptable
-        : null,
-    correctedAcceptable:
-      typeof source.correctedAcceptable === "boolean"
-        ? source.correctedAcceptable
-        : null,
-    explicitCuePresent:
-      typeof source.explicitCuePresent === "boolean"
-        ? source.explicitCuePresent
-        : null,
-    wrongTokenConflictsWithCue:
-      typeof source.wrongTokenConflictsWithCue === "boolean"
-        ? source.wrongTokenConflictsWithCue
-        : null,
-  };
-}
-
-function hasDetachedNounDeterminer(question, targetLang) {
-  if (question.slotType !== "noun") return false;
-  const precedingToken = normalizeDelightText(
-    question.tokens[question.incorrectIndex - 1] || "",
-  );
-  const determiners = (DETACHED_NOUN_DETERMINERS[targetLang] || []).map(
-    normalizeDelightText,
-  );
-  return determiners.includes(precedingToken);
-}
-
-export function sentenceDetectiveAuditPasses(
-  question,
-  validation,
-  moduleType,
-  targetLang,
-) {
-  if (
-    !validation?.valid ||
-    validation.issues.length > 0 ||
-    validation.grammarFits.length !== question.replacements.length ||
-    validation.meaningFits.length !== question.replacements.length
-  )
-    return false;
-
-  const answerKey = normalizeDelightText(question.answer);
-  if (moduleType === "grammar") {
-    return question.replacements.every(
-      (replacement, index) =>
-        validation.grammarFits[index] ===
-        (normalizeDelightText(replacement) === answerKey),
-    );
-  }
-
-  if (hasDetachedNounDeterminer(question, targetLang)) return false;
-
-  if (
-    validation.originalAcceptable !== false ||
-    validation.correctedAcceptable !== true ||
-    validation.explicitCuePresent !== true ||
-    validation.wrongTokenConflictsWithCue !== true
-  )
-    return false;
-
-  return question.replacements.every(
-    (replacement, index) =>
-      validation.grammarFits[index] &&
-      validation.meaningFits[index] ===
-        (normalizeDelightText(replacement) === answerKey),
-  );
 }
 
 export async function generateSentenceDetectiveQuestion({
@@ -1101,7 +1162,6 @@ export async function generateSentenceDetectiveQuestion({
   lessonContent = null,
   onStream = null,
   recentQuestions = [],
-  previousIssues = [],
 }) {
   if (typeof generate !== "function") {
     throw new TypeError("A Sentence Detective generator is required.");
@@ -1115,13 +1175,13 @@ export async function generateSentenceDetectiveQuestion({
       cefrLevel,
       lessonContent,
       recentQuestions,
-      previousIssues,
     }),
     onStream,
   );
   const question = normalizeDelightQuestion(
     "sentence_detective",
     rawQuestion,
+    { targetLang },
   );
   if (!question) {
     const error = new Error("Unable to generate a structurally valid question.");
@@ -1131,18 +1191,27 @@ export async function generateSentenceDetectiveQuestion({
     throw error;
   }
 
-  if (
-    moduleType === "vocabulary" &&
-    hasDetachedNounDeterminer(question, targetLang)
-  ) {
-    const error = new Error("Unable to generate a structurally valid question.");
-    error.issues = [
-      "The noun's article/determiner was outside the replaceable token.",
-    ];
-    throw error;
+  return question;
+}
+
+export async function generateWithProviderFallback({
+  primary,
+  providerFallback,
+  onProviderFallback = null,
+}) {
+  if (typeof providerFallback !== "function") {
+    throw new TypeError("A provider fallback is required.");
   }
 
-  return question;
+  if (typeof primary === "function") {
+    try {
+      return await primary();
+    } catch (error) {
+      onProviderFallback?.(error);
+    }
+  }
+
+  return providerFallback();
 }
 
 export function getInitialDelightResponse(question) {

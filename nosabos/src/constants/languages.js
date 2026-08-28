@@ -264,6 +264,18 @@ export function isSupportedPracticeLanguage(code) {
   return PRACTICE_LANGUAGE_CODES_SET.has(normalizeSupportedCode(code));
 }
 
+export function getPracticeLanguageTier(code) {
+  const normalized = normalizeSupportedCode(code);
+  return (
+    LANGUAGE_META.find((language) => language.value === normalized)?.tier ||
+    null
+  );
+}
+
+export function isBetaPracticeLanguage(code) {
+  return getPracticeLanguageTier(code) === "beta";
+}
+
 export function isSupportedSupportLanguage(code) {
   return SUPPORT_LANGUAGE_CODES_SET.has(normalizeSupportedCode(code));
 }

@@ -4,9 +4,24 @@ import {
   appCheckFetch,
   simplemodel,
 } from "../firebaseResources/firebaseResources";
+import { buildOpenAIResponseFormat } from "./openAIResponseFormat";
+import {
+  extractOpenAIResponseText,
+  getOpenAIResponseError,
+} from "./openAIResponsePayload";
 
 const RESPONSES_URL = `${import.meta.env.VITE_RESPONSES_URL}/proxyResponses`;
 const DEFAULT_RESPONSES_MODEL = "gpt-5-nano";
+const STRUCTURED_RESPONSE_ATTEMPTS = 2;
+const STRUCTURED_RESPONSE_RETRY_DELAY_MS = 250;
+
+function shouldRetryResponsesStatus(status) {
+  return status === 408 || status === 409 || status === 429 || status >= 500;
+}
+
+function wait(ms) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
 
 function textFromChunk(chunk) {
   try {
@@ -17,7 +32,9 @@ function textFromChunk(chunk) {
     if (cand?.content?.parts?.length) {
       return cand.content.parts.map((p) => p.text || "").join("");
     }
-  } catch {}
+  } catch {
+    return "";
+  }
   return "";
 }
 
@@ -25,6 +42,8 @@ export async function callResponses({
   model = DEFAULT_RESPONSES_MODEL,
   input,
   generationConfig = null,
+  responseSchema = null,
+  responseSchemaName = "structured_response",
   skipGemini = false,
 }) {
   if (simplemodel && !skipGemini) {
@@ -55,7 +74,11 @@ export async function callResponses({
   }
 
   try {
-    const r = await appCheckFetch(RESPONSES_URL, {
+    const responseFormat = buildOpenAIResponseFormat({
+      responseSchema,
+      responseSchemaName,
+    });
+    const request = {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -63,29 +86,45 @@ export async function callResponses({
       },
       body: JSON.stringify({
         model,
-        text: { format: { type: "text" } },
+        text: { format: responseFormat },
         input,
       }),
-    });
-    const ct = r.headers.get("content-type") || "";
-    const payload = ct.includes("application/json")
-      ? await r.json()
-      : await r.text();
-    const text =
-      (typeof payload?.output_text === "string" && payload.output_text) ||
-      (Array.isArray(payload?.output) &&
-        payload.output
-          .map((it) =>
-            (it?.content || []).map((seg) => seg?.text || "").join("")
-          )
-          .join(" ")
-          .trim()) ||
-      (Array.isArray(payload?.content) && payload.content[0]?.text) ||
-      (Array.isArray(payload?.choices) &&
-        (payload.choices[0]?.message?.content || "")) ||
-      (typeof payload === "string" ? payload : "");
-    return String(text || "");
-  } catch {
+    };
+    const attempts = responseSchema ? STRUCTURED_RESPONSE_ATTEMPTS : 1;
+    let lastError = null;
+
+    for (let attempt = 1; attempt <= attempts; attempt += 1) {
+      try {
+        const r = await appCheckFetch(RESPONSES_URL, request);
+        const ct = r.headers.get("content-type") || "";
+        const payload = ct.includes("application/json")
+          ? await r.json()
+          : await r.text();
+        if (!r.ok) throw getOpenAIResponseError(payload, r.status);
+
+        const text = extractOpenAIResponseText(payload);
+        if (!text && responseSchema) {
+          throw new Error("OpenAI returned an empty structured response.");
+        }
+        return text;
+      } catch (error) {
+        lastError = error;
+        const statusMatch = String(error?.message || "").match(/\((\d{3})\)/);
+        const status = Number(statusMatch?.[1] || 0);
+        const retryable =
+          attempt < attempts &&
+          (!status || shouldRetryResponsesStatus(status));
+        if (!retryable) break;
+        await wait(STRUCTURED_RESPONSE_RETRY_DELAY_MS * attempt);
+      }
+    }
+
+    throw lastError || new Error("OpenAI Responses request failed.");
+  } catch (error) {
+    if (import.meta.env.DEV) {
+      console.warn("callResponses OpenAI request failed", error);
+    }
+    if (responseSchema) throw error;
     return "";
   }
 }

@@ -3,7 +3,6 @@ import assert from "node:assert/strict";
 import {
   DELIGHT_VARIANT_IDS,
   buildDelightQuestionPrompt,
-  buildDelightQuestionRepairPrompt,
   buildDelightResponseJudgePrompt,
   buildSentenceDetectiveJudgePrompt,
   buildSentenceDetectivePrompt,
@@ -11,17 +10,16 @@ import {
   buildThreeClueMysteryJudgePrompt,
   calculateDelightQuestionXp,
   generateSentenceDetectiveQuestion,
+  generateWithProviderFallback,
   getDelightFallbackQuestion,
   gradeDelightResponse,
-  isDelightQuestionLessonGrounded,
+  isDelightQuestionLanguageConsistent,
   isDelightResponseReady,
   isSingleDelightCueWord,
   normalizeDelightQuestion,
   parseDelightJudgeVerdict,
   parseDelightQuestion,
   parsePartialDelightQuestion,
-  parseSentenceDetectiveValidation,
-  sentenceDetectiveAuditPasses,
 } from "./delightQuestionVariants.js";
 import { getDialogueForkCopy } from "./dialogueForkI18n.js";
 
@@ -94,6 +92,57 @@ test("all delight variants have valid normalized fallbacks", () => {
       normalizeDelightQuestion(variant, fallback),
       `invalid fallback for ${variant}`,
     );
+  }
+});
+
+test("new variants render from their minimal content contracts", () => {
+  const minimalDrafts = {
+    dialogue_fork: {
+      line: "Hola, ¿cómo estás?",
+      options: ["Muy bien.", "Hasta mañana."],
+      answerIndex: 0,
+    },
+    sentence_shapeshifter: {
+      source: "Ella camina.",
+      constraint: "Make it plural",
+      answer: "Ellas caminan.",
+    },
+    word_neighborhoods: {
+      groups: [
+        { label: "Greetings", items: ["hola", "buenos días"] },
+        { label: "Farewells", items: ["adiós", "hasta luego"] },
+      ],
+    },
+    morphology_forge: {
+      sentence: "Ella habla ___.",
+      pieces: ["rápida", "mente", "lenta", "ción"],
+      answerPieces: ["rápida", "mente"],
+    },
+    three_clue_mystery: {
+      clues: ["A greeting", "Used in the daytime", "Starts with h"],
+      answer: "hola",
+    },
+    listen_difference: {
+      audioText: "buenos días",
+      options: ["buenos días", "buenas noches"],
+      answerIndex: 0,
+    },
+    three_word_challenge: {
+      cues: ["hola", "amigo", "hoy"],
+      sampleAnswers: ["Hola, amigo. ¿Cómo estás hoy?"],
+    },
+    natural_or_weird: {
+      sentence: "Buenos días.",
+      isNatural: true,
+    },
+  };
+
+  for (const [variant, draft] of Object.entries(minimalDrafts)) {
+    const normalized = normalizeDelightQuestion(variant, draft);
+    assert.ok(normalized, `${variant} should accept its minimal draft`);
+    assert.equal(normalized.instruction, "");
+    assert.equal(normalized.hint, "");
+    assert.equal(normalized.explanation, "");
   }
 });
 
@@ -228,27 +277,47 @@ test("semantic judge accepts only explicit YES or NO verdicts", () => {
   assert.equal(parseDelightJudgeVerdict(""), null);
 });
 
-test("Sentence Detective normalization enforces exact reconstruction", () => {
+test("Sentence Detective derives redundant UI fields from its minimal contract", () => {
   const valid = normalizeDelightQuestion(
     "sentence_detective",
-    validDetective(),
+    {
+      tokens: ["Ayer", "ella", "fuimos", "al", "mercado."],
+      incorrectIndex: 2,
+      replacements: ["fue", "fui", "fueron", "fuimos"],
+      answer: "fue",
+    },
+    { targetLang: "es" },
   );
+  assert.equal(valid?.sentence, "Ayer ella fuimos al mercado.");
   assert.equal(valid?.correctedSentence, "Ayer ella fue al mercado.");
+  assert.equal(valid?.wrongToken, "fuimos");
+  assert.equal(valid?.joiner, " ");
 
-  assert.equal(
-    normalizeDelightQuestion(
-      "sentence_detective",
-      validDetective({ correctedSentence: "Ella fue ayer al mercado." }),
-    ),
-    null,
+  const contradictoryExtras = normalizeDelightQuestion(
+    "sentence_detective",
+    validDetective({
+      sentence: "ignored",
+      correctedSentence: "also ignored",
+      wrongToken: "ignored",
+    }),
   );
+  assert.equal(contradictoryExtras?.sentence, "Ayer ella fuimos al mercado.");
   assert.equal(
-    normalizeDelightQuestion(
-      "sentence_detective",
-      validDetective({ replacements: ["fue", "fue.", "fueron", "fuimos"] }),
-    ),
-    null,
+    contradictoryExtras?.correctedSentence,
+    "Ayer ella fue al mercado.",
   );
+
+  const correctedDraft = normalizeDelightQuestion(
+    "sentence_detective",
+    {
+      tokens: ["Ayer", "ella", "fue"],
+      incorrectIndex: 2,
+      replacements: ["fue", "fui"],
+      answer: "fue",
+    },
+  );
+  assert.equal(correctedDraft?.sentence, "Ayer ella fui");
+  assert.equal(correctedDraft?.correctedSentence, "Ayer ella fue");
 });
 
 test("Sentence Detective prompt distinguishes vocabulary from grammar", () => {
@@ -258,12 +327,15 @@ test("Sentence Detective prompt distinguishes vocabulary from grammar", () => {
     supportLang: "en",
     lessonContent: { words: ["llave"], topic: "objects at home" },
   });
-  assert.match(prompt, /remain grammatically well formed/i);
-  assert.match(prompt, /same part of speech/i);
-  assert.match(prompt, /general greetings/i);
-  assert.match(prompt, /any ordinary interpretation/i);
+  assert.match(prompt, /explicit local meaning cue/i);
+  assert.match(prompt, /tokens is the complete broken sentence/i);
   assert.match(prompt, /llave/);
-  assert.doesNotMatch(prompt, /genuinely ungrammatical in the target language/i);
+  assert.match(
+    prompt,
+    /"tokens":\["\.\.\."\],"incorrectIndex":0,"replacements"/i,
+  );
+  assert.match(prompt, /application derives those locally/i);
+  assert.doesNotMatch(prompt, /"correctedSentence"/i);
 });
 
 test("delight prompts carry authoritative lesson context and recent-question variety", () => {
@@ -333,101 +405,305 @@ test("Three-Word Challenge requires three distinct words rather than phrases", (
     }),
     null,
   );
-  assert.equal(
+  assert.deepEqual(
     normalizeDelightQuestion("three_word_challenge", {
       ...base,
       cues: ["amiga", "amigo", "familia", "vecina"],
-    }),
-    null,
+    })?.cues,
+    ["amiga", "amigo", "familia"],
   );
   assert.equal(isSingleDelightCueWord("amiga"), true);
   assert.equal(isSingleDelightCueWord("arc-en-ciel"), true);
   assert.equal(isSingleDelightCueWord("close friend"), false);
 });
 
-test("invalid delight drafts get one schema-preserving lesson repair prompt", () => {
-  const prompt = buildDelightQuestionRepairPrompt({
-    variant: "dialogue_fork",
-    moduleType: "grammar",
-    targetLang: "es",
-    supportLang: "en",
-    lessonContent: {
-      topic: "subjunctive doubt and desire",
-      focusPoints: ["use the present subjunctive after expressions of doubt"],
-    },
-    rejectedResponse: '{"line":"Dudo que viene."}',
-    reason: "answerIndex was missing",
+test("normalization repairs harmless provider relationship mistakes", () => {
+  const dialogue = normalizeDelightQuestion("dialogue_fork", {
+    line: "¿Cómo estás?",
+    options: ["Bien.", "Bien.", "No sé.", "Hasta luego."],
+    answerIndex: 1,
   });
+  assert.deepEqual(dialogue?.options, ["Bien.", "No sé.", "Hasta luego."]);
+  assert.equal(dialogue?.answerIndex, 0);
 
-  assert.match(prompt, /REPAIR TASK/);
-  assert.match(prompt, /answerIndex was missing/);
-  assert.match(prompt, /subjunctive doubt and desire/);
-  assert.match(prompt, /Return only a complete JSON object/);
-  assert.match(prompt, /"answerIndex":0/);
-});
+  const listening = normalizeDelightQuestion("listen_difference", {
+    audioText: "provider mismatch",
+    options: ["buenos días", "buenas noches"],
+    answerIndex: 1,
+  });
+  assert.equal(listening?.audioText, "buenas noches");
+  assert.equal(listening?.answerIndex, 1);
 
-test("delight questions reject generated payloads outside the lesson curriculum", () => {
-  const lessonContent = {
-    curriculumContext: {
-      agendaItems: [
-        {
-          modes: ["vocabulary"],
-          targetConcept: "llave",
-          targetExamples: ["Necesito la llave."],
-        },
-      ],
-    },
-  };
+  const forge = normalizeDelightQuestion("morphology_forge", {
+    sentence: "Ella ___ una carta.",
+    pieces: ["escrib", "aron", "ía", "escrib"],
+    answerPieces: ["escrib", "ió"],
+  });
+  assert.ok(forge?.pieces.includes("ió"));
+  assert.equal(forge?.answerWord, "escribió");
 
+  const repeatedForge = normalizeDelightQuestion("morphology_forge", {
+    sentence: "They ___ the word for emphasis.",
+    pieces: ["re", "say", "un", "re"],
+    answerPieces: ["re", "re", "say"],
+  });
+  assert.deepEqual(repeatedForge?.answerPieces, ["re", "re", "say"]);
   assert.equal(
-    isDelightQuestionLessonGrounded(
-      { sentence: "Necesito la llave para abrir la puerta." },
-      lessonContent,
-      "vocabulary",
-    ),
+    repeatedForge?.pieces.filter((piece) => piece === "re").length,
+    2,
+  );
+  assert.equal(repeatedForge?.answerWord, "reresay");
+  assert.equal(
+    isDelightQuestionLanguageConsistent(repeatedForge, {
+      targetLang: "en",
+      supportLang: "es",
+    }),
     true,
   );
-  assert.equal(
-    isDelightQuestionLessonGrounded(
-      { sentence: "El perro corre por el parque." },
-      lessonContent,
-      "vocabulary",
-    ),
-    false,
+});
+
+test("Sentence Detective repairs a provider draft containing the corrected token", () => {
+  const question = normalizeDelightQuestion(
+    "sentence_detective",
+    {
+      tokens: ["私", "の", "家族", "は", "大きい", "です。"],
+      incorrectIndex: 4,
+      replacements: ["犬", "大きい", "小さい", "楽しい"],
+      answer: "大きい",
+    },
+    { targetLang: "ja" },
   );
-  assert.equal(
-    isDelightQuestionLessonGrounded(
-      {
-        variant: "sentence_detective",
-        sentence: "El perro corre por el parque.",
-        correctedSentence: "El gato corre por el parque.",
-        answer: "gato",
-        sourceEvidence: "This tests llave.",
+
+  assert.ok(question);
+  assert.equal(question.tokens[4], "犬");
+  assert.equal(question.wrongToken, "犬");
+  assert.equal(question.answer, "大きい");
+  assert.equal(question.correctedSentence, "私の家族は大きいです。");
+});
+
+test("provider fallback runs after a failed or rejected primary draft", async () => {
+  const calls = [];
+  const question = await generateWithProviderFallback({
+    primary: async () => {
+      calls.push("gemini");
+      throw new Error("schema rejected");
+    },
+    providerFallback: async () => {
+      calls.push("openai");
+      return { variant: "dialogue_fork" };
+    },
+    onProviderFallback: (error) => calls.push(error.message),
+  });
+
+  assert.deepEqual(calls, ["gemini", "schema rejected", "openai"]);
+  assert.equal(question.variant, "dialogue_fork");
+});
+
+test("provider fallback errors surface without substituting local content", async () => {
+  await assert.rejects(
+    generateWithProviderFallback({
+      primary: async () => {
+        throw new Error("Gemini failed");
       },
-      lessonContent,
-      "vocabulary",
-    ),
-    false,
+      providerFallback: async () => {
+        throw new Error("OpenAI failed");
+      },
+    }),
+    /OpenAI failed/,
   );
 });
 
-test("Sentence Detective prompt assigns target and support languages by field", () => {
+test("tutorial delight prompts replace Spanish source focus with target-language starter phrases", () => {
+  const lessonContent = {
+    topic: "tutorial",
+    focusPoints: ["hola + me llamo", "buenos días / buenas noches"],
+  };
+  const dialoguePrompt = buildDelightQuestionPrompt({
+    variant: "dialogue_fork",
+    moduleType: "vocabulary",
+    targetLang: "de",
+    supportLang: "en",
+    lessonContent,
+  });
+  const detectivePrompt = buildSentenceDetectivePrompt({
+    moduleType: "vocabulary",
+    targetLang: "de",
+    supportLang: "en",
+    lessonContent,
+  });
+
+  assert.match(dialoguePrompt, /hallo/i);
+  assert.match(dialoguePrompt, /guten Morgen/i);
+  assert.doesNotMatch(dialoguePrompt, /hola \+ me llamo/i);
+  assert.match(detectivePrompt, /SENTENCE DETECTIVE TARGET WORDS \(REQUIRED\)/);
+  assert.match(detectivePrompt, /auf Wiedersehen/i);
+  assert.doesNotMatch(detectivePrompt, /buenos días \/ buenas noches/i);
+});
+
+test("Sentence Detective prompt asks only for target-language content fields", () => {
   const prompt = buildSentenceDetectivePrompt({
     moduleType: "grammar",
     targetLang: "ja",
     supportLang: "ar",
   });
 
-  assert.match(
-    prompt,
-    /Write instruction, hint, explanation.*in Egyptian Arabic/i,
+  assert.match(prompt, /Write every token, replacement, and answer in Japanese/i);
+  assert.doesNotMatch(prompt, /Egyptian Arabic/i);
+  assert.doesNotMatch(prompt, /instruction|hint|explanation/i);
+});
+
+test("Japanese variants reject copied English curriculum directives", () => {
+  const leaked = normalizeDelightQuestion("sentence_shapeshifter", {
+    source: "Choose exactly one objective for testing: 家族",
+    constraint:
+      "Cambia el sujeto a ‘mi familia’ y usa は para marcar el tema.",
+    answer: "私の家族は東京に住んでいます。",
+  });
+  const valid = normalizeDelightQuestion("sentence_shapeshifter", {
+    source: "私は東京に住んでいます。",
+    constraint:
+      "Cambia el sujeto a ‘mi familia’ y usa は para marcar el tema.",
+    answer: "私の家族は東京に住んでいます。",
+  });
+
+  assert.equal(
+    isDelightQuestionLanguageConsistent(leaked, {
+      targetLang: "ja",
+      supportLang: "es",
+    }),
+    false,
   );
-  assert.match(
-    prompt,
-    /Write sentence, correctedSentence, tokens.*in Japanese/i,
+  assert.equal(
+    isDelightQuestionLanguageConsistent(valid, {
+      targetLang: "ja",
+      supportLang: "es",
+    }),
+    true,
   );
-  assert.match(prompt, /Do not translate or mix/i);
-  assert.match(prompt, /Do not put Egyptian Arabic translations/i);
+});
+
+test("non-English support languages reject obvious English constraints", () => {
+  const question = normalizeDelightQuestion("sentence_shapeshifter", {
+    source: "私は東京に住んでいます。",
+    constraint: "Make it about your family.",
+    answer: "私の家族は東京に住んでいます。",
+  });
+
+  assert.equal(
+    isDelightQuestionLanguageConsistent(question, {
+      targetLang: "ja",
+      supportLang: "es",
+    }),
+    false,
+  );
+});
+
+test("Three-Clue Mystery keeps a valid Japanese draft after removing optional romanization", () => {
+  const question = normalizeDelightQuestion(
+    "three_clue_mystery",
+    {
+      clues: [
+        "Son personas importantes en tu vida.",
+        "Pueden vivir juntas en una casa.",
+        "Incluye a padres, madres e hijos.",
+      ],
+      answer: "家族 (kazoku)",
+      acceptableAnswers: ["kazoku", "家族 / kazoku"],
+      example: "私は家族が大好きです。(I love my family.)",
+    },
+    { targetLang: "ja" },
+  );
+
+  assert.equal(question?.answer, "家族");
+  assert.deepEqual(question?.acceptableAnswers, []);
+  assert.equal(question?.example, "私は家族が大好きです。");
+  assert.equal(
+    isDelightQuestionLanguageConsistent(question, {
+      targetLang: "ja",
+      supportLang: "es",
+    }),
+    true,
+  );
+});
+
+test("Three-Clue Mystery still rejects copied English clues", () => {
+  const question = normalizeDelightQuestion(
+    "three_clue_mystery",
+    {
+      clues: [
+        "Choose exactly one objective for testing.",
+        "Pueden vivir juntas en una casa.",
+        "Incluye a padres, madres e hijos.",
+      ],
+      answer: "家族",
+    },
+    { targetLang: "ja" },
+  );
+
+  assert.equal(
+    isDelightQuestionLanguageConsistent(question, {
+      targetLang: "ja",
+      supportLang: "es",
+    }),
+    false,
+  );
+});
+
+test("script-aware cleanup also covers Chinese, Arabic, and Hindi targets", () => {
+  const cases = [
+    ["zh", "家人 (jiārén)", "家人"],
+    ["ar", "عائلة (family)", "عائلة"],
+    ["hi", "परिवार (parivaar)", "परिवार"],
+  ];
+
+  cases.forEach(([targetLang, rawAnswer, expectedAnswer]) => {
+    const question = normalizeDelightQuestion(
+      "three_clue_mystery",
+      {
+        clues: ["Primera pista", "Segunda pista", "Tercera pista"],
+        answer: rawAnswer,
+      },
+      { targetLang },
+    );
+    assert.equal(question?.answer, expectedAnswer);
+    assert.equal(
+      isDelightQuestionLanguageConsistent(question, {
+        targetLang,
+        supportLang: "es",
+      }),
+      true,
+    );
+  });
+});
+
+test("script-aware cleanup is shared by non-mystery variants", () => {
+  const question = normalizeDelightQuestion(
+    "dialogue_fork",
+    {
+      speaker: "Amiga",
+      line: "你好 (nǐ hǎo)",
+      options: [
+        "你好 (hello)",
+        "谢谢 (thanks)",
+        "再见 (goodbye)",
+        "对不起 (sorry)",
+      ],
+      answerIndex: 0,
+      reaction: "很高兴见到你 (Nice to meet you)",
+    },
+    { targetLang: "zh" },
+  );
+
+  assert.equal(question?.line, "你好");
+  assert.deepEqual(question?.options, ["你好", "谢谢", "再见", "对不起"]);
+  assert.equal(question?.reaction, "很高兴见到你");
+  assert.equal(
+    isDelightQuestionLanguageConsistent(question, {
+      targetLang: "zh",
+      supportLang: "es",
+    }),
+    true,
+  );
 });
 
 test("Sentence Detective receives exact target forms from its active objective", () => {
@@ -462,7 +738,12 @@ test("Sentence Detective uses one generation call and local structural validatio
   const question = await generateSentenceDetectiveQuestion({
     generate: async (prompt) => {
       prompts.push(prompt);
-      return validDetective();
+      return {
+        tokens: ["Ayer", "ella", "fuimos", "al", "mercado."],
+        incorrectIndex: 2,
+        replacements: ["fue", "fui", "fueron", "fuimos"],
+        answer: "fue",
+      };
     },
     moduleType: "grammar",
     targetLang: "es",
@@ -471,64 +752,12 @@ test("Sentence Detective uses one generation call and local structural validatio
   });
 
   assert.equal(question.answer, "fue");
+  assert.equal(question.correctedSentence, "Ayer ella fue al mercado.");
   assert.equal(prompts.length, 1);
   assert.doesNotMatch(prompts[0], /audit this sentence detective/i);
 });
 
-test("Sentence Detective validation responses fail closed", () => {
-  assert.deepEqual(
-    parseSentenceDetectiveValidation('{"valid":false,"issues":["ambiguous"]}'),
-    {
-      valid: false,
-      issues: ["ambiguous"],
-      grammarFits: [],
-      meaningFits: [],
-      originalAcceptable: null,
-      correctedAcceptable: null,
-      explicitCuePresent: null,
-      wrongTokenConflictsWithCue: null,
-    },
-  );
-  assert.equal(parseSentenceDetectiveValidation("YES"), null);
-});
-
-test("vocabulary audits require every choice to fit the same grammar slot", () => {
-  const question = normalizeDelightQuestion(
-    "sentence_detective",
-    validDetective({
-      sentence: "Uso el paraguas para escribir.",
-      correctedSentence: "Uso el lápiz para escribir.",
-      tokens: ["Uso", "el", "paraguas", "para", "escribir."],
-      incorrectIndex: 2,
-      wrongToken: "paraguas",
-      replacements: ["lápiz", "paraguas", "cuchara", "llave"],
-      answer: "lápiz",
-      slotType: "noun",
-      errorCategory: "word meaning",
-      targetSkill: "everyday objects",
-      cueTokens: ["escribir."],
-      errorEvidence: "A pencil, not an umbrella, is used to write.",
-      repairEvidence: "A pencil satisfies the explicit writing function.",
-    }),
-  );
-  const validation = {
-    valid: true,
-    issues: [],
-    grammarFits: [true, true, true, true],
-    meaningFits: [true, false, false, false],
-    originalAcceptable: false,
-    correctedAcceptable: true,
-    explicitCuePresent: true,
-    wrongTokenConflictsWithCue: true,
-  };
-
-  assert.equal(
-    sentenceDetectiveAuditPasses(question, validation, "vocabulary", "es"),
-    false,
-  );
-});
-
-test("vocabulary generation rejects detached noun determiners without retrying", async () => {
+test("vocabulary generation accepts an ordinary noun token after its article", async () => {
   const externalDeterminer = validDetective({
     sentence: "Uso el paraguas para escribir.",
     correctedSentence: "Uso el lápiz para escribir.",
@@ -543,57 +772,19 @@ test("vocabulary generation rejects detached noun determiners without retrying",
     repairEvidence: "A pencil satisfies the writing function.",
   });
   const prompts = [];
-  await assert.rejects(
-    generateSentenceDetectiveQuestion({
-      generate: async (prompt) => {
-        prompts.push(prompt);
-        return externalDeterminer;
-      },
-      moduleType: "vocabulary",
-      targetLang: "es",
-      supportLang: "en",
-      lessonContent: { words: ["lápiz"] },
-    }),
-    /structurally valid question/i,
-  );
+  const question = await generateSentenceDetectiveQuestion({
+    generate: async (prompt) => {
+      prompts.push(prompt);
+      return externalDeterminer;
+    },
+    moduleType: "vocabulary",
+    targetLang: "es",
+    supportLang: "en",
+    lessonContent: { words: ["lápiz"] },
+  });
 
+  assert.equal(question.answer, "lápiz");
   assert.equal(prompts.length, 1);
-});
-
-test("vocabulary audits reject an original sentence with a natural reading", () => {
-  const question = normalizeDelightQuestion(
-    "sentence_detective",
-    validDetective({
-      sentence: "Hello, good evening. My name is Alex.",
-      correctedSentence: "Hi, good evening. My name is Alex.",
-      tokens: ["Hello,", "good", "evening.", "My", "name", "is", "Alex."],
-      incorrectIndex: 0,
-      wrongToken: "Hello,",
-      replacements: ["Hello,", "Hi,", "Goodbye,", "Thanks,"],
-      answer: "Hi,",
-      slotType: "other",
-      cueTokens: ["good", "evening."],
-      errorEvidence: "The draft incorrectly claims hello conflicts with evening.",
-      repairEvidence: "Hi is also a general greeting.",
-      errorCategory: "greetings",
-      targetSkill: "time-of-day greetings",
-    }),
-  );
-  const validation = {
-    valid: true,
-    issues: [],
-    grammarFits: [true, true, true, true],
-    meaningFits: [false, true, false, false],
-    originalAcceptable: true,
-    correctedAcceptable: true,
-    explicitCuePresent: true,
-    wrongTokenConflictsWithCue: false,
-  };
-
-  assert.equal(
-    sentenceDetectiveAuditPasses(question, validation, "vocabulary", "en"),
-    false,
-  );
 });
 
 test("parsePartialDelightQuestion extracts tokens and fields from streaming chunk buffers", () => {

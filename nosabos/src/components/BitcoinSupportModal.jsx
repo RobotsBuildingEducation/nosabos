@@ -128,16 +128,26 @@ export default function BitcoinSupportModal({
     body.style.overscrollBehavior = "none";
 
     let rafOne = null;
+    let layerSettleTimer = null;
+    const shellNode = shellRef.current;
 
     rafOne = window.requestAnimationFrame(() => {
-      const node = shellRef.current;
+      const node = shellNode;
       if (!node) return;
       node.style.willChange = "transform, opacity";
       void node.offsetHeight;
+      // The entrance animation is 200ms. Release the forced compositor layer
+      // once it settles so mobile Safari cannot leave the rounded shell behind
+      // when the next tutorial modal mounts.
+      layerSettleTimer = window.setTimeout(() => {
+        if (shellRef.current === node) node.style.willChange = "auto";
+      }, 240);
     });
 
     return () => {
       if (rafOne !== null) window.cancelAnimationFrame(rafOne);
+      if (layerSettleTimer !== null) window.clearTimeout(layerSettleTimer);
+      if (shellNode) shellNode.style.willChange = "auto";
       html.style.overflow = previousHtmlOverflow;
       body.style.overflow = previousBodyOverflow;
       html.style.overscrollBehavior = previousHtmlOverscroll;
@@ -475,8 +485,6 @@ export default function BitcoinSupportModal({
         sx={{
           animation: "app-modal-content-in 200ms cubic-bezier(0.22, 1, 0.36, 1) both",
           isolation: "isolate",
-          transform: "translate3d(0, 0, 0)",
-          WebkitTransform: "translate3d(0, 0, 0)",
           willChange: "transform, opacity",
           "@supports (height: 100dvh)": {
             height: {

@@ -224,6 +224,7 @@ const characterImagesMap = {
 
 const RandomCharacter = ({
   width = "50px",
+  containerHeight = 100,
   speed = 1.33,
   borderRadius = null,
   notSoRandomCharacter = null,
@@ -300,7 +301,7 @@ const RandomCharacter = ({
   return (
     <div
       style={{
-        height: 100,
+        height: containerHeight,
         display: "flex",
         flexDirection: "column",
         alignContent: "center",

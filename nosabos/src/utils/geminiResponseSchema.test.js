@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { sanitizeGeminiResponseSchema } from "./geminiResponseSchema.js";
 
-test("Gemini response schemas drop unsupported bounds and invalid enums", () => {
+test("Gemini response schemas preserve supported bounds and drop invalid enums", () => {
   const schema = sanitizeGeminiResponseSchema({
     type: "object",
     properties: {
@@ -21,9 +21,9 @@ test("Gemini response schemas drop unsupported bounds and invalid enums", () => 
 
   assert.deepEqual(schema.properties.joiner, { type: "string" });
   assert.deepEqual(schema.properties.slotType.enum, ["noun", "verb"]);
-  assert.equal("minItems" in schema.properties.tokens, false);
-  assert.equal("maxItems" in schema.properties.tokens, false);
-  assert.equal("minimum" in schema.properties.incorrectIndex, false);
+  assert.equal(schema.properties.tokens.minItems, 3);
+  assert.equal(schema.properties.tokens.maxItems, 30);
+  assert.equal(schema.properties.incorrectIndex.minimum, 0);
   assert.deepEqual(schema.required, [
     "joiner",
     "slotType",

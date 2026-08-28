@@ -29,7 +29,7 @@ import {
   FiVolume2,
 } from "react-icons/fi";
 import { FaMicrophone, FaStop } from "react-icons/fa";
-import { MdOutlineSupportAgent } from "react-icons/md";
+import { MdKeyboard, MdOutlineSupportAgent } from "react-icons/md";
 import ReactMarkdown from "react-markdown";
 import useUserStore from "../hooks/useUserStore";
 import useSoundSettings from "../hooks/useSoundSettings";
@@ -39,7 +39,10 @@ import FeedbackRail from "./FeedbackRail";
 import VoiceOrb from "./VoiceOrb";
 import XpProgressHeader from "./XpProgressHeader";
 import { SortableArea, SortableList, SortableItem } from "./dnd/Sortable";
-import { simplemodel } from "../firebaseResources/firebaseResources";
+import {
+  questionModel,
+  simplemodel,
+} from "../firebaseResources/firebaseResources";
 import translations from "../utils/translation";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
 import { awardXp } from "../utils/utils";
@@ -57,6 +60,7 @@ import {
   DEFAULT_SUPPORT_LANGUAGE,
   DEFAULT_TARGET_LANGUAGE,
   getLanguageDirection,
+  isBetaPracticeLanguage,
   normalizePracticeLanguage,
   normalizeSupportLanguage,
 } from "../constants/languages";
@@ -87,21 +91,18 @@ import {
   DELIGHT_VARIANTS,
   DELIGHT_VARIANT_IDS,
   buildDelightQuestionPrompt,
-  buildDelightQuestionRepairPrompt,
   buildDelightResponseJudgePrompt,
   calculateDelightQuestionXp,
+  generateWithProviderFallback,
   generateSentenceDetectiveQuestion,
   getDelightLanguageName,
   getInitialDelightResponse,
   gradeDelightResponse,
-  isDelightQuestionLessonGrounded,
+  isDelightQuestionLanguageConsistent,
   isDelightResponseReady,
   isSingleDelightCueWord,
-  normalizeDelightText,
   normalizeDelightQuestion,
-  normalizeSentenceSurface,
   parseDelightJudgeVerdict,
-  parsePartialDelightQuestion,
 } from "../utils/delightQuestionVariants";
 import {
   formatDialogueForkCopy,
@@ -112,6 +113,7 @@ import {
   getSentenceDetectiveCopy,
 } from "../utils/sentenceDetectiveI18n";
 import { sanitizeGeminiResponseSchema } from "../utils/geminiResponseSchema";
+import { getDelightResponseSchema } from "../utils/delightQuestionSchemas";
 import {
   formatSentenceShapeshifterCopy,
   getSentenceShapeshifterCopy,
@@ -131,6 +133,7 @@ import {
 import { getListenDifferenceCopy } from "../utils/listenDifferenceI18n";
 import { getThreeWordChallengeCopy } from "../utils/threeWordChallengeI18n";
 import { getNaturalOrWeirdCopy } from "../utils/naturalOrWeirdI18n";
+import VirtualKeyboard from "./VirtualKeyboard";
 import {
   SOFT_STOP_BUTTON_BG,
   SOFT_STOP_BUTTON_HOVER_BG,
@@ -147,108 +150,11 @@ const APP_TEXT_MUTED = "var(--app-text-muted)";
 const AVAILABLE_VARIANTS = DELIGHT_VARIANT_IDS.map((variantId) =>
   DELIGHT_VARIANTS.find(({ id }) => id === variantId),
 ).filter(Boolean);
-const QUESTION_GENERATION_TIMEOUT_MS = 30000;
-const SENTENCE_DETECTIVE_CACHE_VERSION = "semantic-proof-v3";
+const PROVIDER_GENERATION_TIMEOUT_MS = 6000;
+const SENTENCE_DETECTIVE_CACHE_VERSION = "minimal-contract-v1";
 const DELIGHT_JSON_GENERATION_CONFIG = {
   thinkingConfig: { thinkingBudget: 0 },
   responseMimeType: "application/json",
-};
-const schemaString = { type: "string" };
-const schemaInteger = { type: "integer" };
-const schemaBoolean = { type: "boolean" };
-const schemaStringArray = { type: "array", items: schemaString };
-const requiredObjectSchema = (properties) => ({
-  type: "object",
-  properties,
-  required: Object.keys(properties),
-});
-const sharedQuestionSchema = {
-  instruction: schemaString,
-  hint: schemaString,
-  explanation: schemaString,
-};
-const DELIGHT_RESPONSE_SCHEMAS = {
-  sentence_detective: requiredObjectSchema({
-    sentence: schemaString,
-    correctedSentence: schemaString,
-    tokens: schemaStringArray,
-    // Gemini rejects empty strings inside response-schema enums. The prompt
-    // and local reconstruction validator still constrain this to "" or " ".
-    joiner: schemaString,
-    incorrectIndex: schemaInteger,
-    wrongToken: schemaString,
-    replacements: schemaStringArray,
-    answer: schemaString,
-    slotType: {
-      ...schemaString,
-      enum: ["noun", "verb", "adjective", "adverb", "other"],
-    },
-    cueTokens: schemaStringArray,
-    errorEvidence: schemaString,
-    repairEvidence: schemaString,
-    errorCategory: schemaString,
-    targetSkill: schemaString,
-    sourceEvidence: schemaString,
-    ...sharedQuestionSchema,
-  }),
-  dialogue_fork: requiredObjectSchema({
-    ...sharedQuestionSchema,
-    speaker: schemaString,
-    line: schemaString,
-    options: schemaStringArray,
-    answerIndex: schemaInteger,
-    reaction: schemaString,
-  }),
-  sentence_shapeshifter: requiredObjectSchema({
-    ...sharedQuestionSchema,
-    source: schemaString,
-    constraint: schemaString,
-    answer: schemaString,
-    acceptableAnswers: schemaStringArray,
-  }),
-  word_neighborhoods: requiredObjectSchema({
-    ...sharedQuestionSchema,
-    groups: {
-      type: "array",
-      items: requiredObjectSchema({
-        label: schemaString,
-        items: schemaStringArray,
-      }),
-    },
-  }),
-  morphology_forge: requiredObjectSchema({
-    ...sharedQuestionSchema,
-    sentence: schemaString,
-    pieces: schemaStringArray,
-    answerPieces: schemaStringArray,
-    answerWord: schemaString,
-  }),
-  three_clue_mystery: requiredObjectSchema({
-    ...sharedQuestionSchema,
-    clues: schemaStringArray,
-    answer: schemaString,
-    acceptableAnswers: schemaStringArray,
-    example: schemaString,
-  }),
-  listen_difference: requiredObjectSchema({
-    ...sharedQuestionSchema,
-    audioText: schemaString,
-    options: schemaStringArray,
-    answerIndex: schemaInteger,
-    contrast: schemaString,
-  }),
-  three_word_challenge: requiredObjectSchema({
-    ...sharedQuestionSchema,
-    cues: schemaStringArray,
-    sampleAnswers: schemaStringArray,
-    reaction: schemaString,
-  }),
-  natural_or_weird: requiredObjectSchema({
-    ...sharedQuestionSchema,
-    sentence: schemaString,
-    isNatural: schemaBoolean,
-    correction: schemaString,
-  }),
 };
 const SPEECH_RESPONSE_VARIANTS = new Set([
   "sentence_shapeshifter",
@@ -441,6 +347,58 @@ function SpeechAnswerButton({
       }
       style={questionSquircleStyle}
     />
+  );
+}
+
+function BetaVirtualKeyboard({
+  targetLang,
+  supportLang,
+  value = "",
+  onChange,
+  isDisabled = false,
+  labels = {},
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    setIsOpen(false);
+  }, [targetLang]);
+
+  if (!isBetaPracticeLanguage(targetLang)) return null;
+
+  const handleKeyPress = (key) => {
+    if (isDisabled) return;
+    if (key === "BACKSPACE" || key === "⌫") {
+      onChange?.(String(value).slice(0, -1));
+      return;
+    }
+    onChange?.(`${value}${key}`);
+  };
+
+  return (
+    <VStack spacing={2} align="stretch" mt={2}>
+      {isOpen && (
+        <VirtualKeyboard
+          lang={targetLang}
+          userLanguage={supportLang}
+          onKeyPress={handleKeyPress}
+          onClose={() => setIsOpen(false)}
+        />
+      )}
+      <Button
+        type="button"
+        variant="ghost"
+        leftIcon={<MdKeyboard />}
+        alignSelf="flex-end"
+        onClick={() => setIsOpen((current) => !current)}
+        isDisabled={isDisabled}
+        style={questionSquircleStyle}
+      >
+        {isOpen
+          ? labels.close || "Close keyboard"
+          : labels.open || "Open keyboard"}
+      </Button>
+    </VStack>
   );
 }
 
@@ -1877,6 +1835,7 @@ function SentenceShapeshifter({
   isSpeechConnecting = false,
   supportsSpeech = false,
   speechLabels,
+  keyboardLabels,
   onSubmit,
   canSubmit = false,
   submitting = false,
@@ -2043,7 +2002,7 @@ function SentenceShapeshifter({
             onChange={(event) => setResponse({ text: event.target.value })}
             onKeyDown={handleKeyDown}
             isDisabled={locked || submitting || isSpeechConnecting || isSpeechRecording}
-            placeholder="Write or record your answer"
+            placeholder={copy?.placeholder || "Type the transformed sentence…"}
             dir={targetDirection}
             lang={targetLang}
             size="lg"
@@ -2056,6 +2015,14 @@ function SentenceShapeshifter({
             autoFocus
           />
         </HStack>
+        <BetaVirtualKeyboard
+          targetLang={targetLang}
+          supportLang={supportLang}
+          value={response.text || ""}
+          onChange={(text) => setResponse({ text })}
+          isDisabled={locked || submitting}
+          labels={keyboardLabels}
+        />
       </Box>
     </VStack>
   );
@@ -2783,6 +2750,7 @@ function ThreeClueMystery({
   isSpeechConnecting = false,
   supportsSpeech = false,
   speechLabels,
+  keyboardLabels,
   onSubmit,
   canSubmit = false,
   submitting = false,
@@ -2978,7 +2946,7 @@ function ThreeClueMystery({
             }
             onKeyDown={handleKeyDown}
             isDisabled={locked || submitting || isSpeechConnecting || isSpeechRecording}
-            placeholder="Write or record your answer"
+            placeholder={copy?.inputPlaceholder || "Type your answer…"}
             dir={targetDirection}
             lang={targetLang}
             size="lg"
@@ -2994,6 +2962,16 @@ function ThreeClueMystery({
             spellCheck="false"
           />
         </HStack>
+        <BetaVirtualKeyboard
+          targetLang={targetLang}
+          supportLang={supportLang}
+          value={response?.text || ""}
+          onChange={(text) =>
+            setResponse((current) => ({ ...current, text }))
+          }
+          isDisabled={locked || submitting}
+          labels={keyboardLabels}
+        />
       </Box>
     </VStack>
   );
@@ -3165,6 +3143,7 @@ function ThreeWordChallenge({
   isSpeechConnecting = false,
   supportsSpeech = false,
   speechLabels,
+  keyboardLabels,
   onSubmit,
   canSubmit = false,
   submitting = false,
@@ -3305,7 +3284,7 @@ function ThreeWordChallenge({
               }))
             }
             isDisabled={locked || submitting || isSpeechConnecting || isSpeechRecording}
-            placeholder="Write or record your answer"
+            placeholder={copy?.inputPlaceholder || "Write your sentence here…"}
             dir={targetDirection}
             lang={targetLang}
             size="lg"
@@ -3321,6 +3300,16 @@ function ThreeWordChallenge({
             spellCheck="false"
           />
         </HStack>
+        <BetaVirtualKeyboard
+          targetLang={targetLang}
+          supportLang={supportLang}
+          value={response?.text || ""}
+          onChange={(text) =>
+            setResponse((current) => ({ ...current, text }))
+          }
+          isDisabled={locked || submitting}
+          labels={keyboardLabels}
+        />
       </Box>
     </VStack>
   );
@@ -3616,75 +3605,6 @@ function getDelightQuestionVarietySummary(question) {
     0,
     280,
   );
-}
-
-function getStableSentenceDetectivePreview(
-  partial,
-  lessonContent,
-  moduleType,
-  targetLang,
-  buffer,
-) {
-  const tokens = Array.isArray(partial?.tokens) ? partial.tokens : [];
-  const replacements = Array.isArray(partial?.replacements)
-    ? partial.replacements
-    : [];
-  const incorrectIndex = Number(partial?.incorrectIndex);
-  const answer = String(partial?.answer || "").trim();
-  const wrongToken = String(partial?.wrongToken || "").trim();
-  const joiner = ["ja", "zh"].includes(targetLang) ? "" : " ";
-  const replacementKeys = replacements.map(normalizeDelightText);
-  const hasCompleteTokens = /"tokens"\s*:\s*\[[^\]]*\]/s.test(buffer);
-  const hasCompleteReplacements = /"replacements"\s*:\s*\[[^\]]*\]/s.test(
-    buffer,
-  );
-
-  if (
-    !hasCompleteTokens ||
-    !hasCompleteReplacements ||
-    tokens.length < 3 ||
-    replacements.length !== 4 ||
-    new Set(replacementKeys).size !== replacements.length ||
-    !Number.isInteger(incorrectIndex) ||
-    incorrectIndex < 0 ||
-    incorrectIndex >= tokens.length ||
-    !answer ||
-    !wrongToken ||
-    normalizeDelightText(tokens[incorrectIndex]) !==
-      normalizeDelightText(wrongToken) ||
-    !replacements.some(
-      (replacement) =>
-        normalizeDelightText(replacement) === normalizeDelightText(answer),
-    )
-  ) {
-    return null;
-  }
-
-  const correctedTokens = [...tokens];
-  correctedTokens[incorrectIndex] = answer;
-  if (
-    partial.sentence &&
-    normalizeSentenceSurface(partial.sentence) !==
-      normalizeSentenceSurface(tokens.join(joiner))
-  ) {
-    return null;
-  }
-  if (
-    partial.correctedSentence &&
-    normalizeSentenceSurface(partial.correctedSentence) !==
-      normalizeSentenceSurface(correctedTokens.join(joiner))
-  ) {
-    return null;
-  }
-
-  const preview = { ...partial, variant: "sentence_detective" };
-  return isDelightQuestionLessonGrounded(
-    preview,
-    lessonContent,
-    moduleType,
-  )
-    ? preview
-    : null;
 }
 
 export default function DelightQuestionLab({
@@ -4199,10 +4119,11 @@ export default function DelightQuestionLab({
 
   useEffect(() => {
     const requestId = ++requestRef.current;
+    const responseSchema = getDelightResponseSchema(variantMeta.id);
     const generationConfig = {
       ...DELIGHT_JSON_GENERATION_CONFIG,
       responseSchema: sanitizeGeminiResponseSchema(
-        DELIGHT_RESPONSE_SCHEMAS[variantMeta.id],
+        responseSchema,
       ),
     };
     const cacheKey = [
@@ -4228,145 +4149,62 @@ export default function DelightQuestionLab({
     setGenerationError("");
     setQuestion(null);
 
-    const onStreamChunk = (accumulated) => {
-      if (requestId !== requestRef.current) return;
-      const partial = parsePartialDelightQuestion(accumulated);
-      if (partial) {
-        const preview =
-          variantMeta.id === "sentence_detective"
-            ? getStableSentenceDetectivePreview(
-                partial,
-                lessonContent,
-                moduleType,
-                targetLang,
-                accumulated,
-              )
-            : partial;
-        if (preview) setStreamingQuestion(preview);
-      }
-    };
-
     const resetStreamingPreview = () => {
       if (requestId === requestRef.current) {
         setStreamingQuestion(null);
       }
     };
 
-    const generate = async (input, onStream) => {
-      if (simplemodel) {
-        try {
-          const resp = await simplemodel.generateContentStream({
-            contents: [{ role: "user", parts: [{ text: input }] }],
-            generationConfig,
-          });
-          let accumulated = "";
-          for await (const chunk of resp.stream) {
-            if (requestId !== requestRef.current) break;
-            const piece = textFromChunk(chunk);
-            if (piece) {
-              accumulated += piece;
-              onStream?.(accumulated);
-            }
-          }
-          const finalAgg = await resp.response;
-          const output =
-            (typeof finalAgg?.text === "function"
-              ? finalAgg.text()
-              : finalAgg?.text) || accumulated;
-          if (String(output || "").trim()) return output;
-          throw new Error("Question generation returned an empty response.");
-        } catch (primaryError) {
-          if (requestId !== requestRef.current) throw primaryError;
-          // The provider fallback is a new draft. Return to the skeleton first
-          // so it cannot silently overwrite fields from the failed stream.
-          resetStreamingPreview();
-          const fallback = await callResponses({
-            model: DEFAULT_RESPONSES_MODEL,
-            input,
-            generationConfig,
-            skipGemini: true,
-          });
-          if (String(fallback || "").trim()) {
-            onStream?.(fallback);
-            return fallback;
-          }
-          throw primaryError;
-        }
-      }
+    const generateWithGemini = async (input) => {
+      const resp = await questionModel.generateContent({
+        contents: [{ role: "user", parts: [{ text: input }] }],
+        generationConfig,
+      });
+      const output =
+        (typeof resp?.response?.text === "function"
+          ? resp.response.text()
+          : resp?.response?.text) || "";
+      if (String(output || "").trim()) return output;
+      throw new Error("Gemini returned an empty question response.");
+    };
+
+    const generateWithOpenAI = async (input) => {
       const result = await callResponses({
         model: DEFAULT_RESPONSES_MODEL,
         input,
-        generationConfig,
+        responseSchema,
+        responseSchemaName: `delight_${variantMeta.id}`,
+        skipGemini: true,
       });
       if (!String(result || "").trim()) {
-        throw new Error("Question generation returned an empty response.");
+        throw new Error("OpenAI returned an empty question response.");
       }
-      onStream?.(result);
       return result;
     };
 
-    const normalizeCandidate = (raw) =>
-      normalizeDelightQuestion(variantMeta.id, raw);
-    const candidateIsGrounded = (candidate) =>
-      candidate &&
-      isDelightQuestionLessonGrounded(
-        candidate,
-        lessonContent,
-        moduleType,
-      );
-
-    const generationTask = (async () => {
-      let firstRaw = "";
-      let firstCandidate = null;
-      let rejectionReason = "The first response did not match the required schema.";
-
-      try {
-        if (variantMeta.id === "sentence_detective") {
-          firstCandidate = await generateSentenceDetectiveQuestion({
-            generate,
-            moduleType,
-            targetLang,
-            supportLang,
-            cefrLevel,
-            lessonContent,
-            recentQuestions: recentQuestionSummariesRef.current,
-            onStream: onStreamChunk,
-          });
-        } else {
-          firstRaw = await generate(
-            buildDelightQuestionPrompt({
-              variant: variantMeta.id,
-              moduleType,
-              targetLang,
-              supportLang,
-              cefrLevel,
-              lessonContent,
-              recentQuestions: recentQuestionSummariesRef.current,
-            }),
-            onStreamChunk,
-          );
-          firstCandidate = normalizeCandidate(firstRaw);
-        }
-      } catch (error) {
-        rejectionReason =
-          error?.issues?.join(" ") ||
-          error?.message ||
-          rejectionReason;
+    const requireValidQuestion = (raw) => {
+      const candidate = normalizeDelightQuestion(variantMeta.id, raw, {
+        targetLang,
+      });
+      if (!candidate) {
+        throw new Error("The provider response did not match the question schema.");
       }
-
-      if (candidateIsGrounded(firstCandidate)) return firstCandidate;
-      if (firstCandidate) {
-        rejectionReason = "The first response drifted outside the active lesson curriculum.";
+      if (
+        !isDelightQuestionLanguageConsistent(candidate, {
+          targetLang,
+          supportLang,
+        })
+      ) {
+        throw new Error(
+          "The provider response mixed the target and support languages.",
+        );
       }
+      return candidate;
+    };
 
-      // One bounded repair attempt lives inside this request. It cannot be
-      // triggered again by rendering or state updates.
-      // Clear the rejected draft before streaming the replacement so the UI
-      // communicates a fresh attempt instead of morphing one question into another.
-      resetStreamingPreview();
-      let repairedCandidate = null;
+    const createQuestion = async (generate) => {
       if (variantMeta.id === "sentence_detective") {
-        repairedCandidate = await generateSentenceDetectiveQuestion({
+        const generated = await generateSentenceDetectiveQuestion({
           generate,
           moduleType,
           targetLang,
@@ -4374,43 +4212,57 @@ export default function DelightQuestionLab({
           cefrLevel,
           lessonContent,
           recentQuestions: recentQuestionSummariesRef.current,
-          previousIssues: [rejectionReason],
-          onStream: onStreamChunk,
         });
-      } else {
-        const repairedRaw = await generate(
-          buildDelightQuestionRepairPrompt({
-            variant: variantMeta.id,
-            moduleType,
-            targetLang,
-            supportLang,
-            cefrLevel,
-            lessonContent,
-            recentQuestions: recentQuestionSummariesRef.current,
-            rejectedResponse: firstRaw,
-            reason: rejectionReason,
-          }),
-          onStreamChunk,
-        );
-        repairedCandidate = normalizeCandidate(repairedRaw);
+        return requireValidQuestion(generated);
       }
 
-      if (candidateIsGrounded(repairedCandidate)) return repairedCandidate;
-      throw new Error(
-        repairedCandidate
-          ? "The repaired question did not match the active lesson curriculum."
-          : "The repaired question did not match the required schema.",
+      const generated = await generate(
+        buildDelightQuestionPrompt({
+          variant: variantMeta.id,
+          moduleType,
+          targetLang,
+          supportLang,
+          cefrLevel,
+          lessonContent,
+          recentQuestions: recentQuestionSummariesRef.current,
+        }),
       );
-    })();
-    const generation = settleWithin(
-      generationTask,
-      QUESTION_GENERATION_TIMEOUT_MS,
-    );
+      return requireValidQuestion(generated);
+    };
+
+    const generationTask = questionModel
+      ? generateWithProviderFallback({
+          primary: () =>
+            settleWithin(
+              createQuestion(generateWithGemini),
+              PROVIDER_GENERATION_TIMEOUT_MS,
+            ),
+          providerFallback: () =>
+            settleWithin(
+              createQuestion(generateWithOpenAI),
+              PROVIDER_GENERATION_TIMEOUT_MS,
+            ),
+          onProviderFallback: (error) => {
+            // The provider fallback is a fresh draft. Keep the skeleton visible
+            // while OpenAI makes its independent structured-response attempt.
+            resetStreamingPreview();
+            if (import.meta.env.DEV) {
+              console.warn(
+                "Gemini question attempt failed; trying OpenAI:",
+                error?.issues?.join(" ") || error?.message,
+              );
+            }
+          },
+        })
+      : settleWithin(
+          createQuestion(generateWithOpenAI),
+          PROVIDER_GENERATION_TIMEOUT_MS,
+        );
+    const generation = generationTask;
 
     generation
-      .then((raw) => {
+      .then((normalized) => {
         if (requestId !== requestRef.current) return;
-        const normalized = raw;
         const summary = getDelightQuestionVarietySummary(normalized);
         if (summary) {
           recentQuestionSummariesRef.current = [
@@ -4424,10 +4276,15 @@ export default function DelightQuestionLab({
       .catch((error) => {
         if (requestId !== requestRef.current) return;
         if (import.meta.env.DEV) {
-          console.warn("Delight question generation failed:", error?.message);
+          console.warn(
+            "Question generation failed after both providers:",
+            error?.message,
+          );
         }
-        setGenerationError("");
         setQuestion(null);
+        setGenerationError(
+          import.meta.env.DEV ? String(error?.message || "") : "",
+        );
       })
       .finally(() => {
         if (requestId === requestRef.current) {
@@ -5091,6 +4948,10 @@ export default function DelightQuestionLab({
     stop: t("flashcard_stop_recording"),
     connecting: t("vocab_connecting"),
   };
+  const keyboardLabels = {
+    open: t("history_keyboard_open"),
+    close: t("history_keyboard_close"),
+  };
   const isLastQuizQuestion =
     isFinalQuiz && quizOutcome.completed;
   const quizCorrect = quizOutcome.correct;
@@ -5496,6 +5357,7 @@ export default function DelightQuestionLab({
                   isSpeechConnecting={isSpeechConnecting}
                   supportsSpeech={supportsSpeech}
                   speechLabels={speechLabels}
+                  keyboardLabels={keyboardLabels}
                   onSubmit={handleSubmit}
                   canSubmit={ready}
                   submitting={submitting}
@@ -5554,6 +5416,7 @@ export default function DelightQuestionLab({
                   isSpeechConnecting={isSpeechConnecting}
                   supportsSpeech={supportsSpeech}
                   speechLabels={speechLabels}
+                  keyboardLabels={keyboardLabels}
                   onSubmit={handleSubmit}
                   canSubmit={ready}
                   submitting={submitting}
@@ -5600,6 +5463,7 @@ export default function DelightQuestionLab({
                   isSpeechConnecting={isSpeechConnecting}
                   supportsSpeech={supportsSpeech}
                   speechLabels={speechLabels}
+                  keyboardLabels={keyboardLabels}
                   onSubmit={handleSubmit}
                   canSubmit={ready}
                   submitting={submitting}
