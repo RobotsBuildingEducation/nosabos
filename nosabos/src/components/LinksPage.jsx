@@ -25,7 +25,6 @@ import {
   ModalFooter,
   ModalHeader,
   ModalOverlay,
-  Stack,
   Text,
   IconButton as ChakraIconButton,
   useDisclosure,
@@ -37,12 +36,11 @@ import { QRCodeSVG } from "qrcode.react";
 import { BsQrCode } from "react-icons/bs";
 import { SiCashapp, SiPatreon } from "react-icons/si";
 import { FaKey, FaInstagram, FaLinkedinIn } from "react-icons/fa";
-import { LuSun } from "react-icons/lu";
+import { LuPencilLine, LuSun } from "react-icons/lu";
 import { RiMoonClearFill } from "react-icons/ri";
 import useSoundSettings from "../hooks/useSoundSettings";
 import { selectSound, submitActionSound } from "../constants/sounds";
 
-import { RoleCanvas } from "./RoleCanvas/RoleCanvas";
 import VoiceOrb from "./VoiceOrb";
 
 import { CloudCanvas } from "./CloudCanvas/CloudCanvas";
@@ -64,7 +62,6 @@ import {
 } from "../constants/languages";
 import { syncDocumentLanguage } from "../utils/documentLanguage";
 
-import AnimatedLogo from "./AnimatedLogo/AnimatedLogo";
 import { linksPageTranslations } from "../translations/linksPage";
 import { useThemeStore } from "../useThemeStore";
 import { APP_BUTTON_RADIUS, APP_SQUIRCLE_SHAPE } from "../theme";
@@ -98,21 +95,168 @@ const drift = keyframes`
   100% { transform: translateY(0) translateX(0); }
 `;
 
+const heroRise = keyframes`
+  from { opacity: 0; transform: translateY(28px); }
+  to { opacity: 1; transform: translateY(0); }
+`;
+
+const orbitSpin = keyframes`
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+`;
+
+const haloPulse = keyframes`
+  0%, 100% { transform: scale(0.96); opacity: 0.62; }
+  50% { transform: scale(1.04); opacity: 0.92; }
+`;
+
+const gradientShift = keyframes`
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+`;
+
+const patreonLevitate = keyframes`
+  0%, 100% { transform: translateY(3px) rotate(-4deg) scale(0.98); }
+  45% { transform: translateY(-9px) rotate(3deg) scale(1.03); }
+  72% { transform: translateY(-3px) rotate(0deg) scale(1); }
+`;
+
+const patreonAura = keyframes`
+  0% { transform: rotate(0deg) scale(0.9); opacity: 0.42; }
+  50% { transform: rotate(180deg) scale(1.08); opacity: 0.7; }
+  100% { transform: rotate(360deg) scale(0.9); opacity: 0.42; }
+`;
+
+const patreonSpark = keyframes`
+  0%, 100% { transform: translate3d(0, 5px, 0) scale(0.7); opacity: 0.25; }
+  45% { transform: translate3d(0, -8px, 0) scale(1.2); opacity: 1; }
+`;
+
+const patreonShadowBreath = keyframes`
+  0%, 100% { transform: translateX(-50%) scaleX(0.82); opacity: 0.28; }
+  45% { transform: translateX(-50%) scaleX(1.12); opacity: 0.16; }
+`;
+
 const VOICE_ORB_STATES = ["idle", "listening", "speaking"];
 
 const pickRandomVoiceOrbState = () =>
   VOICE_ORB_STATES[Math.floor(Math.random() * VOICE_ORB_STATES.length)];
 
-const roleCycle = [
-  "sphere",
-  "plan",
-  "meals",
-  "finance",
-  "sleep",
-  "emotions",
-  "chores",
-  "counselor",
-];
+const HERO_COPY = {
+  en: {
+    eyebrow: "SHEILFER'S LITTLE UNIVERSE",
+    titleLead: "Create scholarships",
+    titleAccent: "with learning.",
+    body: "I design ambitious little worlds for learning, building, and making everyday life feel more possible.",
+    explore: "Explore the universe",
+    workLabel: "Selected creations",
+    workTitle: "Four ideas. Four worlds.",
+    workBody: "Each project starts with a real problem and grows into its own playful experience.",
+  },
+  es: {
+    eyebrow: "EL PEQUEÑO UNIVERSO DE SHEILFER",
+    titleLead: "Herramientas divertidas para",
+    titleAccent: "mentes curiosas.",
+    body: "Diseño pequeños mundos ambiciosos para aprender, crear y hacer que la vida cotidiana se sienta más posible.",
+    explore: "Explorar el universo",
+    workLabel: "Creaciones seleccionadas",
+    workTitle: "Cuatro ideas. Cuatro mundos.",
+    workBody: "Cada proyecto nace de un problema real y se convierte en su propia experiencia divertida.",
+  },
+  pt: {
+    eyebrow: "O PEQUENO UNIVERSO DE SHEILFER",
+    titleLead: "Ferramentas divertidas para",
+    titleAccent: "mentes curiosas.",
+    body: "Crio pequenos mundos ambiciosos para aprender, construir e tornar a vida cotidiana mais possível.",
+    explore: "Explorar o universo",
+    workLabel: "Criações selecionadas",
+    workTitle: "Quatro ideias. Quatro mundos.",
+    workBody: "Cada projeto começa com um problema real e cresce como uma experiência única e divertida.",
+  },
+  it: {
+    eyebrow: "IL PICCOLO UNIVERSO DI SHEILFER",
+    titleLead: "Strumenti giocosi per",
+    titleAccent: "menti curiose.",
+    body: "Creo piccoli mondi ambiziosi per imparare, costruire e rendere la vita quotidiana più possibile.",
+    explore: "Esplora l'universo",
+    workLabel: "Creazioni selezionate",
+    workTitle: "Quattro idee. Quattro mondi.",
+    workBody: "Ogni progetto nasce da un problema reale e cresce in un'esperienza tutta sua.",
+  },
+  fr: {
+    eyebrow: "LE PETIT UNIVERS DE SHEILFER",
+    titleLead: "Des outils ludiques pour",
+    titleAccent: "les esprits curieux.",
+    body: "Je crée de petits mondes ambitieux pour apprendre, construire et rendre le quotidien plus ouvert.",
+    explore: "Explorer l'univers",
+    workLabel: "Créations choisies",
+    workTitle: "Quatre idées. Quatre mondes.",
+    workBody: "Chaque projet part d'un vrai problème et devient une expérience ludique à part entière.",
+  },
+  de: {
+    eyebrow: "SHEILFERS KLEINES UNIVERSUM",
+    titleLead: "Verspielte Werkzeuge für",
+    titleAccent: "neugierige Köpfe.",
+    body: "Ich gestalte ambitionierte kleine Welten zum Lernen, Bauen und für einen Alltag voller Möglichkeiten.",
+    explore: "Universum entdecken",
+    workLabel: "Ausgewählte Kreationen",
+    workTitle: "Vier Ideen. Vier Welten.",
+    workBody: "Jedes Projekt beginnt mit einem echten Problem und wächst zu einem eigenen Erlebnis.",
+  },
+  ja: {
+    eyebrow: "SHEILFERの小さな宇宙",
+    titleLead: "好奇心のための",
+    titleAccent: "遊び心あるツール。",
+    body: "学び、創り、毎日の可能性を広げる、小さくて壮大な世界をデザインしています。",
+    explore: "宇宙を探索する",
+    workLabel: "選ばれた作品",
+    workTitle: "4つのアイデア。4つの世界。",
+    workBody: "それぞれのプロジェクトは現実の課題から始まり、独自の楽しい体験へと育ちます。",
+  },
+  hi: {
+    eyebrow: "शेल्फ़र का छोटा ब्रह्मांड",
+    titleLead: "जिज्ञासु दिमागों के लिए",
+    titleAccent: "मनोरंजक साधन।",
+    body: "मैं सीखने, बनाने और रोज़मर्रा की ज़िंदगी में नई संभावनाएँ जगाने वाले छोटे संसार बनाता हूँ।",
+    explore: "ब्रह्मांड देखें",
+    workLabel: "चुनिंदा रचनाएँ",
+    workTitle: "चार विचार। चार संसार।",
+    workBody: "हर परियोजना एक वास्तविक समस्या से शुरू होकर अपने अनोखे अनुभव में बदलती है।",
+  },
+  ar: {
+    eyebrow: "عالم شيلفر الصغير",
+    titleLead: "أدوات مرحة من أجل",
+    titleAccent: "العقول الفضولية.",
+    body: "أصمم عوالم صغيرة وطموحة للتعلم والبناء وجعل الحياة اليومية مليئة بالإمكانات.",
+    explore: "استكشف العالم",
+    workLabel: "إبداعات مختارة",
+    workTitle: "أربع أفكار. أربعة عوالم.",
+    workBody: "يبدأ كل مشروع بمشكلة حقيقية وينمو ليصبح تجربة مرحة خاصة به.",
+  },
+  zh: {
+    eyebrow: "SHEILFER的小宇宙",
+    titleLead: "为好奇心打造的",
+    titleAccent: "有趣工具。",
+    body: "我设计充满雄心的小世界，让学习、创造和日常生活拥有更多可能。",
+    explore: "探索这个宇宙",
+    workLabel: "精选作品",
+    workTitle: "四个想法。四个世界。",
+    workBody: "每个项目都从真实问题出发，成长为独具个性的有趣体验。",
+  },
+};
+
+const PROFILE_HERO_COPY = {
+  en: { editProfile: "Edit profile", friend: "friend!" },
+  es: { editProfile: "Editar perfil", friend: "¡amigo!" },
+  pt: { editProfile: "Editar perfil", friend: "amigo!" },
+  it: { editProfile: "Modifica profilo", friend: "amico!" },
+  fr: { editProfile: "Modifier le profil", friend: "mon ami !" },
+  de: { editProfile: "Profil bearbeiten", friend: "Freund!" },
+  ja: { editProfile: "プロフィールを編集", friend: "友だち！" },
+  hi: { editProfile: "प्रोफ़ाइल बदलें", friend: "दोस्त!" },
+  ar: { editProfile: "تعديل الملف", friend: "يا صديقي!" },
+  zh: { editProfile: "编辑个人资料", friend: "朋友！" },
+};
 
 const APP_PAGE_BG = "var(--app-page-bg)";
 const APP_SURFACE = "var(--app-surface)";
@@ -581,10 +725,10 @@ function PixelStar({
       bg={color}
       boxShadow={`0 0 ${size * 2}px ${color}`}
       animation={`${starMove} ${duration}s linear infinite, ${pixelFlicker} 2s steps(2) infinite`}
-      animationDelay={`${delay}s`}
       pointerEvents="none"
       sx={{
         imageRendering: "pixelated",
+        animationDelay: `${delay}s`,
       }}
     />
   );
@@ -687,6 +831,167 @@ function RetroStarfield({ isLightTheme = false }) {
   );
 }
 
+function PatreonMotionMark({ isLightTheme = false }) {
+  const logoPath =
+    "M53 132 C38 116 39 88 42 66 C45 39 62 24 89 23 C115 22 137 35 138 56 C139 75 125 88 103 91 C87 93 82 106 76 122 C71 137 61 141 53 132 Z";
+  const morphPaths = [
+    logoPath,
+    "M50 129 C36 112 42 82 46 61 C51 36 70 20 96 25 C120 29 139 42 134 63 C129 83 112 88 96 94 C82 99 83 114 73 128 C65 140 57 138 50 129 Z",
+    "M56 134 C40 119 36 93 43 70 C50 44 63 26 87 22 C112 18 135 34 140 53 C145 72 129 87 105 90 C88 92 80 106 78 121 C76 136 64 142 56 134 Z",
+    logoPath,
+  ].join(";");
+
+  return (
+    <Box
+      role="img"
+      aria-label="Animated Patreon symbol"
+      w={{ base: "190px", md: "220px" }}
+      h={{ base: "190px", md: "220px" }}
+      position="relative"
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+      isolation="isolate"
+      sx={{
+        "@media (prefers-reduced-motion: reduce)": {
+          "& animate": { display: "none" },
+        },
+      }}
+    >
+      <Box
+        position="absolute"
+        inset="9%"
+        borderRadius="43% 57% 64% 36% / 48% 37% 63% 52%"
+        bg={
+          isLightTheme
+            ? "conic-gradient(from 20deg, rgba(255,92,138,0.3), rgba(255,184,76,0.22), rgba(123,97,255,0.28), rgba(255,92,138,0.3))"
+            : "conic-gradient(from 20deg, rgba(255,105,180,0.36), rgba(255,184,76,0.2), rgba(123,97,255,0.4), rgba(255,105,180,0.36))"
+        }
+        filter="blur(18px)"
+        animation={`${patreonAura} 11s linear infinite`}
+      />
+      <Box
+        position="absolute"
+        inset="18%"
+        borderRadius="full"
+        border="1px dashed"
+        borderColor={isLightTheme ? "rgba(209,61,116,0.28)" : "rgba(255,116,170,0.38)"}
+        animation={`${orbitSpin} 18s linear infinite reverse`}
+      />
+      <Box
+        position="absolute"
+        left="50%"
+        bottom="13%"
+        w="72px"
+        h="14px"
+        borderRadius="full"
+        bg={isLightTheme ? "rgba(120,42,75,0.24)" : "rgba(0,0,0,0.46)"}
+        filter="blur(9px)"
+        animation={`${patreonShadowBreath} 5.2s ease-in-out infinite`}
+      />
+
+      <Box
+        w="74%"
+        h="74%"
+        position="relative"
+        zIndex={2}
+        animation={`${patreonLevitate} 5.2s cubic-bezier(.45,.05,.35,1) infinite`}
+        sx={{
+          "@media (prefers-reduced-motion: reduce)": { animation: "none" },
+        }}
+      >
+        <svg
+          viewBox="0 0 180 180"
+          width="100%"
+          height="100%"
+          aria-hidden="true"
+          focusable="false"
+          style={{ overflow: "visible" }}
+        >
+          <defs>
+            <linearGradient id="patreon-motion-gradient" x1="20%" y1="12%" x2="82%" y2="88%">
+              <stop offset="0%" stopColor="#ffb44c" />
+              <stop offset="28%" stopColor="#ff5c8a" />
+              <stop offset="62%" stopColor="#d83bd2" />
+              <stop offset="100%" stopColor="#6e61ff" />
+            </linearGradient>
+            <linearGradient id="patreon-edge-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#ff9e6d" stopOpacity="0.9" />
+              <stop offset="52%" stopColor="#ff4f9a" stopOpacity="0.35" />
+              <stop offset="100%" stopColor="#7968ff" stopOpacity="0.85" />
+            </linearGradient>
+            <radialGradient id="patreon-shine" cx="36%" cy="25%" r="72%">
+              <stop offset="0%" stopColor="white" stopOpacity="0.72" />
+              <stop offset="32%" stopColor="white" stopOpacity="0.16" />
+              <stop offset="100%" stopColor="white" stopOpacity="0" />
+            </radialGradient>
+            <filter id="patreon-logo-shadow" x="-60%" y="-60%" width="220%" height="240%">
+              <feDropShadow dx="0" dy="10" stdDeviation="9" floodColor="#8a286f" floodOpacity="0.38" />
+            </filter>
+          </defs>
+
+          <path d={logoPath} fill="#781e75" opacity="0.72" transform="translate(4 8)" />
+          <path
+            d={logoPath}
+            fill="url(#patreon-motion-gradient)"
+            filter="url(#patreon-logo-shadow)"
+          >
+            <animate
+              attributeName="d"
+              dur="5.2s"
+              repeatCount="indefinite"
+              calcMode="spline"
+              keyTimes="0;0.36;0.7;1"
+              keySplines="0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1"
+              values={morphPaths}
+            />
+          </path>
+          <path
+            d={logoPath}
+            fill="url(#patreon-shine)"
+            stroke="url(#patreon-edge-gradient)"
+            strokeWidth="2"
+            opacity="0.72"
+          >
+            <animate
+              attributeName="d"
+              dur="5.2s"
+              repeatCount="indefinite"
+              calcMode="spline"
+              keyTimes="0;0.36;0.7;1"
+              keySplines="0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1"
+              values={morphPaths}
+            />
+          </path>
+          <ellipse cx="79" cy="47" rx="22" ry="10" fill="white" opacity="0.16" transform="rotate(-18 79 47)" />
+        </svg>
+      </Box>
+
+      {[
+        { top: "19%", left: "12%", size: "7px", delay: "0s", color: "#ffb44c" },
+        { top: "12%", right: "16%", size: "5px", delay: "1.1s", color: "#ff74aa" },
+        { bottom: "24%", right: "9%", size: "8px", delay: "2.2s", color: "#8b7cff" },
+        { bottom: "13%", left: "21%", size: "4px", delay: "3.2s", color: "#ff5c8a" },
+      ].map((spark, index) => (
+        <Box
+          key={index}
+          position="absolute"
+          top={spark.top}
+          bottom={spark.bottom}
+          left={spark.left}
+          right={spark.right}
+          w={spark.size}
+          h={spark.size}
+          borderRadius="full"
+          bg={spark.color}
+          boxShadow={`0 0 14px ${spark.color}`}
+          animation={`${patreonSpark} 3.8s ${spark.delay} ease-in-out infinite`}
+        />
+      ))}
+    </Box>
+  );
+}
+
 function LinkCard({
   title,
   description,
@@ -699,8 +1004,12 @@ function LinkCard({
   secondaryAction,
   isLightTheme = false,
   textDirection = "ltr",
+  accent = "#00ffff",
+  accentSoft = "rgba(0, 255, 255, 0.18)",
+  shadowAccent = "#08776f",
+  buttonTextShadow = "0px 1px 2px rgba(7, 16, 29, 0.32)",
 }) {
-  const primaryActionColor = isLightTheme ? "#0f766e" : "#00ffff";
+  const primaryActionColor = accent;
   const secondaryActionColor =
     isLightTheme && secondaryAction?.color === "#4da3ff"
       ? "#1d4ed8"
@@ -750,81 +1059,168 @@ function LinkCard({
   return (
     <Box
       w="100%"
-      bg={isLightTheme ? "rgba(255, 233, 205, 0.35)" : "rgba(7, 16, 29, 0.65)"}
+      h="100%"
+      minH={{ base: "430px", md: "520px" }}
+      bg={
+        isLightTheme
+          ? `linear-gradient(145deg, rgba(255,255,255,0.72) 0%, ${accentSoft} 150%)`
+          : `linear-gradient(145deg, rgba(14,24,42,0.96) 0%, ${accentSoft} 160%)`
+      }
       color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
       border="1px solid"
-      borderColor={isLightTheme ? APP_BORDER : "rgba(0, 255, 255, 0.08)"}
-      borderRadius="72px"
-      style={{ cornerShape: "superellipse(1.5)" }}
-      px={{ base: 4, md: 6 }}
-      py={{ base: 8, md: 12 }}
-      boxShadow={isLightTheme ? APP_SHADOW : "0 0 10px rgba(0, 255, 255, 0.15)"}
+      borderColor={isLightTheme ? "rgba(91, 72, 50, 0.14)" : "whiteAlpha.200"}
+      borderRadius={{ base: "40px", md: "56px" }}
+      style={{ cornerShape: "superellipse(1.25)" }}
+      px={{ base: 5, md: 7 }}
+      py={{ base: 6, md: 8 }}
+      position="relative"
+      overflow="hidden"
+      isolation="isolate"
+      boxShadow={
+        isLightTheme
+          ? "0 24px 70px rgba(74, 55, 34, 0.10), inset 0 1px 0 rgba(255,255,255,0.8)"
+          : `0 28px 80px rgba(0,0,0,0.36), 0 0 50px ${accentSoft}`
+      }
+      transition="transform 320ms ease, box-shadow 320ms ease, border-color 320ms ease"
+      _before={{
+        content: '""',
+        position: "absolute",
+        w: "280px",
+        h: "280px",
+        borderRadius: "full",
+        bg: accent,
+        opacity: isLightTheme ? 0.12 : 0.16,
+        filter: "blur(70px)",
+        top: "-120px",
+        insetInlineEnd: "-80px",
+        zIndex: -1,
+      }}
+      _after={{
+        content: '""',
+        position: "absolute",
+        inset: "1px",
+        borderRadius: "inherit",
+        border: "1px solid rgba(255,255,255,0.2)",
+        pointerEvents: "none",
+        zIndex: 2,
+      }}
+      _hover={{
+        transform: "translateY(-8px)",
+        borderColor: accent,
+        boxShadow: isLightTheme
+          ? `0 34px 90px rgba(74, 55, 34, 0.16), 0 0 0 1px ${accentSoft}`
+          : `0 36px 90px rgba(0,0,0,0.46), 0 0 70px ${accentSoft}`,
+      }}
+      sx={{
+        "@media (prefers-reduced-motion: reduce)": {
+          transition: "none",
+          "&:hover": { transform: "none" },
+        },
+      }}
     >
-      <Stack
-        direction="column"
-        spacing={{ base: 4, md: 6 }}
-        align="center"
-        textAlign="center"
+      <Box
+        display="flex"
+        flexDirection="column"
+        justifyContent="space-between"
+        h="100%"
+        gap={6}
+        position="relative"
+        zIndex={1}
       >
         <Box
-          w={{ base: "140px", md: "160px" }}
-          minW={{ base: "140px", md: "160px" }}
+          w="100%"
+          minH={{ base: "190px", md: "235px" }}
           display="flex"
           justifyContent="center"
           alignItems="center"
-          animation={`${drift} 6s ease-in-out infinite`}
+          position="relative"
+          _before={{
+            content: '""',
+            position: "absolute",
+            w: { base: "180px", md: "220px" },
+            h: { base: "180px", md: "220px" },
+            borderRadius: "full",
+            border: `1px solid ${accent}`,
+            opacity: 0.24,
+          }}
+          _after={{
+            content: '""',
+            position: "absolute",
+            w: { base: "140px", md: "175px" },
+            h: { base: "140px", md: "175px" },
+            borderRadius: "full",
+            bg: accentSoft,
+            filter: "blur(18px)",
+          }}
         >
-          {visual}
+          <Box
+            position="relative"
+            zIndex={1}
+            transform="scale(1.16)"
+            animation={`${drift} 6s ease-in-out infinite`}
+            sx={{
+              "@media (prefers-reduced-motion: reduce)": { animation: "none" },
+            }}
+          >
+            {visual}
+          </Box>
         </Box>
-        <VStack spacing={3} align="center">
+        <VStack spacing={4} align={textDirection === "rtl" ? "flex-end" : "flex-start"}>
           <Heading
-            size="md"
-            fontFamily="monospace"
-            letterSpacing="wider"
+            fontSize={{ base: "2xl", md: "3xl" }}
+            lineHeight="1.05"
+            fontFamily="'DM Sans', sans-serif"
+            letterSpacing="-0.035em"
+            fontWeight="800"
             color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
-            textAlign={"center"}
+            textAlign={descriptionAlign}
           >
             {title}
           </Heading>
           <Text
             color={isLightTheme ? APP_TEXT_SECONDARY : "gray.400"}
-            fontSize={{ base: "xs", md: "md" }}
-            maxW="520px"
-            fontFamily="monospace"
+            fontSize={{ base: "sm", md: "md" }}
+            lineHeight="1.7"
+            fontFamily="'DM Sans', sans-serif"
             dir={textDirection}
             textAlign={descriptionAlign}
             sx={{ unicodeBidi: "plaintext" }}
           >
             {description}
           </Text>
-          <HStack spacing={3} align="center" justify="center" flexWrap="wrap">
+          <HStack spacing={3} align="center" justify="flex-start" flexWrap="wrap" pt={1}>
             <Button
               {...primaryActionProps}
-              variant="outline"
-              bg={isLightTheme ? APP_SURFACE_ELEVATED : undefined}
+              bg={primaryActionColor}
               borderColor={primaryActionColor}
-              color={primaryActionColor}
-              fontFamily="monospace"
-              size="sm"
+              color="white"
+              textShadow={buttonTextShadow}
+              fontFamily="'DM Sans', sans-serif"
+              fontWeight="800"
+              size="md"
               px={6}
-              py={4}
-              minH="44px"
+              minH="48px"
+              rightIcon={<Text as="span" fontSize="lg">↗</Text>}
+              boxShadow={`0px 4px 0px ${shadowAccent}`}
               _hover={{
-                bg: isLightTheme ? APP_SURFACE_MUTED : "transparent",
+                bg: primaryActionColor,
                 borderColor: primaryActionColor,
-                color: primaryActionColor,
+                color: "white",
                 textDecoration: "none",
-                opacity: 0.8,
+                transform: "translateY(-1px)",
+                boxShadow: `0px 4px 0px ${shadowAccent}`,
               }}
               _active={{
-                bg: isLightTheme ? APP_SURFACE_MUTED : "transparent",
-                color: primaryActionColor,
+                bg: primaryActionColor,
+                color: "white",
+                transform: "translateY(3px)",
+                boxShadow: `0px 1px 0px ${shadowAccent}`,
               }}
               _focus={{
-                boxShadow: "none",
+                boxShadow: `0px 4px 0px ${shadowAccent}`,
               }}
               sx={{
-                "&:visited": { color: primaryActionColor },
+                "&:visited": { color: "white" },
               }}
             >
               {launchAppText || "Launch app"}
@@ -864,8 +1260,473 @@ function LinkCard({
             ) : null}
           </HStack>
         </VStack>
-      </Stack>
+      </Box>
     </Box>
+  );
+}
+
+function LinksHero({
+  heroCopy,
+  translations,
+  isLightTheme,
+  isRtl,
+  directionalTextAlign,
+  primaryAccent,
+  profilePicture,
+  randomCharacterKey,
+  welcomeText,
+  editProfileText,
+  onProfileOpen,
+  onAboutOpen,
+  onSocialClick,
+  languageControl,
+  themeControl,
+}) {
+  const socialItems = [
+    {
+      label: "Instagram",
+      icon: <FaInstagram size={20} />,
+      bg: "radial-gradient(circle at 30% 107%, #fdf497 0%, #fd5949 45%, #d6249f 62%, #285AEB 92%)",
+      url: "https://www.instagram.com/sheilfer",
+    },
+    {
+      label: "LinkedIn",
+      icon: <FaLinkedinIn size={16} />,
+      bg: "#0A66C2",
+      url: "https://www.linkedin.com/in/sheilfer",
+    },
+    {
+      label: "Patreon",
+      icon: <SiPatreon size={16} />,
+      bg: "#111111",
+      url: "https://subscribe.piyali.app/",
+    },
+  ];
+
+  return (
+    <Container maxW="container.xl" position="relative" zIndex={1}>
+      <Box
+        as="nav"
+        display="flex"
+        justifyContent="flex-end"
+        alignItems="center"
+        py={{ base: 4, md: 5 }}
+        w="100%"
+      >
+        <HStack
+          spacing={{ base: 2.5, md: 3 }}
+          dir="ltr"
+          px={{ base: 2.5, md: 3 }}
+          py={{ base: 2, md: 1.5 }}
+          borderRadius={{ base: "20px", md: "18px" }}
+          bg={isLightTheme ? "rgba(255,250,242,0.7)" : "rgba(7,16,29,0.68)"}
+          border="1px solid"
+          borderColor={isLightTheme ? "rgba(91,72,50,0.13)" : "whiteAlpha.200"}
+          boxShadow={isLightTheme ? APP_SHADOW : "0 14px 34px rgba(0,0,0,0.24)"}
+          backdropFilter="blur(18px)"
+        >
+          {socialItems.map((item) => (
+            <Box
+              key={item.label}
+              as="button"
+              type="button"
+              aria-label={item.label}
+              bg={item.bg}
+              borderRadius="10px"
+              w={{ base: "36px", md: "34px" }}
+              h={{ base: "36px", md: "34px" }}
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+              color="white"
+              border="0"
+              p={0}
+              lineHeight="0"
+              overflow="hidden"
+              appearance="none"
+              backgroundClip="padding-box"
+              transition="transform 180ms ease"
+              _focusVisible={{ boxShadow: `0 0 0 3px ${primaryAccent}55` }}
+              _hover={{ transform: "translateY(-2px) scale(1.04)" }}
+              onClick={() => onSocialClick(item.label.toLowerCase(), item.url)}
+            >
+              {item.icon}
+            </Box>
+          ))}
+          {languageControl}
+          {themeControl}
+        </HStack>
+      </Box>
+
+      <Box
+        minH={{ base: "auto", lg: "calc(100dvh - 92px)" }}
+        display="grid"
+        gridTemplateColumns={{ base: "1fr", lg: "minmax(0, 1.08fr) minmax(420px, 0.92fr)" }}
+        alignItems="center"
+        gap={{ base: 10, lg: 7 }}
+        py={{ base: 10, md: 14, lg: 6 }}
+      >
+        <VStack
+          align={isRtl ? "flex-end" : "flex-start"}
+          spacing={{ base: 6, md: 7 }}
+          textAlign={directionalTextAlign}
+          animation={`${heroRise} 700ms cubic-bezier(.2,.8,.2,1) both`}
+          sx={{ "@media (prefers-reduced-motion: reduce)": { animation: "none" } }}
+        >
+          <HStack
+            spacing={{ base: 3, md: 4 }}
+            flexWrap="wrap"
+            justify={isRtl ? "flex-end" : "flex-start"}
+          >
+            <HStack spacing={3}>
+              <Text
+                fontFamily="monospace"
+                fontSize={{ base: "xs", md: "sm" }}
+                color={isLightTheme ? APP_TEXT_SECONDARY : "gray.300"}
+              >
+                {translations.welcome}, {welcomeText}
+              </Text>
+            </HStack>
+            <ChakraButton
+              onClick={onProfileOpen}
+              leftIcon={<LuPencilLine size={15} strokeWidth={2.2} />}
+              h="38px"
+              minW="auto"
+              px={4}
+              py={0}
+              borderRadius="full"
+              bg={isLightTheme ? "rgba(255,255,255,0.58)" : "whiteAlpha.100"}
+              border="1px solid"
+              borderColor={isLightTheme ? "rgba(15,118,110,0.3)" : "rgba(86,240,216,0.38)"}
+              color={primaryAccent}
+              fontFamily="'DM Sans', sans-serif"
+              fontSize="sm"
+              fontWeight="700"
+              lineHeight="1"
+              boxShadow="none"
+              transition="background 180ms ease, border-color 180ms ease, transform 180ms ease"
+              _hover={{
+                bg: isLightTheme ? "rgba(15,118,110,0.08)" : "rgba(86,240,216,0.1)",
+                borderColor: primaryAccent,
+                boxShadow: "none",
+                transform: "translateY(-1px)",
+              }}
+              _active={{
+                bg: isLightTheme ? "rgba(15,118,110,0.12)" : "rgba(86,240,216,0.14)",
+                transform: "translateY(0)",
+                boxShadow: "none",
+              }}
+              _focusVisible={{ boxShadow: `0 0 0 3px ${primaryAccent}33` }}
+            >
+              {editProfileText}
+            </ChakraButton>
+          </HStack>
+
+          <Heading
+            as="h1"
+            fontFamily="'DM Sans', sans-serif"
+            fontSize={{ base: "clamp(3.35rem, 15.5vw, 5.6rem)", md: "clamp(5rem, 8.7vw, 8.4rem)" }}
+            lineHeight="0.87"
+            letterSpacing="-0.073em"
+            fontWeight="900"
+            maxW="920px"
+          >
+            {heroCopy.titleLead}{" "}
+            <Text
+              as="span"
+              display="inline"
+              bgGradient={
+                isLightTheme
+                  ? "linear(to-r, #0f766e, #d97706, #d13d74, #3158a6)"
+                  : "linear(to-r, #56f0d8, #ffbd59, #ff74aa, #7ca7ff)"
+              }
+              bgClip="text"
+              bgSize="220% 220%"
+              animation={`${gradientShift} 8s ease infinite`}
+            >
+              {heroCopy.titleAccent}
+            </Text>
+          </Heading>
+
+          <Text
+            maxW="650px"
+            fontFamily="'DM Sans', sans-serif"
+            fontSize={{ base: "lg", md: "2xl" }}
+            lineHeight="1.55"
+            color={isLightTheme ? APP_TEXT_SECONDARY : "gray.300"}
+          >
+            {heroCopy.body}
+          </Text>
+
+          <HStack spacing={3} flexWrap="wrap" justify={isRtl ? "flex-end" : "flex-start"}>
+            <Button
+              onClick={onAboutOpen}
+              variant="ghost"
+              fontFamily="'DM Sans', sans-serif"
+              fontWeight="800"
+              size="lg"
+              h="56px"
+              px={6}
+              _hover={{ bg: isLightTheme ? "rgba(255,255,255,0.5)" : "whiteAlpha.100" }}
+            >
+              {translations.about} ↗
+            </Button>
+          </HStack>
+
+        </VStack>
+
+        <HeroOrbit
+          isLightTheme={isLightTheme}
+          profilePicture={profilePicture}
+          randomCharacterKey={randomCharacterKey}
+        />
+      </Box>
+    </Container>
+  );
+}
+
+function HeroOrbit({ isLightTheme, profilePicture, randomCharacterKey }) {
+  const orbitLabels = [
+    { label: "PIYALI", top: "10%", left: "4%", color: "#0f9f91" },
+    {
+      label: "ROBOTS BUILDING EDUCATION",
+      lines: ["ROBOTS", "BUILDING", "EDUCATION"],
+      top: "13%",
+      right: "-2%",
+      color: "#d97706",
+    },
+    {
+      label: "FREE DUAL CITIZEN PLANNER",
+      lines: ["FREE", "DUAL CITIZEN", "PLANNER"],
+      bottom: "13%",
+      left: "-4%",
+      color: isLightTheme ? "#3158a6" : "#9bbcff",
+    },
+    { label: "PATREON", bottom: "7%", right: "5%", color: "#d13d74" },
+  ];
+  const orbitRings = [
+    {
+      inset: "4%",
+      color: isLightTheme ? "#3158a6" : "#9bbcff",
+      duration: 34,
+      offset: 13,
+      reverse: true,
+      dashed: true,
+    },
+    {
+      inset: "13%",
+      color: isLightTheme ? "#0f9f91" : "#56f0d8",
+      duration: 22,
+      offset: 2,
+      reverse: false,
+    },
+    {
+      inset: "20%",
+      color: isLightTheme ? "#d97706" : "#ffbd59",
+      duration: 17,
+      offset: 9,
+      reverse: true,
+    },
+    {
+      inset: "25%",
+      color: isLightTheme ? "#d13d74" : "#ff74aa",
+      duration: 13,
+      offset: 6,
+      reverse: false,
+    },
+  ];
+
+  return (
+    <Box
+      w="100%"
+      maxW={{ base: "520px", lg: "610px" }}
+      mx="auto"
+      aspectRatio="1"
+      position="relative"
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+      animation={`${heroRise} 850ms 120ms cubic-bezier(.2,.8,.2,1) both`}
+      sx={{ "@media (prefers-reduced-motion: reduce)": { animation: "none" } }}
+    >
+      <Box
+        position="absolute"
+        inset="7%"
+        borderRadius="full"
+        bg={
+          isLightTheme
+            ? "radial-gradient(circle at 36% 28%, rgba(255,255,255,0.86) 0%, rgba(255,213,168,0.22) 24%, transparent 46%), radial-gradient(circle at center, rgba(255,213,168,0.42) 0%, rgba(74,196,181,0.3) 61%, transparent 70%)"
+            : "radial-gradient(circle at 36% 28%, rgba(255,255,255,0.14) 0%, rgba(255,92,168,0.12) 24%, transparent 45%), radial-gradient(circle at center, rgba(255,92,168,0.18) 0%, rgba(0,255,255,0.16) 61%, transparent 70%)"
+        }
+        animation={`${haloPulse} 7s ease-in-out infinite`}
+      />
+      {orbitRings.map((ring) => (
+        <Box
+          key={ring.color}
+          position="absolute"
+          inset={ring.inset}
+          borderRadius="full"
+          border="1px solid"
+          borderStyle={ring.dashed ? "dashed" : "solid"}
+          borderColor={
+            isLightTheme
+              ? ring.dashed
+                ? "rgba(91,72,50,0.18)"
+                : "rgba(73,102,92,0.22)"
+              : "rgba(255,255,255,0.18)"
+          }
+          animation={`${orbitSpin} ${ring.duration}s linear infinite`}
+          _before={{
+            content: '""',
+            position: "absolute",
+            top: "-4px",
+            left: "calc(50% - 4px)",
+            w: "8px",
+            h: "8px",
+            borderRadius: "full",
+            bg: ring.color,
+            boxShadow: `0 0 7px 2px ${ring.color}, 0 0 20px ${ring.color}`,
+          }}
+          sx={{
+            animationDelay: `-${ring.offset}s`,
+            animationDirection: ring.reverse ? "reverse" : "normal",
+            "@media (prefers-reduced-motion: reduce)": {
+              animation: "none",
+            },
+          }}
+        />
+      ))}
+      <Box
+        w={{ base: "46%", md: "44%" }}
+        aspectRatio="1"
+        borderRadius="full"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        bg={isLightTheme ? "rgba(255,250,242,0.76)" : "rgba(7,16,29,0.76)"}
+        backdropFilter="blur(18px)"
+        border="1px solid"
+        borderColor={isLightTheme ? "rgba(91,72,50,0.15)" : "whiteAlpha.300"}
+        boxShadow={isLightTheme ? "0 30px 80px rgba(75,55,32,0.18)" : "0 30px 90px rgba(0,0,0,0.45)"}
+        position="relative"
+        zIndex={2}
+        overflow="hidden"
+      >
+        {profilePicture ? (
+          <img src={profilePicture} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        ) : (
+          <RandomCharacter notSoRandomCharacter={randomCharacterKey} width="170px" containerHeight={210} />
+        )}
+      </Box>
+      {orbitLabels.map((item) => (
+        <Box
+          key={item.label}
+          position="absolute"
+          top={item.top}
+          bottom={item.bottom}
+          left={item.left}
+          right={item.right}
+          px={{ base: 3, md: 4 }}
+          py={{ base: 2, md: 3 }}
+          borderRadius="full"
+          bg={isLightTheme ? "rgba(255,250,242,0.84)" : "rgba(7,16,29,0.84)"}
+          backdropFilter="blur(14px)"
+          border="1px solid"
+          borderColor={item.color}
+          boxShadow={`0 12px 32px ${item.color}22`}
+          zIndex={3}
+          animation={`${drift} ${5.4 + item.label.length * 0.12}s ease-in-out infinite`}
+        >
+          <Text
+            fontFamily="monospace"
+            fontSize={{ base: "8px", md: "xs" }}
+            fontWeight="bold"
+            lineHeight={item.lines ? "1.35" : "1"}
+            letterSpacing="0.11em"
+            textAlign="center"
+            whiteSpace={item.lines ? "normal" : "nowrap"}
+            color={item.color}
+          >
+            {item.lines
+              ? item.lines.map((line) => (
+                  <Text as="span" key={line} display="block">
+                    {line}
+                  </Text>
+                ))
+              : item.label}
+          </Text>
+        </Box>
+      ))}
+    </Box>
+  );
+}
+
+function ProjectShowcase({
+  heroCopy,
+  links,
+  isLightTheme,
+  isRtl,
+  directionalTextAlign,
+  pageDirection,
+  primaryAccent,
+  onLaunchSound,
+  onLaunchEvent,
+}) {
+  return (
+    <Container maxW="container.xl" position="relative" zIndex={1} pb={{ base: 20, md: 28 }}>
+      <Box id="projects" pt={{ base: 16, md: 24 }} scrollMarginTop="24px">
+        <Box
+          display="grid"
+          gridTemplateColumns={{ base: "1fr", md: "minmax(0, 0.8fr) minmax(0, 1.2fr)" }}
+          gap={{ base: 5, md: 10 }}
+          alignItems="end"
+          mb={{ base: 10, md: 14 }}
+        >
+          <VStack align={isRtl ? "flex-end" : "flex-start"} spacing={3}>
+            <Text fontFamily="monospace" fontSize="xs" fontWeight="bold" letterSpacing="0.18em" color={primaryAccent}>
+              {heroCopy.workLabel}
+            </Text>
+            <Heading
+              fontFamily="'DM Sans', sans-serif"
+              fontSize={{ base: "4xl", md: "6xl" }}
+              lineHeight="0.95"
+              letterSpacing="-0.055em"
+              textAlign={directionalTextAlign}
+            >
+              {heroCopy.workTitle}
+            </Heading>
+          </VStack>
+          <Text
+            fontFamily="'DM Sans', sans-serif"
+            fontSize={{ base: "md", md: "xl" }}
+            lineHeight="1.65"
+            color={isLightTheme ? APP_TEXT_SECONDARY : "gray.300"}
+            textAlign={directionalTextAlign}
+            maxW="680px"
+          >
+            {heroCopy.workBody}
+          </Text>
+        </Box>
+
+        <Box display="grid" gridTemplateColumns={{ base: "1fr", md: "repeat(12, minmax(0, 1fr))" }} gap={{ base: 5, md: 6 }}>
+          {links.map((link, index) => (
+            <Box
+              key={link.title}
+              gridColumn={{ base: "1", md: index === 0 || index === 3 ? "span 7" : "span 5" }}
+            >
+              <LinkCard
+                {...link}
+                isLightTheme={isLightTheme}
+                textDirection={pageDirection}
+                onLaunchSound={onLaunchSound}
+                onLaunchEvent={() => onLaunchEvent(link)}
+                launchAppText={link.launchAppText}
+              />
+            </Box>
+          ))}
+        </Box>
+      </Box>
+    </Container>
   );
 }
 
@@ -880,10 +1741,12 @@ export default function LinksPage() {
   const { language, initLanguage, setLanguage, t } = useLanguage();
   const translations = t(linksPageTranslations);
   const activeLanguage = language || "en";
+  const heroCopy = HERO_COPY[activeLanguage] || HERO_COPY.en;
+  const profileHeroCopy =
+    PROFILE_HERO_COPY[activeLanguage] || PROFILE_HERO_COPY.en;
   const pageDirection = getLanguageDirection(activeLanguage);
   const isRtl = pageDirection === "rtl";
   const directionalTextAlign = isRtl ? "right" : "left";
-  const [npub, setNpub] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [usernameInput, setUsernameInput] = useState("");
   const [nsecInput, setNsecInput] = useState("");
@@ -895,7 +1758,6 @@ export default function LinksPage() {
     () => Math.floor(Math.random() * 21) + 20,
   ); // Random between 20-40
   const [noSabosOrbState] = useState(pickRandomVoiceOrbState);
-  const [roleIndex, setRoleIndex] = useState(0);
   const [hasCopiedRbeSecretKey, setHasCopiedRbeSecretKey] = useState(false);
 
   // Wallet state
@@ -1008,14 +1870,6 @@ export default function LinksPage() {
     };
   }, [walletInit, initWallet]);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setRoleIndex((prev) => (prev + 1) % roleCycle.length);
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, []);
-
   // Initialize language based on timezone detection
   useEffect(() => {
     initLanguage();
@@ -1025,15 +1879,11 @@ export default function LinksPage() {
     syncDocumentLanguage(language);
   }, [language]);
 
-  // Load stored npub, displayName, and profilePicture
+  // Load stored displayName and profilePicture
   useEffect(() => {
-    const storedNpub = localStorage.getItem("local_npub");
     const storedDisplayName = localStorage.getItem("displayName");
     const storedProfilePicture = localStorage.getItem("profilePicture");
     const storedProfilePictureUrl = localStorage.getItem("profilePictureUrl");
-    if (storedNpub) {
-      setNpub(storedNpub);
-    }
     if (storedDisplayName) {
       setDisplayName(storedDisplayName);
       setUsernameInput(storedDisplayName);
@@ -1164,6 +2014,12 @@ export default function LinksPage() {
         </Box>
       ),
       launchAppText: translations.launchApp,
+      accent: isLightTheme ? "#0f9f91" : "#56f0d8",
+      accentSoft: isLightTheme
+        ? "rgba(15, 159, 145, 0.22)"
+        : "rgba(86, 240, 216, 0.22)",
+      shadowAccent: isLightTheme ? "#08776f" : "#15968b",
+      buttonTextShadow: "0px 1px 2px rgba(7, 16, 29, 0.55)",
     },
     {
       title: translations.rbeTitle,
@@ -1185,6 +2041,12 @@ export default function LinksPage() {
         </Box>
       ),
       launchAppText: translations.launchApp,
+      accent: isLightTheme ? "#d97706" : "#ffbd59",
+      accentSoft: isLightTheme
+        ? "rgba(217, 119, 6, 0.18)"
+        : "rgba(255, 189, 89, 0.2)",
+      shadowAccent: isLightTheme ? "#9f5404" : "#c57b18",
+      buttonTextShadow: "0px 1px 2px rgba(7, 16, 29, 0.55)",
     },
     // {
     //   title: translations.roadmapCashTitle,
@@ -1221,6 +2083,11 @@ export default function LinksPage() {
         </Box>
       ),
       launchAppText: translations.launchApp,
+      accent: isLightTheme ? "#3158a6" : "#7ca7ff",
+      accentSoft: isLightTheme
+        ? "rgba(49, 88, 166, 0.18)"
+        : "rgba(124, 167, 255, 0.2)",
+      shadowAccent: isLightTheme ? "#203d78" : "#4668b8",
     },
     {
       title: translations.patreonTitle,
@@ -1229,21 +2096,21 @@ export default function LinksPage() {
       analyticsName: "patreon",
       visual: (
         <Box
-          w={{ base: "110px", md: "120px" }}
-          h={{ base: "110px", md: "120px" }}
+          w={{ base: "190px", md: "220px" }}
+          h={{ base: "190px", md: "220px" }}
           display="flex"
           alignItems="center"
           justifyContent="center"
         >
-          <RoleCanvas
-            role={roleCycle[roleIndex]}
-            width={90}
-            height={90}
-            transparent={true}
-          />
+          <PatreonMotionMark isLightTheme={isLightTheme} />
         </Box>
       ),
       launchAppText: translations.subscribe,
+      accent: isLightTheme ? "#d13d74" : "#ff74aa",
+      accentSoft: isLightTheme
+        ? "rgba(209, 61, 116, 0.18)"
+        : "rgba(255, 116, 170, 0.2)",
+      shadowAccent: isLightTheme ? "#91254f" : "#b83f73",
       // The one-time "Buy apps" action is intentionally hidden while Patreon
       // OAuth membership is the supported unlock path.
       // secondaryAction: {
@@ -1259,10 +2126,7 @@ export default function LinksPage() {
     if (displayName) {
       return displayName;
     }
-    if (npub) {
-      return npub.substring(0, 7);
-    }
-    return "...";
+    return profileHeroCopy.friend;
   };
 
   // Handle profile save (username and picture)
@@ -1442,7 +2306,6 @@ export default function LinksPage() {
       const result = await auth(nsecInput.trim());
       if (result) {
         const newNpub = result.user.npub;
-        setNpub(newNpub);
         setNsecInput("");
 
         // Fetch profile from Nostr to get username and picture
@@ -1515,12 +2378,9 @@ export default function LinksPage() {
     const createInstantKeys = async () => {
       try {
         const defaultDisplayName = "";
-        const did = await generateNostrKeys(defaultDisplayName);
+        await generateNostrKeys(defaultDisplayName);
         if (!isMounted) return;
         localStorage.setItem("displayName", defaultDisplayName);
-        if (did?.npub) {
-          setNpub(did.npub);
-        }
       } catch (error) {
         console.error("Failed to generate instant Nostr keys:", error);
       }
@@ -1549,224 +2409,85 @@ export default function LinksPage() {
       }}
     >
       <RetroStarfield isLightTheme={isLightTheme} />
-      <Container
-        maxW="container.md"
-        position="relative"
-        zIndex={1}
-        mt={2}
-        pb={{ base: 16, md: 16 }}
-      >
-        <VStack spacing={6} textAlign="center">
-          {/* Top bar: social links, language, and theme controls */}
-          <Box
-            w="100%"
-            display="flex"
-            justifyContent="flex-end"
-            alignItems="center"
-            px={{ base: 3, sm: 4, md: 0 }}
-            pt={{ base: 3, md: 1 }}
-          >
-            <HStack spacing={{ base: 3, md: 4 }} dir="ltr">
-              <Box
-                aria-label="Instagram"
-                bg="radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%)"
-                borderRadius="12px"
-                style={{ cornerShape: BUTTON_SQUIRCLE_SHAPE }}
-                w="36px"
-                h="36px"
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-                color="white"
-                cursor="pointer"
-                onClick={() => {
-                  handleSelectSound();
-                  if (!isLocalhost()) {
-                    logEvent(analytics, "links_social_click", {
-                      platform: "instagram",
-                    });
-                  }
-                  window.open(
-                    "https://www.instagram.com/sheilfer",
-                    "_blank",
-                    "noopener,noreferrer",
-                  );
-                }}
-              >
-                <FaInstagram size={24} />
-              </Box>
-              <Box
-                aria-label="LinkedIn"
-                bg="#0A66C2"
-                borderRadius="12px"
-                style={{ cornerShape: BUTTON_SQUIRCLE_SHAPE }}
-                w="36px"
-                h="36px"
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-                color="white"
-                cursor="pointer"
-                onClick={() => {
-                  handleSelectSound();
-                  if (!isLocalhost()) {
-                    logEvent(analytics, "links_social_click", {
-                      platform: "linkedin",
-                    });
-                  }
-                  window.open(
-                    "https://www.linkedin.com/in/sheilfer",
-                    "_blank",
-                    "noopener,noreferrer",
-                  );
-                }}
-              >
-                <FaLinkedinIn size={18} />
-              </Box>
-              <Box
-                aria-label="Patreon"
-                bg="black"
-                borderRadius="12px"
-                style={{ cornerShape: BUTTON_SQUIRCLE_SHAPE }}
-                w="36px"
-                h="36px"
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-                color="white"
-                cursor="pointer"
-                onClick={() => {
-                  handleSelectSound();
-                  if (!isLocalhost()) {
-                    logEvent(analytics, "links_social_click", {
-                      platform: "patreon",
-                    });
-                  }
-                  window.open(
-                    "https://subscribe.piyali.app/",
-                    "_blank",
-                    "noopener,noreferrer",
-                  );
-                }}
-              >
-                <SiPatreon size={18} />
-              </Box>
-              <LanguageMenuFixed
-                language={language}
-                onSelect={setLanguage}
-                playSound={handleSelectSound}
-                translations={translations}
-                isLightTheme={isLightTheme}
-              />
-              <ThemeModeToggle
-                themeMode={themeMode}
-                onModeChange={handleThemeModeChange}
-              />
-            </HStack>
-          </Box>
-          {/* Profile Picture or Random Character */}
-          {profilePicture ? (
-            <Box
-              w="100px"
-              h="100px"
-              borderRadius="full"
-              overflow="hidden"
-              border="3px solid"
-              borderColor={isLightTheme ? APP_BORDER_STRONG : primaryAccent}
-              boxShadow={
-                isLightTheme
-                  ? "0 10px 24px rgba(111, 86, 54, 0.12)"
-                  : "0 0 20px rgba(0, 255, 255, 0.4)"
-              }
-            >
-              <img
-                src={profilePicture}
-                alt="Profile"
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                }}
-              />
-            </Box>
-          ) : (
-            <RandomCharacter
-              notSoRandomCharacter={randomCharacterKey}
-              width="50px"
-            />
-          )}
-
-          <Heading
-            size="sm"
-            fontFamily="monospace"
-            letterSpacing="wider"
-            color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
-          >
-            {translations.welcome}, {getWelcomeText()}
-          </Heading>
-
-          <HStack spacing={3}>
-            <Button
-              onClick={() => {
-                handleSelectSound();
-                onOpen();
-              }}
-              variant="outline"
-              bg={isLightTheme ? APP_SURFACE : undefined}
-              fontFamily="monospace"
-              borderColor={primaryAccent}
-              color={primaryAccent}
-              boxShadow={isLightTheme ? APP_SHADOW : undefined}
-              _hover={{
-                bg: isLightTheme ? APP_SURFACE_MUTED : "transparent",
-                borderColor: primaryAccent,
-              }}
-            >
-              {translations.profile}
-            </Button>
-            <Button
-              onClick={() => {
-                handleSelectSound();
-                onAboutOpen();
-              }}
-              variant="outline"
-              bg={isLightTheme ? APP_SURFACE : undefined}
-              fontFamily="monospace"
-              borderColor={primaryAccent}
-              color={primaryAccent}
-              boxShadow={isLightTheme ? APP_SHADOW : undefined}
-              _hover={{
-                bg: isLightTheme ? APP_SURFACE_MUTED : "transparent",
-                borderColor: primaryAccent,
-              }}
-            >
-              {translations.about}
-            </Button>
-          </HStack>
-        </VStack>
-
-        {/* Links List */}
-        <VStack spacing={6} w="100%" mt={6}>
-          {links.map((link) => (
-            <LinkCard
-              key={link.title}
-              {...link}
-              isLightTheme={isLightTheme}
-              textDirection={pageDirection}
-              onLaunchSound={handleSubmitActionSound}
-              onLaunchEvent={() => {
-                if (!isLocalhost() && !link.onLaunch) {
-                  logEvent(analytics, "links_launch_app", {
-                    app: link.analyticsName,
-                  });
-                }
-              }}
-              launchAppText={link.launchAppText}
-            />
-          ))}
-        </VStack>
-
-      </Container>
+      <Box
+        position="absolute"
+        top={{ base: "80px", md: "20px" }}
+        insetInlineStart={{ base: "-180px", md: "-120px" }}
+        w={{ base: "380px", md: "600px" }}
+        h={{ base: "380px", md: "600px" }}
+        borderRadius="full"
+        bg={isLightTheme ? "rgba(255, 183, 104, 0.22)" : "rgba(255, 93, 168, 0.14)"}
+        filter="blur(105px)"
+        pointerEvents="none"
+      />
+      <Box
+        position="absolute"
+        top={{ base: "580px", md: "260px" }}
+        insetInlineEnd={{ base: "-190px", md: "-140px" }}
+        w={{ base: "400px", md: "680px" }}
+        h={{ base: "400px", md: "680px" }}
+        borderRadius="full"
+        bg={isLightTheme ? "rgba(56, 189, 172, 0.18)" : "rgba(0, 255, 255, 0.12)"}
+        filter="blur(115px)"
+        pointerEvents="none"
+      />
+      <LinksHero
+        heroCopy={heroCopy}
+        translations={translations}
+        isLightTheme={isLightTheme}
+        isRtl={isRtl}
+        directionalTextAlign={directionalTextAlign}
+        primaryAccent={primaryAccent}
+        profilePicture={profilePicture}
+        randomCharacterKey={randomCharacterKey}
+        welcomeText={getWelcomeText()}
+        editProfileText={profileHeroCopy.editProfile}
+        onProfileOpen={() => {
+          handleSelectSound();
+          onOpen();
+        }}
+        onAboutOpen={() => {
+          handleSelectSound();
+          onAboutOpen();
+        }}
+        onSocialClick={(platform, url) => {
+          handleSelectSound();
+          if (!isLocalhost()) {
+            logEvent(analytics, "links_social_click", { platform });
+          }
+          window.open(url, "_blank", "noopener,noreferrer");
+        }}
+        languageControl={
+          <LanguageMenuFixed
+            language={language}
+            onSelect={setLanguage}
+            playSound={handleSelectSound}
+            translations={translations}
+            isLightTheme={isLightTheme}
+          />
+        }
+        themeControl={
+          <ThemeModeToggle
+            themeMode={themeMode}
+            onModeChange={handleThemeModeChange}
+          />
+        }
+      />
+      <ProjectShowcase
+        heroCopy={heroCopy}
+        links={links}
+        isLightTheme={isLightTheme}
+        isRtl={isRtl}
+        directionalTextAlign={directionalTextAlign}
+        pageDirection={pageDirection}
+        primaryAccent={primaryAccent}
+        onLaunchSound={handleSubmitActionSound}
+        onLaunchEvent={(link) => {
+          if (!isLocalhost() && !link.onLaunch) {
+            logEvent(analytics, "links_launch_app", { app: link.analyticsName });
+          }
+        }}
+      />
 
       {/* Robots Building Education Modal */}
       <Modal
@@ -1842,15 +2563,24 @@ export default function LinksPage() {
                   py={4}
                   boxShadow={
                     isLightTheme
-                      ? "0 8px 18px rgba(15, 118, 110, 0.16)"
-                      : undefined
+                      ? "0 8px 18px rgba(15, 118, 110, 0.16), 0px 4px 0px #0b6f68"
+                      : "0px 4px 0px #006b68"
                   }
                   _hover={{
                     bg: isLightTheme ? "#0d9488" : "#009c9c",
                     color: "white",
                     textDecoration: "none",
+                    boxShadow: isLightTheme
+                      ? "0 8px 18px rgba(15, 118, 110, 0.16), 0px 4px 0px #0b6f68"
+                      : "0px 4px 0px #006b68, 0 10px 24px rgba(0, 156, 156, 0.22)",
                   }}
-                  _active={{ color: "white" }}
+                  _active={{
+                    color: "white",
+                    boxShadow: isLightTheme
+                      ? "0 4px 12px rgba(15, 118, 110, 0.16)"
+                      : "0px 1px 0px #006b68",
+                    transform: "translateY(3px)",
+                  }}
                   _visited={{ color: "white" }}
                   onClick={() => {
                     handleSubmitActionSound();
@@ -1880,11 +2610,24 @@ export default function LinksPage() {
                   py={4}
                   borderColor={isLightTheme ? linkAccent : undefined}
                   color={isLightTheme ? linkAccent : "white"}
-                  _hover={
-                    isLightTheme
-                      ? { bg: APP_SURFACE_MUTED, borderColor: linkAccent }
-                      : undefined
+                  boxShadow={
+                    isLightTheme ? "none" : "0 5px 0 #2563eb"
                   }
+                  _hover={{
+                    bg: isLightTheme ? APP_SURFACE_MUTED : "#38bdf8",
+                    borderColor: isLightTheme ? linkAccent : "#7dd3fc",
+                    color: isLightTheme ? linkAccent : "white",
+                    boxShadow: isLightTheme
+                      ? "none"
+                      : "0 5px 0 #2563eb, 0 12px 28px rgba(56, 189, 248, 0.28)",
+                  }}
+                  _active={{
+                    bg: isLightTheme ? APP_SURFACE_MUTED : "#0284c7",
+                    borderColor: isLightTheme ? linkAccent : "#38bdf8",
+                    color: isLightTheme ? linkAccent : "white",
+                    boxShadow: isLightTheme ? "none" : "0 2px 0 #1d4ed8",
+                    transform: "translateY(3px)",
+                  }}
                 >
                   {translations.copySecretKey}
                 </Button>
