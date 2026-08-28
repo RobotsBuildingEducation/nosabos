@@ -29,6 +29,38 @@ const parseJsonObject = (raw) => {
   }
 };
 
+export const VOCABULARY_MATCH_RESPONSE_SCHEMA = {
+  type: "object",
+  description: "One vocabulary matching exercise with exactly three pairs.",
+  properties: {
+    stem: {
+      type: "string",
+      description: "A short instruction in the target language.",
+    },
+    left: {
+      type: "array",
+      description: "Exactly three unique target-language vocabulary items.",
+      minItems: 3,
+      maxItems: 3,
+      items: { type: "string" },
+    },
+    right: {
+      type: "array",
+      description:
+        "Exactly three unique support-language meanings, ordered to match left.",
+      minItems: 3,
+      maxItems: 3,
+      items: { type: "string" },
+    },
+    hint: {
+      type: "string",
+      description: "A short hint in the support language.",
+    },
+  },
+  required: ["stem", "left", "right", "hint"],
+  additionalProperties: false,
+};
+
 export const isTutorialVocabularyLesson = (lessonContent) =>
   lessonContent?.topic === "tutorial" || lessonContent?.isTutorial === true;
 

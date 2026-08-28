@@ -441,6 +441,25 @@ test("normalization repairs harmless provider relationship mistakes", () => {
   });
   assert.ok(forge?.pieces.includes("ió"));
   assert.equal(forge?.answerWord, "escribió");
+
+  const repeatedForge = normalizeDelightQuestion("morphology_forge", {
+    sentence: "They ___ the word for emphasis.",
+    pieces: ["re", "say", "un", "re"],
+    answerPieces: ["re", "re", "say"],
+  });
+  assert.deepEqual(repeatedForge?.answerPieces, ["re", "re", "say"]);
+  assert.equal(
+    repeatedForge?.pieces.filter((piece) => piece === "re").length,
+    2,
+  );
+  assert.equal(repeatedForge?.answerWord, "reresay");
+  assert.equal(
+    isDelightQuestionLanguageConsistent(repeatedForge, {
+      targetLang: "en",
+      supportLang: "es",
+    }),
+    true,
+  );
 });
 
 test("Sentence Detective repairs a provider draft containing the corrected token", () => {
@@ -576,6 +595,114 @@ test("non-English support languages reject obvious English constraints", () => {
       supportLang: "es",
     }),
     false,
+  );
+});
+
+test("Three-Clue Mystery keeps a valid Japanese draft after removing optional romanization", () => {
+  const question = normalizeDelightQuestion(
+    "three_clue_mystery",
+    {
+      clues: [
+        "Son personas importantes en tu vida.",
+        "Pueden vivir juntas en una casa.",
+        "Incluye a padres, madres e hijos.",
+      ],
+      answer: "家族 (kazoku)",
+      acceptableAnswers: ["kazoku", "家族 / kazoku"],
+      example: "私は家族が大好きです。(I love my family.)",
+    },
+    { targetLang: "ja" },
+  );
+
+  assert.equal(question?.answer, "家族");
+  assert.deepEqual(question?.acceptableAnswers, []);
+  assert.equal(question?.example, "私は家族が大好きです。");
+  assert.equal(
+    isDelightQuestionLanguageConsistent(question, {
+      targetLang: "ja",
+      supportLang: "es",
+    }),
+    true,
+  );
+});
+
+test("Three-Clue Mystery still rejects copied English clues", () => {
+  const question = normalizeDelightQuestion(
+    "three_clue_mystery",
+    {
+      clues: [
+        "Choose exactly one objective for testing.",
+        "Pueden vivir juntas en una casa.",
+        "Incluye a padres, madres e hijos.",
+      ],
+      answer: "家族",
+    },
+    { targetLang: "ja" },
+  );
+
+  assert.equal(
+    isDelightQuestionLanguageConsistent(question, {
+      targetLang: "ja",
+      supportLang: "es",
+    }),
+    false,
+  );
+});
+
+test("script-aware cleanup also covers Chinese, Arabic, and Hindi targets", () => {
+  const cases = [
+    ["zh", "家人 (jiārén)", "家人"],
+    ["ar", "عائلة (family)", "عائلة"],
+    ["hi", "परिवार (parivaar)", "परिवार"],
+  ];
+
+  cases.forEach(([targetLang, rawAnswer, expectedAnswer]) => {
+    const question = normalizeDelightQuestion(
+      "three_clue_mystery",
+      {
+        clues: ["Primera pista", "Segunda pista", "Tercera pista"],
+        answer: rawAnswer,
+      },
+      { targetLang },
+    );
+    assert.equal(question?.answer, expectedAnswer);
+    assert.equal(
+      isDelightQuestionLanguageConsistent(question, {
+        targetLang,
+        supportLang: "es",
+      }),
+      true,
+    );
+  });
+});
+
+test("script-aware cleanup is shared by non-mystery variants", () => {
+  const question = normalizeDelightQuestion(
+    "dialogue_fork",
+    {
+      speaker: "Amiga",
+      line: "你好 (nǐ hǎo)",
+      options: [
+        "你好 (hello)",
+        "谢谢 (thanks)",
+        "再见 (goodbye)",
+        "对不起 (sorry)",
+      ],
+      answerIndex: 0,
+      reaction: "很高兴见到你 (Nice to meet you)",
+    },
+    { targetLang: "zh" },
+  );
+
+  assert.equal(question?.line, "你好");
+  assert.deepEqual(question?.options, ["你好", "谢谢", "再见", "对不起"]);
+  assert.equal(question?.reaction, "很高兴见到你");
+  assert.equal(
+    isDelightQuestionLanguageConsistent(question, {
+      targetLang: "zh",
+      supportLang: "es",
+    }),
+    true,
   );
 });
 

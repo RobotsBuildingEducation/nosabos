@@ -39,7 +39,10 @@ import FeedbackRail from "./FeedbackRail";
 import VoiceOrb from "./VoiceOrb";
 import XpProgressHeader from "./XpProgressHeader";
 import { SortableArea, SortableList, SortableItem } from "./dnd/Sortable";
-import { simplemodel } from "../firebaseResources/firebaseResources";
+import {
+  questionModel,
+  simplemodel,
+} from "../firebaseResources/firebaseResources";
 import translations from "../utils/translation";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
 import { awardXp } from "../utils/utils";
@@ -147,7 +150,7 @@ const APP_TEXT_MUTED = "var(--app-text-muted)";
 const AVAILABLE_VARIANTS = DELIGHT_VARIANT_IDS.map((variantId) =>
   DELIGHT_VARIANTS.find(({ id }) => id === variantId),
 ).filter(Boolean);
-const PROVIDER_GENERATION_TIMEOUT_MS = 30000;
+const PROVIDER_GENERATION_TIMEOUT_MS = 6000;
 const SENTENCE_DETECTIVE_CACHE_VERSION = "minimal-contract-v1";
 const DELIGHT_JSON_GENERATION_CONFIG = {
   thinkingConfig: { thinkingBudget: 0 },
@@ -4153,7 +4156,7 @@ export default function DelightQuestionLab({
     };
 
     const generateWithGemini = async (input) => {
-      const resp = await simplemodel.generateContent({
+      const resp = await questionModel.generateContent({
         contents: [{ role: "user", parts: [{ text: input }] }],
         generationConfig,
       });
@@ -4227,7 +4230,7 @@ export default function DelightQuestionLab({
       return requireValidQuestion(generated);
     };
 
-    const generationTask = simplemodel
+    const generationTask = questionModel
       ? generateWithProviderFallback({
           primary: () =>
             settleWithin(
@@ -4279,7 +4282,9 @@ export default function DelightQuestionLab({
           );
         }
         setQuestion(null);
-        setGenerationError("");
+        setGenerationError(
+          import.meta.env.DEV ? String(error?.message || "") : "",
+        );
       })
       .finally(() => {
         if (requestId === requestRef.current) {

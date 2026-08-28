@@ -207,6 +207,14 @@ const COPIED_META_INSTRUCTION_PATTERN =
 const OBVIOUS_ENGLISH_INSTRUCTION_PATTERN =
   /\b(?:make it|change (?:the|this|it)|write (?:a|the|your)|type (?:a|the|your)|find the|sort (?:the|each)|listen (?:for|to)|use all|according to the rule)\b/i;
 const TARGET_SCRIPT_RULES = {
+  ar: {
+    required: /\p{Script=Arabic}/u,
+    forbidden: /[A-Za-z]/,
+  },
+  hi: {
+    required: /\p{Script=Devanagari}/u,
+    forbidden: /[A-Za-z]/,
+  },
   ja: {
     required: /[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}]/u,
     forbidden: /[A-Za-z]/,
@@ -219,7 +227,45 @@ const TARGET_SCRIPT_RULES = {
     required: /\p{Script=Greek}/u,
     forbidden: /[A-Za-z]/,
   },
+  zh: {
+    required: /\p{Script=Han}/u,
+    forbidden: /[A-Za-z]/,
+  },
 };
+
+function cleanTargetScriptValue(value, targetLang) {
+  let text = String(value || "").normalize("NFC").trim();
+  const rule = TARGET_SCRIPT_RULES[targetLang];
+  if (!text || !rule) return text;
+
+  // Providers commonly append a romanization or translation to an otherwise
+  // valid target-language value. That annotation is not part of the exercise
+  // answer and should not make the entire structured draft unusable.
+  text = text
+    .replace(
+      /\s*(?:\[[^\]]*[A-Za-z][^\]]*\]|\([^)]*[A-Za-z][^)]*\)|（[^）]*[A-Za-z][^）]*）)\s*/gu,
+      " ",
+    )
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const candidates = text
+    .split(/\s*(?:\/|\||—|–)\s*/u)
+    .map((candidate) => candidate.trim())
+    .filter(Boolean);
+  const compatible = candidates.find(
+    (candidate) =>
+      !rule.forbidden.test(candidate) && rule.required.test(candidate),
+  );
+  return compatible || text;
+}
+
+function isTargetScriptValueCompatible(value, targetLang) {
+  const text = String(value || "").trim();
+  const rule = TARGET_SCRIPT_RULES[targetLang];
+  if (!text || !rule) return Boolean(text);
+  return !rule.forbidden.test(text) && rule.required.test(text);
+}
 
 function getQuestionLanguageFields(question) {
   const sharedSupport = [
@@ -547,6 +593,13 @@ export function normalizeDelightQuestion(
 ) {
   const source = parseDelightQuestion(raw);
   if (!source || !DELIGHT_VARIANT_IDS.includes(variant)) return null;
+  const cleanTarget = (value) => cleanTargetScriptValue(value, targetLang);
+  const cleanTargetList = (value, limit = 12) =>
+    stringList(value, limit).map(cleanTarget).filter(Boolean);
+  const cleanOptionalTargetList = (value, limit = 12) =>
+    cleanTargetList(value, limit).filter((item) =>
+      isTargetScriptValueCompatible(item, targetLang),
+    );
   const base = {
     variant,
     instruction: String(source.instruction || "").trim(),
@@ -557,9 +610,9 @@ export function normalizeDelightQuestion(
   if (variant === "sentence_detective") {
     const compactScript = ["ja", "zh"].includes(targetLang);
     const joiner = source.joiner === "" || compactScript ? "" : " ";
-    let tokens = stringList(source.tokens, 30);
-    const answer = String(source.answer || "").trim();
-    const rawReplacements = stringList(source.replacements, 6);
+    let tokens = cleanTargetList(source.tokens, 30);
+    const answer = cleanTarget(source.answer);
+    const rawReplacements = cleanTargetList(source.replacements, 6);
     const replacementsByKey = new Map(
       rawReplacements.map((replacement) => [
         normalizeDelightText(replacement),
@@ -666,7 +719,7 @@ export function normalizeDelightQuestion(
   }
 
   if (variant === "dialogue_fork") {
-    const rawOptions = stringList(source.options, 6);
+    const rawOptions = cleanTargetList(source.options, 6);
     const rawAnswerIndex = Number(source.answerIndex);
     const answerValue = Number.isInteger(rawAnswerIndex)
       ? rawOptions[rawAnswerIndex]
@@ -678,8 +731,13 @@ export function normalizeDelightQuestion(
             normalizeDelightText(option) === normalizeDelightText(answerValue),
         )
       : -1;
+    const line = cleanTarget(source.line);
+    const rawReaction = cleanTarget(source.reaction);
+    const reaction = isTargetScriptValueCompatible(rawReaction, targetLang)
+      ? rawReaction
+      : "";
     if (
-      !source.line ||
+      !line ||
       options.length < 2 ||
       !Number.isInteger(answerIndex) ||
       answerIndex < 0 ||
@@ -689,22 +747,26 @@ export function normalizeDelightQuestion(
     return {
       ...base,
       speaker: String(source.speaker || "Speaker").trim(),
-      line: String(source.line).trim(),
+      line,
       options,
       answerIndex,
-      reaction: String(source.reaction || "").trim(),
+      reaction,
     };
   }
 
   if (variant === "sentence_shapeshifter") {
-    const answer = String(source.answer || "").trim();
-    if (!source.source || !source.constraint || !answer) return null;
+    const sourceSentence = cleanTarget(source.source);
+    const answer = cleanTarget(source.answer);
+    if (!sourceSentence || !source.constraint || !answer) return null;
     return {
       ...base,
-      source: String(source.source).trim(),
+      source: sourceSentence,
       constraint: String(source.constraint).trim(),
       answer,
-      acceptableAnswers: stringList(source.acceptableAnswers, 8),
+      acceptableAnswers: cleanOptionalTargetList(
+        source.acceptableAnswers,
+        8,
+      ),
     };
   }
 
@@ -713,7 +775,7 @@ export function normalizeDelightQuestion(
       ? source.groups
           .map((group) => ({
             label: String(group?.label || "").trim(),
-            items: stringList(group?.items, 6),
+            items: cleanTargetList(group?.items, 6),
           }))
           .filter((group) => group.label && group.items.length >= 2)
           .slice(0, 3)
@@ -728,48 +790,77 @@ export function normalizeDelightQuestion(
   }
 
   if (variant === "morphology_forge") {
-    const answerPieces = uniqueStringList(source.answerPieces, 3);
-    const pieces = uniqueStringList(
-      [...stringList(source.pieces, 10), ...answerPieces],
-      10,
-    );
+    const answerPieces = cleanTargetList(source.answerPieces, 3);
+    const pieces = cleanTargetList(source.pieces, 10);
+    const availableCounts = new Map();
+    pieces.forEach((piece) => {
+      const key = normalizeDelightText(piece);
+      availableCounts.set(key, (availableCounts.get(key) || 0) + 1);
+    });
+    const requiredCounts = new Map();
+    answerPieces.forEach((piece) => {
+      const key = normalizeDelightText(piece);
+      const required = (requiredCounts.get(key) || 0) + 1;
+      requiredCounts.set(key, required);
+      if ((availableCounts.get(key) || 0) < required) {
+        pieces.push(piece);
+        availableCounts.set(key, (availableCounts.get(key) || 0) + 1);
+      }
+    });
+    const sentence = cleanTarget(source.sentence);
     if (
-      !source.sentence ||
-      pieces.length < 4 ||
+      !sentence ||
+      pieces.length < 3 ||
       answerPieces.length < 2 ||
       answerPieces.length > 3
     )
       return null;
     return {
       ...base,
-      sentence: String(source.sentence).trim(),
+      sentence,
       pieces,
       answerPieces,
       answerWord:
-        String(source.answerWord || "").trim() || answerPieces.join(""),
+        cleanTarget(source.answerWord) || answerPieces.join(""),
     };
   }
 
   if (variant === "three_clue_mystery") {
     const clues = stringList(source.clues, 3);
-    const answer = String(source.answer || "").trim();
+    const answer = cleanTarget(source.answer);
     if (clues.length !== 3 || !answer) return null;
+    const acceptableAnswers = uniqueStringList(
+      stringList(source.acceptableAnswers, 8)
+        .map(cleanTarget)
+        .filter(
+          (value) =>
+            value &&
+            normalizeDelightText(value) !== normalizeDelightText(answer) &&
+            isTargetScriptValueCompatible(value, targetLang),
+        ),
+      8,
+    );
+    const rawExample = cleanTarget(source.example);
+    const example = isTargetScriptValueCompatible(rawExample, targetLang)
+      ? rawExample
+      : "";
     return {
       ...base,
       clues,
       answer,
-      acceptableAnswers: stringList(source.acceptableAnswers, 8),
-      example: String(source.example || "").trim(),
+      acceptableAnswers,
+      example,
     };
   }
 
   if (variant === "listen_difference") {
-    const options = uniqueStringList(source.options, 4);
+    const options = uniqueStringList(cleanTargetList(source.options, 4), 4);
     const providedAnswerIndex = Number(source.answerIndex);
+    const providedAudioText = cleanTarget(source.audioText);
     const audioMatchIndex = options.findIndex(
       (option) =>
         normalizeDelightText(option) ===
-        normalizeDelightText(source.audioText || ""),
+        normalizeDelightText(providedAudioText),
     );
     const answerIndex =
       audioMatchIndex >= 0
@@ -780,7 +871,7 @@ export function normalizeDelightQuestion(
           ? providedAnswerIndex
           : -1;
     if (
-      !source.audioText ||
+      !providedAudioText ||
       options.length < 2 ||
       !Number.isInteger(answerIndex) ||
       answerIndex < 0 ||
@@ -799,8 +890,8 @@ export function normalizeDelightQuestion(
   }
 
   if (variant === "three_word_challenge") {
-    const cues = stringList(source.cues, 3);
-    const sampleAnswers = stringList(source.sampleAnswers, 5);
+    const cues = cleanTargetList(source.cues, 3);
+    const sampleAnswers = cleanTargetList(source.sampleAnswers, 5);
     if (
       cues.length !== 3 ||
       cues.some((cue) => !isSingleDelightCueWord(cue)) ||
@@ -817,12 +908,14 @@ export function normalizeDelightQuestion(
   }
 
   if (variant === "natural_or_weird") {
-    if (!source.sentence || typeof source.isNatural !== "boolean") return null;
+    const sentence = cleanTarget(source.sentence);
+    const correction = cleanTarget(source.correction || source.sentence);
+    if (!sentence || typeof source.isNatural !== "boolean") return null;
     return {
       ...base,
-      sentence: String(source.sentence).trim(),
+      sentence,
       isNatural: source.isNatural,
-      correction: String(source.correction || source.sentence).trim(),
+      correction,
     };
   }
 

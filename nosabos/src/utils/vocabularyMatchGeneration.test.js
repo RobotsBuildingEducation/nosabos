@@ -3,12 +3,38 @@ import assert from "node:assert/strict";
 import {
   buildVocabularyMatchPrompt,
   normalizeVocabularyMatchQuestion,
+  VOCABULARY_MATCH_RESPONSE_SCHEMA,
 } from "./vocabularyMatchGeneration.js";
 
 const tutorial = {
   topic: "tutorial",
   focusPoints: ["hola + me llamo", "buenos días / buenas noches"],
 };
+
+test("match providers share one exact three-pair response contract", () => {
+  assert.deepEqual(VOCABULARY_MATCH_RESPONSE_SCHEMA.required, [
+    "stem",
+    "left",
+    "right",
+    "hint",
+  ]);
+  assert.equal(
+    VOCABULARY_MATCH_RESPONSE_SCHEMA.properties.left.minItems,
+    3,
+  );
+  assert.equal(
+    VOCABULARY_MATCH_RESPONSE_SCHEMA.properties.left.maxItems,
+    3,
+  );
+  assert.equal(
+    VOCABULARY_MATCH_RESPONSE_SCHEMA.properties.right.minItems,
+    3,
+  );
+  assert.equal(
+    VOCABULARY_MATCH_RESPONSE_SCHEMA.properties.right.maxItems,
+    3,
+  );
+});
 
 test("tutorial match prompts use only the selected target greeting inventory", () => {
   const prompt = buildVocabularyMatchPrompt({

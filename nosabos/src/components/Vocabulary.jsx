@@ -30,7 +30,11 @@ import {
 } from "@chakra-ui/react";
 import { doc, onSnapshot, setDoc, increment } from "firebase/firestore";
 import { SortableArea, SortableList, SortableItem } from "./dnd/Sortable";
-import { database, simplemodel } from "../firebaseResources/firebaseResources"; // ✅ streaming model
+import {
+  database,
+  questionModel,
+  simplemodel,
+} from "../firebaseResources/firebaseResources"; // ✅ streaming model
 import useUserStore from "../hooks/useUserStore";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import VoiceOrb from "./VoiceOrb";
@@ -107,7 +111,15 @@ import {
 import {
   buildVocabularyMatchPrompt,
   normalizeVocabularyMatchQuestion,
+  VOCABULARY_MATCH_RESPONSE_SCHEMA,
 } from "../utils/vocabularyMatchGeneration";
+import { sanitizeGeminiResponseSchema } from "../utils/geminiResponseSchema";
+import {
+  QUESTION_PROVIDER_TIMEOUT_MS,
+  generateContentStreamWithTimeout,
+  generateContentWithTimeout,
+  settleProviderWithin,
+} from "../utils/providerGenerationTimeout";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -2483,7 +2495,7 @@ Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Ant
     try {
       if (!simplemodel) throw new Error("gemini-unavailable");
 
-      const resp = await simplemodel.generateContentStream({
+      const resp = await generateContentStreamWithTimeout(questionModel, {
         contents: [{ role: "user", parts: [{ text: prompt }] }],
       });
 
@@ -2548,9 +2560,11 @@ Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Ant
       if (!gotSomething) throw new Error("no-fill");
     } catch {
       // Fallback (non-stream)
-      const text = await callResponses({
-        model: MODEL,
-        input: `
+      const text = await settleProviderWithin(
+        callResponses({
+          model: MODEL,
+          skipGemini: true,
+          input: `
 Create ONE short ${LANG_NAME(
           targetLang,
         )} VOCAB sentence with a single blank "___" (not grammar), ≤120 chars.
@@ -2559,7 +2573,10 @@ Return EXACTLY:
           resolveSupportLang(supportLang, userLanguage),
         )}> ||| <${showTranslations ? "translation" : '""'}>
 `.trim(),
-      });
+        }),
+        QUESTION_PROVIDER_TIMEOUT_MS,
+        "OpenAI question generation",
+      );
 
       const [q, h, tr] = text.split("|||").map((s) => (s || "").trim());
       if (q) {
@@ -2711,7 +2728,7 @@ Return EXACTLY:
     try {
       if (!simplemodel) throw new Error("gemini-unavailable");
 
-      const resp = await simplemodel.generateContentStream({
+      const resp = await generateContentStreamWithTimeout(questionModel, {
         contents: [{ role: "user", parts: [{ text: prompt }] }],
       });
 
@@ -2851,9 +2868,11 @@ Return EXACTLY:
       }
     } catch {
       // Fallback (non-stream)
-      const text = await callResponses({
-        model: MODEL,
-        input: `
+      const text = await settleProviderWithin(
+        callResponses({
+          model: MODEL,
+          skipGemini: true,
+          input: `
 Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
 {
   "question":"<stem>",
@@ -2868,7 +2887,10 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
   "translation":"${showTranslations ? "<translation>" : ""}"
 }
 `.trim(),
-      });
+        }),
+        QUESTION_PROVIDER_TIMEOUT_MS,
+        "OpenAI question generation",
+      );
 
       const parsed = safeParseJSON(text);
       if (
@@ -3064,7 +3086,7 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
     try {
       if (!simplemodel) throw new Error("gemini-unavailable");
 
-      const resp = await simplemodel.generateContentStream({
+      const resp = await generateContentStreamWithTimeout(questionModel, {
         contents: [{ role: "user", parts: [{ text: prompt }] }],
       });
 
@@ -3208,9 +3230,11 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
       }
     } catch {
       // Fallback (non-stream)
-      const text = await callResponses({
-        model: MODEL,
-        input: `
+      const text = await settleProviderWithin(
+        callResponses({
+          model: MODEL,
+          skipGemini: true,
+          input: `
 Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
 {
   "question":"<stem>",
@@ -3222,7 +3246,10 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
   "translation":"${showTranslations ? "<translation>" : ""}"
 }
 `.trim(),
-      });
+        }),
+        QUESTION_PROVIDER_TIMEOUT_MS,
+        "OpenAI question generation",
+      );
 
       const parsed = sanitizeMA(safeParseJSON(text));
       if (parsed) {
@@ -3361,7 +3388,7 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
     try {
       if (!simplemodel) throw new Error("gemini-unavailable");
 
-      const resp = await simplemodel.generateContentStream({
+      const resp = await generateContentStreamWithTimeout(questionModel, {
         contents: [{ role: "user", parts: [{ text: prompt }] }],
       });
 
@@ -3425,9 +3452,11 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
 
       if (!got) throw new Error("no-speak");
     } catch {
-      const text = await callResponses({
-        model: MODEL,
-        input: `
+      const text = await settleProviderWithin(
+        callResponses({
+          model: MODEL,
+          skipGemini: true,
+          input: `
 Create ONE ${LANG_NAME(
           targetLang,
         )} speaking drill. Randomly choose VARIANT from:
@@ -3458,7 +3487,10 @@ Return JSON ONLY:
       : ""
   }"
 }`.trim(),
-      });
+        }),
+        QUESTION_PROVIDER_TIMEOUT_MS,
+        "OpenAI question generation",
+      );
 
       const parsed = safeParseJSON(text);
       if (parsed && typeof parsed.target === "string") {
@@ -3619,15 +3651,20 @@ Return JSON ONLY:
       let question = null;
       if (simplemodel) {
         try {
-          const resp = await simplemodel.generateContentStream({
+          const resp = await generateContentWithTimeout(questionModel, {
             contents: [{ role: "user", parts: [{ text: prompt }] }],
-            generationConfig: { responseMimeType: "application/json" },
+            generationConfig: {
+              thinkingConfig: { thinkingBudget: 0 },
+              responseMimeType: "application/json",
+              responseSchema: sanitizeGeminiResponseSchema(
+                VOCABULARY_MATCH_RESPONSE_SCHEMA,
+              ),
+            },
           });
-          const finalAgg = await resp.response;
           const finalText =
-            (typeof finalAgg?.text === "function"
-              ? finalAgg.text()
-              : finalAgg?.text) || "";
+            (typeof resp?.response?.text === "function"
+              ? resp.response.text()
+              : resp?.response?.text) || "";
           question = normalizeVocabularyMatchQuestion(finalText, {
             targetLang,
             lessonContent,
@@ -3643,11 +3680,17 @@ Return JSON ONLY:
       }
 
       if (!question) {
-        const raw = await callResponses({
-          model: MODEL,
-          input: prompt,
-          skipGemini: true,
-        });
+        const raw = await settleProviderWithin(
+          callResponses({
+            model: MODEL,
+            input: prompt,
+            skipGemini: true,
+            responseSchema: VOCABULARY_MATCH_RESPONSE_SCHEMA,
+            responseSchemaName: "vocabulary_match",
+          }),
+          QUESTION_PROVIDER_TIMEOUT_MS,
+          "OpenAI question generation",
+        );
         question = normalizeVocabularyMatchQuestion(raw, {
           targetLang,
           lessonContent,
@@ -3745,7 +3788,7 @@ Return JSON ONLY:
 
     try {
       if (!simplemodel) throw new Error("gemini-unavailable");
-      const resp = await simplemodel.generateContentStream({
+      const resp = await generateContentStreamWithTimeout(questionModel, {
         contents: [{ role: "user", parts: [{ text: prompt }] }],
       });
 
@@ -3942,7 +3985,7 @@ Return JSON ONLY:
     try {
       if (!simplemodel) throw new Error("gemini-unavailable");
 
-      const resp = await simplemodel.generateContentStream({
+      const resp = await generateContentStreamWithTimeout(questionModel, {
         contents: [{ role: "user", parts: [{ text: prompt }] }],
       });
 
@@ -3981,10 +4024,15 @@ Return JSON ONLY:
       console.error("Flashcard generation error:", err);
       // Fallback
       try {
-        const response = await callResponses({
-          model: MODEL,
-          input: prompt,
-        });
+        const response = await settleProviderWithin(
+          callResponses({
+            model: MODEL,
+            input: prompt,
+            skipGemini: true,
+          }),
+          QUESTION_PROVIDER_TIMEOUT_MS,
+          "OpenAI question generation",
+        );
         const jsonStart = (response || "").indexOf("{");
         const jsonEnd = (response || "").lastIndexOf("}");
         if (jsonStart !== -1 && jsonEnd > jsonStart) {
