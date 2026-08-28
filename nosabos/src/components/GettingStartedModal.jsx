@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import {
   Box,
   Button,
@@ -48,6 +48,19 @@ export default function GettingStartedModal({
   const ui = (key) => tFn(lang, key);
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
+  const modalBodyRef = useRef(null);
+
+  useEffect(() => {
+    if (!isOpen || typeof window === "undefined") return undefined;
+    const frame = window.requestAnimationFrame(() => {
+      const body = modalBodyRef.current;
+      if (!body) return;
+      body.scrollTop = 0;
+      body.scrollLeft = 0;
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [isOpen]);
+
   const deferPostAction = useCallback((task) => {
     if (typeof task !== "function") return;
 
@@ -154,6 +167,7 @@ export default function GettingStartedModal({
       closeOnEsc={true}
       motionPreset="none"
       returnFocusOnClose={false}
+      autoFocus={false}
     >
       <ModalOverlay
         motionProps={nativeOverlayMotionProps}
@@ -170,6 +184,17 @@ export default function GettingStartedModal({
         overflow="hidden"
         maxH="calc(100vh - 24px)"
         maxW={{ base: "90%", sm: "md" }}
+        display="flex"
+        flexDirection="column"
+        sx={{
+          borderRadius: {
+            base: "24px !important",
+            md: "72px !important",
+          },
+          "@supports (height: 100dvh)": {
+            maxHeight: "calc(100dvh - 24px)",
+          },
+        }}
       >
         {/* Header gradient */}
         <Box
@@ -181,12 +206,35 @@ export default function GettingStartedModal({
           borderColor={
             isLightTheme ? "rgba(99, 102, 241, 0.18)" : "transparent"
           }
+          flexShrink={0}
+          sx={{
+            paddingInlineStart: {
+              base: "16px !important",
+              md: "48px !important",
+            },
+            paddingInlineEnd: {
+              base: "16px !important",
+              md: "48px !important",
+            },
+            paddingTop: {
+              base: "12px !important",
+              md: "32px !important",
+            },
+            paddingBottom: {
+              base: "12px !important",
+              md: "32px !important",
+            },
+          }}
         >
-          <VStack spacing={1.5} align="center">
-            <RandomCharacter notSoRandomCharacter={"39"} width="48px" />
+          <VStack spacing={{ base: 1, md: 1.5 }} align="center">
+            <RandomCharacter
+              notSoRandomCharacter={"39"}
+              width="40px"
+              containerHeight={52}
+            />
             <Text
               fontWeight="bold"
-              fontSize={{ base: "md", md: "lg" }}
+              fontSize={{ base: "sm", md: "lg" }}
               textAlign="center"
               color="white"
               textShadow="0 1px 10px rgba(0,0,0,0.18)"
@@ -194,7 +242,7 @@ export default function GettingStartedModal({
               {ui("app_install_title")}
             </Text>
             <Text
-              fontSize="xs"
+              fontSize={{ base: "2xs", md: "xs" }}
               fontWeight="medium"
               color="rgba(255,255,255,0.92)"
               textAlign="center"
@@ -206,14 +254,44 @@ export default function GettingStartedModal({
           </VStack>
         </Box>
 
-        <ModalBody px={{ base: 4, md: 5 }} py={{ base: 4, md: 5 }}>
-          <VStack spacing={3} align="stretch">
-            <Grid templateColumns="repeat(2, 1fr)" autoRows="1fr" gap={3}>
+        <ModalBody
+          ref={modalBodyRef}
+          px={{ base: 4, md: 5 }}
+          py={{ base: 4, md: 5 }}
+          minH={0}
+          overflowY="auto"
+          overscrollBehavior="contain"
+          sx={{
+            WebkitOverflowScrolling: "touch",
+            paddingInlineStart: {
+              base: "16px !important",
+              md: "40px !important",
+            },
+            paddingInlineEnd: {
+              base: "16px !important",
+              md: "40px !important",
+            },
+            paddingTop: {
+              base: "12px !important",
+              md: "40px !important",
+            },
+            paddingBottom: {
+              base: "12px !important",
+              md: "40px !important",
+            },
+          }}
+        >
+          <VStack spacing={{ base: 2, md: 3 }} align="stretch">
+            <Grid
+              templateColumns="repeat(2, 1fr)"
+              autoRows="1fr"
+              gap={{ base: 2, md: 3 }}
+            >
               {installSteps.map((step, idx) => (
                 <GridItem
                   key={step.id}
                   bg={isLightTheme ? APP_SURFACE_MUTED : "gray.800"}
-                  p={6}
+                  p={{ base: 2, sm: 3, md: 6 }}
                   rounded="md"
                   border="1px solid"
                   borderColor={
@@ -247,7 +325,7 @@ export default function GettingStartedModal({
               {secretKey ? (
                 <GridItem
                   bg={isLightTheme ? APP_SURFACE_MUTED : "gray.800"}
-                  p={6}
+                  p={{ base: 2, sm: 3, md: 6 }}
                   rounded="md"
                   border="1px solid"
                   borderColor={
@@ -302,13 +380,13 @@ export default function GettingStartedModal({
               onClick={handleGotIt}
               fontWeight="bold"
               rounded="lg"
-              p={8}
-              minH="40px"
+              p={{ base: 3, md: 8 }}
+              minH={{ base: "44px", md: "40px" }}
             >
               {ui("app_install_got_it")}
             </Button>
             <Text
-              fontSize="xs"
+              fontSize={{ base: "2xs", md: "xs" }}
               color={isLightTheme ? APP_TEXT_MUTED : "whiteAlpha.700"}
               textAlign="center"
               lineHeight="1.45"

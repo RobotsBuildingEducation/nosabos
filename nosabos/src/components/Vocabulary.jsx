@@ -90,13 +90,13 @@ import {
   DEFAULT_SUPPORT_LANGUAGE,
   DEFAULT_TARGET_LANGUAGE,
   getLanguageDirection,
+  isBetaPracticeLanguage,
   isSupportedPracticeLanguage,
   normalizePracticeLanguage,
   normalizeSupportLanguage,
 } from "../constants/languages";
 import {
   buildCurriculumPromptContext,
-  isCurriculumPayloadGrounded,
 } from "../utils/lessonCurriculum";
 import DelightQuestionLab from "./DelightQuestionLab";
 import { DELIGHT_VARIANT_IDS } from "../utils/delightQuestionVariants";
@@ -104,6 +104,10 @@ import {
   nativeModalMotionProps,
   nativeOverlayMotionProps,
 } from "../utils/modalMotion";
+import {
+  buildVocabularyMatchPrompt,
+  normalizeVocabularyMatchQuestion,
+} from "../utils/vocabularyMatchGeneration";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -661,11 +665,7 @@ function normalizeSpeakPromptPayload(obj) {
   };
 }
 
-/* MATCH phases:
-   1) {"type":"vocab_match","stem":"...","left":["w1",...],"right":["def1",...],"hint":"..."}
-   2) {"type":"done"}
-   Left in TARGET (words), Right in SUPPORT (short defs), 3–6 rows
-*/
+/* MATCH: one strict JSON object with three target/support pairs. */
 function buildMatchVocabStreamPrompt({
   targetLang,
   supportLang,
@@ -674,42 +674,16 @@ function buildMatchVocabStreamPrompt({
   recentGood,
   lessonContent = null,
 }) {
-  const TARGET = LANG_NAME(targetLang);
   const SUPPORT_CODE = resolveSupportLang(supportLang, appUILang);
-  const SUPPORT = LANG_NAME(SUPPORT_CODE);
-  const diff = vocabDifficulty(cefrLevel);
-
-  // If lesson content is provided, use specific vocabulary/topic
-  // Special handling for tutorial mode - use very simple "hello" content only
-  const isTutorial = lessonContent?.topic === "tutorial";
-  const varietyLines = buildVarietyLines(lessonContent, recentGood);
-  const topicDirective = isTutorial
-    ? `- TUTORIAL MODE: Create a VERY SIMPLE matching exercise about basic greetings only. The left column MUST contain ONLY greeting words like "hello", "hola", "hi", "buenos días", "good morning", "goodbye", etc. Keep everything at absolute beginner level.`
-    : lessonContent?.words || lessonContent?.topic
-      ? (lessonContent.words
-          ? `- STRICT REQUIREMENT: The left column MUST contain ONLY words from this list: ${JSON.stringify(
-              lessonContent.words,
-            )}. Do NOT use any other words. Select 3-6 words from this list ONLY. This is lesson-specific content and you MUST NOT diverge.`
-          : `- STRICT REQUIREMENT: All words MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`) +
-        varietyLines
-      : `- Consider learner recent corrects: ${JSON.stringify(
-          recentGood.slice(-3),
-        )}`;
-
-  return [
-    `Create ONE ${TARGET} vocabulary matching exercise. Difficulty: ${
-      isTutorial ? "absolute beginner, very easy" : diff
-    }`,
-    topicDirective,
-    `- Left column: ${TARGET} words (3–6 items, unique).`,
-    `- Right column: ${SUPPORT} short definitions (unique).`,
-    `- Clear 1:1 mapping; ≤ 4 words per item.`,
-    `- Hint in ${SUPPORT} (≤8 words).`,
-    "",
-    "Emit exactly TWO NDJSON lines:",
-    `{"type":"vocab_match","stem":"<${TARGET} stem>","left":["<word>", "..."],"right":["<short ${SUPPORT} definition>", "..."],"hint":"<${SUPPORT} hint>"}`,
-    `{"type":"done"}`,
-  ].join("\n");
+  return buildVocabularyMatchPrompt({
+    targetLang,
+    targetName: LANG_NAME(targetLang),
+    supportLang: SUPPORT_CODE,
+    supportName: LANG_NAME(SUPPORT_CODE),
+    difficulty: vocabDifficulty(cefrLevel),
+    lessonContent,
+    recentGood,
+  });
 }
 
 /* ---------------------------
@@ -983,20 +957,6 @@ function safeParseJSON(text) {
     }
     return null;
   }
-}
-function safeParseJsonLoose(txt = "") {
-  if (!txt) return null;
-  try {
-    return JSON.parse(txt);
-  } catch {}
-  const s = txt.indexOf("{");
-  const e = txt.lastIndexOf("}");
-  if (s !== -1 && e !== -1 && e > s) {
-    try {
-      return JSON.parse(txt.slice(s, e + 1));
-    } catch {}
-  }
-  return null;
 }
 function norm(s) {
   return String(s || "")
@@ -2109,6 +2069,7 @@ Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Ant
   const [mResult, setMResult] = useState(""); // log only
   const [loadingMG, setLoadingMG] = useState(false);
   const [loadingMJ, setLoadingMJ] = useState(false);
+  const [matchGenerationFailed, setMatchGenerationFailed] = useState(false);
 
   // ---- TRANSLATE (word bank) ----
   const [tSentence, setTSentence] = useState(""); // source sentence
@@ -2630,9 +2591,7 @@ Return EXACTLY:
     }
   }, []);
 
-  // Check if keyboard should be available (Japanese, Russian, or Greek)
-  const showKeyboardButton =
-    targetLang === "ja" || targetLang === "ru" || targetLang === "el";
+  const showKeyboardButton = isBetaPracticeLanguage(targetLang);
 
   async function submitFill() {
     if (!qFill || !ansFill.trim()) return;
@@ -3637,6 +3596,7 @@ Return JSON ONLY:
     setLastOk(null);
     setRecentXp(0);
     setNextAction(null);
+    setMatchGenerationFailed(false);
 
     // reset state to show placeholders
     setMStem("");
@@ -3655,171 +3615,57 @@ Return JSON ONLY:
       lessonContent,
     });
 
-    let okPayload = false;
-
     try {
-      if (!simplemodel) throw new Error("gemini-unavailable");
-
-      const resp = await simplemodel.generateContentStream({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-      });
-
-      let buffer = "";
-      for await (const chunk of resp.stream) {
-        const piece = textFromChunk(chunk);
-        if (!piece) continue;
-        buffer += piece;
-
-        let nl;
-        while ((nl = buffer.indexOf("\n")) !== -1) {
-          const line = buffer.slice(0, nl);
-          buffer = buffer.slice(nl + 1);
-          tryConsumeLine(line, (obj) => {
-            if (
-              obj?.type === "vocab_match" &&
-              typeof obj.stem === "string" &&
-              Array.isArray(obj.left) &&
-              Array.isArray(obj.right) &&
-              obj.left.length >= 3 &&
-              obj.left.length <= 6 &&
-              obj.left.length === obj.right.length &&
-              isCurriculumPayloadGrounded(
-                { left: obj.left },
-                lessonContent?.curriculumContext,
-                { mode: "vocabulary" },
-              )
-            ) {
-              const stem =
-                String(obj.stem).trim() ||
-                "Match the words to their definitions.";
-              const left = obj.left.slice(0, 6).map(String);
-              const right = obj.right.slice(0, 6).map(String);
-              const hint = String(obj.hint || "");
-              setMStem(stem);
-              setMHint(hint);
-              setMLeft(left);
-              setMRight(right);
-              setMSlots(Array(left.length).fill(null));
-              setMBank(shuffle([...Array(right.length)].map((_, i) => i)));
-              okPayload = true;
-            }
+      let question = null;
+      if (simplemodel) {
+        try {
+          const resp = await simplemodel.generateContentStream({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig: { responseMimeType: "application/json" },
           });
+          const finalAgg = await resp.response;
+          const finalText =
+            (typeof finalAgg?.text === "function"
+              ? finalAgg.text()
+              : finalAgg?.text) || "";
+          question = normalizeVocabularyMatchQuestion(finalText, {
+            targetLang,
+            lessonContent,
+          });
+        } catch (error) {
+          if (import.meta.env.DEV) {
+            console.warn(
+              "Gemini match question failed; trying OpenAI:",
+              error,
+            );
+          }
         }
       }
 
-      // flush tail
-      const finalAgg = await resp.response;
-      const finalText =
-        (typeof finalAgg?.text === "function"
-          ? finalAgg.text()
-          : finalAgg?.text) || "";
-      if (finalText) {
-        (finalText + "\n")
-          .split("\n")
-          .map((l) => l.trim())
-          .filter(Boolean)
-          .forEach((l) =>
-            tryConsumeLine(l, (obj) => {
-              if (
-                obj?.type === "vocab_match" &&
-                typeof obj.stem === "string" &&
-                Array.isArray(obj.left) &&
-                Array.isArray(obj.right) &&
-                obj.left.length >= 3 &&
-                obj.left.length <= 6 &&
-                obj.left.length === obj.right.length &&
-                isCurriculumPayloadGrounded(
-                  { left: obj.left },
-                  lessonContent?.curriculumContext,
-                  { mode: "vocabulary" },
-                )
-              ) {
-                const stem =
-                  String(obj.stem).trim() ||
-                  "Match the words to their definitions.";
-                const left = obj.left.slice(0, 6).map(String);
-                const right = obj.right.slice(0, 6).map(String);
-                const hint = String(obj.hint || "");
-                setMStem(stem);
-                setMHint(hint);
-                setMLeft(left);
-                setMRight(right);
-                setMSlots(Array(left.length).fill(null));
-                setMBank(shuffle([...Array(right.length)].map((_, i) => i)));
-                okPayload = true;
-              }
-            }),
-          );
+      if (!question) {
+        const raw = await callResponses({
+          model: MODEL,
+          input: prompt,
+          skipGemini: true,
+        });
+        question = normalizeVocabularyMatchQuestion(raw, {
+          targetLang,
+          lessonContent,
+        });
       }
 
-      if (!okPayload) throw new Error("no-match");
-    } catch {
-      // Backend fallback (non-stream)
-      const curriculumScope = buildCurriculumPromptContext(
-        lessonContent?.curriculumContext,
-        { mode: "vocabulary" },
-      );
-      const raw = await callResponses({
-        model: MODEL,
-        input: `
-Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
-${lessonContent?.topic ? `Lesson topic: ${lessonContent.topic}.` : ""}
-${
-  Array.isArray(lessonContent?.focusPoints) &&
-  lessonContent.focusPoints.length
-    ? `Mandatory focus points: ${JSON.stringify(lessonContent.focusPoints)}.`
-    : ""
-}
-${curriculumScope}
-Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
-{"stem":"<stem>","left":["<word>","..."],"right":["<short ${LANG_NAME(
-          resolveSupportLang(supportLang, userLanguage),
-        )} definition>","..."],"hint":"<${LANG_NAME(
-          resolveSupportLang(supportLang, userLanguage),
-        )} hint>"}
-`.trim(),
-      });
-      const parsed = safeParseJsonLoose(raw);
-
-      let stem = "",
-        left = [],
-        right = [],
-        hint = "";
-
-      if (
-        parsed &&
-        Array.isArray(parsed.left) &&
-        Array.isArray(parsed.right) &&
-        parsed.left.length >= 3 &&
-        parsed.left.length <= 6 &&
-        parsed.left.length === parsed.right.length &&
-        isCurriculumPayloadGrounded(
-          { left: parsed.left },
-          lessonContent?.curriculumContext,
-          { mode: "vocabulary" },
-        )
-      ) {
-        stem = String(parsed.stem || "Match the words to their definitions.");
-        left = parsed.left.slice(0, 6).map(String);
-        right = parsed.right.slice(0, 6).map(String);
-        hint = String(parsed.hint || "");
-      } else {
-        if (isFinalQuiz && curriculumScope) {
-          await generateMC();
-          return;
-        }
-        stem = "Match words to their definitions.";
-        left = ["rapid", "generous", "fragile"];
-        right = ["quick", "kind in giving", "easily broken"];
-        hint = "synonym match";
+      if (!question) throw new Error("match-generation-failed");
+      setMStem(question.stem);
+      setMHint(question.hint);
+      setMLeft(question.left);
+      setMRight(question.right);
+      setMSlots(Array(question.left.length).fill(null));
+      setMBank(shuffle([...Array(question.right.length)].map((_, i) => i)));
+    } catch (error) {
+      if (import.meta.env.DEV) {
+        console.warn("Match question failed after both providers:", error);
       }
-
-      setMStem(stem);
-      setMHint(hint);
-      setMLeft(left);
-      setMRight(right);
-      setMSlots(Array(left.length).fill(null));
-      setMBank(shuffle([...Array(right.length)].map((_, i) => i)));
+      setMatchGenerationFailed(true);
     } finally {
       setLoadingMG(false);
     }
@@ -6412,7 +6258,29 @@ Use ONLY the lesson curriculum above. Do not introduce unrelated vocabulary.
         ) : null}
 
         {/* ---- MATCH UI (Drag & Drop) ---- */}
-        {mode === "match" && (mLeft.length > 0 || loadingMG) ? (
+        {mode === "match" && matchGenerationFailed ? (
+          <Box
+            bg={APP_SURFACE_ELEVATED}
+            border={`1px solid ${APP_BORDER}`}
+            rounded="2xl"
+            style={questionSquircleStyle}
+            p={{ base: 6, md: 8 }}
+            boxShadow={APP_SHADOW}
+          >
+            <VStack minH="180px" justify="center" spacing={4}>
+              <Text color={APP_TEXT_SECONDARY} textAlign="center">
+                {t("vocab_assistant_error")}
+              </Text>
+              <Button colorScheme="purple" onClick={generateMatch}>
+                {t("try_again")}
+              </Button>
+            </VStack>
+          </Box>
+        ) : null}
+
+        {mode === "match" &&
+        !matchGenerationFailed &&
+        (mLeft.length > 0 || loadingMG) ? (
           <>
             <Box
               bg={APP_SURFACE_ELEVATED}

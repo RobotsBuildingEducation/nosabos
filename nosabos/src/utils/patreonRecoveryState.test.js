@@ -1,8 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  PATREON_PASSIVE_RECHECK_TTL_MS,
   classifyPatreonReplacementResponse,
+  clearPatreonRestoreMiss,
   createPatreonRecheckGate,
+  hasFreshPatreonRestoreMiss,
+  rememberPatreonRestoreMiss,
   shouldAttemptPatreonKeyRestore,
   shouldHoldForInitialPatreonStatus,
 } from "./patreonRecoveryState.js";
@@ -30,18 +34,45 @@ test("replacement success and restartable failures have stable frontend outcomes
   });
 });
 
-test("focus and visibility rechecks ignore hidden and duplicate events", () => {
-  let currentTime = 2_000;
+test("passive rechecks use a 16-hour TTL while pending returns stay responsive", () => {
+  let currentTime = PATREON_PASSIVE_RECHECK_TTL_MS;
   const shouldRecheck = createPatreonRecheckGate({
-    minimumIntervalMs: 1500,
     now: () => currentTime,
   });
   assert.equal(shouldRecheck("hidden"), false);
   assert.equal(shouldRecheck("visible"), true);
-  currentTime += 200;
+  currentTime += PATREON_PASSIVE_RECHECK_TTL_MS - 1;
   assert.equal(shouldRecheck("visible"), false);
-  currentTime += 1500;
+  currentTime += 1;
   assert.equal(shouldRecheck("visible"), true);
+
+  currentTime += 1500;
+  assert.equal(shouldRecheck("visible", { pending: true }), true);
+});
+
+test("a confirmed missing key link is cached for 16 hours", () => {
+  const values = new Map();
+  const storage = {
+    getItem: (key) => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, value),
+    removeItem: (key) => values.delete(key),
+  };
+  const npub = "npub1test";
+  const now = 20_000;
+
+  assert.equal(hasFreshPatreonRestoreMiss({ npub, storage, now }), false);
+  rememberPatreonRestoreMiss({ npub, storage, now });
+  assert.equal(hasFreshPatreonRestoreMiss({ npub, storage, now }), true);
+  assert.equal(
+    hasFreshPatreonRestoreMiss({
+      npub,
+      storage,
+      now: now + PATREON_PASSIVE_RECHECK_TTL_MS,
+    }),
+    false,
+  );
+  clearPatreonRestoreMiss({ npub, storage });
+  assert.equal(hasFreshPatreonRestoreMiss({ npub, storage, now }), false);
 });
 
 test("key restore never overwrites meaningful checkout or replacement state", () => {

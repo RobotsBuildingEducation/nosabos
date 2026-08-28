@@ -256,6 +256,30 @@ export function getTutorStarterTargetExamples(itemOrId, targetLang = "es") {
   ].filter((example, index, examples) => examples.indexOf(example) === index);
 }
 
+export function getTutorStarterVocabularyPairs(
+  targetLang = "es",
+  supportLang = "en",
+) {
+  const support = getBaseLanguageCode(supportLang) || "en";
+  const pairs = TUTOR_STARTER_AGENDA_IDS.map((itemId) => ({
+    id: itemId,
+    target: getTutorStarterTargetExamples(itemId, targetLang)[0] || "",
+    meaning:
+      SUPPORT_LABELS[itemId]?.[support] ||
+      SUPPORT_LABELS[itemId]?.en ||
+      itemId,
+  })).filter(({ target }) => Boolean(target));
+
+  return Array.from(
+    new Map(
+      pairs.map((pair) => [
+        pair.target.normalize("NFC").trim().toLocaleLowerCase(),
+        pair,
+      ]),
+    ).values(),
+  );
+}
+
 export function getTutorStarterModelPhrase(itemOrId, targetLang = "es") {
   return getTutorStarterTargetExamples(itemOrId, targetLang)[0] || "";
 }

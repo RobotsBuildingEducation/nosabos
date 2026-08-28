@@ -76,6 +76,7 @@ import {
   DEFAULT_SUPPORT_LANGUAGE,
   DEFAULT_TARGET_LANGUAGE,
   getLanguageDirection,
+  isBetaPracticeLanguage,
   isSupportedPracticeLanguage,
   normalizePracticeLanguage,
   normalizeSupportLanguage,
@@ -3828,9 +3829,7 @@ Return JSON ONLY:
     }
   }, []);
 
-  // Check if keyboard should be available (Japanese, Russian, or Greek)
-  const showKeyboardButton =
-    targetLang === "ja" || targetLang === "ru" || targetLang === "el";
+  const showKeyboardButton = isBetaPracticeLanguage(targetLang);
 
   /* ---------------------------
      Submits (backend judging for fill/mc/ma; deterministic for match)

@@ -52,7 +52,10 @@ import { submitActionSound, deliciousSound, clickSound } from "../constants/soun
 import RandomCharacter from "./RandomCharacter";
 import VoiceOrb from "./VoiceOrb";
 import { useThemeStore } from "../useThemeStore";
-import { getLanguageDirection } from "../constants/languages";
+import {
+  getLanguageDirection,
+  isBetaPracticeLanguage,
+} from "../constants/languages";
 import {
   getQuestionFeedbackPanelProps,
   getQuestionToolButtonProps,
@@ -727,12 +730,10 @@ export default function LessonFlashcard({
     }
   };
 
-  // Virtual keyboard support (Japanese, Russian, Greek)
-  const hasVirtualKeyboard =
-    targetLang === "ja" || targetLang === "ru" || targetLang === "el";
+  const hasVirtualKeyboard = isBetaPracticeLanguage(targetLang);
 
   const handleKeyboardInput = (key) => {
-    if (key === "⌫") {
+    if (key === "BACKSPACE" || key === "⌫") {
       setTextAnswer((prev) => prev.slice(0, -1));
     } else {
       setTextAnswer((prev) => prev + key);

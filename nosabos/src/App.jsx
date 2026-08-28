@@ -263,8 +263,12 @@ import {
   createPatreonNostrProof,
 } from "./utils/patreonNostrProof";
 import {
+  PATREON_PASSIVE_RECHECK_TTL_MS,
   classifyPatreonReplacementResponse,
+  clearPatreonRestoreMiss,
   createPatreonRecheckGate,
+  hasFreshPatreonRestoreMiss,
+  rememberPatreonRestoreMiss,
   shouldAttemptPatreonKeyRestore,
   shouldHoldForInitialPatreonStatus,
 } from "./utils/patreonRecoveryState";
@@ -272,6 +276,7 @@ import {
   beginPatreonDrawerReturn,
   clearPatreonDrawerReturn,
   currentPatreonDrawerReturnPath,
+  hasPendingPatreonDrawerReturn,
   hasPatreonDrawerReopenRequest,
   readPatreonDrawerReadyResult,
 } from "./utils/patreonDrawerReturn";
@@ -3090,6 +3095,8 @@ export default function App({ onBootReady } = {}) {
     subscription: null,
   });
   const patreonCheckGenerationRef = useRef(0);
+  const patreonCheckPromiseRef = useRef(null);
+  const patreonLastCheckAtRef = useRef(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [subscriptionDrawerRequested, setSubscriptionDrawerRequested] =
     useState(false);
@@ -3109,87 +3116,113 @@ export default function App({ onBootReady } = {}) {
     Boolean(patreonStatusPayload.checkoutRequired);
 
   const checkPatreonSubscription = useCallback(
-    async ({ allowRestore = true } = {}) => {
+    ({ allowRestore = true } = {}) => {
+      if (patreonCheckPromiseRef.current) {
+        return patreonCheckPromiseRef.current;
+      }
+
       const generation = ++patreonCheckGenerationRef.current;
       const isCurrent = () => patreonCheckGenerationRef.current === generation;
+      patreonLastCheckAtRef.current = Date.now();
       setIsCheckingPatreon(true);
       setPatreonStatusError("");
-      try {
-        const response = await fetchWithTimeout(PATREON_STATUS_ENDPOINT, {
-          method: "GET",
-          credentials: "include",
-          headers: {
-            Accept: "application/json",
-            ...(activeNpub ? { "X-Piyali-Npub": activeNpub } : {}),
-          },
-        });
-        const payload = await response.json().catch(() => ({}));
-        if (!isCurrent()) return;
-        setPatreonStatusPayload(payload);
-        setPatreonAvailable(payload.configured !== false);
-        if (payload.authorized) {
-          setPatreonSubscriptionVerified(true);
-          return;
-        }
-
-        if (
-          allowRestore &&
-          shouldAttemptPatreonKeyRestore(payload) &&
-          activeNpub &&
-          canSilentlySignPatreonProof()
-        ) {
-          const proof = await createPatreonNostrProof({
-            npub: activeNpub,
-            action: "restore",
-            allowExtension: false,
-          });
-          const restoreResponse = await fetchWithTimeout(
-            PATREON_KEY_STATUS_ENDPOINT,
-            {
-              method: "POST",
-              credentials: "include",
-              headers: {
-                Accept: "application/json",
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify(proof),
+      const request = (async () => {
+        try {
+          const response = await fetchWithTimeout(PATREON_STATUS_ENDPOINT, {
+            method: "GET",
+            credentials: "include",
+            headers: {
+              Accept: "application/json",
+              ...(activeNpub ? { "X-Piyali-Npub": activeNpub } : {}),
             },
-          );
-          const restorePayload = await restoreResponse.json().catch(() => ({}));
+          });
+          const payload = await response.json().catch(() => ({}));
           if (!isCurrent()) return;
-          setPatreonStatusPayload(restorePayload);
-          setPatreonAvailable(restorePayload.configured !== false);
-          setPatreonSubscriptionVerified(Boolean(restorePayload.authorized));
+          setPatreonStatusPayload(payload);
+          setPatreonAvailable(payload.configured !== false);
+          if (payload.authorized) {
+            clearPatreonRestoreMiss({ npub: activeNpub });
+            setPatreonSubscriptionVerified(true);
+            return;
+          }
+
           if (
-            !restoreResponse.ok &&
-            restorePayload.error !== "invalid_nostr_proof"
+            allowRestore &&
+            shouldAttemptPatreonKeyRestore(payload) &&
+            activeNpub &&
+            canSilentlySignPatreonProof() &&
+            !hasFreshPatreonRestoreMiss({ npub: activeNpub })
           ) {
+            const proof = await createPatreonNostrProof({
+              npub: activeNpub,
+              action: "restore",
+              allowExtension: false,
+            });
+            const restoreResponse = await fetchWithTimeout(
+              PATREON_KEY_STATUS_ENDPOINT,
+              {
+                method: "POST",
+                credentials: "include",
+                headers: {
+                  Accept: "application/json",
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify(proof),
+              },
+            );
+            const restorePayload = await restoreResponse
+              .json()
+              .catch(() => ({}));
+            if (!isCurrent()) return;
+            setPatreonStatusPayload(restorePayload);
+            setPatreonAvailable(restorePayload.configured !== false);
+            setPatreonSubscriptionVerified(Boolean(restorePayload.authorized));
+            if (restorePayload.authorized || restorePayload.linked) {
+              clearPatreonRestoreMiss({ npub: activeNpub });
+            } else if (
+              restoreResponse.ok &&
+              restorePayload.configured !== false &&
+              !restorePayload.replacementRequired &&
+              !restorePayload.checkoutRequired
+            ) {
+              rememberPatreonRestoreMiss({ npub: activeNpub });
+            }
+            if (
+              !restoreResponse.ok &&
+              restorePayload.error !== "invalid_nostr_proof"
+            ) {
+              setPatreonStatusError("unavailable");
+            }
+            return;
+          }
+
+          setPatreonSubscriptionVerified(false);
+          if (!response.ok && !payload.authorized) {
             setPatreonStatusError("unavailable");
           }
-          return;
-        }
-
-        setPatreonSubscriptionVerified(false);
-        if (!response.ok && !payload.authorized) {
+        } catch (error) {
+          if (!isCurrent()) return;
+          console.warn("Unable to check Patreon subscription", error);
+          setPatreonAvailable(false);
+          setPatreonSubscriptionVerified(false);
           setPatreonStatusError("unavailable");
+          setPatreonStatusPayload((current) => ({
+            ...current,
+            authorized: false,
+            error: "patreon_unavailable",
+          }));
+        } finally {
+          if (isCurrent()) {
+            setPatreonStatusResolved(true);
+            setIsCheckingPatreon(false);
+          }
+          if (patreonCheckPromiseRef.current === request) {
+            patreonCheckPromiseRef.current = null;
+          }
         }
-      } catch (error) {
-        if (!isCurrent()) return;
-        console.warn("Unable to check Patreon subscription", error);
-        setPatreonAvailable(false);
-        setPatreonSubscriptionVerified(false);
-        setPatreonStatusError("unavailable");
-        setPatreonStatusPayload((current) => ({
-          ...current,
-          authorized: false,
-          error: "patreon_unavailable",
-        }));
-      } finally {
-        if (isCurrent()) {
-          setPatreonStatusResolved(true);
-          setIsCheckingPatreon(false);
-        }
-      }
+      })();
+      patreonCheckPromiseRef.current = request;
+      return request;
     },
     [activeNpub],
   );
@@ -3198,6 +3231,8 @@ export default function App({ onBootReady } = {}) {
     // Never carry a prior key's optimistic unlock across an identity change.
     // The status request below must establish access for the active key.
     patreonCheckGenerationRef.current += 1;
+    patreonCheckPromiseRef.current = null;
+    patreonLastCheckAtRef.current = 0;
     setPatreonSubscriptionVerified(false);
     setPatreonStatusResolved(false);
     setPatreonStatusPayload({
@@ -3212,6 +3247,12 @@ export default function App({ onBootReady } = {}) {
   }, [checkPatreonSubscription]);
 
   const handlePatreonSubscriptionSurfaceOpen = useCallback(() => {
+    if (
+      Date.now() - patreonLastCheckAtRef.current <
+      PATREON_PASSIVE_RECHECK_TTL_MS
+    ) {
+      return;
+    }
     void checkPatreonSubscription({ allowRestore: true });
   }, [checkPatreonSubscription]);
 
@@ -3233,7 +3274,17 @@ export default function App({ onBootReady } = {}) {
     if (typeof window === "undefined") return undefined;
     const shouldRecheck = createPatreonRecheckGate();
     const recheck = () => {
-      if (!shouldRecheck(document.visibilityState)) return;
+      const pending =
+        isPatreonAwaiting ||
+        hasPendingPatreonDrawerReturn({ npub: activeNpub });
+      if (
+        !shouldRecheck(document.visibilityState, {
+          pending,
+          lastCheckAtMs: patreonLastCheckAtRef.current,
+        })
+      ) {
+        return;
+      }
       void checkPatreonSubscription({ allowRestore: true });
     };
     window.addEventListener("focus", recheck);
@@ -3242,11 +3293,13 @@ export default function App({ onBootReady } = {}) {
       window.removeEventListener("focus", recheck);
       document.removeEventListener("visibilitychange", recheck);
     };
-  }, [checkPatreonSubscription]);
+  }, [activeNpub, checkPatreonSubscription, isPatreonAwaiting]);
 
   const handlePatreonConnect = useCallback(
     async (plan = "annual", options = {}) => {
       if (typeof window === "undefined" || !activeNpub) return;
+      clearPatreonRestoreMiss({ npub: activeNpub });
+      patreonLastCheckAtRef.current = Date.now();
       const returnMode = options?.returnMode === "drawer" ? "drawer" : "page";
       beginPatreonDrawerReturn({
         returnPath: currentPatreonDrawerReturnPath(),
@@ -3317,6 +3370,7 @@ export default function App({ onBootReady } = {}) {
   const handlePatreonReplacement = useCallback(
     async (options = {}) => {
       if (!activeNpub) return;
+      patreonLastCheckAtRef.current = Date.now();
       const stayInDrawer = options?.surface === "drawer";
       setIsCheckingPatreon(true);
       setPatreonStatusError("");
@@ -3365,6 +3419,7 @@ export default function App({ onBootReady } = {}) {
         }
         setPatreonStatusPayload(payload);
         setPatreonSubscriptionVerified(true);
+        clearPatreonRestoreMiss({ npub: activeNpub });
         if (stayInDrawer) {
           setDrawerPatreonResult("");
         } else {
@@ -3388,6 +3443,7 @@ export default function App({ onBootReady } = {}) {
   const handlePatreonCancelReplacement = useCallback(
     async (options = {}) => {
       const stayInDrawer = options?.surface === "drawer";
+      patreonLastCheckAtRef.current = Date.now();
       setIsCheckingPatreon(true);
       try {
         await fetchWithTimeout(PATREON_CANCEL_REPLACEMENT_ENDPOINT, {
@@ -3421,6 +3477,7 @@ export default function App({ onBootReady } = {}) {
   );
 
   const handlePatreonRefresh = useCallback(async () => {
+    patreonLastCheckAtRef.current = Date.now();
     setIsCheckingPatreon(true);
     setPatreonStatusError("");
     try {
@@ -3452,6 +3509,7 @@ export default function App({ onBootReady } = {}) {
 
   const handlePatreonDisconnect = useCallback(async () => {
     if (!activeNpub) return;
+    patreonLastCheckAtRef.current = Date.now();
     setIsCheckingPatreon(true);
     try {
       const proof = await createPatreonNostrProof({
@@ -3477,6 +3535,7 @@ export default function App({ onBootReady } = {}) {
         linked: false,
         subscription: null,
       });
+      rememberPatreonRestoreMiss({ npub: activeNpub });
       navigate("/subscribe", { replace: true });
     } catch (error) {
       console.warn("Unable to disconnect Patreon", error);
@@ -6161,14 +6220,26 @@ export default function App({ onBootReady } = {}) {
   }, [handleReturnToSkillTree, openPendingDailyGoalCelebration]);
 
   const handleCloseTutorialBitcoinModal = useCallback(() => {
-    setShowTutorialBitcoinModal(false);
-    setPendingTutorialBitcoinModal(false);
+    const shouldOpenInstallModal = !user?.gettingStartedModalShown;
+    // Commit the custom Bitcoin dialog's removal first. Opening the Chakra
+    // install modal in the same mobile Safari frame can preserve the old
+    // composited rounded shell as a visual ghost over the new dialog.
+    flushSync(() => {
+      setShowTutorialBitcoinModal(false);
+      setPendingTutorialBitcoinModal(false);
+    });
     pendingTutorialBitcoinModalRef.current = false;
-    if (!user?.gettingStartedModalShown) {
-      setPendingInstallModalAfterTutorial(true);
+    if (shouldOpenInstallModal) {
+      runAfterNextPaint(() => {
+        setPendingInstallModalAfterTutorial(true);
+      });
     }
     void markTutorialBitcoinModalShown();
-  }, [markTutorialBitcoinModalShown, user?.gettingStartedModalShown]);
+  }, [
+    markTutorialBitcoinModalShown,
+    runAfterNextPaint,
+    user?.gettingStartedModalShown,
+  ]);
 
   const handleTutorFirstLessonComplete = useCallback(() => {
     if (user?.tutorialBitcoinModalShown) {

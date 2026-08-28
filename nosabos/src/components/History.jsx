@@ -72,6 +72,7 @@ import {
   DEFAULT_SUPPORT_LANGUAGE,
   DEFAULT_TARGET_LANGUAGE,
   getLanguageDirection,
+  isBetaPracticeLanguage,
   isSupportedPracticeLanguage,
   normalizePracticeLanguage,
   normalizeSupportLanguage,
@@ -1026,9 +1027,7 @@ export default function History({
     useState({});
   const [isTranslatingLecture, setIsTranslatingLecture] = useState(false);
 
-  const showReviewKeyboardButton = ["ja", "ru", "el", "pl", "ga"].includes(
-    targetLang,
-  );
+  const showReviewKeyboardButton = isBetaPracticeLanguage(targetLang);
 
   const handleReviewKeyboardInput = useCallback((key) => {
     if (key === "BACKSPACE") {
