@@ -77,18 +77,6 @@ const isLocalhost = () =>
   (window.location.hostname === "localhost" ||
     window.location.hostname === "127.0.0.1");
 
-// Pixel flicker effect for 8-bit feel
-const pixelFlicker = keyframes`
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.8; }
-`;
-
-// Scanline animation
-const scanline = keyframes`
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(100vh); }
-`;
-
 const drift = keyframes`
   0% { transform: translateY(0) translateX(0); }
   50% { transform: translateY(-10px) translateX(5px); }
@@ -105,14 +93,32 @@ const orbitSpin = keyframes`
   to { transform: rotate(360deg); }
 `;
 
-const haloPulse = keyframes`
-  0%, 100% { transform: scale(0.96); opacity: 0.62; }
-  50% { transform: scale(1.04); opacity: 0.92; }
-`;
-
 const gradientShift = keyframes`
   0%, 100% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
+`;
+
+const animePanelIn = keyframes`
+  from { opacity: 0; transform: translateY(28px) rotate(4deg) scale(0.94); }
+  to { opacity: 1; transform: translateY(0) rotate(1.5deg) scale(1); }
+`;
+
+const actionLineRush = keyframes`
+  0% { background-position: 0 0; opacity: 0.32; }
+  50% { opacity: 0.58; }
+  100% { background-position: 96px 0; opacity: 0.32; }
+`;
+
+const petalFall = keyframes`
+  0% { transform: translate3d(0, -12vh, 0) rotate(0deg); opacity: 0; }
+  10% { opacity: 0.72; }
+  88% { opacity: 0.55; }
+  100% { transform: translate3d(13vw, 112vh, 0) rotate(540deg); opacity: 0; }
+`;
+
+const stickerBounce = keyframes`
+  0%, 100% { transform: translateY(0) rotate(var(--sticker-rotate)); }
+  50% { transform: translateY(-7px) rotate(var(--sticker-rotate)); }
 `;
 
 const patreonLevitate = keyframes`
@@ -150,8 +156,8 @@ const HERO_COPY = {
     body: "I design ambitious little worlds for learning, building, and making everyday life feel more possible.",
     explore: "Explore the universe",
     workLabel: "Selected creations",
-    workTitle: "Four ideas. Four worlds.",
-    workBody: "Each project starts with a real problem and grows into its own playful experience.",
+    workTitle: "Choose your next story.",
+    workBody: "Four playful tools, each with its own color, character, and energy.",
   },
   es: {
     eyebrow: "EL PEQUEÑO UNIVERSO DE SHEILFER",
@@ -300,27 +306,6 @@ const AccordionButton = withSquircleCorners(
   ChakraAccordionButton,
   "LinksSquircleAccordionButton",
 );
-
-const LINKS_PAPER_PAGE_SX = {
-  background:
-    "radial-gradient(circle at 14% 12%, rgba(220, 197, 169, 0.18) 0%, transparent 34%), " +
-    "radial-gradient(circle at 84% 10%, rgba(235, 220, 198, 0.2) 0%, transparent 32%), " +
-    "linear-gradient(180deg, rgba(252,248,242,0.98) 0%, rgba(246,239,230,0.98) 100%)",
-  "&::before": {
-    content: '""',
-    position: "absolute",
-    inset: 0,
-    backgroundImage:
-      "repeating-linear-gradient(0deg, rgba(155,135,112,0.04) 0px, rgba(155,135,112,0.04) 1px, transparent 1px, transparent 28px), " +
-      "repeating-linear-gradient(90deg, rgba(155,135,112,0.03) 0px, rgba(155,135,112,0.03) 1px, transparent 1px, transparent 28px)",
-    opacity: 0.4,
-    pointerEvents: "none",
-  },
-  "& > *": {
-    position: "relative",
-    zIndex: 1,
-  },
-};
 
 const SUPPORT_LANGUAGE_FLAG_SWATCHES = {
   en: {
@@ -690,142 +675,90 @@ const ThemeModeToggle = ({ themeMode, onModeChange }) => {
   );
 };
 
-// 8-bit pixel star with random direction movement
-function PixelStar({
-  size,
-  startX,
-  startY,
-  delay,
-  duration,
-  color,
-  dirX,
-  dirY,
-}) {
-  // Create unique keyframes for each star's direction
-  const starMove = keyframes`
-    0% {
-      transform: translateX(0) translateY(0);
-      opacity: 0;
-    }
-    5% { opacity: 1; }
-    95% { opacity: 1; }
-    100% {
-      transform: translateX(${dirX}vw) translateY(${dirY}vh);
-      opacity: 0;
-    }
-  `;
-
+function AnimeBackdrop({ isLightTheme = false }) {
+  const petals = [
+    [8, 1, 9, 0],
+    [18, 0.7, 12, -4],
+    [31, 0.9, 14, -7],
+    [47, 0.65, 10, -2],
+    [63, 1, 13, -9],
+    [76, 0.8, 11, -5],
+    [91, 0.7, 15, -11],
+  ];
   return (
     <Box
       position="absolute"
-      top={startY}
-      left={startX}
-      w={`${size}px`}
-      h={`${size}px`}
-      bg={color}
-      boxShadow={`0 0 ${size * 2}px ${color}`}
-      animation={`${starMove} ${duration}s linear infinite, ${pixelFlicker} 2s steps(2) infinite`}
-      pointerEvents="none"
-      sx={{
-        imageRendering: "pixelated",
-        animationDelay: `${delay}s`,
-      }}
-    />
-  );
-}
-
-function RetroStarfield({ isLightTheme = false }) {
-  const stars = useMemo(() => {
-    const starArray = [];
-    // Neon 80s colors
-    const colors = isLightTheme
-      ? ["#0f766e", "#1d4ed8", "#db2777", "#a16207", "#ffffff", "#7c3aed"]
-      : [
-          "#ff00ff", // Magenta
-          "#00ffff", // Cyan
-          "#ff6ec7", // Hot pink
-          "#39ff14", // Neon green
-          "#fff", // White
-          "#ffff00", // Yellow
-        ];
-
-    for (let i = 0; i < 30; i++) {
-      // Random direction for each star
-      const angle = Math.random() * Math.PI * 2;
-      const distance = 80 + Math.random() * 40; // How far it travels
-
-      starArray.push({
-        id: i,
-        size: Math.random() < 0.3 ? 4 : Math.random() < 0.6 ? 3 : 2,
-        startX: `${Math.random() * 100}%`,
-        startY: `${Math.random() * 100}%`,
-        delay: Math.random() * 20,
-        duration: 25 + Math.random() * 20, // Slower: 25-45 seconds
-        color: colors[Math.floor(Math.random() * colors.length)],
-        dirX: Math.cos(angle) * distance,
-        dirY: Math.sin(angle) * distance,
-      });
-    }
-    return starArray;
-  }, [isLightTheme]);
-
-  return (
-    <Box
-      position="absolute"
-      top={0}
-      left={0}
-      right={0}
-      bottom={0}
+      inset={0}
       overflow="hidden"
       pointerEvents="none"
+      aria-hidden="true"
     >
-      {stars.map((star) => (
-        <PixelStar key={star.id} {...star} />
-      ))}
-
-      {/* Retro grid lines */}
       <Box
         position="absolute"
-        top={0}
-        left={0}
-        right={0}
-        bottom={0}
-        opacity={isLightTheme ? 0.08 : 0.03}
-        backgroundImage={
+        inset="0"
+        opacity={isLightTheme ? 0.12 : 0.09}
+        bgImage={
           isLightTheme
-            ? "linear-gradient(rgba(155,135,112,0.18) 1px, transparent 1px), linear-gradient(90deg, rgba(155,135,112,0.14) 1px, transparent 1px)"
-            : "linear-gradient(#ff00ff 1px, transparent 1px), linear-gradient(90deg, #ff00ff 1px, transparent 1px)"
+            ? "radial-gradient(circle, #241c2d 1.25px, transparent 1.35px)"
+            : "radial-gradient(circle, #ff6f91 1.2px, transparent 1.35px)"
         }
-        backgroundSize={isLightTheme ? "42px 42px" : "50px 50px"}
-        pointerEvents="none"
+        bgSize="18px 18px"
+        maskImage="linear-gradient(125deg, black 0%, transparent 46%, black 100%)"
       />
-
-      {!isLightTheme && (
-        <Box
-          position="absolute"
-          top={0}
-          left={0}
-          right={0}
-          height="4px"
-          bg="linear-gradient(transparent, rgba(255,255,255,0.03), transparent)"
-          animation={`${scanline} 8s linear infinite`}
-          pointerEvents="none"
-        />
-      )}
-
-      {/* Vignette effect */}
       <Box
         position="absolute"
-        top={0}
-        left={0}
-        right={0}
-        bottom={0}
-        bg={
+        top="-20vw"
+        right="-12vw"
+        w="70vw"
+        h="70vw"
+        borderRadius="full"
+        border={isLightTheme ? "3px solid rgba(36,28,45,0.08)" : "3px solid rgba(255,255,255,0.08)"}
+        bgImage={
           isLightTheme
-            ? "radial-gradient(ellipse at center, transparent 0%, rgba(111,86,54,0.1) 100%)"
-            : "radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.4) 100%)"
+            ? "radial-gradient(circle, rgba(255,92,122,0.24) 0 46%, transparent 47%), radial-gradient(circle, #cc355f 1.5px, transparent 1.6px)"
+            : "radial-gradient(circle, rgba(255,83,125,0.18) 0 46%, transparent 47%), radial-gradient(circle, #ff668d 1.5px, transparent 1.6px)"
         }
-        pointerEvents="none"
+        bgSize="100% 100%, 14px 14px"
+        opacity={0.72}
+      />
+      <Box
+        position="absolute"
+        inset="0"
+        bgImage={
+          isLightTheme
+            ? "repeating-linear-gradient(116deg, transparent 0 44px, rgba(36,28,45,0.055) 45px 47px, transparent 48px 78px)"
+            : "repeating-linear-gradient(116deg, transparent 0 44px, rgba(255,255,255,0.045) 45px 47px, transparent 48px 78px)"
+        }
+        animation={`${actionLineRush} 9s linear infinite`}
+      />
+      {petals.map(([left, scale, duration, delay], index) => (
+        <Box
+          key={left}
+          position="absolute"
+          top="-5%"
+          left={`${left}%`}
+          w={`${11 * scale}px`}
+          h={`${17 * scale}px`}
+          borderRadius="90% 10% 75% 25%"
+          bg={isLightTheme ? "rgba(218,61,105,0.42)" : "rgba(255,105,145,0.58)"}
+          border={isLightTheme ? "1px solid rgba(80,32,52,0.14)" : "1px solid rgba(255,255,255,0.18)"}
+          animation={`${petalFall} ${duration}s ${delay}s linear infinite`}
+          sx={{
+            "@media (prefers-reduced-motion: reduce)": {
+              animation: "none",
+              display: index > 2 ? "none" : "block",
+            },
+          }}
+        />
+      ))}
+      <Box
+        position="absolute"
+        inset="0"
+        boxShadow={
+          isLightTheme
+            ? "inset 0 0 180px rgba(85,55,43,0.12)"
+            : "inset 0 0 220px rgba(0,0,0,0.56)"
+        }
       />
     </Box>
   );
@@ -1063,14 +996,13 @@ function LinkCard({
       minH={{ base: "430px", md: "520px" }}
       bg={
         isLightTheme
-          ? `linear-gradient(145deg, rgba(255,255,255,0.72) 0%, ${accentSoft} 150%)`
-          : `linear-gradient(145deg, rgba(14,24,42,0.96) 0%, ${accentSoft} 160%)`
+          ? `linear-gradient(156deg, #fffaf0 0%, #fffaf0 68%, ${accentSoft} 68%, ${accentSoft} 100%)`
+          : `linear-gradient(156deg, #121629 0%, #121629 68%, ${accentSoft} 68%, ${accentSoft} 100%)`
       }
       color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
-      border="1px solid"
-      borderColor={isLightTheme ? "rgba(91, 72, 50, 0.14)" : "whiteAlpha.200"}
-      borderRadius={{ base: "40px", md: "56px" }}
-      style={{ cornerShape: "superellipse(1.25)" }}
+      border={{ base: "3px solid", md: "4px solid" }}
+      borderColor={isLightTheme ? "#241c2d" : "#f7f1e8"}
+      borderRadius={{ base: "24px", md: "32px" }}
       px={{ base: 5, md: 7 }}
       py={{ base: 6, md: 8 }}
       position="relative"
@@ -1078,38 +1010,41 @@ function LinkCard({
       isolation="isolate"
       boxShadow={
         isLightTheme
-          ? "0 24px 70px rgba(74, 55, 34, 0.10), inset 0 1px 0 rgba(255,255,255,0.8)"
-          : `0 28px 80px rgba(0,0,0,0.36), 0 0 50px ${accentSoft}`
+          ? `10px 12px 0 ${accent}, 18px 22px 0 rgba(36,28,45,0.1)`
+          : `10px 12px 0 ${accent}, 18px 22px 0 rgba(0,0,0,0.34)`
       }
       transition="transform 320ms ease, box-shadow 320ms ease, border-color 320ms ease"
       _before={{
         content: '""',
         position: "absolute",
-        w: "280px",
-        h: "280px",
-        borderRadius: "full",
-        bg: accent,
-        opacity: isLightTheme ? 0.12 : 0.16,
-        filter: "blur(70px)",
-        top: "-120px",
-        insetInlineEnd: "-80px",
+        inset: 0,
+        bgImage: isLightTheme
+          ? "radial-gradient(circle, rgba(36,28,45,0.22) 1.1px, transparent 1.2px)"
+          : "radial-gradient(circle, rgba(255,255,255,0.2) 1.1px, transparent 1.2px)",
+        bgSize: "12px 12px",
+        opacity: 0.34,
+        maskImage: "linear-gradient(140deg, black, transparent 52%)",
         zIndex: -1,
       }}
       _after={{
         content: '""',
         position: "absolute",
-        inset: "1px",
-        borderRadius: "inherit",
-        border: "1px solid rgba(255,255,255,0.2)",
+        width: "180px",
+        height: "30px",
+        top: "22px",
+        insetInlineEnd: "-45px",
+        bg: accent,
+        opacity: 0.82,
+        transform: "rotate(42deg)",
         pointerEvents: "none",
-        zIndex: 2,
+        zIndex: 0,
       }}
       _hover={{
-        transform: "translateY(-8px)",
+        transform: "translate(-3px, -7px)",
         borderColor: accent,
         boxShadow: isLightTheme
-          ? `0 34px 90px rgba(74, 55, 34, 0.16), 0 0 0 1px ${accentSoft}`
-          : `0 36px 90px rgba(0,0,0,0.46), 0 0 70px ${accentSoft}`,
+          ? `14px 17px 0 ${accent}, 22px 28px 0 rgba(36,28,45,0.1)`
+          : `14px 17px 0 ${accent}, 22px 28px 0 rgba(0,0,0,0.34)`,
       }}
       sx={{
         "@media (prefers-reduced-motion: reduce)": {
@@ -1134,23 +1069,27 @@ function LinkCard({
           justifyContent="center"
           alignItems="center"
           position="relative"
+          borderRadius={{ base: "18px", md: "24px" }}
+          border="2px solid"
+          borderColor={isLightTheme ? "#241c2d" : "rgba(247,241,232,0.88)"}
+          overflow="hidden"
+          bg={accentSoft}
           _before={{
             content: '""',
             position: "absolute",
-            w: { base: "180px", md: "220px" },
-            h: { base: "180px", md: "220px" },
-            borderRadius: "full",
-            border: `1px solid ${accent}`,
-            opacity: 0.24,
+            inset: "-45%",
+            bgImage: `repeating-conic-gradient(from 0deg, ${accent} 0deg 3deg, transparent 3deg 14deg)`,
+            opacity: isLightTheme ? 0.17 : 0.21,
+            animation: `${orbitSpin} 34s linear infinite`,
           }}
           _after={{
             content: '""',
             position: "absolute",
-            w: { base: "140px", md: "175px" },
-            h: { base: "140px", md: "175px" },
+            w: { base: "145px", md: "184px" },
+            h: { base: "145px", md: "184px" },
             borderRadius: "full",
-            bg: accentSoft,
-            filter: "blur(18px)",
+            bg: isLightTheme ? "rgba(255,250,240,0.72)" : "rgba(8,11,24,0.68)",
+            border: `2px solid ${accent}`,
           }}
         >
           <Box
@@ -1170,10 +1109,11 @@ function LinkCard({
             fontSize={{ base: "2xl", md: "3xl" }}
             lineHeight="1.05"
             fontFamily="'DM Sans', sans-serif"
-            letterSpacing="-0.035em"
-            fontWeight="800"
+            letterSpacing="-0.045em"
+            fontWeight="900"
             color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
             textAlign={descriptionAlign}
+            textShadow={isLightTheme ? "2px 2px 0 rgba(218,61,105,0.12)" : "2px 2px 0 rgba(255,112,151,0.15)"}
           >
             {title}
           </Heading>
@@ -1318,11 +1258,11 @@ function LinksHero({
           dir="ltr"
           px={{ base: 2.5, md: 3 }}
           py={{ base: 2, md: 1.5 }}
-          borderRadius={{ base: "20px", md: "18px" }}
-          bg={isLightTheme ? "rgba(255,250,242,0.7)" : "rgba(7,16,29,0.68)"}
-          border="1px solid"
-          borderColor={isLightTheme ? "rgba(91,72,50,0.13)" : "whiteAlpha.200"}
-          boxShadow={isLightTheme ? APP_SHADOW : "0 14px 34px rgba(0,0,0,0.24)"}
+          borderRadius={{ base: "16px", md: "18px" }}
+          bg={isLightTheme ? "rgba(255,250,240,0.9)" : "rgba(14,17,33,0.9)"}
+          border={{ base: "2px solid", md: "3px solid" }}
+          borderColor={isLightTheme ? "#241c2d" : "#f7f1e8"}
+          boxShadow={isLightTheme ? "6px 7px 0 #d13d74" : "6px 7px 0 #d94b73"}
           backdropFilter="blur(18px)"
         >
           {socialItems.map((item) => (
@@ -1339,15 +1279,20 @@ function LinksHero({
               alignItems="center"
               justifyContent="center"
               color="white"
-              border="0"
               p={0}
               lineHeight="0"
               overflow="hidden"
               appearance="none"
               backgroundClip="padding-box"
-              transition="transform 180ms ease"
+              border="2px solid"
+              borderColor={isLightTheme ? "#241c2d" : "rgba(247,241,232,0.88)"}
+              boxShadow={isLightTheme ? "2px 3px 0 #241c2d" : "2px 3px 0 #050711"}
+              transition="transform 180ms ease, box-shadow 180ms ease"
               _focusVisible={{ boxShadow: `0 0 0 3px ${primaryAccent}55` }}
-              _hover={{ transform: "translateY(-2px) scale(1.04)" }}
+              _hover={{
+                transform: "translate(-1px, -2px) scale(1.04)",
+                boxShadow: isLightTheme ? "3px 5px 0 #241c2d" : "3px 5px 0 #050711",
+              }}
               onClick={() => onSocialClick(item.label.toLowerCase(), item.url)}
             >
               {item.icon}
@@ -1377,6 +1322,11 @@ function LinksHero({
             spacing={{ base: 3, md: 4 }}
             flexWrap="wrap"
             justify={isRtl ? "flex-end" : "flex-start"}
+            bg={isLightTheme ? "rgba(255,250,240,0.72)" : "rgba(15,18,35,0.72)"}
+            borderInlineStart="5px solid"
+            borderColor={isLightTheme ? "#d13d74" : "#ff6f91"}
+            px={3}
+            py={2}
           >
             <HStack spacing={3}>
               <Text
@@ -1395,26 +1345,26 @@ function LinksHero({
               px={4}
               py={0}
               borderRadius="full"
-              bg={isLightTheme ? "rgba(255,255,255,0.58)" : "whiteAlpha.100"}
-              border="1px solid"
-              borderColor={isLightTheme ? "rgba(15,118,110,0.3)" : "rgba(86,240,216,0.38)"}
+              bg={isLightTheme ? "#fffaf0" : "#171b31"}
+              border="2px solid"
+              borderColor={isLightTheme ? "#241c2d" : "rgba(247,241,232,0.9)"}
               color={primaryAccent}
               fontFamily="'DM Sans', sans-serif"
               fontSize="sm"
               fontWeight="700"
               lineHeight="1"
-              boxShadow="none"
+              boxShadow={isLightTheme ? "3px 4px 0 #241c2d" : "3px 4px 0 #050711"}
               transition="background 180ms ease, border-color 180ms ease, transform 180ms ease"
               _hover={{
                 bg: isLightTheme ? "rgba(15,118,110,0.08)" : "rgba(86,240,216,0.1)",
                 borderColor: primaryAccent,
-                boxShadow: "none",
-                transform: "translateY(-1px)",
+                boxShadow: isLightTheme ? "4px 5px 0 #241c2d" : "4px 5px 0 #050711",
+                transform: "translate(-1px, -1px)",
               }}
               _active={{
                 bg: isLightTheme ? "rgba(15,118,110,0.12)" : "rgba(86,240,216,0.14)",
                 transform: "translateY(0)",
-                boxShadow: "none",
+                boxShadow: isLightTheme ? "1px 1px 0 #241c2d" : "1px 1px 0 #050711",
               }}
               _focusVisible={{ boxShadow: `0 0 0 3px ${primaryAccent}33` }}
             >
@@ -1430,6 +1380,8 @@ function LinksHero({
             letterSpacing="-0.073em"
             fontWeight="900"
             maxW="920px"
+            color={isLightTheme ? "#241c2d" : "#f7f1e8"}
+            textShadow={isLightTheme ? "5px 6px 0 rgba(218,61,105,0.2)" : "5px 6px 0 rgba(255,103,143,0.2)"}
           >
             {heroCopy.titleLead}{" "}
             <Text
@@ -1437,8 +1389,8 @@ function LinksHero({
               display="inline"
               bgGradient={
                 isLightTheme
-                  ? "linear(to-r, #0f766e, #d97706, #d13d74, #3158a6)"
-                  : "linear(to-r, #56f0d8, #ffbd59, #ff74aa, #7ca7ff)"
+                  ? "linear(to-r, #e34069, #f28b46, #d13d74, #385fd2)"
+                  : "linear(to-r, #ff6f91, #ffb657, #ff77b7, #6ce5e8)"
               }
               bgClip="text"
               bgSize="220% 220%"
@@ -1461,13 +1413,21 @@ function LinksHero({
           <HStack spacing={3} flexWrap="wrap" justify={isRtl ? "flex-end" : "flex-start"}>
             <Button
               onClick={onAboutOpen}
-              variant="ghost"
+              variant="outline"
               fontFamily="'DM Sans', sans-serif"
               fontWeight="800"
               size="lg"
               h="56px"
               px={6}
-              _hover={{ bg: isLightTheme ? "rgba(255,255,255,0.5)" : "whiteAlpha.100" }}
+              bg={isLightTheme ? "#fffaf0" : "#171b31"}
+              border="2px solid"
+              borderColor={isLightTheme ? "#241c2d" : "#f7f1e8"}
+              boxShadow={isLightTheme ? "5px 6px 0 #d13d74" : "5px 6px 0 #d94b73"}
+              _hover={{
+                bg: isLightTheme ? "#fffaf0" : "#171b31",
+                transform: "translate(-1px, -2px)",
+                boxShadow: isLightTheme ? "7px 8px 0 #d13d74" : "7px 8px 0 #d94b73",
+              }}
             >
               {translations.about} ↗
             </Button>
@@ -1475,7 +1435,7 @@ function LinksHero({
 
         </VStack>
 
-        <HeroOrbit
+        <HeroKeyArt
           isLightTheme={isLightTheme}
           profilePicture={profilePicture}
           randomCharacterKey={randomCharacterKey}
@@ -1485,140 +1445,173 @@ function LinksHero({
   );
 }
 
-function HeroOrbit({ isLightTheme, profilePicture, randomCharacterKey }) {
-  const orbitLabels = [
-    { label: "PIYALI", top: "10%", left: "4%", color: "#0f9f91" },
+function HeroKeyArt({ isLightTheme, profilePicture, randomCharacterKey }) {
+  const storyStickers = [
+    {
+      label: "PIYALI",
+      top: "8%",
+      left: "-1%",
+      color: "#0f9f91",
+      rotate: "-7deg",
+    },
     {
       label: "ROBOTS BUILDING EDUCATION",
       lines: ["ROBOTS", "BUILDING", "EDUCATION"],
-      top: "13%",
-      right: "-2%",
+      top: "18%",
+      right: "-5%",
       color: "#d97706",
+      rotate: "6deg",
     },
     {
       label: "FREE DUAL CITIZEN PLANNER",
       lines: ["FREE", "DUAL CITIZEN", "PLANNER"],
-      bottom: "13%",
-      left: "-4%",
+      bottom: "14%",
+      left: "-6%",
       color: isLightTheme ? "#3158a6" : "#9bbcff",
-    },
-    { label: "PATREON", bottom: "7%", right: "5%", color: "#d13d74" },
-  ];
-  const orbitRings = [
-    {
-      inset: "4%",
-      color: isLightTheme ? "#3158a6" : "#9bbcff",
-      duration: 34,
-      offset: 13,
-      reverse: true,
-      dashed: true,
+      rotate: "4deg",
     },
     {
-      inset: "13%",
-      color: isLightTheme ? "#0f9f91" : "#56f0d8",
-      duration: 22,
-      offset: 2,
-      reverse: false,
-    },
-    {
-      inset: "20%",
-      color: isLightTheme ? "#d97706" : "#ffbd59",
-      duration: 17,
-      offset: 9,
-      reverse: true,
-    },
-    {
-      inset: "25%",
-      color: isLightTheme ? "#d13d74" : "#ff74aa",
-      duration: 13,
-      offset: 6,
-      reverse: false,
+      label: "PATREON",
+      bottom: "6%",
+      right: "3%",
+      color: "#d13d74",
+      rotate: "-5deg",
     },
   ];
 
   return (
     <Box
       w="100%"
-      maxW={{ base: "520px", lg: "610px" }}
+      maxW={{ base: "520px", lg: "590px" }}
       mx="auto"
       aspectRatio="1"
       position="relative"
       display="flex"
       alignItems="center"
       justifyContent="center"
-      animation={`${heroRise} 850ms 120ms cubic-bezier(.2,.8,.2,1) both`}
+      animation={`${animePanelIn} 850ms 120ms cubic-bezier(.2,.8,.2,1) both`}
       sx={{ "@media (prefers-reduced-motion: reduce)": { animation: "none" } }}
     >
       <Box
         position="absolute"
-        inset="7%"
-        borderRadius="full"
+        inset={{ base: "9% 8% 8% 9%", md: "7% 9% 8% 8%" }}
+        borderRadius={{ base: "28px", md: "42px" }}
+        transform="rotate(1.5deg)"
+        border={{ base: "3px solid", md: "4px solid" }}
+        borderColor={isLightTheme ? "#241c2d" : "#f7f1e8"}
         bg={
           isLightTheme
-            ? "radial-gradient(circle at 36% 28%, rgba(255,255,255,0.86) 0%, rgba(255,213,168,0.22) 24%, transparent 46%), radial-gradient(circle at center, rgba(255,213,168,0.42) 0%, rgba(74,196,181,0.3) 61%, transparent 70%)"
-            : "radial-gradient(circle at 36% 28%, rgba(255,255,255,0.14) 0%, rgba(255,92,168,0.12) 24%, transparent 45%), radial-gradient(circle at center, rgba(255,92,168,0.18) 0%, rgba(0,255,255,0.16) 61%, transparent 70%)"
+            ? "linear-gradient(145deg, #ff7b96 0%, #ffb45d 48%, #fff2d7 100%)"
+            : "linear-gradient(145deg, #e23d68 0%, #713c8d 52%, #142947 100%)"
         }
-        animation={`${haloPulse} 7s ease-in-out infinite`}
-      />
-      {orbitRings.map((ring) => (
+        boxShadow={
+          isLightTheme
+            ? "12px 14px 0 #241c2d, 22px 26px 0 rgba(218,61,105,0.25)"
+            : "12px 14px 0 #050711, 22px 26px 0 rgba(255,103,143,0.28)"
+        }
+        overflow="hidden"
+        _before={{
+          content: '""',
+          position: "absolute",
+          inset: 0,
+          bgImage: isLightTheme
+            ? "radial-gradient(circle, rgba(36,28,45,0.28) 1.4px, transparent 1.5px)"
+            : "radial-gradient(circle, rgba(255,255,255,0.22) 1.4px, transparent 1.5px)",
+          bgSize: "13px 13px",
+          opacity: 0.42,
+          maskImage: "linear-gradient(145deg, black, transparent 68%)",
+        }}
+        _after={{
+          content: '""',
+          position: "absolute",
+          inset: "-10% -35% -10% 48%",
+          bgImage: isLightTheme
+            ? "repeating-linear-gradient(112deg, transparent 0 14px, rgba(36,28,45,0.18) 15px 17px, transparent 18px 26px)"
+            : "repeating-linear-gradient(112deg, transparent 0 14px, rgba(255,255,255,0.18) 15px 17px, transparent 18px 26px)",
+          transform: "skewX(-12deg)",
+        }}
+      >
         <Box
-          key={ring.color}
           position="absolute"
-          inset={ring.inset}
-          borderRadius="full"
-          border="1px solid"
-          borderStyle={ring.dashed ? "dashed" : "solid"}
-          borderColor={
-            isLightTheme
-              ? ring.dashed
-                ? "rgba(91,72,50,0.18)"
-                : "rgba(73,102,92,0.22)"
-              : "rgba(255,255,255,0.18)"
-          }
-          animation={`${orbitSpin} ${ring.duration}s linear infinite`}
-          _before={{
-            content: '""',
-            position: "absolute",
-            top: "-4px",
-            left: "calc(50% - 4px)",
-            w: "8px",
-            h: "8px",
-            borderRadius: "full",
-            bg: ring.color,
-            boxShadow: `0 0 7px 2px ${ring.color}, 0 0 20px ${ring.color}`,
-          }}
-          sx={{
-            animationDelay: `-${ring.offset}s`,
-            animationDirection: ring.reverse ? "reverse" : "normal",
-            "@media (prefers-reduced-motion: reduce)": {
-              animation: "none",
-            },
-          }}
-        />
-      ))}
+          top={{ base: 4, md: 6 }}
+          left={{ base: 5, md: 7 }}
+          zIndex={2}
+          px={3}
+          py={1}
+          transform="rotate(-4deg)"
+          bg={isLightTheme ? "#241c2d" : "#f7f1e8"}
+          color={isLightTheme ? "#fff9ed" : "#111525"}
+          fontFamily="monospace"
+          fontWeight="900"
+          fontSize={{ base: "10px", md: "xs" }}
+          letterSpacing="0.18em"
+        >
+          ORIGINAL STORY
+        </Box>
+        <Text
+          position="absolute"
+          insetInlineEnd={{ base: 3, md: 5 }}
+          bottom={{ base: 2, md: 3 }}
+          zIndex={2}
+          fontFamily="'DM Sans', sans-serif"
+          fontSize={{ base: "4xl", md: "6xl" }}
+          fontWeight="900"
+          lineHeight="0.8"
+          color="rgba(255,255,255,0.3)"
+          transform="rotate(-8deg)"
+        >
+          ドキッ
+        </Text>
+      </Box>
       <Box
-        w={{ base: "46%", md: "44%" }}
+        w={{ base: "52%", md: "50%" }}
         aspectRatio="1"
-        borderRadius="full"
+        borderRadius="48% 52% 46% 54% / 56% 44% 56% 44%"
         display="flex"
         alignItems="center"
         justifyContent="center"
-        bg={isLightTheme ? "rgba(255,250,242,0.76)" : "rgba(7,16,29,0.76)"}
-        backdropFilter="blur(18px)"
-        border="1px solid"
-        borderColor={isLightTheme ? "rgba(91,72,50,0.15)" : "whiteAlpha.300"}
-        boxShadow={isLightTheme ? "0 30px 80px rgba(75,55,32,0.18)" : "0 30px 90px rgba(0,0,0,0.45)"}
+        bg={isLightTheme ? "rgba(255,249,237,0.92)" : "rgba(12,16,31,0.9)"}
+        border={{ base: "3px solid", md: "4px solid" }}
+        borderColor={isLightTheme ? "#241c2d" : "#f7f1e8"}
+        boxShadow={isLightTheme ? "7px 8px 0 rgba(36,28,45,0.92)" : "7px 8px 0 #050711"}
         position="relative"
         zIndex={2}
         overflow="hidden"
+        transform="translateY(3%) rotate(-2deg)"
+        _before={{
+          content: '""',
+          position: "absolute",
+          inset: 0,
+          bgImage: isLightTheme
+            ? "radial-gradient(circle, rgba(218,61,105,0.28) 1.2px, transparent 1.3px)"
+            : "radial-gradient(circle, rgba(255,112,151,0.28) 1.2px, transparent 1.3px)",
+          bgSize: "10px 10px",
+          opacity: 0.55,
+        }}
       >
         {profilePicture ? (
-          <img src={profilePicture} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <img
+            src={profilePicture}
+            alt="Profile"
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              position: "relative",
+              zIndex: 1,
+            }}
+          />
         ) : (
-          <RandomCharacter notSoRandomCharacter={randomCharacterKey} width="170px" containerHeight={210} />
+          <Box position="relative" zIndex={1} transform={{ base: "scale(0.92)", md: "scale(1.08)" }}>
+            <RandomCharacter
+              notSoRandomCharacter={randomCharacterKey}
+              width="170px"
+              containerHeight={210}
+            />
+          </Box>
         )}
       </Box>
-      {orbitLabels.map((item) => (
+      {storyStickers.map((item) => (
         <Box
           key={item.label}
           position="absolute"
@@ -1628,14 +1621,20 @@ function HeroOrbit({ isLightTheme, profilePicture, randomCharacterKey }) {
           right={item.right}
           px={{ base: 3, md: 4 }}
           py={{ base: 2, md: 3 }}
-          borderRadius="full"
-          bg={isLightTheme ? "rgba(255,250,242,0.84)" : "rgba(7,16,29,0.84)"}
-          backdropFilter="blur(14px)"
-          border="1px solid"
-          borderColor={item.color}
-          boxShadow={`0 12px 32px ${item.color}22`}
+          borderRadius={{ base: "12px", md: "16px" }}
+          bg={item.color}
+          border={{ base: "2px solid", md: "3px solid" }}
+          borderColor={isLightTheme ? "#241c2d" : "#f7f1e8"}
+          boxShadow={isLightTheme ? "5px 6px 0 #241c2d" : "5px 6px 0 #050711"}
           zIndex={3}
-          animation={`${drift} ${5.4 + item.label.length * 0.12}s ease-in-out infinite`}
+          animation={`${stickerBounce} ${5.4 + item.label.length * 0.08}s ease-in-out infinite`}
+          style={{ "--sticker-rotate": item.rotate }}
+          sx={{
+            "@media (prefers-reduced-motion: reduce)": {
+              animation: "none",
+              transform: `rotate(${item.rotate})`,
+            },
+          }}
         >
           <Text
             fontFamily="monospace"
@@ -1645,7 +1644,8 @@ function HeroOrbit({ isLightTheme, profilePicture, randomCharacterKey }) {
             letterSpacing="0.11em"
             textAlign="center"
             whiteSpace={item.lines ? "normal" : "nowrap"}
-            color={item.color}
+            color="white"
+            textShadow="0 1px 1px rgba(0,0,0,0.32)"
           >
             {item.lines
               ? item.lines.map((line) => (
@@ -1680,10 +1680,36 @@ function ProjectShowcase({
           gridTemplateColumns={{ base: "1fr", md: "minmax(0, 0.8fr) minmax(0, 1.2fr)" }}
           gap={{ base: 5, md: 10 }}
           alignItems="end"
-          mb={{ base: 10, md: 14 }}
+          mb={{ base: 12, md: 16 }}
+          position="relative"
+          _after={{
+            content: '""',
+            position: "absolute",
+            left: isRtl ? "auto" : 0,
+            right: isRtl ? 0 : "auto",
+            bottom: { base: "-18px", md: "-24px" },
+            w: { base: "112px", md: "180px" },
+            h: "7px",
+            bg: primaryAccent,
+            transform: "skewX(-30deg)",
+            boxShadow: isLightTheme ? "8px 5px 0 #241c2d" : "8px 5px 0 rgba(247,241,232,0.82)",
+          }}
         >
           <VStack align={isRtl ? "flex-end" : "flex-start"} spacing={3}>
-            <Text fontFamily="monospace" fontSize="xs" fontWeight="bold" letterSpacing="0.18em" color={primaryAccent}>
+            <Text
+              fontFamily="monospace"
+              fontSize="xs"
+              fontWeight="900"
+              letterSpacing="0.18em"
+              color="white"
+              bg={isLightTheme ? "#d13d74" : "#e54c77"}
+              border="2px solid"
+              borderColor={isLightTheme ? "#241c2d" : "#f7f1e8"}
+              boxShadow={isLightTheme ? "4px 4px 0 #241c2d" : "4px 4px 0 #050711"}
+              px={3}
+              py={1}
+              transform="rotate(-2deg)"
+            >
               {heroCopy.workLabel}
             </Text>
             <Heading
@@ -1692,6 +1718,8 @@ function ProjectShowcase({
               lineHeight="0.95"
               letterSpacing="-0.055em"
               textAlign={directionalTextAlign}
+              fontWeight="900"
+              textShadow={isLightTheme ? "4px 4px 0 rgba(218,61,105,0.18)" : "4px 4px 0 rgba(255,112,151,0.18)"}
             >
               {heroCopy.workTitle}
             </Heading>
@@ -1792,10 +1820,12 @@ export default function LinksPage() {
   const secondaryAccent = isLightTheme ? "#c026d3" : "#ff00ff";
   const linkAccent = isLightTheme ? "#1d4ed8" : "#4da3ff";
   const walletAccent = isLightTheme ? "#15803d" : "#16b078";
-  const modalBg = isLightTheme ? APP_SURFACE_ELEVATED : "rgba(7, 16, 29, 0.95)";
-  const modalBorderColor = isLightTheme ? APP_BORDER_STRONG : primaryAccent;
-  const modalBorderSoft = isLightTheme ? APP_BORDER : "rgba(0, 255, 255, 0.3)";
-  const modalHeadingColor = isLightTheme ? APP_TEXT_PRIMARY : primaryAccent;
+  const modalBg = isLightTheme ? "#fffaf0" : "rgba(15, 18, 35, 0.98)";
+  const modalBorderColor = isLightTheme ? "#241c2d" : "#f7f1e8";
+  const modalBorderSoft = isLightTheme
+    ? "rgba(36, 28, 45, 0.2)"
+    : "rgba(255, 111, 145, 0.34)";
+  const modalHeadingColor = isLightTheme ? "#241c2d" : "#ff6f91";
   const labelColor = isLightTheme ? APP_TEXT_SECONDARY : "gray.400";
   const helperColor = isLightTheme ? APP_TEXT_MUTED : "gray.500";
   const inputBg = isLightTheme ? APP_SURFACE : "rgba(0, 0, 0, 0.3)";
@@ -2397,38 +2427,45 @@ export default function LinksPage() {
     <Box
       dir={pageDirection}
       minH="100dvh"
-      bg={isLightTheme ? APP_PAGE_BG : "rgba(7,16,29)"}
+      bg={isLightTheme ? "#fff4df" : "#0b0d1a"}
       color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
       position="relative"
       overflow="hidden"
-      sx={isLightTheme ? LINKS_PAPER_PAGE_SX : undefined}
+      sx={{
+        "::selection": {
+          bg: isLightTheme ? "#e34069" : "#ff6f91",
+          color: "white",
+        },
+      }}
       style={{
         "--links-accent-primary": isLightTheme ? "#0f766e" : "#00ffff",
         "--links-accent-warm": isLightTheme ? "#b45309" : "gold",
         "--links-accent-pink": isLightTheme ? "#db2777" : "hotpink",
       }}
     >
-      <RetroStarfield isLightTheme={isLightTheme} />
+      <AnimeBackdrop isLightTheme={isLightTheme} />
       <Box
         position="absolute"
-        top={{ base: "80px", md: "20px" }}
-        insetInlineStart={{ base: "-180px", md: "-120px" }}
-        w={{ base: "380px", md: "600px" }}
-        h={{ base: "380px", md: "600px" }}
-        borderRadius="full"
-        bg={isLightTheme ? "rgba(255, 183, 104, 0.22)" : "rgba(255, 93, 168, 0.14)"}
-        filter="blur(105px)"
+        top={{ base: "190px", md: "120px" }}
+        insetInlineStart={{ base: "-210px", md: "-150px" }}
+        w={{ base: "420px", md: "650px" }}
+        h={{ base: "180px", md: "260px" }}
+        bg={isLightTheme ? "rgba(227,64,105,0.16)" : "rgba(255,83,125,0.13)"}
+        borderBlock="2px solid"
+        borderColor={isLightTheme ? "rgba(36,28,45,0.12)" : "rgba(255,255,255,0.08)"}
+        transform="rotate(-13deg)"
         pointerEvents="none"
       />
       <Box
         position="absolute"
-        top={{ base: "580px", md: "260px" }}
-        insetInlineEnd={{ base: "-190px", md: "-140px" }}
-        w={{ base: "400px", md: "680px" }}
-        h={{ base: "400px", md: "680px" }}
-        borderRadius="full"
-        bg={isLightTheme ? "rgba(56, 189, 172, 0.18)" : "rgba(0, 255, 255, 0.12)"}
-        filter="blur(115px)"
+        top={{ base: "720px", md: "540px" }}
+        insetInlineEnd={{ base: "-180px", md: "-110px" }}
+        w={{ base: "360px", md: "600px" }}
+        h={{ base: "130px", md: "190px" }}
+        bg={isLightTheme ? "rgba(43,177,183,0.14)" : "rgba(86,229,232,0.1)"}
+        borderBlock="2px solid"
+        borderColor={isLightTheme ? "rgba(36,28,45,0.1)" : "rgba(255,255,255,0.07)"}
+        transform="rotate(16deg)"
         pointerEvents="none"
       />
       <LinksHero
@@ -2506,12 +2543,10 @@ export default function LinksPage() {
           dir={pageDirection}
           bg={modalBg}
           color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
-          border="1px solid"
+          border="3px solid"
           borderColor={modalBorderColor}
-          rounded="xl"
-          boxShadow={
-            isLightTheme ? APP_SHADOW : "0 0 30px rgba(0, 255, 255, 0.3)"
-          }
+          rounded="24px"
+          boxShadow={isLightTheme ? "8px 10px 0 #d13d74" : "8px 10px 0 #050711"}
           fontFamily="monospace"
         >
           <ModalHeader
@@ -2655,12 +2690,10 @@ export default function LinksPage() {
           dir={pageDirection}
           bg={modalBg}
           color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
-          border="1px solid"
+          border="3px solid"
           borderColor={modalBorderColor}
-          rounded="xl"
-          boxShadow={
-            isLightTheme ? APP_SHADOW : "0 0 30px rgba(0, 255, 255, 0.3)"
-          }
+          rounded="24px"
+          boxShadow={isLightTheme ? "8px 10px 0 #d13d74" : "8px 10px 0 #050711"}
           fontFamily="monospace"
           maxH="85vh"
           style={{
@@ -3216,12 +3249,10 @@ export default function LinksPage() {
           dir={pageDirection}
           bg={modalBg}
           color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
-          border="1px solid"
+          border="3px solid"
           borderColor={modalBorderColor}
-          rounded="xl"
-          boxShadow={
-            isLightTheme ? APP_SHADOW : "0 0 30px rgba(0, 255, 255, 0.3)"
-          }
+          rounded="24px"
+          boxShadow={isLightTheme ? "8px 10px 0 #d13d74" : "8px 10px 0 #050711"}
           fontFamily="monospace"
           maxH="85vh"
           style={{
