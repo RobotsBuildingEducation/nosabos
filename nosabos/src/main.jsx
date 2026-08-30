@@ -24,6 +24,9 @@ import AppLoadBoundary from "./components/AppLoadBoundary.jsx";
 
 const App = lazy(() => import("./App.jsx"));
 const LinksPage = lazy(() => import("./components/LinksPage.jsx"));
+const LegacyLinksPage = lazy(
+  () => import("./components/LegacyLinksPage.jsx"),
+);
 const ProficiencyTest = lazy(() => import("./components/ProficiencyTest.jsx"));
 const SquirclePlayground = lazy(
   () => import("./components/SquirclePlayground.jsx"),
@@ -217,6 +220,14 @@ createRoot(document.getElementById("root")).render(
               element={
                 <BootReadyBoundary>
                   <LinksPage />
+                </BootReadyBoundary>
+              }
+            />
+            <Route
+              path="/legacy-links"
+              element={
+                <BootReadyBoundary>
+                  <LegacyLinksPage />
                 </BootReadyBoundary>
               }
             />

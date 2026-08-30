@@ -27,7 +27,7 @@ export const LINKS_PAGE_PT_STATIC = {
   rbeTitle: "Robots Building Education",
   rbeDescription:
     "Seu tutor pessoal de programação. Aprenda rapidamente os fundamentos da engenharia de software para usar agentes de programação e construir suas ideias.",
-  citizenshipTitle: "Checklist de dupla cidadania (100% grátis)",
+  citizenshipTitle: "Planejador de dupla cidadania (100% grátis)",
   citizenshipDescription:
     "Encontre seu caminho para a dupla cidadania mexicana, salve seu progresso e organize os documentos necessários.",
   patreonTitle: "Patreon",
