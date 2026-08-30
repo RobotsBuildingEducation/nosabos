@@ -11,6 +11,7 @@ import {
   Divider,
   Heading,
   HStack,
+  Image,
   Input,
   Link,
   Menu,
@@ -392,15 +393,25 @@ const BUTTON_SQUIRCLE_SHAPE = APP_SQUIRCLE_SHAPE;
 
 const withSquircleCorners = (Component, displayName) => {
   const SquircleComponent = React.forwardRef(function SquircleComponent(
-    { style, ...props },
+    { style, borderRadius, ...props },
     ref,
   ) {
+    const finalRadius =
+      borderRadius !== undefined ? borderRadius : BUTTON_SQUIRCLE_RADIUS;
+    const isSquare =
+      finalRadius === "0" ||
+      finalRadius === 0 ||
+      finalRadius === "none" ||
+      finalRadius === "0 !important";
     return (
       <Component
         ref={ref}
+        borderRadius={finalRadius}
+        style={{
+          ...style,
+          ...(isSquare ? {} : { cornerShape: BUTTON_SQUIRCLE_SHAPE }),
+        }}
         {...props}
-        borderRadius={BUTTON_SQUIRCLE_RADIUS}
-        style={{ ...style, cornerShape: BUTTON_SQUIRCLE_SHAPE }}
       />
     );
   });
@@ -3628,9 +3639,10 @@ export default function LinksPage() {
   const [isSwitching, setIsSwitching] = useState(false);
   const [profilePicture, setProfilePicture] = useState("");
   const [profilePictureUrlInput, setProfilePictureUrlInput] = useState("");
-  const [randomCharacterKey] = useState(
-    () => Math.floor(Math.random() * 21) + 20,
-  ); // Random between 20-40
+  const [randomCharacterKey] = useState(() => {
+    const heroCharacters = ["24", "30", "31"];
+    return heroCharacters[Math.floor(Math.random() * heroCharacters.length)];
+  });
   const [noSabosOrbState] = useState(pickRandomVoiceOrbState);
   const [hasCopiedRbeSecretKey, setHasCopiedRbeSecretKey] = useState(false);
 
@@ -3788,6 +3800,15 @@ export default function LinksPage() {
   const modalShadowColor = isLightTheme
     ? "#000000"
     : "rgba(255, 255, 255, 0.38)";
+  const buttonShadowColor = isLightTheme
+    ? "#000000"
+    : "rgba(255, 255, 255, 0.55)";
+  const buttonHoverShadowColor = isLightTheme
+    ? "#000000"
+    : "rgba(255, 255, 255, 0.72)";
+  const buttonActiveShadowColor = isLightTheme
+    ? "#000000"
+    : "rgba(255, 255, 255, 0.4)";
   const modalHeaderBg = modalBg;
   const modalHeaderText = modalBorderColor;
   const modalHeadingColor = modalHeaderText;
@@ -3828,10 +3849,6 @@ export default function LinksPage() {
       "& button": {
         borderRadius: "0 !important",
         fontWeight: "900",
-        borderColor: `${modalBorderColor} !important`,
-        background: `${modalBorderColor} !important`,
-        color: `${modalBg} !important`,
-        boxShadow: "none !important",
       },
       scrollbarWidth: "thin",
       scrollbarColor: isLightTheme
@@ -4767,6 +4784,34 @@ export default function LinksPage() {
             sx={modalScrollSx}
           >
             <VStack spacing={6} align="stretch">
+              {/* Profile Avatar with 50% border radius */}
+              {(profilePictureUrlInput || profilePicture) && (
+                <Box display="flex" justifyContent="center" mb={1} mt={-1}>
+                  <Box
+                    w={{ base: "88px", md: "96px" }}
+                    h={{ base: "88px", md: "96px" }}
+                    borderRadius="50%"
+                    overflow="hidden"
+                    border="3.5px solid"
+                    borderColor={modalBorderColor}
+                    boxShadow={`4px 5px 0 ${modalShadowColor}`}
+                    bg={modalBg}
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                  >
+                    <Image
+                      src={profilePictureUrlInput || profilePicture}
+                      alt="Profile Avatar"
+                      w="100%"
+                      h="100%"
+                      objectFit="cover"
+                      fallbackSrc=""
+                    />
+                  </Box>
+                </Box>
+              )}
+
               {/* Username Section */}
               <Box>
                 <Text
@@ -4826,31 +4871,63 @@ export default function LinksPage() {
               </Box>
 
               {/* Save Profile Button */}
-              <Button
+              <Box
+                as="button"
+                type="button"
                 onClick={() => {
+                  if (isSaving) return;
                   handleSubmitActionSound();
                   if (!isLocalhost()) {
                     logEvent(analytics, "links_save_profile");
                   }
                   handleSaveProfile();
                 }}
-                isLoading={isSaving}
-                bg={isLightTheme ? primaryAccent : "#00ffff"}
-                color={isLightTheme ? "#f8fafc" : "black"}
+                disabled={isSaving}
                 w="100%"
-                boxShadow={
-                  isLightTheme
-                    ? "0 8px 18px rgba(15, 118, 110, 0.16)"
-                    : undefined
+                h="48px"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                bg={isLightTheme ? "#0d9488" : "#14b8a6"}
+                color="#ffffff"
+                style={{
+                  backgroundColor: isLightTheme ? "#0d9488" : "#14b8a6",
+                  color: "#ffffff",
+                }}
+                border="2px solid"
+                borderColor={isLightTheme ? "#000000" : "#ffffff"}
+                borderRadius="0"
+                boxShadow={`4px 5px 0 ${buttonShadowColor}`}
+                fontFamily="'DM Sans', sans-serif"
+                fontWeight="900"
+                fontSize="md"
+                cursor={isSaving ? "not-allowed" : "pointer"}
+                opacity={isSaving ? 0.7 : 1}
+                transition="all 0.15s ease"
+                _hover={
+                  isSaving
+                    ? {}
+                    : {
+                        bg: isLightTheme ? "#0f766e" : "#2dd4bf",
+                        transform: "translate(-2px, -2px)",
+                        boxShadow: `6px 7px 0 ${buttonHoverShadowColor}`,
+                      }
                 }
-                _hover={isLightTheme ? { bg: "#0d9488" } : undefined}
+                _active={
+                  isSaving
+                    ? {}
+                    : {
+                        transform: "translate(2px, 2px)",
+                        boxShadow: `2px 2px 0 ${buttonActiveShadowColor}`,
+                      }
+                }
               >
-                {translations.saveProfile}
-              </Button>
+                {isSaving ? "..." : translations.saveProfile}
+              </Box>
 
               <Divider
                 borderColor={
-                  isLightTheme ? APP_BORDER : "rgba(255, 0, 255, 0.3)"
+                  isLightTheme ? "#000000" : "rgba(255, 255, 255, 0.3)"
                 }
               />
 
@@ -4864,24 +4941,45 @@ export default function LinksPage() {
                 >
                   {translations.secretKey}
                 </Text>
-                <Button
+                <Box
+                  as="button"
+                  type="button"
                   onClick={() => {
                     handleSelectSound();
                     handleCopySecretKey();
                   }}
-                  variant="outline"
-                  bg={isLightTheme ? APP_SURFACE : undefined}
-                  borderColor={secondaryAccent}
-                  color={secondaryAccent}
                   w="100%"
-                  _hover={
-                    isLightTheme
-                      ? { bg: APP_SURFACE_MUTED, borderColor: secondaryAccent }
-                      : undefined
-                  }
+                  h="48px"
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                  bg={isLightTheme ? "#ffffff" : "transparent"}
+                  color={isLightTheme ? "#17171a" : "#ffffff"}
+                  style={{
+                    backgroundColor: isLightTheme ? "#ffffff" : "transparent",
+                    color: isLightTheme ? "#17171a" : "#ffffff",
+                  }}
+                  border="2px solid"
+                  borderColor={isLightTheme ? "#000000" : "#ffffff"}
+                  borderRadius="0"
+                  boxShadow={`4px 5px 0 ${buttonShadowColor}`}
+                  fontFamily="'DM Sans', sans-serif"
+                  fontWeight="800"
+                  fontSize="md"
+                  cursor="pointer"
+                  transition="all 0.15s ease"
+                  _hover={{
+                    bg: isLightTheme ? "#f4f4f5" : "rgba(255, 255, 255, 0.1)",
+                    transform: "translate(-2px, -2px)",
+                    boxShadow: `6px 7px 0 ${buttonHoverShadowColor}`,
+                  }}
+                  _active={{
+                    transform: "translate(2px, 2px)",
+                    boxShadow: `2px 2px 0 ${buttonActiveShadowColor}`,
+                  }}
                 >
                   {translations.copySecretKey}
-                </Button>
+                </Box>
                 <Text
                   fontSize="xs"
                   color={helperColor}
@@ -4891,18 +4989,59 @@ export default function LinksPage() {
                   {translations.secretKeyWarning}
                 </Text>
               </Box>
+
               {/* Switch Account Accordion */}
               <Accordion allowToggle>
                 <AccordionItem border="none">
-                  <AccordionButton px={0} _hover={{ bg: "transparent" }}>
+                  <AccordionButton
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="space-between"
+                    px={{ base: 4, md: 5 }}
+                    py={3.5}
+                    bg={isLightTheme ? "#ffffff" : "#151519"}
+                    color={isLightTheme ? "#17171a" : "#ffffff"}
+                    style={{
+                      backgroundColor: isLightTheme ? "#ffffff" : "#151519",
+                      color: isLightTheme ? "#17171a" : "#ffffff",
+                    }}
+                    border="2px solid"
+                    borderColor={isLightTheme ? "#000000" : "#ffffff"}
+                    borderRadius="0"
+                    boxShadow={`4px 5px 0 ${buttonShadowColor}`}
+                    cursor="pointer"
+                    _hover={{
+                      bg: isLightTheme ? "#f4f4f5" : "rgba(255, 255, 255, 0.1)",
+                    }}
+                  >
                     <Box flex="1" textAlign={directionalTextAlign}>
-                      <Text fontSize="sm" color={modalBg}>
+                      <Text
+                        fontSize="sm"
+                        fontWeight="800"
+                        color={isLightTheme ? "#17171a" : "#ffffff"}
+                        style={{ color: isLightTheme ? "#17171a" : "#ffffff" }}
+                      >
                         {translations.switchAccount}
                       </Text>
                     </Box>
-                    <AccordionIcon color={secondaryAccent} />
+                    <AccordionIcon
+                      color={isLightTheme ? "#17171a" : "#ffffff"}
+                      style={{ color: isLightTheme ? "#17171a" : "#ffffff" }}
+                      boxSize={5}
+                    />
                   </AccordionButton>
-                  <AccordionPanel px={0} pt={3}>
+                  <AccordionPanel
+                    px={{ base: 4, md: 5 }}
+                    py={4}
+                    mt={3}
+                    bg={isLightTheme ? "#fcfaf6" : "#111114"}
+                    border="2px solid"
+                    borderColor={isLightTheme ? "#000000" : "#ffffff"}
+                    borderRadius="0"
+                    boxShadow={`4px 5px 0 ${
+                      isLightTheme ? "#000000" : "rgba(255, 255, 255, 0.25)"
+                    }`}
+                  >
                     <VStack spacing={3} align="stretch">
                       <Input
                         dir="ltr"
@@ -4916,33 +5055,61 @@ export default function LinksPage() {
                         color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
                         _placeholder={{ color: helperColor }}
                         _focus={{
-                          borderColor: secondaryAccent,
+                          borderColor: isLightTheme ? "#000000" : "#ffffff",
                           boxShadow: isLightTheme
-                            ? "0 0 0 3px rgba(192, 38, 211, 0.12)"
-                            : "0 0 10px rgba(255, 0, 255, 0.3)",
+                            ? "0 0 0 3px rgba(0, 0, 0, 0.12)"
+                            : "0 0 10px rgba(255, 255, 255, 0.3)",
                         }}
                       />
-                      <Button
+                      <Box
+                        as="button"
+                        type="button"
                         onClick={() => {
                           handleSelectSound();
                           handleSwitchAccount();
                         }}
-                        isLoading={isSwitching}
-                        variant="outline"
-                        bg={isLightTheme ? APP_SURFACE : undefined}
-                        borderColor={secondaryAccent}
-                        color={secondaryAccent}
+                        disabled={isSwitching}
+                        h="44px"
+                        w="100%"
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="center"
+                        bg={isLightTheme ? "#ffffff" : "transparent"}
+                        color={isLightTheme ? "#17171a" : "#ffffff"}
+                        style={{
+                          backgroundColor: isLightTheme ? "#ffffff" : "transparent",
+                          color: isLightTheme ? "#17171a" : "#ffffff",
+                        }}
+                        border="2px solid"
+                        borderColor={isLightTheme ? "#000000" : "#ffffff"}
+                        borderRadius="0"
+                        boxShadow={`4px 5px 0 ${buttonShadowColor}`}
+                        fontFamily="'DM Sans', sans-serif"
+                        fontWeight="800"
+                        fontSize="md"
+                        cursor={isSwitching ? "not-allowed" : "pointer"}
+                        opacity={isSwitching ? 0.7 : 1}
+                        transition="all 0.15s ease"
                         _hover={
-                          isLightTheme
-                            ? {
-                                bg: APP_SURFACE_MUTED,
-                                borderColor: secondaryAccent,
+                          isSwitching
+                            ? {}
+                            : {
+                                bg: isLightTheme ? "#f4f4f5" : "rgba(255, 255, 255, 0.1)",
+                                transform: "translate(-2px, -2px)",
+                                boxShadow: `6px 7px 0 ${buttonHoverShadowColor}`,
                               }
-                            : undefined
+                        }
+                        _active={
+                          isSwitching
+                            ? {}
+                            : {
+                                transform: "translate(2px, 2px)",
+                                boxShadow: `2px 2px 0 ${buttonActiveShadowColor}`,
+                              }
                         }
                       >
-                        {translations.switchAccount}
-                      </Button>
+                        {isSwitching ? "..." : translations.switchAccount}
+                      </Box>
                       <Text
                         fontSize="xs"
                         color={helperColor}
@@ -4957,21 +5124,23 @@ export default function LinksPage() {
 
               <Divider
                 borderColor={
-                  isLightTheme ? APP_BORDER : "rgba(0, 255, 255, 0.3)"
+                  isLightTheme ? "#000000" : "rgba(255, 255, 255, 0.3)"
                 }
               />
               {/* Bitcoin Wallet Section */}
               <Box
-                bg={isLightTheme ? APP_SURFACE : "rgba(0, 0, 0, 0.3)"}
-                rounded="md"
+                bg={isLightTheme ? "#fcfaf6" : "rgba(0, 0, 0, 0.3)"}
+                rounded="none"
                 p={4}
-                border="1px solid"
-                borderColor={walletAccent}
+                border="2px solid"
+                borderColor={isLightTheme ? "#000000" : walletAccent}
+                boxShadow={isLightTheme ? "4px 5px 0 #000000" : undefined}
               >
                 <Text
                   fontSize="sm"
-                  color={walletAccent}
-                  fontWeight="bold"
+                  color={isLightTheme ? "#000000" : walletAccent}
+                  fontWeight="900"
+                  letterSpacing="-0.02em"
                   mb={3}
                   textAlign={directionalTextAlign}
                 >
@@ -5064,9 +5233,9 @@ export default function LinksPage() {
                           color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
                           _placeholder={{ color: helperColor }}
                           _focus={{
-                            borderColor: secondaryAccent,
+                            borderColor: isLightTheme ? "#000000" : secondaryAccent,
                             boxShadow: isLightTheme
-                              ? "0 0 0 3px rgba(192, 38, 211, 0.12)"
+                              ? "0 0 0 3px rgba(0, 0, 0, 0.12)"
                               : "0 0 10px rgba(255, 0, 255, 0.3)",
                           }}
                           mb={2}
@@ -5080,27 +5249,51 @@ export default function LinksPage() {
                         </Text>
                       </Box>
                     )}
-                    <Button
+                    <Box
+                      as="button"
+                      type="button"
                       onClick={() => {
+                        if (isCreatingWallet) return;
                         handleSelectSound();
                         handleCreateWallet();
                       }}
-                      isLoading={isCreatingWallet}
-                      loadingText={translations.creatingWallet}
-                      bg={walletAccent}
-                      boxShadow={
-                        isLightTheme
-                          ? "0 4px 0px rgba(21, 128, 61, 0.72)"
-                          : "0px 4px 0px teal"
+                      disabled={
+                        isCreatingWallet ||
+                        Boolean(isNip07Mode && noWalletFound && !nsecForWallet.trim())
                       }
-                      color="white"
+                      h="48px"
                       w="100%"
-                      isDisabled={
-                        isNip07Mode && noWalletFound && !nsecForWallet.trim()
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="center"
+                      bg="#16b078"
+                      color="white"
+                      style={{
+                        backgroundColor: "#16b078",
+                        color: "white",
+                      }}
+                      border="2px solid"
+                      borderColor={isLightTheme ? "#000000" : "#ffffff"}
+                      borderRadius="0"
+                      boxShadow={`4px 5px 0 ${buttonShadowColor}`}
+                      fontFamily="'DM Sans', sans-serif"
+                      fontWeight="800"
+                      fontSize="md"
+                      cursor={isCreatingWallet ? "not-allowed" : "pointer"}
+                      opacity={isCreatingWallet ? 0.7 : 1}
+                      transition="all 0.15s ease"
+                      _hover={
+                        isCreatingWallet
+                          ? {}
+                          : {
+                              bg: "#15803d",
+                              transform: "translate(-2px, -2px)",
+                              boxShadow: `6px 7px 0 ${buttonHoverShadowColor}`,
+                            }
                       }
                     >
-                      {translations.createWallet}
-                    </Button>
+                      {isCreatingWallet ? translations.creatingWallet : translations.createWallet}
+                    </Box>
                   </Box>
                 )}
 
@@ -5151,23 +5344,42 @@ export default function LinksPage() {
                           realValue={cashuWallet.walletId}
                           totalBalance={totalBalance || 0}
                         />
-                        <Button
+                        <Box
+                          as="button"
+                          type="button"
                           mt={3}
                           onClick={() => {
                             handleSelectSound();
                             handleInitiateDeposit();
                           }}
+                          h="48px"
                           w="100%"
-                          bg={walletAccent}
-                          color="white"
-                          boxShadow={
-                            isLightTheme
-                              ? "0 4px 0px rgba(21, 128, 61, 0.72)"
-                              : "0px 4px 0px teal"
-                          }
+                          display="flex"
+                          alignItems="center"
+                          justifyContent="center"
+                          fontSize="md"
+                          bg={isLightTheme ? "#ffffff" : walletAccent}
+                          color={isLightTheme ? "#17171a" : "white"}
+                          style={{
+                            backgroundColor: isLightTheme ? "#ffffff" : walletAccent,
+                            color: isLightTheme ? "#17171a" : "white",
+                          }}
+                          border="2px solid"
+                          borderColor={isLightTheme ? "#000000" : "#ffffff"}
+                          borderRadius="0"
+                          boxShadow={`4px 5px 0 ${buttonShadowColor}`}
+                          fontFamily="'DM Sans', sans-serif"
+                          fontWeight="800"
+                          cursor="pointer"
+                          transition="all 0.15s ease"
+                          _hover={{
+                            bg: isLightTheme ? "#f4f4f5" : "#15803d",
+                            transform: "translate(-2px, -2px)",
+                            boxShadow: `6px 7px 0 ${buttonHoverShadowColor}`,
+                          }}
                         >
                           {translations.deposit}
-                        </Button>
+                        </Box>
                       </Box>
                     )}
 
@@ -5186,27 +5398,40 @@ export default function LinksPage() {
                           <Text fontSize="sm" color={labelColor}>
                             {translations.or}
                           </Text>
-                          <Button
+                          <Box
+                            as="button"
+                            type="button"
+                            display="flex"
+                            alignItems="center"
+                            justifyContent="center"
+                            px={4}
+                            py={2}
+                            h="36px"
                             onClick={() => {
                               handleSelectSound();
                               handleCopyInvoice();
                             }}
-                            size="sm"
-                            variant="outline"
-                            bg={isLightTheme ? APP_SURFACE : undefined}
-                            borderColor={primaryAccent}
-                            color={primaryAccent}
-                            _hover={
-                              isLightTheme
-                                ? {
-                                    bg: APP_SURFACE_MUTED,
-                                    borderColor: primaryAccent,
-                                  }
-                                : undefined
-                            }
+                            bg={isLightTheme ? "#ffffff" : "transparent"}
+                            color={isLightTheme ? "#17171a" : "#ffffff"}
+                            style={{
+                              backgroundColor: isLightTheme ? "#ffffff" : "transparent",
+                              color: isLightTheme ? "#17171a" : "#ffffff",
+                            }}
+                            border="2px solid"
+                            borderColor={isLightTheme ? "#000000" : "#ffffff"}
+                            borderRadius="0"
+                            boxShadow={`3px 4px 0 ${buttonShadowColor}`}
+                            fontWeight="800"
+                            fontSize="sm"
+                            cursor="pointer"
+                            transition="all 0.15s ease"
+                            _hover={{
+                              bg: isLightTheme ? "#f4f4f5" : "rgba(255, 255, 255, 0.1)",
+                              transform: "translate(-2px, -2px)",
+                            }}
                           >
                             {translations.copyAddress}
-                          </Button>
+                          </Box>
                         </HStack>
                         <Text
                           fontSize="xs"
@@ -5228,28 +5453,42 @@ export default function LinksPage() {
                             <Text as="span">{translations.cashApp}</Text>
                           </Link>
                         </Text>
-                        <Button
+                        <Box
+                          as="button"
+                          type="button"
+                          display="flex"
+                          alignItems="center"
+                          justifyContent="center"
+                          gap={2}
+                          px={4}
+                          py={2}
+                          h="36px"
                           onClick={() => {
                             handleSelectSound();
                             handleInitiateDeposit();
                           }}
-                          leftIcon={<BsQrCode />}
-                          size="sm"
-                          variant="outline"
-                          bg={isLightTheme ? APP_SURFACE : undefined}
-                          borderColor={secondaryAccent}
-                          color={secondaryAccent}
-                          _hover={
-                            isLightTheme
-                              ? {
-                                  bg: APP_SURFACE_MUTED,
-                                  borderColor: secondaryAccent,
-                                }
-                              : undefined
-                          }
+                          bg={isLightTheme ? "#ffffff" : "transparent"}
+                          color={isLightTheme ? "#17171a" : "#ffffff"}
+                          style={{
+                            backgroundColor: isLightTheme ? "#ffffff" : "transparent",
+                            color: isLightTheme ? "#17171a" : "#ffffff",
+                          }}
+                          border="2px solid"
+                          borderColor={isLightTheme ? "#000000" : "#ffffff"}
+                          borderRadius="0"
+                          boxShadow={`3px 4px 0 ${buttonShadowColor}`}
+                          fontWeight="800"
+                          fontSize="sm"
+                          cursor="pointer"
+                          transition="all 0.15s ease"
+                          _hover={{
+                            bg: isLightTheme ? "#f4f4f5" : "rgba(255, 255, 255, 0.1)",
+                            transform: "translate(-2px, -2px)",
+                          }}
                         >
-                          {translations.generateNewQR}
-                        </Button>
+                          <BsQrCode />
+                          <span>{translations.generateNewQR}</span>
+                        </Box>
                       </VStack>
                     )}
                   </Box>
@@ -5268,16 +5507,26 @@ export default function LinksPage() {
                 handleSelectSound();
                 onClose();
               }}
-              bg={modalBorderColor}
-              color={modalBg}
-              borderWidth="3px"
+              bg={isLightTheme ? modalBorderColor : "transparent"}
+              color={isLightTheme ? modalBg : "#ffffff"}
+              borderWidth={isLightTheme ? "3px" : "2px"}
               borderStyle="solid"
               borderColor={modalBorderColor}
               borderRadius="0 !important"
-              boxShadow="none"
+              boxShadow={
+                isLightTheme ? "none" : `4px 5px 0 ${buttonShadowColor}`
+              }
               fontWeight="900"
               textTransform="uppercase"
-              _hover={{ opacity: 0.78 }}
+              _hover={
+                isLightTheme
+                  ? { opacity: 0.78 }
+                  : {
+                      bg: "rgba(255, 255, 255, 0.1)",
+                      transform: "translate(-2px, -2px)",
+                      boxShadow: `6px 7px 0 ${buttonHoverShadowColor}`,
+                    }
+              }
             >
               {translations.close}
             </ChakraButton>
@@ -5366,7 +5615,7 @@ export default function LinksPage() {
             <VStack spacing={4} align="stretch">
               <Box mt={"-6"}>
                 {" "}
-                <RandomCharacter notSoRandomCharacter={"38"} />
+                <RandomCharacter notSoRandomCharacter={"37"} />
               </Box>
 
               <Box

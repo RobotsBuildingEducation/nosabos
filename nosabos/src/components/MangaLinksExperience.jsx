@@ -64,24 +64,7 @@ function MangaRule({ ink, accent, reverse = false }) {
   );
 }
 
-function Portrait({ profilePicture, randomCharacterKey, close = false }) {
-  if (profilePicture) {
-    return (
-      <img
-        src={profilePicture}
-        alt={close ? "" : "Profile"}
-        aria-hidden={close ? "true" : undefined}
-        style={{
-          width: "100%",
-          height: "100%",
-          objectFit: "contain",
-          objectPosition: "center bottom",
-          filter: "grayscale(1) contrast(1.08)",
-        }}
-      />
-    );
-  }
-
+function Portrait({ randomCharacterKey, close = false }) {
   return (
     <Box
       aria-hidden={close ? "true" : undefined}
@@ -413,23 +396,48 @@ function MangaCover({
             </Text>
           </Box>
 
-          <Button
+          <Box
+            as="button"
+            type="button"
             onClick={onAboutOpen}
             alignSelf={isRtl ? "flex-end" : "flex-start"}
             h="48px"
             px={5}
-            bg={ink}
-            color={paper}
-            border="2px solid"
-            borderColor={ink}
+            display="inline-flex"
+            alignItems="center"
+            justifyContent="center"
+            bg={isLightTheme ? "#ffffff" : ink}
+            color={isLightTheme ? "#17171a" : paper}
+            style={{
+              backgroundColor: isLightTheme ? "#ffffff" : ink,
+              color: isLightTheme ? "#17171a" : paper,
+              borderColor: "#000000",
+            }}
+            border="2px solid #000000"
+            borderColor="#000000"
             borderRadius="0"
-            boxShadow={`4px 5px 0 ${ink}`}
+            boxShadow={isLightTheme ? "4px 5px 0 #000000" : `4px 5px 0 ${ink}`}
             fontFamily="'DM Sans', sans-serif"
             fontWeight="900"
-            _hover={{ bg: ink, transform: "translate(-2px,-2px)", boxShadow: `6px 7px 0 ${ink}` }}
+            fontSize="md"
+            cursor="pointer"
+            transition="all 0.15s ease"
+            _hover={{
+              bg: isLightTheme ? "#f4f4f5" : ink,
+              transform: "translate(-2px, -2px)",
+              boxShadow: isLightTheme
+                ? "6px 7px 0 #000000"
+                : `6px 7px 0 ${ink}`,
+            }}
+            _active={{
+              transform: "translate(2px, 2px)",
+              boxShadow: isLightTheme
+                ? "2px 2px 0 #000000"
+                : `2px 2px 0 ${ink}`,
+            }}
           >
             {translations.about} ↗
-          </Button>
+          </Box>
         </VStack>
 
         <Box
@@ -489,6 +497,17 @@ function MangaCover({
               w={{ base: "88%", md: "auto" }}
               display="flex"
               justifyContent={{ base: "center", md: "flex-start" }}
+              sx={{
+                "@media screen and (min-height: 740px) and (max-width: 767px)": {
+                  top: "15%",
+                },
+                "@media screen and (min-height: 830px) and (max-width: 767px)": {
+                  top: "18%",
+                },
+                "@media screen and (min-height: 900px) and (max-width: 767px)": {
+                  top: "19.5%",
+                },
+              }}
             >
               <Text
                 fontFamily="'Arial Black', 'Impact', sans-serif"
@@ -525,64 +544,83 @@ function MangaCover({
               filter={isLightTheme ? "none" : "saturate(0.84) contrast(1.05)"}
             >
               <Portrait
-                profilePicture={profilePicture}
                 randomCharacterKey={randomCharacterKey}
               />
             </Box>
             <Box
               position="absolute"
-              top={{ base: "29%", sm: "23%", md: "14%", lg: "16%" }}
+              top={{ base: "29%", sm: "26%", md: "13%", lg: "15%" }}
               left="50%"
               right="auto"
               zIndex={4}
-              w={{ base: "calc(100% - 16px)", md: "min(370px, calc(100% - 72px))" }}
-              maxW="370px"
-              transform="translateX(-50%)"
+              w={{ base: "calc(100% - 16px)", md: "min(380px, calc(100% - 64px))" }}
+              maxW="380px"
+              transform="translateX(-50%) rotate(-1.5deg)"
               bg="#ffffff"
               color="#17171a"
-              border="3px solid"
-              borderColor={bubbleOutline}
-              borderRadius={{ base: "18px", md: "24px" }}
-              boxShadow={bubbleShadow}
-              px={{ base: 2.5, md: 4 }}
+              border="3.5px solid #17171a"
+              borderRadius={{
+                base: "255px 22px 225px 24px / 24px 225px 24px 255px",
+                md: "255px 26px 225px 28px / 28px 225px 26px 255px",
+              }}
+              boxShadow={
+                isLightTheme
+                  ? "5px 6px 0 #17171a"
+                  : "5px 6px 0 rgba(255, 255, 255, 0.32)"
+              }
+              px={{ base: 3, md: 5 }}
               py={{ base: 3, md: 3.5 }}
+              sx={{
+                "@media screen and (min-height: 740px) and (max-width: 767px)": {
+                  top: "32%",
+                },
+                "@media screen and (min-height: 830px) and (max-width: 767px)": {
+                  top: "34%",
+                },
+                "@media screen and (min-height: 900px) and (max-width: 767px)": {
+                  top: "35%",
+                },
+              }}
               _after={{
                 content: '""',
                 position: "absolute",
                 left: "50%",
-                bottom: { base: "-22px", md: "-28px" },
-                borderTop: {
-                  base: `22px solid ${bubbleOutline}`,
-                  md: `28px solid ${bubbleOutline}`,
-                },
-                borderLeft: { base: "15px solid transparent", md: "20px solid transparent" },
-                borderRight: { base: "15px solid transparent", md: "20px solid transparent" },
-                transform: "translateX(-50%)",
+                bottom: { base: "-20px", md: "-24px" },
+                w: 0,
+                h: 0,
+                borderLeft: { base: "14px solid transparent", md: "17px solid transparent" },
+                borderRight: { base: "14px solid transparent", md: "17px solid transparent" },
+                borderTop: { base: "20px solid #17171a", md: "24px solid #17171a" },
+                transform: "translateX(-50%) rotate(-3deg)",
               }}
               _before={{
                 content: '""',
                 position: "absolute",
-                zIndex: 1,
+                zIndex: 2,
                 left: "50%",
-                bottom: { base: "-14px", md: "-18px" },
-                borderTop: { base: "17px solid #ffffff", md: "22px solid #ffffff" },
-                borderLeft: { base: "11px solid transparent", md: "15px solid transparent" },
-                borderRight: { base: "11px solid transparent", md: "15px solid transparent" },
-                transform: "translateX(-50%)",
+                bottom: { base: "-14px", md: "-17px" },
+                w: 0,
+                h: 0,
+                borderLeft: { base: "10px solid transparent", md: "13px solid transparent" },
+                borderRight: { base: "10px solid transparent", md: "13px solid transparent" },
+                borderTop: { base: "15px solid #ffffff", md: "18px solid #ffffff" },
+                transform: "translateX(-50%) rotate(-3deg)",
               }}
             >
               <HStack
                 position="relative"
-                zIndex={2}
+                zIndex={3}
                 spacing={{ base: 2, md: 2.5 }}
                 flexWrap="wrap"
-                justify={{ base: "center", md: "flex-start" }}
+                justify="center"
               >
                 <Text
                   w="100%"
-                  fontFamily="monospace"
-                  fontSize={{ base: "clamp(11px, 3vw, 13px)", md: "lg" }}
-                  fontWeight="800"
+                  fontFamily="'Gaegu', 'Patrick Hand', 'Comic Neue', 'Chalkboard SE', 'Comic Sans MS', cursive, sans-serif"
+                  fontSize={{ base: "clamp(16px, 4.6vw, 19px)", md: "22px" }}
+                  fontWeight="700"
+                  letterSpacing="0.01em"
+                  lineHeight="1.25"
                   textAlign="center"
                   color="#17171a"
                 >
@@ -590,25 +628,39 @@ function MangaCover({
                 </Text>
                 <Button
                   onClick={onProfileOpen}
-                  leftIcon={<LuPencilLine size={12} />}
-                  iconSpacing={{ base: 1, md: 2 }}
-                  minH={{ base: "34px", md: "42px" }}
+                  leftIcon={<LuPencilLine size={13} />}
+                  iconSpacing={{ base: 1.5, md: 2 }}
+                  minH={{ base: "34px", md: "38px" }}
                   w="fit-content"
                   maxW="100%"
                   mx="auto"
-                  px={{ base: 3, md: 4 }}
+                  px={{ base: 3.5, md: 4 }}
                   bg="transparent"
                   color="#17171a"
                   border="2px solid #17171a"
-                  borderRadius="0"
-                  boxShadow="4px 5px 0 #17171a"
-                  fontFamily="'DM Sans', sans-serif"
-                  fontSize={{ base: "clamp(10px, 2.7vw, 12px)", md: "md" }}
-                  fontWeight="900"
+                  borderRadius="255px 15px 225px 15px/15px 225px 15px 255px"
+                  boxShadow={
+                    isLightTheme
+                      ? "3px 4px 0 #17171a"
+                      : "3px 4px 0 rgba(255, 255, 255, 0.35)"
+                  }
+                  transform="rotate(0.8deg)"
+                  fontFamily="'Gaegu', 'Patrick Hand', 'Comic Neue', 'DM Sans', sans-serif"
+                  fontSize={{ base: "clamp(13px, 3.5vw, 15px)", md: "17px" }}
+                  fontWeight="700"
+                  letterSpacing="0.01em"
                   _hover={{
-                    bg: "rgba(0,0,0,0.06)",
-                    transform: "translate(-2px,-2px)",
-                    boxShadow: "6px 7px 0 #17171a",
+                    bg: "rgba(23, 23, 26, 0.08)",
+                    transform: "translate(-2px, -2px) rotate(0deg)",
+                    boxShadow: isLightTheme
+                      ? "5px 6px 0 #17171a"
+                      : "5px 6px 0 rgba(255, 255, 255, 0.45)",
+                  }}
+                  _active={{
+                    transform: "translate(2px, 2px) rotate(0.8deg)",
+                    boxShadow: isLightTheme
+                      ? "1px 2px 0 #17171a"
+                      : "1px 2px 0 rgba(255, 255, 255, 0.25)",
                   }}
                 >
                   {editProfileText}
@@ -1021,8 +1073,9 @@ function MangaChapter({
               bg={link.accent}
               color="white"
               textShadow={link.buttonTextShadow}
-              border="2px solid"
-              borderColor={ink}
+              border="2px solid #000000"
+              borderColor="#000000"
+              style={{ borderColor: "#000000" }}
               borderRadius="0"
               boxShadow={`4px 5px 0 ${link.shadowAccent}`}
               fontFamily="'DM Sans', sans-serif"
