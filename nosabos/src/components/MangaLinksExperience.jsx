@@ -121,6 +121,7 @@ function MangaToolbar({
   accent,
   languageControl,
   themeControl,
+  musicControl,
   onSocialClick,
 }) {
   const socialItems = [
@@ -177,10 +178,15 @@ function MangaToolbar({
           overflow="hidden"
           bg={item.bg}
           color="white"
-          border="1.5px solid"
-          borderColor={ink}
-          borderRadius="7px"
-          boxShadow={isLightTheme ? "1px 2px 0 #17171a" : "1px 2px 0 #000"}
+          border={item.label === "Instagram" ? "none" : "1px solid"}
+          borderColor={
+            item.label === "Instagram"
+              ? "transparent"
+              : isLightTheme
+              ? "rgba(245, 158, 11, 0.36)"
+              : "rgba(147, 197, 253, 0.32)"
+          }
+          borderRadius="12px"
           transition="transform 150ms ease"
           _hover={{ transform: "translateY(-2px)" }}
           _focusVisible={{ outline: `3px solid ${ink}`, outlineOffset: "2px" }}
@@ -191,7 +197,91 @@ function MangaToolbar({
       ))}
       {languageControl}
       {themeControl}
+      {/* {musicControl} */}
     </HStack>
+  );
+}
+
+function RadialFocusLines({
+  ink,
+  opacity = 0.18,
+  innerFade = "26%",
+  center = "50% 50%",
+}) {
+  return (
+    <Box
+      position="absolute"
+      inset="-40%"
+      pointerEvents="none"
+      aria-hidden="true"
+      opacity={opacity}
+      sx={{
+        background: `repeating-conic-gradient(
+          from 0deg at ${center},
+          ${ink} 0deg 1.1deg,
+          transparent 1.2deg 4.2deg,
+          ${ink} 4.3deg 5.6deg,
+          transparent 5.7deg 8.6deg
+        )`,
+        maskImage: `radial-gradient(ellipse at center, transparent ${innerFade}, black 68%)`,
+        WebkitMaskImage: `radial-gradient(ellipse at center, transparent ${innerFade}, black 68%)`,
+      }}
+    />
+  );
+}
+
+function MangaCornerBrackets({ ink, size = 12, stroke = 2.5, offset = 7 }) {
+  return (
+    <>
+      <Box
+        position="absolute"
+        top={`${offset}px`}
+        left={`${offset}px`}
+        w={`${size}px`}
+        h={`${size}px`}
+        borderTop={`${stroke}px solid ${ink}`}
+        borderLeft={`${stroke}px solid ${ink}`}
+        pointerEvents="none"
+        aria-hidden="true"
+        zIndex={3}
+      />
+      <Box
+        position="absolute"
+        top={`${offset}px`}
+        right={`${offset}px`}
+        w={`${size}px`}
+        h={`${size}px`}
+        borderTop={`${stroke}px solid ${ink}`}
+        borderRight={`${stroke}px solid ${ink}`}
+        pointerEvents="none"
+        aria-hidden="true"
+        zIndex={3}
+      />
+      <Box
+        position="absolute"
+        bottom={`${offset}px`}
+        left={`${offset}px`}
+        w={`${size}px`}
+        h={`${size}px`}
+        borderBottom={`${stroke}px solid ${ink}`}
+        borderLeft={`${stroke}px solid ${ink}`}
+        pointerEvents="none"
+        aria-hidden="true"
+        zIndex={3}
+      />
+      <Box
+        position="absolute"
+        bottom={`${offset}px`}
+        right={`${offset}px`}
+        w={`${size}px`}
+        h={`${size}px`}
+        borderBottom={`${stroke}px solid ${ink}`}
+        borderRight={`${stroke}px solid ${ink}`}
+        pointerEvents="none"
+        aria-hidden="true"
+        zIndex={3}
+      />
+    </>
   );
 }
 
@@ -243,14 +333,14 @@ function MangaCover({
         zIndex={2}
         display="flex"
         flexDirection="column"
-        gap={{ base: 12, md: 16 }}
-        pt={{ base: 24, md: 32, lg: 28 }}
-        pb={{ base: 14, md: 18, lg: 12 }}
+        gap={{ base: 14, md: 16 }}
+        pt={{ base: 28, md: 32, lg: 28 }}
+        pb={{ base: 16, md: 18, lg: 12 }}
       >
         <VStack
           align={isRtl ? "flex-end" : "flex-start"}
           textAlign={directionalTextAlign}
-          spacing={{ base: 5, md: 6 }}
+          spacing={{ base: 6, md: 6 }}
           position="relative"
           zIndex={3}
           order={2}
@@ -330,9 +420,8 @@ function MangaCover({
             px={5}
             bg={ink}
             color={paper}
-            borderWidth="2px"
-            borderStyle="solid"
-            borderColor={paper}
+            border="2px solid"
+            borderColor={ink}
             borderRadius="0"
             boxShadow={`4px 5px 0 ${ink}`}
             fontFamily="'DM Sans', sans-serif"
@@ -371,12 +460,61 @@ function MangaCover({
             borderColor={ink}
           >
             <Screentone ink={ink} opacity={0.16} size="13px" />
+            <RadialFocusLines
+              ink={ink}
+              opacity={isLightTheme ? 0.16 : 0.24}
+              innerFade="18%"
+            />
+            <MangaCornerBrackets ink={ink} size={14} offset={8} stroke={2.5} />
             <Box
               position="absolute"
               inset="0"
               bgImage={`repeating-linear-gradient(116deg, transparent 0 38px, ${ink}14 39px 42px, transparent 43px 62px)`}
               opacity={0.35}
             />
+            {/* Hero Entrance SFX Katakana Watermark */}
+            <Box
+              position="absolute"
+              top={{ base: "10%", sm: "8%", md: "3.5%", lg: "4.5%" }}
+              left={{ base: "50%", md: "3.5%", lg: "4.5%" }}
+              right="auto"
+              transform={{
+                base: "translateX(-50%) rotate(-5deg)",
+                md: "rotate(-10deg) skewX(-4deg)",
+              }}
+              zIndex={1}
+              pointerEvents="none"
+              userSelect="none"
+              aria-hidden="true"
+              w={{ base: "88%", md: "auto" }}
+              display="flex"
+              justifyContent={{ base: "center", md: "flex-start" }}
+            >
+              <Text
+                fontFamily="'Arial Black', 'Impact', sans-serif"
+                fontSize={{
+                  base: "clamp(2rem, 9.5vw, 3.4rem)",
+                  sm: "clamp(2.8rem, 11vw, 4.4rem)",
+                  md: "clamp(5.5rem, 8vw, 8.8rem)",
+                }}
+                fontWeight="900"
+                lineHeight="0.82"
+                letterSpacing="-0.04em"
+                textAlign={{ base: "center", md: "left" }}
+                whiteSpace="nowrap"
+                color="transparent"
+                sx={{
+                  WebkitTextStroke: isLightTheme
+                    ? "2.5px rgba(23, 23, 26, 0.25)"
+                    : "2.5px rgba(245, 240, 232, 0.28)",
+                  textShadow: isLightTheme
+                    ? "3px 4px 0 rgba(23, 23, 26, 0.07)"
+                    : "3px 4px 0 rgba(245, 240, 232, 0.12)",
+                }}
+              >
+                バァァン!!
+              </Text>
+            </Box>
             <Box
               position="absolute"
               inset={{ base: "0 4%", sm: "0", md: "0 -8%" }}
@@ -578,10 +716,10 @@ function MangaCover({
 }
 
 const CHAPTERS = [
-  { number: "01", title: "THE FIRST WORD", verb: "LEARN" },
-  { number: "02", title: "THE FIRST BUILD", verb: "BUILD" },
-  { number: "03", title: "THE WAY HOME", verb: "PLAN" },
-  { number: "04", title: "THE OPEN DOOR", verb: "INVEST" },
+  { number: "01", title: "THE FIRST WORD", verb: "LEARN", sfx: "ドドド" },
+  { number: "02", title: "THE FIRST BUILD", verb: "BUILD", sfx: "ゴゴゴ" },
+  { number: "03", title: "THE WAY HOME", verb: "PLAN", sfx: "ザッ" },
+  { number: "04", title: "THE OPEN DOOR", verb: "INVEST", sfx: "ドン!!" },
 ];
 
 function MangaChapter({
@@ -658,8 +796,8 @@ function MangaChapter({
         zIndex={2}
         display={{ base: "flex", md: "block" }}
         flexDirection="column"
-        py={{ base: 2, md: 0 }}
-        px={{ base: 3, md: 4 }}
+        py={{ base: 4, md: 0 }}
+        px={{ base: 4, md: 4 }}
       >
         <Box
           h={{ base: "clamp(56px, 9svh, 72px)", md: "138px" }}
@@ -688,7 +826,7 @@ function MangaChapter({
         <MangaRule ink={ink} accent={link.accent} reverse={reverse} />
 
         <Box
-          mt={{ base: 2, md: 6 }}
+          mt={{ base: 3.5, md: 6 }}
           flex={{ base: "1", md: "initial" }}
           minH={0}
           display="grid"
@@ -698,7 +836,7 @@ function MangaChapter({
             md: "auto",
             lg: "minmax(240px, 0.78fr) minmax(300px, 1fr)",
           }}
-          gap={{ base: 2, md: 4 }}
+          gap={{ base: 3.5, md: 4 }}
           dir="ltr"
           sx={{
             "@media (prefers-reduced-motion: reduce)": {
@@ -718,12 +856,19 @@ function MangaChapter({
             style={{ ...revealStyle, transitionDelay: "60ms" }}
           >
             <Screentone ink={ink} opacity={0.2} size="12px" />
+            <RadialFocusLines
+              ink={isLightTheme ? "#000000" : "#ffffff"}
+              opacity={isLightTheme ? 0.22 : 0.3}
+              innerFade="22%"
+            />
             <Box
               position="absolute"
               inset="-10%"
               bgImage={`repeating-linear-gradient(${reverse ? "62deg" : "118deg"}, transparent 0 44px, ${ink}26 45px 48px, transparent 49px 70px)`}
               opacity={0.48}
             />
+
+            {/* Inner Art Panel Frame with Dynamic Komawari Tilt & Bleed */}
             <Box
               position="absolute"
               inset={{ base: "7% 9%", md: "10% 12%" }}
@@ -737,9 +882,57 @@ function MangaChapter({
               boxShadow={`8px 9px 0 ${
                 isLightTheme ? ink : "rgba(245, 240, 232, 0.52)"
               }`}
+              transform={reverse ? "rotate(1.2deg)" : "rotate(-1.2deg)"}
+              transition="transform 300ms ease"
+              _hover={{ transform: "rotate(0deg) scale(1.02)" }}
             >
               <Screentone ink={ink} opacity={0.12} size="11px" />
-              <Box position="relative" zIndex={1} transform={{ base: "scale(1.45)", md: "scale(2.75)" }}>
+              <MangaCornerBrackets
+                ink={isLightTheme ? ink : "#ffffff"}
+                size={10}
+                offset={6}
+                stroke={2}
+              />
+
+              {/* Japanese SFX Katakana Stamp directly inside the logo container */}
+              <Box
+                position="absolute"
+                bottom={{ base: "14px", md: "20px" }}
+                right={{ base: "10px", md: "18px" }}
+                zIndex={0}
+                pointerEvents="none"
+                userSelect="none"
+                aria-hidden="true"
+                transform="rotate(-5deg)"
+              >
+                <Text
+                  fontFamily="'Arial Black', 'Impact', sans-serif"
+                  fontSize={{
+                    base: "clamp(2rem, 8vw, 3.4rem)",
+                    md: "clamp(3.6rem, 6vw, 5.2rem)",
+                  }}
+                  fontWeight="900"
+                  lineHeight="0.8"
+                  letterSpacing="-0.04em"
+                  color="transparent"
+                  sx={{
+                    WebkitTextStroke: isLightTheme
+                      ? "2px rgba(23, 23, 26, 0.22)"
+                      : "2px rgba(245, 240, 232, 0.28)",
+                    textShadow: isLightTheme
+                      ? "2px 3px 0 rgba(23, 23, 26, 0.05)"
+                      : "2px 3px 0 rgba(0, 0, 0, 0.35)",
+                  }}
+                >
+                  {chapter.sfx}
+                </Text>
+              </Box>
+
+              <Box
+                position="relative"
+                zIndex={1}
+                transform={{ base: "scale(1.48)", md: "scale(2.8)" }}
+              >
                 {link.visual}
               </Box>
             </Box>
@@ -755,11 +948,11 @@ function MangaChapter({
             color={titleText}
             border="4px solid"
             borderColor={ink}
-            p={{ base: 3, md: 7 }}
+            p={{ base: 4, md: 7 }}
             display="flex"
             flexDirection="column"
             justifyContent={{ base: "center", md: "space-between" }}
-            gap={{ base: "clamp(12px, 3svh, 22px)", md: 0 }}
+            gap={{ base: "clamp(14px, 3.5svh, 24px)", md: 0 }}
             style={{ ...revealStyle, transitionDelay: "170ms" }}
           >
             <Box position="absolute" top="0" right="0" w="11px" h="100%" bg={link.accent} />
@@ -796,8 +989,8 @@ function MangaChapter({
             bg={panel}
             border="4px solid"
             borderColor={ink}
-            px={{ base: 3, md: 7 }}
-            py={{ base: 3, md: 6 }}
+            px={{ base: 4, md: 7 }}
+            py={{ base: 4, md: 6 }}
             display="flex"
             flexDirection="column"
             justifyContent={{ base: "center", md: "space-between" }}
@@ -811,7 +1004,7 @@ function MangaChapter({
               lineHeight={{ base: "1.45", md: "1.7" }}
               color={muted}
               textAlign={pageDirection === "rtl" ? "right" : "left"}
-              mb={{ base: 3, md: 6 }}
+              mb={{ base: 4, md: 6 }}
               sx={{
                 "@media screen and (min-width: 390px) and (max-width: 767px)": {
                   fontSize: "clamp(1rem, 4.2vw, 1.125rem)",
@@ -829,7 +1022,7 @@ function MangaChapter({
               color="white"
               textShadow={link.buttonTextShadow}
               border="2px solid"
-              borderColor="#000000"
+              borderColor={ink}
               borderRadius="0"
               boxShadow={`4px 5px 0 ${link.shadowAccent}`}
               fontFamily="'DM Sans', sans-serif"
@@ -906,6 +1099,7 @@ export default function MangaLinksExperience({
   onSocialClick,
   languageControl,
   themeControl,
+  musicControl,
   onLaunchSound,
   onLaunchEvent,
 }) {
@@ -921,6 +1115,7 @@ export default function MangaLinksExperience({
         accent={accent}
         languageControl={languageControl}
         themeControl={themeControl}
+        musicControl={musicControl}
         onSocialClick={onSocialClick}
       />
       <MangaCover

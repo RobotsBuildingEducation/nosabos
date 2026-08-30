@@ -36,10 +36,11 @@ import { QRCodeSVG } from "qrcode.react";
 import { BsQrCode } from "react-icons/bs";
 import { SiCashapp, SiPatreon } from "react-icons/si";
 import { FaKey, FaInstagram, FaLinkedinIn } from "react-icons/fa";
-import { LuPencilLine, LuSun } from "react-icons/lu";
+import { LuPencilLine, LuSun, LuMusic } from "react-icons/lu";
 import { RiMoonClearFill } from "react-icons/ri";
 import useSoundSettings from "../hooks/useSoundSettings";
 import { selectSound, submitActionSound } from "../constants/sounds";
+import awalkMusic from "../assets/awalk.mp3";
 
 import VoiceOrb from "./VoiceOrb";
 import MangaLinksExperience from "./MangaLinksExperience";
@@ -52,7 +53,7 @@ import { Buffer } from "buffer";
 import { bech32 } from "bech32";
 import RandomCharacter from "./RandomCharacter";
 import { logEvent } from "firebase/analytics";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { analytics, database } from "../firebaseResources/firebaseResources";
 import useNostrWalletStore from "../hooks/useNostrWalletStore";
 import { IdentityCard } from "./IdentityCard";
@@ -768,6 +769,59 @@ const ThemeModeToggle = ({ themeMode, onModeChange }) => {
         ) : (
           <RiMoonClearFill size={18} />
         )
+      }
+      size="sm"
+      minW="36px"
+      w="36px"
+      h="36px"
+      border="1px solid"
+      {...themeToggleProps}
+      borderRadius="12px"
+      style={{ cornerShape: BUTTON_SQUIRCLE_SHAPE }}
+      boxShadow="none"
+    />
+  );
+};
+
+const MusicToggle = ({ isMusicPlaying, onToggleMusic, isLightTheme }) => {
+  const themeToggleProps = getThemeModeToggleProps(isLightTheme);
+  const label = isMusicPlaying ? "Mute background music" : "Play background music";
+
+  return (
+    <ChakraIconButton
+      type="button"
+      aria-label={label}
+      title={label}
+      onClick={onToggleMusic}
+      icon={
+        <Box
+          position="relative"
+          display="inline-flex"
+          alignItems="center"
+          justifyContent="center"
+          w="18px"
+          h="18px"
+        >
+          <LuMusic
+            size={18}
+            style={{
+              opacity: isMusicPlaying ? 1 : 0.45,
+              transition: "opacity 150ms ease",
+            }}
+          />
+          {!isMusicPlaying && (
+            <Box
+              position="absolute"
+              top="50%"
+              left="-1px"
+              right="-1px"
+              h="1.5px"
+              bg={isLightTheme ? "rgba(23, 23, 26, 0.55)" : "rgba(255, 255, 255, 0.65)"}
+              borderRadius="1px"
+              transform="translateY(-50%) rotate(-45deg)"
+            />
+          )}
+        </Box>
       }
       size="sm"
       minW="36px"
@@ -3580,6 +3634,122 @@ export default function LinksPage() {
   const [noSabosOrbState] = useState(pickRandomVoiceOrbState);
   const [hasCopiedRbeSecretKey, setHasCopiedRbeSecretKey] = useState(false);
 
+  // Music state - default off, saved to document & localStorage
+  const [isMusicPlaying, setIsMusicPlaying] = useState(() => {
+    const saved = localStorage.getItem("links_music_enabled");
+    return saved !== null ? saved === "true" : false;
+  });
+  const audioRef = useRef(null);
+  const isMusicPlayingRef = useRef(isMusicPlaying);
+  const playPromiseRef = useRef(null);
+
+  // Synchronize ref on every render / state update
+  useEffect(() => {
+    isMusicPlayingRef.current = isMusicPlaying;
+  }, [isMusicPlaying]);
+
+  // Safe play helper to avoid uncaught AbortError / race conditions
+  const safePlay = () => {
+    const audio = audioRef.current;
+    if (!audio || !isMusicPlayingRef.current) return;
+    try {
+      const promise = audio.play();
+      if (promise !== undefined) {
+        playPromiseRef.current = promise;
+        promise
+          .then(() => {
+            playPromiseRef.current = null;
+            if (!isMusicPlayingRef.current) {
+              audio.pause();
+            }
+          })
+          .catch(() => {
+            playPromiseRef.current = null;
+          });
+      }
+    } catch {
+      // Ignored
+    }
+  };
+
+  // Safe pause helper that awaits any in-flight play promise
+  const safePause = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (playPromiseRef.current) {
+      playPromiseRef.current
+        .then(() => {
+          audio.pause();
+        })
+        .catch(() => {
+          audio.pause();
+        });
+    } else {
+      audio.pause();
+    }
+  };
+
+  // Load saved music preference from user's document if available
+  useEffect(() => {
+    const storedNpub = localStorage.getItem("local_npub");
+    if (storedNpub) {
+      getDoc(doc(database, "users", storedNpub))
+        .then((snap) => {
+          if (snap.exists()) {
+            const data = snap.data();
+            const remoteSetting = data.musicEnabled ?? data.linksMusicEnabled;
+            if (typeof remoteSetting === "boolean") {
+              setIsMusicPlaying(remoteSetting);
+              isMusicPlayingRef.current = remoteSetting;
+              localStorage.setItem("links_music_enabled", String(remoteSetting));
+            }
+          }
+        })
+        .catch((err) => {
+          console.warn("Could not load user music preference:", err);
+        });
+    }
+  }, []);
+
+  // Manage Audio instance & Autoplay on render
+  useEffect(() => {
+    const audio = new Audio(awalkMusic);
+    audio.loop = true;
+    audio.volume = 0.35;
+    audioRef.current = audio;
+
+    if (isMusicPlayingRef.current) {
+      safePlay();
+    }
+
+    const handleFirstGesture = () => {
+      if (!isMusicPlayingRef.current) return;
+      if (audio.paused) {
+        safePlay();
+      }
+    };
+
+    window.addEventListener("pointerdown", handleFirstGesture, { once: true });
+    window.addEventListener("keydown", handleFirstGesture, { once: true });
+
+    return () => {
+      window.removeEventListener("pointerdown", handleFirstGesture);
+      window.removeEventListener("keydown", handleFirstGesture);
+      audio.pause();
+      audio.src = "";
+      audioRef.current = null;
+    };
+  }, []);
+
+  // Sync audio play/pause with isMusicPlaying state
+  useEffect(() => {
+    if (isMusicPlaying) {
+      safePlay();
+    } else {
+      safePause();
+    }
+  }, [isMusicPlaying]);
+
   // Wallet state
   const [walletHydrating, setWalletHydrating] = useState(true);
   const [noWalletFound, setNoWalletFound] = useState(false);
@@ -3751,6 +3921,32 @@ export default function LinksPage() {
     if (nextMode === themeMode) return;
     handleSelectSound();
     syncThemeMode(nextMode);
+  };
+
+  const handleToggleMusic = async () => {
+    handleSelectSound();
+    const nextState = !isMusicPlaying;
+    isMusicPlayingRef.current = nextState;
+    setIsMusicPlaying(nextState);
+    localStorage.setItem("links_music_enabled", String(nextState));
+
+    if (nextState) {
+      safePlay();
+    } else {
+      safePause();
+    }
+
+    const storedNpub = localStorage.getItem("local_npub");
+    if (storedNpub) {
+      try {
+        await updateDoc(doc(database, "users", storedNpub), {
+          musicEnabled: nextState,
+          linksMusicEnabled: nextState,
+        });
+      } catch (err) {
+        console.warn("Could not save music setting to user document:", err);
+      }
+    }
   };
 
   // Wallet handlers
@@ -4293,6 +4489,13 @@ export default function LinksPage() {
             onModeChange={handleThemeModeChange}
           />
         }
+        /* musicControl={
+          <MusicToggle
+            isMusicPlaying={isMusicPlaying}
+            onToggleMusic={handleToggleMusic}
+            isLightTheme={isLightTheme}
+          />
+        } */
         onLaunchSound={handleSubmitActionSound}
         onLaunchEvent={(link) => {
           if (!isLocalhost() && !link.onLaunch) {
