@@ -107,6 +107,92 @@ const ruleEntrance = keyframes`
   100% { opacity: 1; scale: 1 1; }
 `;
 
+const radialLinesEntrance = keyframes`
+  0% {
+    opacity: 0;
+    transform: scale(0.28) rotate(-7deg);
+    clip-path: circle(0% at var(--radial-focus-center, 50% 50%));
+    filter: blur(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+    clip-path: circle(76% at var(--radial-focus-center, 50% 50%));
+    filter: blur(0);
+  }
+`;
+
+const speedLinesEntrance = keyframes`
+  0% {
+    opacity: 0;
+    transform: translate3d(var(--emotion-start-x, -18%), 0, 0) skewX(-8deg);
+    clip-path: inset(0 100% 0 0);
+    filter: blur(2px);
+  }
+  62% {
+    opacity: 1;
+    transform: translate3d(var(--emotion-overshoot-x, 2.5%), 0, 0) skewX(1deg);
+    clip-path: inset(0 0 0 0);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) skewX(0deg);
+    clip-path: inset(0 0 0 0);
+    filter: blur(0);
+  }
+`;
+
+const perspectiveLinesEntrance = keyframes`
+  0% {
+    opacity: 0;
+    transform: translateY(18%) scale(0.72);
+    clip-path: inset(100% 0 0 0);
+    filter: blur(2px);
+  }
+  64% {
+    opacity: 1;
+    transform: translateY(-2%) scale(1.045);
+    clip-path: inset(0 0 0 0);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    clip-path: inset(0 0 0 0);
+    filter: blur(0);
+  }
+`;
+
+const shockwaveEntrance = keyframes`
+  0% { opacity: 0; transform: scale(0.32); filter: blur(3px); }
+  55% { opacity: 1; transform: scale(1.11); filter: blur(0); }
+  76% { transform: scale(0.97); }
+  100% { opacity: 1; transform: scale(1); filter: blur(0); }
+`;
+
+const auraLinesEntrance = keyframes`
+  0% {
+    opacity: 0;
+    transform: translateY(22%) scaleY(0.48);
+    clip-path: inset(100% 0 0 0);
+    filter: blur(2px);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-3%) scaleY(1.06);
+    clip-path: inset(0 0 0 0);
+    filter: blur(0);
+  }
+  80% { transform: translateY(1%) scaleY(0.985); }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+    clip-path: inset(0 0 0 0);
+    filter: blur(0);
+  }
+`;
+
 const reducedHeroMotion = {
   "@media (prefers-reduced-motion: reduce)": {
     animation: "none !important",
@@ -310,6 +396,8 @@ function RadialFocusLines({
   opacity = 0.18,
   innerFade = "26%",
   center = "50% 50%",
+  animate = false,
+  animationDelay = "0ms",
 }) {
   return (
     <Box
@@ -318,18 +406,132 @@ function RadialFocusLines({
       pointerEvents="none"
       aria-hidden="true"
       opacity={opacity}
-      sx={{
-        background: `repeating-conic-gradient(
-          from 0deg at ${center},
+    >
+      <Box
+        position="absolute"
+        inset="0"
+        transformOrigin={center}
+        animation={
+          animate
+            ? `${radialLinesEntrance} 1320ms cubic-bezier(.2,.68,.22,1) ${animationDelay} both`
+            : undefined
+        }
+        willChange={animate ? "transform, opacity, clip-path, filter" : undefined}
+        style={{ "--radial-focus-center": center }}
+        sx={{
+          background: `repeating-conic-gradient(
+            from 0deg at ${center},
+            ${ink} 0deg 1.1deg,
+            transparent 1.2deg 4.2deg,
+            ${ink} 4.3deg 5.6deg,
+            transparent 5.7deg 8.6deg
+          )`,
+          maskImage: `radial-gradient(ellipse at center, transparent ${innerFade}, black 68%)`,
+          WebkitMaskImage: `radial-gradient(ellipse at center, transparent ${innerFade}, black 68%)`,
+          ...(animate ? reducedHeroMotion : {}),
+        }}
+      />
+    </Box>
+  );
+}
+
+function ChapterEmotionLines({
+  variant,
+  ink,
+  opacity = 0.24,
+  animate = false,
+  animationDelay = "0ms",
+  reverse = false,
+}) {
+  const isAura = variant === "aura";
+  const isSpeed = variant === "speed";
+  const isPerspective = variant === "perspective";
+  const emotionAnimation = isAura
+    ? `${auraLinesEntrance} 880ms cubic-bezier(.16,.88,.22,1.08) ${animationDelay} both`
+    : isSpeed
+      ? `${speedLinesEntrance} 820ms cubic-bezier(.16,.86,.22,1.04) ${animationDelay} both`
+    : isPerspective
+      ? `${perspectiveLinesEntrance} 900ms cubic-bezier(.16,.86,.22,1.06) ${animationDelay} both`
+      : `${shockwaveEntrance} 860ms cubic-bezier(.16,.88,.24,1.14) ${animationDelay} both`;
+  const maskImage = isAura
+    ? "linear-gradient(to top, black 4%, black 68%, transparent 100%)"
+    : isSpeed
+      ? "linear-gradient(90deg, transparent 2%, black 20%, black 82%, transparent 98%)"
+    : isPerspective
+      ? "linear-gradient(to top, black 6%, black 74%, transparent 100%)"
+      : "conic-gradient(from 8deg, black 0deg 24deg, transparent 25deg 36deg, black 37deg 84deg, transparent 85deg 101deg, black 102deg 158deg, transparent 159deg 174deg, black 175deg 232deg, transparent 233deg 250deg, black 251deg 306deg, transparent 307deg 320deg, black 321deg 360deg)";
+  const backgroundImage = isAura
+    ? `repeating-linear-gradient(
+        88deg,
+        transparent 0 17px,
+        ${ink} 18px 21px,
+        transparent 22px 39px,
+        ${ink} 40px 41px,
+        transparent 42px 63px
+      ), repeating-linear-gradient(
+        93deg,
+        transparent 0 32px,
+        ${ink} 33px 35px,
+        transparent 36px 71px
+      )`
+    : isSpeed
+      ? `repeating-linear-gradient(
+        ${reverse ? "64deg" : "116deg"},
+        transparent 0 13px,
+        ${ink} 14px 17px,
+        transparent 18px 32px,
+        ${ink} 33px 34px,
+        transparent 35px 49px
+      )`
+    : isPerspective
+      ? `repeating-conic-gradient(
+          from -38deg at 50% 108%,
           ${ink} 0deg 1.1deg,
-          transparent 1.2deg 4.2deg,
-          ${ink} 4.3deg 5.6deg,
-          transparent 5.7deg 8.6deg
-        )`,
-        maskImage: `radial-gradient(ellipse at center, transparent ${innerFade}, black 68%)`,
-        WebkitMaskImage: `radial-gradient(ellipse at center, transparent ${innerFade}, black 68%)`,
-      }}
-    />
+          transparent 1.2deg 8.4deg
+        ), repeating-linear-gradient(
+          0deg,
+          transparent 0 27px,
+          ${ink} 28px 30px,
+          transparent 31px 54px
+        )`
+      : `repeating-radial-gradient(
+          circle at center,
+          transparent 0 34px,
+          ${ink} 35px 39px,
+          transparent 40px 62px,
+          ${ink} 63px 65px,
+          transparent 66px 91px
+        )`;
+
+  return (
+    <Box
+      position="absolute"
+      inset={isAura ? "-12%" : isSpeed ? "-18%" : isPerspective ? "-12%" : "-28%"}
+      pointerEvents="none"
+      aria-hidden="true"
+      opacity={opacity}
+    >
+      <Box
+        position="absolute"
+        inset="0"
+        animation={animate ? emotionAnimation : undefined}
+        willChange={animate ? "transform, opacity, clip-path, filter" : undefined}
+        style={
+          isSpeed
+            ? {
+                "--emotion-start-x": reverse ? "18%" : "-18%",
+                "--emotion-overshoot-x": reverse ? "-2.5%" : "2.5%",
+              }
+            : undefined
+        }
+        sx={{
+          backgroundImage,
+          maskImage,
+          WebkitMaskImage: maskImage,
+          ...(animate ? reducedHeroMotion : {}),
+        }}
+      />
+    </Box>
   );
 }
 
@@ -597,6 +799,8 @@ function MangaCover({
               ink={ink}
               opacity={isLightTheme ? 0.16 : 0.24}
               innerFade="18%"
+              animate
+              animationDelay="300ms"
             />
             <MangaCornerBrackets ink={ink} size={14} offset={8} stroke={2.5} />
             <Box
@@ -928,10 +1132,34 @@ function MangaCover({
 }
 
 const CHAPTERS = [
-  { number: "01", title: "THE FIRST WORD", verb: "LEARN", sfx: "ドドド" },
-  { number: "02", title: "THE FIRST BUILD", verb: "BUILD", sfx: "ゴゴゴ" },
-  { number: "03", title: "THE WAY HOME", verb: "PLAN", sfx: "ザッ" },
-  { number: "04", title: "THE OPEN DOOR", verb: "INVEST", sfx: "ドン!!" },
+  {
+    number: "01",
+    title: "THE FIRST WORD",
+    verb: "LEARN",
+    sfx: "ドドド",
+    emotion: "aura",
+  },
+  {
+    number: "02",
+    title: "THE FIRST BUILD",
+    verb: "BUILD",
+    sfx: "ゴゴゴ",
+    emotion: "speed",
+  },
+  {
+    number: "03",
+    title: "THE WAY HOME",
+    verb: "PLAN",
+    sfx: "ザッ",
+    emotion: "perspective",
+  },
+  {
+    number: "04",
+    title: "THE OPEN DOOR",
+    verb: "INVEST",
+    sfx: "ドン!!",
+    emotion: "shockwave",
+  },
 ];
 
 function MangaChapter({
@@ -1068,10 +1296,13 @@ function MangaChapter({
             style={{ ...revealStyle, transitionDelay: "60ms" }}
           >
             <Screentone ink={ink} opacity={0.2} size="12px" />
-            <RadialFocusLines
+            <ChapterEmotionLines
+              variant={chapter.emotion}
               ink={isLightTheme ? "#000000" : "#ffffff"}
               opacity={isLightTheme ? 0.22 : 0.3}
-              innerFade="22%"
+              animate={visible}
+              animationDelay="140ms"
+              reverse={reverse}
             />
             <Box
               position="absolute"
