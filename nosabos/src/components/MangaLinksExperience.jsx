@@ -11,7 +11,113 @@ import {
 import { FaInstagram, FaLinkedinIn } from "react-icons/fa";
 import { SiPatreon } from "react-icons/si";
 import { LuPencilLine } from "react-icons/lu";
+import { keyframes } from "@emotion/react";
 import RandomCharacter from "./RandomCharacter";
+
+const toolbarEntrance = keyframes`
+  0% { opacity: 0; translate: 54px -54px; scale: 0.72; rotate: 7deg; }
+  58% { opacity: 1; translate: -7px 8px; scale: 1.06; rotate: -1.5deg; }
+  78% { translate: 3px -3px; scale: 0.985; rotate: 0.6deg; }
+  100% { opacity: 1; translate: 0 0; scale: 1; rotate: 0deg; }
+`;
+
+const heroPanelEntrance = keyframes`
+  0% {
+    opacity: 0;
+    translate: -9% 2%;
+    scale: 0.94;
+    rotate: -1.2deg;
+    clip-path: polygon(0 0, 4% 0, 0 100%, 0 100%);
+  }
+  46% {
+    opacity: 1;
+    translate: 1.4% -0.6%;
+    scale: 1.018;
+    rotate: 0.35deg;
+    clip-path: polygon(0 0, 100% 0, 94% 100%, 0 100%);
+  }
+  72% { translate: -0.45% 0.2%; scale: 0.994; rotate: -0.12deg; }
+  100% {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1;
+    rotate: 0deg;
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+  }
+`;
+
+const impactFlash = keyframes`
+  0%, 18% { opacity: 0; translate: -135% 0; }
+  38% { opacity: 0.72; }
+  72% { opacity: 0; translate: 135% 0; }
+  100% { opacity: 0; translate: 135% 0; }
+`;
+
+const sfxEntrance = keyframes`
+  0% { opacity: 0; scale: 2.25; rotate: -18deg; filter: blur(7px); }
+  50% { opacity: 0.72; scale: 0.88; rotate: 3deg; filter: blur(0); }
+  72% { scale: 1.08; rotate: -1.5deg; }
+  100% { opacity: 1; scale: 1; rotate: 0deg; filter: blur(0); }
+`;
+
+const portraitEntrance = keyframes`
+  0% { opacity: 0; translate: 0 34%; scale: 0.72; rotate: -6deg; }
+  54% { opacity: 1; translate: 0 -4%; scale: 1.075; rotate: 2deg; }
+  72% { translate: 0 2%; scale: 0.975; rotate: -0.8deg; }
+  86% { translate: 0 -1%; scale: 1.018; rotate: 0.35deg; }
+  100% { opacity: 1; translate: 0 0; scale: 1; rotate: 0deg; }
+`;
+
+const portraitIdle = keyframes`
+  0%, 100% { translate: 0 0; rotate: 0deg; }
+  48% { translate: 0 -7px; rotate: 0.7deg; }
+  54% { translate: 0 -7px; rotate: -0.35deg; }
+`;
+
+const bubbleEntrance = keyframes`
+  0% { opacity: 0; translate: 0 54px; scale: 0.56; rotate: -7deg; }
+  56% { opacity: 1; translate: 0 -9px; scale: 1.075; rotate: 1.8deg; }
+  76% { translate: 0 4px; scale: 0.975; rotate: -0.7deg; }
+  100% { opacity: 1; translate: 0 0; scale: 1; rotate: 0deg; }
+`;
+
+const sidePanelEntrance = keyframes`
+  0% { opacity: 0; translate: 82px 0; scale: 0.93; rotate: 2.5deg; }
+  62% { opacity: 1; translate: -8px 0; scale: 1.025; rotate: -0.7deg; }
+  82% { translate: 3px 0; scale: 0.99; rotate: 0.25deg; }
+  100% { opacity: 1; translate: 0 0; scale: 1; rotate: 0deg; }
+`;
+
+const focusBlockEntrance = keyframes`
+  0% { opacity: 0; translate: 58px 0; filter: contrast(1.8); }
+  66% { opacity: 1; translate: -5px 0; filter: contrast(1.2); }
+  100% { opacity: 1; translate: 0 0; filter: contrast(1); }
+`;
+
+const sloganEntrance = keyframes`
+  0% { opacity: 0; translate: 72px 72px; scale: 0.84; rotate: 5deg; }
+  60% { opacity: 1; translate: -7px -6px; scale: 1.045; rotate: -1.2deg; }
+  82% { translate: 3px 2px; scale: 0.985; rotate: 0.35deg; }
+  100% { opacity: 1; translate: 0 0; scale: 1; rotate: 0deg; }
+`;
+
+const ruleEntrance = keyframes`
+  0% { opacity: 0; scale: 0 1; }
+  68% { opacity: 1; scale: 1.04 1; }
+  100% { opacity: 1; scale: 1 1; }
+`;
+
+const reducedHeroMotion = {
+  "@media (prefers-reduced-motion: reduce)": {
+    animation: "none !important",
+    opacity: "1 !important",
+    translate: "none !important",
+    scale: "1 !important",
+    rotate: "none !important",
+    clipPath: "none !important",
+    filter: "none !important",
+  },
+};
 
 function useReveal(threshold = 0.14) {
   const ref = useRef(null);
@@ -54,9 +160,20 @@ function Screentone({ ink, opacity = 0.12, size = "14px" }) {
   );
 }
 
-function MangaRule({ ink, accent, reverse = false }) {
+function MangaRule({ ink, accent, reverse = false, animate = false }) {
   return (
-    <HStack w="100%" spacing={2} direction={reverse ? "row-reverse" : "row"}>
+    <HStack
+      w="100%"
+      spacing={2}
+      direction={reverse ? "row-reverse" : "row"}
+      transformOrigin={reverse ? "right center" : "left center"}
+      animation={
+        animate
+          ? `${ruleEntrance} 720ms cubic-bezier(.16,.84,.22,1) 1.05s both`
+          : undefined
+      }
+      sx={animate ? reducedHeroMotion : undefined}
+    >
       <Box h="3px" flex="1" bg={ink} />
       <Box h="7px" w={{ base: "42px", md: "72px" }} bg={accent} />
       <Box h="3px" w={{ base: "16px", md: "28px" }} bg={ink} />
@@ -145,6 +262,9 @@ function MangaToolbar({
       borderColor={ink}
       boxShadow={`4px 5px 0 ${ink}`}
       backdropFilter="blur(10px)"
+      animation={`${toolbarEntrance} 820ms cubic-bezier(.16,.88,.24,1.18) 520ms both`}
+      willChange="transform, opacity"
+      sx={reducedHeroMotion}
     >
       {socialItems.map((item) => (
         <Box
@@ -317,7 +437,7 @@ function MangaCover({
         display="flex"
         flexDirection="column"
         gap={{ base: 14, md: 16 }}
-        pt={{ base: 28, md: 32, lg: 28 }}
+        pt={{ base: "86px", sm: "90px", md: 32, lg: 28 }}
         pb={{ base: 16, md: 18, lg: 12 }}
       >
         <VStack
@@ -329,7 +449,7 @@ function MangaCover({
           order={2}
           w="100%"
         >
-          <MangaRule ink={ink} accent={ink} reverse={isRtl} />
+          <MangaRule ink={ink} accent={ink} reverse={isRtl} animate />
 
           <Heading
             as="h1"
@@ -442,7 +562,7 @@ function MangaCover({
 
         <Box
           minH={{
-            base: "max(560px, calc(100svh - 112px))",
+            base: "max(560px, calc(100svh - 98px))",
             md: "680px",
             lg: "720px",
           }}
@@ -461,12 +581,15 @@ function MangaCover({
           <Box
             gridColumn="1"
             gridRow="1 / span 2"
-            position="relative"
-            overflow="hidden"
-            bg={panel}
-            border="4px solid"
-            borderColor={ink}
-          >
+          position="relative"
+          overflow="hidden"
+          bg={panel}
+          border="4px solid"
+          borderColor={ink}
+          animation={`${heroPanelEntrance} 980ms cubic-bezier(.16,.84,.22,1) 80ms both`}
+          willChange="transform, opacity, clip-path"
+          sx={reducedHeroMotion}
+        >
             <Screentone ink={ink} opacity={0.16} size="13px" />
             <RadialFocusLines
               ink={ink}
@@ -479,6 +602,21 @@ function MangaCover({
               inset="0"
               bgImage={`repeating-linear-gradient(116deg, transparent 0 38px, ${ink}14 39px 42px, transparent 43px 62px)`}
               opacity={0.35}
+            />
+            <Box
+              position="absolute"
+              inset="-25%"
+              zIndex={6}
+              pointerEvents="none"
+              aria-hidden="true"
+              bg={`linear-gradient(100deg, transparent 38%, ${
+                isLightTheme
+                  ? "rgba(255,255,255,0.88)"
+                  : "rgba(245,240,232,0.42)"
+              } 49%, transparent 60%)`}
+              animation={`${impactFlash} 980ms cubic-bezier(.2,.75,.2,1) 110ms both`}
+              transform="skewX(-12deg)"
+              sx={reducedHeroMotion}
             />
             {/* Hero Entrance SFX Katakana Watermark */}
             <Box
@@ -497,6 +635,8 @@ function MangaCover({
               w={{ base: "88%", md: "auto" }}
               display="flex"
               justifyContent={{ base: "center", md: "flex-start" }}
+              animation={`${sfxEntrance} 760ms cubic-bezier(.18,.9,.24,1.22) 260ms both`}
+              willChange="transform, opacity, filter"
               sx={{
                 "@media screen and (min-height: 740px) and (max-width: 767px)": {
                   top: "15%",
@@ -507,6 +647,7 @@ function MangaCover({
                 "@media screen and (min-height: 900px) and (max-width: 767px)": {
                   top: "19.5%",
                 },
+                ...reducedHeroMotion,
               }}
             >
               <Text
@@ -542,6 +683,9 @@ function MangaCover({
               justifyContent="center"
               pt={{ base: "34%", sm: "28%", md: "22%" }}
               filter={isLightTheme ? "none" : "saturate(0.84) contrast(1.05)"}
+              animation={`${portraitEntrance} 940ms cubic-bezier(.16,.86,.25,1.16) 360ms both, ${portraitIdle} 4.8s ease-in-out 1.7s infinite`}
+              willChange="transform, opacity"
+              sx={reducedHeroMotion}
             >
               <Portrait
                 randomCharacterKey={randomCharacterKey}
@@ -570,6 +714,8 @@ function MangaCover({
               }
               px={{ base: 3, md: 5 }}
               py={{ base: 3, md: 3.5 }}
+              animation={`${bubbleEntrance} 760ms cubic-bezier(.17,.88,.26,1.2) 720ms both`}
+              willChange="transform, opacity"
               sx={{
                 "@media screen and (min-height: 740px) and (max-width: 767px)": {
                   top: "32%",
@@ -580,6 +726,7 @@ function MangaCover({
                 "@media screen and (min-height: 900px) and (max-width: 767px)": {
                   top: "35%",
                 },
+                ...reducedHeroMotion,
               }}
               _after={{
                 content: '""',
@@ -679,6 +826,9 @@ function MangaCover({
             borderColor={ink}
             display="flex"
             flexDirection="column"
+            animation={`${sidePanelEntrance} 820ms cubic-bezier(.16,.86,.24,1.15) 400ms both`}
+            willChange="transform, opacity"
+            sx={reducedHeroMotion}
           >
             <Screentone ink={ink} opacity={0.14} size="10px" />
             {focusAreas.map((area, index) => (
@@ -697,6 +847,11 @@ function MangaCover({
                 color={index === 0 ? paper : ink}
                 borderBottom={index === focusAreas.length - 1 ? "0" : "3px solid"}
                 borderColor={ink}
+                animation={`${focusBlockEntrance} 520ms cubic-bezier(.2,.82,.24,1) ${
+                  570 + index * 95
+                }ms both`}
+                willChange="transform, opacity, filter"
+                sx={reducedHeroMotion}
               >
                 <Text
                   fontFamily="monospace"
@@ -737,6 +892,9 @@ function MangaCover({
             py={{ base: 4, md: 5 }}
             position="relative"
             overflow="hidden"
+            animation={`${sloganEntrance} 780ms cubic-bezier(.16,.88,.24,1.16) 760ms both`}
+            willChange="transform, opacity"
+            sx={reducedHeroMotion}
           >
             <Box
               position="absolute"
