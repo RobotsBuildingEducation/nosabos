@@ -219,7 +219,12 @@ const HERO_COPY = {
     titleLead: "Create scholarships",
     titleAccent: "with learning.",
     body: "Learning here does more than build skills. With decentralized identity and opt-in features, the steps you take to make progress can send a little to someone you choose—turning everyday learning into scholarships.",
-    focusAreas: ["LANGUAGE TUTOR", "CODING\nTUTOR", "INVESTING & BUSINESS", "DUAL CITIZENSHIP PLANNER"],
+    focusAreas: [
+      "LANGUAGE TUTOR",
+      "CODING\nTUTOR",
+      "DUAL CITIZENSHIP PLANNER",
+      "INVESTING & BUSINESS",
+    ],
     chapterVerbs: ["LEARN", "BUILD", "PLAN", "INVEST"],
     productLabel: "PRODUCT",
     scholarshipSlogan: "CREATE\nSCHOLARSHIPS\nWITH LEARNING.",
@@ -234,7 +239,12 @@ const HERO_COPY = {
     titleLead: "Crea becas",
     titleAccent: "aprendiendo.",
     body: "Aprender aquí va más allá de desarrollar habilidades. Con identidad descentralizada y funciones opcionales, cada paso que das puede destinar una pequeña aportación a quien tú elijas y convertir el aprendizaje cotidiano en becas.",
-    focusAreas: ["TUTOR DE IDIOMAS", "TUTOR DE\nPROGRAMACIÓN", "INVERSIÓN Y\nNEGOCIOS", "PLANIFICADOR DE\nDOBLE CIUDADANÍA"],
+    focusAreas: [
+      "TUTOR DE IDIOMAS",
+      "TUTOR DE\nPROGRAMACIÓN",
+      "PLANIFICADOR DE\nDOBLE CIUDADANÍA",
+      "INVERSIÓN Y\nNEGOCIOS",
+    ],
     chapterVerbs: ["APRENDE", "CONSTRUYE", "PLANEA", "INVIERTE"],
     productLabel: "PRODUCTO",
     scholarshipSlogan: "CREA BECAS\nAPRENDIENDO.",
@@ -249,7 +259,12 @@ const HERO_COPY = {
     titleLead: "Crie bolsas de estudo",
     titleAccent: "aprendendo.",
     body: "Aprender aqui vai além de desenvolver habilidades. Com identidade descentralizada e recursos opcionais, cada passo do seu progresso pode destinar uma pequena contribuição a quem você escolher, transformando o aprendizado do dia a dia em bolsas de estudo.",
-    focusAreas: ["TUTOR DE IDIOMAS", "TUTOR DE\nPROGRAMAÇÃO", "INVESTIMENTOS E\nNEGÓCIOS", "PLANEJADOR DE\nDUPLA CIDADANIA"],
+    focusAreas: [
+      "TUTOR DE IDIOMAS",
+      "TUTOR DE\nPROGRAMAÇÃO",
+      "PLANEJADOR DE\nDUPLA CIDADANIA",
+      "INVESTIMENTOS E\nNEGÓCIOS",
+    ],
     chapterVerbs: ["APRENDA", "CONSTRUA", "PLANEJE", "INVISTA"],
     productLabel: "PRODUTO",
     scholarshipSlogan: "CRIE BOLSAS\nAO APRENDER.",
@@ -264,7 +279,12 @@ const HERO_COPY = {
     titleLead: "Crea borse di studio",
     titleAccent: "imparando.",
     body: "Qui imparare significa molto più che acquisire competenze. Con un’identità decentralizzata e funzioni facoltative, ogni passo avanti può destinare un piccolo contributo a una persona scelta da te, trasformando l’apprendimento quotidiano in borse di studio.",
-    focusAreas: ["TUTOR DI LINGUE", "TUTOR DI\nPROGRAMMAZIONE", "INVESTIMENTI E\nBUSINESS", "PLANNER PER LA\nDOPPIA CITTADINANZA"],
+    focusAreas: [
+      "TUTOR DI LINGUE",
+      "TUTOR DI\nPROGRAMMAZIONE",
+      "PLANNER PER LA\nDOPPIA CITTADINANZA",
+      "INVESTIMENTI E\nBUSINESS",
+    ],
     chapterVerbs: ["IMPARA", "COSTRUISCI", "PIANIFICA", "INVESTI"],
     productLabel: "PRODOTTO",
     scholarshipSlogan: "CREA BORSE\nIMPARANDO.",
@@ -279,7 +299,12 @@ const HERO_COPY = {
     titleLead: "Crée des bourses",
     titleAccent: "en apprenant.",
     body: "Ici, apprendre va au-delà de l’acquisition de compétences. Grâce à une identité décentralisée et à des fonctionnalités facultatives, chaque progrès peut verser une petite contribution à la personne de ton choix, transformant ainsi l’apprentissage quotidien en bourses d’études.",
-    focusAreas: ["TUTEUR DE LANGUES", "TUTEUR DE\nPROGRAMMATION", "INVESTISSEMENT ET\nAFFAIRES", "PLANIFICATEUR DE\nDOUBLE NATIONALITÉ"],
+    focusAreas: [
+      "TUTEUR DE LANGUES",
+      "TUTEUR DE\nPROGRAMMATION",
+      "PLANIFICATEUR DE\nDOUBLE NATIONALITÉ",
+      "INVESTISSEMENT ET\nAFFAIRES",
+    ],
     chapterVerbs: ["APPRENDS", "CONSTRUIS", "PLANIFIE", "INVESTIS"],
     productLabel: "PRODUIT",
     scholarshipSlogan: "CRÉE DES BOURSES\nEN APPRENANT.",
@@ -294,7 +319,12 @@ const HERO_COPY = {
     titleLead: "Mit Lernen",
     titleAccent: "Stipendien schaffen.",
     body: "Hier geht Lernen über den Aufbau von Fähigkeiten hinaus. Mit dezentraler Identität und optionalen Funktionen kann jeder Lernfortschritt einen kleinen Beitrag an eine Person deiner Wahl senden und so alltägliches Lernen in Stipendien verwandeln.",
-    focusAreas: ["SPRACHTUTOR", "PROGRAMMIER-\nTUTOR", "INVESTIEREN &\nBUSINESS", "PLANER FÜR DOPPELTE\nSTAATSBÜRGERSCHAFT"],
+    focusAreas: [
+      "SPRACHTUTOR",
+      "PROGRAMMIER-\nTUTOR",
+      "PLANER FÜR DOPPELTE\nSTAATSBÜRGERSCHAFT",
+      "INVESTIEREN &\nBUSINESS",
+    ],
     chapterVerbs: ["LERNEN", "BAUEN", "PLANEN", "INVESTIEREN"],
     productLabel: "PRODUKT",
     scholarshipSlogan: "MIT LERNEN\nSTIPENDIEN SCHAFFEN.",
@@ -309,7 +339,12 @@ const HERO_COPY = {
     titleLead: "学びで",
     titleAccent: "奨学金をつくる。",
     body: "ここでの学びは、スキルを身につけるだけではありません。分散型IDと任意で使える機能を通じて、一歩前進するたびに、あなたが選んだ相手へ少額を届けられます。日々の学びが奨学金につながります。",
-    focusAreas: ["語学チューター", "プログラミング\nチューター", "投資とビジネス", "二重国籍\nプランナー"],
+    focusAreas: [
+      "語学チューター",
+      "プログラミング\nチューター",
+      "二重国籍\nプランナー",
+      "投資とビジネス",
+    ],
     chapterVerbs: ["学ぶ", "作る", "計画する", "投資する"],
     productLabel: "プロダクト",
     scholarshipSlogan: "学びで\n奨学金を\nつくる。",
@@ -324,7 +359,12 @@ const HERO_COPY = {
     titleLead: "सीखते हुए",
     titleAccent: "छात्रवृत्तियाँ बनाएँ।",
     body: "यहाँ सीखना सिर्फ़ कौशल विकसित करने तक सीमित नहीं है। विकेंद्रीकृत पहचान और वैकल्पिक सुविधाओं की मदद से, आपकी प्रगति का हर कदम आपके चुने हुए व्यक्ति तक छोटी-सी राशि पहुँचा सकता है—यानी रोज़मर्रा की सीख छात्रवृत्तियों में बदल सकती है।",
-    focusAreas: ["भाषा शिक्षक", "कोडिंग शिक्षक", "निवेश और व्यवसाय", "दोहरी नागरिकता\nयोजनाकार"],
+    focusAreas: [
+      "भाषा शिक्षक",
+      "कोडिंग शिक्षक",
+      "दोहरी नागरिकता\nयोजनाकार",
+      "निवेश और व्यवसाय",
+    ],
     chapterVerbs: ["सीखें", "बनाएँ", "योजना बनाएँ", "निवेश करें"],
     productLabel: "उत्पाद",
     scholarshipSlogan: "सीखते हुए\nछात्रवृत्तियाँ\nबनाएँ।",
@@ -339,7 +379,12 @@ const HERO_COPY = {
     titleLead: "اعمل منح دراسية",
     titleAccent: "بالتعلّم.",
     body: "التعلّم هنا مش بس لبناء المهارات. بالهوية اللامركزية والميزات الاختيارية، كل خطوة بتتقدمها ممكن تبعت مساهمة صغيرة لشخص إنت تختاره—وبكده يتحول التعلّم اليومي لمنح دراسية.",
-    focusAreas: ["مدرّس لغات", "مدرّس برمجة", "الاستثمار والأعمال", "مخطط الجنسية\nالمزدوجة"],
+    focusAreas: [
+      "مدرّس لغات",
+      "مدرّس برمجة",
+      "مخطط الجنسية\nالمزدوجة",
+      "الاستثمار والأعمال",
+    ],
     chapterVerbs: ["تعلّم", "ابنِ", "خطّط", "استثمر"],
     productLabel: "المنتج",
     scholarshipSlogan: "اعمل منح\nدراسية بالتعلّم.",
@@ -353,7 +398,7 @@ const HERO_COPY = {
     titleLead: "边学边",
     titleAccent: "创造奖学金。",
     body: "在这里，学习不只是掌握技能。借助去中心化身份和自愿开启的功能，你每前进一步，都可以向自己选择的人送出一笔小额支持，让日常学习转化为奖学金。",
-    focusAreas: ["语言导师", "编程导师", "投资与商业", "双重国籍规划"],
+    focusAreas: ["语言导师", "编程导师", "双重国籍规划", "投资与商业"],
     chapterVerbs: ["学习", "构建", "规划", "投资"],
     productLabel: "产品",
     scholarshipSlogan: "边学边\n创造奖学金。",
@@ -796,7 +841,9 @@ const ThemeModeToggle = ({ themeMode, onModeChange }) => {
 
 const MusicToggle = ({ isMusicPlaying, onToggleMusic, isLightTheme }) => {
   const themeToggleProps = getThemeModeToggleProps(isLightTheme);
-  const label = isMusicPlaying ? "Mute background music" : "Play background music";
+  const label = isMusicPlaying
+    ? "Mute background music"
+    : "Play background music";
 
   return (
     <ChakraIconButton
@@ -827,7 +874,11 @@ const MusicToggle = ({ isMusicPlaying, onToggleMusic, isLightTheme }) => {
               left="-1px"
               right="-1px"
               h="1.5px"
-              bg={isLightTheme ? "rgba(23, 23, 26, 0.55)" : "rgba(255, 255, 255, 0.65)"}
+              bg={
+                isLightTheme
+                  ? "rgba(23, 23, 26, 0.55)"
+                  : "rgba(255, 255, 255, 0.65)"
+              }
               borderRadius="1px"
               transform="translateY(-50%) rotate(-45deg)"
             />
@@ -1623,7 +1674,9 @@ function LinksHero({
               flex={{ base: "0 0 44px", md: "0 0 72px" }}
               bg={isLightTheme ? "#241c2d" : "#f7f1e8"}
               transform="skewX(-28deg)"
-              boxShadow={isLightTheme ? "6px 4px 0 #e34069" : "6px 4px 0 #ff6f91"}
+              boxShadow={
+                isLightTheme ? "6px 4px 0 #e34069" : "6px 4px 0 #ff6f91"
+              }
             />
             <Text
               fontFamily="monospace"
@@ -1753,7 +1806,9 @@ function LinksHero({
               position: "absolute",
               insetInlineStart: { base: "28px", md: "42px" },
               bottom: "-18px",
-              borderTop: isLightTheme ? "18px solid #241c2d" : "18px solid rgba(247,241,232,0.88)",
+              borderTop: isLightTheme
+                ? "18px solid #241c2d"
+                : "18px solid rgba(247,241,232,0.88)",
               borderRight: "14px solid transparent",
               transform: "skewX(-12deg)",
             }}
@@ -1999,7 +2054,9 @@ function HeroKeyArt({ isLightTheme, profilePicture, randomCharacterKey }) {
           borderRight: "11px solid transparent",
           transform: "rotate(16deg)",
         }}
-        sx={{ "@media (prefers-reduced-motion: reduce)": { animation: "none" } }}
+        sx={{
+          "@media (prefers-reduced-motion: reduce)": { animation: "none" },
+        }}
       >
         <Text
           fontFamily="'DM Sans', sans-serif"
@@ -2063,7 +2120,12 @@ function HeroKeyArt({ isLightTheme, profilePicture, randomCharacterKey }) {
 
 function MangaChapterBreak({ isLightTheme }) {
   const ribbonWords = ["LEARN", "CREATE", "BUILD", "GROW"];
-  const repeatedWords = [...ribbonWords, ...ribbonWords, ...ribbonWords, ...ribbonWords];
+  const repeatedWords = [
+    ...ribbonWords,
+    ...ribbonWords,
+    ...ribbonWords,
+    ...ribbonWords,
+  ];
   const ink = isLightTheme ? "#241c2d" : "#f7f1e8";
   const paper = isLightTheme ? "#fffaf0" : "#111426";
 
@@ -2091,10 +2153,16 @@ function MangaChapterBreak({ isLightTheme }) {
           w="max-content"
           py={{ base: 2.5, md: 3 }}
           animation={`${mangaMarquee} 22s linear infinite`}
-          sx={{ "@media (prefers-reduced-motion: reduce)": { animation: "none" } }}
+          sx={{
+            "@media (prefers-reduced-motion: reduce)": { animation: "none" },
+          }}
         >
           {repeatedWords.map((word, index) => (
-            <HStack key={`${word}-${index}`} spacing={{ base: 5, md: 8 }} px={{ base: 5, md: 8 }}>
+            <HStack
+              key={`${word}-${index}`}
+              spacing={{ base: 5, md: 8 }}
+              px={{ base: 5, md: 8 }}
+            >
               <Text
                 fontFamily="'DM Sans', sans-serif"
                 fontSize={{ base: "lg", md: "2xl" }}
@@ -2106,7 +2174,13 @@ function MangaChapterBreak({ isLightTheme }) {
               >
                 {word}
               </Text>
-              <Box w={{ base: "9px", md: "12px" }} h={{ base: "9px", md: "12px" }} bg="#ffd25f" transform="rotate(45deg)" border="2px solid #241c2d" />
+              <Box
+                w={{ base: "9px", md: "12px" }}
+                h={{ base: "9px", md: "12px" }}
+                bg="#ffd25f"
+                transform="rotate(45deg)"
+                border="2px solid #241c2d"
+              />
             </HStack>
           ))}
         </HStack>
@@ -2168,7 +2242,8 @@ function MangaChapterBreak({ isLightTheme }) {
               content: '""',
               position: "absolute",
               inset: 0,
-              bgImage: "radial-gradient(circle, rgba(36,28,45,0.3) 1.3px, transparent 1.4px)",
+              bgImage:
+                "radial-gradient(circle, rgba(36,28,45,0.3) 1.3px, transparent 1.4px)",
               bgSize: "11px 11px",
               opacity: 0.55,
             }}
@@ -2230,7 +2305,13 @@ function MangaChapterBreak({ isLightTheme }) {
               boxShadow: "0 26px 0 rgba(255,210,95,0.96)",
             }}
           >
-            <HStack position="absolute" inset={0} justify="center" spacing={{ base: 2, md: 4 }} pt={{ base: 3, md: 6 }}>
+            <HStack
+              position="absolute"
+              inset={0}
+              justify="center"
+              spacing={{ base: 2, md: 4 }}
+              pt={{ base: 3, md: 6 }}
+            >
               {[0, 1, 2].map((item) => (
                 <Box
                   key={item}
@@ -2251,7 +2332,13 @@ function MangaChapterBreak({ isLightTheme }) {
 
 function MangaInkBackdrop({ isLightTheme }) {
   return (
-    <Box position="absolute" inset={0} overflow="hidden" pointerEvents="none" aria-hidden="true">
+    <Box
+      position="absolute"
+      inset={0}
+      overflow="hidden"
+      pointerEvents="none"
+      aria-hidden="true"
+    >
       <Box
         position="absolute"
         inset={0}
@@ -2272,7 +2359,9 @@ function MangaInkBackdrop({ isLightTheme }) {
         bg={isLightTheme ? "rgba(227,64,105,0.12)" : "rgba(240,93,130,0.12)"}
         clipPath="polygon(0 0, 82% 0, 100% 72%, 16% 100%)"
         border="3px solid"
-        borderColor={isLightTheme ? "rgba(36,28,45,0.08)" : "rgba(255,255,255,0.07)"}
+        borderColor={
+          isLightTheme ? "rgba(36,28,45,0.08)" : "rgba(255,255,255,0.07)"
+        }
       />
       <Box
         position="absolute"
@@ -2283,7 +2372,9 @@ function MangaInkBackdrop({ isLightTheme }) {
         bg={isLightTheme ? "rgba(85,205,188,0.14)" : "rgba(66,189,177,0.12)"}
         transform="rotate(-14deg)"
         borderBlock="3px solid"
-        borderColor={isLightTheme ? "rgba(36,28,45,0.08)" : "rgba(255,255,255,0.07)"}
+        borderColor={
+          isLightTheme ? "rgba(36,28,45,0.08)" : "rgba(255,255,255,0.07)"
+        }
       />
       <Box
         position="absolute"
@@ -2369,7 +2460,9 @@ function AnimeTransformationBeat() {
         bg="white"
         opacity={0}
         animation={`${finaleFlash} 7.6s ease-in-out infinite`}
-        sx={{ "@media (prefers-reduced-motion: reduce)": { animation: "none" } }}
+        sx={{
+          "@media (prefers-reduced-motion: reduce)": { animation: "none" },
+        }}
       />
 
       <Container
@@ -2443,13 +2536,17 @@ function AnimeTransformationBeat() {
             textAlign="center"
             textTransform="uppercase"
             animation={`${limitBreak} 6s steps(1, end) infinite`}
-            sx={{ "@media (prefers-reduced-motion: reduce)": { animation: "none" } }}
+            sx={{
+              "@media (prefers-reduced-motion: reduce)": { animation: "none" },
+            }}
           >
             <Text
               as="span"
               display="block"
               color="transparent"
-              sx={{ WebkitTextStroke: { base: "2px #fffaf2", md: "3px #fffaf2" } }}
+              sx={{
+                WebkitTextStroke: { base: "2px #fffaf2", md: "3px #fffaf2" },
+              }}
               textShadow="10px 11px 0 rgba(255,63,120,0.34)"
               transform="translateX(-4%)"
             >
@@ -2525,7 +2622,10 @@ function AnimeTransformationBeat() {
               transform: "translate(-3px,-4px)",
               boxShadow: "10px 12px 0 #ff3f78, 17px 19px 0 #35f4ea",
             }}
-            _active={{ transform: "translate(3px,4px)", boxShadow: "3px 4px 0 #ff3f78" }}
+            _active={{
+              transform: "translate(3px,4px)",
+              boxShadow: "3px 4px 0 #ff3f78",
+            }}
           >
             ENTER CHAPTER ONE ↓
           </ChakraButton>
@@ -2674,11 +2774,17 @@ function MangaCover({
                 overflow="hidden"
                 border="2px solid"
                 borderColor={ink}
-                boxShadow={isLightTheme ? "2px 3px 0 #211827" : "2px 3px 0 #050711"}
+                boxShadow={
+                  isLightTheme ? "2px 3px 0 #211827" : "2px 3px 0 #050711"
+                }
                 transition="transform 160ms ease"
-                _hover={{ transform: "translateY(-3px) rotate(-3deg) scale(1.05)" }}
+                _hover={{
+                  transform: "translateY(-3px) rotate(-3deg) scale(1.05)",
+                }}
                 _focusVisible={{ boxShadow: `0 0 0 3px ${primaryAccent}66` }}
-                onClick={() => onSocialClick(item.label.toLowerCase(), item.url)}
+                onClick={() =>
+                  onSocialClick(item.label.toLowerCase(), item.url)
+                }
               >
                 {item.icon}
               </Box>
@@ -2690,7 +2796,10 @@ function MangaCover({
 
         <Box
           display="grid"
-          gridTemplateColumns={{ base: "1fr", lg: "minmax(0, 0.92fr) minmax(480px, 1.08fr)" }}
+          gridTemplateColumns={{
+            base: "1fr",
+            lg: "minmax(0, 0.92fr) minmax(480px, 1.08fr)",
+          }}
           alignItems="center"
           gap={{ base: 9, lg: 3 }}
           minH={{ base: "auto", lg: "calc(100svh - 100px)" }}
@@ -2718,7 +2827,12 @@ function MangaCover({
               >
                 ORIGINAL SERIES
               </Text>
-              <Box w={{ base: "42px", md: "80px" }} h="5px" bg="#e34069" transform="skewX(-28deg)" />
+              <Box
+                w={{ base: "42px", md: "80px" }}
+                h="5px"
+                bg="#e34069"
+                transform="skewX(-28deg)"
+              />
             </HStack>
 
             <Box w="100%" position="relative">
@@ -2731,7 +2845,11 @@ function MangaCover({
                 fontWeight="900"
                 fontStyle="italic"
                 fontSize={{ base: "5xl", md: "7xl" }}
-                color={isLightTheme ? "rgba(227,64,105,0.16)" : "rgba(255,111,145,0.14)"}
+                color={
+                  isLightTheme
+                    ? "rgba(227,64,105,0.16)"
+                    : "rgba(255,111,145,0.14)"
+                }
                 transform="rotate(-8deg)"
               >
                 DREAM
@@ -2740,22 +2858,36 @@ function MangaCover({
                 as="h1"
                 position="relative"
                 fontFamily="'DM Sans', sans-serif"
-                fontSize={{ base: "clamp(3.35rem, 15.5vw, 5.5rem)", md: "clamp(5rem, 7.2vw, 7.3rem)" }}
+                fontSize={{
+                  base: "clamp(3.35rem, 15.5vw, 5.5rem)",
+                  md: "clamp(5rem, 7.2vw, 7.3rem)",
+                }}
                 lineHeight="0.82"
                 letterSpacing="-0.075em"
                 fontWeight="900"
                 color={ink}
-                textShadow={isLightTheme ? "6px 7px 0 rgba(227,64,105,0.18)" : "6px 7px 0 rgba(255,111,145,0.2)"}
+                textShadow={
+                  isLightTheme
+                    ? "6px 7px 0 rgba(227,64,105,0.18)"
+                    : "6px 7px 0 rgba(255,111,145,0.2)"
+                }
                 animation={`${coverCutIn} 720ms cubic-bezier(.2,.85,.2,1) both`}
               >
-                <Text as="span" display="block" wordBreak="keep-all" overflowWrap="normal">
+                <Text
+                  as="span"
+                  display="block"
+                  wordBreak="keep-all"
+                  overflowWrap="normal"
+                >
                   {heroCopy.titleLead}
                 </Text>
                 <Text
                   as="span"
                   display="block"
                   color={isLightTheme ? "#e34069" : "#ff7397"}
-                  textShadow={isLightTheme ? "5px 6px 0 #55cdbc" : "5px 6px 0 #236e71"}
+                  textShadow={
+                    isLightTheme ? "5px 6px 0 #55cdbc" : "5px 6px 0 #236e71"
+                  }
                 >
                   {heroCopy.titleAccent}
                 </Text>
@@ -2767,7 +2899,9 @@ function MangaCover({
               bg={paper}
               border="3px solid"
               borderColor={ink}
-              boxShadow={isLightTheme ? "8px 9px 0 #55cdbc" : "8px 9px 0 #237d78"}
+              boxShadow={
+                isLightTheme ? "8px 9px 0 #55cdbc" : "8px 9px 0 #237d78"
+              }
               px={{ base: 4, md: 5 }}
               py={{ base: 3, md: 4 }}
               position="relative"
@@ -2782,7 +2916,12 @@ function MangaCover({
                 transform: "rotate(10deg)",
               }}
             >
-              <Text fontFamily="'DM Sans', sans-serif" fontSize={{ base: "md", md: "xl" }} lineHeight="1.5" color={isLightTheme ? APP_TEXT_SECONDARY : "gray.300"}>
+              <Text
+                fontFamily="'DM Sans', sans-serif"
+                fontSize={{ base: "md", md: "xl" }}
+                lineHeight="1.5"
+                color={isLightTheme ? APP_TEXT_SECONDARY : "gray.300"}
+              >
                 {heroCopy.body}
               </Text>
             </Box>
@@ -2793,9 +2932,15 @@ function MangaCover({
                 px={3}
                 py={2}
                 borderInlineStart="5px solid #e34069"
-                bg={isLightTheme ? "rgba(255,248,233,0.8)" : "rgba(16,19,34,0.82)"}
+                bg={
+                  isLightTheme ? "rgba(255,248,233,0.8)" : "rgba(16,19,34,0.82)"
+                }
               >
-                <Text fontFamily="monospace" fontSize={{ base: "xs", md: "sm" }} color={isLightTheme ? APP_TEXT_SECONDARY : "gray.300"}>
+                <Text
+                  fontFamily="monospace"
+                  fontSize={{ base: "xs", md: "sm" }}
+                  color={isLightTheme ? APP_TEXT_SECONDARY : "gray.300"}
+                >
                   {translations.welcome}, {welcomeText}
                 </Text>
                 <ChakraButton
@@ -2807,7 +2952,9 @@ function MangaCover({
                   border="2px solid"
                   borderColor={ink}
                   color={primaryAccent}
-                  boxShadow={isLightTheme ? "3px 4px 0 #211827" : "3px 4px 0 #050711"}
+                  boxShadow={
+                    isLightTheme ? "3px 4px 0 #211827" : "3px 4px 0 #050711"
+                  }
                   fontFamily="'DM Sans', sans-serif"
                   fontWeight="800"
                   _hover={{ transform: "translateY(-2px)" }}
@@ -2825,7 +2972,9 @@ function MangaCover({
                 color="white"
                 border="3px solid"
                 borderColor={ink}
-                boxShadow={isLightTheme ? "6px 7px 0 #55cdbc" : "6px 7px 0 #35bfb7"}
+                boxShadow={
+                  isLightTheme ? "6px 7px 0 #55cdbc" : "6px 7px 0 #35bfb7"
+                }
                 textShadow="0 2px 2px rgba(45,4,18,0.55)"
                 fontFamily="'DM Sans', sans-serif"
                 fontWeight="900"
@@ -2833,9 +2982,14 @@ function MangaCover({
                 _hover={{
                   bg: "#f04d79",
                   transform: "translate(-2px,-3px)",
-                  boxShadow: isLightTheme ? "9px 10px 0 #55cdbc" : "9px 10px 0 #35bfb7",
+                  boxShadow: isLightTheme
+                    ? "9px 10px 0 #55cdbc"
+                    : "9px 10px 0 #35bfb7",
                 }}
-                _active={{ transform: "translate(3px,4px)", boxShadow: "2px 3px 0 #35bfb7" }}
+                _active={{
+                  transform: "translate(3px,4px)",
+                  boxShadow: "2px 3px 0 #35bfb7",
+                }}
               >
                 BEGIN THE EPISODE ↓
               </Button>
@@ -2847,10 +3001,17 @@ function MangaCover({
                 color={isLightTheme ? "white" : "#101322"}
                 border="3px solid"
                 borderColor={ink}
-                boxShadow={isLightTheme ? "6px 7px 0 #e34069" : "6px 7px 0 #c93c65"}
+                boxShadow={
+                  isLightTheme ? "6px 7px 0 #e34069" : "6px 7px 0 #c93c65"
+                }
                 fontFamily="'DM Sans', sans-serif"
                 fontWeight="900"
-                _hover={{ transform: "translate(-2px,-3px)", boxShadow: isLightTheme ? "8px 10px 0 #e34069" : "8px 10px 0 #c93c65" }}
+                _hover={{
+                  transform: "translate(-2px,-3px)",
+                  boxShadow: isLightTheme
+                    ? "8px 10px 0 #e34069"
+                    : "8px 10px 0 #c93c65",
+                }}
               >
                 {translations.about} ↗
               </Button>
@@ -2862,7 +3023,9 @@ function MangaCover({
             position="relative"
             isolation="isolate"
             animation={`${coverCharacterIn} 880ms 180ms cubic-bezier(.2,.85,.2,1) both`}
-            sx={{ "@media (prefers-reduced-motion: reduce)": { animation: "none" } }}
+            sx={{
+              "@media (prefers-reduced-motion: reduce)": { animation: "none" },
+            }}
           >
             <Box
               position="absolute"
@@ -2871,7 +3034,9 @@ function MangaCover({
               clipPath="polygon(12% 0, 100% 0, 88% 100%, 0 90%)"
               border="4px solid"
               borderColor={ink}
-              boxShadow={isLightTheme ? "15px 17px 0 #211827" : "15px 17px 0 #050711"}
+              boxShadow={
+                isLightTheme ? "15px 17px 0 #211827" : "15px 17px 0 #050711"
+              }
               overflow="hidden"
               _before={{
                 content: '""',
@@ -2893,17 +3058,32 @@ function MangaCover({
               border="4px solid"
               borderColor={ink}
               transform="rotate(5deg)"
-              boxShadow={isLightTheme ? "8px 9px 0 #211827" : "8px 9px 0 #050711"}
+              boxShadow={
+                isLightTheme ? "8px 9px 0 #211827" : "8px 9px 0 #050711"
+              }
               _before={{
                 content: '""',
                 position: "absolute",
                 inset: 0,
-                bgImage: "radial-gradient(circle, rgba(33,24,39,0.34) 1.4px, transparent 1.5px)",
+                bgImage:
+                  "radial-gradient(circle, rgba(33,24,39,0.34) 1.4px, transparent 1.5px)",
                 bgSize: "11px 11px",
               }}
             >
-              <Text position="relative" zIndex={1} p={{ base: 3, md: 5 }} fontFamily="'DM Sans', sans-serif" fontWeight="900" fontStyle="italic" fontSize={{ base: "xl", md: "4xl" }} lineHeight="0.9" color="#211827">
-                MAKE IT<br />REAL.
+              <Text
+                position="relative"
+                zIndex={1}
+                p={{ base: 3, md: 5 }}
+                fontFamily="'DM Sans', sans-serif"
+                fontWeight="900"
+                fontStyle="italic"
+                fontSize={{ base: "xl", md: "4xl" }}
+                lineHeight="0.9"
+                color="#211827"
+              >
+                MAKE IT
+                <br />
+                REAL.
               </Text>
             </Box>
             <Box
@@ -2919,7 +3099,9 @@ function MangaCover({
               border="5px solid"
               borderColor={ink}
               clipPath="polygon(8% 0, 100% 6%, 93% 100%, 0 92%)"
-              boxShadow={isLightTheme ? "12px 14px 0 #55cdbc" : "12px 14px 0 #237d78"}
+              boxShadow={
+                isLightTheme ? "12px 14px 0 #55cdbc" : "12px 14px 0 #237d78"
+              }
               overflow="hidden"
               _before={{
                 content: '""',
@@ -2933,10 +3115,29 @@ function MangaCover({
               }}
             >
               {profilePicture ? (
-                <img src={profilePicture} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover", position: "relative", zIndex: 1 }} />
+                <img
+                  src={profilePicture}
+                  alt="Profile"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    position: "relative",
+                    zIndex: 1,
+                  }}
+                />
               ) : (
-                <Box position="relative" zIndex={1} transform={{ base: "scale(1.65)", md: "scale(2.2)" }} transformOrigin="center bottom">
-                  <RandomCharacter notSoRandomCharacter={randomCharacterKey} width="190px" containerHeight={240} />
+                <Box
+                  position="relative"
+                  zIndex={1}
+                  transform={{ base: "scale(1.65)", md: "scale(2.2)" }}
+                  transformOrigin="center bottom"
+                >
+                  <RandomCharacter
+                    notSoRandomCharacter={randomCharacterKey}
+                    width="190px"
+                    containerHeight={240}
+                  />
                 </Box>
               )}
             </Box>
@@ -2971,7 +3172,9 @@ function MangaCover({
               fontWeight="900"
               fontStyle="italic"
               color={isLightTheme ? "#211827" : "#f8f1e7"}
-              textShadow={isLightTheme ? "5px 6px 0 #ffd25f" : "5px 6px 0 #b7812c"}
+              textShadow={
+                isLightTheme ? "5px 6px 0 #ffd25f" : "5px 6px 0 #b7812c"
+              }
               animation={`${exclamationPulse} 2.8s ease-in-out infinite`}
             >
               WOW!
@@ -3090,12 +3293,19 @@ function MangaProjectScene({
             : "radial-gradient(circle, #ffffff 1.1px, transparent 1.2px)"
         }
         bgSize="16px 16px"
-        maskImage={isReverse ? "linear-gradient(110deg, transparent 25%, black 100%)" : "linear-gradient(250deg, transparent 25%, black 100%)"}
+        maskImage={
+          isReverse
+            ? "linear-gradient(110deg, transparent 25%, black 100%)"
+            : "linear-gradient(250deg, transparent 25%, black 100%)"
+        }
       />
       <Container maxW="container.xl" position="relative" zIndex={2}>
         <Box
           display="grid"
-          gridTemplateColumns={{ base: "1fr", lg: "minmax(0, 1.16fr) minmax(380px, 0.84fr)" }}
+          gridTemplateColumns={{
+            base: "1fr",
+            lg: "minmax(0, 1.16fr) minmax(380px, 0.84fr)",
+          }}
           alignItems="center"
           gap={{ base: 8, lg: 0 }}
           dir="ltr"
@@ -3131,7 +3341,9 @@ function MangaProjectScene({
                   ? "polygon(10% 0, 100% 5%, 94% 92%, 0 100%)"
                   : "polygon(0 5%, 92% 0, 100% 100%, 7% 92%)"
               }
-              boxShadow={isLightTheme ? "14px 16px 0 #211827" : "14px 16px 0 #050711"}
+              boxShadow={
+                isLightTheme ? "14px 16px 0 #211827" : "14px 16px 0 #050711"
+              }
               overflow="hidden"
               _before={{
                 content: '""',
@@ -3161,7 +3373,11 @@ function MangaProjectScene({
                   ? "polygon(7% 3%, 100% 0, 94% 100%, 0 92%)"
                   : "polygon(0 0, 94% 4%, 100% 92%, 6% 100%)"
               }
-              boxShadow={isLightTheme ? `11px 13px 0 ${link.shadowAccent}` : `11px 13px 0 ${link.shadowAccent}`}
+              boxShadow={
+                isLightTheme
+                  ? `11px 13px 0 ${link.shadowAccent}`
+                  : `11px 13px 0 ${link.shadowAccent}`
+              }
               overflow="hidden"
               _before={{
                 content: '""',
@@ -3174,7 +3390,11 @@ function MangaProjectScene({
                 opacity: 0.48,
               }}
             >
-              <Box position="relative" zIndex={1} transform={{ base: "scale(1.9)", md: "scale(2.75)" }}>
+              <Box
+                position="relative"
+                zIndex={1}
+                transform={{ base: "scale(1.9)", md: "scale(2.75)" }}
+              >
                 {link.visual}
               </Box>
             </Box>
@@ -3228,7 +3448,11 @@ function MangaProjectScene({
             color={ink}
             border="5px solid"
             borderColor={ink}
-            boxShadow={isLightTheme ? `12px 14px 0 ${link.accent}` : `12px 14px 0 ${link.shadowAccent}`}
+            boxShadow={
+              isLightTheme
+                ? `12px 14px 0 ${link.accent}`
+                : `12px 14px 0 ${link.shadowAccent}`
+            }
             px={{ base: 6, md: 9 }}
             py={{ base: 7, md: 10 }}
             opacity={isVisible ? 1 : 0}
@@ -3248,8 +3472,14 @@ function MangaProjectScene({
               left: { base: "38px", lg: isReverse ? "auto" : "-30px" },
               right: { base: "auto", lg: isReverse ? "-30px" : "auto" },
               borderBottom: { base: `24px solid ${ink}`, lg: "none" },
-              borderLeft: { base: "16px solid transparent", lg: isReverse ? `32px solid ${ink}` : "none" },
-              borderRight: { base: "none", lg: isReverse ? "none" : `32px solid ${ink}` },
+              borderLeft: {
+                base: "16px solid transparent",
+                lg: isReverse ? `32px solid ${ink}` : "none",
+              },
+              borderRight: {
+                base: "none",
+                lg: isReverse ? "none" : `32px solid ${ink}`,
+              },
               borderTop: { base: "none", lg: "22px solid transparent" },
               transform: isReverse ? "rotate(-8deg)" : "rotate(8deg)",
             }}
@@ -3261,13 +3491,35 @@ function MangaProjectScene({
               },
             }}
           >
-            <Text fontFamily="monospace" fontSize="xs" fontWeight="900" letterSpacing="0.18em" color={link.accent} mb={4}>
+            <Text
+              fontFamily="monospace"
+              fontSize="xs"
+              fontWeight="900"
+              letterSpacing="0.18em"
+              color={link.accent}
+              mb={4}
+            >
               {sceneWords[index]} SOMETHING WONDERFUL
             </Text>
-            <Heading fontFamily="'DM Sans', sans-serif" fontSize={{ base: "4xl", md: "6xl" }} lineHeight="0.92" letterSpacing="-0.055em" fontWeight="900" mb={5} textAlign={pageDirection === "rtl" ? "right" : "left"}>
+            <Heading
+              fontFamily="'DM Sans', sans-serif"
+              fontSize={{ base: "4xl", md: "6xl" }}
+              lineHeight="0.92"
+              letterSpacing="-0.055em"
+              fontWeight="900"
+              mb={5}
+              textAlign={pageDirection === "rtl" ? "right" : "left"}
+            >
               {link.title}
             </Heading>
-            <Text fontFamily="'DM Sans', sans-serif" fontSize={{ base: "md", md: "lg" }} lineHeight="1.7" color={isLightTheme ? APP_TEXT_SECONDARY : "gray.300"} mb={7} textAlign={pageDirection === "rtl" ? "right" : "left"}>
+            <Text
+              fontFamily="'DM Sans', sans-serif"
+              fontSize={{ base: "md", md: "lg" }}
+              lineHeight="1.7"
+              color={isLightTheme ? APP_TEXT_SECONDARY : "gray.300"}
+              mb={7}
+              textAlign={pageDirection === "rtl" ? "right" : "left"}
+            >
               {link.description}
             </Text>
             <Button
@@ -3283,8 +3535,17 @@ function MangaProjectScene({
               fontFamily="'DM Sans', sans-serif"
               fontWeight="900"
               rightIcon={<Text fontSize="xl">↗</Text>}
-              _hover={{ bg: link.accent, color: "white", textDecoration: "none", transform: "translateY(-2px)", boxShadow: `0 8px 0 ${link.shadowAccent}` }}
-              _active={{ transform: "translateY(5px)", boxShadow: `0 1px 0 ${link.shadowAccent}` }}
+              _hover={{
+                bg: link.accent,
+                color: "white",
+                textDecoration: "none",
+                transform: "translateY(-2px)",
+                boxShadow: `0 8px 0 ${link.shadowAccent}`,
+              }}
+              _active={{
+                transform: "translateY(5px)",
+                boxShadow: `0 1px 0 ${link.shadowAccent}`,
+              }}
               sx={{ "&:visited": { color: "white" } }}
             >
               {link.launchAppText || "Launch app"}
@@ -3319,7 +3580,13 @@ function MangaStories({
         position="relative"
         overflow="hidden"
       >
-        <Box position="absolute" inset="0" bgImage="radial-gradient(circle, rgba(227,64,105,0.65) 1.5px, transparent 1.6px)" bgSize="17px 17px" opacity={0.22} />
+        <Box
+          position="absolute"
+          inset="0"
+          bgImage="radial-gradient(circle, rgba(227,64,105,0.65) 1.5px, transparent 1.6px)"
+          bgSize="17px 17px"
+          opacity={0.22}
+        />
         <AnimeFinaleCanvas
           isLightTheme={false}
           intensity={0.62}
@@ -3327,7 +3594,16 @@ function MangaStories({
           variant="chapter"
           opacity={0.5}
         />
-        <Box position="absolute" right="-12%" top="-55%" w="62%" h="190%" bg="#e34069" transform="rotate(17deg)" boxShadow="-26px 0 0 #55cdbc" />
+        <Box
+          position="absolute"
+          right="-12%"
+          top="-55%"
+          w="62%"
+          h="190%"
+          bg="#e34069"
+          transform="rotate(17deg)"
+          boxShadow="-26px 0 0 #55cdbc"
+        />
         <Text
           aria-hidden="true"
           display={{ base: "none", md: "block" }}
@@ -3347,13 +3623,34 @@ function MangaStories({
           START!
         </Text>
         <Container maxW="container.xl" position="relative" zIndex={3}>
-          <Text fontFamily="monospace" fontWeight="900" letterSpacing="0.2em" fontSize="sm" mb={4} color="#ffd25f">
+          <Text
+            fontFamily="monospace"
+            fontWeight="900"
+            letterSpacing="0.2em"
+            fontSize="sm"
+            mb={4}
+            color="#ffd25f"
+          >
             {heroCopy.workLabel}
           </Text>
-          <Heading fontFamily="'DM Sans', sans-serif" fontSize={{ base: "5xl", md: "8xl", lg: "9xl" }} lineHeight="0.82" letterSpacing="-0.07em" fontWeight="900" maxW="900px" textShadow="7px 8px 0 rgba(0,0,0,0.26)">
+          <Heading
+            fontFamily="'DM Sans', sans-serif"
+            fontSize={{ base: "5xl", md: "8xl", lg: "9xl" }}
+            lineHeight="0.82"
+            letterSpacing="-0.07em"
+            fontWeight="900"
+            maxW="900px"
+            textShadow="7px 8px 0 rgba(0,0,0,0.26)"
+          >
             {heroCopy.workTitle}
           </Heading>
-          <Text mt={7} maxW="650px" fontFamily="'DM Sans', sans-serif" fontSize={{ base: "lg", md: "2xl" }} lineHeight="1.5">
+          <Text
+            mt={7}
+            maxW="650px"
+            fontFamily="'DM Sans', sans-serif"
+            fontSize={{ base: "lg", md: "2xl" }}
+            lineHeight="1.5"
+          >
             {heroCopy.workBody}
           </Text>
         </Container>
@@ -3371,11 +3668,46 @@ function MangaStories({
         />
       ))}
 
-      <Box bg={isLightTheme ? "#fff4df" : "#090b16"} py={{ base: 16, md: 24 }} borderTop="6px solid" borderColor={ink}>
+      <Box
+        bg={isLightTheme ? "#fff4df" : "#090b16"}
+        py={{ base: 16, md: 24 }}
+        borderTop="6px solid"
+        borderColor={ink}
+      >
         <Container maxW="container.lg">
-          <Box bg={isLightTheme ? "#211827" : "#f8f1e7"} color={isLightTheme ? "white" : "#101322"} border="5px solid" borderColor={ink} boxShadow={isLightTheme ? "12px 14px 0 #e34069" : "12px 14px 0 #c93c65"} px={{ base: 6, md: 10 }} py={{ base: 7, md: 9 }} transform="rotate(-1deg)" position="relative" overflow="hidden">
-            <Box position="absolute" right="-8%" top="-70%" w="48%" h="240%" bg="#55cdbc" transform="rotate(18deg)" boxShadow="-20px 0 0 #ffd25f" />
-            <Text position="relative" zIndex={1} fontFamily="'DM Sans', sans-serif" fontSize={{ base: "3xl", md: "6xl" }} fontWeight="900" fontStyle="italic" letterSpacing="-0.05em">
+          <Box
+            bg={isLightTheme ? "#211827" : "#f8f1e7"}
+            color={isLightTheme ? "white" : "#101322"}
+            border="5px solid"
+            borderColor={ink}
+            boxShadow={
+              isLightTheme ? "12px 14px 0 #e34069" : "12px 14px 0 #c93c65"
+            }
+            px={{ base: 6, md: 10 }}
+            py={{ base: 7, md: 9 }}
+            transform="rotate(-1deg)"
+            position="relative"
+            overflow="hidden"
+          >
+            <Box
+              position="absolute"
+              right="-8%"
+              top="-70%"
+              w="48%"
+              h="240%"
+              bg="#55cdbc"
+              transform="rotate(18deg)"
+              boxShadow="-20px 0 0 #ffd25f"
+            />
+            <Text
+              position="relative"
+              zIndex={1}
+              fontFamily="'DM Sans', sans-serif"
+              fontSize={{ base: "3xl", md: "6xl" }}
+              fontWeight="900"
+              fontStyle="italic"
+              letterSpacing="-0.05em"
+            >
               TO BE CONTINUED… ↗
             </Text>
           </Box>
@@ -3427,7 +3759,9 @@ function ProjectShowcase({
           w: "5px",
           bg: isLightTheme ? "rgba(36,28,45,0.72)" : "rgba(247,241,232,0.6)",
           transform: "rotate(1.4deg)",
-          boxShadow: isLightTheme ? "7px 0 0 rgba(227,64,105,0.22)" : "7px 0 0 rgba(255,111,145,0.18)",
+          boxShadow: isLightTheme
+            ? "7px 0 0 rgba(227,64,105,0.22)"
+            : "7px 0 0 rgba(255,111,145,0.18)",
           zIndex: 0,
         }}
       >
@@ -3468,7 +3802,9 @@ function ProjectShowcase({
             fontWeight="900"
             fontStyle="italic"
             letterSpacing="-0.06em"
-            color={isLightTheme ? "rgba(36,28,45,0.055)" : "rgba(247,241,232,0.055)"}
+            color={
+              isLightTheme ? "rgba(36,28,45,0.055)" : "rgba(247,241,232,0.055)"
+            }
             transform="rotate(-3deg)"
             pointerEvents="none"
           >
@@ -3544,7 +3880,10 @@ function ProjectShowcase({
               transformOrigin="center"
               transition="transform 260ms ease"
               _hover={{
-                transform: { base: "none", md: `rotate(0deg) translateY(-3px)` },
+                transform: {
+                  base: "none",
+                  md: `rotate(0deg) translateY(-3px)`,
+                },
                 zIndex: 2,
               }}
             >
@@ -3571,7 +3910,9 @@ function ProjectShowcase({
           borderWidth="4px"
           borderStyle="solid"
           borderColor={isLightTheme ? "#241c2d" : "#f7f1e8"}
-          boxShadow={isLightTheme ? "10px 11px 0 #e34069" : "10px 11px 0 #d94b73"}
+          boxShadow={
+            isLightTheme ? "10px 11px 0 #e34069" : "10px 11px 0 #d94b73"
+          }
           transform="rotate(-1deg)"
           overflow="hidden"
           px={{ base: 5, md: 9 }}
@@ -3588,7 +3929,12 @@ function ProjectShowcase({
             boxShadow: "-18px 0 0 #ffd25f",
           }}
         >
-          <HStack position="relative" zIndex={1} justify="space-between" spacing={4}>
+          <HStack
+            position="relative"
+            zIndex={1}
+            justify="space-between"
+            spacing={4}
+          >
             <Text
               fontFamily="'DM Sans', sans-serif"
               fontSize={{ base: "xl", md: "4xl" }}
@@ -3713,7 +4059,10 @@ export default function LinksPage() {
             if (typeof remoteSetting === "boolean") {
               setIsMusicPlaying(remoteSetting);
               isMusicPlayingRef.current = remoteSetting;
-              localStorage.setItem("links_music_enabled", String(remoteSetting));
+              localStorage.setItem(
+                "links_music_enabled",
+                String(remoteSetting),
+              );
             }
           }
         })
@@ -5077,7 +5426,9 @@ export default function LinksPage() {
                         bg={isLightTheme ? "#ffffff" : "transparent"}
                         color={isLightTheme ? "#17171a" : "#ffffff"}
                         style={{
-                          backgroundColor: isLightTheme ? "#ffffff" : "transparent",
+                          backgroundColor: isLightTheme
+                            ? "#ffffff"
+                            : "transparent",
                           color: isLightTheme ? "#17171a" : "#ffffff",
                         }}
                         border="2px solid"
@@ -5094,7 +5445,9 @@ export default function LinksPage() {
                           isSwitching
                             ? {}
                             : {
-                                bg: isLightTheme ? "#f4f4f5" : "rgba(255, 255, 255, 0.1)",
+                                bg: isLightTheme
+                                  ? "#f4f4f5"
+                                  : "rgba(255, 255, 255, 0.1)",
                                 transform: "translate(-2px, -2px)",
                                 boxShadow: `6px 7px 0 ${buttonHoverShadowColor}`,
                               }
@@ -5233,7 +5586,9 @@ export default function LinksPage() {
                           color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
                           _placeholder={{ color: helperColor }}
                           _focus={{
-                            borderColor: isLightTheme ? "#000000" : secondaryAccent,
+                            borderColor: isLightTheme
+                              ? "#000000"
+                              : secondaryAccent,
                             boxShadow: isLightTheme
                               ? "0 0 0 3px rgba(0, 0, 0, 0.12)"
                               : "0 0 10px rgba(255, 0, 255, 0.3)",
@@ -5259,7 +5614,9 @@ export default function LinksPage() {
                       }}
                       disabled={
                         isCreatingWallet ||
-                        Boolean(isNip07Mode && noWalletFound && !nsecForWallet.trim())
+                        Boolean(
+                          isNip07Mode && noWalletFound && !nsecForWallet.trim(),
+                        )
                       }
                       h="48px"
                       w="100%"
@@ -5292,7 +5649,9 @@ export default function LinksPage() {
                             }
                       }
                     >
-                      {isCreatingWallet ? translations.creatingWallet : translations.createWallet}
+                      {isCreatingWallet
+                        ? translations.creatingWallet
+                        : translations.createWallet}
                     </Box>
                   </Box>
                 )}
@@ -5361,7 +5720,9 @@ export default function LinksPage() {
                           bg={isLightTheme ? "#ffffff" : walletAccent}
                           color={isLightTheme ? "#17171a" : "white"}
                           style={{
-                            backgroundColor: isLightTheme ? "#ffffff" : walletAccent,
+                            backgroundColor: isLightTheme
+                              ? "#ffffff"
+                              : walletAccent,
                             color: isLightTheme ? "#17171a" : "white",
                           }}
                           border="2px solid"
@@ -5414,7 +5775,9 @@ export default function LinksPage() {
                             bg={isLightTheme ? "#ffffff" : "transparent"}
                             color={isLightTheme ? "#17171a" : "#ffffff"}
                             style={{
-                              backgroundColor: isLightTheme ? "#ffffff" : "transparent",
+                              backgroundColor: isLightTheme
+                                ? "#ffffff"
+                                : "transparent",
                               color: isLightTheme ? "#17171a" : "#ffffff",
                             }}
                             border="2px solid"
@@ -5426,7 +5789,9 @@ export default function LinksPage() {
                             cursor="pointer"
                             transition="all 0.15s ease"
                             _hover={{
-                              bg: isLightTheme ? "#f4f4f5" : "rgba(255, 255, 255, 0.1)",
+                              bg: isLightTheme
+                                ? "#f4f4f5"
+                                : "rgba(255, 255, 255, 0.1)",
                               transform: "translate(-2px, -2px)",
                             }}
                           >
@@ -5470,7 +5835,9 @@ export default function LinksPage() {
                           bg={isLightTheme ? "#ffffff" : "transparent"}
                           color={isLightTheme ? "#17171a" : "#ffffff"}
                           style={{
-                            backgroundColor: isLightTheme ? "#ffffff" : "transparent",
+                            backgroundColor: isLightTheme
+                              ? "#ffffff"
+                              : "transparent",
                             color: isLightTheme ? "#17171a" : "#ffffff",
                           }}
                           border="2px solid"
@@ -5482,7 +5849,9 @@ export default function LinksPage() {
                           cursor="pointer"
                           transition="all 0.15s ease"
                           _hover={{
-                            bg: isLightTheme ? "#f4f4f5" : "rgba(255, 255, 255, 0.1)",
+                            bg: isLightTheme
+                              ? "#f4f4f5"
+                              : "rgba(255, 255, 255, 0.1)",
                             transform: "translate(-2px, -2px)",
                           }}
                         >
@@ -5615,7 +5984,7 @@ export default function LinksPage() {
             <VStack spacing={4} align="stretch">
               <Box mt={"-6"}>
                 {" "}
-                <RandomCharacter notSoRandomCharacter={"37"} />
+                <RandomCharacter notSoRandomCharacter={"36"} />
               </Box>
 
               <Box

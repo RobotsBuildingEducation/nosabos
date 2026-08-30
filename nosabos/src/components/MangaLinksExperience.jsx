@@ -413,8 +413,8 @@ function MangaCover({
   const focusAreas = heroCopy.focusAreas || [
     "LANGUAGE TUTOR",
     "CODING\nTUTOR",
-    "INVESTING & BUSINESS",
     "DUAL CITIZENSHIP PLANNER",
+    "INVESTING & BUSINESS",
   ];
 
   return (

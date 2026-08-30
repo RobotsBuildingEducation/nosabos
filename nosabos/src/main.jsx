@@ -24,9 +24,7 @@ import AppLoadBoundary from "./components/AppLoadBoundary.jsx";
 
 const App = lazy(() => import("./App.jsx"));
 const LinksPage = lazy(() => import("./components/LinksPage.jsx"));
-const LegacyLinksPage = lazy(
-  () => import("./components/LegacyLinksPage.jsx"),
-);
+const LegacyLinksPage = lazy(() => import("./components/LegacyLinksPage.jsx"));
 const ProficiencyTest = lazy(() => import("./components/ProficiencyTest.jsx"));
 const SquirclePlayground = lazy(
   () => import("./components/SquirclePlayground.jsx"),
