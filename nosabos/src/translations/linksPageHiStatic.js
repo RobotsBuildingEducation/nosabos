@@ -27,7 +27,7 @@ export const LINKS_PAGE_HI_STATIC = {
   rbeTitle: "Robots Building Education",
   rbeDescription:
     "आपका व्यक्तिगत कोडिंग शिक्षक। सॉफ़्टवेयर इंजीनियरिंग की बुनियाद जल्दी सीखें ताकि कोडिंग एजेंट्स की मदद से अपने विचार बना सकें।",
-  citizenshipTitle: "दोहरी नागरिकता चेकलिस्ट (100% मुफ़्त)",
+  citizenshipTitle: "दोहरी नागरिकता प्लानर (100% मुफ़्त)",
   citizenshipDescription:
     "मेक्सिको की दोहरी नागरिकता का अपना मार्ग खोजें, प्रगति सेव करें और जरूरी दस्तावेज़ व्यवस्थित करें।",
   patreonTitle: "Patreon",

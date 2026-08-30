@@ -1230,7 +1230,7 @@ export function BitcoinWalletSection({
       copyAddress: "Copiar dirección",
       ps: "Usa una billetera Lightning compatible para pagar la factura.",
       activeWalletTitle: "Tu billetera está activa",
-      verifyTransactions: "Verifica tus transacciones",
+      verifyTransactions: "Verifica la transacción",
       generateNew: "Generar nuevo QR",
       balanceLabel: "Saldo",
       cardNameLabel: "Billetera",
@@ -1274,7 +1274,7 @@ export function BitcoinWalletSection({
       copyAddress: "Copiar endereço",
       ps: "Use uma carteira Lightning compatível para pagar a fatura.",
       activeWalletTitle: "Sua carteira está ativa",
-      verifyTransactions: "Verifique suas transações",
+      verifyTransactions: "Verifique a transação",
       generateNew: "Gerar novo QR",
       balanceLabel: "Saldo",
       cardNameLabel: "Carteira",
@@ -1296,7 +1296,7 @@ export function BitcoinWalletSection({
       copyAddress: "पता कॉपी करें",
       ps: "इनवॉइस का भुगतान करने के लिए संगत Lightning वॉलेट का उपयोग करें।",
       activeWalletTitle: "आपका वॉलेट सक्रिय है",
-      verifyTransactions: "अपने लेन-देन जांचें",
+      verifyTransactions: "लेन-देन जांचें",
       generateNew: "नया QR बनाएं",
       balanceLabel: "बैलेंस",
       cardNameLabel: "वॉलेट",
@@ -1318,7 +1318,7 @@ export function BitcoinWalletSection({
       copyAddress: "Copia indirizzo",
       ps: "Usa un portafoglio Lightning compatibile per pagare la fattura.",
       activeWalletTitle: "Il tuo portafoglio è attivo",
-      verifyTransactions: "Verifica le transazioni",
+      verifyTransactions: "Verifica la transazione",
       generateNew: "Genera nuovo QR",
       balanceLabel: "Saldo",
       cardNameLabel: "Portafoglio",
@@ -1340,7 +1340,7 @@ export function BitcoinWalletSection({
       copyAddress: "Copier l'adresse",
       ps: "Utilise un portefeuille Lightning compatible pour payer la facture.",
       activeWalletTitle: "Ton portefeuille est actif",
-      verifyTransactions: "Verifier tes transactions",
+      verifyTransactions: "Vérifier la transaction",
       generateNew: "Generer un nouveau QR",
       balanceLabel: "Solde",
       cardNameLabel: "Portefeuille",
@@ -1382,7 +1382,7 @@ export function BitcoinWalletSection({
       copyAddress: "انسخ العنوان",
       ps: "استخدم محفظة Lightning متوافقة لدفع الفاتورة.",
       activeWalletTitle: "محفظتك مفعّلة",
-      verifyTransactions: "تحقق من معاملاتك",
+      verifyTransactions: "تحقق من المعاملة",
       generateNew: "أنشئ QR جديدًا",
       balanceLabel: "الرصيد",
       cardNameLabel: "المحفظة",
@@ -1402,7 +1402,7 @@ export function BitcoinWalletSection({
       copyAddress: "Adresse kopieren",
       ps: "Nutze eine kompatible Lightning-Wallet, um die Rechnung zu bezahlen.",
       activeWalletTitle: "Deine Wallet ist aktiv",
-      verifyTransactions: "Transaktionen prüfen",
+      verifyTransactions: "Transaktion prüfen",
       generateNew: "Neue Adresse erstellen",
       balanceLabel: "Guthaben",
       cardNameLabel: "Wallet",
@@ -1415,9 +1415,31 @@ export function BitcoinWalletSection({
       nip07NsecWarning:
         "Dein Schlüssel wird nur zum Erstellen der Wallet verwendet und nicht gespeichert.",
     };
+    const zh = {
+      createWallet: "创建钱包",
+      loadingWallet: "正在创建钱包…",
+      deposit: "充值",
+      loadingAddress: "正在生成地址…",
+      or: "或",
+      copyAddress: "复制地址",
+      ps: "请使用兼容的 Lightning 钱包支付账单。",
+      activeWalletTitle: "你的钱包已启用",
+      verifyTransactions: "验证交易",
+      generateNew: "生成新地址",
+      balanceLabel: "余额",
+      cardNameLabel: "钱包",
+      scholarshipNote: "你的充值帮助我们通过学习创造奖学金：",
+      nip07NsecTitle: "需要私密密钥",
+      nip07NsecDescription:
+        "你通过浏览器扩展登录，因此我们无法访问你的私钥。要创建钱包，请在下方输入你的 nsec。",
+      nip07NsecPlaceholder: "输入你的 nsec1...",
+      nip07NsecWarning: "你的密钥仅用于创建钱包，不会被保存。",
+    };
     return (
       (walletLang === "ja"
         ? ja
+        : walletLang === "zh"
+          ? zh
         : walletLang === "fr"
           ? fr
           : walletLang === "it"

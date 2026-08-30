@@ -96,7 +96,7 @@ export const linksPageTranslations = {
     rbeTitle: "Robots Building Education",
     rbeDescription:
       "Your personal coding tutor. Learn the foundations of software engineering quickly so you can use coding agents to build your ideas.",
-    citizenshipTitle: "Dual Citizenship Checklist (100% free)",
+    citizenshipTitle: "Dual Citizenship Planner (100% free)",
     citizenshipDescription:
       "Find your path to Mexican dual citizenship, save your progress, and organize the documents you need.",
     patreonTitle: "Patreon",
@@ -296,7 +296,7 @@ export const linksPageTranslations = {
     rbeTitle: "Robots Building Education",
     rbeDescription:
       "Il tuo tutor personale di programmazione. Impara rapidamente i fondamenti dell'ingegneria del software per poter usare agenti di programmazione e costruire le tue idee.",
-    citizenshipTitle: "Checklist doppia cittadinanza (100% gratuita)",
+    citizenshipTitle: "Planner doppia cittadinanza (100% gratuita)",
     citizenshipDescription:
       "Trova il tuo percorso verso la doppia cittadinanza messicana, salva i progressi e organizza i documenti necessari.",
     patreonTitle: "Patreon",
@@ -492,7 +492,7 @@ export const linksPageTranslations = {
     rbeTitle: "Robots Building Education",
     rbeDescription:
       "Tu tutor personal de programación. Aprende rápidamente los fundamentos de la ingeniería de software para que puedas usar agentes de programación y construir tus ideas.",
-    citizenshipTitle: "Checklist de doble ciudadanía (100% gratis)",
+    citizenshipTitle: "Planificador de doble ciudadanía (100% gratis)",
     citizenshipDescription:
       "Encuentra tu ruta hacia la doble ciudadanía mexicana, guarda tu avance y organiza los documentos que necesitas.",
     patreonTitle: "Patreon",
@@ -847,7 +847,7 @@ linksPageTranslations.ar = {
   rbeTitle: "Robots Building Education",
   rbeDescription:
     "مدرّسك الشخصي للبرمجة. اتعلّم أساسيات هندسة البرمجيات بسرعة علشان تقدر تستخدم وكلاء البرمجة وتبني أفكارك.",
-  citizenshipTitle: "قائمة الجنسية المزدوجة (مجانية 100%)",
+  citizenshipTitle: "مخطط الجنسية المزدوجة (مجانية 100%)",
   citizenshipDescription:
     "اعرف مسارك للجنسية المكسيكية المزدوجة، واحفظ تقدمك، ونظّم الوثائق اللي تحتاجها.",
   patreonTitle: "Patreon",
@@ -1021,7 +1021,7 @@ linksPageTranslations.fr = {
     "Ton tuteur personnel de langues. Aussi amusant que Duolingo, mais plus efficace pour apprendre.",
   rbeDescription:
     "Ton tuteur personnel de programmation. Apprends rapidement les bases de l'ingénierie logicielle pour utiliser des agents de programmation et construire tes idées.",
-  citizenshipTitle: "Checklist double citoyenneté (100 % gratuite)",
+  citizenshipTitle: "Planificateur double citoyenneté (100 % gratuite)",
   citizenshipDescription:
     "Trouve ton parcours vers la double citoyenneté mexicaine, enregistre ta progression et organise les documents nécessaires.",
   patreonDescription:
@@ -1189,7 +1189,7 @@ linksPageTranslations.ja = {
   rbeTitle: "Robots Building Education",
   rbeDescription:
     "あなた専用のコーディングチューター。ソフトウェアエンジニアリングの基礎を素早く学び、コーディングエージェントを使ってアイデアを形にできます。",
-  citizenshipTitle: "二重国籍チェックリスト（100%無料）",
+  citizenshipTitle: "二重国籍プランナー（100%無料）",
   citizenshipDescription:
     "メキシコ二重国籍へのルートを確認し、進捗を保存し、必要書類を整理できます。",
   patreonTitle: "Patreon",
@@ -1367,7 +1367,7 @@ linksPageTranslations.de = {
   rbeTitle: "Robots Building Education",
   rbeDescription:
     "Dein persönlicher Programmiercoach. Lerne schnell die Grundlagen der Softwareentwicklung, damit du Coding-Agenten nutzen und deine Ideen umsetzen kannst.",
-  citizenshipTitle: "Checkliste für doppelte Staatsbürgerschaft (100% kostenlos)",
+  citizenshipTitle: "Planer für doppelte Staatsbürgerschaft (100% kostenlos)",
   citizenshipDescription:
     "Finde deinen Weg zur mexikanischen Doppelstaatsbürgerschaft, speichere deinen Fortschritt und organisiere die nötigen Dokumente.",
   patreonTitle: "Patreon",

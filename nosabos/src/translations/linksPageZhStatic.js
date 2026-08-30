@@ -27,7 +27,7 @@ export const LINKS_PAGE_ZH_STATIC = {
   rbeTitle: "Robots Building Education",
   rbeDescription:
     "你的个人编程导师。快速学习软件工程基础，以便使用编程智能体构建自己的想法。",
-  citizenshipTitle: "双重国籍清单（100% 免费）",
+  citizenshipTitle: "双重国籍规划（100% 免费）",
   citizenshipDescription:
     "找到你的墨西哥双重国籍路径，保存进度，并整理所需文件。",
   patreonTitle: "Patreon",
