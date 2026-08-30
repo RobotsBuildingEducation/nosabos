@@ -10,7 +10,7 @@ import {
 } from "@chakra-ui/react";
 import { FaInstagram, FaLinkedinIn } from "react-icons/fa";
 import { SiPatreon } from "react-icons/si";
-import { LuPencilLine } from "react-icons/lu";
+import { LuArrowUpRight, LuPencilLine } from "react-icons/lu";
 import { keyframes } from "@emotion/react";
 import RandomCharacter from "./RandomCharacter";
 
@@ -526,6 +526,7 @@ function MangaCover({
             display="inline-flex"
             alignItems="center"
             justifyContent="center"
+            gap={2}
             bg={isLightTheme ? "#ffffff" : ink}
             color={isLightTheme ? "#17171a" : paper}
             style={{
@@ -556,7 +557,8 @@ function MangaCover({
                 : `2px 2px 0 ${ink}`,
             }}
           >
-            {translations.about} ↗
+            <Text as="span">{translations.about}</Text>
+            <LuArrowUpRight size={20} aria-hidden="true" focusable="false" />
           </Box>
         </VStack>
 
@@ -1239,7 +1241,13 @@ function MangaChapter({
               fontFamily="'DM Sans', sans-serif"
               fontSize={{ base: "lg", md: "xl" }}
               fontWeight="900"
-              rightIcon={<Text fontSize={{ base: "xl", md: "2xl" }}>↗</Text>}
+              rightIcon={
+                <LuArrowUpRight
+                  size={22}
+                  aria-hidden="true"
+                  focusable="false"
+                />
+              }
               _hover={{
                 bg: link.accent,
                 color: "white",
