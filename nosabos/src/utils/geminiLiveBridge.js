@@ -480,6 +480,7 @@ export async function createGeminiLiveVoicePreviewPlayer({
 export async function createGeminiLiveRealtimeBridge({
   audioElement = null,
   initialInstructions = "",
+  responseInstructionsSuffix = "",
   voice = DEFAULT_GEMINI_LIVE_VOICE,
   inputLanguageCodes = null,
   tools = null,
@@ -490,6 +491,7 @@ export async function createGeminiLiveRealtimeBridge({
   const bridge = new GeminiLiveRealtimeBridge({
     audioElement,
     initialInstructions,
+    responseInstructionsSuffix,
     voice,
     inputLanguageCodes,
     tools,
@@ -505,6 +507,7 @@ class GeminiLiveRealtimeBridge {
   constructor({
     audioElement,
     initialInstructions,
+    responseInstructionsSuffix,
     voice,
     inputLanguageCodes,
     tools,
@@ -514,6 +517,9 @@ class GeminiLiveRealtimeBridge {
   }) {
     this.audioElement = audioElement;
     this.instructions = initialInstructions || "";
+    this.responseInstructionsSuffix = String(
+      responseInstructionsSuffix || "",
+    ).trim();
     this.voice = normalizeGeminiLiveVoice(voice);
     this.inputLanguageCodes = Array.isArray(inputLanguageCodes)
       ? inputLanguageCodes
@@ -555,6 +561,10 @@ class GeminiLiveRealtimeBridge {
     this.responseBuffer = [];
     this.responseTimer = null;
     this.serverTurnComplete = false;
+  }
+
+  setResponseInstructionsSuffix(instructions = "") {
+    this.responseInstructionsSuffix = String(instructions || "").trim();
   }
 
   async connect() {
@@ -750,6 +760,9 @@ class GeminiLiveRealtimeBridge {
         ? "Continue following the previously supplied Tutor session rules. Prioritize the current turn instructions below."
         : "",
       instructions ? `Turn instructions:\n${instructions}` : "",
+      this.responseInstructionsSuffix
+        ? `Persistent final requirements:\n${this.responseInstructionsSuffix}`
+        : "",
     ]
       .filter(Boolean)
       .join("\n\n");

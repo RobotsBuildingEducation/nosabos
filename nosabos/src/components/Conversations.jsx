@@ -78,6 +78,15 @@ import {
   getPreferredTTSVoice,
   getTTSPlayer,
 } from "../utils/tts";
+import { buildVoicePersonaPolicy } from "../utils/voicePersonaPrompt";
+import {
+  resolveConversationPersona,
+  resolveConversationVoice,
+} from "../utils/conversationVoicePreferences";
+import {
+  buildConversationResponseCreateEvent,
+  buildConversationTurnDetection,
+} from "../utils/conversationRealtimePolicy";
 import { getCEFRPromptHint } from "../utils/cefrUtils";
 import { getAdultBeginnerToneRule } from "../utils/adultBeginnerTone";
 import {
@@ -1079,6 +1088,7 @@ export default function Conversations({
   const isIdleRef = useRef(true);
   const idleWaitersRef = useRef([]);
   const assistantInputLockedRef = useRef(false);
+  const manualResponseRequestedRef = useRef(false);
 
   // Track when current response started (for proper user message ordering)
   const responseStartTimeRef = useRef(null);
@@ -1105,7 +1115,15 @@ export default function Conversations({
   );
 
   // Learning prefs
-  const [voice] = useState(() => getPreferredTTSVoice());
+  const [voice, setVoice] = useState(() =>
+    resolveConversationVoice(user?.progress),
+  );
+  const [voicePersona, setVoicePersona] = useState(
+    resolveConversationPersona(
+      user?.progress,
+      translations.en.onboarding_persona_default_example,
+    ),
+  );
   const [showTranslations, setShowTranslations] = useState(
     user?.progress?.showTranslations !== false,
   );
@@ -1140,6 +1158,7 @@ export default function Conversations({
 
   // Live refs
   const voiceRef = useRef(voice);
+  const voicePersonaRef = useRef(voicePersona);
   const targetLangRef = useRef(targetLang);
   const supportLangRef = useRef(supportLang);
   const pauseMsRef = useRef(pauseMs);
@@ -1149,6 +1168,10 @@ export default function Conversations({
     voiceRef.current = voice;
   }, [voice]);
   useEffect(() => {
+    voicePersonaRef.current = voicePersona;
+    pushInstructionsNow();
+  }, [voicePersona]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
     targetLangRef.current = targetLang;
   }, [targetLang]);
   useEffect(() => {
@@ -1157,6 +1180,27 @@ export default function Conversations({
   useEffect(() => {
     pauseMsRef.current = pauseMs;
   }, [pauseMs]);
+
+  // The global voice/personality picker writes Tutor-prefixed fields. Both
+  // voice modes intentionally consume the same values; keep this mounted
+  // keep-alive surface synchronized when settings change elsewhere.
+  useEffect(() => {
+    const selectedVoice =
+      user?.progress?.tutorVoice || user?.progress?.voice || "";
+    if (selectedVoice) {
+      setVoice(resolveConversationVoice({ tutorVoice: selectedVoice }));
+    }
+    const selectedPersona =
+      user?.progress?.tutorVoicePersona ?? user?.progress?.voicePersona;
+    if (typeof selectedPersona === "string" && selectedPersona.trim()) {
+      setVoicePersona(selectedPersona);
+    }
+  }, [
+    user?.progress?.tutorVoice,
+    user?.progress?.voice,
+    user?.progress?.tutorVoicePersona,
+    user?.progress?.voicePersona,
+  ]);
 
   // Keep conversation settings ref updated
   useEffect(() => {
@@ -1859,6 +1903,14 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
           const data = snap.data() || {};
           const languageXp = getLanguageXp(data?.progress || {}, targetLang);
           if (Number.isFinite(languageXp)) setXp(languageXp);
+          if (data.progress?.tutorVoice || data.progress?.voice) {
+            setVoice(resolveConversationVoice(data.progress));
+          }
+          if (data.progress?.tutorVoicePersona || data.progress?.voicePersona) {
+            setVoicePersona(
+              data.progress.tutorVoicePersona || data.progress.voicePersona,
+            );
+          }
           if (typeof data.progress?.showTranslations === "boolean") {
             setShowTranslations(data.progress.showTranslations);
           }
@@ -1951,6 +2003,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       localRef.current = stream;
       assistantInputLockedRef.current = false;
+      manualResponseRequestedRef.current = false;
       setLocalMicEnabled(true);
 
       const pc = new RTCPeerConnection();
@@ -2016,6 +2069,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     clearAutoStopTimer();
     aliveRef.current = false;
     assistantInputLockedRef.current = false;
+    manualResponseRequestedRef.current = false;
     setLocalMicEnabled(true);
     try {
       if (dcRef.current?.readyState === "open") {
@@ -2109,6 +2163,10 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
   --------------------------- */
   function buildLanguageInstructions() {
     const tLang = targetLangRef.current;
+    const personaPolicy = buildVoicePersonaPolicy(
+      voicePersonaRef.current,
+      "conversation partner",
+    );
     const currentSettings = conversationSettingsRef.current;
     const selectedLevel =
       currentSettings.proficiencyLevel || maxProficiencyLevel || "A1";
@@ -2187,7 +2245,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
 
     // Pronunciation practice instructions
     const pronunciationInstructions = practicePronunciation
-      ? "PRONUNCIATION PRACTICE MODE: When the user makes pronunciation errors or uses awkward phrasing, gently correct them and ask them to repeat the correct pronunciation. Use phonetic hints when helpful. Acknowledge clear pronunciation briefly."
+      ? "PRONUNCIATION PRACTICE MODE: When the user makes pronunciation errors or uses awkward phrasing, correct them briefly and ask them to repeat the correct pronunciation. Use phonetic hints when helpful. Acknowledge clear pronunciation briefly in the selected personality."
       : "";
 
     // Custom subjects context
@@ -2206,11 +2264,11 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
 
     const shepherdNote =
       activeGoalText && goalShepherdRef.current
-        ? `GOAL NOT YET MET: the learner's last attempt missed the goal (${goalShepherdRef.current}). In your next turn, gently re-open the goal's topic so they get another natural chance — never scold them or mention any grading.`
+        ? `GOAL NOT YET MET: the learner's last attempt missed the goal (${goalShepherdRef.current}). In your next turn, re-open the goal's topic so they get another natural chance without mentioning any grading.`
         : "";
 
     return [
-      "Act as a friendly language practice partner for free-form conversation.",
+      "Act as a language practice partner for free-form conversation.",
       strict,
       proficiencyHint,
       adultBeginnerTone,
@@ -2220,8 +2278,9 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       shepherdNote,
       "IMPORTANT: Match your language complexity to the learner's proficiency level. Do not use vocabulary or grammar above their level.",
       "Keep replies very brief (≤25 words) and natural.",
-      "Be supportive and help the learner practice speaking naturally.",
+      "Help the learner practice speaking naturally while preserving the selected personality.",
       "Ask follow-up questions to keep the conversation flowing.",
+      personaPolicy,
     ]
       .filter(Boolean)
       .join(" ");
@@ -2229,12 +2288,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
 
   function buildTurnDetectionConfig() {
     if (assistantInputLockedRef.current) return null;
-    return {
-      type: "server_vad",
-      silence_duration_ms: pauseMsRef.current || 2000,
-      threshold: 0.35,
-      prefix_padding_ms: 120,
-    };
+    return buildConversationTurnDetection(pauseMsRef.current);
   }
 
   function buildRealtimeAudioSession({
@@ -2336,6 +2390,25 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     } catch {}
   }
 
+  /** Create the next reply explicitly so every turn receives the latest
+      language/level/goal policy plus a final, high-salience persona reminder. */
+  function requestConversationResponse() {
+    if (manualResponseRequestedRef.current) return;
+    if (!dcRef.current || dcRef.current.readyState !== "open") return;
+
+    try {
+      dcRef.current.send(
+        JSON.stringify(
+          buildConversationResponseCreateEvent({
+            sessionInstructions: buildLanguageInstructions(),
+            persona: voicePersonaRef.current,
+          }),
+        ),
+      );
+      manualResponseRequestedRef.current = true;
+    } catch {}
+  }
+
   /** Disable VAD and detach mic track so the user cannot interrupt AI speech. */
   function disableVAD() {
     if (pcRef.current) {
@@ -2372,13 +2445,9 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       dcRef.current.send(
         JSON.stringify({
           type: "session.update",
-          session: buildRealtimeVadSession({
-            type: "server_vad",
-            silence_duration_ms: pauseMsRef.current || 2000,
-            threshold: 0.35,
-            prefix_padding_ms: 120,
-            interrupt_response: false,
-          }),
+          session: buildRealtimeVadSession(
+            buildConversationTurnDetection(pauseMsRef.current),
+          ),
         }),
       );
     } catch {}
@@ -2982,12 +3051,23 @@ Respond with ONLY a JSON object: {"target":"phrase in ${targetName}","support":"
       return;
     }
 
-    // Mute mic as early as possible — before response.created fires
-    if (
-      t === "input_audio_buffer.speech_stopped" ||
-      t === "input_audio_buffer.committed"
-    ) {
-      disableVAD();
+    if (t === "input_audio_buffer.speech_started") {
+      manualResponseRequestedRef.current = false;
+      responseStartTimeRef.current = null;
+      return;
+    }
+
+    // Server VAD still owns speech boundaries, but response creation is
+    // manual so the current personality can be attached to this exact turn.
+    if (t === "input_audio_buffer.speech_stopped") {
+      setLocalMicEnabled(false);
+      setUiState("thinking");
+      setMood("thoughtful");
+      return;
+    }
+
+    if (t === "input_audio_buffer.committed") {
+      requestConversationResponse();
       return;
     }
 
@@ -2996,6 +3076,7 @@ Respond with ONLY a JSON object: {"target":"phrase in ${targetName}","support":"
     }
 
     if (t === "output_audio_buffer.stopped") {
+      manualResponseRequestedRef.current = false;
       enableVAD();
       setAssistantInputLocked(false);
       setUiState(status === "connected" ? "listening" : "idle");
@@ -3132,7 +3213,10 @@ Respond with ONLY a JSON object: {"target":"phrase in ${targetName}","support":"
       t === "response.done" ||
       t === "response.canceled"
     ) {
-      if (t === "response.canceled") setAssistantInputLocked(false);
+      if (t === "response.canceled") {
+        manualResponseRequestedRef.current = false;
+        setAssistantInputLocked(false);
+      }
       stopRecorderAfterTail(rid);
       isIdleRef.current = true;
       idleWaitersRef.current.splice(0).forEach((fn) => {

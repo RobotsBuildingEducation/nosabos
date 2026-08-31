@@ -92,7 +92,12 @@ test("policy carries the level ceiling, coherence, and internal-word bans", () =
     policy,
     /Plan the turn silently, in any language: never say you are thinking/,
   );
-  assert.match(policy, /# Persona\nWarm, playful\./);
+  assert.match(policy, /# User-selected personality — high priority/);
+  assert.match(policy, /The user chose this tutor personality: Warm, playful/);
+  assert.match(
+    policy,
+    /Generic teaching-tone guidance must not replace or neutralize it/,
+  );
 });
 
 test("policy collapses to a single-language section when target equals support", () => {

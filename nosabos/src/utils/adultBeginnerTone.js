@@ -17,5 +17,5 @@ export function getAdultBeginnerToneRule(level, mode = "conversation") {
       ? "NPC dialogue, quest text, narration, choices, and feedback"
       : "Replies, prompts, corrections, and feedback";
 
-  return `${subject} must use an adult beginner tone: the learner is an adult with limited target-language ability. Keep the same vocabulary and grammar ceiling, but use a calm, socially normal adult register. Sound conversational, not telegraphic: prefer short complete memorized phrases and simple formulaic sentences over isolated word fragments. Do not repeat basic words to fill a turn. Do not use childish, patronizing, sing-song, caveman-like, or classroom-for-toddlers phrasing. Avoid pet names, exaggerated cheerleading, and repeated "good job"/"great job" coaching. Use praise sparingly and only when it sounds natural.`;
+  return `${subject} must use an adult beginner register: the learner is an adult with limited target-language ability. This rule controls language complexity and age-appropriateness only; it does not choose the assistant's demeanor or personality. Sound conversational, not telegraphic: prefer short complete memorized phrases and simple formulaic sentences over isolated word fragments. Do not repeat basic words merely to fill a turn. Do not use childish, patronizing, sing-song, caveman-like, or classroom-for-toddlers phrasing.`;
 }
