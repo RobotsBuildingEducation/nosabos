@@ -1182,6 +1182,14 @@ function MangaChapter({
   const titleText = "#0c0c0f";
   const reverse = index % 2 === 1;
   const chapter = CHAPTERS[index];
+  const citizenshipTitleParts =
+    link.analyticsName === "citizenship"
+      ? link.title.match(/^(.*?)(\s*[(（][^()（）]+[)）])$/u)
+      : null;
+  const stackedBrandTitle =
+    link.analyticsName === "robots_building_education"
+      ? link.title.trim().split(/\s+/)
+      : null;
   const actionProps = link.onLaunch
     ? {
         as: "button",
@@ -1270,23 +1278,34 @@ function MangaChapter({
           flex={{ base: "1", md: "initial" }}
           minH={0}
           display="grid"
-          gridTemplateColumns={{ base: "1fr", lg: "repeat(12, minmax(0, 1fr))" }}
+          gridTemplateColumns={{
+            base: reverse
+              ? "minmax(126px, 0.85fr) minmax(0, 1.15fr)"
+              : "minmax(0, 1.15fr) minmax(126px, 0.85fr)",
+            lg: "repeat(12, minmax(0, 1fr))",
+          }}
           gridTemplateRows={{
-            base: "minmax(0, 1.22fr) minmax(0, 0.58fr) minmax(0, 0.9fr)",
-            md: "auto",
+            base: "minmax(0, 0.72fr) minmax(0, 1.28fr)",
+            md: "minmax(210px, 0.78fr) minmax(300px, 1fr)",
             lg: "minmax(240px, 0.78fr) minmax(300px, 1fr)",
           }}
-          gap={{ base: 3.5, md: 4 }}
+          gap={{ base: 2.5, md: 4 }}
           dir="ltr"
           sx={{
+            "@media screen and (max-width: 340px)": {
+              gridTemplateRows: "minmax(0, 0.54fr) minmax(0, 1.46fr)",
+            },
             "@media (prefers-reduced-motion: reduce)": {
               "& > *": { opacity: "1 !important", transform: "none !important", transition: "none !important" },
             },
           }}
         >
           <Box
-            gridColumn={{ base: "1", lg: reverse ? "6 / span 7" : "1 / span 7" }}
-            gridRow={{ base: "1", lg: "1 / span 2" }}
+            gridColumn={{
+              base: reverse ? "2" : "1",
+              lg: reverse ? "6 / span 7" : "1 / span 7",
+            }}
+            gridRow="1 / span 2"
             minH={{ base: 0, md: "520px", lg: "670px" }}
             position="relative"
             overflow="hidden"
@@ -1314,12 +1333,12 @@ function MangaChapter({
             {/* Inner Art Panel Frame with Dynamic Komawari Tilt & Bleed */}
             <Box
               position="absolute"
-              inset={{ base: "7% 9%", md: "10% 12%" }}
+              inset={{ base: "20% 7%", md: "10% 12%" }}
               display="flex"
               alignItems="center"
               justifyContent="center"
               bg={visualPanel}
-              border="4px solid"
+              border={{ base: "3px solid", md: "4px solid" }}
               borderColor={isLightTheme ? ink : "#000000"}
               overflow="hidden"
               boxShadow={`8px 9px 0 ${
@@ -1328,6 +1347,11 @@ function MangaChapter({
               transform={reverse ? "rotate(1.2deg)" : "rotate(-1.2deg)"}
               transition="transform 300ms ease"
               _hover={{ transform: "rotate(0deg) scale(1.02)" }}
+              sx={{
+                "@media screen and (min-width: 400px) and (max-width: 767px)": {
+                  inset: "25% 7%",
+                },
+              }}
             >
               <Screentone ink={ink} opacity={0.12} size="11px" />
               <MangaCornerBrackets
@@ -1351,7 +1375,7 @@ function MangaChapter({
                 <Text
                   fontFamily="'Arial Black', 'Impact', sans-serif"
                   fontSize={{
-                    base: "clamp(2rem, 8vw, 3.4rem)",
+                    base: "clamp(1.45rem, 6vw, 2.4rem)",
                     md: "clamp(3.6rem, 6vw, 5.2rem)",
                   }}
                   fontWeight="900"
@@ -1374,7 +1398,21 @@ function MangaChapter({
               <Box
                 position="relative"
                 zIndex={1}
-                transform={{ base: "scale(1.48)", md: "scale(2.8)" }}
+                transform={{
+                  base:
+                    link.analyticsName === "patreon"
+                      ? "scale(0.7)"
+                      : "scale(1.06)",
+                  md: "scale(2.8)",
+                }}
+                sx={{
+                  "@media screen and (min-width: 400px) and (max-width: 767px)": {
+                    transform:
+                      link.analyticsName === "patreon"
+                        ? "scale(0.9)"
+                        : "scale(1.3)",
+                  },
+                }}
               >
                 {link.visual}
               </Box>
@@ -1382,8 +1420,11 @@ function MangaChapter({
           </Box>
 
           <Box
-            gridColumn={{ base: "1", lg: reverse ? "1 / span 5" : "8 / span 5" }}
-            gridRow={{ base: "2", lg: "1" }}
+            gridColumn={{
+              base: reverse ? "1" : "2",
+              lg: reverse ? "1 / span 5" : "8 / span 5",
+            }}
+            gridRow="1"
             minH={{ base: 0, md: "210px" }}
             position="relative"
             overflow="hidden"
@@ -1391,17 +1432,18 @@ function MangaChapter({
             color={titleText}
             border="4px solid"
             borderColor={ink}
-            p={{ base: 4, md: 7 }}
+            px={{ base: 2, md: 7 }}
+            py={{ base: 2, md: 7 }}
             display="flex"
             flexDirection="column"
             justifyContent={{ base: "center", md: "space-between" }}
-            gap={{ base: "clamp(14px, 3.5svh, 24px)", md: 0 }}
+            gap={{ base: "clamp(10px, 2svh, 16px)", md: 0 }}
             style={{ ...revealStyle, transitionDelay: "170ms" }}
           >
             <Box position="absolute" top="0" right="0" w="11px" h="100%" bg={link.accent} />
             <Text
               fontFamily="monospace"
-              fontSize={{ base: "clamp(10px, 1.7vw, 14px)", md: "10px" }}
+              fontSize={{ base: "clamp(10px, 2.5vw, 12px)", md: "10px" }}
               letterSpacing="0.18em"
               color={link.labelAccent || link.shadowAccent || link.accent}
               fontWeight="900"
@@ -1412,28 +1454,54 @@ function MangaChapter({
             </Text>
             <Heading
               fontFamily="'DM Sans', sans-serif"
-              fontSize={{ base: "clamp(1.5rem, 6vw, 3rem)", md: "5xl" }}
-              lineHeight="0.9"
+              fontSize={{ base: "clamp(1.1rem, 4.8vw, 1.65rem)", md: "5xl" }}
+              lineHeight={{ base: "0.96", md: "0.9" }}
               letterSpacing="-0.055em"
               fontWeight="900"
               textAlign={pageDirection === "rtl" ? "right" : "left"}
               dir={pageDirection}
             >
-              {link.title}
+              {stackedBrandTitle ? (
+                stackedBrandTitle.map((word, wordIndex) => (
+                  <Box
+                    as="span"
+                    key={`${word}-${wordIndex}`}
+                    display={{ base: "block", md: "inline" }}
+                    mr={{
+                      base: 0,
+                      md: wordIndex < stackedBrandTitle.length - 1 ? "0.22em" : 0,
+                    }}
+                  >
+                    {word}
+                  </Box>
+                ))
+              ) : citizenshipTitleParts ? (
+                <>
+                  {citizenshipTitleParts[1].trim()}
+                  <Box as="span" display="block">
+                    {citizenshipTitleParts[2].trim()}
+                  </Box>
+                </>
+              ) : (
+                link.title
+              )}
             </Heading>
           </Box>
 
           <Box
-            gridColumn={{ base: "1", lg: reverse ? "1 / span 5" : "8 / span 5" }}
-            gridRow={{ base: "3", lg: "2" }}
+            gridColumn={{
+              base: reverse ? "1" : "2",
+              lg: reverse ? "1 / span 5" : "8 / span 5",
+            }}
+            gridRow="2"
             minH={0}
             h={{ base: "100%", md: "fit-content" }}
             alignSelf="start"
             bg={panel}
             border="4px solid"
             borderColor={ink}
-            px={{ base: 4, md: 7 }}
-            py={{ base: 4, md: 6 }}
+            px={{ base: 3, md: 7 }}
+            py={{ base: 2, md: 6 }}
             display="flex"
             flexDirection="column"
             justifyContent={{ base: "center", md: "space-between" }}
@@ -1443,14 +1511,14 @@ function MangaChapter({
           >
             <Text
               fontFamily="'DM Sans', sans-serif"
-              fontSize={{ base: "sm", md: "lg" }}
-              lineHeight={{ base: "1.45", md: "1.7" }}
+              fontSize={{ base: "clamp(0.75rem, 3.35vw, 1rem)", md: "lg" }}
+              lineHeight={{ base: "1.38", md: "1.7" }}
               color={muted}
               textAlign={pageDirection === "rtl" ? "right" : "left"}
-              mb={{ base: 4, md: 6 }}
+              mb={{ base: 3, md: 6 }}
               sx={{
-                "@media screen and (min-width: 390px) and (max-width: 767px)": {
-                  fontSize: "clamp(1rem, 4.2vw, 1.125rem)",
+                "@media screen and (min-width: 400px) and (max-width: 767px)": {
+                  fontSize: "1.05rem",
                 },
               }}
             >
@@ -1459,8 +1527,12 @@ function MangaChapter({
             <Button
               {...actionProps}
               alignSelf={pageDirection === "rtl" ? "flex-end" : "flex-start"}
-              minH={{ base: "52px", md: "58px" }}
-              px={{ base: 6, md: 7 }}
+              w={{ base: "100%", md: "auto" }}
+              minW={0}
+              minH={{ base: "44px", md: "58px" }}
+              pl={{ base: 2, md: 7 }}
+              pr={{ base: 1, md: 7 }}
+              py={{ base: 2, md: 0 }}
               bg={link.accent}
               color="white"
               textShadow={link.buttonTextShadow}
@@ -1470,15 +1542,12 @@ function MangaChapter({
               borderRadius="0"
               boxShadow={`4px 5px 0 ${link.shadowAccent}`}
               fontFamily="'DM Sans', sans-serif"
-              fontSize={{ base: "lg", md: "xl" }}
+              fontSize={{ base: "sm", md: "xl" }}
+              lineHeight={{ base: "1.05", md: "1.2" }}
+              whiteSpace="nowrap"
               fontWeight="900"
-              rightIcon={
-                <LuArrowUpRight
-                  size={22}
-                  aria-hidden="true"
-                  focusable="false"
-                />
-              }
+              justifyContent="space-between"
+              gap={{ base: 1, md: 2 }}
               _hover={{
                 bg: link.accent,
                 color: "white",
@@ -1492,7 +1561,15 @@ function MangaChapter({
               }}
               sx={{ "&:visited": { color: "white" } }}
             >
-              {link.launchAppText || "Launch app"}
+              <Box as="span" minW={0} textAlign="left" whiteSpace="nowrap">
+                {link.launchAppText || "Launch app"}
+              </Box>
+              <LuArrowUpRight
+                size={18}
+                aria-hidden="true"
+                focusable="false"
+                style={{ flexShrink: 0 }}
+              />
             </Button>
           </Box>
         </Box>
