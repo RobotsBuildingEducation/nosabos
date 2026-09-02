@@ -412,7 +412,7 @@ export default function DailyGoalModal({
   ui = {},
   petHealth,
   petName = "",
-  petType = "dog",
+  petType = "ghost",
   companionLevel = 1,
   onCustomizePet = null,
   petLastOutcome,

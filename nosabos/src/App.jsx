@@ -311,6 +311,7 @@ import {
   hasDailyGoalResetExpired,
 } from "./utils/dailyGoalPet";
 import {
+  DEFAULT_PET_TYPE,
   getCompanionLevelFromXp,
   getEffectivePetType,
   getNewlyUnlockedPetTypes,
@@ -4293,7 +4294,7 @@ export default function App({ onBootReady } = {}) {
             practicePronunciation: false,
             identity: null,
             displayName: storedDisplayName || "",
-            dailyGoalPetType: "dog",
+            dailyGoalPetType: DEFAULT_PET_TYPE,
           };
           await setDoc(doc(database, "users", id), base, { merge: true });
           userDoc = await loadUserObjectFromDB(database, id);
@@ -4315,7 +4316,7 @@ export default function App({ onBootReady } = {}) {
           practicePronunciation: false,
           identity: null,
           displayName: storedDisplayName || "",
-          dailyGoalPetType: "dog",
+          dailyGoalPetType: DEFAULT_PET_TYPE,
         };
         await setDoc(doc(database, "users", id), base, { merge: true });
         userDoc = await loadUserObjectFromDB(database, id);
@@ -10697,7 +10698,7 @@ export default function App({ onBootReady } = {}) {
                 lang={appLanguage}
                 health={100}
                 petName={companionUnlockModal?.name || ""}
-                petType={companionUnlockModal?.type || "dog"}
+                petType={companionUnlockModal?.type || DEFAULT_PET_TYPE}
                 companionLevel={
                   companionUnlockModal?.reachedLevel || companionLevel
                 }

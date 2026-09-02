@@ -42,7 +42,7 @@ const ACTIVE_UNLOCKED_TEXT_DARK = "#99f6e4";
 
 // Small animated preview of a companion option, drawn with the panel's own
 // `drawCompanion(ctx, frame, stage, petType)` so the picker matches the panel.
-function OptionCanvas({ stage, petType = "dog", drawCompanion }) {
+function OptionCanvas({ stage, petType = "ghost", drawCompanion }) {
   const canvasRef = useRef(null);
   const [frame, setFrame] = useState(0);
   const resolvedPetType = normalizePetType(petType);
@@ -93,7 +93,7 @@ export default function CompanionCustomizeModal({
   lang = "en",
   isLightTheme = false,
   petName = "",
-  petType = "dog",
+  petType = "ghost",
   companionLevel = 1,
   placeholder = "",
   stage,

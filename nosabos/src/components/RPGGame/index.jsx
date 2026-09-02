@@ -85,6 +85,7 @@ import {
 } from "../rpgCompanionSprites";
 import { getCustomizeModalCopy } from "../companionCustomizeCopy";
 import {
+  DEFAULT_PET_TYPE,
   PET_TYPES,
   getCompanionLevelFromXp,
   getPetUnlockLevel,
@@ -2272,9 +2273,11 @@ const SCENARIO_OBJECT_VISUALS = {
   default: { width: 1.0, height: 1.0, yOffset: 0.5, z: 1.7 },
 };
 
-const RPG_COMPANION_STORAGE_KEY = "nosabos:rpg-companion:v1";
-const RPG_DEFAULT_COMPANION = "girl";
-const RPG_COMPANION_OPTIONS = [RPG_DEFAULT_COMPANION, ...PET_TYPES];
+const RPG_COMPANION_STORAGE_KEY = "nosabos:rpg-companion:v2";
+const RPG_LEGACY_COMPANION_STORAGE_KEY = "nosabos:rpg-companion:v1";
+const RPG_GIRL_COMPANION = "girl";
+const RPG_DEFAULT_COMPANION = DEFAULT_PET_TYPE;
+const RPG_COMPANION_OPTIONS = [RPG_GIRL_COMPANION, ...PET_TYPES];
 const RPG_PLAYER_ASPECT = 0.9 / 1.2;
 // Pets whose loader art self-animates (float, hop, blink) even while idle;
 // dog and alien animate from the walk cycle only.
@@ -2455,7 +2458,7 @@ function RpgCompanionPreview({ companion, size = 56, animate = true }) {
       );
     };
 
-    if (companion === RPG_DEFAULT_COMPANION) {
+    if (companion === RPG_GIRL_COMPANION) {
       const image = new window.Image();
       image.onload = () => {
         const girlFrame = cropGirlSpawnFrame(image, frame);
@@ -3179,13 +3182,19 @@ export default function RPGGame({
   const [rpgCompanion, setRpgCompanion] = useState(() => {
     if (typeof window === "undefined") return RPG_DEFAULT_COMPANION;
     const saved = window.localStorage.getItem(RPG_COMPANION_STORAGE_KEY);
-    return RPG_COMPANION_OPTIONS.includes(saved)
-      ? saved
+    if (RPG_COMPANION_OPTIONS.includes(saved)) return saved;
+
+    const legacySaved = window.localStorage.getItem(
+      RPG_LEGACY_COMPANION_STORAGE_KEY,
+    );
+    return legacySaved !== RPG_GIRL_COMPANION &&
+      RPG_COMPANION_OPTIONS.includes(legacySaved)
+      ? legacySaved
       : RPG_DEFAULT_COMPANION;
   });
   const effectiveRpgCompanion = useMemo(
     () =>
-      rpgCompanion === RPG_DEFAULT_COMPANION ||
+      rpgCompanion === RPG_GIRL_COMPANION ||
       isPetTypeUnlocked(rpgCompanion, rpgCompanionLevel)
         ? rpgCompanion
         : RPG_DEFAULT_COMPANION,
@@ -3232,7 +3241,7 @@ export default function RPGGame({
   // ambient ticks never rebuild identical textures.
   const applyRpgPetFrame = useCallback((dir, frame) => {
     const type = rpgCompanionRef.current;
-    if (type === RPG_DEFAULT_COMPANION) return;
+    if (type === RPG_GIRL_COMPANION) return;
     const sprite = playerSpriteRef.current;
     if (!sprite?.material) return;
     const key = `${type}:${dir}:${frame}`;
@@ -3262,7 +3271,7 @@ export default function RPGGame({
     }
     rpgPetFrameKeyRef.current = "";
 
-    if (effectiveRpgCompanion === RPG_DEFAULT_COMPANION) {
+    if (effectiveRpgCompanion === RPG_GIRL_COMPANION) {
       const frames = playerSheetFramesRef.current;
       playerSprite.material.map = frames
         ? frames.getFrame(gameStateRef.current?.playerDir || "down", 0)
@@ -5519,10 +5528,10 @@ export default function RPGGame({
     const scene = new THREE.Scene();
 
     const fallbackPlayerTexture =
-      rpgCompanionRef.current === RPG_DEFAULT_COMPANION
+      rpgCompanionRef.current === RPG_GIRL_COMPANION
         ? createCharacterTexture(PLAYER_COLORS, "down", 0)
         : createRpgPetTexture(rpgCompanionRef.current, 0, "down");
-    if (rpgCompanionRef.current !== RPG_DEFAULT_COMPANION) {
+    if (rpgCompanionRef.current !== RPG_GIRL_COMPANION) {
       rpgCompanionTextureRef.current = fallbackPlayerTexture;
       rpgPetFrameKeyRef.current = `${rpgCompanionRef.current}:down:0`;
     }
@@ -5536,7 +5545,7 @@ export default function RPGGame({
         playerSheetFramesRef.current = frameSet;
 
         if (
-          rpgCompanionRef.current === RPG_DEFAULT_COMPANION &&
+          rpgCompanionRef.current === RPG_GIRL_COMPANION &&
           playerSpriteRef.current?.material
         ) {
           const nextFrame = frameSet.getFrame(
@@ -5555,7 +5564,7 @@ export default function RPGGame({
       () => {
         playerSheetFramesRef.current = null;
         if (
-          rpgCompanionRef.current === RPG_DEFAULT_COMPANION &&
+          rpgCompanionRef.current === RPG_GIRL_COMPANION &&
           playerSpriteRef.current
         ) {
           playerSpriteRef.current.scale.set(1, 1, 1);
@@ -6490,7 +6499,7 @@ export default function RPGGame({
 
       // Ambient companion motion: ghost/robot/slime/axolotl self-animate on
       // a steady clock (matching the loader), whether or not the player moves.
-      if (rpgCompanionRef.current !== RPG_DEFAULT_COMPANION) {
+      if (rpgCompanionRef.current !== RPG_GIRL_COMPANION) {
         rpgPetClockMsRef.current += delta;
         if (rpgPetClockMsRef.current >= 130) {
           rpgPetClockMsRef.current = 0;
@@ -6595,7 +6604,7 @@ export default function RPGGame({
             walkTimerRef.current++;
             walkFrameRef.current = walkTimerRef.current % 6;
 
-            if (rpgCompanionRef.current === RPG_DEFAULT_COMPANION) {
+            if (rpgCompanionRef.current === RPG_GIRL_COMPANION) {
               const sheetFrames = playerSheetFramesRef.current;
               playerSprite.material.map = sheetFrames
                 ? sheetFrames.getFrame(gs.playerDir, walkFrameRef.current)
@@ -6637,11 +6646,11 @@ export default function RPGGame({
           gs.idleHoldMs = Math.max(0, (gs.idleHoldMs || 0) - delta);
           if (gs.idleHoldMs <= 0) {
             const sheetFrames = playerSheetFramesRef.current;
-            if (rpgCompanionRef.current === RPG_DEFAULT_COMPANION && sheetFrames) {
+            if (rpgCompanionRef.current === RPG_GIRL_COMPANION && sheetFrames) {
               playerSprite.material.map = sheetFrames.getFrame("idle", 0);
               playerSprite.material.needsUpdate = true;
             } else if (
-              rpgCompanionRef.current !== RPG_DEFAULT_COMPANION &&
+              rpgCompanionRef.current !== RPG_GIRL_COMPANION &&
               !RPG_AMBIENT_PET_TYPES.has(rpgCompanionRef.current)
             ) {
               // Dog/alien settle into their standing pose; ambient pets keep
@@ -7006,7 +7015,7 @@ export default function RPGGame({
           walkFrameRef.current = walkTimerRef.current % 6;
 
           if (
-            rpgCompanionRef.current === RPG_DEFAULT_COMPANION &&
+            rpgCompanionRef.current === RPG_GIRL_COMPANION &&
             playerSprite?.material
           ) {
             playerSprite.material.map = sheetFrames
@@ -8607,7 +8616,7 @@ export default function RPGGame({
             </Text>
             <SimpleGrid columns={2} spacing={3}>
               {RPG_COMPANION_OPTIONS.map((companion) => {
-                const isGirl = companion === RPG_DEFAULT_COMPANION;
+                const isGirl = companion === RPG_GIRL_COMPANION;
                 const unlockLevel = isGirl ? 1 : getPetUnlockLevel(companion);
                 const unlocked =
                   isGirl || isPetTypeUnlocked(companion, rpgCompanionLevel);

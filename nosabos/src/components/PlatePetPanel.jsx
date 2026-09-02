@@ -1902,7 +1902,7 @@ const BUBBLE_OFFSET_DESKTOP_Y = 16;
 
 function CompanionCanvas({
   stage,
-  petType = "dog",
+  petType = "ghost",
   isLightTheme,
   isCelebration = false,
 }) {
@@ -1964,7 +1964,7 @@ function CompanionCanvas({
   );
 }
 
-function CompanionOptionCanvas({ stage, petType = "dog" }) {
+function CompanionOptionCanvas({ stage, petType = "ghost" }) {
   const canvasRef = useRef(null);
   const [frame, setFrame] = useState(0);
   const resolvedPetType = normalizePetType(petType);
@@ -2016,7 +2016,7 @@ export default function PlatePetPanel({
   dailyGoalXp = 0,
   // Custom companion name; falls back to the localized default when empty.
   petName = "",
-  petType = "dog",
+  petType = "ghost",
   companionLevel = 1,
   // When provided, a pencil button next to the title opens the customize modal.
   onCustomizePet = null,

@@ -117,7 +117,7 @@ export default function DailyPlateHome({
   dailyXpHistory = {},
   // Companion name/type + customize handler for the pet panel's pencil button.
   petName = "",
-  petType = "dog",
+  petType = "ghost",
   companionLevel = 1,
   onCustomizePet,
 }) {

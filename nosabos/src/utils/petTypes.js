@@ -1,19 +1,19 @@
-export const DEFAULT_PET_TYPE = "dog";
+export const DEFAULT_PET_TYPE = "ghost";
 export const PET_TYPES = [
   DEFAULT_PET_TYPE,
   "alien",
   "robot",
   "slime",
-  "ghost",
+  "dog",
   "axolotl",
 ];
 
 export const PET_TYPE_UNLOCK_LEVELS = {
-  dog: 1,
+  ghost: 1,
   alien: 2,
   robot: 5,
   slime: 10,
-  ghost: 20,
+  dog: 20,
   axolotl: 40,
 };
 

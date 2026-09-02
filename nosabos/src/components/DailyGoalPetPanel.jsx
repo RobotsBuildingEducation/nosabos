@@ -1848,7 +1848,7 @@ function drawCompanionCharacter(ctx, frame, stage, petType) {
 
 function CompanionCanvas({
   stage,
-  petType = "dog",
+  petType = "ghost",
   isLightTheme,
   isCelebration = false,
   celebrationTone = "default",
@@ -1924,7 +1924,7 @@ export default function DailyGoalPetPanel({
   // Custom companion name; falls back to the localized default ("Your
   // companion") when empty. Edited from the daily-quest pet panel.
   petName = "",
-  petType = "dog",
+  petType = "ghost",
   companionLevel = 1,
   // When provided, a pencil button by the title opens the customize modal.
   onCustomizePet = null,
