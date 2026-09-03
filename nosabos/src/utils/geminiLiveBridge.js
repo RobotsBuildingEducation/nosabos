@@ -39,8 +39,7 @@ const GEMINI_LIVE_MODEL =
 const INPUT_SAMPLE_RATE = 16000;
 const OUTPUT_SAMPLE_RATE = 24000;
 export const DEFAULT_GEMINI_LIVE_SESSION_RESPONSE_LIMIT = 4;
-export const DEFAULT_GEMINI_LIVE_INPUT_RMS_THRESHOLD = 0.015;
-export const DEFAULT_GEMINI_LIVE_INPUT_PREROLL_MS = 400;
+export const DEFAULT_GEMINI_LIVE_INPUT_RMS_THRESHOLD = 0.006;
 export const DEFAULT_GEMINI_LIVE_INPUT_SPEECH_HOLD_MS = 1200;
 
 const parseEnvNumber = (val, fallback) => {
@@ -49,33 +48,29 @@ const parseEnvNumber = (val, fallback) => {
   return Number.isFinite(num) ? num : fallback;
 };
 
-// Cost guardrails: Gemini Live bills audio input/output and accumulated session
-// context. Keep these defaults conservative so Tutor stays realtime without
-// streaming silence, background room noise, or growing one expensive session forever.
+// Cost guardrails: input is muted outside the learner's turn, Tutor auto-closes
+// idle sessions, and the bridge periodically resets accumulated session context.
+// This threshold only drives local activity notifications; it never filters the
+// continuous audio stream expected by Gemini's server-side VAD.
 export const INPUT_SILENCE_RMS_THRESHOLD = parseEnvNumber(
   env.VITE_GEMINI_LIVE_INPUT_RMS_THRESHOLD,
   DEFAULT_GEMINI_LIVE_INPUT_RMS_THRESHOLD,
-);
-export const INPUT_PREROLL_MS = parseEnvNumber(
-  env.VITE_GEMINI_LIVE_INPUT_PREROLL_MS,
-  DEFAULT_GEMINI_LIVE_INPUT_PREROLL_MS,
 );
 export const INPUT_SPEECH_HOLD_MS = parseEnvNumber(
   env.VITE_GEMINI_LIVE_INPUT_SPEECH_HOLD_MS,
   DEFAULT_GEMINI_LIVE_INPUT_SPEECH_HOLD_MS,
 );
 
-// Capture tuning: Noise suppression and echo cancellation now default ON to
-// eliminate ambient room noise, fan hum, and air conditioner hiss from tripping
-// the speech gate and streaming billable dead air. Auto-gain stays OFF to avoid
-// pumping ambient noise floors during quiet moments.
+// Capture tuning: Noise suppression, echo cancellation, and auto-gain default
+// ON. Gemini receives the continuous enabled mic stream and performs the real
+// VAD; the local RMS threshold is used only to refresh Tutor's inactivity timer.
 // All overridable via env (set to "false" to disable) for studio mic or custom setups.
 export const INPUT_ECHO_CANCELLATION =
   env.VITE_GEMINI_LIVE_ECHO_CANCELLATION !== "false";
 export const INPUT_NOISE_SUPPRESSION =
   env.VITE_GEMINI_LIVE_NOISE_SUPPRESSION !== "false";
 export const INPUT_AUTO_GAIN_CONTROL =
-  env.VITE_GEMINI_LIVE_AUTO_GAIN_CONTROL === "true";
+  env.VITE_GEMINI_LIVE_AUTO_GAIN_CONTROL !== "false";
 
 // Periodic Live-session resets flush accumulated audio context so multi-turn
 // lessons do not suffer quadratic cost compounding. Resetting every 4 turns
@@ -567,8 +562,7 @@ class GeminiLiveRealtimeBridge {
     this.desiredInputAudioEnabled = true;
     this.inputAudioEnabled = true;
     this.inputSpeechActiveUntil = 0;
-    this.inputPrerollBuffers = [];
-    this.inputPrerollDurationMs = 0;
+    this.lastLocalSpeechActivityAt = 0;
     this.completedResponsesSinceReset = 0;
     this.resetPending = false;
     this.resettingSession = false;
@@ -723,15 +717,6 @@ class GeminiLiveRealtimeBridge {
       }
       if (Object.prototype.hasOwnProperty.call(session, "turn_detection")) {
         this.setInputAudioEnabled(!!session.turn_detection);
-        if (
-          session.turn_detection &&
-          typeof session.turn_detection === "object"
-        ) {
-          const silenceMs = Number(session.turn_detection.silence_duration_ms);
-          if (Number.isFinite(silenceMs) && silenceMs > 0) {
-            this.speechHoldMs = silenceMs;
-          }
-        }
       }
       this.emit({ type: "session.updated" });
       return;
@@ -1114,10 +1099,14 @@ class GeminiLiveRealtimeBridge {
     } catch {
       // Track state is best-effort; the bridge-level gate below is authoritative.
     }
+    if (enabled && this.audioContext?.state === "suspended") {
+      // Mobile browsers can suspend Web Audio between Tutor turns. Re-arm the
+      // worklet whenever listening resumes so a live mic track cannot appear
+      // enabled while producing no PCM buffers.
+      this.audioContext.resume().catch(() => {});
+    }
     if (!enabled) {
       this.inputSpeechActiveUntil = 0;
-      this.inputPrerollBuffers = [];
-      this.inputPrerollDurationMs = 0;
     }
   }
 
@@ -1141,12 +1130,19 @@ class GeminiLiveRealtimeBridge {
       typeof performance !== "undefined" && performance.now
         ? performance.now()
         : Date.now();
-    const durationMs = getPcm16DurationMs(buffer);
     const isSpeech = rms >= INPUT_SILENCE_RMS_THRESHOLD;
 
     if (isSpeech) {
+      const wasSpeechActive = now <= this.inputSpeechActiveUntil;
       this.inputSpeechActiveUntil =
         now + (this.speechHoldMs || INPUT_SPEECH_HOLD_MS);
+      if (!wasSpeechActive) {
+        this.lastLocalSpeechActivityAt = now;
+        void this.emit({ type: "input_audio_buffer.local_speech_started" });
+      } else if (now - this.lastLocalSpeechActivityAt >= 1000) {
+        this.lastLocalSpeechActivityAt = now;
+        void this.emit({ type: "input_audio_buffer.local_speech_active" });
+      }
       if (this.responseTimer) {
         clearTimeout(this.responseTimer);
         this.responseTimer = null;
@@ -1159,28 +1155,12 @@ class GeminiLiveRealtimeBridge {
       }
     }
 
-    if (now <= this.inputSpeechActiveUntil) {
-      if (this.inputPrerollBuffers.length) {
-        const preroll = this.inputPrerollBuffers;
-        this.inputPrerollBuffers = [];
-        this.inputPrerollDurationMs = 0;
-        for (const prerollBuffer of preroll) {
-          this.sendInputAudioBuffer(prerollBuffer);
-        }
-      }
-      this.sendInputAudioBuffer(buffer);
-      return;
-    }
-
-    this.inputPrerollBuffers.push(buffer);
-    this.inputPrerollDurationMs += durationMs;
-    while (
-      this.inputPrerollBuffers.length &&
-      this.inputPrerollDurationMs > INPUT_PREROLL_MS
-    ) {
-      const dropped = this.inputPrerollBuffers.shift();
-      this.inputPrerollDurationMs -= getPcm16DurationMs(dropped);
-    }
+    // Gemini Live's automatic VAD is designed for a continuous audio stream.
+    // Filtering here used to discard quiet/short answers before Gemini could
+    // recognize them, and gaps in the stream could leave its turn detector
+    // waiting. Input is already disabled while the tutor speaks and sessions
+    // auto-close after inactivity, so forwarding every enabled buffer is bounded.
+    this.sendInputAudioBuffer(buffer);
   }
 
   sendInputAudioBuffer(buffer) {

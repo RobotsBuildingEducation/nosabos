@@ -4025,6 +4025,7 @@ export default function Tutor({
   pauseMsRef.current = normalizeTutorPauseMs(pauseMs);
   useEffect(() => {
     if (
+      realtimeProviderRef.current !== "openai" ||
       !aliveRef.current ||
       assistantInputLockedRef.current ||
       dcRef.current?.readyState !== "open"
@@ -8093,9 +8094,18 @@ export default function Tutor({
       .join(" ");
   }
 
+  function buildEnabledTurnDetectionConfig() {
+    // Firebase AI Logic currently leaves Gemini Live's VAD at its server
+    // defaults. The user-configurable silence duration is an OpenAI-only
+    // capability and must not leak into Gemini's local audio gate.
+    return realtimeProviderRef.current === "openai"
+      ? buildTutorTurnDetection(pauseMsRef.current)
+      : { type: "server_vad" };
+  }
+
   function buildTurnDetectionConfig() {
     if (assistantInputLockedRef.current) return null;
-    return buildTutorTurnDetection(pauseMsRef.current);
+    return buildEnabledTurnDetectionConfig();
   }
 
   function setLocalMicEnabled(enabled) {
@@ -8593,7 +8603,7 @@ export default function Tutor({
         JSON.stringify({
           type: "session.update",
           session: {
-            turn_detection: buildTutorTurnDetection(pauseMsRef.current),
+            turn_detection: buildEnabledTurnDetectionConfig(),
           },
         }),
       );
@@ -10094,6 +10104,17 @@ export default function Tutor({
 
     if (t === "input_audio_buffer.speech_stopped") {
       commitPendingUserSpeech();
+      return;
+    }
+
+    if (
+      t === "input_audio_buffer.local_speech_started" ||
+      t === "input_audio_buffer.local_speech_active"
+    ) {
+      // Gemini may need a moment to recognize/transcribe a short answer. Keep
+      // the independent Tutor inactivity timeout from closing a healthy live
+      // session while microphone activity is still arriving.
+      scheduleAutoStop();
       return;
     }
 

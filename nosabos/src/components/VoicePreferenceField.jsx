@@ -286,11 +286,27 @@ export default function VoicePreferenceField({
     [t],
   );
   const getVoiceDescription = useCallback(
-    (option) =>
-      t[`onboarding_voice_${option.value}_description`] ||
-      t[`settings_voice_${option.value}_description`] ||
-      option.description,
-    [t],
+    (option) => {
+      if (!option) return "";
+      const lang = supportLang || "en";
+      if (
+        option.descriptionByLang &&
+        (option.descriptionByLang[lang] || option.descriptionByLang.en)
+      ) {
+        return option.descriptionByLang[lang] || option.descriptionByLang.en;
+      }
+      return (
+        t[`onboarding_voice_${option.value}_description`] ||
+        t[`settings_voice_${option.value}_description`] ||
+        t[`onboarding_voice_${option.value?.toLowerCase()}_description`] ||
+        t[`settings_voice_${option.value?.toLowerCase()}_description`] ||
+        t[`onboarding_voice_${option.label?.toLowerCase()}_description`] ||
+        t[`settings_voice_${option.label?.toLowerCase()}_description`] ||
+        option.description ||
+        ""
+      );
+    },
+    [supportLang, t],
   );
 
   useEffect(() => {
