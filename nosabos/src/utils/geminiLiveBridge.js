@@ -6,17 +6,16 @@ import {
   VertexAIBackend,
 } from "firebase/ai";
 
-import { app } from "../firebaseResources/firebaseResources";
 import {
   DEFAULT_GEMINI_LIVE_VOICE,
   normalizeGeminiLiveVoice,
-} from "./geminiLiveVoices";
+} from "./geminiLiveVoices.js";
 
-const GEMINI_LIVE_PROVIDER =
-  import.meta.env.VITE_GEMINI_LIVE_PROVIDER || "google-ai";
+const env = (typeof import.meta !== "undefined" && import.meta?.env) || {};
+
+const GEMINI_LIVE_PROVIDER = env.VITE_GEMINI_LIVE_PROVIDER || "google-ai";
 const GEMINI_LIVE_USES_VERTEX = GEMINI_LIVE_PROVIDER === "vertex";
-const GEMINI_LIVE_LOCATION =
-  import.meta.env.VITE_GEMINI_LIVE_LOCATION || "us-central1";
+const GEMINI_LIVE_LOCATION = env.VITE_GEMINI_LIVE_LOCATION || "us-central1";
 
 // Support both backends:
 // • Google AI (Developer API / Google AI Studio): gemini-3.1-flash-live-preview
@@ -27,8 +26,8 @@ export const DEFAULT_GEMINI_LIVE_MODEL = GEMINI_LIVE_USES_VERTEX
   : "gemini-3.1-flash-live-preview";
 
 const configuredModel =
-  (import.meta.env.VITE_TUTOR_GEMINI_LIVE_MODEL ||
-    import.meta.env.VITE_GEMINI_LIVE_MODEL ||
+  (env.VITE_TUTOR_GEMINI_LIVE_MODEL ||
+    env.VITE_GEMINI_LIVE_MODEL ||
     "") + "";
 
 // Guard against cross-backend model mismatch (e.g. .env having 2.5 hardcoded while using google-ai):
@@ -39,49 +38,58 @@ const GEMINI_LIVE_MODEL =
 
 const INPUT_SAMPLE_RATE = 16000;
 const OUTPUT_SAMPLE_RATE = 24000;
+export const DEFAULT_GEMINI_LIVE_SESSION_RESPONSE_LIMIT = 4;
+export const DEFAULT_GEMINI_LIVE_INPUT_RMS_THRESHOLD = 0.015;
+export const DEFAULT_GEMINI_LIVE_INPUT_PREROLL_MS = 400;
+export const DEFAULT_GEMINI_LIVE_INPUT_SPEECH_HOLD_MS = 1200;
+
+const parseEnvNumber = (val, fallback) => {
+  if (val === undefined || val === "") return fallback;
+  const num = Number(val);
+  return Number.isFinite(num) ? num : fallback;
+};
+
 // Cost guardrails: Gemini Live bills audio input/output and accumulated session
 // context. Keep these defaults conservative so Tutor stays realtime without
-// streaming silence or growing one expensive session forever.
-// #3 VAD tuning: a lower loudness threshold catches softer speech, and a longer
-// pre-roll keeps more of the word onset (the quiet start of "bon"/"pomeriggio") that
-// the old 360ms window was clipping — clipped onsets are a top cause of misreads.
-// All overridable via env so they can be A/B tuned without code changes.
-const INPUT_SILENCE_RMS_THRESHOLD = Number(
-  import.meta.env.VITE_GEMINI_LIVE_INPUT_RMS_THRESHOLD || 0.005,
+// streaming silence, background room noise, or growing one expensive session forever.
+export const INPUT_SILENCE_RMS_THRESHOLD = parseEnvNumber(
+  env.VITE_GEMINI_LIVE_INPUT_RMS_THRESHOLD,
+  DEFAULT_GEMINI_LIVE_INPUT_RMS_THRESHOLD,
 );
-const INPUT_PREROLL_MS = Number(
-  import.meta.env.VITE_GEMINI_LIVE_INPUT_PREROLL_MS || 700,
+export const INPUT_PREROLL_MS = parseEnvNumber(
+  env.VITE_GEMINI_LIVE_INPUT_PREROLL_MS,
+  DEFAULT_GEMINI_LIVE_INPUT_PREROLL_MS,
 );
-const INPUT_SPEECH_HOLD_MS = Number(
-  import.meta.env.VITE_GEMINI_LIVE_INPUT_SPEECH_HOLD_MS || 2200,
+export const INPUT_SPEECH_HOLD_MS = parseEnvNumber(
+  env.VITE_GEMINI_LIVE_INPUT_SPEECH_HOLD_MS,
+  DEFAULT_GEMINI_LIVE_INPUT_SPEECH_HOLD_MS,
 );
 
-// #1 Capture tuning: the "voice call" DSP (echo cancellation / noise suppression /
-// auto gain) is tuned for phone-call intelligibility, not ASR fidelity — it distorts
-// consonants, pumps levels mid-word, and on mobile often flips the mic into a
-// narrowband "communications" capture mode. All three default OFF for cleaner audio.
-// Echo cancellation is safe to disable here because the Tutor is strictly turn-based:
-// the mic track is hard-muted while the tutor speaks and only re-opens after the
-// playback analyser detects ~1.1s of silence (scheduleAssistantUnlockAfterQuiet), so
-// the tutor's own voice never overlaps an open mic — there is no echo to cancel.
-// All overridable via env (set to "true") for A/B testing or noisy/speakerphone setups.
-const INPUT_ECHO_CANCELLATION =
-  import.meta.env.VITE_GEMINI_LIVE_ECHO_CANCELLATION === "true";
-const INPUT_NOISE_SUPPRESSION =
-  import.meta.env.VITE_GEMINI_LIVE_NOISE_SUPPRESSION === "true";
-const INPUT_AUTO_GAIN_CONTROL =
-  import.meta.env.VITE_GEMINI_LIVE_AUTO_GAIN_CONTROL === "true";
-// Periodic Live-session resets were meant to cap accumulated context cost, but
-// reconnecting mid-lesson is too risky for the voice loop: it can drop the next
-// learner turn or leave a queued tutor response waiting on a slow reconnect.
-// Keep the knob for explicit experiments, but default to no automatic reset.
-const SESSION_RESPONSE_LIMIT = Math.max(
+// Capture tuning: Noise suppression and echo cancellation now default ON to
+// eliminate ambient room noise, fan hum, and air conditioner hiss from tripping
+// the speech gate and streaming billable dead air. Auto-gain stays OFF to avoid
+// pumping ambient noise floors during quiet moments.
+// All overridable via env (set to "false" to disable) for studio mic or custom setups.
+export const INPUT_ECHO_CANCELLATION =
+  env.VITE_GEMINI_LIVE_ECHO_CANCELLATION !== "false";
+export const INPUT_NOISE_SUPPRESSION =
+  env.VITE_GEMINI_LIVE_NOISE_SUPPRESSION !== "false";
+export const INPUT_AUTO_GAIN_CONTROL =
+  env.VITE_GEMINI_LIVE_AUTO_GAIN_CONTROL === "true";
+
+// Periodic Live-session resets flush accumulated audio context so multi-turn
+// lessons do not suffer quadratic cost compounding. Resetting every 4 turns
+// aligns directly with the Tutor's 4-turn continuity window.
+export const SESSION_RESPONSE_LIMIT = Math.max(
   0,
-  Number(import.meta.env.VITE_GEMINI_LIVE_SESSION_RESPONSE_LIMIT || 0),
+  parseEnvNumber(
+    env.VITE_GEMINI_LIVE_SESSION_RESPONSE_LIMIT,
+    DEFAULT_GEMINI_LIVE_SESSION_RESPONSE_LIMIT,
+  ),
 );
 const MANUAL_RESPONSE_START_TIMEOUT_MS = Math.max(
   5000,
-  Number(import.meta.env.VITE_GEMINI_LIVE_RESPONSE_START_TIMEOUT_MS || 20000),
+  Number(env.VITE_GEMINI_LIVE_RESPONSE_START_TIMEOUT_MS || 20000),
 );
 
 const AUDIO_WORKLET_NAME = "nosabos-gemini-live-audio";
@@ -188,7 +196,7 @@ function fromBase64(base64) {
   return bytes.buffer;
 }
 
-function getPcm16Rms(arrayBuffer) {
+export function getPcm16Rms(arrayBuffer) {
   const samples = new Int16Array(arrayBuffer);
   if (!samples.length) return 0;
   let sum = 0;
@@ -199,7 +207,7 @@ function getPcm16Rms(arrayBuffer) {
   return Math.sqrt(sum / samples.length);
 }
 
-function getPcm16DurationMs(arrayBuffer) {
+export function getPcm16DurationMs(arrayBuffer) {
   return (new Int16Array(arrayBuffer).length / INPUT_SAMPLE_RATE) * 1000;
 }
 
@@ -266,7 +274,8 @@ function audioPartsFromModelTurn(modelTurn) {
     );
 }
 
-function getGeminiLiveAI() {
+async function getGeminiLiveAI() {
+  const { app } = await import("../firebaseResources/firebaseResources.js");
   return getAI(app, {
     backend: GEMINI_LIVE_USES_VERTEX
       ? new VertexAIBackend(GEMINI_LIVE_LOCATION)
@@ -281,7 +290,7 @@ async function connectLiveSession({
   tools = null,
   systemInstruction = null,
 } = {}) {
-  const ai = getGeminiLiveAI();
+  const ai = await getGeminiLiveAI();
   const configs = [
     buildLiveGenerationConfig({
       includeTranscriptions,
@@ -1398,6 +1407,7 @@ class GeminiLiveRealtimeBridge {
         this.completedResponsesSinceReset >= SESSION_RESPONSE_LIMIT
       ) {
         this.resetPending = true;
+        this.resetLiveSessionSoon();
       }
     }
     this.dispatchNextManualResponse();
@@ -1419,6 +1429,9 @@ class GeminiLiveRealtimeBridge {
     if (this.closed || this.resettingSession) return;
     // Live bills the accumulated session context on later turns, so reset
     // periodically to bound multi-turn lesson cost.
+    console.info(
+      `[gemini-live] resetting session to truncate context after ${this.completedResponsesSinceReset} responses`,
+    );
     this.resettingSession = true;
     this.applyInputAudioEnabled();
     const oldSession = this.session;

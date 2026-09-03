@@ -514,3 +514,25 @@ test("repair turn wraps the directive with one verdict line", () => {
   assert.doesNotMatch(turn, /transcript/i);
   assert.match(turn, /Give the learner exactly one clear action\./);
 });
+
+test("tutor policy and verdict directives forbid false praise and ambiguous demonstratives on rejected turns", () => {
+  const policy = buildOpenAITutorResponsePolicy({
+    targetLanguageName: "Italian",
+    supportLanguageName: "English",
+  });
+  assert.match(policy, /Never give false or unearned praise/);
+  assert.match(policy, /Never use ambiguous demonstratives like "That means\.\.\."/);
+  assert.match(policy, /progressive scaffolding/);
+
+  const starterRejected = buildOpenAIStarterAgendaTurnInstructions({
+    turnVerdict: TUTOR_TURN_VERDICT.REJECTED,
+    currentItem: { task: "learn to say hello", phrase: "ciao", meaning: "hello" },
+    targetLanguageName: "Italian",
+    supportLanguageName: "English",
+  });
+  assert.match(starterRejected, /Never give false praise/);
+  assert.match(starterRejected, /never say ambiguous phrases like "That means\.\.\."/);
+  assert.match(starterRejected, /diagnose the issue in English/);
+  assert.match(starterRejected, /offer a helpful scaffold/);
+});
+
