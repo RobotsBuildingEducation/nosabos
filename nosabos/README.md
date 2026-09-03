@@ -57,16 +57,21 @@ Node version 20+ is required.
 
 > Google captcha needed to make Firebase Appcheck work (https://cloud.google.com/security/products/recaptcha) 11. `VITE_RECAPTCHA_SITE_KEY=your_recaptcha_v3_site_key`
 
-12. `VITE_GEMINI_LIVE_TOOL_GRADING=true`
-13. `VITE_GEMINI_LIVE_PROVIDER=google-ai`
+12. `VITE_GEMINI_LIVE_TOOL_GRADING=false`
+13. `VITE_GEMINI_LIVE_LOCATION=us-central1`
+14. `VITE_TUTOR_GEMINI_LIVE_MODEL=gemini-live-2.5-flash-native-audio`
 
-> if you don't want to set up a gemini developer account, change this value to "openai" to use your openAI api key instead
+> Tutor's Gemini path uses Firebase AI Logic with the Agent Platform Gemini API
+> (formerly Vertex AI), not the Gemini Developer API. Enable Firebase AI Logic
+> with the Agent Platform provider and link the Firebase project to a Cloud
+> Billing account (Blaze). Tutor usage is then billed through that linked Cloud
+> Billing account; no separate Gemini Developer API wallet is used.
 
-14. `VITE_TUTOR_REALTIME_PROVIDER=gemini` || `VITE_TUTOR_REALTIME_PROVIDER=openai`
+15. `VITE_TUTOR_REALTIME_PROVIDER=gemini` || `VITE_TUTOR_REALTIME_PROVIDER=openai`
 
 ##### .env.local
 
-> like step 14 in .env, configure this to change the UI and tutor API for openai or gemini realtime speech
+> like step 15 in .env, configure this to change the UI and tutor API for openai or gemini realtime speech
 > `VITE_TUTOR_REALTIME_PROVIDER=gemini` || `VITE_TUTOR_REALTIME_PROVIDER=openai`
 
 ##### /functions/.env

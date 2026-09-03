@@ -1,36 +1,28 @@
-export const DEFAULT_GEMINI_LIVE_VOICE = "Zephyr";
+// Trey is the learner-facing name for Gemini's Sadachbia voice ID.
+export const DEFAULT_GEMINI_LIVE_VOICE = "Sadachbia";
 
 export const GEMINI_LIVE_VOICE_OPTIONS = [
-  { value: "Puck", type: "boy", description: "Upbeat" },
-  { value: "Kore", type: "girl", description: "Firm" },
-  { value: "Charon", type: "boy", description: "Informative" },
-  { value: "Fenrir", type: "boy", description: "Excitable" },
-  { value: "Aoede", type: "girl", description: "Breezy" },
-  { value: "Leda", type: "girl", description: "Youthful" },
-  { value: "Zephyr", type: "girl", description: "Bright" },
-  { value: "Orus", type: "boy", description: "Firm" },
-  { value: "Umbriel", type: "boy", description: "Easy-going" },
-  { value: "Autonoe", type: "girl", description: "Bright" },
-  { value: "Erinome", type: "girl", description: "Clear" },
-  { value: "Laomedeia", type: "girl", description: "Upbeat" },
-  { value: "Schedar", type: "boy", description: "Even" },
-  { value: "Achird", type: "boy", description: "Friendly" },
-  { value: "Sadachbia", type: "boy", description: "Lively" },
-  { value: "Enceladus", type: "boy", description: "Breathy" },
-  { value: "Algieba", type: "boy", description: "Smooth" },
-  { value: "Algenib", type: "boy", description: "Gravelly" },
-  { value: "Achernar", type: "girl", description: "Soft" },
-  { value: "Gacrux", type: "girl", description: "Mature" },
-  { value: "Zubenelgenubi", type: "boy", description: "Casual" },
-  { value: "Sadaltager", type: "boy", description: "Knowledgeable" },
-  { value: "Callirrhoe", type: "girl", description: "Easy-going" },
-  { value: "Iapetus", type: "boy", description: "Clear" },
-  { value: "Despina", type: "girl", description: "Smooth" },
-  { value: "Rasalgethi", type: "boy", description: "Informative" },
-  { value: "Alnilam", type: "boy", description: "Firm" },
-  { value: "Pulcherrima", type: "girl", description: "Forward" },
-  { value: "Vindemiatrix", type: "girl", description: "Gentle" },
-  { value: "Sulafat", type: "girl", description: "Warm" },
+  { value: "Zephyr", label: "Zephyr", type: "girl", description: "Bright" },
+  { value: "Sadachbia", label: "Trey", type: "boy", description: "Chill" },
+  {
+    value: "Vindemiatrix",
+    label: "Naomi",
+    type: "girl",
+    description: "Warm",
+  },
+  {
+    value: "Enceladus",
+    label: "John",
+    type: "boy",
+    description: "Polished",
+  },
+  { value: "Gacrux", label: "Chloe", type: "girl", description: "Gentle" },
+  {
+    value: "Algenib",
+    label: "David",
+    type: "boy",
+    description: "Confident",
+  },
 ];
 
 const GEMINI_LIVE_VOICE_BY_KEY = new Map(

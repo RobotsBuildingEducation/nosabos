@@ -279,7 +279,10 @@ export default function VoicePreferenceField({
     "Voice personality";
 
   const getVoiceLabel = useCallback(
-    (value) => t[`onboarding_voice_${value}`] || titleCaseVoice(value),
+    (option) =>
+      option?.label ||
+      t[`onboarding_voice_${option?.value}`] ||
+      titleCaseVoice(option?.value),
     [t],
   );
   const getVoiceDescription = useCallback(
@@ -541,7 +544,7 @@ export default function VoicePreferenceField({
                   <VoiceTypeIcon type={selectedVoice.type} />
                 )}
                 <Text as="span" noOfLines={1}>
-                  {getVoiceLabel(selectedVoice.value)}
+                  {getVoiceLabel(selectedVoice)}
                 </Text>
               </HStack>
             </MenuButton>
@@ -616,7 +619,7 @@ export default function VoicePreferenceField({
                         <VoiceTypeIcon type={option.type} />
                         <Box minW={0}>
                           <Text as="span" display="block" noOfLines={1}>
-                            {getVoiceLabel(option.value)}
+                            {getVoiceLabel(option)}
                           </Text>
                           <Text
                             fontSize="xs"

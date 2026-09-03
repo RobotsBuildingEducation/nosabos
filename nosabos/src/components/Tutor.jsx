@@ -1003,14 +1003,16 @@ function getTutorStarterAgendaTitleText() {
   };
 }
 
-// Tool-call grading (flag-gated, default OFF). When enabled, the Live tutor model
-// (which heard the audio) drives grading directly via tools, instead of the verdict
-// being reverse-engineered from the (sometimes mistranscribed) transcript:
+// Live tool-call grading is intentionally disabled on the Firebase Agent Platform
+// transport. Its blocking function responses can split one native-audio turn into
+// two learner-facing replies, while newer non-blocking response fields close the
+// Firebase WebSocket. The local phrase matcher plus the separate transcript judge
+// remain the production grading path:
 //   • markTurnSuccessful    — did the learner complete the current task this turn?
 //   • proposeLessonComplete — model asks before ending; the app approves or denies.
-// The transcript grader and the closing-act judge stay as fallbacks.
-const TUTOR_TOOL_GRADING_ENABLED =
-  import.meta.env.VITE_GEMINI_LIVE_TOOL_GRADING === "true";
+// Keep the dormant implementation below for a future SDK/backend that supports
+// silent non-blocking responses without breaking the voice session.
+const TUTOR_TOOL_GRADING_ENABLED = false;
 
 // Realtime provider swap: resolveTutorRealtimeProvider (utils/tutorRealtime.js)
 // picks gemini|openai from the env default, a sticky ?tutorRealtime= URL

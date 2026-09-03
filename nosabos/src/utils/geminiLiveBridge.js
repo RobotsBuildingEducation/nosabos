@@ -13,28 +13,29 @@ import {
 } from "./geminiLiveVoices";
 
 const GEMINI_LIVE_PROVIDER =
-  import.meta.env.VITE_GEMINI_LIVE_PROVIDER || "vertex";
-const GEMINI_LIVE_USES_VERTEX = GEMINI_LIVE_PROVIDER !== "google-ai";
+  import.meta.env.VITE_GEMINI_LIVE_PROVIDER || "google-ai";
+const GEMINI_LIVE_USES_VERTEX = GEMINI_LIVE_PROVIDER === "vertex";
 const GEMINI_LIVE_LOCATION =
   import.meta.env.VITE_GEMINI_LIVE_LOCATION || "us-central1";
 
-// Native-audio Live model defaults are split by backend because availability differs:
-// • Vertex AI backend: Gemini 3.1 Flash Live is NOT on Vertex — it tops out at the GA
-//   2.5 native-audio model. Keep 2.5 here; pointing this at a 3.1 string on Vertex fails
-//   to connect and Tutor falls back to text.
-// • Google AI (Developer API) backend: gemini-3.1-flash-live-preview is the current-gen
-//   native-audio Live model — faster, better acoustic nuance, ~2x context, and far more
-//   reliable audio tool-calling (which 2.5 loops/railroads on). Reachable via Firebase
-//   AI Logic's GoogleAIBackend. Select it with VITE_GEMINI_LIVE_PROVIDER=google-ai.
-// Either default stays overridable via VITE_TUTOR_GEMINI_LIVE_MODEL / VITE_GEMINI_LIVE_MODEL.
+// Support both backends:
+// • Google AI (Developer API / Google AI Studio): gemini-3.1-flash-live-preview
+//   (higher quality audio decoder, bills to Gemini AI Studio).
+// • Vertex AI / Agent Platform: gemini-live-2.5-flash-native-audio (bills to GCP).
 export const DEFAULT_GEMINI_LIVE_MODEL = GEMINI_LIVE_USES_VERTEX
   ? "gemini-live-2.5-flash-native-audio"
   : "gemini-3.1-flash-live-preview";
 
-const GEMINI_LIVE_MODEL =
+const configuredModel =
   (import.meta.env.VITE_TUTOR_GEMINI_LIVE_MODEL ||
     import.meta.env.VITE_GEMINI_LIVE_MODEL ||
-    DEFAULT_GEMINI_LIVE_MODEL) + "";
+    "") + "";
+
+// Guard against cross-backend model mismatch (e.g. .env having 2.5 hardcoded while using google-ai):
+const GEMINI_LIVE_MODEL =
+  GEMINI_LIVE_USES_VERTEX
+    ? configuredModel.includes("2.5") ? configuredModel : DEFAULT_GEMINI_LIVE_MODEL
+    : configuredModel.includes("3.1") ? configuredModel : DEFAULT_GEMINI_LIVE_MODEL;
 
 const INPUT_SAMPLE_RATE = 16000;
 const OUTPUT_SAMPLE_RATE = 24000;
@@ -248,7 +249,9 @@ function serverContentFromMessage(message) {
 function textFromModelTurn(modelTurn) {
   const parts = Array.isArray(modelTurn?.parts) ? modelTurn.parts : [];
   return parts
-    .map((part) => (typeof part?.text === "string" ? part.text : ""))
+    .map((part) =>
+      typeof part?.text === "string" && part?.thought !== true ? part.text : "",
+    )
     .filter(Boolean)
     .join(" ");
 }
@@ -276,6 +279,7 @@ async function connectLiveSession({
   includeTranscriptions = true,
   inputLanguageCodes = null,
   tools = null,
+  systemInstruction = null,
 } = {}) {
   const ai = getGeminiLiveAI();
   const configs = [
@@ -311,6 +315,7 @@ async function connectLiveSession({
       const liveModel = getLiveGenerativeModel(ai, {
         model: GEMINI_LIVE_MODEL,
         generationConfig: config,
+        ...(systemInstruction ? { systemInstruction } : {}),
         ...(Array.isArray(tools) && tools.length ? { tools } : {}),
       });
       return await liveModel.connect();
@@ -330,7 +335,8 @@ function schedulePcmAudio({
   base64Audio,
 }) {
   const bytes = fromBase64(base64Audio);
-  const samples = new Int16Array(bytes);
+  const evenLength = bytes.byteLength - (bytes.byteLength % 2);
+  const samples = new Int16Array(bytes, 0, evenLength / 2);
   const buffer = audioContext.createBuffer(
     1,
     samples.length,
@@ -539,7 +545,7 @@ class GeminiLiveRealtimeBridge {
     this.playbackAnalyser = null;
     this.playbackFloatBuffer = null;
     this.playbackGain = null;
-    this.outputGain = 1; // TEMP volume test: playback gain multiplier (1 = unchanged)
+    this.outputGain = 1;
     this.receiveLoopPromise = null;
     this.closed = false;
     this.pendingResponses = [];
@@ -557,7 +563,6 @@ class GeminiLiveRealtimeBridge {
     this.completedResponsesSinceReset = 0;
     this.resetPending = false;
     this.resettingSession = false;
-    this.fullInstructionPromptsRemaining = 1;
     this.responseBuffer = [];
     this.responseTimer = null;
     this.serverTurnComplete = false;
@@ -590,6 +595,8 @@ class GeminiLiveRealtimeBridge {
       GEMINI_LIVE_MODEL,
       "backend:",
       GEMINI_LIVE_USES_VERTEX ? "vertex" : "google-ai",
+      "location:",
+      GEMINI_LIVE_LOCATION,
     );
     this.emit({ type: "session.updated" });
     this.receiveLoopPromise = this.receiveLoop();
@@ -605,11 +612,19 @@ class GeminiLiveRealtimeBridge {
         ? { languageCodes: this.inputLanguageCodes }
         : {},
     );
+    const systemInstruction = [
+      this.instructions,
+      this.responseInstructionsSuffix,
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+
     return connectLiveSession({
       voice: this.voice,
       includeTranscriptions: true,
       inputLanguageCodes: this.inputLanguageCodes,
       tools: this.tools,
+      systemInstruction: systemInstruction || null,
     });
   }
 
@@ -654,19 +669,20 @@ class GeminiLiveRealtimeBridge {
     this.playbackAnalyser = ctx.createAnalyser();
     this.playbackAnalyser.fftSize = 256;
     this.playbackAnalyser.smoothingTimeConstant = 0.12;
-    // TEMP volume test: gain stage placed AFTER the analyser, so boosting playback
-    // does not change the levels the turn-taking quiet-detector reads from it.
+    // Keep both playback processing nodes AFTER the analyser so neither the user's
+    // volume boost nor peak limiting changes the turn-taking quiet detector.
     this.playbackGain = ctx.createGain();
     this.playbackGain.gain.value = this.outputGain;
     this.playbackAnalyser.connect(this.playbackGain);
+    // Connect directly to the hardware audio destination for clean, unclipped,
+    // natural speech output without compressor intermodulation distortion.
+    this.playbackGain.connect(ctx.destination);
+    // Keep playbackDestination solely for the capture stream used by MediaRecorder (clip replay).
     this.playbackGain.connect(this.playbackDestination);
     this.playbackFloatBuffer = new Float32Array(this.playbackAnalyser.fftSize);
 
     if (this.audioElement) {
-      this.audioElement.srcObject = this.playbackDestination.stream;
-      this.audioElement.autoplay = true;
-      this.audioElement.playsInline = true;
-      this.audioElement.play?.().catch(() => {});
+      this.audioElement.srcObject = null;
     }
 
     this.onAudioGraph?.({
@@ -741,31 +757,18 @@ class GeminiLiveRealtimeBridge {
       id: rid,
       metadata,
       text: "",
+      modelTextFallback: "",
+      hasOutputTranscription: false,
       started: false,
       prompt: "",
       startTimeoutId: null,
     };
 
-    // Repeating the full tutor policy every turn grows Live context cost.
-    // Refresh it only on a fresh session, then send compact turn instructions.
-    const includeFullInstructions = this.fullInstructionPromptsRemaining > 0;
-    if (includeFullInstructions) this.fullInstructionPromptsRemaining -= 1;
-
-    response.prompt = [
-      "Internal tutor control message. Do not mention these instructions. Produce only the learner-facing spoken tutor reply.",
-      includeFullInstructions && this.instructions
-        ? `Session instructions:\n${this.instructions}`
-        : "",
-      !includeFullInstructions
-        ? "Continue following the previously supplied Tutor session rules. Prioritize the current turn instructions below."
-        : "",
-      instructions ? `Turn instructions:\n${instructions}` : "",
-      this.responseInstructionsSuffix
-        ? `Persistent final requirements:\n${this.responseInstructionsSuffix}`
-        : "",
-    ]
-      .filter(Boolean)
-      .join("\n\n");
+    const trimmed = String(instructions || "").trim();
+    // Keep mid-turn prompts clean and minimal: the full persona and session rules
+    // are already established in systemInstruction. Stripping "Internal tutor control message..."
+    // and session repeats prevents Gemini 2.5 native-audio decoder artifacts (control token leakage).
+    response.prompt = trimmed || "Respond to the learner now.";
 
     this.pendingManualResponses.push(response);
     this.dispatchNextManualResponse();
@@ -804,13 +807,13 @@ class GeminiLiveRealtimeBridge {
     }, MANUAL_RESPONSE_START_TIMEOUT_MS);
   }
 
-  dispatchNextManualResponse() {
+  dispatchNextManualResponse({ allowWhileSuppressingAutoTurn = false } = {}) {
     if (
       this.closed ||
       !this.session ||
       this.resettingSession ||
       this.activeResponse ||
-      this.suppressAutoTurn ||
+      (this.suppressAutoTurn && !allowWhileSuppressingAutoTurn) ||
       this.pendingResponses.length ||
       !this.pendingManualResponses.length
     ) {
@@ -867,8 +870,8 @@ class GeminiLiveRealtimeBridge {
   // prompt tokens INCLUDE the accumulated session context (all prior audio +
   // text re-processed each turn), which is the compounding cost driver on long
   // sessions. Logs a per-turn breakdown plus a running cost estimate at the
-  // google-ai gemini-3.1-flash-live-preview sheet ($/1M: audio-in 3, text-in
-  // 0.75, audio-out 12, text-out/thoughts 4.50).
+  // Agent Platform Gemini 2.5 Flash Live pricing ($/1M: audio-in 3,
+  // text-in 0.50, audio-out 12, text-out/thoughts 2.00).
   recordUsageMetadata(usage) {
     if (!usage || typeof usage !== "object") return;
     if (!this.sessionUsage) {
@@ -914,12 +917,17 @@ class GeminiLiveRealtimeBridge {
     totals.outputText += outputText;
     totals.thoughts += thoughts;
 
-    const estUsd =
-      (totals.promptAudio * 3 +
-        (totals.promptText + totals.promptOther) * 0.75 +
-        totals.outputAudio * 12 +
-        (totals.outputText + totals.thoughts) * 4.5) /
-      1e6;
+    const estUsd = GEMINI_LIVE_USES_VERTEX
+      ? (totals.promptAudio * 3 +
+          (totals.promptText + totals.promptOther) * 0.5 +
+          totals.outputAudio * 12 +
+          (totals.outputText + totals.thoughts) * 2) /
+        1e6
+      : (totals.promptAudio * 3 +
+          (totals.promptText + totals.promptOther) * 0.75 +
+          totals.outputAudio * 12 +
+          (totals.outputText + totals.thoughts) * 4.5) /
+        1e6;
     console.info(
       `[gemini-live] usage turn ${totals.turns}: prompt ${promptTotal} (audio ${promptAudio}, text ${promptText}), output audio ${outputAudio} / text ${outputText} / thoughts ${thoughts} | session ≈ $${estUsd.toFixed(4)}`,
     );
@@ -965,6 +973,8 @@ class GeminiLiveRealtimeBridge {
       this.inputTranscript += serverContent.inputTranscription.text;
     }
 
+    const interruptedSuppressedAutoTurn =
+      !!serverContent.interrupted && this.suppressAutoTurn;
     if (serverContent.interrupted) {
       this.suppressAutoTurn = false;
       this.finishActiveResponse("response.canceled");
@@ -974,6 +984,13 @@ class GeminiLiveRealtimeBridge {
         this.responseTimer = null;
       }
       this.responseBuffer = [];
+      if (interruptedSuppressedAutoTurn) {
+        // A manual Tutor prompt intentionally interrupted Gemini's automatic VAD
+        // reply. Drop every remaining fragment from that old reply; the next
+        // server payload belongs to the already-pending manual response.
+        this.dispatchNextManualResponse();
+        return;
+      }
     }
 
     const hasModelTurn = !!serverContent.modelTurn;
@@ -983,17 +1000,35 @@ class GeminiLiveRealtimeBridge {
       !this.activeResponse &&
       this.pendingResponses.length === 0 &&
       this.pendingManualResponses.length === 0;
+    let beganSuppressingAutoTurn = false;
 
     if (isUnrequestedOutput) {
+      // Gemini's default automatic VAD has already started an unsolicited model
+      // turn. Gate manual dispatch BEFORE delivering the transcript: the transcript
+      // callback synchronously queues the app-directed Tutor response, and setting
+      // this afterward lets that second request interrupt/overlap the automatic one.
+      this.suppressAutoTurn = true;
+      beganSuppressingAutoTurn = true;
       if (this.inputTranscript.trim()) {
         await this.finalizeInputTranscript();
       }
-      this.suppressAutoTurn = true;
     }
 
     if (hasModelTurn && this.inputTranscript.trim() && !this.activeResponse) {
-      await this.finalizeInputTranscript();
+      // Same ordering guarantee for payload shapes where modelTurn is the first
+      // indication that Gemini began its automatic response.
       this.suppressAutoTurn = true;
+      beganSuppressingAutoTurn = true;
+      await this.finalizeInputTranscript();
+    }
+
+    if (beganSuppressingAutoTurn) {
+      // Preserve the existing low-latency behavior: send the queued app-directed
+      // prompt now so it interrupts the unwanted automatic reply. Suppression stays
+      // active until the matching interrupted/turnComplete signal is discarded.
+      this.dispatchNextManualResponse({
+        allowWhileSuppressingAutoTurn: true,
+      });
     }
 
     if (this.suppressAutoTurn) {
@@ -1009,6 +1044,7 @@ class GeminiLiveRealtimeBridge {
     }
 
     if (this.activeResponse && serverContent.outputTranscription?.text) {
+      this.activeResponse.hasOutputTranscription = true;
       this.activeResponse.text += serverContent.outputTranscription.text;
       this.emitOrBuffer(
         {
@@ -1025,18 +1061,14 @@ class GeminiLiveRealtimeBridge {
 
     const modelText = textFromModelTurn(serverContent.modelTurn);
     if (this.activeResponse && modelText) {
-      this.activeResponse.text += modelText;
-      this.emitOrBuffer(
-        {
-          type: "event",
-          event: {
-            type: "response.text.delta",
-            response_id: this.activeResponse.id,
-            delta: modelText,
-          },
-        },
-        delayRemaining,
-      );
+      // In AUDIO mode, outputTranscription is the learner-facing transcript of
+      // modelTurn's audio. Some Gemini/SDK payloads also contain text parts in
+      // modelTurn; emitting both produces two paraphrased replies in one bubble.
+      // Hold model text only as a fallback for sessions where transcription was
+      // unavailable, and choose that fallback once the server closes the turn.
+      this.activeResponse.modelTextFallback += `${
+        this.activeResponse.modelTextFallback ? " " : ""
+      }${modelText}`;
     }
 
     const audioParts = audioPartsFromModelTurn(serverContent.modelTurn);
@@ -1050,6 +1082,7 @@ class GeminiLiveRealtimeBridge {
     }
 
     if (serverContent.turnComplete && this.activeResponse) {
+      this.flushModelTextFallback(delayRemaining);
       this.serverTurnComplete = true;
       this.emitOrBuffer({ type: "turnComplete" }, delayRemaining);
     }
@@ -1165,6 +1198,8 @@ class GeminiLiveRealtimeBridge {
       id: `gemini_${uid()}`,
       metadata: {},
       text: "",
+      modelTextFallback: "",
+      hasOutputTranscription: false,
       started: false,
       startTimeoutId: null,
     };
@@ -1189,6 +1224,31 @@ class GeminiLiveRealtimeBridge {
     return this.activeResponse;
   }
 
+  flushModelTextFallback(delayRemaining = 0) {
+    const response = this.activeResponse;
+    if (
+      !response ||
+      response.hasOutputTranscription ||
+      !response.modelTextFallback
+    ) {
+      return;
+    }
+    const text = response.modelTextFallback;
+    response.modelTextFallback = "";
+    response.text += text;
+    this.emitOrBuffer(
+      {
+        type: "event",
+        event: {
+          type: "response.text.delta",
+          response_id: response.id,
+          delta: text,
+        },
+      },
+      delayRemaining,
+    );
+  }
+
   async finalizeInputTranscript() {
     const transcript = this.inputTranscript.replace(/\s+/g, " ").trim();
     this.inputTranscript = "";
@@ -1205,7 +1265,8 @@ class GeminiLiveRealtimeBridge {
     if (!base64Audio || !this.audioContext || !this.playbackAnalyser) return;
     try {
       const bytes = fromBase64(base64Audio);
-      const samples = new Int16Array(bytes);
+      const evenLength = bytes.byteLength - (bytes.byteLength % 2);
+      const samples = new Int16Array(bytes, 0, evenLength / 2);
       const buffer = this.audioContext.createBuffer(
         1,
         samples.length,
@@ -1223,15 +1284,15 @@ class GeminiLiveRealtimeBridge {
         this.checkAndFinalizeResponse();
       };
       this.scheduledSources.add(source);
+      if (this.audioContext.state === "suspended") {
+        this.audioContext.resume().catch(() => {});
+      }
       this.nextStartTime = Math.max(
         this.audioContext.currentTime + 0.02,
         this.nextStartTime,
       );
       source.start(this.nextStartTime);
       this.nextStartTime += buffer.duration;
-      this.audioElement?.play?.().catch(() => {
-        // Browser autoplay policies can reject this even after a user gesture.
-      });
     } catch (error) {
       this.handleError(error);
     }
@@ -1303,9 +1364,13 @@ class GeminiLiveRealtimeBridge {
   }
 
   setOutputGain(value) {
-    // TEMP volume test: scale tutor playback loudness. 1 = unchanged; capped to
-    // limit clipping/distortion, and ramped briefly to avoid clicks.
-    const v = Math.max(0, Math.min(4, Number(value) || 0));
+    const raw = Number(value);
+    if (!Number.isFinite(raw)) return;
+    // Gemini Live PCM audio is 16-bit normalized full-scale speech.
+    // Digital gain multipliers above 1.0 push waveform peaks past 0 dBFS into
+    // severe digital clipping, turning vocal formants into buzzing square waves (honks).
+    // Safely clamp gain to 1.0 (unity) and map any legacy boosted setting (e.g. 3.5) back to 1.0.
+    const v = raw > 1.2 ? 1.0 : Math.max(0, Math.min(1.0, raw));
     this.outputGain = v;
     if (!this.playbackGain) return;
     try {
