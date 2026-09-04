@@ -25,10 +25,10 @@ const TUTOR_REALTIME_PROVIDER_ENV = (
   import.meta.env.VITE_TUTOR_REALTIME_PROVIDER || "gemini"
 ).toLowerCase();
 
-// V2 intentionally retires the sticky override used during the
-// gpt-realtime-2.1-mini trial. Anyone who tested OpenAI is returned to the
-// shipped Gemini default; a new explicit URL override can still opt back in.
-const TUTOR_REALTIME_PROVIDER_STORAGE_KEY = "tutorRealtimeProviderV2";
+// V3 retires sticky provider overrides from the OpenAI trial so the Firebase
+// Gemini rollout actually takes effect on devices that previously opted in.
+// A new explicit URL override can still opt back into OpenAI for testing.
+const TUTOR_REALTIME_PROVIDER_STORAGE_KEY = "tutorRealtimeProviderV3";
 
 export function resolveTutorRealtimeProvider() {
   // The SPA strips the search string on internal navigation long before the

@@ -1257,7 +1257,8 @@ function TopBar({
   const isRtlApp = getLanguageDirection(appLanguage) === "rtl";
   const themeMode = useThemeStore((s) => s.themeMode);
   const syncThemeMode = useThemeStore((s) => s.syncThemeMode);
-  const showTutorVolumeControl = !isOpenAITutorProvider();
+  const showTutorPauseControl = isOpenAITutorProvider();
+  const showTutorVolumeControl = !showTutorPauseControl;
   const [settingsTabIndex, setSettingsTabIndex] = useState(0);
   const subscriptionSurfaceOpenRef = useRef(onSubscriptionSurfaceOpen);
   useEffect(() => {
@@ -2566,40 +2567,42 @@ function TopBar({
                           }
                         />
 
-                        <Box bg="gray.800" p={3} rounded="md">
-                          <HStack justifyContent="space-between" mb={2}>
-                            <Text fontSize="sm">
-                              {t.ra_vad_label ||
-                                "How long to wait to respond to your speech"}
-                            </Text>
-                            <Text fontSize="sm" opacity={0.8}>
-                              {pauseSeconds} {vadSecondsLabel}
-                            </Text>
-                          </HStack>
-                          <Slider
-                            aria-label="pause-slider"
-                            min={200}
-                            max={4000}
-                            step={100}
-                            value={pauseMs}
-                            onChange={(val) => {
-                              setPauseMs(val);
-                              playSliderTick(val, 200, 4000);
-                            }}
-                            onChangeEnd={(value) =>
-                              persistSettings({ pauseMs: value })
-                            }
-                          >
-                            <SliderTrack
-                              bg="gray.700"
-                              h={3}
-                              borderRadius="full"
+                        {showTutorPauseControl && (
+                          <Box bg="gray.800" p={3} rounded="md">
+                            <HStack justifyContent="space-between" mb={2}>
+                              <Text fontSize="sm">
+                                {t.ra_vad_label ||
+                                  "How long to wait to respond to your speech"}
+                              </Text>
+                              <Text fontSize="sm" opacity={0.8}>
+                                {pauseSeconds} {vadSecondsLabel}
+                              </Text>
+                            </HStack>
+                            <Slider
+                              aria-label="pause-slider"
+                              min={200}
+                              max={4000}
+                              step={100}
+                              value={pauseMs}
+                              onChange={(val) => {
+                                setPauseMs(val);
+                                playSliderTick(val, 200, 4000);
+                              }}
+                              onChangeEnd={(value) =>
+                                persistSettings({ pauseMs: value })
+                              }
                             >
-                              <SliderFilledTrack bg="linear-gradient(90deg, #3CB371, #5dade2)" />
-                            </SliderTrack>
-                            <SliderThumb boxSize={6} />
-                          </Slider>
-                        </Box>
+                              <SliderTrack
+                                bg="gray.700"
+                                h={3}
+                                borderRadius="full"
+                              >
+                                <SliderFilledTrack bg="linear-gradient(90deg, #3CB371, #5dade2)" />
+                              </SliderTrack>
+                              <SliderThumb boxSize={6} />
+                            </Slider>
+                          </Box>
+                        )}
 
                         {showTutorVolumeControl && (
                           <Box bg="gray.800" p={3} rounded="md">
@@ -4504,10 +4507,6 @@ export default function App({ onBootReady } = {}) {
   const [proficiencyTestOpen, setProficiencyTestOpen] = useState(false);
   const proficiencyPromptOpenedForRef = useRef("");
   const [gettingStartedOpen, setGettingStartedOpen] = useState(false);
-  const [
-    pendingInstallModalAfterTutorial,
-    setPendingInstallModalAfterTutorial,
-  ] = useState(false);
 
   const blurActiveElement = useCallback(() => {
     if (typeof document === "undefined") return;
@@ -6221,37 +6220,19 @@ export default function App({ onBootReady } = {}) {
   }, [handleReturnToSkillTree, openPendingDailyGoalCelebration]);
 
   const handleCloseTutorialBitcoinModal = useCallback(() => {
-    const shouldOpenInstallModal = !user?.gettingStartedModalShown;
-    // Commit the custom Bitcoin dialog's removal first. Opening the Chakra
-    // install modal in the same mobile Safari frame can preserve the old
-    // composited rounded shell as a visual ghost over the new dialog.
     flushSync(() => {
       setShowTutorialBitcoinModal(false);
       setPendingTutorialBitcoinModal(false);
     });
     pendingTutorialBitcoinModalRef.current = false;
-    if (shouldOpenInstallModal) {
-      runAfterNextPaint(() => {
-        setPendingInstallModalAfterTutorial(true);
-      });
-    }
     void markTutorialBitcoinModalShown();
-  }, [
-    markTutorialBitcoinModalShown,
-    runAfterNextPaint,
-    user?.gettingStartedModalShown,
-  ]);
+  }, [markTutorialBitcoinModalShown]);
 
   const handleTutorFirstLessonComplete = useCallback(() => {
-    if (user?.tutorialBitcoinModalShown) {
-      if (!user?.gettingStartedModalShown) {
-        setPendingInstallModalAfterTutorial(true);
-      }
-      return;
+    if (!user?.tutorialBitcoinModalShown) {
+      setPendingTutorialBitcoinModal(true);
     }
-
-    setPendingTutorialBitcoinModal(true);
-  }, [user?.gettingStartedModalShown, user?.tutorialBitcoinModalShown]);
+  }, [user?.tutorialBitcoinModalShown]);
 
   const handleTutorDailyGoalCelebration = useCallback(
     (detail = {}) => {
@@ -6393,101 +6374,6 @@ export default function App({ onBootReady } = {}) {
     pendingTutorialBitcoinModal,
     showCompletionModal,
     showProficiencyCompletionModal,
-  ]);
-
-  // dailyGoalOpen/timerModalOpen aren't in the dep array because they live in
-  // useModalStore — read with getState() inside the run, re-fired by the
-  // subscribe() below. This keeps App from re-rendering on a timer-modal tap.
-  useEffect(() => {
-    let cancelled = false;
-    let timeoutId = null;
-    let rafId = null;
-
-    const tryOpenGettingStarted = () => {
-      if (cancelled) return;
-
-      const activeModalContainers = document.querySelectorAll(
-        ".chakra-modal__content-container",
-      ).length;
-      const activeModalOverlays = document.querySelectorAll(
-        ".chakra-modal__overlay",
-      ).length;
-      const modalStackStillClosing =
-        activeModalContainers > 0 || activeModalOverlays > 0;
-
-      if (!modalStackStillClosing) {
-        setGettingStartedOpen(true);
-        setPendingInstallModalAfterTutorial(false);
-        return;
-      }
-
-      timeoutId = window.setTimeout(tryOpenGettingStarted, 60);
-    };
-
-    const evaluate = () => {
-      if (cancelled) return;
-      if (!pendingInstallModalAfterTutorial) return;
-
-      if (user?.gettingStartedModalShown) {
-        setPendingInstallModalAfterTutorial(false);
-        return;
-      }
-
-      const m = useModalStore.getState();
-      if (
-        showTutorialBitcoinModal ||
-        celebrateOpen ||
-        showCompletionModal ||
-        showProficiencyCompletionModal ||
-        m.dailyGoalOpen ||
-        m.timerModalOpen ||
-        proficiencyTestOpen ||
-        gettingStartedOpen
-      ) {
-        return;
-      }
-
-      if (typeof window === "undefined" || typeof document === "undefined") {
-        setGettingStartedOpen(true);
-        setPendingInstallModalAfterTutorial(false);
-        return;
-      }
-
-      rafId = window.requestAnimationFrame(() => {
-        timeoutId = window.setTimeout(tryOpenGettingStarted, 0);
-      });
-    };
-
-    evaluate();
-
-    const unsubscribe = useModalStore.subscribe((state, prev) => {
-      if (
-        state.dailyGoalOpen !== prev.dailyGoalOpen ||
-        state.timerModalOpen !== prev.timerModalOpen
-      ) {
-        evaluate();
-      }
-    });
-
-    return () => {
-      cancelled = true;
-      unsubscribe();
-      if (rafId !== null) {
-        window.cancelAnimationFrame(rafId);
-      }
-      if (timeoutId !== null) {
-        window.clearTimeout(timeoutId);
-      }
-    };
-  }, [
-    celebrateOpen,
-    gettingStartedOpen,
-    pendingInstallModalAfterTutorial,
-    proficiencyTestOpen,
-    showCompletionModal,
-    showProficiencyCompletionModal,
-    showTutorialBitcoinModal,
-    user?.gettingStartedModalShown,
   ]);
 
   // When the user switches practice languages, return them to the skill tree
@@ -6863,7 +6749,7 @@ export default function App({ onBootReady } = {}) {
     setTimerModalImmediateBody(false);
   }, [setTimerModalOpen]);
 
-  const handleCompanionContinue = useCallback(() => {
+  const openProficiencyPromptIfNeeded = useCallback(() => {
     const latestUser = useUserStore.getState()?.user || user || {};
     const hasProficiencyDecision = Object.prototype.hasOwnProperty.call(
       latestUser,
@@ -6910,6 +6796,19 @@ export default function App({ onBootReady } = {}) {
       });
     }
   }, [activeNpub, patchUser, user]);
+
+  const handleCompanionContinue = useCallback(() => {
+    const latestUser = useUserStore.getState()?.user || user || {};
+
+    // The install prompt is the first step after onboarding. Returning users
+    // who have already seen it continue straight to the proficiency decision.
+    if (latestUser.gettingStartedModalShown !== true) {
+      setGettingStartedOpen(true);
+      return;
+    }
+
+    openProficiencyPromptIfNeeded();
+  }, [openProficiencyPromptIfNeeded, user]);
 
   const handleProficiencySkip = useCallback(async () => {
     flushSync(() => {
@@ -6972,10 +6871,15 @@ export default function App({ onBootReady } = {}) {
     flushSync(() => {
       setGettingStartedOpen(false);
     });
+    void markGettingStartedShown();
     runAfterNextPaint(() => {
-      markGettingStartedShown();
+      openProficiencyPromptIfNeeded();
     });
-  }, [markGettingStartedShown, runAfterNextPaint]);
+  }, [
+    markGettingStartedShown,
+    openProficiencyPromptIfNeeded,
+    runAfterNextPaint,
+  ]);
 
   const pickRandomFeature = useCallback(() => {
     const pool = RANDOM_POOL;
@@ -9228,7 +9132,6 @@ export default function App({ onBootReady } = {}) {
     celebrateOpen,
     companionUnlockModalOpen: Boolean(companionUnlockModal),
     gettingStartedOpen,
-    pendingInstallModalAfterTutorial,
     pendingTutorialBitcoinModal,
     plateCelebrationOpen: Boolean(plateCelebration),
     proficiencyTestOpen,

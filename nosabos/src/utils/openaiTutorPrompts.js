@@ -77,8 +77,11 @@ export function buildOpenAITutorResponsePolicy({
     "React once to what the learner actually said, make one useful teaching move, and give exactly one clear learner action.",
     "Plan the turn silently, in any language: never say you are thinking, deciding, or figuring out what comes next, and never announce what you are about to do — every spoken sentence is the tutoring itself.",
     "Never restate or paraphrase a sentence you already said, and never stack alternate acknowledgements, transitions, or repeated prompts in one reply.",
+    "Never give false or unearned praise (never say \"That's close!\", \"Almost!\", \"Good try!\", or \"No problem!\") when an answer is incorrect, off-target, or in the wrong language; give honest, supportive, and specific feedback.",
+    "Never use ambiguous demonstratives like \"That means...\" right after an incorrect response; explicitly state which word means what.",
     `Every practice task must be answerable exactly as spoken: a fill-in-the-blank must leave the answer out, offered choices must include exactly one correct ${target} answer, and asking which phrase the learner heard is only possible immediately after you actually said that phrase aloud.`,
     `When you give a meaning, say the ${target} phrase first and then its ${support} meaning, with the connecting words in natural ${support}; never present the ${support} word as the phrase to say.`,
+    "When a learner struggles or repeats an error on the same phrase, do not repeat the identical request; provide progressive scaffolding such as a phonetic sound hook, syllable breakdown, or simple choice.",
     isAdvancedTutorLevel
       ? "Keep replies natural and concise: usually 1-3 short sentences, under 16 seconds spoken."
       : "Keep replies short and instructional: 1-2 compact sentences, under 12 seconds spoken.",
@@ -126,7 +129,7 @@ function verdictDirective({
     }. Acknowledge it with one short natural phrase, then move straight on.`;
   }
   if (turnVerdict === TUTOR_TURN_VERDICT.REJECTED) {
-    return `The latest attempt did not succeed. If the learner asked for help, the meaning, or a repetition, give exactly that in ${supportLanguageName} for the current phrase; otherwise briefly correct the one important issue. Then invite one more try at the same phrase.`;
+    return `The latest attempt did not succeed. Never give false praise (do not say "That's close!" or "Almost!" for an incorrect or unrelated answer), and never say ambiguous phrases like "That means..." right after an error. If the learner asked for help, the meaning, or a repetition, give exactly that in ${supportLanguageName} for the current phrase; otherwise briefly diagnose the issue in ${supportLanguageName} (such as noting if they spoke ${supportLanguageName} or a different word). Then offer a helpful scaffold (such as a phonetic sound clue or a clearer model) and invite one more try at the same phrase.`;
   }
   return "The latest turn could not be graded. Do not call it right or wrong; respond to what was clear and offer one fresh, natural chance at the current task.";
 }
@@ -244,7 +247,7 @@ export function buildOpenAIGoalTurnInstructions({
     verdictLine =
       "The learner's latest attempt succeeded. Acknowledge it with one short natural phrase, then continue the current objective.";
   } else if (turnVerdict === TUTOR_TURN_VERDICT.REJECTED) {
-    verdictLine = `The latest attempt did not succeed. Give one useful correction or scaffold in ${support}, then offer another small way to demonstrate the same objective.`;
+    verdictLine = `The latest attempt did not succeed. Never give false praise. Give one useful diagnosis or scaffold in ${support}, then offer another small way to demonstrate the same objective.`;
   } else if (turnVerdict === TUTOR_TURN_VERDICT.UNCERTAIN) {
     verdictLine =
       "The latest turn could not be graded. Do not call it right or wrong; offer one fresh, natural chance at the current objective.";
@@ -298,7 +301,7 @@ export function buildOpenAITargetedReviewTurnInstructions({
     : turnVerdict === TUTOR_TURN_VERDICT.ACCEPTED
       ? "The learner recalled the previous item successfully. Acknowledge it briefly, then test the new current item."
       : turnVerdict === TUTOR_TURN_VERDICT.REJECTED
-        ? `The latest attempt did not succeed. Give one concise correction or scaffold in ${supportLanguageName}, then ask for one retry of the same current item.`
+        ? `The latest attempt did not succeed. Never give false praise. Give one concise correction or scaffold in ${supportLanguageName} with a specific diagnosis of what was missed, then ask for one retry of the same current item.`
         : turnVerdict === TUTOR_TURN_VERDICT.UNCERTAIN
           ? "The latest attempt could not be graded. Do not call it right or wrong; ask the same retrieval task again in a clearer way without revealing the answer."
           : "";
@@ -363,7 +366,7 @@ export function buildOpenAIIntegratedScenarioTurnInstructions({
     : turnVerdict === TUTOR_TURN_VERDICT.ACCEPTED
       ? "The learner completed the previous objective. Acknowledge it naturally and continue the same roleplay with the new current objective; do not reset the scene."
       : turnVerdict === TUTOR_TURN_VERDICT.REJECTED
-        ? `The latest attempt did not demonstrate the current objective. Stay inside the roleplay, give one brief correction or scaffold in ${supportLanguageName}, and offer another natural chance to respond.`
+        ? `The latest attempt did not demonstrate the current objective. Never give false praise. Stay inside the roleplay, give one brief diagnosis or scaffold in ${supportLanguageName}, and offer another natural chance to respond.`
         : turnVerdict === TUTOR_TURN_VERDICT.UNCERTAIN
           ? "The latest attempt could not be graded. Stay in character and ask one clearer follow-up that still requires the current objective."
           : "";

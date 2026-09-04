@@ -279,15 +279,34 @@ export default function VoicePreferenceField({
     "Voice personality";
 
   const getVoiceLabel = useCallback(
-    (value) => t[`onboarding_voice_${value}`] || titleCaseVoice(value),
+    (option) =>
+      option?.label ||
+      t[`onboarding_voice_${option?.value}`] ||
+      titleCaseVoice(option?.value),
     [t],
   );
   const getVoiceDescription = useCallback(
-    (option) =>
-      t[`onboarding_voice_${option.value}_description`] ||
-      t[`settings_voice_${option.value}_description`] ||
-      option.description,
-    [t],
+    (option) => {
+      if (!option) return "";
+      const lang = supportLang || "en";
+      if (
+        option.descriptionByLang &&
+        (option.descriptionByLang[lang] || option.descriptionByLang.en)
+      ) {
+        return option.descriptionByLang[lang] || option.descriptionByLang.en;
+      }
+      return (
+        t[`onboarding_voice_${option.value}_description`] ||
+        t[`settings_voice_${option.value}_description`] ||
+        t[`onboarding_voice_${option.value?.toLowerCase()}_description`] ||
+        t[`settings_voice_${option.value?.toLowerCase()}_description`] ||
+        t[`onboarding_voice_${option.label?.toLowerCase()}_description`] ||
+        t[`settings_voice_${option.label?.toLowerCase()}_description`] ||
+        option.description ||
+        ""
+      );
+    },
+    [supportLang, t],
   );
 
   useEffect(() => {
@@ -541,7 +560,7 @@ export default function VoicePreferenceField({
                   <VoiceTypeIcon type={selectedVoice.type} />
                 )}
                 <Text as="span" noOfLines={1}>
-                  {getVoiceLabel(selectedVoice.value)}
+                  {getVoiceLabel(selectedVoice)}
                 </Text>
               </HStack>
             </MenuButton>
@@ -616,7 +635,7 @@ export default function VoicePreferenceField({
                         <VoiceTypeIcon type={option.type} />
                         <Box minW={0}>
                           <Text as="span" display="block" noOfLines={1}>
-                            {getVoiceLabel(option.value)}
+                            {getVoiceLabel(option)}
                           </Text>
                           <Text
                             fontSize="xs"

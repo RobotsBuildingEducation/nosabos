@@ -5,7 +5,7 @@ import { soundManager } from "../utils/SoundManager";
 
 // Module-level promise to track initialization across all callers
 let initPromise = null;
-export const DEFAULT_TUTOR_VOLUME = 3;
+export const DEFAULT_TUTOR_VOLUME = 1.0;
 
 /**
  * Global sound settings store.

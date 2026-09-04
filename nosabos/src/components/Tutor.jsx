@@ -1003,14 +1003,16 @@ function getTutorStarterAgendaTitleText() {
   };
 }
 
-// Tool-call grading (flag-gated, default OFF). When enabled, the Live tutor model
-// (which heard the audio) drives grading directly via tools, instead of the verdict
-// being reverse-engineered from the (sometimes mistranscribed) transcript:
+// Live tool-call grading is intentionally disabled on the Firebase Agent Platform
+// transport. Its blocking function responses can split one native-audio turn into
+// two learner-facing replies, while newer non-blocking response fields close the
+// Firebase WebSocket. The local phrase matcher plus the separate transcript judge
+// remain the production grading path:
 //   • markTurnSuccessful    — did the learner complete the current task this turn?
 //   • proposeLessonComplete — model asks before ending; the app approves or denies.
-// The transcript grader and the closing-act judge stay as fallbacks.
-const TUTOR_TOOL_GRADING_ENABLED =
-  import.meta.env.VITE_GEMINI_LIVE_TOOL_GRADING === "true";
+// Keep the dormant implementation below for a future SDK/backend that supports
+// silent non-blocking responses without breaking the voice session.
+const TUTOR_TOOL_GRADING_ENABLED = false;
 
 // Realtime provider swap: resolveTutorRealtimeProvider (utils/tutorRealtime.js)
 // picks gemini|openai from the env default, a sticky ?tutorRealtime= URL
@@ -3987,6 +3989,8 @@ export default function Tutor({
   const tutorKickoffSentRef = useRef(false);
   const tutorKickoffTimerRef = useRef(null);
   const tutorKickoffRetryCountRef = useRef(0);
+  const tutorItemRetryCountRef = useRef(0);
+  const tutorActiveItemIdRef = useRef(null);
   const tutorSessionReadyRef = useRef(false);
   // Tutorial lesson opens with a support-language welcome turn. While true, the
   // learner's next reply is treated as a greeting (no XP, no agenda progress)
@@ -4021,6 +4025,7 @@ export default function Tutor({
   pauseMsRef.current = normalizeTutorPauseMs(pauseMs);
   useEffect(() => {
     if (
+      realtimeProviderRef.current !== "openai" ||
       !aliveRef.current ||
       assistantInputLockedRef.current ||
       dcRef.current?.readyState !== "open"
@@ -5335,6 +5340,8 @@ export default function Tutor({
     setMessages(session.visibleMessages);
     tutorKickoffSentRef.current = false;
     tutorKickoffRetryCountRef.current = 0;
+    tutorItemRetryCountRef.current = 0;
+    tutorActiveItemIdRef.current = null;
     tutorWelcomePendingReplyRef.current = false;
   }
 
@@ -6884,7 +6891,7 @@ export default function Tutor({
             "- Listen first and react specifically to the learner's meaning, question, or attempt.",
             "- Do not follow a fixed acknowledgement-explanation-model-prompt formula. Choose the teaching move that fits this turn: acknowledge, clarify, correct, model, review, or extend.",
             "- Use praise only when it is earned and make it specific; never fill the turn with generic encouragement.",
-            "- After an accepted answer, move forward without re-teaching it. After a genuine mistake, correct only the important issue and offer one natural retry. If the learner asks for help, answer before returning to practice.",
+            "- After an accepted answer, move forward without re-teaching it. After a genuine mistake, correct only the important issue and offer one natural retry. If the learner asks for help, answer before returning to practice. Never give false praise (never say \"That's close!\", \"Almost!\", or \"Good try!\") when an attempt is incorrect, unrelated, or in the wrong language.",
             isEarlyTutorLevel
               ? `- Keep the learner's next action tiny. Use ${supportLanguageName} for teacher talk and ${targetLanguageName} for the exact practice language, but model a phrase only when it helps the learner take the next step.`
               : isAdvancedTutorLevel
@@ -6896,8 +6903,8 @@ export default function Tutor({
               "TUTORING STYLE: Be an active tutor, not a passive chat partner.",
               `For each reply, use this rhythm: brief ${supportLanguageName} guidance, one exact ${targetLanguageName} model phrase, then ask the learner to try, choose, or complete that phrase once.`,
               `Before asking the learner to say a ${targetLanguageName} phrase, briefly tell them what it means in ${supportLanguageName}.`,
-              "When the learner answers, accept it only when it matches the requested target-language phrase or clearly expresses the requested meaning. If the words are unrelated or clearly wrong, correct briefly and keep the learner on that same tiny step.",
-              "Do not repeat a phrase after it has been accepted. If the learner misses the phrase, keep the same agenda item but make the prompt simpler. Avoid bare two-word acknowledgements that do not teach the next step.",
+              "When the learner answers, accept it only when it matches the requested target-language phrase or clearly expresses the requested meaning. If the words are unrelated or clearly wrong, diagnose the mistake simply in the support language (such as clarifying if they spoke in the support language or said a different word), never use false praise like 'That\\'s close!', and never say ambiguous phrases like 'That means...'. Keep the learner on that same tiny step with helpful scaffolding.",
+              "Do not repeat a phrase after it has been accepted. If the learner misses the phrase, do not just repeat the identical prompt; provide progressive scaffolding such as a phonetic sound hook or simple choice. Avoid bare two-word acknowledgements that do not teach the next step.",
               `Use fill-in-the-blank prompts, brief repetition, and simple choices. The surrounding instruction must be in ${supportLanguageName}; only the model phrase itself is in ${targetLanguageName}.`,
               "Allow support-language questions and answer them briefly, then guide the learner back to producing the target-language phrase.",
             ].join(" ")
@@ -6929,7 +6936,7 @@ export default function Tutor({
           "Do not grade how the learner sounds. Do not drill the same phrase repeatedly. Do not split syllables unless the learner explicitly asks for sound coaching.",
           "For normal Tutor flow, treat speech transcription as approximate, but the transcript must still represent the requested phrase or meaning before you advance.",
           "If your previous assistant message already asked the learner to say the same phrase and they did not match it, stay on that agenda item but switch to a simpler prompt or choice.",
-          "If an attempt is not the requested phrase or meaning, do not say it was correct; give a short correction and ask for the same model phrase again.",
+          "If an attempt is not the requested phrase or meaning, do not say it was correct, do not give false praise ('That\\'s close!'), and do not use ambiguous phrasing like 'That means...'; give a short diagnosis of the mismatch and scaffold the retry.",
         ].join(" ")
       : "SPEECH ACCEPTANCE RULE: Do not grade how the learner sounds or over-drill. If the learner expresses the requested meaning, keep the conversation moving; if the answer is unrelated or clearly wrong, correct it.";
 
@@ -7450,6 +7457,7 @@ export default function Tutor({
       ? TUTOR_TURN_VERDICT.ACCEPTED
       : TUTOR_TURN_VERDICT.REJECTED,
     kind = "tutor_followup",
+    retryCount = tutorItemRetryCountRef.current,
   } = {}) {
     const supportCode = normalizeSupportLanguage(
       supportLang,
@@ -7662,7 +7670,7 @@ export default function Tutor({
         ? "Teach this as a normal phrase-practice item only. Do not end the session, summarize the lesson, or make a closing announcement."
         : "",
       meaning ? `Meaning in ${supportLanguageName}: "${meaning}".` : "",
-      meaning
+      meaning && (isKickoff || latestTurnWasAccepted)
         ? `Before asking the learner to say "${phrase}", briefly explain that it means "${meaning}" in ${supportLanguageName}.`
         : "",
       currentPhrase
@@ -7677,8 +7685,26 @@ export default function Tutor({
       acceptedItems
         ? `The app accepted the learner's last attempt for: ${acceptedItems}. Briefly praise it in ${supportLanguageName}, then move to the current agenda item. Do not mention internal completion state to the learner.`
         : "",
-      latestTranscript && latestTurnWasRejected && !isKickoff
-        ? `The learner has not produced the phrase correctly yet, so do not say "nice work"/"great" or imply they got it right. FIRST fully respond to what they actually said: if they asked for help, a breakdown, the meaning, a repetition, or any question, give exactly that — about the SAME phrase you just asked them to try — in ${supportLanguageName} (e.g. break it into syllables). Then invite them to try that SAME phrase again. Stay on that phrase: do NOT switch to a different phrase, say you've "moved on", or change the agenda item, even if they ask for help several times — keep helping until they produce it.`
+      latestTurnWasRejected && !isKickoff
+        ? [
+            `CORRECTIVE FEEDBACK DIRECTIVE (latest attempt did not produce the target phrase "${phrase}"):`,
+            `- STRICT NEGATIVE RULE: NEVER give false or unearned praise. NEVER say "That's close!", "Almost!", "Good try!", or "No problem!" when the learner's response is unrelated, in the wrong language, or clearly incorrect. Be honest, supportive, and clear.`,
+            `- NEVER use ambiguous demonstratives like "That means..." right after an incorrect response; explicitly state which word means what: e.g. '"${phrase}" means "${meaning}" in ${supportLanguageName}'.`,
+            `- GIVE CONSTRUCTIVE DIAGNOSTIC FEEDBACK in 1 brief sentence in ${supportLanguageName}:`,
+            latestTranscript
+              ? `  * The learner said: "${latestTranscript}". If that was in ${supportLanguageName}, kindly clarify that they spoke in ${supportLanguageName}, while we are learning to say "${phrase}" in ${targetLanguageName}.`
+              : `  * If the learner spoke in ${supportLanguageName}: clarify that they spoke in ${supportLanguageName}, while we are learning to say "${phrase}" in ${targetLanguageName}.`,
+            `  * If the learner gave the ${supportLanguageName} translation/meaning ("${meaning}"): note that was the translation and prompt for the ${targetLanguageName} word "${phrase}".`,
+            `  * If the learner spoke a different ${targetLanguageName} word: clarify what that word means and contrast it with "${phrase}".`,
+            `  * If the learner asked for help, breakdown, meaning, or repetition: answer that directly in ${supportLanguageName}.`,
+            retryCount >= 3
+              ? `- PROGRESSIVE SCAFFOLDING (repeated difficulty): Do NOT ask the learner to repeat the full phrase again. Provide an easier scaffolded step: give a simple choice between "${phrase}" and an obvious distractor (e.g. "Is it '${phrase}' or something else?"), or provide a fill-in-the-blank prompt with the starting sound.`
+              : retryCount === 2
+                ? `- PROGRESSIVE SCAFFOLDING (second attempt): Do NOT just repeat the same request. Give a helpful phonetic sound hook or syllable tip (e.g. what "${phrase}" sounds like in ${supportLanguageName}), clearly model "${phrase}", and invite one try.`
+                : `- Clearly model "${phrase}" in ${targetLanguageName} and invite one fresh attempt.`,
+            `- Vary your closing prompt; do NOT repeat the same ending phrase ("can you say that", "could you try saying") as previous turns.`,
+            `- Stay on the current item: do NOT switch to a different phrase or change the agenda item until the app advances.`,
+          ].join("\n")
         : "",
       latestTranscript && latestTurnIsUncertain && !isKickoff
         ? `The app could not confidently grade the learner's last turn. Do not claim it was correct or incorrect, do not praise or correct it as fact, and do not record a mistake. Respond naturally to what was understandable, then ask one brief clarification or give one fresh opportunity to use the current phrase.`
@@ -7691,7 +7717,7 @@ export default function Tutor({
         : latestTurnWasAccepted
           ? "Briefly acknowledge the accepted attempt, then introduce only the current agenda item. Do not apologize and do not mention internal completion state."
           : latestTurnWasRejected
-            ? "First fully address what the learner asked or said, then keep practicing the SAME phrase you just asked them to try — do not move to a different phrase or agenda item until they produce it correctly."
+            ? `Give the constructive diagnostic feedback and scaffold described above, then keep practicing the model phrase "${phrase}" without advancing until the learner produces it.`
             : "Stay on the current agenda item without judging the uncertain attempt; ask one natural clarification or offer another way to respond.",
       currentPhrase && (isKickoff || latestTurnWasAccepted)
         ? `Your next practice prompt MUST be for the current model phrase: "${currentPhrase}".`
@@ -7720,6 +7746,11 @@ export default function Tutor({
   } = {}) {
     if (!aliveRef.current) return;
     if (!dcRef.current || dcRef.current.readyState !== "open") return;
+
+    if (item?.id && item.id !== tutorActiveItemIdRef.current) {
+      tutorActiveItemIdRef.current = item.id;
+      tutorItemRetryCountRef.current = 0;
+    }
 
     const nextPracticePhrase = item
       ? getTutorStarterItemModelPhrase(item, targetLang)
@@ -7819,7 +7850,7 @@ export default function Tutor({
         ? `The app has accepted the latest turn as completing: ${acceptedText}. Say a brief positive acknowledgement, then move forward. Do not mention internal completion state. Do not ask for those words again.`
         : "",
       latestTranscript && !acceptedText
-        ? "The app did not accept the latest turn. Do not advance the agenda, do not award praise, and keep the learner on the current phrase."
+        ? "The app did not accept the latest turn. Do not advance the agenda, do not award false praise ('That\\'s close!', 'Almost!'), and keep the learner on the current phrase with constructive diagnostic feedback and helpful scaffolding."
         : "",
       nextItem
         ? `Next agenda item: ${getTutorAgendaItemLabel(
@@ -7832,7 +7863,7 @@ export default function Tutor({
       remainingXp > 0
         ? `Internal only: ${remainingXp} XP remains. Do not perform a closing act in any language or wording; continue with one more review prompt.`
         : "",
-      nextItem
+      nextItem && (!latestTranscript || acceptedText)
         ? `Before asking the learner to repeat "${nextModel}", briefly explain that it means "${nextMeaning}" in ${supportLanguageName}.`
         : "",
       "Completed agenda state is internal bookkeeping. Do not mention it to the learner.",
@@ -7946,7 +7977,7 @@ export default function Tutor({
         `Use brief ${supportLanguageName} guidance and one tiny ${targetLanguageName} practice step.`,
         acceptedItemIds.length
           ? "The latest app-tracked item is complete. Continue to the next agenda item."
-          : "The latest turn was not accepted. First address what the learner actually said — if they asked for help, a breakdown, the meaning, or a repetition, provide it for the current phrase — then invite them to try the current agenda item's phrase again.",
+          : "The latest turn was not accepted. Never give false praise (do not say 'That\\'s close!' or 'Almost!' for an incorrect or unrelated answer), and never say ambiguous phrases like 'That means...'. First address what the learner actually said — if they spoke the support language or made a slip, diagnose it simply in the support language — then offer a helpful scaffold (such as a phonetic sound clue, syllable breakdown, or simpler model) and invite them to try the current agenda item's phrase again.",
       ]
         .filter(Boolean)
         .join(" ");
@@ -8041,6 +8072,19 @@ export default function Tutor({
       supportCode !== tLang && !isEarlyTutorLevel
         ? `Do not default back to ${supportLanguageName}; the learner is ${selectedLevel}, so they should practice following instructions in ${targetLanguageName}.`
         : "",
+      !acceptedItemIds.length &&
+      turnVerdict === TUTOR_TURN_VERDICT.REJECTED &&
+      !lesson?.isFinalQuiz
+        ? [
+            "CORRECTIVE FEEDBACK DIRECTIVE (latest attempt was not accepted):",
+            "- STRICT NEGATIVE RULE: NEVER give false or unearned praise. NEVER say 'That\\'s close!', 'Almost!', 'Good try!', or 'No problem!' when the learner's answer is unrelated, in the wrong language, or clearly incorrect.",
+            "- NEVER use ambiguous demonstratives like 'That means...' right after an error. Explicitly state what the target phrase means.",
+            "- Give a concise diagnosis in the support language explaining the mistake (e.g. noting if they spoke the support language, gave the translation, or said a different word).",
+            tutorItemRetryCountRef.current >= 2
+              ? "- Provide a progressive scaffold (such as a phonetic pronunciation clue, syllable breakdown, or simple choice) instead of repeating the identical request."
+              : `Clearly re-model the expected ${targetLanguageName} phrase and invite one fresh attempt.`,
+          ].join(" ")
+        : "",
       "If the learner's meaning is understandable, accept it and move forward. Do not evaluate accent or sound quality.",
       isAdvancedTutorLevel
         ? "Ask one purposeful open-ended follow-up in the target language and weave corrections into your reply."
@@ -8050,9 +8094,18 @@ export default function Tutor({
       .join(" ");
   }
 
+  function buildEnabledTurnDetectionConfig() {
+    // Firebase AI Logic currently leaves Gemini Live's VAD at its server
+    // defaults. The user-configurable silence duration is an OpenAI-only
+    // capability and must not leak into Gemini's local audio gate.
+    return realtimeProviderRef.current === "openai"
+      ? buildTutorTurnDetection(pauseMsRef.current)
+      : { type: "server_vad" };
+  }
+
   function buildTurnDetectionConfig() {
     if (assistantInputLockedRef.current) return null;
-    return buildTutorTurnDetection(pauseMsRef.current);
+    return buildEnabledTurnDetectionConfig();
   }
 
   function setLocalMicEnabled(enabled) {
@@ -8388,6 +8441,15 @@ export default function Tutor({
     if (!aliveRef.current) return;
     if (!dcRef.current || dcRef.current.readyState !== "open") return;
 
+    if (turnVerdict === TUTOR_TURN_VERDICT.REJECTED) {
+      tutorItemRetryCountRef.current += 1;
+    } else if (
+      turnVerdict === TUTOR_TURN_VERDICT.ACCEPTED ||
+      acceptedItemIds.length > 0
+    ) {
+      tutorItemRetryCountRef.current = 0;
+    }
+
     const lesson = selectedTutorLessonRef.current;
     const isStarterLesson = isTutorStarterAgendaLesson(lesson);
     const supportCode = normalizeSupportLanguage(
@@ -8541,7 +8603,7 @@ export default function Tutor({
         JSON.stringify({
           type: "session.update",
           session: {
-            turn_detection: buildTutorTurnDetection(pauseMsRef.current),
+            turn_detection: buildEnabledTurnDetectionConfig(),
           },
         }),
       );
@@ -9628,6 +9690,8 @@ export default function Tutor({
       return { acceptedItemIds: [], lessonCompletionTriggered: false };
     }
 
+    tutorItemRetryCountRef.current = 0;
+
     const acceptedItemIds =
       isStarterLesson && starterCandidateItemIds.length
         ? commitTutorStarterAgendaProgress(starterCandidateItemIds)
@@ -10040,6 +10104,17 @@ export default function Tutor({
 
     if (t === "input_audio_buffer.speech_stopped") {
       commitPendingUserSpeech();
+      return;
+    }
+
+    if (
+      t === "input_audio_buffer.local_speech_started" ||
+      t === "input_audio_buffer.local_speech_active"
+    ) {
+      // Gemini may need a moment to recognize/transcribe a short answer. Keep
+      // the independent Tutor inactivity timeout from closing a healthy live
+      // session while microphone activity is still arriving.
+      scheduleAutoStop();
       return;
     }
 
