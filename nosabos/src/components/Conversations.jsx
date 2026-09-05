@@ -51,6 +51,7 @@ import { logEvent } from "firebase/analytics";
 
 import useUserStore from "../hooks/useUserStore";
 import VoiceOrb from "./VoiceOrb";
+import RandomCharacter from "./RandomCharacter";
 import AnimatedEllipsis from "./AnimatedEllipsis";
 import {
   CHAT_LOG_HIGHLIGHT_DURATION_MS,
@@ -123,6 +124,79 @@ const TRANSLATE_MODEL =
   import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-5-nano";
 const AUTO_DISCONNECT_MS = 15000;
 const ARCHIVE_GLYPH_DURATION_MS = 680;
+
+const CONVERSATION_SUMMARY_COPY = {
+  en: {
+    title: "Conversation complete!",
+    xpEarned: "XP earned",
+    goalsCompleted: "Goals completed",
+    speakingTurns: "Speaking turns",
+    done: "Done",
+  },
+  es: {
+    title: "¡Conversación completada!",
+    xpEarned: "XP ganado",
+    goalsCompleted: "Metas completadas",
+    speakingTurns: "Turnos hablados",
+    done: "Listo",
+  },
+  pt: {
+    title: "Conversa concluída!",
+    xpEarned: "XP ganho",
+    goalsCompleted: "Metas concluídas",
+    speakingTurns: "Turnos falados",
+    done: "Concluir",
+  },
+  it: {
+    title: "Conversazione completata!",
+    xpEarned: "XP guadagnati",
+    goalsCompleted: "Obiettivi completati",
+    speakingTurns: "Turni parlati",
+    done: "Fatto",
+  },
+  fr: {
+    title: "Conversation terminée !",
+    xpEarned: "XP gagnés",
+    goalsCompleted: "Objectifs atteints",
+    speakingTurns: "Tours de parole",
+    done: "Terminé",
+  },
+  de: {
+    title: "Gespräch abgeschlossen!",
+    xpEarned: "Verdiente XP",
+    goalsCompleted: "Abgeschlossene Ziele",
+    speakingTurns: "Gesprächsbeiträge",
+    done: "Fertig",
+  },
+  ja: {
+    title: "会話完了！",
+    xpEarned: "獲得XP",
+    goalsCompleted: "達成した目標",
+    speakingTurns: "発話ターン",
+    done: "完了",
+  },
+  hi: {
+    title: "बातचीत पूरी!",
+    xpEarned: "अर्जित XP",
+    goalsCompleted: "पूरे किए गए लक्ष्य",
+    speakingTurns: "बोलने की बारी",
+    done: "पूर्ण",
+  },
+  ar: {
+    title: "اكتملت المحادثة!",
+    xpEarned: "XP المكتسبة",
+    goalsCompleted: "الأهداف المكتملة",
+    speakingTurns: "مرات التحدث",
+    done: "تم",
+  },
+  zh: {
+    title: "对话完成！",
+    xpEarned: "获得 XP",
+    goalsCompleted: "已完成目标",
+    speakingTurns: "发言轮次",
+    done: "完成",
+  },
+};
 const ARCHIVE_GLYPH_DURATION_VARIANCE_MS = 150;
 const ARCHIVE_ANIMATION_BUFFER_MS = 180;
 const ARCHIVE_GLYPH_STREAM_SPREAD_MS = 180;
@@ -1050,6 +1124,8 @@ export default function Conversations({
   const voiceOrbWrapWidth =
     useBreakpointValue({ base: "112px", md: "132px" }, { ssr: false }) ||
     "112px";
+  const summaryCharacterSize =
+    useBreakpointValue({ base: 76, sm: 92 }, { ssr: false }) || 76;
 
   // User id
   const user = useUserStore((s) => s.user);
@@ -1146,6 +1222,11 @@ export default function Conversations({
     isOpen: isTranscriptOpen,
     onOpen: openTranscript,
     onClose: closeTranscript,
+  } = useDisclosure();
+  const {
+    isOpen: isSummaryOpen,
+    onOpen: openSummary,
+    onClose: closeSummary,
   } = useDisclosure();
   const handleSettingsOpen = useCallback(() => {
     openSettings();
@@ -1276,6 +1357,9 @@ export default function Conversations({
   // XP
   const [xp, setXp] = useState(0);
   const [streak, setStreak] = useState(0);
+  const [sessionXp, setSessionXp] = useState(0);
+  const [sessionTurns, setSessionTurns] = useState(0);
+  const [goalsCompleted, setGoalsCompleted] = useState(0);
 
   // Goal system - initialize with fallback, then generate AI topic
   const [currentGoal, setCurrentGoal] = useState(() => ({
@@ -1335,7 +1419,6 @@ export default function Conversations({
     window.addEventListener("plate:courseComplete", handler);
     return () => window.removeEventListener("plate:courseComplete", handler);
   }, []);
-  const [goalsCompleted, setGoalsCompleted] = useState(0);
   const [isGeneratingGoal, setIsGeneratingGoal] = useState(false);
   const [goalFeedback, setGoalFeedback] = useState("");
   const goalCheckPendingRef = useRef(false);
@@ -1555,6 +1638,8 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
 
   const uiLang = resolvedSupportLang;
   const ui = translations[uiLang] || translations.en;
+  const summaryCopy =
+    CONVERSATION_SUMMARY_COPY[uiLang] || CONVERSATION_SUMMARY_COPY.en;
   const uiText = (key, fallback = "") =>
     ui?.[key] || translations.en?.[key] || fallback;
   const goalTextForUI = (goal) => {
@@ -1994,6 +2079,10 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
   --------------------------- */
   async function start() {
     playSound(submitActionSound);
+    closeSummary();
+    setSessionXp(0);
+    setSessionTurns(0);
+    setGoalsCompleted(0);
     clearAutoStopTimer();
     setErr("");
     setStatus("connecting");
@@ -2156,6 +2245,11 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     setStatus("disconnected");
     setUiState("idle");
     setMood("neutral");
+  }
+
+  async function handleEndConversation() {
+    await stop();
+    openSummary();
   }
 
   /* ---------------------------
@@ -2970,6 +3064,7 @@ Respond with ONLY a JSON object: {"target":"phrase in ${targetName}","support":"
     const xpGain = Math.floor(Math.random() * 3) + 2; // 2, 3, or 4
 
     setXp((v) => v + xpGain);
+    setSessionXp((v) => v + xpGain);
     setGoalsCompleted((v) => v + 1);
     setCurrentGoal((prev) => ({ ...prev, completed: true }));
 
@@ -2988,12 +3083,16 @@ Respond with ONLY a JSON object: {"target":"phrase in ${targetName}","support":"
   --------------------------- */
   async function awardTurnXp(userMessage = "", aiResponse = "") {
     const npub = currentNpub;
+    const hasUserMessage = Boolean(userMessage && userMessage.trim());
+    if (hasUserMessage) {
+      setSessionTurns((v) => v + 1);
+    }
     if (!npub) return;
 
     // Daily quest: the Conversation course asks for 4-7 user turns of practice
     // (target is per-day; see getConversationTurnTarget), so each real user
     // turn counts toward it — it measures practice volume, not correctness.
-    if (userMessage && userMessage.trim()) {
+    if (hasUserMessage) {
       void recordPlateActivity(npub, "conversation", targetLangRef.current);
     }
 
@@ -3010,6 +3109,7 @@ Respond with ONLY a JSON object: {"target":"phrase in ${targetName}","support":"
     const xpGain = Math.floor(Math.random() * 3) + 1; // 1, 2, or 3
 
     setXp((v) => v + xpGain);
+    setSessionXp((v) => v + xpGain);
 
     try {
       await awardXp(npub, xpGain, targetLangRef.current);
@@ -3672,16 +3772,6 @@ Respond with ONLY a JSON object: {"target":"phrase in ${targetName}","support":"
                     </Text>
                   )}
               </VStack>
-
-              {/* XP Progress Bar */}
-              <Box w="100%">
-                <XpProgressHeader
-                  levelText={`${uiText("ra_label_level", "Level")} ${xpLevelNumber}`}
-                  xpText={`${uiText("ra_label_xp", "XP")} ${xp}`}
-                  progressPct={progressPct}
-                  xpBadgeProps={{ colorScheme: "teal", fontSize: "10px" }}
-                />
-              </Box>
             </VStack>
           </Box>
 
@@ -3803,7 +3893,7 @@ Respond with ONLY a JSON object: {"target":"phrase in ${targetName}","support":"
         >
           <HStack spacing={3} w="100%" maxW="560px" justify="center">
             <Button
-              onClick={status === "connected" ? stop : start}
+              onClick={status === "connected" ? handleEndConversation : start}
               size="lg"
               height="64px"
               px={{ base: 8, md: 12 }}
@@ -3896,6 +3986,146 @@ Respond with ONLY a JSON object: {"target":"phrase in ${targetName}","support":"
         onSettingsChange={handleSettingsChange}
         supportLang={supportLang}
       />
+
+      <Modal
+        isOpen={isSummaryOpen}
+        onClose={closeSummary}
+        isCentered
+        size="md"
+        motionPreset="none"
+      >
+        <ModalOverlay
+          motionProps={nativeOverlayMotionProps}
+          bg="var(--app-overlay)"
+        />
+        <ModalContent
+          motionProps={nativeModalMotionProps}
+          bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+          color="white"
+          borderRadius="2xl"
+          boxShadow="2xl"
+          width={{ base: "95%", sm: "md" }}
+          maxW="md"
+          maxH="calc(100dvh - 24px)"
+          overflow="hidden"
+        >
+          <ModalBody px={{ base: 5, sm: 7 }} py={{ base: 5, sm: 8 }}>
+            <VStack spacing={{ base: 4, sm: 6 }} textAlign="center">
+              <Box
+                bg="rgba(255,255,255,0.2)"
+                borderRadius="full"
+                p={{ base: 2, sm: 3 }}
+                border="2px solid"
+                borderColor="rgba(255,255,255,0.3)"
+                boxShadow="0 20px 40px rgba(0,0,0,0.18)"
+              >
+                <RandomCharacter
+                  key={`conversation-summary-${
+                    isSummaryOpen ? "open" : "closed"
+                  }`}
+                  width={`${summaryCharacterSize}px`}
+                  containerHeight={summaryCharacterSize}
+                  notSoRandomCharacter="34"
+                />
+              </Box>
+
+              <Text
+                fontSize={{ base: "2xl", sm: "3xl" }}
+                fontWeight="bold"
+                lineHeight="1.15"
+              >
+                {summaryCopy.title}
+              </Text>
+
+              <Box
+                width="100%"
+                bg="rgba(255,255,255,0.18)"
+                border="2px solid"
+                borderColor="rgba(255,255,255,0.38)"
+                borderRadius="xl"
+                px={{ base: 5, sm: 7 }}
+                py={{ base: 4, sm: 6 }}
+              >
+                <VStack spacing={4} width="100%">
+                  <VStack spacing={1}>
+                    <Text
+                      fontSize="sm"
+                      textTransform="uppercase"
+                      opacity={0.82}
+                    >
+                      {summaryCopy.xpEarned}
+                    </Text>
+                    <Text
+                      fontSize={{ base: "4xl", sm: "5xl" }}
+                      fontWeight="bold"
+                      color="yellow.300"
+                      lineHeight="1"
+                    >
+                      +{sessionXp}
+                    </Text>
+                  </VStack>
+
+                  <HStack spacing={3} width="100%" align="stretch">
+                    <VStack
+                      flex="1"
+                      spacing={0.5}
+                      justify="center"
+                      bg="rgba(255,255,255,0.12)"
+                      borderRadius="lg"
+                      px={3}
+                      py={{ base: 2.5, sm: 3 }}
+                    >
+                      <Text fontSize="2xl" fontWeight="bold" lineHeight="1">
+                        {goalsCompleted}
+                      </Text>
+                      <Text fontSize="xs" opacity={0.85} lineHeight="short">
+                        {summaryCopy.goalsCompleted}
+                      </Text>
+                    </VStack>
+                    <VStack
+                      flex="1"
+                      spacing={0.5}
+                      justify="center"
+                      bg="rgba(255,255,255,0.12)"
+                      borderRadius="lg"
+                      px={3}
+                      py={{ base: 2.5, sm: 3 }}
+                    >
+                      <Text fontSize="2xl" fontWeight="bold" lineHeight="1">
+                        {sessionTurns}
+                      </Text>
+                      <Text fontSize="xs" opacity={0.85} lineHeight="short">
+                        {summaryCopy.speakingTurns}
+                      </Text>
+                    </VStack>
+                  </HStack>
+
+                  <Box width="100%" pt={1}>
+                    <XpProgressHeader
+                      levelText={`${uiText("ra_label_level", "Level")} ${xpLevelNumber}`}
+                      xpText={`${uiText("ra_label_xp", "XP")} ${xp}`}
+                      progressPct={progressPct}
+                      levelTextProps={{ color: "white" }}
+                    />
+                  </Box>
+                </VStack>
+              </Box>
+
+              <Button
+                size="lg"
+                width="100%"
+                bg="white"
+                color="purple.600"
+                _hover={{ bg: "rgba(255,255,255,0.92)" }}
+                onClick={closeSummary}
+                fontWeight="bold"
+              >
+                {summaryCopy.done}
+              </Button>
+            </VStack>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
 
       <Modal
         isOpen={isTranscriptOpen}

@@ -37,7 +37,6 @@ import useNotesStore from "../hooks/useNotesStore";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import FeedbackRail from "./FeedbackRail";
 import VoiceOrb from "./VoiceOrb";
-import XpProgressHeader from "./XpProgressHeader";
 import { SortableArea, SortableList, SortableItem } from "./dnd/Sortable";
 import {
   questionModel,
@@ -47,7 +46,6 @@ import translations from "../utils/translation";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
 import { awardXp } from "../utils/utils";
 import { captureCompanionMemory } from "../utils/companionMemory";
-import { getLanguageXp } from "../utils/progressTracking";
 import { extractCEFRLevel } from "../utils/cefrUtils";
 import { generateNoteContent, buildNoteObject } from "../utils/noteGeneration";
 import { buildAssistantLanguagePolicy } from "../utils/assistantLanguagePolicy";
@@ -3690,12 +3688,6 @@ export default function DelightQuestionLab({
   const triggerDoneAnimation = useNotesStore((s) => s.triggerDoneAnimation);
   const toast = useToast();
 
-  const rawLanguageXp = getLanguageXp(progress, targetLang);
-  const totalUserXp =
-    (Number.isFinite(rawLanguageXp) ? rawLanguageXp : 0) + sessionEarnedXp;
-  const levelNumber = Math.floor(totalUserXp / 100) + 1;
-  const xpProgressPct = Math.min(100, totalUserXp % 100);
-
   const lessonXpGoal = lesson?.xpReward || 0;
   const normalizedLessonEarnedXp = Math.max(0, Number(lessonEarnedXp) || 0);
   const currentEarnedXp = normalizedLessonEarnedXp + sessionEarnedXp;
@@ -5047,12 +5039,10 @@ export default function DelightQuestionLab({
         maxW={embedded ? "none" : "720px"}
         mx="auto"
       >
-        {/* Shared progress header */}
-        {!embedded && <Box display="flex" justifyContent="center">
+        {/* Final-quiz progress stays in context; account XP now appears on completion. */}
+        {!embedded && isFinalQuiz && <Box display="flex" justifyContent="center">
           <Box w={{ base: "100%", md: "60%" }} justifyContent="center">
-            {isFinalQuiz ? (
-              // Quiz progress display with animated bars
-              <VStack spacing={2} w="100%">
+            <VStack spacing={2} w="100%">
                 <HStack justify="space-between" w="100%" mb={1}>
                   <Badge colorScheme="purple" fontSize="md">
                     {t("vocab_final_quiz") === "vocab_final_quiz"
@@ -5106,35 +5096,7 @@ export default function DelightQuestionLab({
                     needed: quizConfig.passingScore,
                   })}
                 </Text>
-              </VStack>
-            ) : (
-              // Normal XP progress display
-              <XpProgressHeader
-                levelText={
-                  moduleType === "grammar"
-                    ? t("grammar_badge_level", { level: levelNumber }) ===
-                      "grammar_badge_level"
-                      ? `Level ${levelNumber}`
-                      : t("grammar_badge_level", { level: levelNumber })
-                    : t("vocab_badge_level", { level: levelNumber }) ===
-                        "vocab_badge_level"
-                      ? `Level ${levelNumber}`
-                      : t("vocab_badge_level", { level: levelNumber })
-                }
-                xpText={
-                  moduleType === "grammar"
-                    ? t("grammar_badge_xp", { xp: totalUserXp }) ===
-                      "grammar_badge_xp"
-                      ? `${totalUserXp} XP`
-                      : t("grammar_badge_xp", { xp: totalUserXp })
-                    : t("vocab_badge_xp", { xp: totalUserXp }) ===
-                        "vocab_badge_xp"
-                      ? `${totalUserXp} XP`
-                      : t("vocab_badge_xp", { xp: totalUserXp })
-                }
-                progressPct={xpProgressPct}
-              />
-            )}
+            </VStack>
           </Box>
         </Box>}
 

@@ -37,6 +37,7 @@ import {
   WrapItem,
   useDisclosure,
   useBreakpointValue,
+  useMediaQuery,
 } from "@chakra-ui/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { layoutWithLines, prepareWithSegments } from "@chenglou/pretext";
@@ -3338,68 +3339,6 @@ function TutorPathLevelHeader({
   );
 }
 
-function TutorLessonProgressRing({
-  percent = 0,
-  label = "",
-  isComplete = false,
-  isLightTheme = false,
-}) {
-  const safePercent = Math.max(0, Math.min(100, Math.round(percent || 0)));
-  const progressColor = isComplete ? "#34D399" : "#5EEAD4";
-  const trackColor = isLightTheme
-    ? "rgba(31,41,55,0.14)"
-    : "rgba(255,255,255,0.18)";
-  const innerBg = isLightTheme ? "rgba(255,255,255,0.92)" : "rgba(5,10,22,0.9)";
-  const iconColor = isLightTheme ? "#166534" : "#D1FAE5";
-
-  return (
-    <Box
-      role="progressbar"
-      aria-label={label || "Lesson progress"}
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-valuenow={safePercent}
-      title={label || `${safePercent}%`}
-      w="26px"
-      h="26px"
-      borderRadius="full"
-      display="grid"
-      placeItems="center"
-      flexShrink={0}
-      bg={`conic-gradient(${progressColor} ${safePercent}%, ${trackColor} 0)`}
-      boxShadow={
-        isComplete
-          ? `0 0 14px ${progressColor}55`
-          : isLightTheme
-            ? "0 1px 4px rgba(15,23,42,0.08)"
-            : "0 0 10px rgba(94,234,212,0.12)"
-      }
-      transition="background 180ms ease, box-shadow 180ms ease"
-    >
-      <Box
-        w="18px"
-        h="18px"
-        borderRadius="full"
-        bg={innerBg}
-        display="grid"
-        placeItems="center"
-      >
-        {isComplete ? (
-          <Box as={RiCheckLine} boxSize="13px" color={iconColor} />
-        ) : (
-          <Box
-            w="5px"
-            h="5px"
-            borderRadius="full"
-            bg={progressColor}
-            opacity={safePercent > 0 ? 0.95 : 0.45}
-          />
-        )}
-      </Box>
-    </Box>
-  );
-}
-
 function TutorPathLessonNode({
   lesson,
   unit,
@@ -4364,6 +4303,14 @@ export default function Tutor({
   const [completedTutorLessonData, setCompletedTutorLessonData] =
     useState(null);
   const [showTutorLessonComplete, setShowTutorLessonComplete] = useState(false);
+  const [hasRoomyTutorCompletionViewport] = useMediaQuery(
+    "(min-width: 400px) and (min-height: 740px)",
+  );
+  const tutorCompletionCharacterSize =
+    useBreakpointValue({
+      base: hasRoomyTutorCompletionViewport ? 96 : 80,
+      md: 96,
+    }) ?? 80;
   const [completedTutorAgendaData, setCompletedTutorAgendaData] =
     useState(null);
   const [showTutorCompletedAgenda, setShowTutorCompletedAgenda] =
@@ -10887,6 +10834,19 @@ export default function Tutor({
     tutorRegularAgendaTick,
   ]);
 
+  const lessonProgressLabel = tutorCopy(uiLang, {
+    en: "Lesson progress",
+    es: "Progreso de la leccion",
+    pt: "Progresso da licao",
+    it: "Progresso della lezione",
+    fr: "Progression de la lecon",
+    de: "Lektionsfortschritt",
+    ja: "レッスンの進捗",
+    hi: "पाठ प्रगति",
+    ar: "تقدّم الدرس",
+    zh: "课程进度",
+  });
+
   // Repair an interrupted completion on hydration. Regular lessons require
   // full XP plus their agenda; Tutor quizzes intentionally use XP alone.
   // Legacy checkpoints predate the agenda schema, so full XP is their only
@@ -10949,17 +10909,7 @@ export default function Tutor({
       return {
         percent: 0,
         isComplete: false,
-        label: tutorCopy(uiLang, {
-          en: "Lesson progress",
-          es: "Progreso de la leccion",
-          pt: "Progresso da licao",
-          it: "Progresso della lezione",
-          fr: "Progression de la lecon",
-          ja: "レッスンの進捗",
-          hi: "पाठ प्रगति",
-          ar: "تقدّم الدرس",
-          zh: "课程进度",
-        }),
+        label: `${lessonProgressLabel}: 0%`,
       };
     }
 
@@ -10991,20 +10941,7 @@ export default function Tutor({
       percent,
       isComplete:
         percent >= 100 && starterAgendaComplete && regularAgendaGateOpen,
-      label:
-        required > 0
-          ? `${earned}/${required} XP`
-          : tutorCopy(uiLang, {
-              en: "Lesson complete",
-              es: "Leccion completada",
-              pt: "Licao completa",
-              it: "Lezione completata",
-              fr: "Lecon terminee",
-              ja: "レッスン完了",
-              hi: "पाठ पूरा हुआ",
-              ar: "الدرس اكتمل",
-              zh: "课程完成",
-            }),
+      label: `${lessonProgressLabel}: ${percent}%`,
     };
   }, [
     selectedTutorLesson,
@@ -11012,6 +10949,7 @@ export default function Tutor({
     tutorLessonEarnedXp,
     tutorStarterAgendaProgress,
     regularAgendaGateOpen,
+    lessonProgressLabel,
     uiLang,
   ]);
   const previewedLessonAgendaItems = useMemo(() => {
@@ -11139,12 +11077,6 @@ export default function Tutor({
                   {uiText("app_mode_path", "Lessons")}
                 </Button>
                 <HStack spacing={2}>
-                  <TutorLessonProgressRing
-                    percent={lessonCompletionRing.percent}
-                    label={lessonCompletionRing.label}
-                    isComplete={lessonCompletionRing.isComplete}
-                    isLightTheme={isLightTheme}
-                  />
                   <IconButton
                     ref={chatLogButtonRef}
                     icon={<FaRegCommentDots size={14} />}
@@ -11190,13 +11122,25 @@ export default function Tutor({
                 </HStack>
               </VStack>
 
-              {/* XP Progress Bar */}
-              <Box w="100%">
+              {/* Current lesson progress */}
+              <Box
+                w="100%"
+                role="progressbar"
+                aria-label={lessonCompletionRing.label}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={lessonCompletionRing.percent}
+              >
                 <XpProgressHeader
-                  levelText={`${uiText("ra_label_level", "Level")} ${xpLevelNumber}`}
-                  xpText={`${uiText("ra_label_xp", "XP")} ${xp}`}
-                  progressPct={progressPct}
-                  xpBadgeProps={{ colorScheme: "teal", fontSize: "10px" }}
+                  levelText={lessonProgressLabel}
+                  xpText={`${lessonCompletionRing.percent}%`}
+                  progressPct={lessonCompletionRing.percent}
+                  levelTextProps={{ fontSize: "xs", fontWeight: "normal" }}
+                  xpBadgeProps={{
+                    colorScheme: "teal",
+                    fontSize: "10px",
+                    fontWeight: "normal",
+                  }}
                 />
               </Box>
             </VStack>
@@ -12085,14 +12029,30 @@ export default function Tutor({
           color="white"
           borderRadius="2xl"
           boxShadow="2xl"
-          maxW={{ base: "90%", sm: "md" }}
+          maxW={{ base: "calc(100% - 24px)", sm: "md" }}
+          maxH={{ base: "calc(100dvh - 16px)", sm: "calc(100dvh - 24px)" }}
+          overflow="hidden"
         >
-          <ModalBody py={12} px={8}>
-            <VStack spacing={6} textAlign="center">
+          <ModalBody
+            py={{ base: hasRoomyTutorCompletionViewport ? 6 : 5, md: 12 }}
+            px={{ base: hasRoomyTutorCompletionViewport ? 6 : 5, md: 8 }}
+            pb={{ base: 3, md: 6 }}
+            overflow="hidden"
+          >
+            <VStack
+              spacing={{
+                base: hasRoomyTutorCompletionViewport ? 5 : 4,
+                md: 6,
+              }}
+              textAlign="center"
+            >
               <Box
                 bg="rgba(255,255,255,0.2)"
                 borderRadius="full"
-                p={4}
+                p={{
+                  base: hasRoomyTutorCompletionViewport ? 3 : 2,
+                  md: 4,
+                }}
                 border="2px solid"
                 borderColor="rgba(255,255,255,0.3)"
                 boxShadow="0 20px 40px rgba(0,0,0,0.18)"
@@ -12101,12 +12061,20 @@ export default function Tutor({
                   key={`${completedTutorLessonData?.lessonId || "tutor"}-${
                     showTutorLessonComplete ? "open" : "closed"
                   }`}
-                  width="96px"
+                  width={`${tutorCompletionCharacterSize}px`}
+                  containerHeight={tutorCompletionCharacterSize}
                   notSoRandomCharacter="27"
                 />
               </Box>
-              <VStack spacing={2}>
-                <Text fontSize="3xl" fontWeight="bold">
+              <VStack spacing={{ base: 1, md: 2 }}>
+                <Text
+                  fontSize={{
+                    base: hasRoomyTutorCompletionViewport ? "3xl" : "2xl",
+                    md: "3xl",
+                  }}
+                  fontWeight="bold"
+                  lineHeight="1.15"
+                >
                   {tutorCopy(uiLang, {
                     en: "Lesson Complete!",
                     es: "Leccion completada!",
@@ -12119,20 +12087,32 @@ export default function Tutor({
                     zh: "课程完成！",
                   })}
                 </Text>
-                <Text fontSize="lg" opacity={0.9}>
+                <Text
+                  fontSize={{
+                    base: hasRoomyTutorCompletionViewport ? "lg" : "md",
+                    md: "lg",
+                  }}
+                  opacity={0.9}
+                >
                   {getTutorDisplayText(completedTutorLessonData?.title, uiLang)}
                 </Text>
               </VStack>
               <Box
                 bg="rgba(255,255,255,0.2)"
                 borderRadius="xl"
-                py={6}
-                px={8}
+                py={{
+                  base: hasRoomyTutorCompletionViewport ? 5 : 4,
+                  md: 6,
+                }}
+                px={{
+                  base: hasRoomyTutorCompletionViewport ? 7 : 5,
+                  md: 8,
+                }}
                 width="100%"
                 border="2px solid"
                 borderColor="rgba(255,255,255,0.4)"
               >
-                <VStack spacing={2}>
+                <VStack spacing={{ base: 1, md: 2 }}>
                   <Text
                     fontSize="sm"
                     textTransform="uppercase"
@@ -12151,14 +12131,55 @@ export default function Tutor({
                       zh: "获得 XP",
                     })}
                   </Text>
-                  <Text fontSize="5xl" fontWeight="bold" color="yellow.300">
+                  <Text
+                    fontSize={{
+                      base: hasRoomyTutorCompletionViewport ? "5xl" : "4xl",
+                      md: "5xl",
+                    }}
+                    fontWeight="bold"
+                    color="yellow.300"
+                    lineHeight="1"
+                  >
                     {completedTutorLessonData?.xpEarned || 0}
                   </Text>
+
+                  <Box
+                    w="100%"
+                    pt={{ base: 2, md: 4 }}
+                    mt={{ base: 1, md: 2 }}
+                  >
+                    {(() => {
+                      const totalXp = Math.max(
+                        0,
+                        Number(xp) || 0,
+                        Number(
+                          getLanguageXp(
+                            user?.progress || {},
+                            targetLangRef.current || targetLang,
+                          ),
+                        ) || 0,
+                      );
+                      const levelNumber = Math.floor(totalXp / 100) + 1;
+
+                      return (
+                        <XpProgressHeader
+                          levelText={`${uiText("ra_label_level", "Level")} ${levelNumber}`}
+                          xpText={`${uiText("ra_label_xp", "XP")} ${totalXp}`}
+                          progressPct={totalXp % 100}
+                          levelTextProps={{ color: "white" }}
+                        />
+                      );
+                    })()}
+                  </Box>
                 </VStack>
               </Box>
             </VStack>
           </ModalBody>
-          <ModalFooter>
+          <ModalFooter
+            pt={0}
+            px={{ base: hasRoomyTutorCompletionViewport ? 6 : 5, md: 8 }}
+            pb={{ base: hasRoomyTutorCompletionViewport ? 6 : 5, md: 8 }}
+          >
             <Button
               size="lg"
               width="100%"
@@ -12167,6 +12188,14 @@ export default function Tutor({
               _hover={{ bg: "rgba(255,255,255,0.92)" }}
               onClick={closeTutorLessonCompleteModal}
               fontWeight="bold"
+              fontSize={{
+                base: hasRoomyTutorCompletionViewport ? "lg" : "md",
+                md: "lg",
+              }}
+              py={{
+                base: hasRoomyTutorCompletionViewport ? 7 : 6,
+                md: 6,
+              }}
             >
               {tutorCopy(uiLang, {
                 en: "Continue",

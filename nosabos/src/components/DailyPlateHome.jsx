@@ -106,6 +106,7 @@ export default function DailyPlateHome({
   appLanguage = "en",
   dailyXp = 0,
   dailyGoalXp = 0,
+  languageXp = 0,
   sessionActive = false,
   onStartPractice,
   onResetPlate,
@@ -568,6 +569,7 @@ export default function DailyPlateHome({
           showPreview={false}
           dailyXp={dailyXp}
           dailyGoalXp={dailyGoalXp}
+          totalXp={languageXp}
           petName={petName}
           petType={petType}
           companionLevel={companionLevel}

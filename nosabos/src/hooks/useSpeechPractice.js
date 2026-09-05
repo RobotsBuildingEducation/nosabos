@@ -43,11 +43,22 @@ function makeError(code, message) {
 }
 
 function buildRealtimeSpeechSession({
+  transcriptionHint,
   targetLang,
   timeoutMs,
   vadSilenceDurationMs,
 }) {
   const whisperLang = BCP47_TO_WHISPER[targetLang] || "es";
+  const expectedUtterance = (transcriptionHint || "").toString().trim();
+  const transcriptionPrompt = [
+    `The input is spoken in the language with ISO-639-1 code "${whisperLang}".`,
+    "Transcribe the actual speech in that language's normal writing system only. Do not translate or transliterate it into another language or script.",
+    expectedUtterance
+      ? `The speaker is attempting the practice phrase "${expectedUtterance}" and may pronounce it incorrectly.`
+      : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return {
     type: "realtime",
@@ -68,6 +79,7 @@ function buildRealtimeSpeechSession({
         transcription: {
           model: "gpt-4o-mini-transcribe",
           language: whisperLang,
+          prompt: transcriptionPrompt,
         },
       },
     },
@@ -77,6 +89,7 @@ function buildRealtimeSpeechSession({
 export function useSpeechPractice({
   targetText,
   targetLang = "es",
+  transcriptionHint = "",
   onResult,
   timeoutMs = 15000,
   maxConnectionMs = 10000,
@@ -209,6 +222,7 @@ export function useSpeechPractice({
       const pc = new RTCPeerConnection();
       pcRef.current = pc;
       const realtimeSession = buildRealtimeSpeechSession({
+        transcriptionHint,
         targetLang,
         timeoutMs,
         vadSilenceDurationMs,
@@ -506,6 +520,7 @@ export function useSpeechPractice({
     vadSilenceDurationMs,
     speechStopDelayMs,
     responseDoneDelayMs,
+    transcriptionHint,
     onResult,
     cleanup,
   ]);

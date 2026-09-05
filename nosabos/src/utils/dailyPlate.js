@@ -44,7 +44,7 @@ export const DAILY_PLATE_TARGETS = {
   learn: 1, // skill-tree lessons completed
   speak: 1, // Tutor lessons completed
   conversation: 4, // fallback only — overridden per-day to 4-7 user turns
-  phonics: 3, // Alphabet/phonics letters practiced
+  phonics: 3, // Alphabet/phonics cards successfully cleared
   repair: 1, // fallback only — overridden per-day by the repair plan's item count
 };
 

@@ -79,7 +79,6 @@ import LessonFlashcard, {
   FlashcardDeckReview,
   buildLessonFlashcardPrompt,
 } from "./LessonFlashcard";
-import XpProgressHeader from "./XpProgressHeader";
 import {
   getQuestionAssistantPanelProps,
   getQuestionChoiceCardProps,
@@ -1146,8 +1145,7 @@ function VocabularyLegacy({
     quizCurrentQuestionAttempted,
   ]);
 
-  const { xp, levelNumber, progressPct, progress, npub, ready } =
-    useSharedProgress();
+  const { progress, npub, ready } = useSharedProgress();
 
   const lessonXpGoal = lesson?.xpReward || 0;
   const normalizedLessonEarnedXp = Math.max(
@@ -5299,12 +5297,11 @@ Return JSON ONLY:
   return (
     <Box p={4} color={APP_TEXT_PRIMARY}>
       <VStack spacing={4} align="stretch" maxW="720px" mx="auto">
-        {/* Shared progress header */}
-        <Box display={"flex"} justifyContent={"center"}>
+        {/* Final-quiz progress stays in context; account XP now appears on completion. */}
+        {isFinalQuiz && (
+          <Box display="flex" justifyContent="center">
           <Box w="50%" justifyContent={"center"}>
-            {isFinalQuiz ? (
-              // Quiz progress display with animated bars
-              <VStack spacing={2}>
+            <VStack spacing={2}>
                 <HStack justify="space-between" w="100%" mb={1}>
                   <Badge colorScheme="purple" fontSize="md">
                     {t("vocab_final_quiz")}
@@ -5388,19 +5385,10 @@ Return JSON ONLY:
                     needed: quizConfig.passingScore,
                   })}
                 </Text>
-              </VStack>
-            ) : (
-              // Normal XP progress display
-              <>
-                <XpProgressHeader
-                  levelText={t("vocab_badge_level", { level: levelNumber })}
-                  xpText={t("vocab_badge_xp", { xp })}
-                  progressPct={progressPct}
-                />
-              </>
-            )}
+            </VStack>
           </Box>
-        </Box>
+          </Box>
+        )}
 
         {mode === "delight" ? (
           <DelightQuestionLab

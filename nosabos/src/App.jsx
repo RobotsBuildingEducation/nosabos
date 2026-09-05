@@ -58,6 +58,7 @@ import {
   Tooltip,
   useDisclosure,
   useBreakpointValue,
+  useMediaQuery,
 } from "@chakra-ui/react";
 import {
   SettingsIcon,
@@ -242,6 +243,7 @@ import ProficiencyTestModal from "./components/ProficiencyTestModal";
 import GettingStartedModal from "./components/GettingStartedModal";
 import BitcoinSupportModal from "./components/BitcoinSupportModal";
 import RandomCharacter from "./components/RandomCharacter";
+import XpProgressHeader from "./components/XpProgressHeader";
 import {
   loadLearningPath,
   loadMultiLevelLearningPath,
@@ -3865,6 +3867,14 @@ export default function App({ onBootReady } = {}) {
   // Lesson completion celebration modal
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [completedLessonData, setCompletedLessonData] = useState(null);
+  const [hasRoomyPhoneViewport] = useMediaQuery(
+    "(min-width: 400px) and (min-height: 740px)",
+  );
+  const completionCharacterSize =
+    useBreakpointValue({
+      base: hasRoomyPhoneViewport ? 96 : 80,
+      md: 96,
+    }) ?? 80;
   const [showTutorialBitcoinModal, setShowTutorialBitcoinModal] =
     useState(false);
   const [pendingTutorialBitcoinModal, setPendingTutorialBitcoinModal] =
@@ -6051,7 +6061,7 @@ export default function App({ onBootReady } = {}) {
         });
 
         deferDailyGoalCelebrationRef.current = true;
-        await awardXp(npub, earnedXp, lessonLang, "lesson");
+        const xpAward = await awardXp(npub, earnedXp, lessonLang, "lesson");
 
         if (!activeLesson.isGame && !activeLesson.isTutorial) {
           void warmUpcomingGameReview(
@@ -6065,6 +6075,16 @@ export default function App({ onBootReady } = {}) {
           title: activeLesson.title,
           xpEarned: earnedXp,
           lessonId: activeLesson.id,
+          targetLang: lessonLang,
+          totalXp: Number.isFinite(Number(xpAward?.languageXp))
+            ? Math.max(0, Number(xpAward.languageXp))
+            : Math.max(
+                0,
+                getLanguageXp(
+                  useUserStore.getState()?.user?.progress || {},
+                  lessonLang,
+                ),
+              ),
         };
         setCompletedLessonData(lessonData);
         pendingLessonCompletionRef.current = lessonData;
@@ -9953,6 +9973,7 @@ export default function App({ onBootReady } = {}) {
               appLanguage={appLanguage}
               dailyXp={dailyXpToday}
               dailyGoalXp={dailyGoalTarget}
+              languageXp={companionXp}
               sessionActive={plateSessionActive}
               onStartPractice={handleStartDailyPractice}
               onResetPlate={handleResetQuestPlate}
@@ -10680,14 +10701,23 @@ export default function App({ onBootReady } = {}) {
           color="white"
           borderRadius="2xl"
           boxShadow="2xl"
-          maxW={{ base: "90%", sm: "md" }}
+          maxW={{ base: "calc(100% - 24px)", sm: "md" }}
+          maxH={{ base: "calc(100dvh - 16px)", sm: "calc(100dvh - 24px)" }}
+          overflow="hidden"
         >
-          <ModalBody py={12} px={8}>
-            <VStack spacing={6} textAlign="center">
+          <ModalBody
+            py={{ base: hasRoomyPhoneViewport ? 6 : 5, md: 12 }}
+            px={{ base: hasRoomyPhoneViewport ? 6 : 5, md: 8 }}
+            overflow="hidden"
+          >
+            <VStack
+              spacing={{ base: hasRoomyPhoneViewport ? 5 : 4, md: 6 }}
+              textAlign="center"
+            >
               <Box
                 bg="rgba(255, 255, 255, 0.2)"
                 borderRadius="full"
-                p={4}
+                p={{ base: hasRoomyPhoneViewport ? 3 : 2, md: 4 }}
                 border="2px solid"
                 borderColor="rgba(255, 255, 255, 0.3)"
                 boxShadow="0 20px 40px rgba(0, 0, 0, 0.18)"
@@ -10696,14 +10726,22 @@ export default function App({ onBootReady } = {}) {
                   key={`${completedLessonData?.lessonId || "lesson"}-${
                     showCompletionModal ? "open" : "closed"
                   }`}
-                  width="96px"
+                  width={`${completionCharacterSize}px`}
+                  containerHeight={completionCharacterSize}
                   notSoRandomCharacter={"27"}
                 />
               </Box>
 
               {/* Title */}
-              <VStack spacing={2}>
-                <Text fontSize="3xl" fontWeight="bold">
+              <VStack spacing={{ base: 1, md: 2 }}>
+                <Text
+                  fontSize={{
+                    base: hasRoomyPhoneViewport ? "3xl" : "2xl",
+                    md: "3xl",
+                  }}
+                  fontWeight="bold"
+                  lineHeight="1.15"
+                >
                   {uiCopy(appLanguage, {
                     en: "Lesson Complete!",
                     es: "¡Lección Completada!",
@@ -10716,7 +10754,13 @@ export default function App({ onBootReady } = {}) {
                     zh: "课程完成！",
                   })}
                 </Text>
-                <Text fontSize="lg" opacity={0.9}>
+                <Text
+                  fontSize={{
+                    base: hasRoomyPhoneViewport ? "lg" : "md",
+                    md: "lg",
+                  }}
+                  opacity={0.9}
+                >
                   {completedLessonData?.title?.[appLanguage] ||
                     completedLessonData?.title?.en}
                 </Text>
@@ -10726,13 +10770,13 @@ export default function App({ onBootReady } = {}) {
               <Box
                 bg="rgba(255, 255, 255, 0.2)"
                 borderRadius="xl"
-                py={6}
-                px={8}
+                py={{ base: hasRoomyPhoneViewport ? 5 : 4, md: 6 }}
+                px={{ base: hasRoomyPhoneViewport ? 7 : 5, md: 8 }}
                 width="100%"
                 border="2px solid"
                 borderColor="rgba(255, 255, 255, 0.4)"
               >
-                <VStack spacing={2}>
+                <VStack spacing={{ base: 1, md: 2 }}>
                   <Text
                     fontSize="sm"
                     textTransform="uppercase"
@@ -10751,7 +10795,15 @@ export default function App({ onBootReady } = {}) {
                       zh: "获得的 XP",
                     })}
                   </Text>
-                  <Text fontSize="5xl" fontWeight="bold" color="yellow.300">
+                  <Text
+                    fontSize={{
+                      base: hasRoomyPhoneViewport ? "5xl" : "4xl",
+                      md: "5xl",
+                    }}
+                    fontWeight="bold"
+                    color="yellow.300"
+                    lineHeight="1"
+                  >
                     +{completedLessonData?.xpEarned || 0}
                   </Text>
                   <Text fontSize="sm" opacity={0.8}>
@@ -10767,6 +10819,50 @@ export default function App({ onBootReady } = {}) {
                       zh: "经验值",
                     })}
                   </Text>
+
+                  <Box
+                    w="100%"
+                    pt={{ base: 2, md: 4 }}
+                    mt={{ base: 1, md: 2 }}
+                  >
+                    {(() => {
+                      const totalXp = Math.max(
+                        0,
+                        Number(completedLessonData?.totalXp) || 0,
+                        Number(userProgress?.totalXp) || 0,
+                        Number(
+                          getLanguageXp(
+                            useUserStore.getState()?.user?.progress || {},
+                            completedLessonData?.targetLang ||
+                              resolvedTargetLang,
+                          ),
+                        ) || 0,
+                      );
+                      const levelNumber = Math.floor(totalXp / 100) + 1;
+                      const levelProgress = totalXp % 100;
+
+                      return (
+                        <XpProgressHeader
+                          levelText={`${uiCopy(appLanguage, {
+                            en: "Level",
+                            es: "Nivel",
+                            pt: "Nível",
+                            it: "Livello",
+                            fr: "Niveau",
+                            de: "Level",
+                            ja: "レベル",
+                            hi: "स्तर",
+                            ar: "المستوى",
+                            zh: "等级",
+                            ru: "Уровень",
+                          })} ${levelNumber}`}
+                          xpText={`XP ${totalXp}`}
+                          progressPct={levelProgress}
+                          levelTextProps={{ color: "white" }}
+                        />
+                      );
+                    })()}
+                  </Box>
                 </VStack>
               </Box>
 
@@ -10780,8 +10876,11 @@ export default function App({ onBootReady } = {}) {
                 _active={{ bg: "rgba(255, 255, 255, 0.82)" }}
                 onClick={handleCloseCompletionModal}
                 fontWeight="bold"
-                fontSize="lg"
-                py={6}
+                fontSize={{
+                  base: hasRoomyPhoneViewport ? "lg" : "md",
+                  md: "lg",
+                }}
+                py={{ base: hasRoomyPhoneViewport ? 7 : 6, md: 6 }}
               >
                 {uiCopy(appLanguage, {
                   en: "Continue",

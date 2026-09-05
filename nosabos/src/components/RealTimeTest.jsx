@@ -73,7 +73,6 @@ import {
 } from "./realtimeArchiveStream";
 import { awardXp } from "../utils/utils";
 import { captureCompanionMemory } from "../utils/companionMemory";
-import { getLanguageXp } from "../utils/progressTracking";
 import {
   SOFT_STOP_BUTTON_BG,
   SOFT_STOP_BUTTON_GLOW,
@@ -86,7 +85,6 @@ import useSoundSettings from "../hooks/useSoundSettings";
 import { submitActionSound, nextButtonSound, deliciousSound } from "../constants/sounds";
 import { useThemeStore } from "../useThemeStore";
 import { APP_MESSAGE_RADIUS, APP_SQUIRCLE_SHAPE } from "../theme";
-import XpProgressHeader from "./XpProgressHeader";
 import {
   DEFAULT_SUPPORT_LANGUAGE,
   DEFAULT_TARGET_LANGUAGE,
@@ -893,8 +891,7 @@ export default function RealTimeTest({
     }
   }, [currentGoal]);
 
-  // XP/STREAK
-  const [xp, setXp] = useState(0);
+  // STREAK
   const [streak, setStreak] = useState(0);
 
   // Persisted history (newest-first)
@@ -1006,7 +1003,6 @@ export default function RealTimeTest({
       : level === "intermediate"
         ? "orange"
         : "purple";
-  const progressPct = Math.min(100, xp % 100);
   const appTitle = ui.ra_title.replace(
     "{language}",
     languageNameFor(targetLang),
@@ -1052,8 +1048,6 @@ export default function RealTimeTest({
               ? "छोड़ें"
               : "Skip");
   const tGoalCriteria = gtr?.ra_goal_criteria || "";
-
-  const xpLevelNumber = Math.floor(xp / 100) + 1;
 
   useEffect(() => () => stop(), []);
 
@@ -1134,9 +1128,6 @@ export default function RealTimeTest({
         const snap = await getDoc(ref);
         if (snap.exists()) {
           const data = snap.data() || {};
-          const currentLang = targetLangRef.current || targetLang;
-          const languageXp = getLanguageXp(data?.progress || {}, currentLang);
-          if (Number.isFinite(languageXp)) setXp(languageXp);
           if (Number.isFinite(data?.streak)) setStreak(data.streak);
           const p = data?.progress || {};
           // Prime all local states from saved progress
@@ -1216,15 +1207,6 @@ export default function RealTimeTest({
     if (!hydrated) return;
     scheduleProfileSave();
   }, [targetLang, hydrated]);
-
-  // Keep XP in sync with the active practice language
-  useEffect(() => {
-    if (!hydrated) return;
-    const langXp = getLanguageXp(user?.progress || {}, targetLangRef.current);
-    if (Number.isFinite(langXp)) {
-      setXp(langXp);
-    }
-  }, [hydrated, targetLang, user?.progress]);
 
   const DEBOUNCE_MS = 350;
   const respToMsg = useRef(new Map());
@@ -2766,7 +2748,6 @@ Return ONLY JSON:
           attempts: nextAttempts,
           pron: !!practicePronunciationRef.current,
         });
-        setXp((v) => v + xpGain);
         await awardXp(currentNpub, xpGain, targetLangRef.current, {
           skillTreeLessonId: lesson?.id,
         });
@@ -3943,17 +3924,6 @@ Return ONLY JSON:
                     </HStack>
                   ) : null}
 
-                  <Box mt={3}>
-                    <XpProgressHeader
-                      levelText={`${uiText(
-                        "ra_label_level",
-                        "Level",
-                      )} ${xpLevelNumber}`}
-                      xpText={`${uiText("ra_label_xp", "XP")} ${xp}`}
-                      progressPct={progressPct}
-                      xpBadgeProps={{ colorScheme: "teal", fontSize: "10px" }}
-                    />
-                  </Box>
                 </Box>
               </VStack>
             </Box>

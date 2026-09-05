@@ -14,7 +14,6 @@ import translations from "../utils/translation";
 import { getGermanCopy } from "../utils/germanCopy";
 import { getLanguageXp } from "../utils/progressTracking";
 import VoiceOrb from "./VoiceOrb";
-import XpProgressHeader from "./XpProgressHeader";
 import {
   DEFAULT_SUPPORT_LANGUAGE,
   DEFAULT_TARGET_LANGUAGE,
@@ -86,11 +85,6 @@ export default function Randomize() {
   );
   const t = useT(uiLang);
   const toast = useToast();
-
-  // live XP header
-  const [xp, setXp] = useState(0);
-  const [progressPct, setProgressPct] = useState(0);
-  const levelNumber = Math.floor(xp / 100) + 1;
 
   // random rotation state
   const [currentModeKey, setCurrentModeKey] = useState(null);
@@ -166,8 +160,6 @@ export default function Randomize() {
       const languageChanged = targetLangRef.current !== targetLang;
 
       targetLangRef.current = targetLang;
-      setXp(newXp);
-      setProgressPct(Math.min(100, newXp % 100));
 
       if (initializing) {
         xpBaselineRef.current = newXp;
@@ -258,26 +250,6 @@ export default function Randomize() {
 
   // Reused translated strings with safe fallbacks
   const STR = {
-    level:
-      t("grammar_badge_level", { level: levelNumber }) ||
-      uiCopy(uiLang, {
-        en: `Level ${levelNumber}`,
-        es: `Nivel ${levelNumber}`,
-        it: `Livello ${levelNumber}`,
-        fr: `Niveau ${levelNumber}`,
-        ja: `レベル ${levelNumber}`,
-        ar: `المستوى ${levelNumber}`,
-      }),
-    xpBadge:
-      t("grammar_badge_xp", { xp }) ||
-      uiCopy(uiLang, {
-        en: `XP ${xp}`,
-        es: `XP ${xp}`,
-        it: `XP ${xp}`,
-        fr: `XP ${xp}`,
-        ja: `XP ${xp}`,
-        ar: `XP ${xp}`,
-      }),
     shuffle:
       t("random_shuffle") ||
       uiCopy(uiLang, {
@@ -354,13 +326,6 @@ export default function Randomize() {
             </Button>
           </HStack>
         </HStack>
-        <Box mt={2}>
-          <XpProgressHeader
-            levelText={STR.level}
-            xpText={STR.xpBadge}
-            progressPct={progressPct}
-          />
-        </Box>
       </Box>
 
       {/* Content */}

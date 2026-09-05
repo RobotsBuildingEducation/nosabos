@@ -58,7 +58,6 @@ import {
   SOFT_STOP_BUTTON_HOVER_BG,
 } from "../utils/softStopButton";
 import { submitActionSound, deliciousSound, selectSound, nextButtonSound } from "../constants/sounds";
-import RandomCharacter from "./RandomCharacter";
 import VoiceOrb from "./VoiceOrb";
 import { useThemeStore } from "../useThemeStore";
 import {
@@ -1055,9 +1054,10 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
         borderRadius={{ base: "64px", md: APP_CARD_RADIUS }}
         style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
         overflow="hidden"
-        mx={{ base: "1%", md: 0 }}
-        h={{ base: "calc(100vh - 2rem)", md: "620px" }}
-        maxH="calc(100vh - 2rem)"
+        w={{ base: "95%", md: "100%" }}
+        mx={{ base: "auto", md: 0 }}
+        h={{ base: "clamp(540px, 82svh, 700px)", md: "620px" }}
+        maxH={{ base: "calc(100svh - 2rem)", md: "620px" }}
         boxShadow={
           isLightTheme
             ? `${APP_SHADOW}, 0 0 0 1px ${modalShellTheme.ringColor}`
@@ -1102,7 +1102,7 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
         }}
       >
         <ModalBody
-          p={8}
+          p={{ base: 6, md: 8 }}
           position="relative"
           zIndex={1}
           flex="1"
@@ -1923,18 +1923,6 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
                   </AnimatePresence>
                 )}
               </VStack>
-            </Box>
-            <Box
-              minH={showResult && shouldCenterModalContent ? "72px" : "0"}
-              display="flex"
-              alignItems="flex-end"
-              pl={{ base: 3, md: 1 }}
-              pb={{ base: 2, md: 0 }}
-              pointerEvents="none"
-            >
-              {showResult && shouldCenterModalContent ? (
-                <RandomCharacter />
-              ) : null}
             </Box>
           </VStack>
         </ModalBody>

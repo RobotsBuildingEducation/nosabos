@@ -547,8 +547,8 @@ const ALPHABET_UI_TEXT = {
     generateWordErrorTitle: "Couldn't generate a new word",
     level: "Level",
     progress: "Progress",
-    alphabetHeadline: "{language} Alphabet",
-    alphabetSubhead: "Start by learning {language} letters and sounds.",
+    alphabetHeadline: "{language} Phonics",
+    alphabetSubhead: "Practice {language} letters and sounds.",
     note: "After this, switch to Path mode in the menu to explore lessons.",
     complete: "Congratulations! You've completed the alphabet.",
     deckComplete: "Deck cleared! Generate a new one to keep going.",
@@ -586,9 +586,8 @@ const ALPHABET_UI_TEXT = {
     generateWordErrorTitle: "No pudimos generar una palabra",
     level: "Nivel",
     progress: "Progreso",
-    alphabetHeadline: "Alfabeto {language}",
-    alphabetSubhead:
-      "Empieza aprendiendo las letras y sonidos del {language}.",
+    alphabetHeadline: "Fonética del {language}",
+    alphabetSubhead: "Practica las letras y los sonidos del {language}.",
     note:
       "Después de esto, cambia al modo Ruta en el menú para explorar las lecciones.",
     complete: "¡Felicidades! Has completado el alfabeto.",
@@ -625,9 +624,8 @@ const ALPHABET_UI_TEXT = {
     generateWordErrorTitle: "Non abbiamo potuto generare una nuova parola",
     level: "Livello",
     progress: "Progressi",
-    alphabetHeadline: "Alfabeto {language}",
-    alphabetSubhead:
-      "Inizia imparando le lettere e i suoni del {language}.",
+    alphabetHeadline: "Fonetica {language}",
+    alphabetSubhead: "Esercitati con le lettere e i suoni del {language}.",
     note:
       "Dopo questo, passa alla modalità Percorso nel menu per esplorare le lezioni.",
     complete: "Congratulazioni! Hai completato l'alfabeto.",
@@ -664,9 +662,8 @@ const ALPHABET_UI_TEXT = {
     generateWordErrorTitle: "Impossible de generer un nouveau mot",
     level: "Niveau",
     progress: "Progres",
-    alphabetHeadline: "Alphabet {language}",
-    alphabetSubhead:
-      "Commence par apprendre les lettres et les sons du {language}.",
+    alphabetHeadline: "Phonétique {language}",
+    alphabetSubhead: "Pratique les lettres et les sons du {language}.",
     note:
       "Ensuite, passe au mode Parcours dans le menu pour explorer les lecons.",
     complete: "Felicitations ! Tu as termine l'alphabet.",
@@ -703,9 +700,8 @@ const ALPHABET_UI_TEXT = {
     generateWordErrorTitle: "Kein neues Wort generierbar",
     level: "Level",
     progress: "Fortschritt",
-    alphabetHeadline: "{language}-Alphabet",
-    alphabetSubhead:
-      "Beginne mit den Buchstaben und Lauten von {language}.",
+    alphabetHeadline: "{language}-Phonetik",
+    alphabetSubhead: "Übe die Buchstaben und Laute von {language}.",
     note:
       "Wechsle danach im Menü zum Pfadmodus, um Lektionen zu erkunden.",
     complete: "Glückwunsch! Du hast das Alphabet abgeschlossen.",
@@ -742,8 +738,8 @@ const ALPHABET_UI_TEXT = {
     generateWordErrorTitle: "新しい単語を生成できませんでした",
     level: "レベル",
     progress: "進捗",
-    alphabetHeadline: "{language}の文字",
-    alphabetSubhead: "{language}の文字と音から始めましょう。",
+    alphabetHeadline: "{language}のフォニックス",
+    alphabetSubhead: "{language}の文字と音を練習しましょう。",
     note: "この後は、メニューでパスモードに切り替えてレッスンを探索しましょう。",
     complete: "おめでとうございます！文字練習を完了しました。",
     startSkillTree: "スキルツリーを始める",
@@ -779,8 +775,8 @@ const ALPHABET_UI_TEXT = {
     generateWordErrorTitle: "नया शब्द तैयार नहीं किया जा सका",
     level: "स्तर",
     progress: "प्रगति",
-    alphabetHeadline: "{language} वर्णमाला",
-    alphabetSubhead: "{language} की ध्वनियां और अक्षर सीखकर शुरुआत करें।",
+    alphabetHeadline: "{language} फ़ोनिक्स",
+    alphabetSubhead: "{language} के अक्षरों और ध्वनियों का अभ्यास करें।",
     note: "इसके बाद मेनू में पाथ मोड पर जाकर पाठों को देखें।",
     complete: "बधाई हो! आपने वर्णमाला पूरी कर ली है।",
     startSkillTree: "स्किल ट्री शुरू करें",
@@ -816,8 +812,8 @@ const ALPHABET_UI_TEXT = {
     generateWordErrorTitle: "ما قدرناش نطلّع كلمة جديدة",
     level: "المستوى",
     progress: "التقدّم",
-    alphabetHeadline: "أبجدية {language}",
-    alphabetSubhead: "ابدأ بتعلّم حروف وأصوات {language}.",
+    alphabetHeadline: "صوتيات {language}",
+    alphabetSubhead: "تدرّب على حروف وأصوات {language}.",
     note:
       "بعد كده بدّل لوضع المسار من القائمة علشان تستكشف الدروس.",
     complete: "مبروك! خلّصت الأبجدية.",
@@ -854,8 +850,8 @@ const ALPHABET_UI_TEXT = {
     generateWordErrorTitle: "无法生成新单词",
     level: "等级",
     progress: "进度",
-    alphabetHeadline: "{language}字母",
-    alphabetSubhead: "从学习{language}的字母和发音开始。",
+    alphabetHeadline: "{language}自然拼读",
+    alphabetSubhead: "练习{language}的字母和发音。",
     note:
       "完成后，在菜单中切换到路径模式继续学习课程。",
     complete: "恭喜！你已完成字母练习。",
@@ -897,9 +893,8 @@ ALPHABET_UI_TEXT.pt = {
   generateWordErrorTitle: "Não foi possível gerar uma nova palavra",
   level: "Nível",
   progress: "Progresso",
-  alphabetHeadline: "Alfabeto {language}",
-  alphabetSubhead:
-    "Comece aprendendo as letras e os sons do {language}.",
+  alphabetHeadline: "Fonética do {language}",
+  alphabetSubhead: "Pratique as letras e os sons do {language}.",
   note:
     "Depois disso, mude para o modo Caminho no menu para explorar as lições.",
   complete: "Parabéns! Você concluiu a prática do alfabeto.",
@@ -1549,6 +1544,7 @@ function LetterCard({
   } = useSpeechPractice({
     targetText: practiceWord || "placeholder",
     targetLang: targetLang,
+    transcriptionHint: practiceWord,
     onResult: ({ recognizedText: text, error }) => {
       if (error) {
         toast({
@@ -1596,12 +1592,6 @@ function LetterCard({
       setIsCorrect(isYes);
       setShowResult(true);
 
-      // Daily plate: every graded letter practice counts toward the Phonics
-      // quest course (pass or fail, like flashcard reviews).
-      if (npub) {
-        void recordPlateActivity(npub, "phonics", targetLang);
-      }
-
       // Companion brain: a missed pronunciation is a high-signal phonics slip —
       // bank it for tomorrow's repair quest (it enriches itself via the cheap
       // model). Fire-and-forget so grading UI stays snappy.
@@ -1645,6 +1635,11 @@ function LetterCard({
         if (!collectedThisMountRef.current) {
           collectedThisMountRef.current = true;
           onCardCollected?.(letter.id);
+          // The Daily Quest counts successfully cleared active cards, not
+          // failed attempts or repeat practice from the collection.
+          if (npub && onCardCollected) {
+            void recordPlateActivity(npub, "phonics", targetLang);
+          }
         }
       }
 
@@ -2815,7 +2810,14 @@ export default function AlphabetBootcamp({
   }, [stopLetterPlayback]);
 
   return (
-    <VStack align="stretch" spacing={4} w="100%" color={APP_TEXT_PRIMARY} px={6}>
+    <VStack
+      align="stretch"
+      spacing={4}
+      w="100%"
+      color={APP_TEXT_PRIMARY}
+      px={6}
+      pt={{ base: 5, md: 6 }}
+    >
       {/* Repair focus: shown only when the Daily Quest routed a phonics repair
           here (returns null otherwise, so it adds no gap on a normal visit). */}
       <RepairFocusBanner
@@ -2824,16 +2826,6 @@ export default function AlphabetBootcamp({
         maxW="400px"
         mt={12}
       />
-      {/* XP Progress Bar */}
-      <Box maxW="400px" mx="auto" w="100%" zIndex={10} mt={12}>
-        <XpProgressHeader
-          levelText={`${uiText(uiLang, "level")} ${xpLevelNumber}`}
-          xpText={`XP ${currentXp}`}
-          progressPct={nextLevelProgressPct}
-          xpBadgeProps={{ colorScheme: "teal", fontSize: "10px" }}
-        />
-      </Box>
-
       <Heading
         size="md"
         color={APP_TEXT_PRIMARY}
@@ -2842,7 +2834,13 @@ export default function AlphabetBootcamp({
       >
         {headline}
       </Heading>
-      <Text color={APP_TEXT_SECONDARY} zIndex={10} textAlign={"center"} mt={"-4"}>
+      <Text
+        color={APP_TEXT_SECONDARY}
+        zIndex={10}
+        textAlign="center"
+        mt="-4"
+        fontSize="sm"
+      >
         {subhead}
       </Text>
       {/* <Alert status="info" borderRadius="lg" bg="blue.900" color="white">
@@ -2941,7 +2939,7 @@ export default function AlphabetBootcamp({
               </Box>
             </VStack>
           ) : (
-            <VStack spacing={4}>
+            <VStack spacing={4} w="100%" maxW="400px" mx="auto">
               <Flex
                 align="center"
                 justify="center"
@@ -2951,10 +2949,9 @@ export default function AlphabetBootcamp({
                 border="1px solid"
                 borderColor={isLightTheme ? "green.300" : "green.500"}
                 p={6}
-                maxW="400px"
-                mx="auto"
+                w="100%"
               >
-                <VStack spacing={2}>
+                <VStack spacing={4} w="100%">
                   <RandomCharacter notSoRandomCharacter="30" />
                   <Text
                     color={isLightTheme ? "green.700" : "green.200"}
@@ -2966,6 +2963,19 @@ export default function AlphabetBootcamp({
                       generatedCards.length > 0 ? "deckComplete" : "complete",
                     )}
                   </Text>
+                  {isComplete && (
+                    <Box w="100%" pt={2}>
+                      <XpProgressHeader
+                        levelText={`${uiText(uiLang, "level")} ${xpLevelNumber}`}
+                        xpText={`XP ${currentXp}`}
+                        progressPct={nextLevelProgressPct}
+                        xpBadgeProps={{
+                          colorScheme: "teal",
+                          fontSize: "10px",
+                        }}
+                      />
+                    </Box>
+                  )}
                 </VStack>
               </Flex>
               {isComplete && (

@@ -71,7 +71,6 @@ import VoiceOrb from "./VoiceOrb";
 import RandomCharacter from "./RandomCharacter";
 import useSoundSettings from "../hooks/useSoundSettings";
 import { submitActionSound, nextButtonSound, deliciousSound } from "../constants/sounds";
-import XpProgressHeader from "./XpProgressHeader";
 import { getBidiTextProps, mergeBidiSx } from "../utils/bidiText";
 import { buildCurriculumPromptContext } from "../utils/lessonCurriculum";
 import { questionSquircleStyle } from "./questionUiStyles";
@@ -393,8 +392,7 @@ export default function StoryMode({
   }, []);
 
   // Shared settings + XP
-  const { xp, levelNumber, progressPct, progress, npub, progressReady } =
-    useSharedProgress();
+  const { progress, npub, progressReady } = useSharedProgress();
 
   const targetLang = progress.targetLang;
 
@@ -1906,22 +1904,6 @@ export default function StoryMode({
           </HStack>
         </HStack>
       </motion.div>
-
-      {/* Shared Level/XP card */}
-      <Box px={4} pt={4}>
-        <Box p={3} rounded="2xl" style={questionSquircleStyle}>
-          <Box display="flex" justifyContent={"center"}>
-            <Box width="50%" maxW="600px">
-              <XpProgressHeader
-                levelText={`${uiText.levelLabel} ${levelNumber}`}
-                xpText={`${uiText.xp} ${xp}`}
-                progressPct={progressPct}
-                xpBadgeProps={{ colorScheme: "teal", fontSize: "10px" }}
-              />
-            </Box>
-          </Box>
-        </Box>
-      </Box>
 
       {/* Content */}
       <Box

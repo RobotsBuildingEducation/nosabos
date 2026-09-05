@@ -61,7 +61,6 @@ import useSoundSettings from "../hooks/useSoundSettings";
 import { submitActionSound, nextButtonSound, deliciousSound, clickSound, selectSound } from "../constants/sounds";
 import RandomCharacter from "./RandomCharacter";
 import VoiceOrb from "./VoiceOrb";
-import XpProgressHeader from "./XpProgressHeader";
 import { useThemeStore } from "../useThemeStore";
 import {
   SOFT_STOP_BUTTON_BG,
@@ -903,8 +902,7 @@ export default function History({
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, []);
 
-  const { xp, levelNumber, progressPct, progress, npub, isLoading } =
-    useSharedProgress();
+  const { progress, npub, isLoading } = useSharedProgress();
 
   // Lesson progress (mirrors Vocabulary / GrammarBook pattern)
   const lessonXpGoal = lesson?.xpReward || 0;
@@ -1995,19 +1993,6 @@ Return ONLY valid JSON:
   return (
     <Box p={[3, 4, 6]}>
       <VStack spacing={5} align="stretch" maxW="1100px" mx="auto">
-        {/* Header: Level / XP */}
-        <Box justifyContent={"center"} display="flex">
-          <Box width="50%">
-            <XpProgressHeader
-              levelText={t("reading_badge_level", { level: levelNumber })}
-              xpText={t("reading_badge_xp", { xp })}
-              progressPct={progressPct}
-              mb={2}
-              xpBadgeProps={{ px: 2, py: 1, rounded: "md" }}
-            />
-          </Box>
-        </Box>
-
         {/* Controls */}
         <HStack justify="space-between" flexWrap="wrap" gap={3}>
           <HStack gap={2}>

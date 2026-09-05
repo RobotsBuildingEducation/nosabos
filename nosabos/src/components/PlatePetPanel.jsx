@@ -28,7 +28,7 @@ import {
   FiTrendingUp,
 } from "react-icons/fi";
 import { MdShowChart } from "react-icons/md";
-import { TbEdit } from "react-icons/tb";
+import { TbDeviceGamepad3, TbEdit } from "react-icons/tb";
 import {
   WaveBar,
   WAVE_BAR_PROGRESS_END,
@@ -2014,6 +2014,8 @@ export default function PlatePetPanel({
   // Today's XP, shown under the health bar when provided
   dailyXp = null,
   dailyGoalXp = 0,
+  // Total XP for the active language, shown with the account level.
+  totalXp = 0,
   // Custom companion name; falls back to the localized default when empty.
   petName = "",
   petType = "ghost",
@@ -2039,6 +2041,7 @@ export default function PlatePetPanel({
     1,
     Math.floor(Number(companionLevel) || 1),
   );
+  const safeTotalXp = Math.max(0, Math.round(Number(totalXp) || 0));
   const resolvedPetType = getEffectivePetType(petType, safeCompanionLevel);
   const displayTitle = trimmedName || copy.title;
   const companionLevelText = `${getCompanionLevelLabel(
@@ -2249,50 +2252,52 @@ export default function PlatePetPanel({
               ) : null}
             </VStack>
 
-            <VStack align="stretch" spacing={{ base: 1.5, md: 2 }}>
-              <HStack justify="space-between" align="center">
-                <HStack spacing={2}>
-                  <Box
-                    as={FiHeart}
-                    color={isLightTheme ? "#ce7a8c" : "pink.200"}
-                    boxSize={{ base: 3.5, md: 4 }}
-                  />
+            <VStack align="stretch" spacing={{ base: 3, md: 4 }}>
+              <VStack align="stretch" spacing={{ base: 1.5, md: 2 }}>
+                <HStack justify="space-between" align="center">
+                  <HStack spacing={2}>
+                    <Box
+                      as={FiHeart}
+                      color={isLightTheme ? "#ce7a8c" : "pink.200"}
+                      boxSize={{ base: 3.5, md: 4 }}
+                    />
+                    <Text
+                      fontSize="xs"
+                      fontWeight="semibold"
+                      color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
+                    >
+                      {copy.health}
+                    </Text>
+                  </HStack>
                   <Text
                     fontSize="xs"
-                    fontWeight="semibold"
+                    fontWeight="bold"
+                    lineHeight="1"
                     color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
                   >
-                    {copy.health}
+                    {safeHealth}%
                   </Text>
                 </HStack>
-                <Text
-                  fontSize="xs"
-                  fontWeight="bold"
-                  lineHeight="1"
-                  color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
-                >
-                  {safeHealth}%
-                </Text>
-              </HStack>
 
-              <Box w="100%">
-                <WaveBar
-                  value={safeHealth}
-                  height={14}
-                  start={WAVE_BAR_PROGRESS_START}
-                  end={WAVE_BAR_PROGRESS_END}
-                  bg={
-                    isLightTheme
-                      ? "rgba(255, 255, 255, 0.58)"
-                      : "rgba(255,255,255,0.22)"
-                  }
-                  border={
-                    isLightTheme
-                      ? "rgba(91, 75, 58, 0.10)"
-                      : "rgba(255,255,255,0.14)"
-                  }
-                />
-              </Box>
+                <Box w="100%">
+                  <WaveBar
+                    value={safeHealth}
+                    height={14}
+                    start="#60a5fa"
+                    end="#38bdf8"
+                    bg={
+                      isLightTheme
+                        ? "rgba(255, 255, 255, 0.58)"
+                        : "rgba(255,255,255,0.22)"
+                    }
+                    border={
+                      isLightTheme
+                        ? "rgba(91, 75, 58, 0.10)"
+                        : "rgba(255,255,255,0.14)"
+                    }
+                  />
+                </Box>
+              </VStack>
 
               {/* Today's XP — a second bar mirroring Health ("XP" is
                   universal, so no per-language copy needed) */}
@@ -2312,11 +2317,11 @@ export default function PlatePetPanel({
                       goal > 0 ? Math.round((earned / goal) * 100) : 0;
                     const pct = Math.min(100, rawPercent);
                     return (
-                      <VStack
-                        align="stretch"
-                        spacing={{ base: 1.5, md: 2 }}
-                        mt={{ base: 2, md: 2.5 }}
-                      >
+                      <>
+                        <VStack
+                          align="stretch"
+                          spacing={{ base: 1.5, md: 2 }}
+                        >
                         <HStack justify="space-between" align="center">
                           <HStack spacing={2}>
                             <Box
@@ -2360,7 +2365,64 @@ export default function PlatePetPanel({
                             }
                           />
                         </Box>
-                      </VStack>
+
+                        </VStack>
+
+                        <VStack
+                          align="stretch"
+                          spacing={{ base: 1.5, md: 2 }}
+                        >
+                          <HStack justify="space-between" align="center">
+                            <HStack spacing={2}>
+                              <Box
+                                as={TbDeviceGamepad3}
+                                color={
+                                  isLightTheme ? "#2563eb" : "blue.200"
+                                }
+                                boxSize={{ base: 4, md: 4.5 }}
+                              />
+                              <Text
+                                fontSize="xs"
+                                fontWeight="semibold"
+                                color={
+                                  isLightTheme ? APP_TEXT_PRIMARY : undefined
+                                }
+                              >
+                                {companionLevelText}
+                              </Text>
+                            </HStack>
+                            <Text
+                              fontSize="11px"
+                              fontWeight="bold"
+                              lineHeight="1"
+                              color={
+                                isLightTheme ? APP_TEXT_PRIMARY : undefined
+                              }
+                            >
+                              XP {safeTotalXp}
+                            </Text>
+                          </HStack>
+
+                          <Box w="100%">
+                            <WaveBar
+                              value={safeTotalXp % 100}
+                              height={14}
+                              start={WAVE_BAR_PROGRESS_START}
+                              end={WAVE_BAR_PROGRESS_END}
+                              bg={
+                                isLightTheme
+                                  ? "rgba(255, 255, 255, 0.58)"
+                                  : "rgba(255,255,255,0.22)"
+                              }
+                              border={
+                                isLightTheme
+                                  ? "rgba(91, 75, 58, 0.10)"
+                                  : "rgba(255,255,255,0.14)"
+                              }
+                            />
+                          </Box>
+                        </VStack>
+                      </>
                     );
                   })()
                 : null}
