@@ -6175,9 +6175,10 @@ Return JSON ONLY:
               actions={
                 (!showNextButton) && (
                   <ActivityActionRow
-                    tone={isSpeakRecording ? "danger" : "primary"}
+                    tone={isSpeakRecording ? "stop" : "speak"}
                     primary={
                       <Button
+                        key={isSpeakRecording ? "stop" : "speak"}
                         colorScheme={
                           isSpeakRecording ? undefined : isSpeakConnecting ? "yellow" : "teal"
                         }

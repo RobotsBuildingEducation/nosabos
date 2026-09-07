@@ -2193,7 +2193,15 @@ export default function StoryMode({
             feedback={!showFullStory && sentenceCompleted && lastSuccessInfo ? true : null}
             actions={
               <ActivityActionRow
-                tone={isRecording ? "danger" : sentenceCompleted ? "success" : "primary"}
+                tone={
+                  isRecording
+                    ? "stop"
+                    : sentenceCompleted
+                    ? "success"
+                    : !showFullStory
+                    ? "speak"
+                    : "primary"
+                }
                 primary={
                   showFullStory ? (
                     <Button
@@ -2248,6 +2256,7 @@ export default function StoryMode({
                     </Button>
                   ) : (
                     <Button
+                      key={isRecording ? "stop" : "record"}
                       onClick={handleRecordPress}
                       size="lg"
                       height="60px"

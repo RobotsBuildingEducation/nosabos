@@ -6079,7 +6079,7 @@ Return JSON ONLY:
               actions={
                 (!((lastOk === true || isFinalQuiz && lastOk === false) && nextAction)) && (
                   <ActivityActionRow
-                    tone={isSpeakRecording ? "danger" : "primary"}
+                    tone={isSpeakRecording ? "stop" : "speak"}
                     primary={
                       <Button
                         colorScheme={

@@ -4015,220 +4015,36 @@ Return ONLY JSON:
           actions={
             <ActivityActionRow
               tone={
-                goalCompleted ? "success" : status === "connected" ? "danger" : "primary"
+                goalCompleted ? "success" : status === "connected" ? "stop" : "speak"
               }
               primary={
                 goalCompleted ? (
-                  <Box position="relative" flex="1" minW={0}>
-                    <Button
-                      w="full"
-                      onClick={handleNextGoal}
-                      size="md"
-                      height="48px"
-                      px={3}
-                      rounded="full"
-                      variant={isLightTheme ? "outline" : "solid"}
-                      color={
-                        isLightTheme
-                          ? goalCompleted
-                            ? "#134e4a"
-                            : APP_TEXT_MUTED
-                          : "white"
-                      }
-                      textShadow={isLightTheme ? "none" : "0 0 16px rgba(0,0,0,0.9)"}
-                      bg={
-                        isLightTheme
-                          ? APP_SURFACE
-                          : !goalCompleted
-                          ? "gray.800"
-                          : "cyan.700"
-                      }
-                      border="1px solid"
-                      borderColor={
-                        isLightTheme
-                          ? goalCompleted
-                            ? "rgba(64, 198, 217, 0.95)"
-                            : APP_BORDER
-                          : "cyan"
-                      }
-                      boxShadow={isLightTheme ? "none" : undefined}
-                      _hover={
-                        isLightTheme && goalCompleted
-                          ? {
-                              bg: APP_SURFACE_MUTED,
-                              borderColor: "#40c6d9",
-                            }
-                          : undefined
-                      }
-                      _disabled={
-                        isLightTheme
-                          ? {
-                              opacity: 1,
-                              bg: APP_SURFACE,
-                              color: APP_TEXT_MUTED,
-                              borderColor: APP_BORDER,
-                            }
-                          : undefined
-                      }
-                      disabled={!goalCompleted}
-                      animation={
-                        goalCompleted
-                          ? `${
-                              isLightTheme
-                                ? "pulse-glow-unlock-light"
-                                : "pulse-glow-unlock"
-                            } 2.2s infinite ease-in-out`
-                          : undefined
-                      }
-                      sx={
-                        goalCompleted
-                          ? {
-                              "@keyframes pulse-glow-unlock": {
-                                "0%, 100%": {
-                                  boxShadow:
-                                    "0 0 8px rgba(45, 212, 191, 0.3), 0 0 0 0 rgba(45, 212, 191, 0)",
-                                  transform: "scale(1)",
-                                },
-                                "50%": {
-                                  boxShadow:
-                                    "0 0 20px rgba(45, 212, 191, 0.8), 0 0 0 4px rgba(45, 212, 191, 0.4)",
-                                  transform: "scale(1.04)",
-                                },
-                              },
-                              "@keyframes pulse-glow-unlock-light": {
-                                "0%, 100%": {
-                                  boxShadow:
-                                    "0 0 8px rgba(64, 198, 217, 0.3), 0 0 0 0 rgba(64, 198, 217, 0)",
-                                  transform: "scale(1)",
-                                },
-                                "50%": {
-                                  boxShadow:
-                                    "0 0 22px rgba(64, 198, 217, 0.8), 0 0 0 4px rgba(64, 198, 217, 0.45)",
-                                  transform: "scale(1.04)",
-                                },
-                              },
-                            }
-                          : undefined
-                      }
-                    >
-                      {uiText("ra_btn_next", "Next")}
-                    </Button>
-                    {goalCompleted && (
-                      <>
-                        <Box
-                          pointerEvents="none"
-                          position="absolute"
-                          top="-8px"
-                          left="10px"
-                          w="8px"
-                          h="8px"
-                          borderRadius="full"
-                          bg="white"
-                          boxShadow="0 0 8px 2px rgba(255,255,255,0.8), 0 0 14px rgba(255,255,255,0.6)"
-                          animation="btn-sparkle 2.2s ease-in-out infinite"
-                          sx={{
-                            "@keyframes btn-sparkle": {
-                              "0%, 100%": {
-                                opacity: 0,
-                                transform: "scale(0.3) rotate(0deg)",
-                              },
-                              "50%": {
-                                opacity: 0.95,
-                                transform: "scale(1.2) rotate(45deg)",
-                              },
-                            },
-                          }}
-                        />
-                        <Box
-                          pointerEvents="none"
-                          position="absolute"
-                          bottom="-6px"
-                          right="15px"
-                          w="6px"
-                          h="6px"
-                          borderRadius="full"
-                          bg="white"
-                          boxShadow="0 0 6px 2px rgba(255,255,255,0.8), 0 0 12px rgba(255,255,255,0.5)"
-                          animation="btn-sparkle-delayed 2.5s ease-in-out infinite 0.6s"
-                          sx={{
-                            "@keyframes btn-sparkle-delayed": {
-                              "0%, 100%": {
-                                opacity: 0,
-                                transform: "scale(0.2) rotate(0deg)",
-                              },
-                              "50%": {
-                                opacity: 0.9,
-                                transform: "scale(1.1) rotate(-30deg)",
-                              },
-                            },
-                          }}
-                        />
-                        <Box
-                          pointerEvents="none"
-                          position="absolute"
-                          top="4px"
-                          right="-5px"
-                          w="6px"
-                          h="6px"
-                          borderRadius="full"
-                          bg="white"
-                          boxShadow="0 0 6px 2px rgba(255,255,255,0.8), 0 0 12px rgba(255,255,255,0.5)"
-                          animation="btn-sparkle-delayed2 2s ease-in-out infinite 1.2s"
-                          sx={{
-                            "@keyframes btn-sparkle-delayed2": {
-                              "0%, 100%": {
-                                opacity: 0,
-                                transform: "scale(0.2) rotate(0deg)",
-                              },
-                              "50%": {
-                                opacity: 0.95,
-                                transform: "scale(1) rotate(15deg)",
-                              },
-                            },
-                          }}
-                        />
-                      </>
-                    )}
-                  </Box>
+                  <Button
+                    w="full"
+                    onClick={handleNextGoal}
+                    size="md"
+                    height="48px"
+                    px={3}
+                    rounded="full"
+                    disabled={!goalCompleted}
+                  >
+                    {uiText("ra_btn_next", "Next")}
+                  </Button>
                 ) : (
                   <Button
-                    onClick={status === "connected" ? stop : start}
+                    key={status === "connected" ? "end" : "start"}
+                    onClick={(e) => {
+                      e.currentTarget?.blur?.();
+                      if (status === "connected") {
+                        stop();
+                      } else {
+                        start();
+                      }
+                    }}
                     size="lg"
                     height="48px"
                     px={4}
                     rounded="full"
-                    colorScheme={status === "connected" ? undefined : "cyan"}
-                    bg={
-                      status === "connected"
-                        ? SOFT_STOP_BUTTON_BG
-                        : isLightTheme
-                        ? "linear-gradient(180deg, #40c6d9 0%, #2fb4c7 100%)"
-                        : undefined
-                    }
-                    boxShadow={
-                      status === "connected"
-                        ? SOFT_STOP_BUTTON_GLOW
-                        : isLightTheme
-                        ? "0 10px 24px rgba(66, 168, 181, 0.22), 0 4px 0 rgba(41, 126, 136, 0.82)"
-                        : undefined
-                    }
-                    _hover={
-                      status === "connected"
-                        ? { bg: SOFT_STOP_BUTTON_HOVER_BG }
-                        : isLightTheme
-                        ? {
-                            bg: "linear-gradient(180deg, #35bfd3 0%, #27adc0 100%)",
-                          }
-                        : undefined
-                    }
-                    color={
-                      status === "connected" ? "white" : isLightTheme ? "white" : "white"
-                    }
-                    border={
-                      isLightTheme && status !== "connected"
-                        ? "1px solid rgba(255,255,255,0.55)"
-                        : undefined
-                    }
                     textShadow={isLightTheme ? "none" : "0 0 16px rgba(0,0,0,0.9)"}
                   >
                     {status === "connected" ? (

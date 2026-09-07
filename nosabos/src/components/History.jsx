@@ -3018,9 +3018,11 @@ Return ONLY valid JSON:
             <ActivityActionRow
               tone={
                 isListening
-                  ? "danger"
+                  ? "stop"
                   : (reviewFormat === "speech" ? speechSubmitted : reviewCorrect === true)
                   ? "success"
+                  : reviewFormat === "speech" && !speechTranscript.trim()
+                  ? "speak"
                   : "primary"
               }
               primary={

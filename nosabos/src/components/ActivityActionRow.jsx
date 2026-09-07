@@ -1,6 +1,97 @@
 import React, { Children } from "react";
 import { Box, Flex } from "@chakra-ui/react";
 
+const TONE_PALETTES = {
+  purple: {
+    bg: "purple.500",
+    hoverBg: "purple.600",
+    shadow: "0 4px 0 var(--chakra-colors-purple-800, #44337A)",
+    activeShadow: "0 2px 0 var(--chakra-colors-purple-800, #44337A)",
+  },
+  teal: {
+    bg: "teal.500",
+    hoverBg: "teal.600",
+    shadow: "0 4px 0 var(--chakra-colors-teal-800, #234E52)",
+    activeShadow: "0 2px 0 var(--chakra-colors-teal-800, #234E52)",
+  },
+  cyan: {
+    bg: "cyan.500",
+    hoverBg: "cyan.600",
+    shadow: "0 4px 0 var(--chakra-colors-cyan-800, #086F83)",
+    activeShadow: "0 2px 0 var(--chakra-colors-cyan-800, #086F83)",
+  },
+  reddit: {
+    bg: "reddit.500",
+    hoverBg: "reddit.600",
+    shadow: "0 4px 0 var(--chakra-colors-reddit-800, #72003b)",
+    activeShadow: "0 2px 0 var(--chakra-colors-reddit-800, #72003b)",
+  },
+  stop: {
+    bg: "reddit.500",
+    hoverBg: "reddit.600",
+    shadow: "0 4px 0 var(--chakra-colors-reddit-800, #72003b)",
+    activeShadow: "0 2px 0 var(--chakra-colors-reddit-800, #72003b)",
+  },
+  red: {
+    bg: "red.500",
+    hoverBg: "red.600",
+    shadow: "0 4px 0 var(--chakra-colors-red-800, #822727)",
+    activeShadow: "0 2px 0 var(--chakra-colors-red-800, #822727)",
+  },
+};
+
+function inspectElement(node, fn) {
+  if (!node) return false;
+  if (fn(node)) return true;
+  if (node.props) {
+    if (node.props.leftIcon && inspectElement(node.props.leftIcon, fn)) return true;
+    if (node.props.rightIcon && inspectElement(node.props.rightIcon, fn)) return true;
+    if (node.props.icon && inspectElement(node.props.icon, fn)) return true;
+    const children = Children.toArray(node.props.children);
+    for (const child of children) {
+      if (typeof child === "string" && fn(child)) return true;
+      if (typeof child === "object" && inspectElement(child, fn)) return true;
+    }
+  }
+  return false;
+}
+
+function isRecordOrSpeak(node) {
+  return inspectElement(node, (el) => {
+    if (typeof el === "string") {
+      return /\b(record|speak)\b/i.test(el) || el.includes("🎤");
+    }
+    if (el && el.type) {
+      const name = el.type.displayName || el.type.name || "";
+      if (/mic|microphone/i.test(name)) return true;
+    }
+    return false;
+  });
+}
+
+function isStopButton(node) {
+  return inspectElement(node, (el) => {
+    if (typeof el === "string") {
+      return /\b(stop|disconnect|end)\b/i.test(el) || el.includes("⏹");
+    }
+    if (el && el.type) {
+      const name = el.type.displayName || el.type.name || "";
+      if (/stop/i.test(name)) return true;
+    }
+    return false;
+  });
+}
+
+function resolveTone(tone, primary) {
+  if (tone === "speak" || tone === "record" || tone === "cyan") return "cyan";
+  if (tone === "stop" || tone === "reddit" || tone === "danger") return "reddit";
+  if (tone === "success") return "teal";
+  if (isStopButton(primary)) return "reddit";
+  if (isRecordOrSpeak(primary)) return "cyan";
+  if (tone === "primary") return "purple";
+  return tone in TONE_PALETTES ? tone : "purple";
+}
+
 /** One layout for every activity: menu slot, secondary actions, then primary. */
 export default function ActivityActionRow({
   primary,
@@ -8,8 +99,8 @@ export default function ActivityActionRow({
   tone = "primary",
 }) {
   const secondary = Children.toArray(children);
-  const color =
-    tone === "danger" ? "pink" : tone === "success" ? "teal" : "purple";
+  const colorKey = resolveTone(tone, primary);
+  const palette = TONE_PALETTES[colorKey] || TONE_PALETTES.purple;
   return (
     <Flex
       data-activity-action-row=""
@@ -77,23 +168,38 @@ export default function ActivityActionRow({
             padding: "0 12px",
             fontSize: "14px",
             fontWeight: 700,
-            background: `${color}.500`,
+            background: palette.bg,
             color: "white",
             border: 0,
-            boxShadow: `0 4px 0 var(--chakra-colors-${color}-800)`,
+            boxShadow: `${palette.shadow} !important`,
+            transform: "translateY(0)",
+            transitionProperty: "transform, box-shadow",
+            transitionDuration: "120ms",
+            transitionTimingFunction: "ease",
             animation: "none",
           },
           "& button:hover:not(:disabled)": {
-            background: `${color}.600`,
-            transform: "none",
+            background: palette.hoverBg,
+            transform: "translateY(0)",
+            boxShadow: `${palette.shadow} !important`,
           },
-          "& button:active:not(:disabled)": {
-            transform: "translateY(2px)",
-            boxShadow: `0 2px 0 var(--chakra-colors-${color}-800)`,
+          "& button:focus, & button[data-focus]": {
+            transform: "translateY(0)",
+            boxShadow: `${palette.shadow} !important`,
+          },
+          "& button:focus-visible": {
+            outline: "2px solid var(--question-tool-accent-strong)",
+            outlineOffset: "3px",
+            transform: "translateY(0)",
+            boxShadow: `${palette.shadow} !important`,
+          },
+          "& button:active:not(:disabled), & button[data-active]:not(:disabled)": {
+            transform: "translateY(4px)",
+            boxShadow: "none !important",
           },
           "& button:disabled": {
             opacity: 0.55,
-            boxShadow: "none",
+            boxShadow: "none !important",
             transform: "none",
           },
         }}

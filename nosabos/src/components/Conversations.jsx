@@ -3879,46 +3879,22 @@ Respond with ONLY a JSON object: {"target":"phrase in ${targetName}","support":"
         <QuestionActionArea
           actions={
             <ActivityActionRow
-              tone={status === "connected" ? "danger" : "primary"}
+              tone={status === "connected" ? "stop" : "speak"}
               primary={
                 <Button
-                  onClick={status === "connected" ? handleEndConversation : start}
+                  key={status === "connected" ? "end" : "start"}
+                  onClick={(e) => {
+                    e.currentTarget?.blur?.();
+                    if (status === "connected") {
+                      handleEndConversation();
+                    } else {
+                      start();
+                    }
+                  }}
                   size="lg"
                   height="48px"
                   px={4}
                   rounded="full"
-                  colorScheme={status === "connected" ? undefined : "cyan"}
-                  bg={
-                    status === "connected"
-                      ? SOFT_STOP_BUTTON_BG
-                      : isLightTheme
-                      ? "linear-gradient(180deg, #40c6d9 0%, #2fb4c7 100%)"
-                      : undefined
-                  }
-                  boxShadow={
-                    status === "connected"
-                      ? SOFT_STOP_BUTTON_GLOW
-                      : isLightTheme
-                      ? "0 10px 24px rgba(66, 168, 181, 0.22), 0 4px 0 rgba(41, 126, 136, 0.82)"
-                      : undefined
-                  }
-                  _hover={
-                    status === "connected"
-                      ? { bg: SOFT_STOP_BUTTON_HOVER_BG }
-                      : isLightTheme
-                      ? {
-                          bg: "linear-gradient(180deg, #35bfd3 0%, #27adc0 100%)",
-                        }
-                      : undefined
-                  }
-                  color={
-                    status === "connected" ? "white" : isLightTheme ? "white" : "white"
-                  }
-                  border={
-                    isLightTheme && status !== "connected"
-                      ? "1px solid rgba(255,255,255,0.55)"
-                      : undefined
-                  }
                   textShadow={isLightTheme ? "none" : "0 0 16px rgba(0,0,0,0.9)"}
                 >
                   {status === "connected" ? (

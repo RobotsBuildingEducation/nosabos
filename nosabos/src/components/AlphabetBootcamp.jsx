@@ -2309,10 +2309,17 @@ function LetterCard({
           actions={
             <ActivityActionRow
               tone={
-                isRecording ? "danger" : showResult && isCorrect ? "success" : "primary"
+                isRecording
+                  ? "stop"
+                  : showResult && isCorrect
+                  ? "success"
+                  : isPracticeMode && !showResult
+                  ? "speak"
+                  : "primary"
               }
               primary={
                 <Button
+                  key={isRecording ? "stop" : "record"}
                   colorScheme={isRecording ? "pink" : "teal"}
                   isLoading={isGeneratingWord || isGrading || isConnecting}
                   isDisabled={

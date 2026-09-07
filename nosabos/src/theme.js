@@ -43,6 +43,19 @@ const appGray = {
   950: "#030712",
 };
 
+const redditOrange = {
+  50: "#FDF2F7",
+  100: "#FCE7F0",
+  200: "#F8C1D8",
+  300: "#F08EB8",
+  400: "#D94A88",
+  500: "#b0005b",
+  600: "#c41a6b",
+  700: "#96004d",
+  800: "#72003b",
+  900: "#52002a",
+};
+
 // -------------------------------------------------------
 // Buttons (flat press effect by default)
 // -------------------------------------------------------
@@ -69,8 +82,8 @@ const duoBase = defineStyle((props) => {
 
   return {
     outline: "none",
-    _focus: { outline: "none", boxShadow: "none" },
-    _focusVisible: { outline: "none", boxShadow: "none" },
+    _focus: { outline: "none" },
+    _focusVisible: { outline: "none" },
 
     // Flat 3D press effect
     "--button-shadow": darker,
@@ -271,7 +284,7 @@ const Modal = defineModalMultiStyleConfig({
 // Export theme
 // -------------------------------------------------------
 export const theme = extendTheme({
-  colors: { duo: duoGreen, gray: appGray },
+  colors: { duo: duoGreen, gray: appGray, reddit: redditOrange },
   components: {
     Button,
     IconButton,
