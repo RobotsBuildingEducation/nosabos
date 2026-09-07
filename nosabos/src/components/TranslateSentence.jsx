@@ -1,3 +1,4 @@
+import ActivityActionRow from "./ActivityActionRow";
 // components/TranslateSentence.jsx
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import {
@@ -15,6 +16,7 @@ import { PiSpeakerHighDuotone } from "react-icons/pi";
 import { MdOutlineSupportAgent } from "react-icons/md";
 import ReactMarkdown from "react-markdown";
 import FeedbackRail from "./FeedbackRail";
+import QuestionActionArea from "./QuestionActionArea";
 import useSoundSettings from "../hooks/useSoundSettings";
 import { selectSound, submitActionSound } from "../constants/sounds";
 import VoiceOrb from "./VoiceOrb";
@@ -700,37 +702,46 @@ export default function TranslateSentence({
             </SortableList>
 
         {/* Action buttons */}
-        <Stack direction="row" spacing={3} align="center" justify="flex-end">
-          {canSkip && (
-            <Button
-              variant="ghost"
-              onClick={onSkip}
-              px={{ base: 6, md: 10 }}
-              py={{ base: 3, md: 4 }}
-              color={APP_TEXT_PRIMARY}
-              _hover={{ bg: APP_SURFACE_MUTED }}
-            >
-              {skipLabel}
-            </Button>
-          )}
-          <Button
-            colorScheme="purple"
-            onClick={handleSubmit}
-            isDisabled={
-              lastOk === true ||
-              isSubmitting ||
-              selectedWords.length === 0 ||
-              loading
-            }
-            px={{ base: 7, md: 12 }}
-            py={{ base: 3, md: 4 }}
-          >
-            {isSubmitting ? submitSpinner : submitLabel}
-          </Button>
-        </Stack>
-
-        {/* Feedback rail */}
-        <FeedbackRail
+        <QuestionActionArea
+          feedback={lastOk}
+          actions={
+            (!showNext) && (
+              <ActivityActionRow
+                primary={
+                  <Button
+                    colorScheme="purple"
+                    onClick={handleSubmit}
+                    isDisabled={
+                      lastOk === true ||
+                      isSubmitting ||
+                      selectedWords.length === 0 ||
+                      loading
+                    }
+                    px={{ base: 7, md: 12 }}
+                    py={{ base: 3, md: 4 }}
+                  >
+                    {isSubmitting ? submitSpinner : submitLabel}
+                  </Button>
+                }
+              >
+                {canSkip && (
+                  <Button
+                    variant="ghost"
+                    onClick={onSkip}
+                    px={{ base: 6, md: 10 }}
+                    py={{ base: 3, md: 4 }}
+                    color={APP_TEXT_PRIMARY}
+                    _hover={{ bg: APP_SURFACE_MUTED }}
+                  >
+                    {skipLabel}
+                  </Button>
+                )}
+              </ActivityActionRow>
+            )
+          }
+        >
+          <FeedbackRail
+            compact
           ok={lastOk}
           xp={recentXp}
           showNext={showNext}
@@ -745,7 +756,8 @@ export default function TranslateSentence({
           onCreateNote={onCreateNote}
           isCreatingNote={isCreatingNote}
           noteCreated={noteCreated}
-        />
+          />
+        </QuestionActionArea>
       </VStack>
     </SortableArea>
   );

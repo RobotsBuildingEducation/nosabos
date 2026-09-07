@@ -1,3 +1,5 @@
+import ActivityActionRow from "./ActivityActionRow";
+import QuestionActionArea from "./QuestionActionArea";
 // components/Stories.jsx
 import React, {
   useEffect,
@@ -1840,12 +1842,10 @@ export default function StoryMode({
   if (!storyData) {
     return (
       <Box
-        minH="100vh"
-        // bg="linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%)"
         borderRadius="24px"
         style={questionSquircleStyle}
       >
-        <Center h="100vh">
+        <Center py={{ base: 12, md: 16 }}>
           <VStack spacing={6}>
             <Text color={APP_TEXT_PRIMARY} fontSize="xl" fontWeight="600">
               {uiText.generatingTitle}
@@ -1867,48 +1867,44 @@ export default function StoryMode({
 
   /* ----------------------------- Main UI ----------------------------- */
   return (
-    <Box
-      minH="100vh"
-
-      // bg="linear-gradient(135deg, #0f0f23 0%, #1a1e2e 50%, #16213e 100%)"
-    >
+    <Box>
       {/* Header */}
-      <motion.div
-        initial={prefersReducedMotion ? {} : { y: -100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={
-          prefersReducedMotion ? {} : { duration: 0.6, ease: "easeOut" }
-        }
-      >
-        <HStack
-          as="header"
-          w="100%"
-          px={4}
-          py={3}
-          // bg="rgba(15, 15, 35, 0.8)"
-          // backdropFilter="blur(20px)"
-          color={APP_TEXT_PRIMARY}
-          // borderBottom="1px solid"
-          borderColor="rgba(255, 255, 255, 0.1)"
-          // position="sticky"
-          top={0}
-          zIndex={100}
+      {sessionXp > 0 && (
+        <motion.div
+          initial={prefersReducedMotion ? {} : { y: -100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={
+            prefersReducedMotion ? {} : { duration: 0.6, ease: "easeOut" }
+          }
         >
-          <Spacer />
-          <HStack spacing={3} align="center" flexWrap="wrap" justify="flex-end">
-            {sessionXp > 0 && (
+          <HStack
+            as="header"
+            w="100%"
+            px={4}
+            py={{ base: 1, md: 3 }}
+            // bg="rgba(15, 15, 35, 0.8)"
+            // backdropFilter="blur(20px)"
+            color={APP_TEXT_PRIMARY}
+            // borderBottom="1px solid"
+            borderColor="rgba(255, 255, 255, 0.1)"
+            // position="sticky"
+            top={0}
+            zIndex={100}
+          >
+            <Spacer />
+            <HStack spacing={3} align="center" flexWrap="wrap" justify="flex-end">
               <Badge colorScheme="teal" variant="subtle" fontSize="sm">
                 +{sessionXp}
               </Badge>
-            )}
+            </HStack>
           </HStack>
-        </HStack>
-      </motion.div>
+        </motion.div>
+      )}
 
       {/* Content */}
       <Box
-        px={4}
-        py={6}
+        px={{ base: 0, md: 4 }}
+        py={{ base: 1, md: 6 }}
         display="flex"
         flexDirection={"column"}
         alignItems={"center"}
@@ -1922,22 +1918,8 @@ export default function StoryMode({
           transition={prefersReducedMotion ? {} : { duration: 0.5 }}
           style={{ width: "100%", maxWidth: "1280px" }}
         >
-          <VStack spacing={6} align="stretch" w="100%">
-            {onSkip && (
-              <Box w="100%" display="flex" justifyContent={"flex-end"}>
-                <Button
-                  onClick={handleSkipModule}
-                  // size="md"
-                  variant="ghost"
-                  color={APP_TEXT_PRIMARY}
-                  _hover={{ bg: APP_SURFACE_MUTED }}
-                  // padding={6}
-                  width="fit-content"
-                >
-                  {t(uiLang, "practice_skip_question")}
-                </Button>
-              </Box>
-            )}
+          <VStack spacing={{ base: 3, md: 6 }} align="stretch" w="100%">
+
             <Box
               bg={APP_SURFACE_ELEVATED}
               p={6}
@@ -1948,47 +1930,7 @@ export default function StoryMode({
             >
               {showFullStory ? (
                 <VStack spacing={4} align="stretch">
-                  <Center>
-                    <Button
-                      onClick={() => {
-                        playSound(submitActionSound);
-                        stopAllAudio();
-                        // Reset all practice state before switching views
-                        setSentenceCompleted(false);
-                        setLastSuccessInfo(null);
-                        setShowFullStory(false);
-                        setCurrentSentenceIndex(0);
-                        setSessionXp(0);
-                        setSessionComplete(false);
-                        setSessionSummary({
-                          passed: 0,
-                          total: storyData?.sentences?.length || 0,
-                        });
-                        sessionAwardedRef.current = false;
-                        setPassedCount(0);
-                        setHighlightedWordIndex(-1);
-                        // Only stop recording if there's one in progress
-                        if (isSpeakRecording) {
-                          stopSpeakRecording();
-                        }
-                      }}
-                      size="lg"
-                      px={8}
-                      rounded="full"
-                      bg={STORY_PRIMARY_BUTTON_BG}
-                      color="white"
-                      fontWeight="600"
-                      boxShadow={`0px 4px 0px ${STORY_PRIMARY_BUTTON_EDGE}`}
-                      _hover={{
-                        bg: STORY_PRIMARY_BUTTON_HOVER_BG,
-                        transform: "translateY(-2px)",
-                      }}
-                      _active={{ transform: "translateY(0)" }}
-                      transition="all 0.2s ease"
-                    >
-                      {uiText.startPractice}
-                    </Button>
-                  </Center>
+
                   {/* Full story with highlighting (target language) */}
                   <Box>
                     {/* Conversation script view - dialogue format with alternating positions */}
@@ -2200,58 +2142,7 @@ export default function StoryMode({
                   </Box>
 
                   <VStack spacing={4}>
-                    <Center>
-                      <HStack spacing={4}>
-                        <Button
-                          onClick={handleRecordPress}
-                          size="lg"
-                          height="60px"
-                          px={8}
-                          rounded="full"
-                          bg={
-                            isRecording
-                              ? SOFT_STOP_BUTTON_BG
-                              : isConnecting
-                                ? "linear-gradient(135deg, #eab308 0%, #ca8a04 100%)"
-                                : STORY_PRIMARY_BUTTON_BG
-                          }
-                          boxShadow={
-                            isRecording
-                              ? `0px 4px 0px ${SOFT_STOP_BUTTON_EDGE}`
-                              : isConnecting
-                                ? "0px 4px 0px #eab308"
-                                : `0px 4px 0px ${STORY_PRIMARY_BUTTON_EDGE}`
-                          }
-                          color="white"
-                          fontWeight="600"
-                          fontSize="lg"
-                          leftIcon={
-                            isConnecting ? null : <PiMicrophoneStageDuotone />
-                          }
-                          isDisabled={
-                            !supportsSpeak ||
-                            !currentSentence?.tgt ||
-                            isConnecting
-                          }
-                          _hover={{
-                            bg: isRecording
-                              ? SOFT_STOP_BUTTON_HOVER_BG
-                              : isConnecting
-                                ? "linear-gradient(135deg, #ca8a04 0%, #a16207 100%)"
-                                : STORY_PRIMARY_BUTTON_HOVER_BG,
-                            transform: "translateY(-2px)",
-                          }}
-                          _active={{ transform: "translateY(0)" }}
-                          transition="all 0.2s ease"
-                        >
-                          {isConnecting
-                            ? t(uiLang, "vocab_connecting")
-                            : isRecording
-                              ? uiText.stopRecording
-                              : uiText.record}
-                        </Button>
-                      </HStack>
-                    </Center>
+
                     <HStack spacing={3} justify="center">
                       <Button
                         onClick={() =>
@@ -2276,110 +2167,7 @@ export default function StoryMode({
                         )}
                       </Button>
                     </HStack>
-                    {sentenceCompleted && lastSuccessInfo ? (
-                      <SlideFade in={true} offsetY="10px">
-                        <Box
-                          p={4}
-                          borderRadius="xl"
-                          style={questionSquircleStyle}
-                          bg="linear-gradient(90deg, rgba(72,187,120,0.16), rgba(56,161,105,0.08))"
-                          borderWidth="1px"
-                          borderColor="green.400"
-                          boxShadow="0 12px 30px rgba(0, 0, 0, 0.3)"
-                        >
-                          <Flex
-                            direction={{ base: "column", md: "row" }}
-                            gap={3}
-                            align={{ base: "stretch", md: "center" }}
-                          >
-                            <HStack spacing={3} flex="1" align="center">
-                              <Flex
-                                w="44px"
-                                h="44px"
-                                rounded="full"
-                                align="center"
-                                justify="center"
-                                bg="green.500"
-                                color="white"
-                                fontWeight="bold"
-                                fontSize="lg"
-                                boxShadow="0 10px 24px rgba(0,0,0,0.22)"
-                              >
-                                ✓
-                              </Flex>
-                              <Box>
-                                <Text fontWeight="semibold">
-                                  {t(
-                                    uiLang,
-                                    "stories_sentence_success_title",
-                                  ) || uiText.wellDone}
-                                </Text>
-                                <Text fontSize="sm" color={APP_TEXT_SECONDARY}>
-                                  {typeof lastSuccessInfo.score === "number"
-                                    ? t(
-                                        uiLang,
-                                        "stories_sentence_success_score",
-                                        {
-                                          score: lastSuccessInfo.score,
-                                        },
-                                      ) ||
-                                      `${uiText.score}: ${lastSuccessInfo.score}%`
-                                    : t(uiLang, "practice_next_ready") ||
-                                      supportStoryText(uiLang, {
-                                        en: "Ready to continue!",
-                                        es: "¡Listo para continuar!",
-                                        hi: "आगे बढ़ने के लिए तैयार!",
-                                        it: "Pronto per continuare!",
-                                        fr: "Pret pour continuer !",
-                                        ar: "جاهز تكمل!",
-                                      })}
-                                </Text>
-                              </Box>
-                            </HStack>
-                            <Button
-                              rightIcon={<FiArrowRight />}
-                              colorScheme="teal"
-                              variant="solid"
-                              onClick={handleNextSentence}
-                              shadow="md"
-                              w={{ base: "100%", md: "auto" }}
-                            >
-                              {isLastSentence ? finishLabel : nextSentenceLabel}
-                            </Button>
-                          </Flex>
-                          {/* Progress WaveBar */}
-                          <Box mt={4}>
-                            <HStack justify="space-between" mb={2}>
-                              <Text fontSize="xs" color={APP_TEXT_SECONDARY}>
-                                {uiText.progress}
-                              </Text>
-                              <Text fontSize="xs" color={APP_TEXT_SECONDARY}>
-                                {`${currentSentenceIndex + 1} / ${
-                                  storyData?.sentences?.length || 0
-                                }`}
-                              </Text>
-                            </HStack>
-                            <WaveBar
-                              value={
-                                storyData
-                                  ? ((currentSentenceIndex + 1) /
-                                      storyData.sentences.length) *
-                                    100
-                                  : 0
-                              }
-                              height={12}
-                              start="#48bb78"
-                              end="#38b2ac"
-                              bg={APP_SURFACE_MUTED}
-                              border={APP_BORDER}
-                            />
-                          </Box>
-                        </Box>
-                        <Box mt="-6" paddingBottom={6}>
-                          <RandomCharacter />
-                        </Box>
-                      </SlideFade>
-                    ) : null}
+
                     {sessionComplete &&
                     sessionXp > 0 &&
                     sessionSummary.total > 0 ? (
@@ -2400,7 +2188,144 @@ export default function StoryMode({
           </VStack>
         </motion.div>
 
-        {/* Skip button - only show in lesson mode */}
+        <Box w="full" maxW="720px" mx="auto">
+          <QuestionActionArea
+            feedback={!showFullStory && sentenceCompleted && lastSuccessInfo ? true : null}
+            actions={
+              <ActivityActionRow
+                tone={isRecording ? "danger" : sentenceCompleted ? "success" : "primary"}
+                primary={
+                  showFullStory ? (
+                    <Button
+                      onClick={() => {
+                        playSound(submitActionSound);
+                        stopAllAudio();
+                        // Reset all practice state before switching views
+                        setSentenceCompleted(false);
+                        setLastSuccessInfo(null);
+                        setShowFullStory(false);
+                        setCurrentSentenceIndex(0);
+                        setSessionXp(0);
+                        setSessionComplete(false);
+                        setSessionSummary({
+                          passed: 0,
+                          total: storyData?.sentences?.length || 0,
+                        });
+                        sessionAwardedRef.current = false;
+                        setPassedCount(0);
+                        setHighlightedWordIndex(-1);
+                        // Only stop recording if there's one in progress
+                        if (isSpeakRecording) {
+                          stopSpeakRecording();
+                        }
+                      }}
+                      size="lg"
+                      px={8}
+                      rounded="full"
+                      bg={STORY_PRIMARY_BUTTON_BG}
+                      color="white"
+                      fontWeight="600"
+                      boxShadow={`0px 4px 0px ${STORY_PRIMARY_BUTTON_EDGE}`}
+                      _hover={{
+                        bg: STORY_PRIMARY_BUTTON_HOVER_BG,
+                        transform: "translateY(-2px)",
+                      }}
+                      _active={{ transform: "translateY(0)" }}
+                      transition="all 0.2s ease"
+                    >
+                      {uiText.startPractice}
+                    </Button>
+                  ) : sentenceCompleted && lastSuccessInfo ? (
+                    <Button
+                      rightIcon={<FiArrowRight />}
+                      colorScheme="teal"
+                      variant="solid"
+                      onClick={handleNextSentence}
+                      shadow="md"
+                      w={{ base: "100%", md: "auto" }}
+                    >
+                      {isLastSentence ? finishLabel : nextSentenceLabel}
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={handleRecordPress}
+                      size="lg"
+                      height="60px"
+                      px={8}
+                      rounded="full"
+                      bg={
+                        isRecording
+                          ? SOFT_STOP_BUTTON_BG
+                          : isConnecting
+                          ? "linear-gradient(135deg, #eab308 0%, #ca8a04 100%)"
+                          : STORY_PRIMARY_BUTTON_BG
+                      }
+                      boxShadow={
+                        isRecording
+                          ? `0px 4px 0px ${SOFT_STOP_BUTTON_EDGE}`
+                          : isConnecting
+                          ? "0px 4px 0px #eab308"
+                          : `0px 4px 0px ${STORY_PRIMARY_BUTTON_EDGE}`
+                      }
+                      color="white"
+                      fontWeight="600"
+                      fontSize="lg"
+                      leftIcon={isConnecting ? null : <PiMicrophoneStageDuotone />}
+                      isDisabled={!supportsSpeak || !currentSentence?.tgt || isConnecting}
+                      _hover={{
+                        bg: isRecording
+                          ? SOFT_STOP_BUTTON_HOVER_BG
+                          : isConnecting
+                          ? "linear-gradient(135deg, #ca8a04 0%, #a16207 100%)"
+                          : STORY_PRIMARY_BUTTON_HOVER_BG,
+                        transform: "translateY(-2px)",
+                      }}
+                      _active={{ transform: "translateY(0)" }}
+                      transition="all 0.2s ease"
+                    >
+                      {isConnecting
+                        ? t(uiLang, "vocab_connecting")
+                        : isRecording
+                        ? uiText.stopRecording
+                        : uiText.record}
+                    </Button>
+                  )
+                }
+              >
+                {onSkip && (
+                  <Button
+                    onClick={handleSkipModule}
+                    // size="md"
+                    variant="ghost"
+                    color={APP_TEXT_PRIMARY}
+                    _hover={{ bg: APP_SURFACE_MUTED }}
+                    // padding={6}
+                    width="fit-content"
+                  >
+                    {t(uiLang, "practice_skip_question")}
+                  </Button>
+                )}
+              </ActivityActionRow>
+            }
+          >
+            {!showFullStory && sentenceCompleted && lastSuccessInfo && (
+              <Box
+                role="status"
+
+
+
+                px={1} py={2}
+              >
+                <Text fontWeight="bold">{uiText.wellDone}</Text>
+                {typeof lastSuccessInfo.score === "number" && (
+                  <Text fontSize="sm">
+                    {uiText.score}: {lastSuccessInfo.score}%
+                  </Text>
+                )}
+              </Box>
+            )}
+          </QuestionActionArea>
+        </Box>
       </Box>
     </Box>
   );

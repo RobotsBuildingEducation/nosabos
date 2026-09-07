@@ -1,3 +1,5 @@
+import ActivityActionRow from "./ActivityActionRow";
+import QuestionActionArea from "./QuestionActionArea";
 import React, {
   useCallback,
   useEffect,
@@ -78,6 +80,7 @@ import {
   RiRefreshLine,
 } from "react-icons/ri";
 import { getPreferredTTSVoice, getTTSPlayer, TTS_LANG_TAG } from "../utils/tts";
+import { watchPhonicsPlaybackCompletion } from "../utils/phonicsPlayback";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
 import { awardXp } from "../utils/utils";
@@ -529,7 +532,9 @@ const ALPHABET_UI_TEXT = {
     close: "Close",
     sayThisWord: "Say this word:",
     grading: "Grading...",
+    next: "Next",
     nextWord: "Next word",
+    correct: "Correct!",
     tryAgain: "Try again",
     back: "Back",
     connecting: "Connecting...",
@@ -568,7 +573,9 @@ const ALPHABET_UI_TEXT = {
     close: "Cerrar",
     sayThisWord: "Di esta palabra:",
     grading: "Evaluando...",
+    next: "Siguiente",
     nextWord: "Siguiente palabra",
+    correct: "¡Correcto!",
     tryAgain: "Otra vez",
     back: "Volver",
     connecting: "Conectando...",
@@ -606,7 +613,9 @@ const ALPHABET_UI_TEXT = {
     close: "Chiudi",
     sayThisWord: "Pronuncia questa parola:",
     grading: "Valutazione...",
+    next: "Avanti",
     nextWord: "Prossima parola",
+    correct: "Corretto!",
     tryAgain: "Riprova",
     back: "Indietro",
     connecting: "Connessione...",
@@ -644,7 +653,9 @@ const ALPHABET_UI_TEXT = {
     close: "Fermer",
     sayThisWord: "Dis ce mot :",
     grading: "Evaluation...",
+    next: "Suivant",
     nextWord: "Mot suivant",
+    correct: "Correct !",
     tryAgain: "Reessaie",
     back: "Retour",
     connecting: "Connexion...",
@@ -682,7 +693,9 @@ const ALPHABET_UI_TEXT = {
     close: "Schließen",
     sayThisWord: "Sprich dieses Wort:",
     grading: "Wird bewertet...",
+    next: "Weiter",
     nextWord: "Nächstes Wort",
+    correct: "Richtig!",
     tryAgain: "Erneut versuchen",
     back: "Zurück",
     connecting: "Verbindung wird hergestellt...",
@@ -720,7 +733,9 @@ const ALPHABET_UI_TEXT = {
     close: "閉じる",
     sayThisWord: "この単語を言ってください:",
     grading: "採点中...",
+    next: "次へ",
     nextWord: "次の単語",
+    correct: "正解！",
     tryAgain: "もう一度",
     back: "戻る",
     connecting: "接続中...",
@@ -757,7 +772,9 @@ const ALPHABET_UI_TEXT = {
     close: "बंद करें",
     sayThisWord: "यह शब्द बोलें:",
     grading: "मूल्यांकन हो रहा है...",
+    next: "आगे बढ़ें",
     nextWord: "अगला शब्द",
+    correct: "सही!",
     tryAgain: "फिर से कोशिश करें",
     back: "वापस",
     connecting: "कनेक्ट हो रहा है...",
@@ -794,7 +811,9 @@ const ALPHABET_UI_TEXT = {
     close: "اقفل",
     sayThisWord: "قول الكلمة دي:",
     grading: "جارٍ التقييم...",
+    next: "التالي",
     nextWord: "الكلمة اللي بعد كده",
+    correct: "صحيح!",
     tryAgain: "حاول تاني",
     back: "رجوع",
     connecting: "جارٍ الاتصال...",
@@ -832,7 +851,9 @@ const ALPHABET_UI_TEXT = {
     close: "关闭",
     sayThisWord: "说这个词：",
     grading: "正在评分...",
+    next: "下一个",
     nextWord: "下一个词",
+    correct: "正确！",
     tryAgain: "再试一次",
     back: "返回",
     connecting: "正在连接...",
@@ -874,7 +895,9 @@ ALPHABET_UI_TEXT.pt = {
   close: "Fechar",
   sayThisWord: "Diga esta palavra:",
   grading: "Avaliando...",
+  next: "Avançar",
   nextWord: "Próxima palavra",
+  correct: "Correto!",
   tryAgain: "Tentar novamente",
   back: "Voltar",
   connecting: "Conectando...",
@@ -1447,6 +1470,7 @@ const getHighlightedWordParts = (word, marker) => {
 };
 
 function LetterCard({
+  dockActions = false,
   playSound = () => {},
   letter,
   onPlay,
@@ -1466,6 +1490,7 @@ function LetterCard({
 }) {
   const uiLang = normalizeSupportLanguage(appLanguage, DEFAULT_SUPPORT_LANGUAGE);
   const [isPracticeMode, setIsPracticeMode] = useState(false);
+  const useDock = dockActions || isPracticeMode;
   const [isFlipped, setIsFlipped] = useState(false);
   const [isGrading, setIsGrading] = useState(false);
   const [isGeneratingWord, setIsGeneratingWord] = useState(false);
@@ -1631,16 +1656,6 @@ function LetterCard({
           await awardXp(npub, xp, targetLang);
           onXpAwarded?.(xp);
         }
-        // Collect the card on its first clear this mount (works across rounds).
-        if (!collectedThisMountRef.current) {
-          collectedThisMountRef.current = true;
-          onCardCollected?.(letter.id);
-          // The Daily Quest counts successfully cleared active cards, not
-          // failed attempts or repeat practice from the collection.
-          if (npub && onCardCollected) {
-            void recordPlateActivity(npub, "phonics", targetLang);
-          }
-        }
       }
 
       // Calculate new correctCount (since setCorrectCount is async)
@@ -1793,7 +1808,6 @@ function LetterCard({
 
       if (requestId !== wordPlaybackRequestRef.current) {
         player.cleanup?.();
-        wordPlayerRef.current = null;
         return;
       }
 
@@ -1810,8 +1824,8 @@ function LetterCard({
         player.cleanup?.();
       };
 
-      detachCompletionWatcher = watchRealtimeAudioCompletion(
-        player.audio,
+      detachCompletionWatcher = watchPhonicsPlaybackCompletion(
+        player,
         finishPlayback,
       );
 
@@ -1829,6 +1843,25 @@ function LetterCard({
     playSound(selectSound);
     setShowResult(false);
     setIsCorrect(false);
+  };
+
+  const handleNext = async () => {
+    playSound(nextButtonSound);
+
+    // If this card is an active deck card being cleared, advance the deck
+    if (onCardCollected) {
+      if (!collectedThisMountRef.current) {
+        collectedThisMountRef.current = true;
+        onCardCollected(letter.id);
+        if (npub) {
+          void recordPlateActivity(npub, "phonics", targetLang);
+        }
+      }
+      return;
+    }
+
+    // Repeat practice from collection: generate the next practice word
+    await handleNextWord();
   };
 
   const handleNextWord = async () => {
@@ -1988,21 +2021,35 @@ function LetterCard({
               {typeLabel}
             </Badge>
             <HStack spacing={2}>
-              <Button
-                size="sm"
-                background="transparent"
-                border="1px solid"
-                borderColor={APP_BORDER_STRONG}
-                boxShadow="0px 2px 0px rgba(148, 163, 184, 0.35)"
-                color={APP_TEXT_PRIMARY}
-                leftIcon={<RiMicLine size={12} />}
-                onClick={handlePracticeClick}
-                isLoading={isGeneratingWord}
-                fontSize="xs"
-                _hover={{ bg: APP_SURFACE_MUTED }}
-              >
-                {uiText(uiLang, "practice")}
-              </Button>
+              <>
+                {!useDock && (
+                  <Button
+                    size="sm"
+                    background="transparent"
+                    border="1px solid"
+                    borderColor={APP_BORDER_STRONG}
+                    boxShadow="0px 2px 0px rgba(148, 163, 184, 0.35)"
+                    color={APP_TEXT_PRIMARY}
+                    leftIcon={
+                      onCardCollected && correctCount > 0 ? undefined : (
+                        <RiMicLine size={12} />
+                      )
+                    }
+                    onClick={
+                      onCardCollected && correctCount > 0
+                        ? handleNext
+                        : handlePracticeClick
+                    }
+                    isLoading={isGeneratingWord}
+                    fontSize="xs"
+                    _hover={{ bg: APP_SURFACE_MUTED }}
+                  >
+                    {onCardCollected && correctCount > 0
+                      ? uiText(uiLang, "next")
+                      : uiText(uiLang, "practice")}
+                  </Button>
+                )}
+              </>
             </HStack>
           </HStack>
 
@@ -2177,24 +2224,32 @@ function LetterCard({
 
               <HStack spacing={2} mt={1}>
                 {isCorrect ? (
-                  <Button
-                    size="xs"
-                    colorScheme="green"
-                    onClick={handleNextWord}
-                    _hover={{ bg: "green.400" }}
-                  >
-                    {uiText(uiLang, "nextWord")}
-                  </Button>
+                  <>
+                    {!useDock && (
+                      <Button
+                        size="xs"
+                        colorScheme="green"
+                        onClick={handleNext}
+                        _hover={{ bg: "green.400" }}
+                      >
+                        {uiText(uiLang, onCardCollected ? "next" : "nextWord")}
+                      </Button>
+                    )}
+                  </>
                 ) : (
-                  <Button
-                    size="xs"
-                    variant="ghost"
-                    color={APP_TEXT_PRIMARY}
-                    onClick={handleTryAgain}
-                    _hover={{ bg: APP_SURFACE_MUTED }}
-                  >
-                    {uiText(uiLang, "tryAgain")}
-                  </Button>
+                  <>
+                    {!useDock && (
+                      <Button
+                        size="xs"
+                        variant="ghost"
+                        color={APP_TEXT_PRIMARY}
+                        onClick={handleTryAgain}
+                        _hover={{ bg: APP_SURFACE_MUTED }}
+                      >
+                        {uiText(uiLang, "tryAgain")}
+                      </Button>
+                    )}
+                  </>
                 )}
                 <Button
                   size="xs"
@@ -2209,40 +2264,116 @@ function LetterCard({
             </VStack>
           ) : (
             <VStack spacing={2} py={2}>
-              <Button
-                size="md"
-                colorScheme={
-                  isRecording ? undefined : isConnecting ? "yellow" : "teal"
-                }
-                bg={isRecording ? SOFT_STOP_BUTTON_BG : undefined}
-                boxShadow={isRecording ? "0px 4px 0px #e03767" : undefined}
-                color={isRecording ? "white" : undefined}
-                leftIcon={
-                  isConnecting ? (
-                    <Spinner size="xs" />
-                  ) : isRecording ? (
-                    <RiStopCircleLine />
-                  ) : (
-                    <RiMicLine />
-                  )
-                }
-                onClick={handleRecord}
-                isDisabled={!supportsSpeech || isConnecting}
-                _hover={{
-                  transform: "scale(1.02)",
-                  ...(isRecording ? { bg: SOFT_STOP_BUTTON_HOVER_BG } : {}),
-                }}
-              >
-                {isConnecting
-                  ? uiText(uiLang, "connecting")
-                  : isRecording
-                    ? uiText(uiLang, "stop")
-                    : uiText(uiLang, "record")}
-              </Button>
+              <>
+                {!useDock && (
+                  <Button
+                    size="md"
+                    colorScheme={
+                      isRecording ? undefined : isConnecting ? "yellow" : "teal"
+                    }
+                    bg={isRecording ? SOFT_STOP_BUTTON_BG : undefined}
+                    boxShadow={isRecording ? "0px 4px 0px #e03767" : undefined}
+                    color={isRecording ? "white" : undefined}
+                    leftIcon={
+                      isConnecting ? (
+                        <Spinner size="xs" />
+                      ) : isRecording ? (
+                        <RiStopCircleLine />
+                      ) : (
+                        <RiMicLine />
+                      )
+                    }
+                    onClick={handleRecord}
+                    isDisabled={!supportsSpeech || isConnecting}
+                    _hover={{
+                      transform: "scale(1.02)",
+                      ...(isRecording ? { bg: SOFT_STOP_BUTTON_HOVER_BG } : {}),
+                    }}
+                  >
+                    {isConnecting
+                      ? uiText(uiLang, "connecting")
+                      : isRecording
+                      ? uiText(uiLang, "stop")
+                      : uiText(uiLang, "record")}
+                  </Button>
+                )}
+              </>
             </VStack>
           )}
         </VStack>
       </MotionBox>
+
+      {useDock && (
+        <QuestionActionArea
+          feedback={showResult ? isCorrect : null}
+          actions={
+            <ActivityActionRow
+              tone={
+                isRecording ? "danger" : showResult && isCorrect ? "success" : "primary"
+              }
+              primary={
+                <Button
+                  colorScheme={isRecording ? "pink" : "teal"}
+                  isLoading={isGeneratingWord || isGrading || isConnecting}
+                  isDisabled={
+                    isGeneratingWord ||
+                    isGrading ||
+                    isConnecting ||
+                    (isPracticeMode && !supportsSpeech)
+                  }
+                  onClick={
+                    !isPracticeMode
+                      ? onCardCollected && correctCount > 0
+                        ? handleNext
+                        : handlePracticeClick
+                      : showResult
+                      ? isCorrect
+                        ? handleNext
+                        : handleTryAgain
+                      : handleRecord
+                  }
+                >
+                  {!isPracticeMode
+                    ? onCardCollected && correctCount > 0
+                      ? uiText(uiLang, "next")
+                      : uiText(uiLang, "practice")
+                    : showResult
+                    ? isCorrect
+                      ? uiText(uiLang, onCardCollected ? "next" : "nextWord")
+                      : uiText(uiLang, "tryAgain")
+                    : isRecording
+                    ? uiText(uiLang, "stop")
+                    : uiText(uiLang, "record")}
+                </Button>
+              }
+            >
+              {isPracticeMode ? (
+                <Button variant="ghost" onClick={handleFlipBack}>
+                  {uiText(uiLang, "back")}
+                </Button>
+              ) : onCardCollected && correctCount > 0 ? (
+                <Button variant="ghost" onClick={handlePracticeClick}>
+                  {uiText(uiLang, "practice")}
+                </Button>
+              ) : null}
+            </ActivityActionRow>
+          }
+        >
+          {showResult && (
+            <Box
+              role="status"
+              px={1} py={2}
+            >
+              <Text fontWeight="bold">
+                {isCorrect ? "✓" : "✖"}{" "}
+                {isCorrect
+                  ? uiText(uiLang, "correct")
+                  : uiText(uiLang, "tryAgain")}
+              </Text>
+            </Box>
+          )}
+        </QuestionActionArea>
+      )}
     </Box>
   );
 }
@@ -2287,127 +2418,6 @@ function shuffleArray(arr) {
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
   return shuffled;
-}
-
-function watchRealtimeAudioCompletion(audio, onDone) {
-  if (!audio) return () => {};
-
-  let hasStarted = false;
-  let isDetached = false;
-  let silenceTimer = null;
-  let levelPollTimer = null;
-  let audioContext = null;
-  let mediaSource = null;
-  let analyser = null;
-  let levelSamples = null;
-  const audioTracks = audio.srcObject?.getAudioTracks?.() || [];
-
-  const clearSilenceTimer = () => {
-    if (!silenceTimer) return;
-    clearTimeout(silenceTimer);
-    silenceTimer = null;
-  };
-  const markStarted = () => {
-    hasStarted = true;
-    clearSilenceTimer();
-  };
-  const scheduleSilenceFinish = () => {
-    if (!hasStarted || silenceTimer) return;
-    silenceTimer = setTimeout(() => {
-      silenceTimer = null;
-      onDone();
-    }, 700);
-  };
-  const finishAfterStart = () => {
-    const currentTime = Number.isFinite(audio.currentTime)
-      ? audio.currentTime
-      : 0;
-    if (hasStarted || currentTime > 0.01) onDone();
-  };
-  const finish = () => {
-    onDone();
-  };
-  const detach = () => {
-    if (isDetached) return;
-    isDetached = true;
-    clearSilenceTimer();
-    if (levelPollTimer) {
-      clearTimeout(levelPollTimer);
-      levelPollTimer = null;
-    }
-    audio.removeEventListener("playing", markStarted);
-    audio.removeEventListener("ended", finish);
-    audio.removeEventListener("error", finish);
-    audioTracks.forEach((track) => {
-      track.removeEventListener("unmute", markStarted);
-      track.removeEventListener("mute", finishAfterStart);
-      track.removeEventListener("ended", finishAfterStart);
-    });
-    try {
-      mediaSource?.disconnect?.();
-    } catch {
-      // The source may already be disconnected when playback is cleaned up.
-    }
-    try {
-      analyser?.disconnect?.();
-    } catch {
-      // The analyser may already be disconnected when playback is cleaned up.
-    }
-    try {
-      audioContext?.close?.();
-    } catch {
-      // Closing is best-effort; the browser will reclaim the context.
-    }
-  };
-
-  const pollAudioLevel = () => {
-    if (isDetached || !analyser || !levelSamples) return;
-
-    analyser.getByteTimeDomainData(levelSamples);
-    let sumSquares = 0;
-    for (let i = 0; i < levelSamples.length; i += 1) {
-      const centered = (levelSamples[i] - 128) / 128;
-      sumSquares += centered * centered;
-    }
-    const rms = Math.sqrt(sumSquares / levelSamples.length);
-
-    if (rms > 0.006) {
-      markStarted();
-    } else {
-      scheduleSilenceFinish();
-    }
-
-    levelPollTimer = setTimeout(pollAudioLevel, 80);
-  };
-
-  audio.addEventListener("playing", markStarted, { once: true });
-  audio.addEventListener("ended", finish, { once: true });
-  audio.addEventListener("error", finish, { once: true });
-
-  audioTracks.forEach((track) => {
-    if (!track.muted && track.readyState === "live") markStarted();
-    track.addEventListener("unmute", markStarted, { once: true });
-    track.addEventListener("mute", finishAfterStart);
-    track.addEventListener("ended", finishAfterStart);
-  });
-
-  try {
-    const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
-    if (AudioContextCtor && audio.srcObject instanceof MediaStream) {
-      audioContext = new AudioContextCtor();
-      mediaSource = audioContext.createMediaStreamSource(audio.srcObject);
-      analyser = audioContext.createAnalyser();
-      analyser.fftSize = 256;
-      levelSamples = new Uint8Array(analyser.fftSize);
-      mediaSource.connect(analyser);
-      void audioContext.resume?.();
-      pollAudioLevel();
-    }
-  } catch {
-    // Fall back to media and track events when Web Audio is unavailable.
-  }
-
-  return detach;
 }
 
 // Routed repair (deep-seed): when the Daily Quest sends a phonics repair here,
@@ -2637,11 +2647,11 @@ export default function AlphabetBootcamp({
         return;
       }
 
-      try {
-        stopLetterPlayback();
-        const requestId = playbackRequestRef.current;
-        setLoadingId(data.id);
+      stopLetterPlayback();
+      const requestId = playbackRequestRef.current;
+      setLoadingId(data.id);
 
+      try {
         const player = await getTTSPlayer({
           text,
           langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
@@ -2658,7 +2668,6 @@ export default function AlphabetBootcamp({
 
         if (requestId !== playbackRequestRef.current) {
           player.cleanup?.();
-          playerRef.current = null;
           return;
         }
 
@@ -2676,8 +2685,8 @@ export default function AlphabetBootcamp({
         };
 
         const audio = player.audio;
-        detachCompletionWatcher = watchRealtimeAudioCompletion(
-          audio,
+        detachCompletionWatcher = watchPhonicsPlaybackCompletion(
+          player,
           finishPlayback,
         );
 
@@ -2685,6 +2694,7 @@ export default function AlphabetBootcamp({
         setPlayingId(data.id);
         await audio.play();
       } catch (err) {
+        if (requestId !== playbackRequestRef.current) return;
         console.error("AlphabetBootcamp TTS failed", err);
         stopLetterPlayback();
       }
@@ -2891,6 +2901,7 @@ export default function AlphabetBootcamp({
                   <LetterCard
                     playSound={playSound}
                     key={deck[0].id}
+                    dockActions
                     letter={deck[0]}
                     appLanguage={appLanguage}
                     targetLang={targetLang}
@@ -2980,16 +2991,24 @@ export default function AlphabetBootcamp({
               </Flex>
               {isComplete && (
                 <VStack spacing={3}>
-                  <Button
-                    variant="outline"
-                    colorScheme="teal"
-                    size="lg"
-                    leftIcon={<RiRefreshLine />}
-                    onClick={handleNewRound}
-                    isLoading={isGeneratingDeck}
-                  >
-                    {uiText(uiLang, "newRound")}
-                  </Button>
+                  <QuestionActionArea
+                    actions={
+                      <ActivityActionRow
+                        primary={
+                          <Button
+                            variant="outline"
+                            colorScheme="teal"
+                            size="lg"
+                            leftIcon={<RiRefreshLine />}
+                            onClick={handleNewRound}
+                            isLoading={isGeneratingDeck}
+                          >
+                            {uiText(uiLang, "newRound")}
+                          </Button>
+                        }
+                      />
+                    }
+                  />
                 </VStack>
               )}
             </VStack>

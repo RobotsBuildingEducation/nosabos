@@ -1,3 +1,4 @@
+import ActivityActionRow from "./ActivityActionRow";
 import React, {
   useCallback,
   useEffect,
@@ -36,6 +37,7 @@ import useSoundSettings from "../hooks/useSoundSettings";
 import useNotesStore from "../hooks/useNotesStore";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import FeedbackRail from "./FeedbackRail";
+import QuestionActionArea from "./QuestionActionArea";
 import VoiceOrb from "./VoiceOrb";
 import { SortableArea, SortableList, SortableItem } from "./dnd/Sortable";
 import {
@@ -5028,7 +5030,7 @@ export default function DelightQuestionLab({
 
   return (
     <Box
-      p={embedded ? 0 : 4}
+      p={embedded ? 0 : { base: 0, md: 4 }}
       color={APP_TEXT_PRIMARY}
       lang={supportLang}
       dir={supportDirection}
@@ -5457,79 +5459,88 @@ export default function DelightQuestionLab({
           )}
         </Box>
 
-        {(result === null || (!isFinalQuiz && result === false)) && (
-          <VStack spacing={3} align="stretch" pt={1}>
-            <HStack justify="flex-end" spacing={3} flexWrap="wrap">
-              {!isFinalQuiz && (
-                <Button
-                  variant="ghost"
-                  size="lg"
-                  onClick={handleSkipQuestion}
-                  isDisabled={submitting}
-                  style={questionSquircleStyle}
-                >
-                  {activeVariantCopy.skip || "Skip"}
-                </Button>
-              )}
-              <Button
-                colorScheme="purple"
-                size="lg"
-                px={{ base: 7, md: 10 }}
-                isLoading={submitting}
-                isDisabled={
-                  loading ||
-                  !ready ||
-                  submitting ||
-                  isSpeechRecording ||
-                  isSpeechConnecting
-                }
-                onClick={() => handleSubmit()}
-                style={questionSquircleStyle}
-              >
-                {submitting
-                  ? activeVariantCopy.checking || "Checking…"
-                  : activeVariantCopy.submit || "Check"}
-              </Button>
-            </HStack>
-          </VStack>
-        )}
+        <QuestionActionArea
+          feedback={result}
+          actions={
+            (result === null || !isFinalQuiz && result === false) && (
 
-        {question && result !== null && (
-          <FeedbackRail
-            ok={result}
-            xp={recentXp}
-            showNext={result === true || isFinalQuiz}
-            onNext={handleNext}
-            nextLabel={
-              isLastQuizQuestion
-                ? t("vocab_see_results") !== "vocab_see_results"
-                  ? t("vocab_see_results")
-                  : (supportLang === "es"
-                      ? "Ver resultados"
-                      : supportLang === "it"
-                        ? "Vedi i risultati"
-                        : supportLang === "fr"
-                          ? "Voir les résultats"
-                          : supportLang === "de"
-                            ? "Ergebnisse ansehen"
-                            : "See results")
-                : activeVariantCopy?.nextQuestion
-                  ? activeVariantCopy.nextQuestion.replace(/\s*→\s*$/, "")
-                  : t("practice_next_question") !== "practice_next_question"
-                    ? t("practice_next_question")
-                    : "Next question"
-            }
-            t={t}
-            userLanguage={supportLang}
-            onExplainAnswer={isFinalQuiz ? undefined : handleExplainAnswer}
-            explanationText={explanationText}
-            isLoadingExplanation={isLoadingExplanation}
-            lessonProgress={lessonProgress}
-            onCreateNote={isFinalQuiz ? undefined : handleCreateNote}
-            isCreatingNote={isCreatingNote}
-            noteCreated={noteCreated}
-          />
-        )}
+                <ActivityActionRow
+                  primary={
+                    <Button
+                      colorScheme="purple"
+                      size="lg"
+                      px={{ base: 7, md: 10 }}
+                      isLoading={submitting}
+                      isDisabled={
+                        loading ||
+                        !ready ||
+                        submitting ||
+                        isSpeechRecording ||
+                        isSpeechConnecting
+                      }
+                      onClick={() => handleSubmit()}
+                      style={questionSquircleStyle}
+                    >
+                      {submitting
+                        ? activeVariantCopy.checking || "Checking…"
+                        : activeVariantCopy.submit || "Check"}
+                    </Button>
+                  }
+                >
+                  {!isFinalQuiz && (
+                    <Button
+                      variant="ghost"
+                      size="lg"
+                      onClick={handleSkipQuestion}
+                      isDisabled={submitting}
+                      style={questionSquircleStyle}
+                    >
+                      {activeVariantCopy.skip || "Skip"}
+                    </Button>
+                  )}
+                </ActivityActionRow>
+
+            )
+          }
+        >
+          {question && result !== null && (
+            <FeedbackRail
+              compact
+              ok={result}
+              xp={recentXp}
+              showNext={result === true || isFinalQuiz}
+              onNext={handleNext}
+              nextLabel={
+                isLastQuizQuestion
+                  ? t("vocab_see_results") !== "vocab_see_results"
+                    ? t("vocab_see_results")
+                    : (supportLang === "es"
+                        ? "Ver resultados"
+                        : supportLang === "it"
+                          ? "Vedi i risultati"
+                          : supportLang === "fr"
+                            ? "Voir les résultats"
+                            : supportLang === "de"
+                              ? "Ergebnisse ansehen"
+                              : "See results")
+                  : activeVariantCopy?.nextQuestion
+                    ? activeVariantCopy.nextQuestion.replace(/\s*→\s*$/, "")
+                    : t("practice_next_question") !== "practice_next_question"
+                      ? t("practice_next_question")
+                      : "Next question"
+              }
+              t={t}
+              userLanguage={supportLang}
+              onExplainAnswer={isFinalQuiz ? undefined : handleExplainAnswer}
+              explanationText={explanationText}
+              isLoadingExplanation={isLoadingExplanation}
+              lessonProgress={lessonProgress}
+              onCreateNote={isFinalQuiz ? undefined : handleCreateNote}
+              isCreatingNote={isCreatingNote}
+              noteCreated={noteCreated}
+            />
+          )}
+        </QuestionActionArea>
       </VStack>
     </Box>
   );

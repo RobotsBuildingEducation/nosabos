@@ -1,11 +1,14 @@
 import React, { useEffect, useRef } from "react";
+import { motion, useReducedMotion } from "framer-motion";
+import ActivityActionRow from "./ActivityActionRow";
 import {
   Box,
   Button,
   Flex,
   HStack,
   IconButton,
-  SlideFade, Text,
+  SlideFade,
+  Text,
   VStack,
 } from "@chakra-ui/react";
 import { FiArrowRight, FiHelpCircle } from "react-icons/fi";
@@ -25,6 +28,7 @@ import {
 
 const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
 const APP_BORDER = "var(--app-border)";
+const MotionBox = motion.create(Box);
 
 /**
  * Stable, memoized feedback rail used by GrammarBook and Vocabulary.
@@ -48,8 +52,10 @@ const FeedbackRail = React.memo(
     onCreateNote,
     isCreatingNote,
     noteCreated,
+    compact = false,
   }) => {
     const hasPlayedRef = useRef(false);
+    const reduceMotion = useReducedMotion();
     const playSound = useSoundSettings((s) => s.playSound);
 
     // Play sound feedback based on answer correctness
@@ -77,6 +83,167 @@ const FeedbackRail = React.memo(
       ? t?.("correct") || "Correct!"
       : t?.("try_again") || "Try again";
 
+    if (compact) {
+      return (
+        <VStack align="stretch" spacing={3}>
+          <MotionBox
+            key={ok ? "correct" : "incorrect"}
+            initial={
+              reduceMotion ? false : { opacity: 0, y: 6, filter: "blur(3px)" }
+            }
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            transition={{
+              duration: reduceMotion ? 0 : 0.24,
+              delay: reduceMotion ? 0 : 0.06,
+              ease: [0.22, 1, 0.36, 1],
+            }}
+            maxH="min(28dvh, 240px)"
+            overflowY="auto"
+            overscrollBehavior="contain"
+            data-activity-feedback-content=""
+            px={1}
+            pt={2}
+            pb={1}
+          >
+            <HStack align="start" spacing={3}>
+              <Text
+                aria-hidden="true"
+                fontWeight="bold"
+                color={
+                  ok ? questionFeedbackAccent.ok : questionFeedbackAccent.error
+                }
+              >
+                {ok ? "✓" : "✖"}
+              </Text>
+              <Box
+                flex="1"
+                minW={0}
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+              >
+                <Text fontWeight="bold">
+                  {label}
+                  {xp > 0 ? ` · +${xp} XP` : ""}
+                </Text>
+              </Box>
+              {onCreateNote && (
+                <IconButton
+                  icon={<RiBookmarkLine size={18} />}
+                  aria-label={noteCreated ? noteSavedLabel : createNoteLabel}
+                  variant="ghost"
+                  size="sm"
+                  isLoading={isCreatingNote}
+                  isDisabled={isCreatingNote || noteCreated}
+                  onClick={() => {
+                    playSound(sparkleSound);
+                    onCreateNote();
+                  }}
+                  flexShrink={0}
+                />
+              )}
+            </HStack>
+            {ok && lessonProgress?.total > 0 && (
+              <Box mt={3}>
+                <HStack
+                  justify="space-between"
+                  mb={2}
+                  fontSize="xs"
+                  color={questionToneText.secondary}
+                >
+                  <Text>{lessonProgress.label}</Text>
+                  <Text fontWeight="semibold">
+                    {Math.round(lessonProgress.pct)}%
+                  </Text>
+                </HStack>
+                <Box
+                  role="progressbar"
+                  aria-label={lessonProgress.label}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={Math.max(
+                    0,
+                    Math.min(100, Math.round(lessonProgress.pct || 0)),
+                  )}
+                >
+                  <WaveBar
+                    value={lessonProgress.pct}
+                    height={14}
+                    start="#4aa8ff"
+                    end="#75f8ff"
+                    bg="rgba(125, 211, 252, 0.12)"
+                    border="rgba(125, 211, 252, 0.24)"
+                  />
+                </Box>
+              </Box>
+            )}
+            {!ok && onExplainAnswer && !explanationText && (
+              <Button
+                mt={3}
+                size="sm"
+                w="full"
+                justifyContent="center"
+                textAlign="center"
+                variant="solid"
+                bg="var(--app-surface-elevated)"
+                color={questionToneText.primary}
+                border="1px solid var(--question-error-accent)"
+                borderRadius="18px"
+                boxShadow="0 3px 0 var(--question-error-bg)"
+                _hover={{ bg: "var(--app-surface-muted)" }}
+                _active={{ transform: "translateY(1px)", boxShadow: "none" }}
+                _focusVisible={{
+                  outline: "2px solid var(--question-error-accent)",
+                  outlineOffset: "2px",
+                }}
+                leftIcon={<FiHelpCircle />}
+                onClick={onExplainAnswer}
+                isLoading={isLoadingExplanation}
+                whiteSpace="normal"
+                height="auto"
+                minH="40px"
+              >
+                {t?.("flashcard_explain_answer") || "Explain my answer"}
+              </Button>
+            )}
+            {!ok && explanationText && (
+              <Box
+                mt={2}
+                fontSize="sm"
+                lineHeight="1.6"
+                sx={{
+                  "& p": { mb: 2, unicodeBidi: "plaintext" },
+                  "& ul, & ol": { ps: 4 },
+                }}
+              >
+                <ReactMarkdown>{explanationText}</ReactMarkdown>
+              </Box>
+            )}
+          </MotionBox>
+          {showNext && (
+            <ActivityActionRow
+              tone={ok ? "success" : "danger"}
+              primary={
+                <Button
+                  rightIcon={<FiArrowRight />}
+                  colorScheme={ok ? "teal" : "red"}
+                  onClick={onNext}
+                  width="full"
+                  minH="48px"
+                  height="auto"
+                  py={3}
+                  whiteSpace="normal"
+                  size="lg"
+                >
+                  {nextLabel}
+                </Button>
+              }
+            />
+          )}
+        </VStack>
+      );
+    }
+
     return (
       <SlideFade in={true} offsetY="10px">
         <VStack spacing={3} align="stretch">
@@ -94,7 +261,9 @@ const FeedbackRail = React.memo(
                 rounded="full"
                 align="center"
                 justify="center"
-                bg={ok ? questionFeedbackAccent.ok : questionFeedbackAccent.error}
+                bg={
+                  ok ? questionFeedbackAccent.ok : questionFeedbackAccent.error
+                }
                 color="white"
                 fontWeight="bold"
                 fontSize="lg"
@@ -130,7 +299,14 @@ const FeedbackRail = React.memo(
                 <IconButton
                   icon={
                     isCreatingNote ? (
-                      <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />
+                      <VoiceOrb
+                        state={
+                          ["idle", "listening", "speaking"][
+                            Math.floor(Math.random() * 3)
+                          ]
+                        }
+                        size={16}
+                      />
                     ) : (
                       <RiBookmarkLine size={18} />
                     )
@@ -187,7 +363,14 @@ const FeedbackRail = React.memo(
               <Button
                 leftIcon={
                   isLoadingExplanation ? (
-                    <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} />
+                    <VoiceOrb
+                      state={
+                        ["idle", "listening", "speaking"][
+                          Math.floor(Math.random() * 3)
+                        ]
+                      }
+                      size={24}
+                    />
                   ) : (
                     <FiHelpCircle />
                   )
@@ -290,7 +473,7 @@ const FeedbackRail = React.memo(
         </VStack>
       </SlideFade>
     );
-  }
+  },
 );
 
 FeedbackRail.displayName = "FeedbackRail";

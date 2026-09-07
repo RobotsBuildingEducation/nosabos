@@ -460,6 +460,34 @@ button[role="tab"]:focus-visible {
     inset 0 1px 0 rgba(255, 255, 255, 0.72) !important;
 }
 
+/* Feedback belongs to the entire activity surface, including its action row. */
+[data-question-action-area][data-question-feedback="correct"] {
+  --activity-feedback-accent: var(--question-success-accent);
+  --activity-feedback-tint: var(--question-success-bg);
+}
+
+[data-question-action-area][data-question-feedback="incorrect"] {
+  --activity-feedback-accent: var(--question-error-accent);
+  --activity-feedback-tint: var(--question-error-bg);
+}
+
+[data-question-action-area] .bottombar-glass {
+  transition: border-color 220ms ease, background-color 220ms ease, box-shadow 300ms ease;
+}
+
+[data-question-action-area][data-question-feedback="correct"] .bottombar-glass,
+[data-question-action-area][data-question-feedback="incorrect"] .bottombar-glass {
+  background: linear-gradient(135deg, var(--activity-feedback-tint), var(--activity-feedback-tint)), var(--app-glass-bg);
+  border-color: var(--activity-feedback-accent);
+  box-shadow: 0 18px 42px rgba(2, 6, 23, 0.16), 0 0 24px var(--activity-feedback-tint), inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-question-action-area] .bottombar-glass {
+    transition: none;
+  }
+}
+
 @media (prefers-color-scheme: light) {
   :root {
     color: var(--app-text-primary);

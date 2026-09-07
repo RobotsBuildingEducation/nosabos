@@ -301,9 +301,9 @@ export default function TutorialStepper({
   };
 
   return (
-    <VStack spacing={4} w="100%" mb={2}>
+    <VStack spacing={1} w="100%" mb={{ base: 2, md: 3 }}>
       {/* Stepper Progress */}
-      <Box w="100%" px={2}>
+      <Box w="100%" px={{ base: 1, md: 2 }}>
         <HStack
           spacing={0}
           justify="center"

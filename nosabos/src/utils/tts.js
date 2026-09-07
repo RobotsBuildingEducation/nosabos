@@ -35,9 +35,9 @@ export const DEFAULT_TTS_VOICE = "alloy";
 // Default to opus for size efficiency; allow callers to request lower-latency formats
 export const DEFAULT_TTS_FORMAT = "opus";
 export const LOW_LATENCY_TTS_FORMAT = "wav";
-// v3 recordings stop at the server's end-of-audio signal instead of waiting
-// for the longer WebRTC connection finalizer, avoiding cached trailing silence.
-const REALTIME_CACHE_FORMAT = "realtime-v3";
+// Only recordings made after successful generation AND WebRTC playout drain
+// are reusable. Older versions may contain truncated audio; never promote them.
+const REALTIME_CACHE_FORMAT = "realtime-v6";
 const REALTIME_CACHE_MIME_TYPES = [
   "audio/webm;codecs=opus",
   "audio/webm",
@@ -397,10 +397,11 @@ async function saveToIndexedDB(key, blob) {
 
     const transaction = db.transaction(STORE_NAME, "readwrite");
     const store = transaction.objectStore(STORE_NAME);
-    store.put({
-      key,
-      blob,
-      timestamp: Date.now(),
+    await new Promise((resolve, reject) => {
+      transaction.oncomplete = resolve;
+      transaction.onerror = () => reject(transaction.error);
+      transaction.onabort = () => reject(transaction.error);
+      store.put({ key, blob, timestamp: Date.now() });
     });
   } catch (error) {
     console.warn("TTS IndexedDB save failed:", error);
@@ -611,20 +612,20 @@ async function getRealtimePlayer({
   const pc = new RTCPeerConnection();
   pc.addTransceiver("audio", { direction: "recvonly" });
 
-  // Track when audio playback has actually started (play() resolved)
-  let audioStarted = false;
-  let audioEnded = false;
-  let responseDone = false;
+  let responseSucceeded = false;
+  let outputBufferStopped = false;
   let resolveResponseComplete;
+  // Consumers use this to update playback UI, so it must follow playout,
+  // not the faster-than-realtime generation events.
   const responseComplete = new Promise((resolve) => {
     resolveResponseComplete = resolve;
   });
   let finalizeResolved = false;
-  let playbackMonitorTimer = null;
-  let responseDoneWatchTimer = null;
-  let cacheRecorderStopTimer = null;
   let hardFallbackTimer = null;
-  let shouldCacheRealtimeAudio = false;
+  let playbackDrainTimer = null;
+  let drainScheduled = false;
+  let playbackCompletedNaturally = false;
+  let recorderFailed = false;
   let cacheRecorder = null;
   let cacheRecorderDone = Promise.resolve();
   let resolveCacheRecorderDone = null;
@@ -659,15 +660,21 @@ async function getRealtimePlayer({
       });
       cacheRecorder.addEventListener(
         "stop",
-        () => {
-          if (shouldCacheRealtimeAudio && cacheChunks.length) {
+        async () => {
+          if (
+            playbackCompletedNaturally &&
+            responseSucceeded &&
+            !recorderFailed &&
+            !intentionalEnd &&
+            cacheChunks.length
+          ) {
             const blob = new Blob(cacheChunks, {
               type:
                 cacheRecorder.mimeType ||
                 cacheChunks[0]?.type ||
                 "audio/webm",
             });
-            if (blob.size > 512) addToCache(cacheKey, blob);
+            if (blob.size > 512) await addToCache(cacheKey, blob);
           }
           resolveCacheRecorderDone?.();
         },
@@ -676,6 +683,7 @@ async function getRealtimePlayer({
       cacheRecorder.addEventListener(
         "error",
         () => {
+          recorderFailed = true;
           resolveCacheRecorderDone?.();
         },
         { once: true },
@@ -705,149 +713,85 @@ async function getRealtimePlayer({
     return cacheRecorderDone;
   };
 
-  audio.addEventListener(
-    "playing",
-    () => {
-      audioStarted = true;
-    },
-    { once: true },
-  );
-  audio.addEventListener(
-    "ended",
-    () => {
-      audioEnded = true;
-    },
-    { once: true },
-  );
-
   let resolveFinalize;
+  let rejectReady;
   const clearFinalizeTimers = () => {
-    if (playbackMonitorTimer) {
-      clearTimeout(playbackMonitorTimer);
-      playbackMonitorTimer = null;
-    }
-    if (responseDoneWatchTimer) {
-      clearTimeout(responseDoneWatchTimer);
-      responseDoneWatchTimer = null;
-    }
-    if (cacheRecorderStopTimer) {
-      clearTimeout(cacheRecorderStopTimer);
-      cacheRecorderStopTimer = null;
-    }
-    if (hardFallbackTimer) {
-      clearTimeout(hardFallbackTimer);
-      hardFallbackTimer = null;
-    }
+    clearTimeout(playbackDrainTimer);
+    clearTimeout(hardFallbackTimer);
+    clearTimeout(sessionReadyFallbackTimer);
   };
   const finishFinalize = () => {
     if (finalizeResolved) return;
     finalizeResolved = true;
-    resolveResponseComplete?.();
     clearFinalizeTimers();
     resolveFinalize?.();
   };
-
-  const markResponseComplete = () => {
-    if (responseDone) return;
-    responseDone = true;
-    shouldCacheRealtimeAudio = true;
-    resolveResponseComplete?.();
-    cacheRecorderStopTimer = setTimeout(() => {
-      cacheRecorderStopTimer = null;
-      void stopRealtimeCacheRecording();
-    }, 220);
-    schedulePlaybackCompletionWatch(180);
-  };
-  const startPlaybackCompletionWatch = () => {
-    if (responseDoneWatchTimer) {
-      clearTimeout(responseDoneWatchTimer);
-      responseDoneWatchTimer = null;
-    }
-    if (playbackMonitorTimer || finalizeResolved) return;
-
-    const pollMs = 120;
-    const stagnantThreshold = 5;
-    const maxMonitorMs = Math.max(7000, text.length * 100 + 2500);
-    const startedAt = Date.now();
-    let lastTime = Number.isFinite(audio.currentTime) ? audio.currentTime : 0;
-    let sawPlaybackProgress = lastTime > 0.01 || audioStarted;
-    let stagnantPolls = 0;
-
-    const poll = () => {
-      playbackMonitorTimer = null;
-      if (finalizeResolved) return;
-
-      const currentTime = Number.isFinite(audio.currentTime) ? audio.currentTime : 0;
-      const hasAdvanced = currentTime > lastTime + 0.01;
-
-      if (hasAdvanced) {
-        sawPlaybackProgress = true;
-        audioStarted = true;
-        stagnantPolls = 0;
-        lastTime = currentTime;
-      } else if (sawPlaybackProgress || currentTime > 0.01 || audioEnded) {
-        sawPlaybackProgress = true;
-        stagnantPolls += 1;
-      }
-
-      if (
-        sawPlaybackProgress &&
-        (audioEnded || stagnantPolls >= stagnantThreshold)
-      ) {
-        finishFinalize();
-        return;
-      }
-
-      if (
-        Date.now() - startedAt >= maxMonitorMs ||
-        (!sawPlaybackProgress && audio.paused && Date.now() - startedAt >= 1500)
-      ) {
-        finishFinalize();
-        return;
-      }
-
-      playbackMonitorTimer = setTimeout(poll, pollMs);
-    };
-
-    playbackMonitorTimer = setTimeout(poll, pollMs);
-  };
-  const schedulePlaybackCompletionWatch = (delayMs = 0) => {
+  const failPlayback = (error) => {
     if (finalizeResolved) return;
-    if (delayMs <= 0) {
-      startPlaybackCompletionWatch();
-      return;
+    playbackCompletedNaturally = false;
+    rejectReady?.(error);
+    finishFinalize();
+    audio.dispatchEvent(new Event("error"));
+  };
+  const onPlaybackError = () =>
+    failPlayback(new Error("TTS audio playback failed"));
+  audio.addEventListener("error", onPlaybackError);
+
+  const finishAfterPlaybackDrain = async () => {
+    if (
+      !responseSucceeded ||
+      !outputBufferStopped ||
+      drainScheduled ||
+      finalizeResolved
+    ) return;
+    drainScheduled = true;
+    // The data channel can beat the last RTP packets and the browser's jitter
+    // buffer. Keep recording through that tail before stopping any tracks.
+    let tailMs = 1000;
+    try {
+      const stats = await pc.getStats();
+      stats.forEach((report) => {
+        if (report.type !== "inbound-rtp" || report.kind !== "audio") return;
+        const emitted = report.jitterBufferEmittedCount;
+        if (emitted > 0) {
+          const delay =
+            Math.max(
+              report.jitterBufferDelay || 0,
+              report.jitterBufferTargetDelay || 0,
+            ) / emitted;
+          tailMs = Math.max(tailMs, delay * 1000 + 500);
+        }
+      });
+    } catch {
+      // Safari/older WebViews may not expose receiver jitter-buffer stats.
     }
-    if (playbackMonitorTimer || responseDoneWatchTimer) return;
-    responseDoneWatchTimer = setTimeout(() => {
-      responseDoneWatchTimer = null;
-      startPlaybackCompletionWatch();
-    }, delayMs);
+    if (finalizeResolved) return;
+    playbackDrainTimer = setTimeout(() => {
+      playbackCompletedNaturally = true;
+      finishFinalize();
+    }, tailMs);
   };
 
   const ready = new Promise((resolve, reject) => {
+    rejectReady = reject;
     pc.ontrack = (event) => {
-      event.streams[0].getTracks().forEach((t) => {
-        remoteStream.addTrack(t);
-        t.addEventListener(
-          "ended",
-          () => {
-            if (responseDone) startPlaybackCompletionWatch();
-          },
-          { once: true },
-        );
-        t.addEventListener("mute", () => {
-          if (responseDone) startPlaybackCompletionWatch();
-        });
+      if (finalizeResolved) return;
+      // ontrack can be streamless on some browsers.
+      const tracks = event.streams?.[0]?.getTracks() || [event.track];
+      tracks.filter(Boolean).forEach((track) => {
+        if (!remoteStream.getTracks().includes(track)) remoteStream.addTrack(track);
       });
       startRealtimeCacheRecording();
       resolve();
     };
     pc.oniceconnectionstatechange = () => {
       if (pc.iceConnectionState === "failed") {
-        reject(new Error("RTC connection failed"));
+        failPlayback(new Error("RTC connection failed"));
       }
     };
   });
+  // Setup can fail before the caller receives the player and awaits ready.
+  void ready.catch(() => {});
 
   const dc = pc.createDataChannel("oai-events");
 
@@ -863,7 +807,7 @@ async function getRealtimePlayer({
   let narrationRequested = false;
   let sessionReadyFallbackTimer = null;
   const requestNarration = () => {
-    if (narrationRequested) return;
+    if (narrationRequested || finalizeResolved) return;
     narrationRequested = true;
     if (sessionReadyFallbackTimer) {
       clearTimeout(sessionReadyFallbackTimer);
@@ -877,7 +821,7 @@ async function getRealtimePlayer({
         }),
       );
     } catch (err) {
-      console.warn("Realtime response.create failed", err);
+      failPlayback(err);
     }
   };
 
@@ -886,26 +830,25 @@ async function getRealtimePlayer({
     resolveFinalize = resolve;
     pc.onconnectionstatechange = () => {
       if (["closed", "failed"].includes(pc.connectionState || "")) {
-        finishFinalize();
+        failPlayback(
+          new Error("RTC connection closed before playback completed"),
+        );
       }
     };
-    audio.addEventListener(
-      "ended",
-      () => {
-        finishFinalize();
-      },
-      { once: true },
-    );
     // Long safety net for cases where the stream never settles cleanly.
     const fallbackTimeoutMs = Math.max(45000, text.length * 180 + 10000);
-    hardFallbackTimer = setTimeout(finishFinalize, fallbackTimeoutMs);
+    hardFallbackTimer = setTimeout(
+      () => failPlayback(new Error("Realtime TTS playback timed out")),
+      fallbackTimeoutMs,
+    );
   }).finally(async () => {
     unregisterActiveTTSPlayer(audio, cleanupFn);
-    // Mark as intentionally ended so components can ignore errors
-    intentionalEnd = true;
-    audioEnded = true;
+    audio.removeEventListener("error", onPlaybackError);
     clearFinalizeTimers();
     await stopRealtimeCacheRecording();
+    resolveResponseComplete?.();
+    // Mark as intentionally ended so components can ignore errors
+    intentionalEnd = true;
     // Dispatch 'ended' as a final notification for components that only watch
     // the media element and do not await the finalize promise.
     try {
@@ -940,28 +883,41 @@ async function getRealtimePlayer({
     // Stopping the tracks is sufficient cleanup
   });
 
-  // Listen for response.done to know when speech synthesis is complete
   dc.onmessage = (event) => {
+    if (finalizeResolved) return;
+    let msg;
     try {
-      const msg = JSON.parse(event.data);
-      if (msg.type === "error") {
-        console.warn("Realtime TTS error:", msg.error?.message || msg.error);
-      }
-      if (msg.type === "session.updated") {
-        // Narration instructions are now applied — safe to request the turn.
-        requestNarration();
-      }
-      // Expose the server's exact end-of-audio signal separately from
-      // `finalize`, which may remain pending while the WebRTC track settles.
-      if (
-        msg.type === "response.output_audio.done" ||
-        msg.type === "output_audio.done" ||
-        msg.type === "response.done"
-      ) {
-        markResponseComplete();
-      }
+      msg = JSON.parse(event.data);
     } catch {
-      // Ignore malformed data-channel events.
+      return;
+    }
+    if (msg.type === "error") {
+      failPlayback(new Error(msg.error?.message || "Realtime TTS failed"));
+    } else if (msg.type === "session.updated") {
+      requestNarration();
+    } else if (msg.type === "response.done") {
+      // Audio-done events also arrive on failed/cancelled/incomplete responses.
+      // Only a completed response is eligible to become a replay recording.
+      if (msg.response?.status !== "completed") {
+        failPlayback(
+          new Error(`Realtime TTS response ${msg.response?.status || "unsuccessful"}`),
+        );
+        return;
+      }
+      responseSucceeded = true;
+      void finishAfterPlaybackDrain();
+    } else if (msg.type === "output_audio_buffer.stopped") {
+      outputBufferStopped = true;
+      void finishAfterPlaybackDrain();
+    } else if (msg.type === "output_audio_buffer.cleared") {
+      failPlayback(new Error("Realtime TTS playback interrupted"));
+    }
+    // response.output_audio.done and response.done describe generation, not
+    // playback. Never stop the recorder or infer duration from their tokens.
+  };
+  dc.onclose = () => {
+    if (!finalizeResolved) {
+      failPlayback(new Error("Realtime TTS data channel closed"));
     }
   };
 
@@ -969,6 +925,7 @@ async function getRealtimePlayer({
   audio._ttsIntentionalEnd = () => intentionalEnd;
 
   dc.onopen = () => {
+    if (finalizeResolved) return;
     try {
       // Configure session for narration/read-aloud mode
       dc.send(
@@ -1014,27 +971,34 @@ async function getRealtimePlayer({
       // fires the request if that event is somehow missed, so we never hang.
       sessionReadyFallbackTimer = setTimeout(requestNarration, 500);
     } catch (err) {
-      console.warn("Realtime prompt send failed", err);
+      failPlayback(err);
     }
   };
 
-  const offer = await pc.createOffer();
-  await pc.setLocalDescription(offer);
-  const resp = await appCheckFetch(REALTIME_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/sdp" },
-    body: offer.sdp,
-  });
-  const answer = await resp.text();
-  if (!resp.ok) throw new Error(`SDP exchange failed: ${resp.status}`);
-  await pc.setRemoteDescription({ type: "answer", sdp: answer });
+  try {
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    const resp = await appCheckFetch(REALTIME_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/sdp" },
+      body: offer.sdp,
+    });
+    const answer = await resp.text();
+    if (!resp.ok) throw new Error(`SDP exchange failed: ${resp.status}`);
+    await pc.setRemoteDescription({ type: "answer", sdp: answer });
+  } catch (error) {
+    failPlayback(error);
+    await finalize;
+    throw error;
+  }
 
   cleanupFn = () => {
     intentionalEnd = true;
+    rejectReady?.(new Error("TTS playback cancelled"));
     unregisterActiveTTSPlayer(audio, cleanupFn);
     finishFinalize();
   };
-  registerActiveTTSPlayer(audio, cleanupFn);
+  if (!finalizeResolved) registerActiveTTSPlayer(audio, cleanupFn);
   audio._ttsCleanup = cleanupFn;
 
   return {
@@ -1084,6 +1048,12 @@ export async function prefetchTTS(items) {
           ...item,
           disableCache: false,
         });
+        // Another request may have filled the cache since isCached(). A blob
+        // does not autoplay, so there is no playback to await for prefetch.
+        if (player.audioUrl) {
+          player.cleanup?.();
+          continue;
+        }
         await player.ready.catch(() => undefined);
         await player.finalize.catch(() => undefined);
         player.cleanup?.();
@@ -1104,27 +1074,19 @@ export async function isCached(
   langTag = TTS_LANG_TAG.es,
   { voice, personality } = {},
 ) {
-  const cacheKey = getCacheKey(
+  const key = getCacheKey(
     text,
     langTag,
     REALTIME_CACHE_FORMAT,
     getPreferredTTSVoice(voice),
     personality,
   );
-
-  // Check memory first (instant)
-  if (memoryCache.has(cacheKey)) {
-    return true;
-  }
-
-  // Check IndexedDB
-  const cached = await getFromIndexedDB(cacheKey);
+  if (memoryCache.has(key)) return true;
+  const cached = await getFromIndexedDB(key);
   if (cached) {
-    // Promote to memory cache
-    memoryCache.set(cacheKey, cached);
+    memoryCache.set(key, cached);
     return true;
   }
-
   return false;
 }
 
@@ -1192,9 +1154,9 @@ function getOrCreateBlobUrl(blob) {
   return url;
 }
 
-function addToCache(cacheKey, blob) {
+async function addToCache(cacheKey, blob) {
   memoryCache.set(cacheKey, blob);
-  saveToIndexedDB(cacheKey, blob); // async
+  await saveToIndexedDB(cacheKey, blob);
 }
 
 function createAudioFromBlob(blob, warmAudio = null) {
@@ -1215,10 +1177,18 @@ function createAudioFromBlob(blob, warmAudio = null) {
   audio.playsInline = true;
 
   let cleanedUp = false;
+  let resolveFinalize;
+  const finalize = new Promise((resolve) => {
+    resolveFinalize = resolve;
+  });
+
   const cleanup = () => {
     if (cleanedUp) return;
     cleanedUp = true;
     unregisterActiveTTSPlayer(audio, cleanup);
+    audio.removeEventListener("ended", cleanup);
+    audio.removeEventListener("error", cleanup);
+    resolveFinalize?.();
   };
   registerActiveTTSPlayer(audio, cleanup);
   audio._ttsCleanup = cleanup;
@@ -1229,7 +1199,7 @@ function createAudioFromBlob(blob, warmAudio = null) {
     audio,
     audioUrl,
     ready: Promise.resolve(),
-    finalize: Promise.resolve(),
+    finalize,
     cleanup,
   };
 }

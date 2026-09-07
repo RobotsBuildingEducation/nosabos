@@ -1,3 +1,5 @@
+import ActivityActionRow from "./ActivityActionRow";
+import QuestionActionArea from "./QuestionActionArea";
 // components/Tutor.jsx
 import React, {
   Suspense,
@@ -3867,7 +3869,6 @@ export default function Tutor({
   onFirstLessonComplete,
   onDailyGoalCelebration,
   onConnectionStatusChange,
-  bottomActionBarMinimized = false,
   isActive = true,
 }) {
   const aliveRef = useRef(false);
@@ -5466,13 +5467,6 @@ export default function Tutor({
     status === "connected" && uiState !== "speaking" && uiState !== "thinking"
       ? "listening"
       : uiState;
-  const isVoiceSessionActive =
-    status === "connecting" || status === "connected";
-  const dockButtonBottomMargin = bottomActionBarMinimized
-    ? isVoiceSessionActive
-      ? 10
-      : 20
-    : 24;
   const edgeGlowState = status === "connected" ? liveUiState : "idle";
   const [displayRobotState, setDisplayRobotState] = useState(liveUiState);
   const [previousRobotState, setPreviousRobotState] = useState(null);
@@ -11044,7 +11038,7 @@ export default function Tutor({
         state={edgeGlowState}
         isLightTheme={isLightTheme}
       />
-      <Box color="gray.100" position="relative" pb="120px">
+      <Box color="gray.100" position="relative" pb={4}>
         {/* Header area: lesson agenda separated from robot. No repair-focus
             banner here: a routed tutor repair runs as its own ephemeral
             lesson, so the lesson header already IS the repair context. */}
@@ -11259,75 +11253,68 @@ export default function Tutor({
         </Box>
 
         {/* Bottom dock - Connect button only */}
-        <Center
-          position="fixed"
-          bottom="22px"
-          left="0"
-          right="0"
-          zIndex={30}
-          px={4}
-        >
-          <HStack spacing={3} w="100%" maxW="560px" justify="center">
-            <Button
-              onClick={status === "connected" ? stop : start}
-              size="lg"
-              height="64px"
-              px={{ base: 8, md: 12 }}
-              rounded="full"
-              colorScheme={status === "connected" ? undefined : "cyan"}
-              bg={
-                status === "connected"
-                  ? SOFT_STOP_BUTTON_BG
-                  : isLightTheme
-                    ? "linear-gradient(180deg, #40c6d9 0%, #2fb4c7 100%)"
-                    : undefined
+        <QuestionActionArea
+          actions={
+            <ActivityActionRow
+              tone={status === "connected" ? "danger" : "primary"}
+              primary={
+                <Button
+                  onClick={status === "connected" ? stop : start}
+                  size="lg"
+                  height="48px"
+                  px={4}
+                  rounded="full"
+                  colorScheme={status === "connected" ? undefined : "cyan"}
+                  bg={
+                    status === "connected"
+                      ? SOFT_STOP_BUTTON_BG
+                      : isLightTheme
+                      ? "linear-gradient(180deg, #40c6d9 0%, #2fb4c7 100%)"
+                      : undefined
+                  }
+                  boxShadow={
+                    status === "connected"
+                      ? SOFT_STOP_BUTTON_GLOW
+                      : isLightTheme
+                      ? "0 10px 24px rgba(66, 168, 181, 0.22), 0 4px 0 rgba(41, 126, 136, 0.82)"
+                      : undefined
+                  }
+                  _hover={
+                    status === "connected"
+                      ? { bg: SOFT_STOP_BUTTON_HOVER_BG }
+                      : isLightTheme
+                      ? {
+                          bg: "linear-gradient(180deg, #35bfd3 0%, #27adc0 100%)",
+                        }
+                      : undefined
+                  }
+                  color={
+                    status === "connected" ? "white" : isLightTheme ? "white" : "white"
+                  }
+                  border={
+                    isLightTheme && status !== "connected"
+                      ? "1px solid rgba(255,255,255,0.55)"
+                      : undefined
+                  }
+                  textShadow={isLightTheme ? "none" : "0 0 16px rgba(0,0,0,0.9)"}
+                >
+                  {status === "connected" ? (
+                    <>
+                      <FaStop /> &nbsp; {uiText("ra_btn_end", "End")}
+                    </>
+                  ) : (
+                    <>
+                      <FaMicrophone /> &nbsp;{" "}
+                      {status === "connecting"
+                        ? uiText("ra_btn_starting", "Starting...")
+                        : uiText("ra_btn_start", "Start")}
+                    </>
+                  )}
+                </Button>
               }
-              boxShadow={
-                status === "connected"
-                  ? SOFT_STOP_BUTTON_GLOW
-                  : isLightTheme
-                    ? "0 10px 24px rgba(66, 168, 181, 0.22), 0 4px 0 rgba(41, 126, 136, 0.82)"
-                    : undefined
-              }
-              _hover={
-                status === "connected"
-                  ? { bg: SOFT_STOP_BUTTON_HOVER_BG }
-                  : isLightTheme
-                    ? {
-                        bg: "linear-gradient(180deg, #35bfd3 0%, #27adc0 100%)",
-                      }
-                    : undefined
-              }
-              color={
-                status === "connected"
-                  ? "white"
-                  : isLightTheme
-                    ? "white"
-                    : "white"
-              }
-              border={
-                isLightTheme && status !== "connected"
-                  ? "1px solid rgba(255,255,255,0.55)"
-                  : undefined
-              }
-              textShadow={isLightTheme ? "none" : "0 0 16px rgba(0,0,0,0.9)"}
-              mb={dockButtonBottomMargin}
-            >
-              {status === "connected" ? (
-                <>
-                  <FaStop /> &nbsp; {uiText("ra_btn_end", "End")}
-                </>
-              ) : (
-                <>
-                  <FaMicrophone /> &nbsp;{" "}
-                  {status === "connecting"
-                    ? uiText("ra_btn_starting", "Starting...")
-                    : uiText("ra_btn_start", "Start")}
-                </>
-              )}
-            </Button>
-          </HStack>
-        </Center>
+            ></ActivityActionRow>
+          }
+        />
 
         {err && (
           <Box px={4} pt={2}>

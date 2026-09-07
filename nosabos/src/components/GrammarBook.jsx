@@ -1,3 +1,4 @@
+import ActivityActionRow from "./ActivityActionRow";
 // components/GrammarBook.jsx
 import React, {
   useRef,
@@ -52,6 +53,7 @@ import {
   explainAnswer,
 } from "../utils/llm";
 import FeedbackRail from "./FeedbackRail";
+import QuestionActionArea from "./QuestionActionArea";
 import TranslateSentence from "./TranslateSentence";
 import RepeatWhatYouHear from "./RepeatWhatYouHear";
 import {
@@ -5227,7 +5229,7 @@ Return JSON ONLY:
   }
 
   return (
-    <Box p={4} color={APP_TEXT_PRIMARY}>
+    <Box px={{ base: 0, md: 4 }} pt={{ base: 1.5, md: 4 }} pb={{ base: 2, md: 4 }} color={APP_TEXT_PRIMARY}>
       <VStack spacing={4} align="stretch" maxW="720px" mx="auto">
         {/* Final-quiz progress stays in context; account XP now appears on completion. */}
         {isFinalQuiz && (
@@ -5408,70 +5410,77 @@ Return JSON ONLY:
               />
             )}
 
-            <Stack
-              direction="row"
-              spacing={3}
-              align="center"
-              justify="flex-end"
-            >
-              {showKeyboardButton && (
-                <Button
-                  variant="ghost"
-                  leftIcon={<MdKeyboard />}
-                  onClick={() => setShowKeyboard(!showKeyboard)}
-                  isDisabled={loadingQ || loadingG}
-                  px={{ base: 4, md: 6 }}
-                  py={{ base: 3, md: 4 }}
-                >
-                  {showKeyboard ? t("history_keyboard_close") : t("history_keyboard_open")}
-                </Button>
-              )}
-              {canSkip && (
-                <Button
-                  variant="ghost"
-                  onClick={handleSkip}
-                  px={{ base: 6, md: 10 }}
-                  py={{ base: 3, md: 4 }}
-                >
-                  {skipLabel}
-                </Button>
-              )}
-              <Button
-                colorScheme="purple"
-                onClick={submitFill}
-                isDisabled={
-                  lastOk === true ||
-                  loadingG ||
-                  !input.trim() ||
-                  !question ||
-                  (isFinalQuiz && quizCurrentQuestionAttempted)
-                }
-                px={{ base: 7, md: 12 }}
-                py={{ base: 3, md: 4 }}
-              >
-                {loadingG ? submitSpinner : t("grammar_submit")}
-              </Button>
-            </Stack>
-
-            <FeedbackRail
-              ok={lastOk}
-              xp={recentXp}
-              showNext={
-                (lastOk === true || (isFinalQuiz && lastOk === false)) &&
-                nextAction
+            <QuestionActionArea
+              feedback={lastOk}
+              actions={
+                (!((lastOk === true || isFinalQuiz && lastOk === false) && nextAction)) && (
+                  <ActivityActionRow
+                    primary={
+                      <Button
+                        colorScheme="purple"
+                        onClick={submitFill}
+                        isDisabled={
+                          lastOk === true ||
+                          loadingG ||
+                          !input.trim() ||
+                          !question ||
+                          (isFinalQuiz && quizCurrentQuestionAttempted)
+                        }
+                        px={{ base: 7, md: 12 }}
+                        py={{ base: 3, md: 4 }}
+                      >
+                        {loadingG ? submitSpinner : t("grammar_submit")}
+                      </Button>
+                    }
+                  >
+                    {showKeyboardButton && (
+                      <IconButton
+                        variant="ghost"
+                        icon={<MdKeyboard />}
+                        aria-label={
+                          showKeyboard
+                            ? t("history_keyboard_close")
+                            : t("history_keyboard_open")
+                        }
+                        onClick={() => setShowKeyboard(!showKeyboard)}
+                        isDisabled={loadingQ || loadingG}
+                      />
+                    )}
+                    {canSkip && (
+                      <Button
+                        variant="ghost"
+                        onClick={handleSkip}
+                        px={{ base: 6, md: 10 }}
+                        py={{ base: 3, md: 4 }}
+                      >
+                        {skipLabel}
+                      </Button>
+                    )}
+                  </ActivityActionRow>
+                )
               }
-              onNext={handleNext}
-              nextLabel={nextQuestionLabel}
-              t={t}
-              userLanguage={userLanguage}
-              onExplainAnswer={handleExplainAnswer}
-              explanationText={explanationText}
-              isLoadingExplanation={isLoadingExplanation}
-              lessonProgress={lessonProgress}
-              onCreateNote={handleCreateNote}
-              isCreatingNote={isCreatingNote}
-              noteCreated={noteCreated}
-            />
+            >
+              <FeedbackRail
+                compact
+                ok={lastOk}
+                xp={recentXp}
+                showNext={
+                  (lastOk === true || (isFinalQuiz && lastOk === false)) &&
+                  nextAction
+                }
+                onNext={handleNext}
+                nextLabel={nextQuestionLabel}
+                t={t}
+                userLanguage={userLanguage}
+                onExplainAnswer={handleExplainAnswer}
+                explanationText={explanationText}
+                isLoadingExplanation={isLoadingExplanation}
+                lessonProgress={lessonProgress}
+                onCreateNote={handleCreateNote}
+                isCreatingNote={isCreatingNote}
+                noteCreated={noteCreated}
+              />
+            </QuestionActionArea>
           </VStack>
         ) : null}
 
@@ -5677,58 +5686,64 @@ Return JSON ONLY:
 
             <AssistantSupportBox />
 
-            <Stack
-              direction="row"
-              spacing={3}
-              align="center"
-              justify="flex-end"
-            >
-              {canSkip && (
-                <Button
-                  variant="ghost"
-                  onClick={handleSkip}
-                  px={{ base: 6, md: 10 }}
-                  py={{ base: 3, md: 4 }}
-                >
-                  {skipLabel}
-                </Button>
-              )}
-              <Button
-                colorScheme="purple"
-                onClick={submitMC}
-                isDisabled={
-                  lastOk === true ||
-                  loadingMCG ||
-                  !mcPick ||
-                  !mcChoices.length ||
-                  (isFinalQuiz && quizCurrentQuestionAttempted)
-                }
-                px={{ base: 7, md: 12 }}
-                py={{ base: 3, md: 4 }}
-              >
-                {loadingMCG ? submitSpinner : t("grammar_submit")}
-              </Button>
-            </Stack>
-
-            <FeedbackRail
-              ok={lastOk}
-              xp={recentXp}
-              showNext={
-                (lastOk === true || (isFinalQuiz && lastOk === false)) &&
-                nextAction
+            <QuestionActionArea
+              feedback={lastOk}
+              actions={
+                (!((lastOk === true || isFinalQuiz && lastOk === false) && nextAction)) && (
+                  <ActivityActionRow
+                    primary={
+                      <Button
+                        colorScheme="purple"
+                        onClick={submitMC}
+                        isDisabled={
+                          lastOk === true ||
+                          loadingMCG ||
+                          !mcPick ||
+                          !mcChoices.length ||
+                          (isFinalQuiz && quizCurrentQuestionAttempted)
+                        }
+                        px={{ base: 7, md: 12 }}
+                        py={{ base: 3, md: 4 }}
+                      >
+                        {loadingMCG ? submitSpinner : t("grammar_submit")}
+                      </Button>
+                    }
+                  >
+                    {canSkip && (
+                      <Button
+                        variant="ghost"
+                        onClick={handleSkip}
+                        px={{ base: 6, md: 10 }}
+                        py={{ base: 3, md: 4 }}
+                      >
+                        {skipLabel}
+                      </Button>
+                    )}
+                  </ActivityActionRow>
+                )
               }
-              onNext={handleNext}
-              nextLabel={nextQuestionLabel}
-              t={t}
-              userLanguage={userLanguage}
-              onExplainAnswer={handleExplainAnswer}
-              explanationText={explanationText}
-              isLoadingExplanation={isLoadingExplanation}
-              lessonProgress={lessonProgress}
-              onCreateNote={handleCreateNote}
-              isCreatingNote={isCreatingNote}
-              noteCreated={noteCreated}
-            />
+            >
+              <FeedbackRail
+                compact
+                ok={lastOk}
+                xp={recentXp}
+                showNext={
+                  (lastOk === true || (isFinalQuiz && lastOk === false)) &&
+                  nextAction
+                }
+                onNext={handleNext}
+                nextLabel={nextQuestionLabel}
+                t={t}
+                userLanguage={userLanguage}
+                onExplainAnswer={handleExplainAnswer}
+                explanationText={explanationText}
+                isLoadingExplanation={isLoadingExplanation}
+                lessonProgress={lessonProgress}
+                onCreateNote={handleCreateNote}
+                isCreatingNote={isCreatingNote}
+                noteCreated={noteCreated}
+              />
+            </QuestionActionArea>
           </>
         ) : null}
         {/* ---- MA UI ---- */}
@@ -5946,58 +5961,64 @@ Return JSON ONLY:
 
             <AssistantSupportBox />
 
-            <Stack
-              direction="row"
-              spacing={3}
-              align="center"
-              justify="flex-end"
-            >
-              {canSkip && (
-                <Button
-                  variant="ghost"
-                  onClick={handleSkip}
-                  px={{ base: 6, md: 10 }}
-                  py={{ base: 3, md: 4 }}
-                >
-                  {skipLabel}
-                </Button>
-              )}
-              <Button
-                colorScheme="purple"
-                onClick={submitMA}
-                isDisabled={
-                  lastOk === true ||
-                  loadingMAG ||
-                  !maChoices.length ||
-                  !maReady ||
-                  (isFinalQuiz && quizCurrentQuestionAttempted)
-                }
-                px={{ base: 7, md: 12 }}
-                py={{ base: 3, md: 4 }}
-              >
-                {loadingMAG ? submitSpinner : t("grammar_submit")}
-              </Button>
-            </Stack>
-
-            <FeedbackRail
-              ok={lastOk}
-              xp={recentXp}
-              showNext={
-                (lastOk === true || (isFinalQuiz && lastOk === false)) &&
-                nextAction
+            <QuestionActionArea
+              feedback={lastOk}
+              actions={
+                (!((lastOk === true || isFinalQuiz && lastOk === false) && nextAction)) && (
+                  <ActivityActionRow
+                    primary={
+                      <Button
+                        colorScheme="purple"
+                        onClick={submitMA}
+                        isDisabled={
+                          lastOk === true ||
+                          loadingMAG ||
+                          !maChoices.length ||
+                          !maReady ||
+                          (isFinalQuiz && quizCurrentQuestionAttempted)
+                        }
+                        px={{ base: 7, md: 12 }}
+                        py={{ base: 3, md: 4 }}
+                      >
+                        {loadingMAG ? submitSpinner : t("grammar_submit")}
+                      </Button>
+                    }
+                  >
+                    {canSkip && (
+                      <Button
+                        variant="ghost"
+                        onClick={handleSkip}
+                        px={{ base: 6, md: 10 }}
+                        py={{ base: 3, md: 4 }}
+                      >
+                        {skipLabel}
+                      </Button>
+                    )}
+                  </ActivityActionRow>
+                )
               }
-              onNext={handleNext}
-              nextLabel={nextQuestionLabel}
-              t={t}
-              userLanguage={userLanguage}
-              onExplainAnswer={handleExplainAnswer}
-              explanationText={explanationText}
-              isLoadingExplanation={isLoadingExplanation}
-              lessonProgress={lessonProgress}
-              onCreateNote={handleCreateNote}
-              isCreatingNote={isCreatingNote}
-              noteCreated={noteCreated}
-            />
+            >
+              <FeedbackRail
+                compact
+                ok={lastOk}
+                xp={recentXp}
+                showNext={
+                  (lastOk === true || (isFinalQuiz && lastOk === false)) &&
+                  nextAction
+                }
+                onNext={handleNext}
+                nextLabel={nextQuestionLabel}
+                t={t}
+                userLanguage={userLanguage}
+                onExplainAnswer={handleExplainAnswer}
+                explanationText={explanationText}
+                isLoadingExplanation={isLoadingExplanation}
+                lessonProgress={lessonProgress}
+                onCreateNote={handleCreateNote}
+                isCreatingNote={isCreatingNote}
+                noteCreated={noteCreated}
+              />
+            </QuestionActionArea>
           </>
         ) : null}
         {/* ---- SPEAK UI ---- */}
@@ -6053,144 +6074,142 @@ Return JSON ONLY:
 
             <AssistantSupportBox />
 
-            <Stack
-              direction="row"
-              spacing={3}
-              align="center"
-              justify="flex-end"
-              mt={4}
-            >
-              {canSkip && (
-                <Button
-                  variant="ghost"
-                  onClick={handleSkip}
-                  px={{ base: 6, md: 10 }}
-                  py={{ base: 3, md: 4 }}
-                >
-                  {skipLabel}
-                </Button>
-              )}
-              <Button
-                colorScheme={
-                  isSpeakRecording
-                    ? undefined
-                    : isSpeakConnecting
-                      ? "yellow"
-                      : "teal"
-                }
-                bg={isSpeakRecording ? SOFT_STOP_BUTTON_BG : undefined}
-                color={isSpeakRecording ? "white" : undefined}
-                boxShadow={
-                  isSpeakRecording
-                    ? `0px 4px 0px ${SOFT_STOP_BUTTON_EDGE}`
-                    : undefined
-                }
-                px={{ base: 7, md: 12 }}
-                py={{ base: 3, md: 4 }}
-                leftIcon={
-                  isSpeakConnecting ? (
-                    <Spinner size="sm" thickness="2px" color="currentColor" />
-                  ) : undefined
-                }
-                _hover={
-                  isSpeakRecording
-                    ? { bg: SOFT_STOP_BUTTON_HOVER_BG }
-                    : undefined
-                }
-                onClick={async () => {
-                  if (isSpeakRecording) {
-                    stopSpeakRecording();
-                    return;
-                  }
-                  // Clear previous results to prevent UI flickering
-                  setLastOk(null);
-                  setSEval(null);
-                  playSound(submitActionSound);
-                  try {
-                    await startSpeakRecording();
-                  } catch (err) {
-                    const code = err?.code;
-                    if (code === "no-speech-recognition") {
-                      toast({
-                        title:
-                          t("grammar_speak_unavailable") ||
-                          (userLanguage === "pt"
-                            ? "Reconhecimento de voz indisponivel"
-                            : userLanguage === "ar"
-                              ? "التعرّف على الصوت غير متاح"
-                            : userLanguage === "es"
-                              ? "Reconocimiento de voz no disponible"
-                              : "Speech recognition unavailable"),
-                        description: t("flashcard_speech_unavailable_desc"),
-                        status: "warning",
-                        duration: 3200,
-                      });
-                    } else if (code === "mic-denied") {
-                      toast({
-                        title: t("flashcard_mic_denied_title"),
-                        description: t("flashcard_mic_denied_desc"),
-                        status: "error",
-                        duration: 3200,
-                      });
-                    } else {
-                      toast({
-                        title: t("vocab_recording_failed"),
-                        description: t("vocab_recording_failed_desc"),
-                        status: "error",
-                        duration: 2500,
-                      });
+            <QuestionActionArea
+              feedback={lastOk}
+              actions={
+                (!((lastOk === true || isFinalQuiz && lastOk === false) && nextAction)) && (
+                  <ActivityActionRow
+                    tone={isSpeakRecording ? "danger" : "primary"}
+                    primary={
+                      <Button
+                        colorScheme={
+                          isSpeakRecording ? undefined : isSpeakConnecting ? "yellow" : "teal"
+                        }
+                        bg={isSpeakRecording ? SOFT_STOP_BUTTON_BG : undefined}
+                        color={isSpeakRecording ? "white" : undefined}
+                        boxShadow={
+                          isSpeakRecording ? `0px 4px 0px ${SOFT_STOP_BUTTON_EDGE}` : undefined
+                        }
+                        px={{ base: 7, md: 12 }}
+                        py={{ base: 3, md: 4 }}
+                        leftIcon={
+                          isSpeakConnecting ? (
+                            <Spinner size="sm" thickness="2px" color="currentColor" />
+                          ) : undefined
+                        }
+                        _hover={
+                          isSpeakRecording ? { bg: SOFT_STOP_BUTTON_HOVER_BG } : undefined
+                        }
+                        onClick={async () => {
+                          if (isSpeakRecording) {
+                            stopSpeakRecording();
+                            return;
+                          }
+                          // Clear previous results to prevent UI flickering
+                          setLastOk(null);
+                          setSEval(null);
+                          playSound(submitActionSound);
+                          try {
+                            await startSpeakRecording();
+                          } catch (err) {
+                            const code = err?.code;
+                            if (code === "no-speech-recognition") {
+                              toast({
+                                title:
+                                  t("grammar_speak_unavailable") ||
+                                  (userLanguage === "pt"
+                                    ? "Reconhecimento de voz indisponivel"
+                                    : userLanguage === "ar"
+                                    ? "التعرّف على الصوت غير متاح"
+                                    : userLanguage === "es"
+                                    ? "Reconocimiento de voz no disponible"
+                                    : "Speech recognition unavailable"),
+                                description: t("flashcard_speech_unavailable_desc"),
+                                status: "warning",
+                                duration: 3200,
+                              });
+                            } else if (code === "mic-denied") {
+                              toast({
+                                title: t("flashcard_mic_denied_title"),
+                                description: t("flashcard_mic_denied_desc"),
+                                status: "error",
+                                duration: 3200,
+                              });
+                            } else {
+                              toast({
+                                title: t("vocab_recording_failed"),
+                                description: t("vocab_recording_failed_desc"),
+                                status: "error",
+                                duration: 2500,
+                              });
+                            }
+                          }
+                        }}
+                        isDisabled={
+                          !supportsSpeak ||
+                          loadingSpeakQ ||
+                          !sTarget ||
+                          isSpeakConnecting ||
+                          (isFinalQuiz && quizCurrentQuestionAttempted)
+                        }
+                      >
+                        {isSpeakConnecting
+                          ? t("vocab_connecting")
+                          : isSpeakRecording
+                          ? t("grammar_speak_stop") ||
+                            (userLanguage === "pt"
+                              ? "Parar"
+                              : userLanguage === "ar"
+                              ? "إيقاف"
+                              : userLanguage === "es"
+                              ? "Detener"
+                              : "Stop")
+                          : t("grammar_speak_record") ||
+                            (userLanguage === "pt"
+                              ? "Gravar"
+                              : userLanguage === "ar"
+                              ? "سجّل"
+                              : userLanguage === "es"
+                              ? "Grabar"
+                              : "Record")}
+                      </Button>
                     }
-                  }
-                }}
-                isDisabled={
-                  !supportsSpeak ||
-                  loadingSpeakQ ||
-                  !sTarget ||
-                  isSpeakConnecting ||
-                  (isFinalQuiz && quizCurrentQuestionAttempted)
-                }
-              >
-                {isSpeakConnecting
-                  ? t("vocab_connecting")
-                  : isSpeakRecording
-                    ? t("grammar_speak_stop") ||
-                      (userLanguage === "pt"
-                        ? "Parar"
-                        : userLanguage === "ar"
-                          ? "إيقاف"
-                          : userLanguage === "es"
-                            ? "Detener"
-                            : "Stop")
-                    : t("grammar_speak_record") ||
-                      (userLanguage === "pt"
-                        ? "Gravar"
-                        : userLanguage === "ar"
-                          ? "سجّل"
-                          : userLanguage === "es"
-                            ? "Grabar"
-                            : "Record")}
-              </Button>
-            </Stack>
-
-            <FeedbackRail
-              ok={lastOk}
-              xp={recentXp}
-              showNext={
-                (lastOk === true || (isFinalQuiz && lastOk === false)) &&
-                nextAction
+                  >
+                    {canSkip && (
+                      <Button
+                        variant="ghost"
+                        onClick={handleSkip}
+                        px={{ base: 6, md: 10 }}
+                        py={{ base: 3, md: 4 }}
+                      >
+                        {skipLabel}
+                      </Button>
+                    )}
+                  </ActivityActionRow>
+                )
               }
-              onNext={handleNext}
-              nextLabel={nextQuestionLabel}
-              t={t}
-              userLanguage={userLanguage}
-              onExplainAnswer={handleExplainAnswer}
-              explanationText={explanationText}
-              isLoadingExplanation={isLoadingExplanation}
-              lessonProgress={lessonProgress}
-              onCreateNote={handleCreateNote}
-              isCreatingNote={isCreatingNote}
-              noteCreated={noteCreated}
-            />
+            >
+              <FeedbackRail
+                compact
+                ok={lastOk}
+                xp={recentXp}
+                showNext={
+                  (lastOk === true || (isFinalQuiz && lastOk === false)) &&
+                  nextAction
+                }
+                onNext={handleNext}
+                nextLabel={nextQuestionLabel}
+                t={t}
+                userLanguage={userLanguage}
+                onExplainAnswer={handleExplainAnswer}
+                explanationText={explanationText}
+                isLoadingExplanation={isLoadingExplanation}
+                lessonProgress={lessonProgress}
+                onCreateNote={handleCreateNote}
+                isCreatingNote={isCreatingNote}
+                noteCreated={noteCreated}
+              />
+            </QuestionActionArea>
           </>
         ) : null}
 
@@ -6492,58 +6511,64 @@ Return JSON ONLY:
 
             <AssistantSupportBox />
 
-            <Stack
-              direction="row"
-              spacing={3}
-              align="center"
-              justify="flex-end"
-            >
-              {canSkip && (
-                <Button
-                  variant="ghost"
-                  onClick={handleSkip}
-                  px={{ base: 7, md: 12 }}
-                  py={{ base: 3, md: 4 }}
-                >
-                  {skipLabel}
-                </Button>
-              )}
-              <Button
-                colorScheme="purple"
-                onClick={submitMatch}
-                isDisabled={
-                  lastOk === true ||
-                  !canSubmitMatch() ||
-                  loadingMJ ||
-                  !mLeft.length ||
-                  (isFinalQuiz && quizCurrentQuestionAttempted)
-                }
-                px={{ base: 8, md: 14 }}
-                py={{ base: 3, md: 4 }}
-              >
-                {loadingMJ ? submitSpinner : t("grammar_submit")}
-              </Button>
-            </Stack>
-
-            <FeedbackRail
-              ok={lastOk}
-              xp={recentXp}
-              showNext={
-                (lastOk === true || (isFinalQuiz && lastOk === false)) &&
-                nextAction
+            <QuestionActionArea
+              feedback={lastOk}
+              actions={
+                (!((lastOk === true || isFinalQuiz && lastOk === false) && nextAction)) && (
+                  <ActivityActionRow
+                    primary={
+                      <Button
+                        colorScheme="purple"
+                        onClick={submitMatch}
+                        isDisabled={
+                          lastOk === true ||
+                          !canSubmitMatch() ||
+                          loadingMJ ||
+                          !mLeft.length ||
+                          (isFinalQuiz && quizCurrentQuestionAttempted)
+                        }
+                        px={{ base: 8, md: 14 }}
+                        py={{ base: 3, md: 4 }}
+                      >
+                        {loadingMJ ? submitSpinner : t("grammar_submit")}
+                      </Button>
+                    }
+                  >
+                    {canSkip && (
+                      <Button
+                        variant="ghost"
+                        onClick={handleSkip}
+                        px={{ base: 7, md: 12 }}
+                        py={{ base: 3, md: 4 }}
+                      >
+                        {skipLabel}
+                      </Button>
+                    )}
+                  </ActivityActionRow>
+                )
               }
-              onNext={handleNext}
-              nextLabel={nextQuestionLabel}
-              t={t}
-              userLanguage={userLanguage}
-              onExplainAnswer={handleExplainAnswer}
-              explanationText={explanationText}
-              isLoadingExplanation={isLoadingExplanation}
-              lessonProgress={lessonProgress}
-              onCreateNote={handleCreateNote}
-              isCreatingNote={isCreatingNote}
-              noteCreated={noteCreated}
-            />
+            >
+              <FeedbackRail
+                compact
+                ok={lastOk}
+                xp={recentXp}
+                showNext={
+                  (lastOk === true || (isFinalQuiz && lastOk === false)) &&
+                  nextAction
+                }
+                onNext={handleNext}
+                nextLabel={nextQuestionLabel}
+                t={t}
+                userLanguage={userLanguage}
+                onExplainAnswer={handleExplainAnswer}
+                explanationText={explanationText}
+                isLoadingExplanation={isLoadingExplanation}
+                lessonProgress={lessonProgress}
+                onCreateNote={handleCreateNote}
+                isCreatingNote={isCreatingNote}
+                noteCreated={noteCreated}
+              />
+            </QuestionActionArea>
           </>
         ) : null}
 

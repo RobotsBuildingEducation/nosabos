@@ -1,3 +1,5 @@
+import ActivityActionRow from "./ActivityActionRow";
+import QuestionActionArea from "./QuestionActionArea";
 // components/RealtimeAgent.jsx
 import React, {
   useCallback,
@@ -707,7 +709,6 @@ export default function RealTimeTest({
   activeNsec = "",
   onSwitchedAccount,
   onConnectionStatusChange,
-  bottomActionBarMinimized = false,
   lesson = null,
   lessonContent = null,
   supportLang: initialSupportLang = "",
@@ -3667,13 +3668,6 @@ Return ONLY JSON:
     isLightTheme,
   );
   const orbUiState = getRealtimeOrbVisualState(uiState);
-  const isVoiceSessionActive =
-    status === "connecting" || status === "connected";
-  const dockButtonBottomMargin = bottomActionBarMinimized
-    ? isVoiceSessionActive
-      ? 10
-      : 20
-    : 24;
 
   const liveStateLabel = uiStateLabel(uiState, uiLang);
   const currentGoalTitleText = goalTitleForUI(currentGoal);
@@ -3709,14 +3703,13 @@ Return ONLY JSON:
   return (
     <>
       <Box
-        minH="100vh"
         // bg="gray.900"
         color="gray.100"
         position="relative"
-        pb="120px"
+        pb={4}
         borderRadius="24px"
         style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
-        mt="-8"
+        mt={{ base: 2, md: 0 }}
       >
         {/* Header */}
         {/* <Text
@@ -3734,6 +3727,7 @@ Return ONLY JSON:
         <Flex
           px={4}
           pt={2}
+          display={{ base: "none", md: "flex" }}
           align="center"
           justify="space-between"
           gap={2}
@@ -3742,7 +3736,7 @@ Return ONLY JSON:
         {/* Only Delete (settings moved to top bar) */}
 
         {/* 🎯 Active goal display */}
-        <Box px={4} mt={3} display="flex" justifyContent="center">
+        <Box px={{ base: 2, md: 4 }} mt={{ base: 1, md: 3 }} display="flex" justifyContent="center">
           <VStack spacing={2} w="100%" maxW="520px" align="center">
             <Box
               sx={{
@@ -4016,262 +4010,279 @@ Return ONLY JSON:
         ) : null}
 
         {/* Bottom dock */}
-        <Center
-          position="fixed"
-          bottom="22px"
-          left="0"
-          right="0"
-          zIndex={30}
-          px={4}
-        >
-          <HStack spacing={3} w="100%" maxW="560px" justify="center">
-            <Button
-              onClick={skipGoal}
-              size="md"
-              height="48px"
-              px={{ base: 6, md: 8 }}
-              rounded="full"
-              colorScheme="orange"
-              variant={isLightTheme ? "outline" : "ghost"}
-              bg={isLightTheme ? APP_SURFACE : undefined}
-              borderColor={isLightTheme ? APP_BORDER_STRONG : undefined}
-              color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
-              boxShadow={isLightTheme ? "none" : undefined}
-              _hover={
-                isLightTheme
-                  ? { bg: APP_SURFACE_MUTED, borderColor: APP_BORDER_STRONG }
-                  : undefined
+        <QuestionActionArea
+          feedback={goalCompleted ? true : null}
+          actions={
+            <ActivityActionRow
+              tone={
+                goalCompleted ? "success" : status === "connected" ? "danger" : "primary"
               }
-              textShadow={isLightTheme ? "none" : "0 0 16px rgba(0,0,0,0.9)"}
-              mb={dockButtonBottomMargin}
-            >
-              {uiText("ra_btn_skip", "Skip")}
-            </Button>
-            <Button
-              onClick={status === "connected" ? stop : start}
-              size="lg"
-              height="64px"
-              px={{ base: 8, md: 12 }}
-              rounded="full"
-              colorScheme={status === "connected" ? undefined : "cyan"}
-              bg={
-                status === "connected"
-                  ? SOFT_STOP_BUTTON_BG
-                  : isLightTheme
-                    ? "linear-gradient(180deg, #40c6d9 0%, #2fb4c7 100%)"
-                    : undefined
-              }
-              boxShadow={
-                status === "connected"
-                  ? SOFT_STOP_BUTTON_GLOW
-                  : isLightTheme
-                    ? "0 10px 24px rgba(66, 168, 181, 0.22), 0 4px 0 rgba(41, 126, 136, 0.82)"
-                    : undefined
-              }
-              _hover={
-                status === "connected"
-                  ? { bg: SOFT_STOP_BUTTON_HOVER_BG }
-                  : isLightTheme
-                    ? {
-                        bg: "linear-gradient(180deg, #35bfd3 0%, #27adc0 100%)",
+              primary={
+                goalCompleted ? (
+                  <Box position="relative" flex="1" minW={0}>
+                    <Button
+                      w="full"
+                      onClick={handleNextGoal}
+                      size="md"
+                      height="48px"
+                      px={3}
+                      rounded="full"
+                      variant={isLightTheme ? "outline" : "solid"}
+                      color={
+                        isLightTheme
+                          ? goalCompleted
+                            ? "#134e4a"
+                            : APP_TEXT_MUTED
+                          : "white"
                       }
-                    : undefined
+                      textShadow={isLightTheme ? "none" : "0 0 16px rgba(0,0,0,0.9)"}
+                      bg={
+                        isLightTheme
+                          ? APP_SURFACE
+                          : !goalCompleted
+                          ? "gray.800"
+                          : "cyan.700"
+                      }
+                      border="1px solid"
+                      borderColor={
+                        isLightTheme
+                          ? goalCompleted
+                            ? "rgba(64, 198, 217, 0.95)"
+                            : APP_BORDER
+                          : "cyan"
+                      }
+                      boxShadow={isLightTheme ? "none" : undefined}
+                      _hover={
+                        isLightTheme && goalCompleted
+                          ? {
+                              bg: APP_SURFACE_MUTED,
+                              borderColor: "#40c6d9",
+                            }
+                          : undefined
+                      }
+                      _disabled={
+                        isLightTheme
+                          ? {
+                              opacity: 1,
+                              bg: APP_SURFACE,
+                              color: APP_TEXT_MUTED,
+                              borderColor: APP_BORDER,
+                            }
+                          : undefined
+                      }
+                      disabled={!goalCompleted}
+                      animation={
+                        goalCompleted
+                          ? `${
+                              isLightTheme
+                                ? "pulse-glow-unlock-light"
+                                : "pulse-glow-unlock"
+                            } 2.2s infinite ease-in-out`
+                          : undefined
+                      }
+                      sx={
+                        goalCompleted
+                          ? {
+                              "@keyframes pulse-glow-unlock": {
+                                "0%, 100%": {
+                                  boxShadow:
+                                    "0 0 8px rgba(45, 212, 191, 0.3), 0 0 0 0 rgba(45, 212, 191, 0)",
+                                  transform: "scale(1)",
+                                },
+                                "50%": {
+                                  boxShadow:
+                                    "0 0 20px rgba(45, 212, 191, 0.8), 0 0 0 4px rgba(45, 212, 191, 0.4)",
+                                  transform: "scale(1.04)",
+                                },
+                              },
+                              "@keyframes pulse-glow-unlock-light": {
+                                "0%, 100%": {
+                                  boxShadow:
+                                    "0 0 8px rgba(64, 198, 217, 0.3), 0 0 0 0 rgba(64, 198, 217, 0)",
+                                  transform: "scale(1)",
+                                },
+                                "50%": {
+                                  boxShadow:
+                                    "0 0 22px rgba(64, 198, 217, 0.8), 0 0 0 4px rgba(64, 198, 217, 0.45)",
+                                  transform: "scale(1.04)",
+                                },
+                              },
+                            }
+                          : undefined
+                      }
+                    >
+                      {uiText("ra_btn_next", "Next")}
+                    </Button>
+                    {goalCompleted && (
+                      <>
+                        <Box
+                          pointerEvents="none"
+                          position="absolute"
+                          top="-8px"
+                          left="10px"
+                          w="8px"
+                          h="8px"
+                          borderRadius="full"
+                          bg="white"
+                          boxShadow="0 0 8px 2px rgba(255,255,255,0.8), 0 0 14px rgba(255,255,255,0.6)"
+                          animation="btn-sparkle 2.2s ease-in-out infinite"
+                          sx={{
+                            "@keyframes btn-sparkle": {
+                              "0%, 100%": {
+                                opacity: 0,
+                                transform: "scale(0.3) rotate(0deg)",
+                              },
+                              "50%": {
+                                opacity: 0.95,
+                                transform: "scale(1.2) rotate(45deg)",
+                              },
+                            },
+                          }}
+                        />
+                        <Box
+                          pointerEvents="none"
+                          position="absolute"
+                          bottom="-6px"
+                          right="15px"
+                          w="6px"
+                          h="6px"
+                          borderRadius="full"
+                          bg="white"
+                          boxShadow="0 0 6px 2px rgba(255,255,255,0.8), 0 0 12px rgba(255,255,255,0.5)"
+                          animation="btn-sparkle-delayed 2.5s ease-in-out infinite 0.6s"
+                          sx={{
+                            "@keyframes btn-sparkle-delayed": {
+                              "0%, 100%": {
+                                opacity: 0,
+                                transform: "scale(0.2) rotate(0deg)",
+                              },
+                              "50%": {
+                                opacity: 0.9,
+                                transform: "scale(1.1) rotate(-30deg)",
+                              },
+                            },
+                          }}
+                        />
+                        <Box
+                          pointerEvents="none"
+                          position="absolute"
+                          top="4px"
+                          right="-5px"
+                          w="6px"
+                          h="6px"
+                          borderRadius="full"
+                          bg="white"
+                          boxShadow="0 0 6px 2px rgba(255,255,255,0.8), 0 0 12px rgba(255,255,255,0.5)"
+                          animation="btn-sparkle-delayed2 2s ease-in-out infinite 1.2s"
+                          sx={{
+                            "@keyframes btn-sparkle-delayed2": {
+                              "0%, 100%": {
+                                opacity: 0,
+                                transform: "scale(0.2) rotate(0deg)",
+                              },
+                              "50%": {
+                                opacity: 0.95,
+                                transform: "scale(1) rotate(15deg)",
+                              },
+                            },
+                          }}
+                        />
+                      </>
+                    )}
+                  </Box>
+                ) : (
+                  <Button
+                    onClick={status === "connected" ? stop : start}
+                    size="lg"
+                    height="48px"
+                    px={4}
+                    rounded="full"
+                    colorScheme={status === "connected" ? undefined : "cyan"}
+                    bg={
+                      status === "connected"
+                        ? SOFT_STOP_BUTTON_BG
+                        : isLightTheme
+                        ? "linear-gradient(180deg, #40c6d9 0%, #2fb4c7 100%)"
+                        : undefined
+                    }
+                    boxShadow={
+                      status === "connected"
+                        ? SOFT_STOP_BUTTON_GLOW
+                        : isLightTheme
+                        ? "0 10px 24px rgba(66, 168, 181, 0.22), 0 4px 0 rgba(41, 126, 136, 0.82)"
+                        : undefined
+                    }
+                    _hover={
+                      status === "connected"
+                        ? { bg: SOFT_STOP_BUTTON_HOVER_BG }
+                        : isLightTheme
+                        ? {
+                            bg: "linear-gradient(180deg, #35bfd3 0%, #27adc0 100%)",
+                          }
+                        : undefined
+                    }
+                    color={
+                      status === "connected" ? "white" : isLightTheme ? "white" : "white"
+                    }
+                    border={
+                      isLightTheme && status !== "connected"
+                        ? "1px solid rgba(255,255,255,0.55)"
+                        : undefined
+                    }
+                    textShadow={isLightTheme ? "none" : "0 0 16px rgba(0,0,0,0.9)"}
+                  >
+                    {status === "connected" ? (
+                      <>
+                        <FaStop /> &nbsp; {ui.ra_btn_disconnect}
+                      </>
+                    ) : (
+                      <>
+                        <FaMicrophone /> &nbsp;{" "}
+                        {status === "connecting"
+                          ? ui.ra_btn_connecting
+                          : ui.ra_btn_connect}
+                      </>
+                    )}
+                  </Button>
+                )
               }
-              color={
-                status === "connected"
-                  ? "white"
-                  : isLightTheme
-                    ? "white"
-                    : "white"
-              }
-              border={
-                isLightTheme && status !== "connected"
-                  ? "1px solid rgba(255,255,255,0.55)"
-                  : undefined
-              }
-              textShadow={isLightTheme ? "none" : "0 0 16px rgba(0,0,0,0.9)"}
-              mb={dockButtonBottomMargin}
             >
-              {status === "connected" ? (
-                <>
-                  <FaStop /> &nbsp; {ui.ra_btn_disconnect}
-                </>
+              {goalCompleted ? (
+                status === "connected" && (
+                  <IconButton
+                    aria-label={ui.ra_btn_disconnect}
+                    icon={<FaStop />}
+                    onClick={stop}
+                    colorScheme="pink"
+                    flexShrink={0}
+                  />
+                )
               ) : (
-                <>
-                  <FaMicrophone /> &nbsp;{" "}
-                  {status === "connecting"
-                    ? ui.ra_btn_connecting
-                    : ui.ra_btn_connect}
-                </>
+                <Button
+                  onClick={skipGoal}
+                  size="md"
+                  height="48px"
+                  px={3}
+                  rounded="full"
+                  colorScheme="orange"
+                  variant={isLightTheme ? "outline" : "ghost"}
+                  bg={isLightTheme ? APP_SURFACE : undefined}
+                  borderColor={isLightTheme ? APP_BORDER_STRONG : undefined}
+                  color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
+                  boxShadow={isLightTheme ? "none" : undefined}
+                  _hover={
+                    isLightTheme
+                      ? { bg: APP_SURFACE_MUTED, borderColor: APP_BORDER_STRONG }
+                      : undefined
+                  }
+                  textShadow={isLightTheme ? "none" : "0 0 16px rgba(0,0,0,0.9)"}
+                >
+                  {uiText("ra_btn_skip", "Skip")}
+                </Button>
               )}
-            </Button>
-
-            <Box position="relative" mb={dockButtonBottomMargin}>
-              <Button
-                onClick={handleNextGoal}
-                size="md"
-                height="48px"
-                px={{ base: 6, md: 8 }}
-                rounded="full"
-                variant={isLightTheme ? "outline" : "solid"}
-                color={
-                  isLightTheme
-                    ? goalCompleted
-                      ? "#134e4a"
-                      : APP_TEXT_MUTED
-                    : "white"
-                }
-                textShadow={isLightTheme ? "none" : "0 0 16px rgba(0,0,0,0.9)"}
-                bg={
-                  isLightTheme
-                    ? APP_SURFACE
-                    : !goalCompleted
-                      ? "gray.800"
-                      : "cyan.700"
-                }
-                border="1px solid"
-                borderColor={
-                  isLightTheme
-                    ? goalCompleted
-                      ? "rgba(64, 198, 217, 0.95)"
-                      : APP_BORDER
-                    : "cyan"
-                }
-                boxShadow={isLightTheme ? "none" : undefined}
-                _hover={
-                  isLightTheme && goalCompleted
-                    ? {
-                        bg: APP_SURFACE_MUTED,
-                        borderColor: "#40c6d9",
-                      }
-                    : undefined
-                }
-                _disabled={
-                  isLightTheme
-                    ? {
-                        opacity: 1,
-                        bg: APP_SURFACE,
-                        color: APP_TEXT_MUTED,
-                        borderColor: APP_BORDER,
-                      }
-                    : undefined
-                }
-                disabled={!goalCompleted}
-                animation={
-                  goalCompleted
-                    ? `${
-                        isLightTheme ? "pulse-glow-unlock-light" : "pulse-glow-unlock"
-                      } 2.2s infinite ease-in-out`
-                    : undefined
-                }
-                sx={
-                  goalCompleted
-                    ? {
-                        "@keyframes pulse-glow-unlock": {
-                          "0%, 100%": {
-                            boxShadow: "0 0 8px rgba(45, 212, 191, 0.3), 0 0 0 0 rgba(45, 212, 191, 0)",
-                            transform: "scale(1)",
-                          },
-                          "50%": {
-                            boxShadow: "0 0 20px rgba(45, 212, 191, 0.8), 0 0 0 4px rgba(45, 212, 191, 0.4)",
-                            transform: "scale(1.04)",
-                          },
-                        },
-                        "@keyframes pulse-glow-unlock-light": {
-                          "0%, 100%": {
-                            boxShadow: "0 0 8px rgba(64, 198, 217, 0.3), 0 0 0 0 rgba(64, 198, 217, 0)",
-                            transform: "scale(1)",
-                          },
-                          "50%": {
-                            boxShadow: "0 0 22px rgba(64, 198, 217, 0.8), 0 0 0 4px rgba(64, 198, 217, 0.45)",
-                            transform: "scale(1.04)",
-                          },
-                        },
-                      }
-                    : undefined
-                }
-              >
-                {uiText("ra_btn_next", "Next")}
-              </Button>
-              {goalCompleted && (
-                <>
-                  <Box
-                    pointerEvents="none"
-                    position="absolute"
-                    top="-8px"
-                    left="10px"
-                    w="8px"
-                    h="8px"
-                    borderRadius="full"
-                    bg="white"
-                    boxShadow="0 0 8px 2px rgba(255,255,255,0.8), 0 0 14px rgba(255,255,255,0.6)"
-                    animation="btn-sparkle 2.2s ease-in-out infinite"
-                    sx={{
-                      "@keyframes btn-sparkle": {
-                        "0%, 100%": {
-                          opacity: 0,
-                          transform: "scale(0.3) rotate(0deg)",
-                        },
-                        "50%": {
-                          opacity: 0.95,
-                          transform: "scale(1.2) rotate(45deg)",
-                        },
-                      },
-                    }}
-                  />
-                  <Box
-                    pointerEvents="none"
-                    position="absolute"
-                    bottom="-6px"
-                    right="15px"
-                    w="6px"
-                    h="6px"
-                    borderRadius="full"
-                    bg="white"
-                    boxShadow="0 0 6px 2px rgba(255,255,255,0.8), 0 0 12px rgba(255,255,255,0.5)"
-                    animation="btn-sparkle-delayed 2.5s ease-in-out infinite 0.6s"
-                    sx={{
-                      "@keyframes btn-sparkle-delayed": {
-                        "0%, 100%": {
-                          opacity: 0,
-                          transform: "scale(0.2) rotate(0deg)",
-                        },
-                        "50%": {
-                          opacity: 0.9,
-                          transform: "scale(1.1) rotate(-30deg)",
-                        },
-                      },
-                    }}
-                  />
-                  <Box
-                    pointerEvents="none"
-                    position="absolute"
-                    top="4px"
-                    right="-5px"
-                    w="6px"
-                    h="6px"
-                    borderRadius="full"
-                    bg="white"
-                    boxShadow="0 0 6px 2px rgba(255,255,255,0.8), 0 0 12px rgba(255,255,255,0.5)"
-                    animation="btn-sparkle-delayed2 2s ease-in-out infinite 1.2s"
-                    sx={{
-                      "@keyframes btn-sparkle-delayed2": {
-                        "0%, 100%": {
-                          opacity: 0,
-                          transform: "scale(0.2) rotate(0deg)",
-                        },
-                        "50%": {
-                          opacity: 0.95,
-                          transform: "scale(1) rotate(15deg)",
-                        },
-                      },
-                    }}
-                  />
-                </>
-              )}
-            </Box>
-          </HStack>
-        </Center>
+            </ActivityActionRow>
+          }
+        />
 
         <Modal
           isOpen={showChatLog}

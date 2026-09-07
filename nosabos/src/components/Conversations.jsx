@@ -1,3 +1,5 @@
+import ActivityActionRow from "./ActivityActionRow";
+import QuestionActionArea from "./QuestionActionArea";
 // components/Conversations.jsx
 import React, {
   useEffect,
@@ -1111,7 +1113,6 @@ export default function Conversations({
   pauseMs: initialPauseMs = 2000,
   maxProficiencyLevel = "A1",
   onConnectionStatusChange,
-  bottomActionBarMinimized = false,
   isActive = true,
 }) {
   const aliveRef = useRef(false);
@@ -1653,13 +1654,6 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     status === "connected" && uiState !== "speaking" && uiState !== "thinking"
       ? "listening"
       : uiState;
-  const isVoiceSessionActive =
-    status === "connecting" || status === "connected";
-  const dockButtonBottomMargin = bottomActionBarMinimized
-    ? isVoiceSessionActive
-      ? 10
-      : 20
-    : 24;
   const [displayRobotState, setDisplayRobotState] = useState(liveUiState);
   const [previousRobotState, setPreviousRobotState] = useState(null);
   const [isRobotTransitioning, setIsRobotTransitioning] = useState(false);
@@ -3512,8 +3506,7 @@ Respond with ONLY a JSON object: {"target":"phrase in ${targetName}","support":"
       <Box
         color="gray.100"
         position="relative"
-        pb="calc(240px + env(safe-area-inset-bottom))"
-        scrollPaddingBottom="calc(240px + env(safe-area-inset-bottom))"
+        pb={4}
       >
         {/* Header area: robot separated from goal card */}
         <VStack px={4} mt={0} spacing={1} align="center">
@@ -3883,75 +3876,68 @@ Respond with ONLY a JSON object: {"target":"phrase in ${targetName}","support":"
         </Box>
 
         {/* Bottom dock - Connect button only */}
-        <Center
-          position="fixed"
-          bottom="22px"
-          left="0"
-          right="0"
-          zIndex={30}
-          px={4}
-        >
-          <HStack spacing={3} w="100%" maxW="560px" justify="center">
-            <Button
-              onClick={status === "connected" ? handleEndConversation : start}
-              size="lg"
-              height="64px"
-              px={{ base: 8, md: 12 }}
-              rounded="full"
-              colorScheme={status === "connected" ? undefined : "cyan"}
-              bg={
-                status === "connected"
-                  ? SOFT_STOP_BUTTON_BG
-                  : isLightTheme
-                    ? "linear-gradient(180deg, #40c6d9 0%, #2fb4c7 100%)"
-                    : undefined
+        <QuestionActionArea
+          actions={
+            <ActivityActionRow
+              tone={status === "connected" ? "danger" : "primary"}
+              primary={
+                <Button
+                  onClick={status === "connected" ? handleEndConversation : start}
+                  size="lg"
+                  height="48px"
+                  px={4}
+                  rounded="full"
+                  colorScheme={status === "connected" ? undefined : "cyan"}
+                  bg={
+                    status === "connected"
+                      ? SOFT_STOP_BUTTON_BG
+                      : isLightTheme
+                      ? "linear-gradient(180deg, #40c6d9 0%, #2fb4c7 100%)"
+                      : undefined
+                  }
+                  boxShadow={
+                    status === "connected"
+                      ? SOFT_STOP_BUTTON_GLOW
+                      : isLightTheme
+                      ? "0 10px 24px rgba(66, 168, 181, 0.22), 0 4px 0 rgba(41, 126, 136, 0.82)"
+                      : undefined
+                  }
+                  _hover={
+                    status === "connected"
+                      ? { bg: SOFT_STOP_BUTTON_HOVER_BG }
+                      : isLightTheme
+                      ? {
+                          bg: "linear-gradient(180deg, #35bfd3 0%, #27adc0 100%)",
+                        }
+                      : undefined
+                  }
+                  color={
+                    status === "connected" ? "white" : isLightTheme ? "white" : "white"
+                  }
+                  border={
+                    isLightTheme && status !== "connected"
+                      ? "1px solid rgba(255,255,255,0.55)"
+                      : undefined
+                  }
+                  textShadow={isLightTheme ? "none" : "0 0 16px rgba(0,0,0,0.9)"}
+                >
+                  {status === "connected" ? (
+                    <>
+                      <FaStop /> &nbsp; {uiText("ra_btn_end", "End")}
+                    </>
+                  ) : (
+                    <>
+                      <FaMicrophone /> &nbsp;{" "}
+                      {status === "connecting"
+                        ? uiText("ra_btn_starting", "Starting...")
+                        : uiText("ra_btn_start", "Start")}
+                    </>
+                  )}
+                </Button>
               }
-              boxShadow={
-                status === "connected"
-                  ? SOFT_STOP_BUTTON_GLOW
-                  : isLightTheme
-                    ? "0 10px 24px rgba(66, 168, 181, 0.22), 0 4px 0 rgba(41, 126, 136, 0.82)"
-                    : undefined
-              }
-              _hover={
-                status === "connected"
-                  ? { bg: SOFT_STOP_BUTTON_HOVER_BG }
-                  : isLightTheme
-                    ? {
-                        bg: "linear-gradient(180deg, #35bfd3 0%, #27adc0 100%)",
-                      }
-                  : undefined
-              }
-              color={
-                status === "connected"
-                  ? "white"
-                  : isLightTheme
-                    ? "white"
-                    : "white"
-              }
-              border={
-                isLightTheme && status !== "connected"
-                  ? "1px solid rgba(255,255,255,0.55)"
-                  : undefined
-              }
-              textShadow={isLightTheme ? "none" : "0 0 16px rgba(0,0,0,0.9)"}
-              mb={dockButtonBottomMargin}
-            >
-              {status === "connected" ? (
-                <>
-                  <FaStop /> &nbsp; {uiText("ra_btn_end", "End")}
-                </>
-              ) : (
-                <>
-                  <FaMicrophone /> &nbsp;{" "}
-                  {status === "connecting"
-                    ? uiText("ra_btn_starting", "Starting...")
-                    : uiText("ra_btn_start", "Start")}
-                </>
-              )}
-            </Button>
-          </HStack>
-        </Center>
+            ></ActivityActionRow>
+          }
+        />
 
         {err && (
           <Box px={4} pt={2}>

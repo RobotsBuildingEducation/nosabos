@@ -92,7 +92,7 @@ export const linksPageTranslations = {
     // Link cards
     noSabosTitle: "Piyali",
     noSabosDescription:
-      "Your personal language tutor. As fun as Duolingo, but better for learning.",
+      "Your personal language tutor. As fun as Duolingo, but more calm & better for learning.",
     rbeTitle: "Robots Building Education",
     rbeDescription:
       "Your personal coding tutor. Learn the foundations of software engineering quickly so you can use coding agents to build your ideas.",

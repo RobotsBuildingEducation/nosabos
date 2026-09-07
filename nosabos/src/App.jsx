@@ -8,7 +8,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { flushSync } from "react-dom";
+import { createPortal, flushSync } from "react-dom";
 import {
   Box,
   Drawer,
@@ -96,6 +96,7 @@ import {
   PiUsersBold,
   PiUsersThreeBold,
   PiSealQuestionDuotone,
+  PiDotsNineBold,
 } from "react-icons/pi";
 import { FiClock, FiCompass, FiPause, FiPlay, FiTarget } from "react-icons/fi";
 import { FaCalendarAlt, FaCalendarCheck } from "react-icons/fa";
@@ -138,6 +139,10 @@ import { isMasterUnlockActive } from "./utils/masterUnlock";
 import Vocabulary from "./components/Vocabulary";
 import StoryMode from "./components/Stories";
 import History from "./components/History";
+import ActivityMenu, { ImmersionPracticeMenuIcon } from "./components/ActivityMenu";
+import QuestionActionArea from "./components/QuestionActionArea";
+import { isFullNavigationSkillTreeMode } from "./utils/activityControls";
+import useQuestionActionStore from "./hooks/useQuestionActionStore";
 import HelpChatFab from "./components/HelpChatFab";
 import DailyGoalModal from "./components/DailyGoalModal";
 import DailyGoalPetPanel from "./components/DailyGoalPetPanel.jsx";
@@ -10100,7 +10105,7 @@ export default function App({ onBootReady } = {}) {
       )}
 
       {viewMode === "lesson" && !isGameFullScreen && (
-        <Box px={[2, 3, 4]} pt={[2, 3]} pb={{ base: 32, md: 24 }} w="100%">
+        <Box px={[2, 3, 4]} pt={{ base: 2, md: 3 }} pb={{ base: 32, md: 24 }} w="100%">
           {/* Tutorial Stepper - shows progress through tutorial modules */}
           {isTutorialMode && activeLesson?.isTutorial && (
             <TutorialStepper
@@ -10124,12 +10129,12 @@ export default function App({ onBootReady } = {}) {
             colorScheme="teal"
             isLazy
           >
-            <TabPanels mt={[2, 3]}>
+            <TabPanels mt={{ base: 2, md: 3 }}>
               {activeTabs.map((tabKey) => {
                 switch (tabKey) {
                   case "realtime":
                     return (
-                      <TabPanel key="realtime" px={0}>
+                      <TabPanel key="realtime" px={0} py={{ base: 0, md: 2 }}>
                         <RealTimeTest
                           key={`realtime-${lessonModuleNonce}`}
                           auth={auth}
@@ -10159,7 +10164,7 @@ export default function App({ onBootReady } = {}) {
                       <TabPanel
                         key="stories"
                         px={0}
-                        pt={isTutorialMode ? 0 : 4}
+                        py={{ base: 0, md: 2 }}
                       >
                         <StoryMode
                           key={`stories-${lessonModuleNonce}`}
@@ -10177,7 +10182,7 @@ export default function App({ onBootReady } = {}) {
                     );
                   case "reading":
                     return (
-                      <TabPanel key="reading" px={0}>
+                      <TabPanel key="reading" px={0} py={{ base: 0, md: 2 }}>
                         <History
                           key={`reading-${lessonModuleNonce}`}
                           userLanguage={appLanguage}
@@ -10190,7 +10195,7 @@ export default function App({ onBootReady } = {}) {
                     );
                   case "grammar":
                     return (
-                      <TabPanel key="grammar" px={0}>
+                      <TabPanel key="grammar" px={0} py={{ base: 0, md: 2 }}>
                         <GrammarBook
                           key={`grammar-${lessonModuleNonce}`}
                           userLanguage={appLanguage}
@@ -10217,7 +10222,7 @@ export default function App({ onBootReady } = {}) {
                     );
                   case "vocabulary":
                     return (
-                      <TabPanel key="vocabulary" px={0}>
+                      <TabPanel key="vocabulary" px={0} py={{ base: 0, md: 2 }}>
                         <Vocabulary
                           key={`vocabulary-${lessonModuleNonce}`}
                           userLanguage={appLanguage}
@@ -10244,7 +10249,7 @@ export default function App({ onBootReady } = {}) {
                     );
                   case "game":
                     return (
-                      <TabPanel key="game" px={0}>
+                      <TabPanel key="game" px={0} py={{ base: 0, md: 2 }}>
                         {activeLesson?.isTutorial &&
                         !preGeneratedGameScenario &&
                         !tutorialGamePreparationFailed ? (
@@ -10258,7 +10263,7 @@ export default function App({ onBootReady } = {}) {
                             maxH="720px"
                             borderRadius="xl"
                             overflow="hidden"
-                            mt={-2}
+                            mt={{ base: 2, md: 0 }}
                           >
                             <TutorialGameLoadingFallback
                               supportLang={resolvedSupportLang}
@@ -10289,7 +10294,7 @@ export default function App({ onBootReady } = {}) {
                     );
                   case "random":
                     return (
-                      <TabPanel key="random" px={0}>
+                      <TabPanel key="random" px={0} py={{ base: 0, md: 2 }}>
                         {renderRandomPanel()}
                       </TabPanel>
                     );
@@ -10299,6 +10304,7 @@ export default function App({ onBootReady } = {}) {
               })}
             </TabPanels>
           </Tabs>
+          <QuestionActionArea fallback />
         </Box>
       )}
 
@@ -11954,8 +11960,121 @@ function BottomActionBar({
     );
   }
 
+  const questionMenuSlot = useQuestionActionStore((state) => state.menuSlot);
+  const showFullNavigation = isFullNavigationSkillTreeMode(viewMode, pathMode);
+  const activityMenu = Boolean(questionMenuSlot) && !showFullNavigation;
+
+  if (activityMenu) {
+    return createPortal(
+      <ActivityMenu
+        label={currentMode.label || modeMenuLabel}
+        modesLabel={currentMode.label || modeMenuLabel}
+        modesIcon={<CurrentModeIcon size={20} />}
+        backLabel={
+          t?.back ||
+          uiCopy(appLanguage, {
+            en: "Back",
+            es: "Volver",
+            it: "Indietro",
+            ja: "戻る",
+          })
+        }
+        items={[
+          ...(viewMode === "lesson"
+            ? [
+                {
+                  id: "exitLesson",
+                  label:
+                    t?.exit_lesson ||
+                    uiCopy(appLanguage, {
+                      en: "Exit lesson",
+                      es: "Salir de la lección",
+                      it: "Esci dalla lezione",
+                      ja: "レッスンを終了",
+                    }),
+                  icon: <ArrowBackIcon boxSize={5} />,
+                  onClick: () => {
+                    playSound?.(selectSound);
+                    onNavigateToSkillTree?.();
+                  },
+                },
+              ]
+            : []),
+          {
+            id: "teams",
+            label: tasksLabel,
+            icon: (
+              <ImmersionPracticeMenuIcon
+                progress={realWorldTasksTimerProgress}
+                hasNotification={realWorldTasksHasNotification}
+                attention={realWorldTasksAttention}
+                isLightTheme={isLightTheme}
+              />
+            ),
+            onClick: () => handleActionClick(onOpenTeams),
+          },
+          {
+            id: "settings",
+            label: settingsLabel,
+            icon: <SettingsIcon boxSize={5} />,
+            onClick: () => handleActionClick(onOpenSettings),
+          },
+          {
+            id: "notes",
+            label: notesLabel,
+            icon: notesIsDone ? (
+              <RiBookmarkFill size={20} />
+            ) : (
+              <RiBookmarkLine size={20} />
+            ),
+            buttonBg: notesIsDone ? "teal.400" : undefined,
+            buttonColor: notesIsDone ? "white" : undefined,
+            onClick: () => handleActionClick(onOpenNotes),
+          },
+          {
+            id: "help",
+            label: helpChatLabel,
+            icon: <MdOutlineSupportAgent size={20} />,
+            onClick: () => handleActionClick(onOpenHelpChat),
+            disabled: !onOpenHelpChat,
+          },
+        ]}
+        modes={PATH_MODES}
+        selectedMode={pathMode}
+        onSelectMode={(modeId) => {
+          playSound?.("modeSwitch");
+          if (viewMode !== "skillTree") {
+            onNavigateToSkillTree?.();
+            if (modeId !== pathMode) {
+              onPathModeChange?.(modeId);
+            }
+          } else {
+            onPathModeChange?.(modeId);
+          }
+        }}
+        onOpen={() => playSound?.(selectSound)}
+        triggerIcon={
+          <PiDotsNineBold
+            size={22}
+            color={isLightTheme ? "#1f1912" : "var(--app-text-primary)"}
+          />
+        }
+        triggerProps={{
+          "aria-label": currentMode.label || modeMenuLabel,
+          color: isLightTheme ? "#1f1912" : "var(--app-text-primary)",
+        }}
+      />,
+      questionMenuSlot,
+    );
+  }
+
+  if (!showFullNavigation) {
+    return null;
+  }
+
   return (
     <Box
+      data-bottom-navigation=""
       position="fixed"
       bottom={0}
       left={0}
@@ -12039,7 +12158,7 @@ function BottomActionBar({
               style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
             >
               <Box position="relative" flexShrink={0}>
-                {realWorldTasksTimerProgress > 0 && (
+                {realWorldTasksTimerProgress > 0 && !realWorldTasksHasNotification && (
                   <Box
                     as="svg"
                     position="absolute"
