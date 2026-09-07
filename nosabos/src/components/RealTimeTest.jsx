@@ -9,7 +9,6 @@ import React, {
   useState,
 } from "react";
 import {
-  Badge,
   Box,
   Button,
   Center,
@@ -1011,19 +1010,6 @@ export default function RealTimeTest({
   // Goal-UI language routing
   const goalUiLang = uiLang;
   const gtr = translations[goalUiLang] || translations.en;
-  const tGoalLabel =
-    translations[goalUiLang]?.ra_goal_label ||
-    (goalUiLang === "fr"
-      ? "Objectif"
-      : goalUiLang === "es"
-        ? "Meta"
-        : goalUiLang === "pt"
-          ? "Meta"
-          : goalUiLang === "it"
-            ? "Obiettivo"
-            : goalUiLang === "hi"
-              ? "लक्ष्य"
-              : "Goal");
   const tGoalCompletedToast =
     gtr?.ra_goal_completed ||
     (goalUiLang === "es"
@@ -2621,7 +2607,7 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
       title: uiText("ra_free_practice_title", "Free practice mode"),
       description: uiText(
         "ra_free_practice_desc",
-        "In free mode, use the Connect button to practice conversation.",
+        "In free mode, use the Start button to practice conversation.",
       ),
       status: "info",
       duration: 2000,
@@ -3789,13 +3775,6 @@ Return ONLY JSON:
                         minW="24px"
                         h="24px"
                       />
-                      <Badge
-                        colorScheme="yellow"
-                        variant="subtle"
-                        fontSize={"10px"}
-                      >
-                        {tGoalLabel}
-                      </Badge>
                       <Text
                         fontSize="xs"
                         opacity={0.9}
@@ -4055,8 +4034,8 @@ Return ONLY JSON:
                       <>
                         <FaMicrophone /> &nbsp;{" "}
                         {status === "connecting"
-                          ? ui.ra_btn_connecting
-                          : ui.ra_btn_connect}
+                          ? ui.ra_btn_starting || uiText("ra_btn_starting", "Starting...")
+                          : ui.ra_btn_start || uiText("ra_btn_start", "Start")}
                       </>
                     )}
                   </Button>

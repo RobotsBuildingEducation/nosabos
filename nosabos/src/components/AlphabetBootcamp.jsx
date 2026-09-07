@@ -71,6 +71,7 @@ import {
   withGermanAlphabetSupport,
 } from "../data/alphabetGermanLocalizer";
 import { FiVolume2 } from "react-icons/fi";
+import { FaMicrophone, FaStop } from "react-icons/fa";
 import {
   RiMicLine,
   RiStopCircleLine,
@@ -2278,9 +2279,9 @@ function LetterCard({
                       isConnecting ? (
                         <Spinner size="xs" />
                       ) : isRecording ? (
-                        <RiStopCircleLine />
+                        <FaStop />
                       ) : (
-                        <RiMicLine />
+                        <FaMicrophone />
                       )
                     }
                     onClick={handleRecord}
@@ -2327,6 +2328,11 @@ function LetterCard({
                     isGrading ||
                     isConnecting ||
                     (isPracticeMode && !supportsSpeech)
+                  }
+                  leftIcon={
+                    isPracticeMode && !showResult ? (
+                      isRecording ? <FaStop /> : <FaMicrophone />
+                    ) : undefined
                   }
                   onClick={
                     !isPracticeMode

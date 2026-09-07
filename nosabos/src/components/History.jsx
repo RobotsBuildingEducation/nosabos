@@ -26,14 +26,13 @@ import {
   Grid,
   GridItem,
   Spinner,
-  Switch,
 } from "@chakra-ui/react";
 import {
   PiSpeakerHighDuotone,
   PiLightningDuotone,
   PiStopDuotone,
-  PiMicrophoneStageDuotone,
 } from "react-icons/pi";
+import { FaMicrophone } from "react-icons/fa";
 import { doc, onSnapshot } from "firebase/firestore";
 import { MdKeyboard, MdMenuBook } from "react-icons/md";
 import { FiArrowRight, FiHelpCircle } from "react-icons/fi";
@@ -1071,18 +1070,6 @@ export default function History({
     setSpeechTranscript("");
   }
 
-  function switchReviewFormat(format) {
-    if (format === reviewFormat) return;
-    stopListening();
-    setReviewFormat(format);
-    setReviewAnswer("");
-    setReviewSubmitted(false);
-    setReviewCorrect(null);
-    setSpeechTranscript("");
-    setSpeechFeedback(null);
-    setSpeechSubmitted(false);
-    setExplanationText("");
-  }
 
   async function translateLectureLines() {
     if (!viewLecture?.id || !targetSentences.length || isTranslatingLecture)
@@ -1346,6 +1333,9 @@ export default function History({
     const xpAward = getRandomHistoryXp();
     const xpReason = "Immediate random 5–8 XP award.";
 
+    const chosenReviewFormat =
+      hasSpeechRecognition && Math.random() < 0.5 ? "speech" : "question";
+
     const payload = {
       title: cleanTitle,
       target: safeTarget,
@@ -1355,6 +1345,7 @@ export default function History({
       supportLang,
       xpAward,
       xpReason,
+      reviewFormat: chosenReviewFormat,
       createdAtClient: Date.now(),
       awarded: false, // ← XP not yet claimed
     };
@@ -1528,6 +1519,9 @@ export default function History({
       const xpAward = getRandomHistoryXp();
       const xpReason = "Immediate random 5–8 XP award.";
 
+      const chosenReviewFormat =
+        hasSpeechRecognition && Math.random() < 0.5 ? "speech" : "question";
+
       // Save locally (do not award yet)
       const payload = {
         title: finalTitle,
@@ -1538,6 +1532,7 @@ export default function History({
         supportLang,
         xpAward,
         xpReason,
+        reviewFormat: chosenReviewFormat,
         reviewQuestion: bundledReviewQuestion,
         reviewQuestionType: plannedReviewQuestionType,
         createdAtClient: Date.now(),
@@ -1907,7 +1902,7 @@ Return ONLY valid JSON:
 
   // Reset review state when lecture changes
   useEffect(() => {
-    setReviewFormat(null);
+    setReviewFormat(activeLecture?.reviewFormat || null);
     setReviewQuestion(activeLecture?.reviewQuestion || null);
     setExplanationText("");
     setIsLoadingExplanation(false);
@@ -1921,7 +1916,7 @@ Return ONLY valid JSON:
     stopListening();
   }, [activeId]); // eslint-disable-line
 
-  // Default to read-aloud format when a lecture is ready.
+  // Randomize modality (speech or question) when a lecture is ready.
   useEffect(() => {
     if (
       activeLecture?.target &&
@@ -1929,9 +1924,27 @@ Return ONLY valid JSON:
       !isGenerating &&
       reviewFormat === null
     ) {
-      setReviewFormat("speech");
+      const chosen =
+        activeLecture?.reviewFormat ||
+        (hasSpeechRecognition && Math.random() < 0.5 ? "speech" : "question");
+      setReviewFormat(chosen);
+      if (!activeLecture?.reviewFormat && activeLecture?.id) {
+        setLectures((prev) =>
+          prev.map((lec) =>
+            lec.id === activeLecture.id ? { ...lec, reviewFormat: chosen } : lec,
+          ),
+        );
+      }
     }
-  }, [activeLecture?.id, draftLecture, isGenerating]); // eslint-disable-line
+  }, [
+    activeLecture?.id,
+    activeLecture?.reviewFormat,
+    activeLecture?.target,
+    draftLecture,
+    hasSpeechRecognition,
+    isGenerating,
+    reviewFormat,
+  ]); // eslint-disable-line
 
   // Gemini normally bundles the review question with the lecture stream. Use
   // Nano once as a fallback only when that bundled record is missing or invalid.
@@ -2355,39 +2368,7 @@ Return ONLY valid JSON:
                   <Box>
                     <Divider opacity={0.2} mb={3} />
 
-                    {/* Tutorial mode: let user toggle format */}
-                    {reviewFormat && (
-                      <HStack spacing={3} mb={3} justify="center">
-                        <Text
-                          fontSize="sm"
-                          fontWeight={
-                            reviewFormat === "question" ? "bold" : "normal"
-                          }
-                          opacity={reviewFormat === "question" ? 1 : 0.6}
-                        >
-                          {t("history_format_question")}
-                        </Text>
-                        <Switch
-                          size="md"
-                          colorScheme="purple"
-                          isChecked={reviewFormat === "speech"}
-                          onChange={() =>
-                            switchReviewFormat(
-                              reviewFormat === "speech" ? "question" : "speech",
-                            )
-                          }
-                        />
-                        <Text
-                          fontSize="sm"
-                          fontWeight={
-                            reviewFormat === "speech" ? "bold" : "normal"
-                          }
-                          opacity={reviewFormat === "speech" ? 1 : 0.6}
-                        >
-                          {t("history_format_speech")}
-                        </Text>
-                      </HStack>
-                    )}
+
 
                     {/* Speech format */}
                     {reviewFormat === "speech" ? (
@@ -3045,6 +3026,11 @@ Return ONLY valid JSON:
                       colorScheme={isListening ? "pink" : "teal"}
                       isLoading={isGradingSpeech}
                       isDisabled={!hasSpeechRecognition || isGradingSpeech}
+                      leftIcon={
+                        !isListening && !speechTranscript.trim() ? (
+                          <FaMicrophone />
+                        ) : undefined
+                      }
                       onClick={() => {
                         if (isListening) {
                           playSound(selectSound);
@@ -3069,17 +3055,21 @@ Return ONLY valid JSON:
                       isLoading={isCheckingAnswer}
                       isDisabled={!reviewAnswer.trim() || isCheckingAnswer}
                     >
-                      {t("history_check_answer")}
+                      {t("quiz_submit") || "Submit"}
                     </Button>
                   ) : (
                     <Button
                       colorScheme="teal"
+                      isLoading={isGeneratingQuestion}
+                      isDisabled={isGeneratingQuestion}
                       onClick={() => {
                         playSound(selectSound);
                         generateReviewQuestion();
                       }}
                     >
-                      {t("history_generate_review")}
+                      {isGeneratingQuestion
+                        ? t("history_generating_question")
+                        : t("history_generate_review")}
                     </Button>
                   )
                 ) : (
