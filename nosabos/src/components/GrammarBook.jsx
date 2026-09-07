@@ -1241,6 +1241,9 @@ function GrammarBookLegacy({
   // wipes any prior explanation the moment a new answer is graded — the panel
   // now shows only right after the user taps "Explain the answer".
   useEffect(() => {
+    setAssistantSupportText("");
+    setIsLoadingAssistantSupport(false);
+    setIsAssistantOpen(false);
     setExplanationText("");
   }, [currentQuestionData]);
 
@@ -1248,6 +1251,11 @@ function GrammarBookLegacy({
   const [assistantSupportText, setAssistantSupportText] = useState("");
   const [isLoadingAssistantSupport, setIsLoadingAssistantSupport] =
     useState(false);
+  const [isAssistantOpen, setIsAssistantOpen] = useState(false);
+
+  const handleCloseAssistant = useCallback(() => {
+    setIsAssistantOpen(false);
+  }, []);
 
   function showCopyToast() {
     toast({
@@ -1306,8 +1314,13 @@ function GrammarBookLegacy({
 
   // Inline assistant support - streams response directly in the UI
   async function handleAskAssistant(questionContext) {
-    if (!questionContext || isLoadingAssistantSupport || assistantSupportText)
+    if (!questionContext) return;
+    if (isAssistantOpen) {
+      setIsAssistantOpen(false);
       return;
+    }
+    setIsAssistantOpen(true);
+    if (isLoadingAssistantSupport || assistantSupportText) return;
 
     playSound(submitSound);
     setIsLoadingAssistantSupport(true);
@@ -1940,6 +1953,7 @@ Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Ant
     setNextAction(null);
     setExplanationText("");
     setAssistantSupportText("");
+    setIsAssistantOpen(false);
     setCurrentQuestionData(null);
     setNoteCreated(false);
 
@@ -2021,6 +2035,7 @@ Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Ant
       } catch {}
     }
     setLastOk(null);
+    setIsAssistantOpen(false);
     setRecentXp(0);
     setNextAction(null);
 
@@ -3876,6 +3891,7 @@ Return JSON ONLY:
   --------------------------- */
   async function submitFill() {
     if (!question || !input.trim()) return;
+    setIsAssistantOpen(false);
     playSound(submitActionSound);
     setLoadingG(true);
 
@@ -3952,6 +3968,7 @@ Return JSON ONLY:
 
   async function submitMC() {
     if (!mcQ || !mcPick) return;
+    setIsAssistantOpen(false);
     playSound(submitActionSound);
     setLoadingMCG(true);
 
@@ -4031,6 +4048,7 @@ Return JSON ONLY:
 
   async function submitMA() {
     if (!maQ || !maPicks.length) return;
+    setIsAssistantOpen(false);
     playSound(submitActionSound);
     setLoadingMAG(true);
 
@@ -4121,6 +4139,7 @@ Return JSON ONLY:
   // ✅ Deterministic judge for Match using the returned map
   async function submitMatch() {
     if (!canSubmitMatch()) return;
+    setIsAssistantOpen(false);
     playSound(submitActionSound);
     setLoadingMJ(true);
 
@@ -4197,6 +4216,7 @@ Return JSON ONLY:
   // Submit for Translate mode
   async function submitTranslate(userWords) {
     if (!tSentence || !userWords || userWords.length === 0) return;
+    setIsAssistantOpen(false);
     setLoadingTJ(true);
 
     // Clear previous explanation when attempting a new answer
@@ -4483,6 +4503,11 @@ Return JSON ONLY:
   }
 
   const sendMatchHelp = useCallback(() => {
+    if (isAssistantOpen) {
+      setIsAssistantOpen(false);
+      return;
+    }
+    setIsAssistantOpen(true);
     if (isLoadingAssistantSupport || assistantSupportText) return;
     const isFrenchUI = userLanguage === "fr";
     const isPortugueseUI = userLanguage === "pt";
@@ -4584,6 +4609,7 @@ Return JSON ONLY:
     mStem,
     isLoadingAssistantSupport,
     assistantSupportText,
+    isAssistantOpen,
     userLanguage,
   ]);
 
@@ -4611,79 +4637,15 @@ Return JSON ONLY:
     return (
       <IconButton
         aria-label={t("vocab_ask_assistant")}
-        icon={
-          isLoadingAssistantSupport ? (
-            <VoiceOrb
-              state={
-                ["idle", "listening", "speaking"][Math.floor(Math.random() * 3)]
-              }
-              size={16}
-            />
-          ) : (
-            <MdOutlineSupportAgent />
-          )
-        }
+        icon={<MdOutlineSupportAgent />}
         size="sm"
         fontSize="lg"
         rounded="xl"
         onClick={() => copyAll(q, h, tr)}
-        isDisabled={isLoadingAssistantSupport || !!assistantSupportText}
+        isDisabled={isLoadingAssistantSupport}
         mr={1}
-        {...getQuestionToolButtonProps()}
+        {...getQuestionToolButtonProps({ active: isAssistantOpen })}
       />
-    );
-  };
-
-  // Assistant support response box (blue theme)
-  const AssistantSupportBox = () => {
-    if (!assistantSupportText && !isLoadingAssistantSupport) return null;
-    return (
-      <Box
-        p={4}
-        borderRadius="lg"
-        mt={4}
-        {...getQuestionAssistantPanelProps()}
-      >
-        <HStack spacing={2} mb={2}>
-          <MdOutlineSupportAgent color={questionAssistantText.accent} />
-          <Text fontWeight="semibold" color={questionAssistantText.accentStrong}>
-            {t("vocab_assistant")}
-          </Text>
-          {isLoadingAssistantSupport && (
-            <VoiceOrb
-              state={
-                ["idle", "listening", "speaking"][Math.floor(Math.random() * 3)]
-              }
-              size={16}
-            />
-          )}
-        </HStack>
-        <Box
-          fontSize="md"
-          color={APP_TEXT_PRIMARY}
-          lineHeight="1.6"
-          sx={{
-            "& p": { mb: 2, unicodeBidi: "plaintext" },
-            "& p:last-child": { mb: 0 },
-            "& strong": {
-              fontWeight: "bold",
-              color: questionAssistantText.accentStrong,
-            },
-            "& em": { fontStyle: "italic" },
-            "& ul, & ol": { pl: 4, mb: 2 },
-            "& li": { mb: 1, unicodeBidi: "plaintext" },
-            "& code": {
-              bg: APP_SURFACE,
-              px: 1,
-              py: 0.5,
-              borderRadius: "sm",
-              fontFamily: "mono",
-            },
-          }}
-        >
-          <ReactMarkdown>{assistantSupportText}</ReactMarkdown>
-        </Box>
-      </Box>
     );
   };
 
@@ -5389,8 +5351,6 @@ Return JSON ONLY:
               </VStack>
             </Box>
 
-            <AssistantSupportBox />
-
             <Input
               style={questionSquircleStyle}
               value={input}
@@ -5411,9 +5371,9 @@ Return JSON ONLY:
             )}
 
             <QuestionActionArea
-              feedback={lastOk}
+              feedback={isAssistantOpen ? "assistant" : lastOk}
               actions={
-                (!((lastOk === true || isFinalQuiz && lastOk === false) && nextAction)) && (
+                !isAssistantOpen && (!((lastOk === true || isFinalQuiz && lastOk === false) && nextAction)) && (
                   <ActivityActionRow
                     primary={
                       <Button
@@ -5463,6 +5423,12 @@ Return JSON ONLY:
               <FeedbackRail
                 compact
                 ok={lastOk}
+                isAssistant={isAssistantOpen}
+                assistantSupportText={assistantSupportText}
+                isLoadingAssistantSupport={isLoadingAssistantSupport}
+                assistantLabel={t("vocab_assistant") || "Assistant"}
+                onCloseAssistant={handleCloseAssistant}
+                closeAssistantLabel={t("app_close") || "Close"}
                 xp={recentXp}
                 showNext={
                   (lastOk === true || (isFinalQuiz && lastOk === false)) &&
@@ -5684,12 +5650,10 @@ Return JSON ONLY:
               </>
             )}
 
-            <AssistantSupportBox />
-
             <QuestionActionArea
-              feedback={lastOk}
+              feedback={isAssistantOpen ? "assistant" : lastOk}
               actions={
-                (!((lastOk === true || isFinalQuiz && lastOk === false) && nextAction)) && (
+                !isAssistantOpen && (!((lastOk === true || isFinalQuiz && lastOk === false) && nextAction)) && (
                   <ActivityActionRow
                     primary={
                       <Button
@@ -5726,6 +5690,12 @@ Return JSON ONLY:
               <FeedbackRail
                 compact
                 ok={lastOk}
+                isAssistant={isAssistantOpen}
+                assistantSupportText={assistantSupportText}
+                isLoadingAssistantSupport={isLoadingAssistantSupport}
+                assistantLabel={t("vocab_assistant") || "Assistant"}
+                onCloseAssistant={handleCloseAssistant}
+                closeAssistantLabel={t("app_close") || "Close"}
                 xp={recentXp}
                 showNext={
                   (lastOk === true || (isFinalQuiz && lastOk === false)) &&
@@ -5959,12 +5929,10 @@ Return JSON ONLY:
               </>
             )}
 
-            <AssistantSupportBox />
-
             <QuestionActionArea
-              feedback={lastOk}
+              feedback={isAssistantOpen ? "assistant" : lastOk}
               actions={
-                (!((lastOk === true || isFinalQuiz && lastOk === false) && nextAction)) && (
+                !isAssistantOpen && (!((lastOk === true || isFinalQuiz && lastOk === false) && nextAction)) && (
                   <ActivityActionRow
                     primary={
                       <Button
@@ -6001,6 +5969,12 @@ Return JSON ONLY:
               <FeedbackRail
                 compact
                 ok={lastOk}
+                isAssistant={isAssistantOpen}
+                assistantSupportText={assistantSupportText}
+                isLoadingAssistantSupport={isLoadingAssistantSupport}
+                assistantLabel={t("vocab_assistant") || "Assistant"}
+                onCloseAssistant={handleCloseAssistant}
+                closeAssistantLabel={t("app_close") || "Close"}
                 xp={recentXp}
                 showNext={
                   (lastOk === true || (isFinalQuiz && lastOk === false)) &&
@@ -6072,12 +6046,10 @@ Return JSON ONLY:
               </>
             )}
 
-            <AssistantSupportBox />
-
             <QuestionActionArea
-              feedback={lastOk}
+              feedback={isAssistantOpen ? "assistant" : lastOk}
               actions={
-                (!((lastOk === true || isFinalQuiz && lastOk === false) && nextAction)) && (
+                !isAssistantOpen && (!((lastOk === true || isFinalQuiz && lastOk === false) && nextAction)) && (
                   <ActivityActionRow
                     tone={isSpeakRecording ? "stop" : "speak"}
                     primary={
@@ -6192,6 +6164,12 @@ Return JSON ONLY:
               <FeedbackRail
                 compact
                 ok={lastOk}
+                isAssistant={isAssistantOpen}
+                assistantSupportText={assistantSupportText}
+                isLoadingAssistantSupport={isLoadingAssistantSupport}
+                assistantLabel={t("vocab_assistant") || "Assistant"}
+                onCloseAssistant={handleCloseAssistant}
+                closeAssistantLabel={t("app_close") || "Close"}
                 xp={recentXp}
                 showNext={
                   (lastOk === true || (isFinalQuiz && lastOk === false)) &&
@@ -6244,28 +6222,13 @@ Return JSON ONLY:
                 <IconButton
                   aria-label={t("vocab_ask_assistant")
                   }
-                  icon={
-                    isLoadingAssistantSupport ? (
-                      <VoiceOrb
-                        state={
-                          ["idle", "listening", "speaking"][
-                            Math.floor(Math.random() * 3)
-                          ]
-                        }
-                        size={16}
-                      />
-                    ) : (
-                      <MdOutlineSupportAgent />
-                    )
-                  }
+                  icon={<MdOutlineSupportAgent />}
                   size="sm"
                   fontSize="lg"
                   rounded="xl"
                   onClick={sendMatchHelp}
-                  isDisabled={
-                    isLoadingAssistantSupport || !!assistantSupportText
-                  }
-                  {...getQuestionToolButtonProps()}
+                  isDisabled={isLoadingAssistantSupport}
+                  {...getQuestionToolButtonProps({ active: isAssistantOpen })}
                 />
               </HStack>
 
@@ -6509,11 +6472,10 @@ Return JSON ONLY:
               </SortableArea>
             </Box>
 
-            <AssistantSupportBox />
-
             <QuestionActionArea
-              feedback={lastOk}
+              feedback={isAssistantOpen ? "assistant" : lastOk}
               actions={
+                !isAssistantOpen &&
                 (!((lastOk === true || isFinalQuiz && lastOk === false) && nextAction)) && (
                   <ActivityActionRow
                     primary={
@@ -6551,6 +6513,12 @@ Return JSON ONLY:
               <FeedbackRail
                 compact
                 ok={lastOk}
+                isAssistant={isAssistantOpen}
+                assistantSupportText={assistantSupportText}
+                isLoadingAssistantSupport={isLoadingAssistantSupport}
+                assistantLabel={t("vocab_assistant") || "Assistant"}
+                onCloseAssistant={handleCloseAssistant}
+                closeAssistantLabel={t("app_close") || "Close"}
                 xp={recentXp}
                 showNext={
                   (lastOk === true || (isFinalQuiz && lastOk === false)) &&
@@ -6592,6 +6560,8 @@ Return JSON ONLY:
                 handlePlayQuestionTTS(text, questionTTsLang, options)
               }
               onAskAssistant={handleAskAssistant}
+              isAssistantOpen={isAssistantOpen}
+              onCloseAssistant={handleCloseAssistant}
               assistantSupportText={assistantSupportText}
               isLoadingAssistantSupport={isLoadingAssistantSupport}
               canSkip={canSkip}
@@ -6629,6 +6599,8 @@ Return JSON ONLY:
                 handlePlayQuestionTTS(text, questionTTsLang, options)
               }
               onAskAssistant={handleAskAssistant}
+              isAssistantOpen={isAssistantOpen}
+              onCloseAssistant={handleCloseAssistant}
               assistantSupportText={assistantSupportText}
               isLoadingAssistantSupport={isLoadingAssistantSupport}
               canSkip={canSkip}

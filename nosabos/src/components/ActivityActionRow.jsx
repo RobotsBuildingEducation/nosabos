@@ -38,6 +38,18 @@ const TONE_PALETTES = {
     shadow: "0 4px 0 var(--chakra-colors-red-800, #822727)",
     activeShadow: "0 2px 0 var(--chakra-colors-red-800, #822727)",
   },
+  assistant: {
+    bg: "blue.500",
+    hoverBg: "blue.600",
+    shadow: "0 4px 0 var(--chakra-colors-blue-800, #2b6cb0)",
+    activeShadow: "0 2px 0 var(--chakra-colors-blue-800, #2b6cb0)",
+  },
+  blue: {
+    bg: "blue.500",
+    hoverBg: "blue.600",
+    shadow: "0 4px 0 var(--chakra-colors-blue-800, #2b6cb0)",
+    activeShadow: "0 2px 0 var(--chakra-colors-blue-800, #2b6cb0)",
+  },
 };
 
 function inspectElement(node, fn) {
@@ -83,6 +95,7 @@ function isStopButton(node) {
 }
 
 function resolveTone(tone, primary) {
+  if (tone === "assistant" || tone === "blue") return "assistant";
   if (tone === "speak" || tone === "record" || tone === "cyan") return "cyan";
   if (tone === "stop" || tone === "reddit" || tone === "danger") return "reddit";
   if (tone === "success") return "teal";

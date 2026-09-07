@@ -11,7 +11,8 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react";
-import { FiArrowRight, FiHelpCircle } from "react-icons/fi";
+import { FiArrowRight, FiHelpCircle, FiX } from "react-icons/fi";
+import { MdOutlineSupportAgent } from "react-icons/md";
 import { RiBookmarkLine } from "react-icons/ri";
 import ReactMarkdown from "react-markdown";
 import { WaveBar } from "./WaveBar";
@@ -19,11 +20,14 @@ import RandomCharacter from "./RandomCharacter";
 import useSoundSettings from "../hooks/useSoundSettings";
 import { deliciousSound, clickSound, sparkleSound } from "../constants/sounds";
 import VoiceOrb from "./VoiceOrb";
+import AnimatedEllipsis from "./AnimatedEllipsis";
 import {
   getQuestionFeedbackPanelProps,
+  getQuestionAssistantPanelProps,
   questionSquircleStyle,
   questionFeedbackAccent,
   questionToneText,
+  questionAssistantMarkdownStyles,
 } from "./questionUiStyles";
 
 const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
@@ -53,6 +57,13 @@ const FeedbackRail = React.memo(
     isCreatingNote,
     noteCreated,
     compact = false,
+    // Assistant props
+    isAssistant = false,
+    assistantSupportText = "",
+    isLoadingAssistantSupport = false,
+    assistantLabel,
+    onCloseAssistant,
+    closeAssistantLabel,
   }) => {
     const hasPlayedRef = useRef(false);
     const reduceMotion = useReducedMotion();
@@ -73,7 +84,174 @@ const FeedbackRail = React.memo(
       }
     }, [ok, playSound]);
 
-    if (ok === null) return null;
+    if (ok === null && !isAssistant) return null;
+
+    if (isAssistant) {
+      const resolvedAssistantLabel =
+        assistantLabel || t?.("vocab_assistant") || "Assistant";
+      const resolvedCloseLabel =
+        closeAssistantLabel || t?.("app_close") || "Close";
+
+      if (compact) {
+        return (
+          <VStack align="stretch" spacing={3}>
+            <MotionBox
+              key="assistant-content"
+              initial={
+                reduceMotion ? false : { opacity: 0, y: 6, filter: "blur(3px)" }
+              }
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              transition={{
+                duration: reduceMotion ? 0 : 0.24,
+                delay: reduceMotion ? 0 : 0.06,
+                ease: [0.22, 1, 0.36, 1],
+              }}
+              maxH="min(34dvh, 260px)"
+              overflowY="auto"
+              overscrollBehavior="contain"
+              data-activity-feedback-content=""
+              px={1}
+              pt={2}
+              pb={1}
+            >
+              <HStack align="center" justify="space-between" mb={2}>
+                <HStack align="center" spacing={2.5}>
+                  <Box
+                    color="var(--question-assistant-accent)"
+                    display="flex"
+                    alignItems="center"
+                  >
+                    <MdOutlineSupportAgent size={22} />
+                  </Box>
+                  <Text
+                    fontWeight="bold"
+                    fontSize="md"
+                    color="var(--question-assistant-accent-strong)"
+                  >
+                    {resolvedAssistantLabel}
+                  </Text>
+                </HStack>
+                {onCloseAssistant && (
+                  <IconButton
+                    icon={<FiX size={18} />}
+                    aria-label={resolvedCloseLabel}
+                    variant="ghost"
+                    size="sm"
+                    borderRadius="full"
+                    onClick={onCloseAssistant}
+                    flexShrink={0}
+                  />
+                )}
+              </HStack>
+
+              {isLoadingAssistantSupport && !assistantSupportText ? (
+                <Box py={2}>
+                  <AnimatedEllipsis
+                    color="var(--question-assistant-accent)"
+                    justify="flex-start"
+                    ariaLabel={t?.("loading") || "Loading"}
+                  />
+                </Box>
+              ) : assistantSupportText ? (
+                <Box
+                  fontSize="sm"
+                  color="var(--app-text-primary)"
+                  lineHeight="1.6"
+                  sx={questionAssistantMarkdownStyles}
+                >
+                  <ReactMarkdown>{assistantSupportText}</ReactMarkdown>
+                </Box>
+              ) : null}
+            </MotionBox>
+
+            {onCloseAssistant && (
+              <ActivityActionRow
+                tone="assistant"
+                primary={
+                  <Button
+                    onClick={onCloseAssistant}
+                    width="full"
+                    minH="48px"
+                    height="auto"
+                    py={3}
+                    whiteSpace="normal"
+                    size="lg"
+                  >
+                    {resolvedCloseLabel}
+                  </Button>
+                }
+              />
+            )}
+          </VStack>
+        );
+      }
+
+      return (
+        <SlideFade in={true} offsetY="10px">
+          <VStack spacing={3} align="stretch">
+            <VStack
+              spacing={3}
+              align="stretch"
+              p={4}
+              borderRadius="xl"
+              {...getQuestionAssistantPanelProps()}
+            >
+              <HStack align="center" justify="space-between">
+                <HStack spacing={2.5}>
+                  <MdOutlineSupportAgent
+                    size={22}
+                    color="var(--question-assistant-accent)"
+                  />
+                  <Text
+                    fontWeight="bold"
+                    color="var(--question-assistant-accent-strong)"
+                  >
+                    {resolvedAssistantLabel}
+                  </Text>
+                </HStack>
+                {onCloseAssistant && (
+                  <IconButton
+                    icon={<FiX size={18} />}
+                    aria-label={resolvedCloseLabel}
+                    variant="ghost"
+                    size="sm"
+                    borderRadius="full"
+                    onClick={onCloseAssistant}
+                  />
+                )}
+              </HStack>
+              {isLoadingAssistantSupport && !assistantSupportText ? (
+                <Box py={2}>
+                  <AnimatedEllipsis
+                    color="var(--question-assistant-accent)"
+                    justify="flex-start"
+                    ariaLabel={t?.("loading") || "Loading"}
+                  />
+                </Box>
+              ) : assistantSupportText ? (
+                <Box
+                  fontSize="sm"
+                  lineHeight="1.6"
+                  sx={questionAssistantMarkdownStyles}
+                >
+                  <ReactMarkdown>{assistantSupportText}</ReactMarkdown>
+                </Box>
+              ) : null}
+            </VStack>
+            {onCloseAssistant && (
+              <Button
+                colorScheme="blue"
+                onClick={onCloseAssistant}
+                width="full"
+                size="lg"
+              >
+                {resolvedCloseLabel}
+              </Button>
+            )}
+          </VStack>
+        </SlideFade>
+      );
+    }
 
     // Note button labels
     const createNoteLabel = t?.("vocab_create_note") || "Create note";

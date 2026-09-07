@@ -83,7 +83,13 @@ export default function QuestionActionArea({
   const reduceMotion = useReducedMotion();
   const responseMotion = useAnimationControls();
   const feedbackState =
-    feedback === true ? "correct" : feedback === false ? "incorrect" : "idle";
+    feedback === true
+      ? "correct"
+      : feedback === false
+        ? "incorrect"
+        : feedback === "assistant"
+          ? "assistant"
+          : "idle";
 
   useEffect(() => {
     responseMotion.stop();
@@ -94,10 +100,14 @@ export default function QuestionActionArea({
     // A small lift for success; a gentle nudge for a retry. Keep the measured
     // fixed panel still so response motion cannot disturb scroll reservation.
     responseMotion.start({
-      scale: feedback === true ? [1, 1.018, 0.997, 1] : [1, 0.992, 1],
+      scale:
+        feedback === true || feedback === "assistant"
+          ? [1, 1.018, 0.997, 1]
+          : [1, 0.992, 1],
       x: feedback === false ? [0, -3, 3, -1, 0] : 0,
       transition: {
-        duration: feedback === true ? 0.48 : 0.36,
+        duration:
+          feedback === true || feedback === "assistant" ? 0.48 : 0.36,
         ease: "easeInOut",
       },
     });
@@ -390,7 +400,13 @@ export default function QuestionActionArea({
                         the surface contracts while the new controls stay visible. */}
                     <AnimatePresence initial={false} mode="sync">
                       <ActionAreaContent
-                        key={feedback == null ? "question" : "feedback"}
+                        key={
+                          feedback == null
+                            ? "question"
+                            : feedback === "assistant"
+                              ? "assistant"
+                              : "feedback"
+                        }
                         feedback={feedback}
                         reduceMotion={reduceMotion || !shown}
                         actions={actions}

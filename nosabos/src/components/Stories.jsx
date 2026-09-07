@@ -28,10 +28,10 @@ import {
   Spinner,
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
-import { FaArrowLeft, FaStop, FaPen } from "react-icons/fa";
+import { FaArrowLeft, FaStop, FaPen, FaMicrophone } from "react-icons/fa";
 import { FiArrowRight } from "react-icons/fi";
 import { FaWandMagicSparkles } from "react-icons/fa6";
-import { PiSpeakerHighDuotone, PiMicrophoneStageDuotone } from "react-icons/pi";
+import { PiSpeakerHighDuotone } from "react-icons/pi";
 import { useNavigate } from "react-router-dom";
 import {
   doc,
@@ -2279,7 +2279,13 @@ export default function StoryMode({
                       color="white"
                       fontWeight="600"
                       fontSize="lg"
-                      leftIcon={isConnecting ? null : <PiMicrophoneStageDuotone />}
+                      leftIcon={
+                        isConnecting ? null : isRecording ? (
+                          <FaStop />
+                        ) : (
+                          <FaMicrophone />
+                        )
+                      }
                       isDisabled={!supportsSpeak || !currentSentence?.tgt || isConnecting}
                       _hover={{
                         bg: isRecording

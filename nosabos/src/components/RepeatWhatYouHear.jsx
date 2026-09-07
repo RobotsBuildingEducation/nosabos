@@ -19,7 +19,6 @@ import FeedbackRail from "./FeedbackRail";
 import QuestionActionArea from "./QuestionActionArea";
 import useSoundSettings from "../hooks/useSoundSettings";
 import { selectSound, submitActionSound } from "../constants/sounds";
-import VoiceOrb from "./VoiceOrb";
 import { getLanguageDirection } from "../constants/languages";
 import {
   getQuestionAssistantPanelProps,
@@ -78,6 +77,8 @@ export default function RepeatWhatYouHear({
   onAskAssistant = null,
   assistantSupportText = "",
   isLoadingAssistantSupport = false,
+  isAssistantOpen = false,
+  onCloseAssistant = null,
 
   lastOk = null,
   recentXp = 0,
@@ -282,8 +283,14 @@ export default function RepeatWhatYouHear({
   }, []);
 
   const handleSendHelp = useCallback(() => {
-    if (!onAskAssistant || isLoadingAssistantSupport || assistantSupportText)
+    if (!onAskAssistant)
       return;
+    if (isAssistantOpen) {
+      if (onCloseAssistant) {
+        onCloseAssistant();
+        return;
+      }
+    }
     const isFrenchUI = userLanguage === "fr";
     const isPortugueseUI = userLanguage === "pt";
     const isSpanishUI = userLanguage === "es";
@@ -364,7 +371,8 @@ export default function RepeatWhatYouHear({
     hint,
     onAskAssistant,
     isLoadingAssistantSupport,
-    assistantSupportText,
+    isAssistantOpen,
+    onCloseAssistant,
     sourceSentence,
     userLanguage,
     wordBank,
@@ -443,21 +451,13 @@ export default function RepeatWhatYouHear({
                       ? "Pedir ayuda"
                       : "Ask the assistant"
                   }
-                  icon={
-                    isLoadingAssistantSupport ? (
-                      <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />
-                    ) : (
-                      <MdOutlineSupportAgent />
-                    )
-                  }
+                  icon={<MdOutlineSupportAgent />}
                   size="md"
                   fontSize="xl"
                   rounded="xl"
                   onClick={handleSendHelp}
-                  isDisabled={
-                    isLoadingAssistantSupport || !!assistantSupportText
-                  }
-                  {...getQuestionToolButtonProps()}
+                  isDisabled={isLoadingAssistantSupport}
+                  {...getQuestionToolButtonProps({ active: isAssistantOpen })}
                 />
               )}
             </HStack>
@@ -604,54 +604,10 @@ export default function RepeatWhatYouHear({
               ))}
             </SortableList>
 
-        {/* Inline assistant support response */}
-        {(assistantSupportText || isLoadingAssistantSupport) && (
-          <Box
-            p={4}
-            borderRadius="lg"
-            {...getQuestionAssistantPanelProps()}
-          >
-            <HStack spacing={2} mb={2}>
-              <MdOutlineSupportAgent color={questionAssistantText.accent} />
-              <Text fontWeight="semibold" color={questionAssistantText.accentStrong}>
-                {assistantLabel}
-              </Text>
-              {isLoadingAssistantSupport && (
-                <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />
-              )}
-            </HStack>
-            <Box
-              fontSize="md"
-              color={APP_TEXT_PRIMARY}
-              lineHeight="1.6"
-              sx={{
-                "& p": { mb: 2 },
-                "& p:last-child": { mb: 0 },
-                "& strong": {
-                  fontWeight: "bold",
-                  color: questionAssistantText.accentStrong,
-                },
-                "& em": { fontStyle: "italic" },
-                "& ul, & ol": { pl: 4, mb: 2 },
-                "& li": { mb: 1 },
-                "& code": {
-                  bg: APP_SURFACE,
-                  px: 1,
-                  py: 0.5,
-                  borderRadius: "sm",
-                  fontFamily: "mono",
-                },
-              }}
-            >
-              <ReactMarkdown>{assistantSupportText}</ReactMarkdown>
-            </Box>
-          </Box>
-        )}
-
         <QuestionActionArea
-          feedback={lastOk}
+          feedback={isAssistantOpen ? "assistant" : lastOk}
           actions={
-            (!showNext) && (
+            !isAssistantOpen && (!showNext) && (
               <ActivityActionRow
                 primary={
                   <Button
@@ -688,20 +644,26 @@ export default function RepeatWhatYouHear({
         >
           <FeedbackRail
             compact
-          ok={lastOk}
-          xp={recentXp}
-          showNext={showNext}
-          onNext={onNext}
-          nextLabel={nextLabel}
-          t={t}
-          userLanguage={userLanguage}
-          onExplainAnswer={onExplainAnswer}
-          explanationText={explanationText}
-          isLoadingExplanation={isLoadingExplanation}
-          lessonProgress={lessonProgress}
-          onCreateNote={onCreateNote}
-          isCreatingNote={isCreatingNote}
-          noteCreated={noteCreated}
+            ok={lastOk}
+            isAssistant={isAssistantOpen}
+            assistantSupportText={assistantSupportText}
+            isLoadingAssistantSupport={isLoadingAssistantSupport}
+            assistantLabel={assistantLabel}
+            onCloseAssistant={onCloseAssistant}
+            closeAssistantLabel={t("app_close") || "Close"}
+            xp={recentXp}
+            showNext={showNext}
+            onNext={onNext}
+            nextLabel={nextLabel}
+            t={t}
+            userLanguage={userLanguage}
+            onExplainAnswer={onExplainAnswer}
+            explanationText={explanationText}
+            isLoadingExplanation={isLoadingExplanation}
+            lessonProgress={lessonProgress}
+            onCreateNote={onCreateNote}
+            isCreatingNote={isCreatingNote}
+            noteCreated={noteCreated}
           />
         </QuestionActionArea>
       </VStack>

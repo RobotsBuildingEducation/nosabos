@@ -38,7 +38,6 @@ import useNotesStore from "../hooks/useNotesStore";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import FeedbackRail from "./FeedbackRail";
 import QuestionActionArea from "./QuestionActionArea";
-import VoiceOrb from "./VoiceOrb";
 import { SortableArea, SortableList, SortableItem } from "./dnd/Sortable";
 import {
   questionModel,
@@ -223,33 +222,20 @@ function QuestionAssistantButton({
   label,
   onAskAssistant,
   isLoading = false,
-  hasResponse = false,
+  isOpen = false,
 }) {
   if (!onAskAssistant) return null;
 
   return (
     <IconButton
       aria-label={label || "Help"}
-      icon={
-        isLoading ? (
-          <VoiceOrb
-            state={
-              ["idle", "listening", "speaking"][
-                Math.floor(Math.random() * 3)
-              ]
-            }
-            size={16}
-          />
-        ) : (
-          <MdOutlineSupportAgent />
-        )
-      }
+      icon={<MdOutlineSupportAgent />}
       size="sm"
       fontSize="lg"
       rounded="xl"
       onClick={onAskAssistant}
-      isDisabled={isLoading || hasResponse}
-      {...getQuestionToolButtonProps()}
+      isDisabled={isLoading}
+      {...getQuestionToolButtonProps({ active: isOpen })}
     />
   );
 }
@@ -536,6 +522,7 @@ function SentenceDetective({
   isLoadingAssistantSupport = false,
   assistantSupportText = "",
   assistantLabel = "Assistant",
+  isAssistantOpen = false,
   onSelectSound = () => {},
 }) {
   const targetDirection = getLanguageDirection(targetLang, "ltr");
@@ -584,7 +571,7 @@ function SentenceDetective({
           label={copy.askForHelp}
           onAskAssistant={onAskAssistant}
           isLoading={isLoadingAssistantSupport}
-          hasResponse={!!assistantSupportText}
+          isOpen={isAssistantOpen}
         />
       }
     >
@@ -629,50 +616,6 @@ function SentenceDetective({
           </WrapItem>
         ))}
       </Wrap>
-
-      {/* Inline assistant support response */}
-      {(assistantSupportText || isLoadingAssistantSupport) && (
-        <Box
-          p={4}
-          borderRadius="xl"
-          style={questionSquircleStyle}
-          {...getQuestionAssistantPanelProps()}
-        >
-          <HStack spacing={2} mb={2} align="center">
-            <MdOutlineSupportAgent color={questionAssistantText.accent} />
-            <Text
-              fontSize="xs"
-              fontWeight="800"
-              textTransform="uppercase"
-              letterSpacing="wider"
-              color="var(--question-assistant-accent-strong)"
-            >
-              {assistantLabel}
-            </Text>
-            {isLoadingAssistantSupport && (
-              <VoiceOrb
-                state={
-                  ["idle", "listening", "speaking"][
-                    Math.floor(Math.random() * 3)
-                  ]
-                }
-                size={16}
-                centered={false}
-              />
-            )}
-          </HStack>
-          {assistantSupportText && (
-            <Box
-              fontSize="sm"
-              color="var(--question-assistant-text)"
-              lineHeight="tall"
-              sx={questionAssistantMarkdownStyles}
-            >
-              <ReactMarkdown>{assistantSupportText}</ReactMarkdown>
-            </Box>
-          )}
-        </Box>
-      )}
 
       {foundBrokenWord && (
         <Box
@@ -1677,6 +1620,7 @@ function DialogueFork({
   isLoadingAssistantSupport = false,
   assistantSupportText = "",
   assistantLabel = "Assistant",
+  isAssistantOpen = false,
   onPlayAudio,
   isLoadingAudio = false,
   isPlayingAudio = false,
@@ -1701,7 +1645,7 @@ function DialogueFork({
             label={copy?.askForHelp}
             onAskAssistant={onAskAssistant}
             isLoading={isLoadingAssistantSupport}
-            hasResponse={!!assistantSupportText}
+            isOpen={isAssistantOpen}
           />
         </HStack>
         <Text fontSize="sm" color={APP_TEXT_SECONDARY} fontWeight="normal">
@@ -1750,50 +1694,6 @@ function DialogueFork({
         </Text>
       </HStack>
 
-      {/* Inline Assistant Panel */}
-      {(assistantSupportText || isLoadingAssistantSupport) && (
-        <Box
-          p={4}
-          borderRadius="xl"
-          style={questionSquircleStyle}
-          {...getQuestionAssistantPanelProps()}
-        >
-          <HStack spacing={2} mb={2} align="center">
-            <MdOutlineSupportAgent color={questionAssistantText.accent} />
-            <Text
-              fontSize="xs"
-              fontWeight="800"
-              textTransform="uppercase"
-              letterSpacing="wider"
-              color="var(--question-assistant-accent-strong)"
-            >
-              {assistantLabel}
-            </Text>
-            {isLoadingAssistantSupport && (
-              <VoiceOrb
-                state={
-                  ["idle", "listening", "speaking"][
-                    Math.floor(Math.random() * 3)
-                  ]
-                }
-                size={16}
-                centered={false}
-              />
-            )}
-          </HStack>
-          {assistantSupportText && (
-            <Box
-              fontSize="sm"
-              color="var(--question-assistant-text)"
-              lineHeight="tall"
-              sx={questionAssistantMarkdownStyles}
-            >
-              <ReactMarkdown>{assistantSupportText}</ReactMarkdown>
-            </Box>
-          )}
-        </Box>
-      )}
-
       {/* Choice Cards */}
       <VStack spacing={3} align="stretch" dir={targetDirection} lang={targetLang}>
         {question.options.map((option, index) => (
@@ -1827,6 +1727,7 @@ function SentenceShapeshifter({
   isLoadingAssistantSupport = false,
   assistantSupportText = "",
   assistantLabel = "Assistant",
+  isAssistantOpen = false,
   onPlayAudio,
   isLoadingAudio = false,
   isPlayingAudio = false,
@@ -1866,7 +1767,7 @@ function SentenceShapeshifter({
             label={copy?.askForHelp}
             onAskAssistant={onAskAssistant}
             isLoading={isLoadingAssistantSupport}
-            hasResponse={!!assistantSupportText}
+            isOpen={isAssistantOpen}
           />
         </HStack>
         <Text fontSize="sm" color={APP_TEXT_SECONDARY} fontWeight="normal">
@@ -1942,50 +1843,6 @@ function SentenceShapeshifter({
         </Text>
       </HStack>
 
-      {/* Inline Assistant Panel */}
-      {(assistantSupportText || isLoadingAssistantSupport) && (
-        <Box
-          p={4}
-          borderRadius="xl"
-          style={questionSquircleStyle}
-          {...getQuestionAssistantPanelProps()}
-        >
-          <HStack spacing={2} mb={2} align="center">
-            <MdOutlineSupportAgent color={questionAssistantText.accent} />
-            <Text
-              fontSize="xs"
-              fontWeight="800"
-              textTransform="uppercase"
-              letterSpacing="wider"
-              color="var(--question-assistant-accent-strong)"
-            >
-              {assistantLabel}
-            </Text>
-            {isLoadingAssistantSupport && (
-              <VoiceOrb
-                state={
-                  ["idle", "listening", "speaking"][
-                    Math.floor(Math.random() * 3)
-                  ]
-                }
-                size={16}
-                centered={false}
-              />
-            )}
-          </HStack>
-          {assistantSupportText && (
-            <Box
-              fontSize="sm"
-              color="var(--question-assistant-text)"
-              lineHeight="tall"
-              sx={questionAssistantMarkdownStyles}
-            >
-              <ReactMarkdown>{assistantSupportText}</ReactMarkdown>
-            </Box>
-          )}
-        </Box>
-      )}
-
       {/* Text Input */}
       <Box lang={targetLang}>
         <HStack align="stretch" spacing={2} dir="ltr">
@@ -2041,6 +1898,7 @@ function WordNeighborhoods({
   isLoadingAssistantSupport = false,
   assistantSupportText = "",
   assistantLabel = "Assistant",
+  isAssistantOpen = false,
   onSelectSound = () => {},
 }) {
   const [selectedWord, setSelectedWord] = useState("");
@@ -2080,10 +1938,10 @@ function WordNeighborhoods({
   );
 
   const handleDragEnd = useCallback(
-    (dragResult) => {
-      if (locked || !dragResult?.destination) return;
-      const { draggableId, source, destination } = dragResult;
-      if (source.droppableId === destination.droppableId) return;
+    ({ active, over }) => {
+      if (!over || locked) return;
+      const draggableId = active.id;
+      const destination = over;
 
       if (destination.droppableId === "bank") {
         returnToBank(draggableId);
@@ -2119,57 +1977,13 @@ function WordNeighborhoods({
               label={copy?.askForHelp}
               onAskAssistant={onAskAssistant}
               isLoading={isLoadingAssistantSupport}
-              hasResponse={!!assistantSupportText}
+              isOpen={isAssistantOpen}
             />
           </HStack>
           <Text fontSize="sm" color={APP_TEXT_SECONDARY} fontWeight="normal">
             {copy?.instruction || "Sort each word into its matching neighborhood."}
           </Text>
         </Box>
-
-        {/* Inline Assistant Panel */}
-        {(assistantSupportText || isLoadingAssistantSupport) && (
-          <Box
-            p={4}
-            borderRadius="xl"
-            style={questionSquircleStyle}
-            {...getQuestionAssistantPanelProps()}
-          >
-            <HStack spacing={2} mb={2} align="center">
-              <MdOutlineSupportAgent color={questionAssistantText.accent} />
-              <Text
-                fontSize="xs"
-                fontWeight="800"
-                textTransform="uppercase"
-                letterSpacing="wider"
-                color="var(--question-assistant-accent-strong)"
-              >
-                {assistantLabel}
-              </Text>
-              {isLoadingAssistantSupport && (
-                <VoiceOrb
-                  state={
-                    ["idle", "listening", "speaking"][
-                      Math.floor(Math.random() * 3)
-                    ]
-                  }
-                  size={16}
-                  centered={false}
-                />
-              )}
-            </HStack>
-            {assistantSupportText && (
-              <Box
-                fontSize="sm"
-                color="var(--question-assistant-text)"
-                lineHeight="tall"
-                sx={questionAssistantMarkdownStyles}
-              >
-                <ReactMarkdown>{assistantSupportText}</ReactMarkdown>
-              </Box>
-            )}
-          </Box>
-        )}
 
         {/* Word Bank */}
         <Box
@@ -2375,6 +2189,7 @@ function MorphologyForge({
   isLoadingAssistantSupport = false,
   assistantSupportText = "",
   assistantLabel = "Assistant",
+  isAssistantOpen = false,
   onSelectSound = () => {},
 }) {
   const targetDirection = getLanguageDirection(targetLang, "ltr");
@@ -2433,9 +2248,9 @@ function MorphologyForge({
           addPiece(pieceIndex);
         }
       } else if (destination.droppableId === "bank") {
-        const pos = chosenIndices.indexOf(pieceIndex);
-        if (pos !== -1) {
-          removePiece(pos);
+        const removePos = chosenIndices.indexOf(pieceIndex);
+        if (removePos !== -1) {
+          removePiece(removePos);
         }
       }
     },
@@ -2465,57 +2280,13 @@ function MorphologyForge({
               label={copy?.askForHelp}
               onAskAssistant={onAskAssistant}
               isLoading={isLoadingAssistantSupport}
-              hasResponse={!!assistantSupportText}
+              isOpen={isAssistantOpen}
             />
           </HStack>
           <Text fontSize="sm" color={APP_TEXT_SECONDARY} fontWeight="normal">
             {copy?.instruction || "Build the missing word piece by piece."}
           </Text>
         </Box>
-
-        {/* Inline Assistant Panel */}
-        {(assistantSupportText || isLoadingAssistantSupport) && (
-          <Box
-            p={4}
-            borderRadius="xl"
-            style={questionSquircleStyle}
-            {...getQuestionAssistantPanelProps()}
-          >
-            <HStack spacing={2} mb={2} align="center">
-              <MdOutlineSupportAgent color={questionAssistantText.accent} />
-              <Text
-                fontSize="xs"
-                fontWeight="800"
-                textTransform="uppercase"
-                letterSpacing="wider"
-                color="var(--question-assistant-accent-strong)"
-              >
-                {assistantLabel}
-              </Text>
-              {isLoadingAssistantSupport && (
-                <VoiceOrb
-                  state={
-                    ["idle", "listening", "speaking"][
-                      Math.floor(Math.random() * 3)
-                    ]
-                  }
-                  size={16}
-                  centered={false}
-                />
-              )}
-            </HStack>
-            {assistantSupportText && (
-              <Box
-                fontSize="sm"
-                color="var(--question-assistant-text)"
-                lineHeight="tall"
-                sx={questionAssistantMarkdownStyles}
-              >
-                <ReactMarkdown>{assistantSupportText}</ReactMarkdown>
-              </Box>
-            )}
-          </Box>
-        )}
 
         {/* Context Sentence Card */}
         <Box
@@ -2745,6 +2516,7 @@ function ThreeClueMystery({
   isLoadingAssistantSupport = false,
   assistantSupportText = "",
   assistantLabel = "Assistant",
+  isAssistantOpen = false,
   onToggleSpeech,
   isSpeechRecording = false,
   isSpeechConnecting = false,
@@ -2773,9 +2545,9 @@ function ThreeClueMystery({
 
   const handleKeyDown = useCallback(
     (event) => {
-      if (event.key === "Enter" && !locked && canSubmit && !submitting && onSubmit) {
+      if (event.key === "Enter" && canSubmit && !submitting && !locked) {
         event.preventDefault();
-        onSubmit();
+        onSubmit?.();
       }
     },
     [canSubmit, locked, onSubmit, submitting],
@@ -2798,57 +2570,13 @@ function ThreeClueMystery({
             label={copy?.askForHelp}
             onAskAssistant={onAskAssistant}
             isLoading={isLoadingAssistantSupport}
-            hasResponse={!!assistantSupportText}
+            isOpen={isAssistantOpen}
           />
         </HStack>
         <Text fontSize="sm" color={APP_TEXT_SECONDARY} fontWeight="normal">
           {copy?.instruction || "Deduce the mystery word using as few clues as possible."}
         </Text>
       </Box>
-
-      {/* Inline Assistant Panel */}
-      {(assistantSupportText || isLoadingAssistantSupport) && (
-        <Box
-          p={4}
-          borderRadius="xl"
-          style={questionSquircleStyle}
-          {...getQuestionAssistantPanelProps()}
-        >
-          <HStack spacing={2} mb={2} align="center">
-            <MdOutlineSupportAgent color={questionAssistantText.accent} />
-            <Text
-              fontSize="xs"
-              fontWeight="800"
-              textTransform="uppercase"
-              letterSpacing="wider"
-              color="var(--question-assistant-accent-strong)"
-            >
-              {assistantLabel}
-            </Text>
-            {isLoadingAssistantSupport && (
-              <VoiceOrb
-                state={
-                  ["idle", "listening", "speaking"][
-                    Math.floor(Math.random() * 3)
-                  ]
-                }
-                size={16}
-                centered={false}
-              />
-            )}
-          </HStack>
-          {assistantSupportText && (
-            <Box
-              fontSize="sm"
-              color="var(--question-assistant-text)"
-              lineHeight="tall"
-              sx={questionAssistantMarkdownStyles}
-            >
-              <ReactMarkdown>{assistantSupportText}</ReactMarkdown>
-            </Box>
-          )}
-        </Box>
-      )}
 
       {/* Progressive Clue Cards */}
       <VStack spacing={3} align="stretch">
@@ -2989,6 +2717,7 @@ function ListenDifference({
   isLoadingAssistantSupport = false,
   assistantSupportText = "",
   assistantLabel = "Assistant",
+  isAssistantOpen = false,
   onPlayAudio,
   isLoadingAudio = false,
   isPlayingAudio = false,
@@ -3028,57 +2757,13 @@ function ListenDifference({
             label={copy?.askForHelp}
             onAskAssistant={onAskAssistant}
             isLoading={isLoadingAssistantSupport}
-            hasResponse={!!assistantSupportText}
+            isOpen={isAssistantOpen}
           />
         </HStack>
         <Text fontSize="sm" color={APP_TEXT_SECONDARY} fontWeight="normal">
           {copy?.instruction || "Listen carefully. Which sentence did you hear?"}
         </Text>
       </Box>
-
-      {/* Inline Assistant Panel */}
-      {(assistantSupportText || isLoadingAssistantSupport) && (
-        <Box
-          p={4}
-          borderRadius="xl"
-          style={questionSquircleStyle}
-          {...getQuestionAssistantPanelProps()}
-        >
-          <HStack spacing={2} mb={2} align="center">
-            <MdOutlineSupportAgent color={questionAssistantText.accent} />
-            <Text
-              fontSize="xs"
-              fontWeight="800"
-              textTransform="uppercase"
-              letterSpacing="wider"
-              color="var(--question-assistant-accent-strong)"
-            >
-              {assistantLabel}
-            </Text>
-            {isLoadingAssistantSupport && (
-              <VoiceOrb
-                state={
-                  ["idle", "listening", "speaking"][
-                    Math.floor(Math.random() * 3)
-                  ]
-                }
-                size={16}
-                centered={false}
-              />
-            )}
-          </HStack>
-          {assistantSupportText && (
-            <Box
-              fontSize="sm"
-              color="var(--question-assistant-text)"
-              lineHeight="tall"
-              sx={questionAssistantMarkdownStyles}
-            >
-              <ReactMarkdown>{assistantSupportText}</ReactMarkdown>
-            </Box>
-          )}
-        </Box>
-      )}
 
       {/* Prominent Play Audio Button */}
       <Button
@@ -3138,6 +2823,7 @@ function ThreeWordChallenge({
   isLoadingAssistantSupport = false,
   assistantSupportText = "",
   assistantLabel = "Assistant",
+  isAssistantOpen = false,
   onToggleSpeech,
   isSpeechRecording = false,
   isSpeechConnecting = false,
@@ -3179,57 +2865,13 @@ function ThreeWordChallenge({
             label={copy?.askForHelp}
             onAskAssistant={onAskAssistant}
             isLoading={isLoadingAssistantSupport}
-            hasResponse={!!assistantSupportText}
+            isOpen={isAssistantOpen}
           />
         </HStack>
         <Text fontSize="sm" color={APP_TEXT_SECONDARY} fontWeight="normal">
           {copy?.instruction || "Create an original sentence using all three words."}
         </Text>
       </Box>
-
-      {/* Inline Assistant Panel */}
-      {(assistantSupportText || isLoadingAssistantSupport) && (
-        <Box
-          p={4}
-          borderRadius="xl"
-          style={questionSquircleStyle}
-          {...getQuestionAssistantPanelProps()}
-        >
-          <HStack spacing={2} mb={2} align="center">
-            <MdOutlineSupportAgent color={questionAssistantText.accent} />
-            <Text
-              fontSize="xs"
-              fontWeight="800"
-              textTransform="uppercase"
-              letterSpacing="wider"
-              color="var(--question-assistant-accent-strong)"
-            >
-              {assistantLabel}
-            </Text>
-            {isLoadingAssistantSupport && (
-              <VoiceOrb
-                state={
-                  ["idle", "listening", "speaking"][
-                    Math.floor(Math.random() * 3)
-                  ]
-                }
-                size={16}
-                centered={false}
-              />
-            )}
-          </HStack>
-          {assistantSupportText && (
-            <Box
-              fontSize="sm"
-              color="var(--question-assistant-text)"
-              lineHeight="tall"
-              sx={questionAssistantMarkdownStyles}
-            >
-              <ReactMarkdown>{assistantSupportText}</ReactMarkdown>
-            </Box>
-          )}
-        </Box>
-      )}
 
       {/* 3 Cue Chips */}
       <HStack
@@ -3327,6 +2969,7 @@ function NaturalOrWeird({
   isLoadingAssistantSupport = false,
   assistantSupportText = "",
   assistantLabel = "Assistant",
+  isAssistantOpen = false,
   onPlayAudio,
   isLoadingAudio = false,
   isPlayingAudio = false,
@@ -3366,57 +3009,13 @@ function NaturalOrWeird({
             label={copy?.askForHelp}
             onAskAssistant={onAskAssistant}
             isLoading={isLoadingAssistantSupport}
-            hasResponse={!!assistantSupportText}
+            isOpen={isAssistantOpen}
           />
         </HStack>
         <Text fontSize="sm" color={APP_TEXT_SECONDARY} fontWeight="normal">
           {copy?.instruction || "Decide if this sentence sounds natural in everyday use."}
         </Text>
       </Box>
-
-      {/* Inline Assistant Panel */}
-      {(assistantSupportText || isLoadingAssistantSupport) && (
-        <Box
-          p={4}
-          borderRadius="xl"
-          style={questionSquircleStyle}
-          {...getQuestionAssistantPanelProps()}
-        >
-          <HStack spacing={2} mb={2} align="center">
-            <MdOutlineSupportAgent color={questionAssistantText.accent} />
-            <Text
-              fontSize="xs"
-              fontWeight="800"
-              textTransform="uppercase"
-              letterSpacing="wider"
-              color="var(--question-assistant-accent-strong)"
-            >
-              {assistantLabel}
-            </Text>
-            {isLoadingAssistantSupport && (
-              <VoiceOrb
-                state={
-                  ["idle", "listening", "speaking"][
-                    Math.floor(Math.random() * 3)
-                  ]
-                }
-                size={16}
-                centered={false}
-              />
-            )}
-          </HStack>
-          {assistantSupportText && (
-            <Box
-              fontSize="sm"
-              color="var(--question-assistant-text)"
-              lineHeight="tall"
-              sx={questionAssistantMarkdownStyles}
-            >
-              <ReactMarkdown>{assistantSupportText}</ReactMarkdown>
-            </Box>
-          )}
-        </Box>
-      )}
 
       {/* Sentence Presentation Card with Audio Button */}
       <Box
@@ -3678,6 +3277,7 @@ export default function DelightQuestionLab({
   const [quizFinished, setQuizFinished] = useState(false);
   const [assistantSupportText, setAssistantSupportText] = useState("");
   const [isLoadingAssistantSupport, setIsLoadingAssistantSupport] = useState(false);
+  const [isAssistantOpen, setIsAssistantOpen] = useState(false);
   const [explanationText, setExplanationText] = useState("");
   const [isLoadingExplanation, setIsLoadingExplanation] = useState(false);
   const [sessionEarnedXp, setSessionEarnedXp] = useState(0);
@@ -3874,6 +3474,7 @@ export default function DelightQuestionLab({
     setRevealedClues(1);
     setAssistantSupportText("");
     setIsLoadingAssistantSupport(false);
+    setIsAssistantOpen(false);
     setExplanationText("");
     setIsLoadingExplanation(false);
     setNoteCreated(false);
@@ -3886,6 +3487,10 @@ export default function DelightQuestionLab({
     );
   }, [cancelQuestionSpeech, stopQuestionAudio]);
 
+  const handleCloseAssistant = useCallback(() => {
+    setIsAssistantOpen(false);
+  }, []);
+
   const setResponse = useCallback((updater) => {
     setResponseState(updater);
     if (result === false) {
@@ -3895,13 +3500,13 @@ export default function DelightQuestionLab({
   }, [result]);
 
   const handleAskAssistant = useCallback(async () => {
-    if (
-      isFinalQuiz ||
-      !question ||
-      isLoadingAssistantSupport ||
-      assistantSupportText
-    )
+    if (isFinalQuiz || !question) return;
+    if (isAssistantOpen) {
+      setIsAssistantOpen(false);
       return;
+    }
+    setIsAssistantOpen(true);
+    if (isLoadingAssistantSupport || assistantSupportText) return;
     playSound(submitSound);
     setIsLoadingAssistantSupport(true);
     setAssistantSupportText("");
@@ -4095,6 +3700,7 @@ export default function DelightQuestionLab({
     detectiveCopy.helpRequest,
     dialogueForkCopy.helpRequest,
     isLoadingAssistantSupport,
+    isAssistantOpen,
     isFinalQuiz,
     listenDifferenceCopy.helpRequest,
     morphologyForgeCopy.helpRequest,
@@ -4350,6 +3956,7 @@ export default function DelightQuestionLab({
 
   const handleSkipQuestion = useCallback(() => {
     if (isFinalQuiz || submitting) return;
+    setIsAssistantOpen(false);
     playSound(nextButtonSound);
     if (onSkip) {
       stopQuestionAudio();
@@ -4484,6 +4091,7 @@ export default function DelightQuestionLab({
       submitting
     )
       return;
+    setIsAssistantOpen(false);
     playSound(submitActionSound);
     setSubmitting(true);
     let ok = gradeDelightResponse(question, submittedResponse);
@@ -5278,6 +4886,7 @@ export default function DelightQuestionLab({
                   isLoadingAssistantSupport={isLoadingAssistantSupport}
                   assistantSupportText={assistantSupportText}
                   assistantLabel={t("vocab_assistant") || "Assistant"}
+                  isAssistantOpen={isAssistantOpen}
                   onSelectSound={playSelectSound}
                 />
               )}
@@ -5294,6 +4903,7 @@ export default function DelightQuestionLab({
                   isLoadingAssistantSupport={isLoadingAssistantSupport}
                   assistantSupportText={assistantSupportText}
                   assistantLabel={t("vocab_assistant") || "Assistant"}
+                  isAssistantOpen={isAssistantOpen}
                   onPlayAudio={handlePlay}
                   isLoadingAudio={isSynthesizingAudio}
                   isPlayingAudio={isSpeaking}
@@ -5313,6 +4923,7 @@ export default function DelightQuestionLab({
                   isLoadingAssistantSupport={isLoadingAssistantSupport}
                   assistantSupportText={assistantSupportText}
                   assistantLabel={t("vocab_assistant") || "Assistant"}
+                  isAssistantOpen={isAssistantOpen}
                   onPlayAudio={handlePlay}
                   isLoadingAudio={isSynthesizingAudio}
                   isPlayingAudio={isSpeaking}
@@ -5341,6 +4952,7 @@ export default function DelightQuestionLab({
                   isLoadingAssistantSupport={isLoadingAssistantSupport}
                   assistantSupportText={assistantSupportText}
                   assistantLabel={t("vocab_assistant") || "Assistant"}
+                  isAssistantOpen={isAssistantOpen}
                   onSelectSound={playSelectSound}
                 />
               )}
@@ -5357,6 +4969,7 @@ export default function DelightQuestionLab({
                   isLoadingAssistantSupport={isLoadingAssistantSupport}
                   assistantSupportText={assistantSupportText}
                   assistantLabel={t("vocab_assistant") || "Assistant"}
+                  isAssistantOpen={isAssistantOpen}
                   onSelectSound={playSelectSound}
                 />
               )}
@@ -5375,6 +4988,7 @@ export default function DelightQuestionLab({
                   isLoadingAssistantSupport={isLoadingAssistantSupport}
                   assistantSupportText={assistantSupportText}
                   assistantLabel={t("vocab_assistant") || "Assistant"}
+                  isAssistantOpen={isAssistantOpen}
                   onToggleSpeech={handleToggleSpeech}
                   isSpeechRecording={isSpeechRecording}
                   isSpeechConnecting={isSpeechConnecting}
@@ -5400,6 +5014,7 @@ export default function DelightQuestionLab({
                   isLoadingAssistantSupport={isLoadingAssistantSupport}
                   assistantSupportText={assistantSupportText}
                   assistantLabel={t("vocab_assistant") || "Assistant"}
+                  isAssistantOpen={isAssistantOpen}
                   onPlayAudio={handlePlay}
                   isLoadingAudio={isSynthesizingAudio}
                   isPlayingAudio={isSpeaking}
@@ -5422,6 +5037,7 @@ export default function DelightQuestionLab({
                   isLoadingAssistantSupport={isLoadingAssistantSupport}
                   assistantSupportText={assistantSupportText}
                   assistantLabel={t("vocab_assistant") || "Assistant"}
+                  isAssistantOpen={isAssistantOpen}
                   onToggleSpeech={handleToggleSpeech}
                   isSpeechRecording={isSpeechRecording}
                   isSpeechConnecting={isSpeechConnecting}
@@ -5446,6 +5062,7 @@ export default function DelightQuestionLab({
                   isLoadingAssistantSupport={isLoadingAssistantSupport}
                   assistantSupportText={assistantSupportText}
                   assistantLabel={t("vocab_assistant") || "Assistant"}
+                  isAssistantOpen={isAssistantOpen}
                   onPlayAudio={handlePlay}
                   isLoadingAudio={isSynthesizingAudio}
                   isPlayingAudio={isSpeaking}
@@ -5460,53 +5077,58 @@ export default function DelightQuestionLab({
         </Box>
 
         <QuestionActionArea
-          feedback={result}
+          feedback={isAssistantOpen ? "assistant" : result}
           actions={
-            (result === null || !isFinalQuiz && result === false) && (
-
-                <ActivityActionRow
-                  primary={
-                    <Button
-                      colorScheme="purple"
-                      size="lg"
-                      px={{ base: 7, md: 10 }}
-                      isLoading={submitting}
-                      isDisabled={
-                        loading ||
-                        !ready ||
-                        submitting ||
-                        isSpeechRecording ||
-                        isSpeechConnecting
-                      }
-                      onClick={() => handleSubmit()}
-                      style={questionSquircleStyle}
-                    >
-                      {submitting
-                        ? activeVariantCopy.checking || "Checking…"
-                        : activeVariantCopy.submit || "Check"}
-                    </Button>
-                  }
-                >
-                  {!isFinalQuiz && (
-                    <Button
-                      variant="ghost"
-                      size="lg"
-                      onClick={handleSkipQuestion}
-                      isDisabled={submitting}
-                      style={questionSquircleStyle}
-                    >
-                      {activeVariantCopy.skip || "Skip"}
-                    </Button>
-                  )}
-                </ActivityActionRow>
-
+            !isAssistantOpen &&
+            (result === null || (!isFinalQuiz && result === false)) && (
+              <ActivityActionRow
+                primary={
+                  <Button
+                    colorScheme="purple"
+                    size="lg"
+                    px={{ base: 7, md: 10 }}
+                    isLoading={submitting}
+                    isDisabled={
+                      loading ||
+                      !ready ||
+                      submitting ||
+                      isSpeechRecording ||
+                      isSpeechConnecting
+                    }
+                    onClick={() => handleSubmit()}
+                    style={questionSquircleStyle}
+                  >
+                    {submitting
+                      ? activeVariantCopy.checking || "Checking…"
+                      : activeVariantCopy.submit || "Check"}
+                  </Button>
+                }
+              >
+                {!isFinalQuiz && (
+                  <Button
+                    variant="ghost"
+                    size="lg"
+                    onClick={handleSkipQuestion}
+                    isDisabled={submitting}
+                    style={questionSquircleStyle}
+                  >
+                    {activeVariantCopy.skip || "Skip"}
+                  </Button>
+                )}
+              </ActivityActionRow>
             )
           }
         >
-          {question && result !== null && (
+          {question && (result !== null || isAssistantOpen) && (
             <FeedbackRail
               compact
               ok={result}
+              isAssistant={isAssistantOpen}
+              assistantSupportText={assistantSupportText}
+              isLoadingAssistantSupport={isLoadingAssistantSupport}
+              assistantLabel={t("vocab_assistant") || "Assistant"}
+              onCloseAssistant={handleCloseAssistant}
+              closeAssistantLabel={t("app_close") || "Close"}
               xp={recentXp}
               showNext={result === true || isFinalQuiz}
               onNext={handleNext}
