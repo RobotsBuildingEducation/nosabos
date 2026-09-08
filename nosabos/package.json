@@ -10,7 +10,7 @@
     "build": "vite build",
     "generate:skill-tree-splits": "node scripts/generateSplitSkillTreeModules.mjs",
     "audit:curriculum": "node scripts/auditLessonCurriculum.mjs",
-    "test": "node --test src/**/*.test.js src/features/citizenship/*.test.js",
+    "test": "node --test src/**/*.test.js src/features/citizenship/*.test.js src/features/stories/*.test.js",
     "lint": "eslint .",
     "preview": "vite preview"
   },

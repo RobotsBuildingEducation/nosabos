@@ -572,7 +572,7 @@ export const TRANSLATION_ZH_STATIC = {
   story_generating_role_title: "正在生成角色场景",
   story_generating_role_sub: "正在准备互动故事...",
   story_finish_role: "完成角色扮演",
-  story_start_practice: "开始句子练习",
+  story_start_practice: "练习",
   story_practice_this: "练习这个句子：",
   story_skip: "跳过句子",
   story_finish: "完成故事",

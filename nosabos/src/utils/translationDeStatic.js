@@ -574,7 +574,7 @@ export const TRANSLATION_DE_STATIC = {
   story_play_target: "{name} abspielen",
   story_listen: "Anhören",
   story_stop: "Stopp",
-  story_start_practice: "Satzübung starten",
+  story_start_practice: "Üben",
   story_practice_this: "Übe diesen Satz:",
   story_skip: "Satz überspringen",
   story_record: "Satz aufnehmen",

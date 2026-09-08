@@ -332,7 +332,7 @@ export const TRANSLATION_AR_STATIC = {
   tts_synthesizing: "بيكوّن الصوت...",
   story_listen: "اسمع",
   story_stop: "وقف",
-  story_start_practice: "ابدأ التدريب جملة بجملة",
+  story_start_practice: "تدريب",
   story_practice_this: "اتدرب على الجملة دي:",
   story_skip: "تخطي الجملة",
   story_finish: "انهِ القصة",

@@ -64,6 +64,8 @@ const FeedbackRail = React.memo(
     assistantLabel,
     onCloseAssistant,
     closeAssistantLabel,
+    statusLabel,
+    subtext,
   }) => {
     const hasPlayedRef = useRef(false);
     const reduceMotion = useReducedMotion();
@@ -257,9 +259,9 @@ const FeedbackRail = React.memo(
     const createNoteLabel = t?.("vocab_create_note") || "Create note";
     const noteSavedLabel = t?.("vocab_note_saved") || "Note saved!";
 
-    const label = ok
-      ? t?.("correct") || "Correct!"
-      : t?.("try_again") || "Try again";
+    const label =
+      statusLabel ||
+      (ok ? t?.("correct") || "Correct!" : t?.("try_again") || "Try again");
 
     if (compact) {
       return (
@@ -304,6 +306,11 @@ const FeedbackRail = React.memo(
                   {label}
                   {xp > 0 ? ` · +${xp} XP` : ""}
                 </Text>
+                {subtext && (
+                  <Text fontSize="sm" color={questionToneText.secondary}>
+                    {subtext}
+                  </Text>
+                )}
               </Box>
               {onCreateNote && (
                 <IconButton
@@ -321,7 +328,7 @@ const FeedbackRail = React.memo(
                 />
               )}
             </HStack>
-            {ok && lessonProgress?.total > 0 && (
+            {(ok || lessonProgress?.showAlways) && lessonProgress?.total > 0 && (
               <Box mt={3}>
                 <HStack
                   justify="space-between"
@@ -455,21 +462,22 @@ const FeedbackRail = React.memo(
                   {label}
                 </Text>
                 <Text fontSize="sm" color={questionToneText.secondary}>
-                  {xp > 0
-                    ? `+${xp} XP`
-                    : ok
-                    ? t?.("practice_next_ready") ||
-                      "Great work! Keep the streak going."
-                    : t?.("practice_try_again_hint") ||
-                      (userLanguage === "pt"
-                        ? "Revise e tente novamente."
-                        : userLanguage === "de"
-                        ? "Überprüfe es und versuche es erneut."
-                        : userLanguage === "es"
-                        ? "Repasa y vuelve a intentarlo."
-                        : userLanguage === "ja"
-                        ? "復習してもう一度試しましょう。"
-                        : "Review and try again.")}
+                  {subtext ||
+                    (xp > 0
+                      ? `+${xp} XP`
+                      : ok
+                      ? t?.("practice_next_ready") ||
+                        "Great work! Keep the streak going."
+                      : t?.("practice_try_again_hint") ||
+                        (userLanguage === "pt"
+                          ? "Revise e tente novamente."
+                          : userLanguage === "de"
+                          ? "Überprüfe es und versuche es erneut."
+                          : userLanguage === "es"
+                          ? "Repasa y vuelve a intentarlo."
+                          : userLanguage === "ja"
+                          ? "復習してもう一度試しましょう。"
+                          : "Review and try again."))}
                 </Text>
               </Box>
               {/* Create Note Button - icon only */}
@@ -503,7 +511,7 @@ const FeedbackRail = React.memo(
               )}
             </HStack>
 
-            {ok && lessonProgress && lessonProgress.total > 0 && (
+            {(ok || lessonProgress?.showAlways) && lessonProgress && lessonProgress.total > 0 && (
               <VStack align="center" spacing={2} mt={2} px={1} width="full">
                 <HStack
                   justify="center"

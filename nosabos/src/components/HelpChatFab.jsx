@@ -90,7 +90,7 @@ import useSoundSettings from "../hooks/useSoundSettings";
 import { selectSound, submitActionSound, clickSound } from "../constants/sounds";
 import BottomDrawerDragHandle from "./BottomDrawerDragHandle";
 import useBottomDrawerSwipeDismiss from "../hooks/useBottomDrawerSwipeDismiss";
-import VoiceOrb from "./VoiceOrb";
+import AnimatedEllipsis from "./AnimatedEllipsis";
 import { useThemeStore } from "../useThemeStore";
 import { APP_SQUIRCLE_SHAPE } from "../theme";
 import {
@@ -2513,14 +2513,7 @@ const HelpChatFab = forwardRef(
                                     aria-label={helpUi.play}
                                     icon={
                                       replayLoadingId === m.id ? (
-                                        <VoiceOrb
-                                          state={
-                                            ["idle", "listening", "speaking"][
-                                              Math.floor(Math.random() * 3)
-                                            ]
-                                          }
-                                          size={16}
-                                        />
+                                        <Spinner size="xs" />
                                       ) : (
                                         <RiVolumeUpLine size={14} />
                                       )
@@ -2536,16 +2529,19 @@ const HelpChatFab = forwardRef(
                                     mt={1}
                                   />
                                   <Box flex="1">
-                                    {!m.done && (
-                                      <VoiceOrb
-                                        state={
-                                          ["idle", "listening", "speaking"][
-                                            Math.floor(Math.random() * 3)
-                                          ]
-                                        }
-                                        size={16}
-                                      />
-                                    )}
+                                    {!m.done && !main ? (
+                                      <Box py={1}>
+                                        <AnimatedEllipsis
+                                          justify="flex-start"
+                                          color={
+                                            isLightTheme ? "black" : "white"
+                                          }
+                                          ariaLabel={
+                                            helpUi?.loading || "Loading"
+                                          }
+                                        />
+                                      </Box>
+                                    ) : null}
                                     <Markdown>{main}</Markdown>
                                     {!!gloss && (
                                       <Box
@@ -2594,14 +2590,7 @@ const HelpChatFab = forwardRef(
                                 realtimeStatus === "connected" ? (
                                   <FaStop />
                                 ) : realtimeStatus === "connecting" ? (
-                                  <VoiceOrb
-                                    state={
-                                      ["idle", "listening", "speaking"][
-                                        Math.floor(Math.random() * 3)
-                                      ]
-                                    }
-                                    size={24}
-                                  />
+                                  <Spinner size="xs" />
                                 ) : (
                                   <FaMicrophone />
                                 )

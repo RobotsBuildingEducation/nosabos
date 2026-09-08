@@ -1,5 +1,6 @@
 import ActivityActionRow from "./ActivityActionRow";
 import QuestionActionArea from "./QuestionActionArea";
+import FeedbackRail from "./FeedbackRail";
 // components/Stories.jsx
 import React, {
   useEffect,
@@ -29,7 +30,7 @@ import {
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import { FaArrowLeft, FaStop, FaPen, FaMicrophone } from "react-icons/fa";
-import { FiArrowRight } from "react-icons/fi";
+import { FiArrowRight, FiRadio, FiHeadphones, FiRotateCcw, FiCheck, FiX } from "react-icons/fi";
 import { FaWandMagicSparkles } from "react-icons/fa6";
 import { PiSpeakerHighDuotone } from "react-icons/pi";
 import { useNavigate } from "react-router-dom";
@@ -45,7 +46,7 @@ import {
 import {
   appCheckFetch,
   database,
-  simplemodel,
+  storyModel,
 } from "../firebaseResources/firebaseResources";
 import useUserStore from "../hooks/useUserStore";
 import { t, translations } from "../utils/translation";
@@ -64,7 +65,7 @@ import {
   stopAllTTSPlayback,
   TTS_LANG_TAG,
 } from "../utils/tts";
-import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
+import { extractCEFRLevel } from "../utils/cefrUtils";
 import { getUserProficiencyLevel } from "../utils/cefrProgress";
 import { speechReasonTips } from "../utils/speechEvaluation";
 import { SpeakSuccessCard } from "./SpeakSuccessCard";
@@ -76,6 +77,16 @@ import { submitActionSound, nextButtonSound, deliciousSound } from "../constants
 import { getBidiTextProps, mergeBidiSx } from "../utils/bidiText";
 import { buildCurriculumPromptContext } from "../utils/lessonCurriculum";
 import { questionSquircleStyle } from "./questionUiStyles";
+import StoryComprehension from "../features/stories/StoryComprehension";
+import { chooseStoryMode, rotateStoryMode, STORY_MODES } from "../features/stories/storySession";
+import { storyCopy } from "../features/stories/storyCopy";
+import { buildSpeakingStoryPrompt, getStoryDifficulty, STORY_THINKING_BUDGET } from "../features/stories/storyPrompts";
+import StoryCharacterAvatar from "../features/stories/StoryCharacterAvatar";
+import {
+  getStoryCharacterVoice,
+  getStoryCharacterPersonality,
+  getRandomStoryCharacterPortraitId,
+} from "../features/stories/storyCharacters";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -344,7 +355,17 @@ function useUIText(uiLang, level) {
       playTarget: (name) => t(uiLang, "story_play_target").replace("{name}", name),
       listen: t(uiLang, "story_listen"),
       stop: t(uiLang, "story_stop"),
-      startPractice: t(uiLang, "story_start_practice"),
+      startPractice:
+        t(uiLang, "story_start_practice") ||
+        supportStoryText(uiLang, {
+          en: "Practice",
+          es: "Practicar",
+          hi: "अभ्यास",
+          it: "Pratica",
+          fr: "Pratiquer",
+          ar: "تدريب",
+        }) ||
+        "Practice",
       practiceThis: t(uiLang, "story_practice_this"),
       skip: t(uiLang, "story_skip"),
       finish: t(uiLang, "story_finish_role"),
@@ -377,12 +398,157 @@ function useUIText(uiLang, level) {
 /* ================================
    Main Component
 =================================== */
-export default function StoryMode({
+export default function StoryMode(props) {
+  const user = useUserStore((s) => s.user);
+  const uiLang = getAppUILang();
+  const copy = storyCopy(uiLang);
+  const pinnedMode =
+    props.lessonContent?.topic === "tutorial"
+      ? "speaking"
+      : props.lessonContent?.storyMode &&
+        STORY_MODES.includes(props.lessonContent.storyMode)
+      ? props.lessonContent.storyMode
+      : null;
+
+  const [activeMode, setActiveMode] = useState(() =>
+    pinnedMode || chooseStoryMode(props.lessonContent),
+  );
+  const [cycle, setCycle] = useState(0);
+
+  const baseScope = JSON.stringify([
+    user?.id,
+    user?.progress?.targetLang,
+    user?.progress?.supportLang,
+    props.lesson?.id,
+    props.lessonContent?.topic,
+    props.lessonContent?.scenario,
+  ]);
+
+  useEffect(() => {
+    if (pinnedMode && pinnedMode !== activeMode) {
+      setActiveMode(pinnedMode);
+    }
+  }, [pinnedMode, activeMode]);
+
+  const handleSelectMode = useCallback((newMode) => {
+    if (!STORY_MODES.includes(newMode)) return;
+    setActiveMode(newMode);
+    setCycle((c) => c + 1);
+  }, []);
+
+  const handleNewStory = useCallback(() => {
+    if (pinnedMode) {
+      setActiveMode(pinnedMode);
+    } else {
+      const nextMode = rotateStoryMode(activeMode, props.lessonContent);
+      setActiveMode(nextMode);
+    }
+    setCycle((c) => c + 1);
+  }, [pinnedMode, activeMode, props.lessonContent]);
+
+  return (
+    <Box w="100%" maxW="1280px" mx="auto" px={{ base: 2, md: 4 }}>
+      {props.lessonContent?.topic !== "tutorial" && (
+        <Flex
+          align="center"
+          justify="space-between"
+          gap={2}
+          wrap="wrap"
+          mb={4}
+          pb={3}
+          borderBottom="1px solid"
+          borderColor={APP_BORDER}
+        >
+          <HStack spacing={2} wrap="wrap" role="tablist" aria-label={copy.modes}>
+            {STORY_MODES.map((m) => {
+              const isActive = activeMode === m;
+              const icon =
+                m === "speaking" ? (
+                  <FaMicrophone />
+                ) : m === "radio" ? (
+                  <FiRadio />
+                ) : (
+                  <FiHeadphones />
+                );
+              const label =
+                m === "speaking"
+                  ? copy.speaking || "Practice"
+                  : m === "radio"
+                  ? copy.radio || "Radio"
+                  : copy.conversation || "Conversation";
+
+              return (
+                <Button
+                  key={m}
+                  size="sm"
+                  role="tab"
+                  aria-selected={isActive}
+                  variant={isActive ? "solid" : "ghost"}
+                  colorScheme="teal"
+                  leftIcon={icon}
+                  rounded="full"
+                  fontWeight={isActive ? "700" : "500"}
+                  onClick={() => handleSelectMode(m)}
+                >
+                  {label}
+                </Button>
+              );
+            })}
+          </HStack>
+
+          <Button
+            size="sm"
+            variant="outline"
+            colorScheme="teal"
+            rounded="full"
+            leftIcon={<FiRotateCcw />}
+            onClick={handleNewStory}
+            aria-label={copy.back || "New story"}
+          >
+            {copy.back || "New story"}
+          </Button>
+        </Flex>
+      )}
+
+      <StoryActivity
+        key={`${baseScope}-${activeMode}-${cycle}`}
+        {...props}
+        mode={activeMode}
+        onNewStory={handleNewStory}
+        onSelectMode={handleSelectMode}
+      />
+    </Box>
+  );
+}
+
+function StoryActivity(props) {
+  const mode = props.mode;
+  return mode === "speaking" ? (
+    <SpeakingStoryMode {...props} />
+  ) : (
+    <StoryComprehensionSettings {...props} mode={mode} />
+  );
+}
+
+function StoryComprehensionSettings(props) {
+  const { progress, npub, progressReady } = useSharedProgress();
+  const uiLang = getAppUILang();
+  const supportLang = progress.supportLang === "bilingual" ? uiLang : progress.supportLang;
+  if (!progressReady) return <Center p={12}><Spinner /></Center>;
+  return <StoryComprehension {...props} npub={npub} uiLang={uiLang}
+    targetLang={progress.targetLang} supportLang={supportLang}
+    targetName={LLM_LANG_NAME(progress.targetLang)} supportName={LLM_LANG_NAME(supportLang)}
+    cefrLevel={props.lesson?.cefrLevel || props.lessonContent?.cefrLevel || (props.lesson?.id ? extractCEFRLevel(props.lesson.id) : getUserProficiencyLevel(progress, progress.targetLang))} />;
+}
+
+function SpeakingStoryMode({
   userLanguage = "en",
   lesson = null,
   lessonContent = null,
   onSkip = null,
+  onNewStory = null,
   pauseMs = 2000,
+  lessonEarnedXp = 0,
 }) {
   const navigate = useNavigate();
   const toast = useToast();
@@ -444,14 +610,12 @@ export default function StoryMode({
   const [playingLineIndex, setPlayingLineIndex] = useState(null);
   const [sentenceCompleted, setSentenceCompleted] = useState(false); // Track when sentence is completed but not advanced
   const [lastSuccessInfo, setLastSuccessInfo] = useState(null);
+  const [lastFeedback, setLastFeedback] = useState(null);
 
   // accumulate this session, but award only at end
   const [sessionXp, setSessionXp] = useState(0);
-  const [sessionComplete, setSessionComplete] = useState(false);
   const [sessionSummary, setSessionSummary] = useState({ passed: 0, total: 0 });
   const [passedCount, setPassedCount] = useState(0);
-
-  const [showFullStory, setShowFullStory] = useState(true);
 
   // Highlighting (target full story)
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
@@ -467,7 +631,18 @@ export default function StoryMode({
   const currentUtteranceRef = useRef(null);
   const animationFrameRef = useRef(null);
   const currentAudioRef = useRef(null);
+  const audioRequestRef = useRef(0);
   const eventSourceRef = useRef(null);
+  const activeSentenceRef = useRef(null);
+
+  useEffect(() => {
+    if (currentSentenceIndex > 0 && activeSentenceRef.current) {
+      activeSentenceRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+    }
+  }, [currentSentenceIndex]);
   const currentAudioUrlRef = useRef(null);
   const sessionAwardedRef = useRef(false);
   const usageStatsRef = useRef({
@@ -593,9 +768,15 @@ export default function StoryMode({
   }, [storyData?.sentences]);
 
   const getStableCharacterVoice = useCallback(
-    (name) =>
-      characterVoiceMap.get(canonicalCharacterName(name)) || STORY_NARRATOR_VOICE,
-    [characterVoiceMap],
+    (name) => {
+      const charVoice = getStoryCharacterVoice(name, user);
+      if (charVoice) return charVoice;
+      return (
+        characterVoiceMap.get(canonicalCharacterName(name)) ||
+        STORY_NARRATOR_VOICE
+      );
+    },
+    [characterVoiceMap, user],
   );
 
   // pseudo alignment based on duration
@@ -709,6 +890,7 @@ export default function StoryMode({
   };
 
   const stopAllAudio = useCallback(() => {
+    audioRequestRef.current++;
     stopAllTTSPlayback();
     if (currentAudioRef.current) {
       currentAudioRef.current = null;
@@ -732,13 +914,13 @@ export default function StoryMode({
   const generateStory = useCallback(async () => {
     setIsLoading(true);
     stopAllAudio();
+    const isTutorial = lessonContent?.topic === "tutorial";
     try {
       usageStatsRef.current.storyGenerations++;
       const storyUrl = "https://generatestory-hftgya63qa-uc.a.run.app";
 
       // Determine lesson context for the story
       // Special handling for tutorial mode - use very simple "hello" content only
-      const isTutorial = lessonContent?.topic === "tutorial";
       const lessonTopic = isTutorial
         ? "TUTORIAL: Create an extremely simple story about saying hello. Use ONLY basic greetings like 'hello', 'hi', 'good morning', 'goodbye'. The story must be 2-3 very short sentences (2-5 words each) with NO extra topics."
         : lessonContent?.topic ||
@@ -780,9 +962,9 @@ export default function StoryMode({
       });
       setPassedCount(0);
       sessionAwardedRef.current = false;
-      setShowFullStory(true);
       setHighlightedWordIndex(-1);
       setLastSuccessInfo(null);
+      setLastFeedback(null);
     } catch (error) {
       // Bilingual fallback that respects target/support languages
       setStoryType("paragraph"); // Fallback is always a paragraph story
@@ -1041,7 +1223,7 @@ export default function StoryMode({
       const sLang = supportLang; // 'en' | 'es'
       const tName = LLM_LANG_NAME(tLang);
       const sName = LLM_LANG_NAME(sLang);
-      const diff = getCEFRPromptHint(cefrLevel);
+      const diff = getStoryDifficulty(cefrLevel);
 
       // Check for tutorial mode first
       const isTutorial = lessonContent?.topic === "tutorial";
@@ -1064,69 +1246,21 @@ export default function StoryMode({
         { mode: "stories" },
       );
 
-      // Different prompts based on story type
-      let prompt;
-      if (selectedStoryType === "conversation") {
-        prompt = [
-          "You are a language tutor. Generate a short dialogue/conversation script",
-          `for a learner practicing ${tName} (${tLang}). Difficulty: ${
-            isTutorial ? "absolute beginner, very easy" : diff
-          }.`,
-          `Also provide a brief support translation in ${sName} (${sLang}).`,
-          scenarioDirective,
-          curriculumPromptContext,
-          "",
-          "Constraints:",
-          "- Create a dialogue between 2-3 characters with distinct names.",
-          isTutorial
-            ? "- 2 to 3 lines of dialogue total."
-            : "- 8 to 10 lines of dialogue total.",
-          isTutorial
-            ? "- Each line should be 2–5 words, greetings only."
-            : "- Each line should be 8–15 words, natural conversational speech.",
-          "- Use simple, culturally-relevant names for the characters.",
-          "- The dialogue should be engaging and natural, like a real conversation.",
-          "- NO headings, NO commentary, NO code fences.",
-          "",
-          "Output protocol (NDJSON, one compact JSON object per line):",
-          `1) For each line of dialogue, output: {"type":"sentence","character":"<character name>","gender":"male or female","tgt":"<${tName} dialogue line>","sup":"<${sName} translation>"}`,
-          '2) After the final line, output: {"type":"done"}',
-          "",
-          "IMPORTANT: The 'character' field must contain ONLY the character's name. Do NOT include the name in the 'tgt' field.",
-          "IMPORTANT: Keep the same gender for the same character every time they speak.",
-          "",
-          "Begin now and follow the protocol exactly.",
-        ].join(" ");
-      } else {
-        prompt = [
-          "You are a language tutor. Generate a short, engaging conversational story",
-          `for a learner practicing ${tName} (${tLang}). Difficulty: ${
-            isTutorial ? "absolute beginner, very easy" : diff
-          }.`,
-          `Also provide a brief support translation in ${sName} (${sLang}).`,
-          scenarioDirective,
-          "",
-          "Constraints:",
-          isTutorial
-            ? "- 2 to 3 sentences total."
-            : "- 8 to 10 sentences total.",
-          isTutorial
-            ? "- Simple greetings only, 2–5 words per sentence."
-            : "- Simple, culturally-relevant, 8–15 words per sentence.",
-          "- Create an engaging narrative that helps the learner practice the language.",
-          "- NO headings, NO commentary, NO code fences.",
-          "",
-          "Output protocol (NDJSON, one compact JSON object per line):",
-          `1) For each sentence, output: {"type":"sentence","tgt":"<${tName} sentence>","sup":"<${sName} translation>"}`,
-          '2) After the final sentence, output: {"type":"done"}',
-          "",
-          "Begin now and follow the protocol exactly.",
-        ].join(" ");
-      }
+      const prompt = buildSpeakingStoryPrompt({
+        targetName: tName,
+        targetLang: tLang,
+        supportName: sName,
+        supportLang: sLang,
+        difficulty: diff,
+        isTutorial,
+        scenarioDirective,
+        curriculumContext: curriculumPromptContext,
+      });
 
       // Stream from Gemini
-      const resp = await simplemodel.generateContentStream({
+      const resp = await storyModel.generateContentStream({
         contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: { thinkingConfig: { thinkingBudget: STORY_THINKING_BUDGET } },
       });
 
       let buffer = "";
@@ -1336,9 +1470,7 @@ export default function StoryMode({
     if (!progressReady) return;
 
     if (storyData || isLoading) return;
-    if (lessonContent) {
-      generateStoryGeminiStream();
-    }
+    generateStoryGeminiStream();
   }, [
     lessonContent,
     storyData,
@@ -1351,6 +1483,7 @@ export default function StoryMode({
   const handleSkipModule = () => {
     playSound(nextButtonSound);
     stopAllAudio();
+    setLastFeedback(null);
     // If in lesson mode, call onSkip to switch to next random module type
     if (onSkip && typeof onSkip === "function") {
       console.log("[StoryMode] Skipping to next lesson module");
@@ -1377,8 +1510,10 @@ export default function StoryMode({
       onEnd = () => {},
       setSynthesizing,
       voice = null,
+      personality = null,
     } = {},
   ) => {
+    const request = audioRequestRef.current;
     try {
       if (currentAudioRef.current) {
         currentAudioRef.current.pause();
@@ -1399,8 +1534,14 @@ export default function StoryMode({
         text,
         langTag,
         voice: voice || STORY_NARRATOR_VOICE,
+        personality,
         responseFormat: LOW_LATENCY_TTS_FORMAT,
       });
+      if (request !== audioRequestRef.current) {
+        player.ready?.catch(() => {});
+        player.cleanup?.();
+        return;
+      }
       currentAudioUrlRef.current = player.audioUrl;
 
       let tokenMap = null;
@@ -1441,9 +1582,11 @@ export default function StoryMode({
       };
 
       await player.ready;
+      if (request !== audioRequestRef.current) { player.cleanup?.(); return; }
       setSynthesizing?.(false);
       await audio.play();
     } catch (e) {
+      if (request !== audioRequestRef.current) return;
       setSynthesizing?.(false);
       onEnd?.();
       throw e;
@@ -1471,7 +1614,7 @@ export default function StoryMode({
     }
   };
 
-  const playTargetTTS = async (text, voice = null) => {
+  const playTargetTTS = async (text, voice = null, personality = null) => {
     if (!text) return;
     stopAllAudio();
     setIsPlayingTarget(true);
@@ -1481,6 +1624,7 @@ export default function StoryMode({
         onEnd: () => setIsPlayingTarget(false),
         setSynthesizing: setIsSynthesizingTarget,
         voice,
+        personality,
       });
     } catch {
       stopAllAudio();
@@ -1520,6 +1664,63 @@ export default function StoryMode({
   const currentSentence = storyData?.sentences?.[currentSentenceIndex];
   const totalSentences = storyData?.sentences?.length || 0;
   const isLastSentence = currentSentenceIndex >= totalSentences - 1;
+
+  const isCharacterStory =
+    (storyData?.storyType === "conversation" || storyType === "conversation") &&
+    storyData?.sentences?.some((s) => s.character);
+
+  const autoplaySentenceRef = useRef(null);
+  autoplaySentenceRef.current = () => {
+    const name = isCharacterStory ? currentSentence?.character || "Sheilfer" : "Sheilfer";
+    playTargetTTS(
+      currentSentence?.tgt,
+      isCharacterStory ? getStoryCharacterVoice(name, user) : STORY_NARRATOR_VOICE,
+      getStoryCharacterPersonality(name),
+    );
+  };
+  useEffect(() => {
+    if (isLoading || !currentSentence?.tgt) return;
+    autoplaySentenceRef.current();
+    return stopAllAudio;
+  }, [currentSentenceIndex, currentSentence?.tgt, isLoading, stopAllAudio]);
+
+  const storyCharacterPortraits = useMemo(() => {
+    const map = {};
+    storyData?.sentences?.forEach((s) => {
+      const charName = s.character || "Sheilfer";
+      if (!map[charName]) {
+        map[charName] = getRandomStoryCharacterPortraitId(charName, user);
+      }
+    });
+    if (!map["Sheilfer"]) {
+      map["Sheilfer"] = getRandomStoryCharacterPortraitId("Sheilfer", user);
+    }
+    return map;
+  }, [storyData, user]);
+
+  const visibleSentences = (storyData?.sentences || []).slice(
+    0,
+    currentSentenceIndex + 1,
+  );
+
+  const completedSentences = currentSentenceIndex + (sentenceCompleted ? 1 : 0);
+  const progressPct =
+    totalSentences > 0
+      ? Math.round((completedSentences / totalSentences) * 100)
+      : 0;
+  const lessonProgress =
+    totalSentences > 0
+      ? {
+          pct: progressPct,
+          earned: completedSentences,
+          total: totalSentences,
+          label:
+            t(uiLang, "story_progress") ||
+            t(uiLang, "vocab_lesson_progress") ||
+            "Lesson progress",
+          showAlways: true,
+        }
+      : null;
 
   const nextSentenceLabel =
     t(uiLang, "stories_next_sentence") ||
@@ -1575,13 +1776,15 @@ export default function StoryMode({
         });
 
         setLastSuccessInfo(null);
-
-        toast({
-          title: uiText.almost,
-          description: tips.join(" "),
-          status: "warning",
-          duration: 3800,
-          position: "top",
+        setSentenceCompleted(false);
+        setLastFeedback({
+          ok: false,
+          label: uiText.almost,
+          explanation:
+            tips.length > 0
+              ? tips.join(" ")
+              : t(uiLang, "practice_try_again_hint") ||
+                "Try saying the sentence again clearly.",
         });
 
         // Companion brain: a missed sentence-practice attempt (pronunciation) is
@@ -1641,8 +1844,14 @@ export default function StoryMode({
         translation: currentSentence?.sup || "",
       });
 
-      // Play success sound
-      playSound(deliciousSound);
+      setLastFeedback({
+        ok: true,
+        label: uiText.wellDone,
+        subtext:
+          typeof evaluation.score === "number"
+            ? `${uiText.score}: ${evaluation.score}%`
+            : null,
+      });
 
       // Mark sentence as completed, wait for user to click "Next"
       setSentenceCompleted(true);
@@ -1675,6 +1884,49 @@ export default function StoryMode({
   const isRecording = isSpeakRecording;
   const isConnecting = isSpeakConnecting;
 
+  const handleTestSubmit = useCallback(
+    (isCorrect = true) => {
+      if (!currentSentence?.tgt) return;
+      stopAllAudio();
+      if (isSpeakRecording) {
+        try {
+          stopSpeakRecording();
+        } catch {}
+      }
+
+      if (isCorrect) {
+        handleEvaluationResult({
+          evaluation: {
+            pass: true,
+            score: 95,
+            reasons: [],
+          },
+          recognizedText: currentSentence.tgt,
+          confidence: 0.98,
+          method: "test",
+        });
+      } else {
+        handleEvaluationResult({
+          evaluation: {
+            pass: false,
+            score: 42,
+            reasons: ["pronunciation"],
+          },
+          recognizedText: "...",
+          confidence: 0.42,
+          method: "test",
+        });
+      }
+    },
+    [
+      currentSentence,
+      handleEvaluationResult,
+      isSpeakRecording,
+      stopAllAudio,
+      stopSpeakRecording,
+    ],
+  );
+
   const handleRecordPress = useCallback(async () => {
     stopAllAudio();
     if (isSpeakRecording) {
@@ -1683,6 +1935,7 @@ export default function StoryMode({
     }
 
     setLastSuccessInfo(null);
+    setLastFeedback(null);
     playSound(submitActionSound);
 
     try {
@@ -1760,6 +2013,7 @@ export default function StoryMode({
       setCurrentSentenceIndex((p) => p + 1);
       setSentenceCompleted(false);
       setLastSuccessInfo(null);
+      setLastFeedback(null);
     } else {
       const totalSentences = storyData?.sentences?.length || 0;
       const latestPassed = Math.min(
@@ -1769,19 +2023,22 @@ export default function StoryMode({
       const totalSessionXp = computeStoryXpReward();
       setSessionXp(totalSessionXp);
       setSessionSummary({ passed: latestPassed, total: totalSentences });
-      setSessionComplete(true);
       await finalizePracticeSession(totalSessionXp);
 
-      // Move to the next lesson module when available; otherwise show recap
-      if (onSkip && typeof onSkip === "function") {
-        onSkip();
-        return;
-      }
-
-      setShowFullStory(true);
-      setCurrentSentenceIndex(0);
       setSentenceCompleted(false);
       setLastSuccessInfo(null);
+      setLastFeedback(null);
+
+      if (onSkip) {
+        onSkip();
+      } else if (onNewStory) {
+        onNewStory();
+      } else {
+        setStoryData(null);
+        storyCacheRef.current = null;
+        setCurrentSentenceIndex(0);
+        generateStoryGeminiStream();
+      }
     }
   };
 
@@ -1818,49 +2075,44 @@ export default function StoryMode({
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   /* ----------------------------- Loading / Empty ----------------------------- */
-  if (isLoading) {
+  if (isLoading || !storyData) {
     return (
       <Box
-      // minH="100vh"
-      // bg="linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%)"
+        minH="300px"
+        py={{ base: 6, md: 12 }}
+        display="flex"
+        flexDirection="column"
+        alignItems="center"
+        justifyContent="center"
       >
-        <Center>
-          <VStack spacing={6}>
-            <Text color={APP_TEXT_PRIMARY} fontSize="xl" fontWeight="600">
-              {uiText.generatingTitle}
-            </Text>
-            <Text color={APP_TEXT_SECONDARY} fontSize="sm">
-              {uiText.generatingSub}
-            </Text>
-            <VoiceOrb />
-          </VStack>
-        </Center>
-      </Box>
-    );
-  }
-
-  if (!storyData) {
-    return (
-      <Box
-        borderRadius="24px"
-        style={questionSquircleStyle}
-      >
-        <Center py={{ base: 12, md: 16 }}>
-          <VStack spacing={6}>
-            <Text color={APP_TEXT_PRIMARY} fontSize="xl" fontWeight="600">
-              {uiText.generatingTitle}
-            </Text>
-            <Text color={APP_TEXT_SECONDARY} fontSize="sm">
-              {uiText.generatingSub}
-            </Text>
-            <VoiceOrb
-              state={
-                ["idle", "listening", "speaking"][Math.floor(Math.random() * 3)]
+        <VStack spacing={6}>
+          <Text color={APP_TEXT_PRIMARY} fontSize="xl" fontWeight="600">
+            {uiText.generatingTitle}
+          </Text>
+          <Text color={APP_TEXT_SECONDARY} fontSize="sm">
+            {uiText.generatingSub}
+          </Text>
+          <VoiceOrb size={32} />
+        </VStack>
+        {onSkip && (
+          <Box w="full" maxW="720px" mx="auto" mt={8}>
+            <QuestionActionArea
+              actions={
+                <ActivityActionRow>
+                  <Button
+                    onClick={handleSkipModule}
+                    variant="ghost"
+                    color={APP_TEXT_PRIMARY}
+                    _hover={{ bg: APP_SURFACE_MUTED }}
+                    width="fit-content"
+                  >
+                    {t(uiLang, "practice_skip_question")}
+                  </Button>
+                </ActivityActionRow>
               }
-              size={32}
             />
-          </VStack>
-        </Center>
+          </Box>
+        )}
       </Box>
     );
   }
@@ -1882,12 +2134,8 @@ export default function StoryMode({
             w="100%"
             px={4}
             py={{ base: 1, md: 3 }}
-            // bg="rgba(15, 15, 35, 0.8)"
-            // backdropFilter="blur(20px)"
             color={APP_TEXT_PRIMARY}
-            // borderBottom="1px solid"
             borderColor="rgba(255, 255, 255, 0.1)"
-            // position="sticky"
             top={0}
             zIndex={100}
           >
@@ -1906,20 +2154,17 @@ export default function StoryMode({
         px={{ base: 0, md: 4 }}
         py={{ base: 1, md: 6 }}
         display="flex"
-        flexDirection={"column"}
-        alignItems={"center"}
+        flexDirection="column"
+        alignItems="center"
       >
         <motion.div
-          key={
-            showFullStory ? "full-story" : `sentence-${currentSentenceIndex}`
-          }
+          key="sentence-practice"
           initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={prefersReducedMotion ? {} : { duration: 0.5 }}
           style={{ width: "100%", maxWidth: "1280px" }}
         >
           <VStack spacing={{ base: 3, md: 6 }} align="stretch" w="100%">
-
             <Box
               bg={APP_SURFACE_ELEVATED}
               p={6}
@@ -1928,419 +2173,388 @@ export default function StoryMode({
               border={`1px solid ${APP_BORDER}`}
               boxShadow={APP_SHADOW}
             >
-              {showFullStory ? (
+              <Flex justify="flex-end" align="center" gap={2} mb={3}>
+                <Button
+                  size="xs"
+                  variant="outline"
+                  colorScheme="teal"
+                  rounded="full"
+                  leftIcon={<FiCheck />}
+                  onClick={() => handleTestSubmit(true)}
+                  isDisabled={!currentSentence || (lastFeedback && lastFeedback.ok)}
+                  title="Test correct answer"
+                  aria-label="Test correct answer"
+                >
+                  Test Correct
+                </Button>
+                <Button
+                  size="xs"
+                  variant="outline"
+                  colorScheme="red"
+                  rounded="full"
+                  leftIcon={<FiX />}
+                  onClick={() => handleTestSubmit(false)}
+                  isDisabled={!currentSentence || (lastFeedback && lastFeedback.ok)}
+                  title="Test incorrect answer"
+                  aria-label="Test incorrect answer"
+                >
+                  Test Incorrect
+                </Button>
+              </Flex>
+              {isCharacterStory ? (
                 <VStack spacing={4} align="stretch">
+                  {visibleSentences.map((sentence, idx) => {
+                    const isCurrent = idx === currentSentenceIndex;
+                    const isLeft = idx % 2 === 0;
+                    const isThisLinePlaying =
+                      playingLineIndex === idx ||
+                      (isCurrent && isPlayingTarget);
+                    const characterVoice = sentence.character
+                      ? getStableCharacterVoice(sentence.character)
+                      : STORY_NARRATOR_VOICE;
+                    const characterPersonality = sentence.character
+                      ? getStoryCharacterPersonality(sentence.character)
+                      : null;
 
-                  {/* Full story with highlighting (target language) */}
-                  <Box>
-                    {/* Conversation script view - dialogue format with alternating positions */}
-                    {(storyData.storyType === "conversation" ||
-                      storyType === "conversation") &&
-                    storyData.sentences?.some((s) => s.character) ? (
-                      <VStack spacing={4} align="stretch">
-                        {storyData.sentences.map((sentence, idx) => {
-                          const isLeft = idx % 2 === 0;
-                          const isThisLinePlaying = playingLineIndex === idx;
-                          const characterVoice = sentence.character
-                            ? getStableCharacterVoice(sentence.character)
-                            : STORY_NARRATOR_VOICE;
-                          return (
-                            <Flex
-                              key={idx}
-                              justify={isLeft ? "flex-start" : "flex-end"}
-                            >
-                              <HStack
-                                spacing={2}
-                                align="flex-start"
-                                maxW="85%"
-                                flexDirection={isLeft ? "row" : "row-reverse"}
-                              >
-                                <IconButton
-                                  onClick={() => {
-                                    setPlayingLineIndex(idx);
-                                    playTargetTTS(
-                                      sentence.tgt,
-                                      characterVoice,
-                                    ).finally(() => setPlayingLineIndex(null));
-                                  }}
-                                  variant="outline"
-                                  borderColor={APP_BORDER_STRONG}
-                                  color={APP_TEXT_PRIMARY}
-                                  _hover={{ bg: APP_SURFACE_MUTED }}
-                                  size="xs"
-                                  aria-label={`Play ${
-                                    sentence.character || "line"
-                                  }`}
-                                  icon={renderSpeakerIcon(
-                                    isThisLinePlaying && isSynthesizingTarget,
-                                  )}
-                                  flexShrink={0}
-                                  mt={1}
-                                />
-                                <Box
-                                  px={3}
-                                  py={2}
-                                  bg={
-                                    isLeft
-                                      ? "rgba(56, 178, 172, 0.15)"
-                                      : "rgba(99, 102, 241, 0.15)"
-                                  }
-                                  borderRadius="lg"
-                                  style={questionSquircleStyle}
-                                  borderLeft={isLeft ? "3px solid" : "none"}
-                                  borderRight={isLeft ? "none" : "3px solid"}
-                                  borderColor={
-                                    isLeft ? "teal.400" : "purple.400"
-                                  }
-                                >
-                                  {sentence.character && (
-                                    <Text
-                                      fontSize="sm"
-                                      fontWeight="700"
-                                      color={isLeft ? "teal.300" : "purple.300"}
-                                      mb={1}
-                                    >
-                                      {sentence.character}
-                                    </Text>
-                                  )}
-                                  <Text
-                                    fontSize="lg"
-                                    fontWeight="500"
-                                    color={APP_TEXT_PRIMARY}
-                                    lineHeight="1.6"
-                                    {...targetTextProps}
-                                    sx={mergeBidiSx(targetTextProps)}
-                                  >
-                                    {sentence.tgt}
-                                  </Text>
-                                  {!!sentence.sup && (
-                                    <Text
-                                      fontSize="sm"
-                                      color={APP_TEXT_SECONDARY}
-                                      lineHeight="1.4"
-                                      mt={1}
-                                      {...supportTextProps}
-                                      sx={mergeBidiSx(supportTextProps)}
-                                    >
-                                      {sentence.sup}
-                                    </Text>
-                                  )}
-                                </Box>
-                              </HStack>
-                            </Flex>
-                          );
-                        })}
-                      </VStack>
-                    ) : (
-                      /* Paragraph story view - TTS button inline to the left */
-                      <HStack align="flex-start" spacing={3} w="100%">
-                        <IconButton
-                          onClick={() =>
-                            playNarrationWithHighlighting(
-                              storyData.fullStory?.tgt,
-                            )
-                          }
-                          variant="outline"
-                          borderColor={APP_BORDER_STRONG}
-                          color={APP_TEXT_PRIMARY}
-                          _hover={{ bg: APP_SURFACE_MUTED }}
-                          size="sm"
-                          isDisabled={isAutoPlaying || isSynthesizingTarget}
-                          aria-label={uiText.playTarget(targetDisplayName)}
-                          icon={renderSpeakerIcon(isSynthesizingTarget)}
-                          flexShrink={0}
-                          mt={1}
-                        />
-                        <Box flex="1" minW={0}>
-                          <Text
-                            fontSize="lg"
-                            fontWeight="500"
+                    return (
+                      <Flex
+                        key={idx}
+                        ref={isCurrent ? activeSentenceRef : undefined}
+                        justify={isLeft ? "flex-start" : "flex-end"}
+                        w="100%"
+                      >
+                        <HStack
+                          spacing={3}
+                          align="flex-start"
+                          maxW="85%"
+                          flexDirection={isLeft ? "row" : "row-reverse"}
+                        >
+                          <StoryCharacterAvatar
+                            name={sentence.character || (isLeft ? "Sheilfer" : "You")}
+                            portraitId={
+                              sentence.character
+                                ? storyCharacterPortraits[sentence.character]
+                                : isLeft
+                                  ? storyCharacterPortraits["Sheilfer"]
+                                  : undefined
+                            }
+                            user={user}
+                            size="36px"
+                            isSpeaking={isThisLinePlaying}
+                            accentColor={isLeft ? "teal.400" : "purple.400"}
+                          />
+                          <IconButton
+                            onClick={() => {
+                              setPlayingLineIndex(idx);
+                              playTargetTTS(
+                                sentence.tgt,
+                                characterVoice,
+                                characterPersonality,
+                              ).finally(() => setPlayingLineIndex(null));
+                            }}
+                            variant="outline"
+                            borderColor={
+                              isCurrent
+                                ? isLeft
+                                  ? "teal.400"
+                                  : "purple.400"
+                                : APP_BORDER_STRONG
+                            }
                             color={APP_TEXT_PRIMARY}
-                            mb={3}
-                            lineHeight="1.8"
-                            {...targetTextProps}
-                            sx={mergeBidiSx(targetTextProps)}
+                            _hover={{ bg: APP_SURFACE_MUTED }}
+                            size="xs"
+                            aria-label={`Play ${
+                              sentence.character || "line"
+                            }`}
+                            icon={renderSpeakerIcon(
+                              isThisLinePlaying &&
+                                (isSynthesizingTarget || isPlayingTarget),
+                            )}
+                            flexShrink={0}
+                            mt={1}
+                          />
+                          <Box
+                            px={3}
+                            py={2}
+                            bg={
+                              isLeft
+                                ? "rgba(56, 178, 172, 0.15)"
+                                : "rgba(99, 102, 241, 0.15)"
+                            }
+                            borderRadius="lg"
+                            style={questionSquircleStyle}
+                            borderLeft={isLeft ? "3px solid" : "none"}
+                            borderRight={isLeft ? "none" : "3px solid"}
+                            borderColor={
+                              isLeft ? "teal.400" : "purple.400"
+                            }
+                            boxShadow={
+                              isCurrent
+                                ? `0 0 0 2px ${
+                                    isLeft
+                                      ? "rgba(56, 178, 172, 0.6)"
+                                      : "rgba(99, 102, 241, 0.6)"
+                                  }`
+                                : "none"
+                            }
+                            opacity={isCurrent ? 1 : 0.85}
+                            transition="all 0.25s ease"
                           >
-                            {storyData.fullStory?.tgt || ""}
-                          </Text>
-
-                          {!!storyData.fullStory?.sup && (
+                            {sentence.character && (
+                              <Text
+                                fontSize="sm"
+                                fontWeight="700"
+                                color={
+                                  isLeft ? "teal.300" : "purple.300"
+                                }
+                                mb={1}
+                              >
+                                {sentence.character}
+                              </Text>
+                            )}
                             <Text
-                              fontSize="md"
-                              color={APP_TEXT_SECONDARY}
+                              fontSize="lg"
+                              fontWeight="500"
+                              color={APP_TEXT_PRIMARY}
                               lineHeight="1.6"
-                              {...supportTextProps}
-                              sx={mergeBidiSx(supportTextProps)}
+                              {...targetTextProps}
+                              sx={mergeBidiSx(targetTextProps)}
                             >
-                              {storyData.fullStory.sup}
+                              {sentence.tgt}
                             </Text>
-                          )}
-                        </Box>
-                      </HStack>
-                    )}
-                  </Box>
+                            {!!sentence.sup && (
+                              <Text
+                                fontSize="sm"
+                                color={APP_TEXT_SECONDARY}
+                                lineHeight="1.4"
+                                mt={1}
+                                {...supportTextProps}
+                                sx={mergeBidiSx(supportTextProps)}
+                              >
+                                {sentence.sup}
+                              </Text>
+                            )}
+                          </Box>
+                        </HStack>
+                      </Flex>
+                    );
+                  })}
                 </VStack>
               ) : (
-                /* Sentence practice */
                 <VStack spacing={4} align="stretch">
-                  <Box>
-                    <Text fontSize="lg" fontWeight="500" color={APP_TEXT_PRIMARY} mb={3}>
-                      {uiText.practiceThis}
-                    </Text>
-                    {/* Show character label for conversation scripts */}
-                    {currentSentence?.character && (
-                      <Box textAlign="center" mb={2}>
-                        <Tag
-                          size="md"
-                          colorScheme="teal"
-                          borderRadius="full"
-                          px={3}
-                          py={1}
-                        >
-                          <TagLabel fontWeight="600">
-                            {currentSentence.character}
-                          </TagLabel>
-                        </Tag>
-                      </Box>
-                    )}
-                    <Text
-                      fontSize="xl"
-                      fontWeight="600"
-                      color={APP_TEXT_PRIMARY}
-                      lineHeight="1.6"
-                      mb={2}
-                      textAlign="center"
-                      dir={targetTextProps.dir}
-                      lang={targetTextProps.lang}
-                      sx={mergeBidiSx(targetTextProps)}
-                    >
-                      {currentSentence?.tgt}
-                    </Text>
-                    {!!currentSentence?.sup && (
-                      <Text
-                        fontSize="md"
-                        color={APP_TEXT_SECONDARY}
-                        lineHeight="1.5"
-                        textAlign="center"
-                        dir={supportTextProps.dir}
-                        lang={supportTextProps.lang}
-                        sx={mergeBidiSx(supportTextProps)}
+                  {visibleSentences.map((sentence, idx) => {
+                    const isCurrent = idx === currentSentenceIndex;
+                    const isThisLinePlaying =
+                      playingLineIndex === idx ||
+                      (isCurrent && isPlayingTarget);
+
+                    return (
+                      <Flex
+                        key={idx}
+                        ref={isCurrent ? activeSentenceRef : undefined}
+                        w="100%"
+                        justify="flex-start"
                       >
-                        {currentSentence?.sup}
-                      </Text>
-                    )}
-                    <Text
-                      fontSize="sm"
-                      color={APP_TEXT_MUTED}
-                      textAlign="center"
-                      mt={2}
-                    >
-                      {t(uiLang, "story_sentence_label")}{" "}
-                      {currentSentenceIndex + 1} {t(uiLang, "story_of")}{" "}
-                      {storyData.sentences.length}
-                    </Text>
-                  </Box>
-
-                  <VStack spacing={4}>
-
-                    <HStack spacing={3} justify="center">
-                      <Button
-                        onClick={() =>
-                          playTargetTTS(
-                            currentSentence?.tgt,
-                            currentSentence?.character
-                              ? getStableCharacterVoice(currentSentence.character)
-                              : STORY_NARRATOR_VOICE,
-                          )
-                        }
-                        aria-label={uiText.listen}
-                        px={3}
-                        variant="outline"
-                        borderColor={APP_BORDER_STRONG}
-                        color={APP_TEXT_PRIMARY}
-                        _hover={{ bg: APP_SURFACE_MUTED }}
-                        size="sm"
-                      >
-                        {renderSpeakerIcon(
-                          isPlayingTarget || isSynthesizingTarget,
-                          "white",
-                        )}
-                      </Button>
-                    </HStack>
-
-                    {sessionComplete &&
-                    sessionXp > 0 &&
-                    sessionSummary.total > 0 ? (
-                      <SpeakSuccessCard
-                        title={t(uiLang, "story_roleplay_completed")}
-                        scoreLabel={`${sessionSummary.passed}/${
-                          sessionSummary.total
-                        } ${t(uiLang, "story_sentences")}`}
-                        xp={sessionXp}
-                        t={t}
-                        userLanguage={uiLang}
-                      />
-                    ) : null}
-                  </VStack>
+                        <HStack spacing={3} align="flex-start" w="100%">
+                          <StoryCharacterAvatar
+                            name="Sheilfer"
+                            portraitId={storyCharacterPortraits["Sheilfer"]}
+                            user={user}
+                            size="36px"
+                            isSpeaking={isThisLinePlaying}
+                            accentColor="teal.400"
+                          />
+                          <IconButton
+                            onClick={() => {
+                              setPlayingLineIndex(idx);
+                              playTargetTTS(
+                                sentence.tgt,
+                                STORY_NARRATOR_VOICE,
+                                getStoryCharacterPersonality("Sheilfer"),
+                              ).finally(() => setPlayingLineIndex(null));
+                            }}
+                            variant="outline"
+                            borderColor={
+                              isCurrent ? "teal.400" : APP_BORDER_STRONG
+                            }
+                            color={APP_TEXT_PRIMARY}
+                            _hover={{ bg: APP_SURFACE_MUTED }}
+                            size="xs"
+                            aria-label={`Play line ${idx + 1}`}
+                            icon={renderSpeakerIcon(
+                              isThisLinePlaying &&
+                                (isSynthesizingTarget || isPlayingTarget),
+                            )}
+                            flexShrink={0}
+                            mt={1}
+                          />
+                          <Box
+                            flex="1"
+                            px={3}
+                            py={2}
+                            bg="rgba(56, 178, 172, 0.1)"
+                            borderRadius="lg"
+                            style={questionSquircleStyle}
+                            borderLeft="3px solid"
+                            borderColor={isCurrent ? "teal.400" : "teal.600"}
+                            boxShadow={
+                              isCurrent ? "0 0 0 2px rgba(56, 178, 172, 0.5)" : "none"
+                            }
+                            opacity={isCurrent ? 1 : 0.85}
+                            transition="all 0.25s ease"
+                          >
+                            <Text
+                              fontSize="lg"
+                              fontWeight="500"
+                              color={APP_TEXT_PRIMARY}
+                              lineHeight="1.6"
+                              {...targetTextProps}
+                              sx={mergeBidiSx(targetTextProps)}
+                            >
+                              {sentence.tgt}
+                            </Text>
+                            {!!sentence.sup && (
+                              <Text
+                                fontSize="sm"
+                                color={APP_TEXT_SECONDARY}
+                                lineHeight="1.4"
+                                mt={1}
+                                {...supportTextProps}
+                                sx={mergeBidiSx(supportTextProps)}
+                              >
+                                {sentence.sup}
+                              </Text>
+                            )}
+                          </Box>
+                        </HStack>
+                      </Flex>
+                    );
+                  })}
                 </VStack>
               )}
             </Box>
           </VStack>
         </motion.div>
 
-        <Box w="full" maxW="720px" mx="auto">
-          <QuestionActionArea
-            feedback={!showFullStory && sentenceCompleted && lastSuccessInfo ? true : null}
-            actions={
-              <ActivityActionRow
-                tone={
-                  isRecording
-                    ? "stop"
-                    : sentenceCompleted
-                    ? "success"
-                    : !showFullStory
-                    ? "speak"
-                    : "primary"
-                }
-                primary={
-                  showFullStory ? (
-                    <Button
-                      onClick={() => {
-                        playSound(submitActionSound);
-                        stopAllAudio();
-                        // Reset all practice state before switching views
-                        setSentenceCompleted(false);
-                        setLastSuccessInfo(null);
-                        setShowFullStory(false);
-                        setCurrentSentenceIndex(0);
-                        setSessionXp(0);
-                        setSessionComplete(false);
-                        setSessionSummary({
-                          passed: 0,
-                          total: storyData?.sentences?.length || 0,
-                        });
-                        sessionAwardedRef.current = false;
-                        setPassedCount(0);
-                        setHighlightedWordIndex(-1);
-                        // Only stop recording if there's one in progress
-                        if (isSpeakRecording) {
-                          stopSpeakRecording();
+        <Box w="full" maxW="720px" mx="auto" mt={6}>
+            <QuestionActionArea
+              feedback={lastFeedback ? lastFeedback.ok : null}
+              actions={
+                lastFeedback?.ok ? null : (
+                  <ActivityActionRow
+                    tone={
+                      isRecording
+                        ? "stop"
+                        : lastFeedback && !lastFeedback.ok
+                        ? "danger"
+                        : "speak"
+                    }
+                    primary={
+                      <Button
+                        key={isRecording ? "stop" : "record"}
+                        onClick={handleRecordPress}
+                        size="lg"
+                        height="60px"
+                        px={8}
+                        rounded="full"
+                        bg={
+                          isRecording
+                            ? SOFT_STOP_BUTTON_BG
+                            : isConnecting
+                            ? "linear-gradient(135deg, #eab308 0%, #ca8a04 100%)"
+                            : STORY_PRIMARY_BUTTON_BG
                         }
-                      }}
-                      size="lg"
-                      px={8}
-                      rounded="full"
-                      bg={STORY_PRIMARY_BUTTON_BG}
-                      color="white"
-                      fontWeight="600"
-                      boxShadow={`0px 4px 0px ${STORY_PRIMARY_BUTTON_EDGE}`}
-                      _hover={{
-                        bg: STORY_PRIMARY_BUTTON_HOVER_BG,
-                        transform: "translateY(-2px)",
-                      }}
-                      _active={{ transform: "translateY(0)" }}
-                      transition="all 0.2s ease"
-                    >
-                      {uiText.startPractice}
-                    </Button>
-                  ) : sentenceCompleted && lastSuccessInfo ? (
-                    <Button
-                      rightIcon={<FiArrowRight />}
-                      colorScheme="teal"
-                      variant="solid"
-                      onClick={handleNextSentence}
-                      shadow="md"
-                      w={{ base: "100%", md: "auto" }}
-                    >
-                      {isLastSentence ? finishLabel : nextSentenceLabel}
-                    </Button>
-                  ) : (
-                    <Button
-                      key={isRecording ? "stop" : "record"}
-                      onClick={handleRecordPress}
-                      size="lg"
-                      height="60px"
-                      px={8}
-                      rounded="full"
-                      bg={
-                        isRecording
-                          ? SOFT_STOP_BUTTON_BG
-                          : isConnecting
-                          ? "linear-gradient(135deg, #eab308 0%, #ca8a04 100%)"
-                          : STORY_PRIMARY_BUTTON_BG
-                      }
-                      boxShadow={
-                        isRecording
-                          ? `0px 4px 0px ${SOFT_STOP_BUTTON_EDGE}`
-                          : isConnecting
-                          ? "0px 4px 0px #eab308"
-                          : `0px 4px 0px ${STORY_PRIMARY_BUTTON_EDGE}`
-                      }
-                      color="white"
-                      fontWeight="600"
-                      fontSize="lg"
-                      leftIcon={
-                        isConnecting ? null : isRecording ? (
-                          <FaStop />
-                        ) : (
-                          <FaMicrophone />
-                        )
-                      }
-                      isDisabled={!supportsSpeak || !currentSentence?.tgt || isConnecting}
-                      _hover={{
-                        bg: isRecording
-                          ? SOFT_STOP_BUTTON_HOVER_BG
-                          : isConnecting
-                          ? "linear-gradient(135deg, #ca8a04 0%, #a16207 100%)"
-                          : STORY_PRIMARY_BUTTON_HOVER_BG,
-                        transform: "translateY(-2px)",
-                      }}
-                      _active={{ transform: "translateY(0)" }}
-                      transition="all 0.2s ease"
-                    >
-                      {isConnecting
-                        ? t(uiLang, "vocab_connecting")
-                        : isRecording
-                        ? uiText.stopRecording
-                        : uiText.record}
-                    </Button>
-                  )
-                }
-              >
-                {onSkip && (
-                  <Button
-                    onClick={handleSkipModule}
-                    // size="md"
-                    variant="ghost"
-                    color={APP_TEXT_PRIMARY}
-                    _hover={{ bg: APP_SURFACE_MUTED }}
-                    // padding={6}
-                    width="fit-content"
+                        boxShadow={
+                          isRecording
+                            ? `0px 4px 0px ${SOFT_STOP_BUTTON_EDGE}`
+                            : isConnecting
+                            ? "0px 4px 0px #eab308"
+                            : `0px 4px 0px ${STORY_PRIMARY_BUTTON_EDGE}`
+                        }
+                        color="white"
+                        fontWeight="600"
+                        fontSize="lg"
+                        leftIcon={
+                          isConnecting ? null : isRecording ? (
+                            <FaStop />
+                          ) : (
+                            <FaMicrophone />
+                          )
+                        }
+                        isDisabled={!supportsSpeak || !currentSentence?.tgt || isConnecting}
+                        _hover={{
+                          bg: isRecording
+                            ? SOFT_STOP_BUTTON_HOVER_BG
+                            : isConnecting
+                            ? "linear-gradient(135deg, #ca8a04 0%, #a16207 100%)"
+                            : STORY_PRIMARY_BUTTON_HOVER_BG,
+                          transform: "translateY(-2px)",
+                        }}
+                        _active={{ transform: "translateY(0)" }}
+                        transition="all 0.2s ease"
+                      >
+                        {isConnecting
+                          ? t(uiLang, "vocab_connecting")
+                          : isRecording
+                          ? uiText.stopRecording
+                          : uiText.record}
+                      </Button>
+                    }
                   >
-                    {t(uiLang, "practice_skip_question")}
-                  </Button>
-                )}
-              </ActivityActionRow>
-            }
-          >
-            {!showFullStory && sentenceCompleted && lastSuccessInfo && (
-              <Box
-                role="status"
-
-
-
-                px={1} py={2}
-              >
-                <Text fontWeight="bold">{uiText.wellDone}</Text>
-                {typeof lastSuccessInfo.score === "number" && (
-                  <Text fontSize="sm">
-                    {uiText.score}: {lastSuccessInfo.score}%
-                  </Text>
-                )}
-              </Box>
-            )}
-          </QuestionActionArea>
-        </Box>
+                    {onSkip && (
+                      <Button
+                        onClick={handleSkipModule}
+                        variant="ghost"
+                        color={APP_TEXT_PRIMARY}
+                        _hover={{ bg: APP_SURFACE_MUTED }}
+                        width="fit-content"
+                      >
+                        {t(uiLang, "practice_skip_question")}
+                      </Button>
+                    )}
+                    <Button
+                      onClick={() => handleTestSubmit(true)}
+                      variant="ghost"
+                      color="teal.400"
+                      _hover={{ bg: "rgba(56, 178, 172, 0.16)", color: "teal.300" }}
+                      title="Test correct answer"
+                      aria-label="Test correct answer"
+                      isDisabled={!currentSentence || (lastFeedback && lastFeedback.ok)}
+                    >
+                      Test ✓
+                    </Button>
+                    <Button
+                      onClick={() => handleTestSubmit(false)}
+                      variant="ghost"
+                      color="red.400"
+                      _hover={{ bg: "rgba(229, 62, 62, 0.16)", color: "red.300" }}
+                      title="Test incorrect answer"
+                      aria-label="Test incorrect answer"
+                      isDisabled={!currentSentence || (lastFeedback && lastFeedback.ok)}
+                    >
+                      Test ✗
+                    </Button>
+                  </ActivityActionRow>
+                )
+              }
+            >
+              {lastFeedback && (
+                <FeedbackRail
+                  compact
+                  ok={lastFeedback.ok}
+                  statusLabel={lastFeedback.label}
+                  subtext={lastFeedback.subtext}
+                  explanationText={lastFeedback.explanation}
+                  lessonProgress={lessonProgress}
+                  showNext={lastFeedback.ok}
+                  onNext={handleNextSentence}
+                  nextLabel={isLastSentence ? finishLabel : nextSentenceLabel}
+                  t={(k) => t(uiLang, k)}
+                  userLanguage={uiLang}
+                />
+              )}
+            </QuestionActionArea>
+          </Box>
       </Box>
     </Box>
   );

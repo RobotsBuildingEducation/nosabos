@@ -12,6 +12,7 @@ import {
 } from "./manifests";
 import { getItemName } from "./itemArt";
 import { getLanguagePromptName } from "../../../constants/languages";
+import { splitDialogueSubtext } from "../../../utils/dialogueFormatting";
 
 // Language props can arrive empty during app hydration. Fall back to the same
 // persisted settings the game component itself trusts, so a missing prop can
@@ -177,7 +178,10 @@ function validatePreparedStory(raw) {
   if (!beats || beats.length !== 7) return null;
   const cleaned = beats.map((beat, index) => {
     const mode = beat?.mode === "speech" ? "speech" : "choice";
-    const npcLine = cleanLine(beat?.npcLine, 260);
+    const rawNpcLine = cleanLine(beat?.npcLine, 260);
+    const parsedNpc = splitDialogueSubtext(rawNpcLine);
+    const npcLine = parsedNpc.spokenText || rawNpcLine;
+    const sceneLine = cleanLine(beat?.sceneLine || parsedNpc.subtext, 220);
     const options = Array.isArray(beat?.options)
       ? beat.options.map((option) => String(option || "").trim()).filter(Boolean)
       : [];
@@ -200,11 +204,21 @@ function validatePreparedStory(raw) {
     ) {
       return null;
     }
+    const rawRight = cleanLine(beat?.right, 200);
+    const parsedRight = splitDialogueSubtext(rawRight);
+    const right = parsedRight.spokenText || rawRight;
+    const rightSubtext = parsedRight.subtext || "";
+
+    const rawWrong = cleanLine(beat?.wrong, 200);
+    const parsedWrong = splitDialogueSubtext(rawWrong);
+    const wrong = parsedWrong.spokenText || rawWrong;
+    const wrongSubtext = parsedWrong.subtext || "";
+
     return {
       id: index === 6 ? "finale" : `b${index + 1}`,
       mode,
       npcLine,
-      sceneLine: cleanLine(beat?.sceneLine, 220),
+      sceneLine,
       options: mode === "choice" ? options : [],
       correctIndex,
       speechExample,
@@ -218,8 +232,10 @@ function validatePreparedStory(raw) {
         beat?.expectedAnswer || speechExample || options[correctIndex] || "",
         160,
       ),
-      right: cleanLine(beat?.right, 200),
-      wrong: cleanLine(beat?.wrong, 200),
+      right,
+      rightSubtext,
+      wrong,
+      wrongSubtext,
     };
   });
   if (!cleaned.every(Boolean)) return null;
@@ -309,19 +325,24 @@ function applyPreparedBeats(scenario, prepared) {
             expectedAnswer: beat.expectedAnswer,
             primitive:
               beat.mode === "speech" ? "say-aloud" : "choice-check",
-            choices: beat.mode === "choice" ? beat.options.map((text, optionIndex) => ({
-              text,
-              correct: optionIndex === beat.correctIndex,
-              npcReply:
-                optionIndex === beat.correctIndex
-                  ? beat.right || scenario.quest.steps[index]?.nodes?.[0]?.choices?.find(
-                      (choice) => choice.correct,
-                    )?.npcReply
-                  : beat.wrong || scenario.quest.steps[index]?.nodes?.[0]?.choices?.find(
-                      (choice) => !choice.correct,
-                    )?.npcReply,
-              nextNodeId: null,
-            })) : [],
+            choices: beat.mode === "choice" ? beat.options.map((text, optionIndex) => {
+              const isCorrect = optionIndex === beat.correctIndex;
+              const replyText = isCorrect
+                ? beat.right || scenario.quest.steps[index]?.nodes?.[0]?.choices?.find(
+                    (choice) => choice.correct,
+                  )?.npcReply
+                : beat.wrong || scenario.quest.steps[index]?.nodes?.[0]?.choices?.find(
+                    (choice) => !choice.correct,
+                  )?.npcReply;
+              const replySubtext = isCorrect ? (beat.rightSubtext || "") : (beat.wrongSubtext || "");
+              return {
+                text,
+                correct: isCorrect,
+                npcReply: replyText,
+                sceneLine: replySubtext || null,
+                nextNodeId: null,
+              };
+            }) : [],
           },
         ],
       })),
@@ -534,7 +555,10 @@ export async function prepareLegacyEpisodeScenario(args) {
     "Write exactly 7 beats: exactly 2 or 3 speech beats and the rest choice beats. Vary the order; the finale may be either type.",
     `For choice mode: provide exactly 3 options in ${targetLangName} and correctIndex 0, 1, or 2. Distractors must diagnose a plausible misconception from this unit, not unrelated words.`,
     `For speech mode: this is FREE-FORM roleplay, never repeat-after-me. npcLine must end with an open question or invitation to the player — asking their opinion, a decision, a description, a negotiation — woven from the unit material. Provide "speechGoal": a ${supportLangName} description of what a good spoken answer does (the micro-goal a grader can check), and "speechExample": ONE natural example answer in ${targetLangName} a learner at this level could give. Do not provide options or correctIndex.`,
-    `npcLine, options, speechExample, right, and wrong must be in ${targetLangName}. coverage, concept, speechGoal, and sceneLine are concise ${supportLangName} strings.`,
+    "DIALOGUE FORMAT RULES (CRITICAL):",
+    `- "npcLine", "right", and "wrong" must contain ONLY the character's direct spoken words in first person.`,
+    `- NEVER include speaker attributions, dialogue tags, actions, or third-person narration (e.g. NEVER write "Yachiru says", "looks up and says", "*smiles*", or "she replies") inside "npcLine", "right", or "wrong". Spoken lines are read aloud by text-to-speech.`,
+    `- Put ALL narrative actions, gestures, and scene-setting descriptions into "sceneLine", NEVER in "npcLine", "right", or "wrong".`,
     "right must react in character to what the player did and pull the story toward the next event. wrong must stay in character, react to the actual mistake, and give a useful hint without changing subjects.",
     ["Pre-A1", "A1"].includes(scenario.authoredEpisode.level)
       ? "Use only very short, concrete beginner phrases. No advanced grammar and no unrelated vocabulary."

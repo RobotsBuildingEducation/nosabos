@@ -58,6 +58,7 @@ import { logEvent } from "firebase/analytics";
 
 import useUserStore from "../hooks/useUserStore";
 import VoiceOrb from "./VoiceOrb";
+import AnimatedEllipsis from "./AnimatedEllipsis";
 import { translations } from "../utils/translation";
 import {
   buildMessageTranslationPrompt,
@@ -3742,54 +3743,59 @@ Return ONLY JSON:
               <VStack align="flex-start" spacing={2} width="100%">
                 <Box w="100%">
                   <HStack justify="space-between" align="center" mb={1}>
-                    <HStack spacing={2} align="center" flex="1">
-                      <IconButton
-                        icon={
-                          isGeneratingGoal ? (
-                            <VoiceOrb
-                              state={getRealtimeOrbVisualState(
-                                ["idle", "listening", "speaking"][
-                                  Math.floor(Math.random() * 3)
-                                ],
+                    {isGeneratingGoal ? (
+                      <Box flex="1">
+                        <AnimatedEllipsis
+                          color={isLightTheme ? "black" : "white"}
+                          ariaLabel={uiText(
+                            "ra_generating_topic",
+                            "Generating new topic...",
+                          )}
+                        />
+                      </Box>
+                    ) : (
+                      <HStack spacing={2} align="center" flex="1">
+                        <IconButton
+                          icon={<FaDice />}
+                          size="xs"
+                          variant="ghost"
+                          color={isLightTheme ? APP_TEXT_SECONDARY : "white"}
+                          aria-label={uiText("ra_new_goal", "New goal")}
+                          onClick={generateGoalVariation}
+                          opacity={0.7}
+                          bg={isLightTheme ? APP_SURFACE : undefined}
+                          _hover={{
+                            opacity: 1,
+                            bg: isLightTheme
+                              ? APP_SURFACE_MUTED
+                              : "whiteAlpha.100",
+                          }}
+                          isDisabled={status === "connected"}
+                          minW="24px"
+                          h="24px"
+                        />
+                        {currentGoalTitleText ? (
+                          <Text
+                            fontSize="xs"
+                            opacity={0.9}
+                            color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
+                            flex="1"
+                          >
+                            {currentGoalTitleText}
+                          </Text>
+                        ) : (
+                          <Box flex="1">
+                            <AnimatedEllipsis
+                              color={isLightTheme ? "black" : "white"}
+                              ariaLabel={uiText(
+                                "ra_generating_topic",
+                                "Generating new topic...",
                               )}
-                              size={16}
                             />
-                          ) : (
-                            <FaDice />
-                          )
-                        }
-                        size="xs"
-                        variant="ghost"
-                        color={isLightTheme ? APP_TEXT_SECONDARY : "white"}
-                        aria-label={uiText("ra_new_goal", "New goal")}
-                        onClick={generateGoalVariation}
-                        opacity={0.7}
-                        bg={isLightTheme ? APP_SURFACE : undefined}
-                        _hover={{
-                          opacity: 1,
-                          bg: isLightTheme
-                            ? APP_SURFACE_MUTED
-                            : "whiteAlpha.100",
-                        }}
-                        isDisabled={status === "connected" || isGeneratingGoal}
-                        minW="24px"
-                        h="24px"
-                      />
-                      <Text
-                        fontSize="xs"
-                        opacity={0.9}
-                        color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
-                        flex="1"
-                      >
-                        {isGeneratingGoal
-                          ? streamingGoalText ||
-                            uiText("ra_generating", "Generating...")
-                          : currentGoalTitleText ||
-                            (uiLang === "en"
-                              ? "—"
-                              : uiText("ra_generating", "Generating..."))}
-                      </Text>
-                    </HStack>
+                          </Box>
+                        )}
+                      </HStack>
+                    )}
                     <IconButton
                       ref={chatLogButtonRef}
                       icon={<FaRegCommentDots size={14} />}

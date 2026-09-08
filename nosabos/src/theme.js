@@ -310,6 +310,11 @@ export const theme = extendTheme({
         outline: "none",
         overflow: "hidden !important",
       },
+      ".chakra-modal__content[data-fullscreen='true'], .chakra-modal__content--fullscreen": {
+        borderRadius: "0 !important",
+        cornerShape: "initial !important",
+        border: "none !important",
+      },
       // Corner-aware padding keeps the content boundary visually concentric
       // with the large modal squircle instead of letting content crowd its
       // curved corners. Compact modals use a 28px safe inset; the 72px desktop

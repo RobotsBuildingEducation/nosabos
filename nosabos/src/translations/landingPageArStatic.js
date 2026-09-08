@@ -24,7 +24,7 @@ export const LANDING_PAGE_AR_STATIC = {
   feature_memory: "نظام الذاكرة",
   feature_memory_desc:
     "بيفتكر أخطاءك وتقدمك ويحوّلهم لمراجعة مركزة.",
-  feature_daily_quests: "مهام يومية",
+  feature_daily_quests: "تركيز اليوم",
   feature_daily_quests_desc:
     "خد كل يوم مزيج شخصي من التدريب والمراجعة والمكافآت.",
   feature_companion: "رفيق التعلّم",

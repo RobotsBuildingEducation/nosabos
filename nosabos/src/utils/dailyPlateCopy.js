@@ -120,31 +120,31 @@ export const PLATE_COURSE_META = {
 };
 
 export const PLATE_TITLE_COPY = {
-  en: "Daily Quest",
-  es: "Misión diaria",
-  pt: "Missão diária",
-  fr: "Quête du jour",
-  it: "Missione quotidiana",
-  de: "Tägliche Mission",
-  ja: "デイリークエスト",
-  zh: "每日任务",
-  ru: "Ежедневное задание",
-  ar: "المهمة اليومية",
-  hi: "दैनिक क्वेस्ट",
+  en: "Today’s Focus",
+  es: "Enfoque de hoy",
+  pt: "Foco de hoje",
+  fr: "Focus du jour",
+  it: "Focus di oggi",
+  de: "Heutiger Fokus",
+  ja: "今日のフォーカス",
+  zh: "今日重点",
+  ru: "Фокус дня",
+  ar: "تركيز اليوم",
+  hi: "आज का फ़ोकस",
 };
 
 export const PLATE_CLEARED_COPY = {
-  en: "Quests complete!",
-  es: "¡Misiones completadas!",
-  pt: "Missões concluídas!",
-  fr: "Quêtes terminées !",
-  it: "Missioni completate!",
-  de: "Missionen abgeschlossen!",
-  ja: "クエスト完了！",
-  zh: "任务完成！",
-  ru: "Задания выполнены!",
-  ar: "اكتملت المهام!",
-  hi: "क्वेस्ट पूरी हुईं!",
+  en: "Focus complete!",
+  es: "¡Enfoque completado!",
+  pt: "Foco concluído!",
+  fr: "Focus terminé !",
+  it: "Focus completato!",
+  de: "Fokus abgeschlossen!",
+  ja: "フォーカス完了！",
+  zh: "重点完成！",
+  ru: "Фокус дня выполнен!",
+  ar: "اكتمل التركيز!",
+  hi: "फ़ोकस पूरा हुआ!",
 };
 
 export const PLATE_BONUS_TOAST_COPY = {

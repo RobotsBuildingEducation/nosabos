@@ -307,6 +307,11 @@ body {
   border-bottom: none;
 }
 
+.chakra-modal__content[data-fullscreen="true"]::before,
+.chakra-modal__content--fullscreen::before {
+  display: none !important;
+}
+
 @keyframes app-modal-overlay-in {
   from {
     opacity: 0;

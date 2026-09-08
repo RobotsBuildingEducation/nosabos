@@ -474,7 +474,7 @@ export const TRANSLATION_HI_STATIC = {
   tts_synthesizing: "ऑडियो तैयार किया जा रहा है…",
   story_listen: "सुनें",
   story_stop: "रोकें",
-  story_start_practice: "वाक्य अभ्यास शुरू करें",
+  story_start_practice: "अभ्यास",
   story_practice_this: "इस वाक्य का अभ्यास करें:",
   story_skip: "वाक्य छोड़ें",
   story_finish: "कहानी समाप्त करें",

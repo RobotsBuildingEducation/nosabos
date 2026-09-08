@@ -58,7 +58,7 @@ import {
   SOFT_STOP_BUTTON_HOVER_BG,
 } from "../utils/softStopButton";
 import { submitActionSound, deliciousSound, selectSound, nextButtonSound } from "../constants/sounds";
-import VoiceOrb from "./VoiceOrb";
+import AnimatedEllipsis from "./AnimatedEllipsis";
 import { useThemeStore } from "../useThemeStore";
 import {
   buildFlashcardReviewUpdate,
@@ -1216,13 +1216,11 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
                           {getTranslation("flashcard_answer_label")}
                         </Text>
                         {isStreaming && !streamedAnswer ? (
-                          <VoiceOrb
-                            state={
-                              ["idle", "listening", "speaking"][
-                                Math.floor(Math.random() * 3)
-                              ]
+                          <AnimatedEllipsis
+                            color={isLightTheme ? "black" : "white"}
+                            ariaLabel={
+                              getTranslation("flashcard_loading") || "Loading"
                             }
-                            size={32}
                           />
                         ) : (
                           <Text
@@ -1293,19 +1291,12 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
                     {/* Grading State */}
                     {isGrading ? (
                       <VStack spacing={3} py={4}>
-                        <VoiceOrb
-                          state={
-                            ["idle", "listening", "speaking"][
-                              Math.floor(Math.random() * 3)
-                            ]
+                        <AnimatedEllipsis
+                          color={isLightTheme ? "black" : "white"}
+                          ariaLabel={
+                            getTranslation("flashcard_grading") || "Grading"
                           }
-                          size={48}
                         />
-                        <Text
-                          color={isLightTheme ? APP_TEXT_SECONDARY : "gray.400"}
-                        >
-                          {getTranslation("flashcard_grading")}
-                        </Text>
                       </VStack>
                     ) : (
                       <VStack spacing={4} w="100%">

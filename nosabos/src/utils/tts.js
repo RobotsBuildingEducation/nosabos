@@ -108,6 +108,11 @@ export const CHARACTER_VOICES = {
     voice: "marin",
     personality: "a joyful woman with a Japanese accent, warm and enthusiastic",
   },
+  yachiru: {
+    voice: "shimmer",
+    personality:
+      "an adorable, bubbly companion with childlike energy, excitable, warm, and playful",
+  },
 };
 
 /**
@@ -613,6 +618,10 @@ async function getRealtimePlayer({
   pc.addTransceiver("audio", { direction: "recvonly" });
 
   let responseSucceeded = false;
+  let playbackError = null;
+  let resolveCompletion;
+  // Natural playout is distinct from cleanup, and does not wait on cache writes.
+  const completion = new Promise((resolve) => { resolveCompletion = resolve; });
   let outputBufferStopped = false;
   let resolveResponseComplete;
   // Consumers use this to update playback UI, so it must follow playout,
@@ -725,10 +734,14 @@ async function getRealtimePlayer({
     finalizeResolved = true;
     clearFinalizeTimers();
     resolveFinalize?.();
+    resolveCompletion?.(playbackCompletedNaturally
+      ? { status: "ended" }
+      : { status: playbackError ? "error" : "cancelled", error: playbackError });
   };
   const failPlayback = (error) => {
     if (finalizeResolved) return;
     playbackCompletedNaturally = false;
+    playbackError = error;
     rejectReady?.(error);
     finishFinalize();
     audio.dispatchEvent(new Event("error"));
@@ -1005,6 +1018,7 @@ async function getRealtimePlayer({
     audio,
     audioUrl: null,
     ready,
+    completion,
     responseComplete,
     finalize,
     cleanup: cleanupFn,
@@ -1177,18 +1191,23 @@ function createAudioFromBlob(blob, warmAudio = null) {
   audio.playsInline = true;
 
   let cleanedUp = false;
+  let resolveCompletion;
+  const completion = new Promise((resolve) => { resolveCompletion = resolve; });
   let resolveFinalize;
   const finalize = new Promise((resolve) => {
     resolveFinalize = resolve;
   });
 
-  const cleanup = () => {
+  const cleanup = (event) => {
     if (cleanedUp) return;
     cleanedUp = true;
     unregisterActiveTTSPlayer(audio, cleanup);
     audio.removeEventListener("ended", cleanup);
     audio.removeEventListener("error", cleanup);
     resolveFinalize?.();
+    resolveCompletion?.(event?.type === "ended"
+      ? { status: "ended" }
+      : { status: event?.type === "error" ? "error" : "cancelled", error: event?.type === "error" ? new Error("Cached TTS audio playback failed") : null });
   };
   registerActiveTTSPlayer(audio, cleanup);
   audio._ttsCleanup = cleanup;
@@ -1199,6 +1218,7 @@ function createAudioFromBlob(blob, warmAudio = null) {
     audio,
     audioUrl,
     ready: Promise.resolve(),
+    completion,
     finalize,
     cleanup,
   };

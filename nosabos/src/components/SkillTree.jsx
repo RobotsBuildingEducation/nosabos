@@ -1973,7 +1973,7 @@ function LessonDetailModal({
             : onClose
       }
       size={gameLoading && !isDesktop ? "full" : "xl"}
-      isCentered
+      isCentered={!gameLoading || isDesktop}
       closeOnOverlayClick={!isTransitioningToLesson}
       closeOnEsc={!isTransitioningToLesson}
       motionPreset="none"
@@ -1987,16 +1987,46 @@ function LessonDetailModal({
         motionProps={nativeModalMotionProps}
         bg="gray.900"
         color="var(--app-text-primary)"
-        borderRadius={gameLoading ? { base: "0", md: "2xl" } : "2xl"}
-        style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
+        data-fullscreen={gameLoading && !isDesktop ? "true" : undefined}
+        className={
+          gameLoading && !isDesktop
+            ? "chakra-modal__content--fullscreen"
+            : undefined
+        }
+        borderRadius={
+          gameLoading && !isDesktop
+            ? "0 !important"
+            : gameLoading
+              ? { base: "0 !important", md: "2xl" }
+              : "2xl"
+        }
+        style={{
+          cornerShape:
+            gameLoading && !isDesktop ? "initial" : APP_SQUIRCLE_SHAPE,
+        }}
         overflow="hidden"
         boxShadow={
-          isLightTheme
-            ? `0 28px 64px rgba(112, 88, 57, 0.16), 0 0 0 1px ${unit.color}24`
-            : `0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px ${unit.color}40`
+          gameLoading && !isDesktop
+            ? "none !important"
+            : isLightTheme
+              ? `0 28px 64px rgba(112, 88, 57, 0.16), 0 0 0 1px ${unit.color}24`
+              : `0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px ${unit.color}40`
         }
-        border="1px solid"
+        border={gameLoading && !isDesktop ? "none !important" : "1px solid"}
         borderColor={isLightTheme ? "var(--app-border)" : `${unit.color}30`}
+        sx={{
+          ...(gameLoading && !isDesktop
+            ? {
+                borderRadius: "0 !important",
+                cornerShape: "initial !important",
+                border: "none !important",
+                boxShadow: "none !important",
+                "&::before": {
+                  display: "none !important",
+                },
+              }
+            : {}),
+        }}
         {...(gameLoading
           ? {
               w: {
@@ -2006,7 +2036,7 @@ function LessonDetailModal({
                   : undefined,
               },
               h: {
-                base: "100vh",
+                base: "100dvh",
                 md: loadingModalSize?.height
                   ? `${loadingModalSize.height}px`
                   : undefined,
@@ -2018,19 +2048,19 @@ function LessonDetailModal({
                   : undefined,
               },
               maxH: {
-                base: "100vh",
+                base: "100dvh",
                 md: loadingModalSize?.height
                   ? `${loadingModalSize.height}px`
                   : undefined,
               },
               minH: {
-                base: "100vh",
+                base: "100dvh",
                 md: loadingModalSize?.height
                   ? `${loadingModalSize.height}px`
                   : undefined,
               },
               m: { base: 0, md: "auto" },
-              borderRadius: { base: "0", md: "2xl" },
+              borderRadius: { base: "0 !important", md: "2xl" },
             }
           : {})}
       >

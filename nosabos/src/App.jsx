@@ -10177,6 +10177,7 @@ export default function App({ onBootReady } = {}) {
                           lesson={activeLesson}
                           lessonContent={activeLessonContent?.stories}
                           onSkip={switchToRandomLessonMode}
+                          lessonEarnedXp={activeLessonEarnedXp}
                         />
                       </TabPanel>
                     );

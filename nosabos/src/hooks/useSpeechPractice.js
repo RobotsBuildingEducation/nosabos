@@ -108,6 +108,7 @@ export function useSpeechPractice({
     connectionTimeoutId: null,
   });
   const transcriptRef = useRef("");
+  const sessionVersionRef = useRef(0);
   const [isRecording, setIsRecording] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
 
@@ -123,6 +124,7 @@ export function useSpeechPractice({
   }, []);
 
   const cleanup = useCallback(() => {
+    sessionVersionRef.current++;
     // Close data channel
     try {
       dcRef.current?.close?.();
@@ -194,6 +196,9 @@ export function useSpeechPractice({
     )
       throw makeError("no-media", "getUserMedia not supported");
 
+    const sessionVersion = ++sessionVersionRef.current;
+    const isCurrentSession = () => sessionVersion === sessionVersionRef.current;
+
     // Show connecting spinner immediately
     setIsConnecting(true);
 
@@ -211,11 +216,16 @@ export function useSpeechPractice({
         },
       });
     } catch (err) {
+      if (!isCurrentSession()) return;
       evalRef.current.inProgress = false;
       setIsConnecting(false);
       throw makeError("mic-denied", err?.message || "microphone access denied");
     }
 
+    if (!isCurrentSession()) {
+      localStream.getTracks().forEach((track) => track.stop());
+      return;
+    }
     localStreamRef.current = localStream;
 
     try {
@@ -265,6 +275,7 @@ export function useSpeechPractice({
       };
 
       const finishRecording = async () => {
+        if (!isCurrentSession()) return;
         if (!evalRef.current.inProgress || evalRef.current.speechDone) return;
         evalRef.current.speechDone = true;
         waitingForTurnEnd = false;
@@ -289,6 +300,7 @@ export function useSpeechPractice({
       };
 
       dc.onopen = () => {
+        if (!isCurrentSession()) return;
         // Keep this update in sync with the initial call session. Some deployed
         // SDP proxies only apply defaults at call creation, so the data channel
         // update is still useful as a compatibility belt-and-suspenders.
@@ -302,6 +314,7 @@ export function useSpeechPractice({
       };
 
       dc.onmessage = (evt) => {
+        if (!isCurrentSession()) return;
         try {
           const msg = JSON.parse(evt.data);
           const msgType = msg?.type || "";
@@ -440,6 +453,7 @@ export function useSpeechPractice({
       };
 
       dc.onclose = () => {
+        if (!isCurrentSession()) return;
         if (evalRef.current.inProgress && !evalRef.current.speechDone) {
           // Connection closed unexpectedly
           const finalTranscript = transcriptRef.current.trim();
@@ -458,7 +472,9 @@ export function useSpeechPractice({
 
       // Create and send offer
       const offer = await pc.createOffer();
+      if (!isCurrentSession()) return;
       await pc.setLocalDescription(offer);
+      if (!isCurrentSession()) return;
 
       let resp = null;
       let jsonExchangeError = null;
@@ -476,6 +492,8 @@ export function useSpeechPractice({
         jsonExchangeError = err;
       }
 
+      if (!isCurrentSession()) return;
+
       if (!resp || (!resp.ok && [400, 415].includes(resp.status))) {
         resp = await appCheckFetch(REALTIME_URL, {
           method: "POST",
@@ -483,6 +501,8 @@ export function useSpeechPractice({
           body: offer.sdp,
         });
       }
+
+      if (!isCurrentSession()) return;
 
       if (!resp.ok) {
         throw new Error(
@@ -493,7 +513,9 @@ export function useSpeechPractice({
       }
 
       const answerSdp = await resp.text();
+      if (!isCurrentSession()) return;
       await pc.setRemoteDescription({ type: "answer", sdp: answerSdp });
+      if (!isCurrentSession()) return;
 
       // Connection established - stop showing connecting spinner, start showing recording
       setIsConnecting(false);
@@ -505,6 +527,7 @@ export function useSpeechPractice({
         }
       }, maxConnectionMs);
     } catch (err) {
+      if (!isCurrentSession()) return;
       cleanup();
       throw makeError(
         "connection-failed",

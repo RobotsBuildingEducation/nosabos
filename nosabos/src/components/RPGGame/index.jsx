@@ -68,6 +68,10 @@ import {
 } from "../../utils/tts";
 import { callResponses } from "../../utils/llm";
 import {
+  splitDialogueSubtext,
+  extractSpokenDialogue,
+} from "../../utils/dialogueFormatting";
+import {
   database,
   simplemodel,
 } from "../../firebaseResources/firebaseResources";
@@ -78,6 +82,7 @@ import VoiceOrb from "../VoiceOrb";
 import LoadingMiniGame from "../LoadingMiniGame";
 import playerSpriteSheetUrl from "../../sprites/sprite_sheet_6.png";
 import npcSpriteSheetUrl from "../../sprites/NPC_sprites.png";
+import yachiruSpriteUrl from "../../sprites/tutor/main_character_tutor_transparent.png";
 import RandomCharacter from "../RandomCharacter";
 import {
   drawRpgCompanionFrame,
@@ -1688,6 +1693,7 @@ const NPC_SPRITE_ROWS = [
   { id: "frog", rowIndex: 1, name: "Jiraiya" },
   { id: "purple-girl", rowIndex: 2, name: "Yoruichi" },
   { id: "cat", rowIndex: 3, name: "Neko" },
+  { id: "yachiru", name: "Yachiru" },
 ];
 
 // ─── UI text per support language ────────────────────────────────────────────
@@ -2277,7 +2283,10 @@ const RPG_COMPANION_STORAGE_KEY = "nosabos:rpg-companion:v2";
 const RPG_LEGACY_COMPANION_STORAGE_KEY = "nosabos:rpg-companion:v1";
 const RPG_GIRL_COMPANION = "girl";
 const RPG_DEFAULT_COMPANION = DEFAULT_PET_TYPE;
-const RPG_COMPANION_OPTIONS = [RPG_GIRL_COMPANION, ...PET_TYPES];
+const RPG_COMPANION_OPTIONS = [
+  // RPG_GIRL_COMPANION, // Commented out to prevent side effects outside of the game (e.g. stories defaulting)
+  ...PET_TYPES,
+];
 const RPG_PLAYER_ASPECT = 0.9 / 1.2;
 // Pets whose loader art self-animates (float, hop, blink) even while idle;
 // dog and alien animate from the walk cycle only.
@@ -2937,6 +2946,7 @@ const DIALOGUE_CHARACTER_POOLS = {
   frog: ["29", "32", "36"],
   cat: ["40", "38", "37", "28", "24"],
   "purple-girl": ["31", "39", "34"],
+  yachiru: ["18", "20", "21", "23", "27", "30", "35"],
 };
 
 // ─── Animated text: fade-in per character ────────────────────────────────────
@@ -3187,10 +3197,21 @@ export default function RPGGame({
     const legacySaved = window.localStorage.getItem(
       RPG_LEGACY_COMPANION_STORAGE_KEY,
     );
-    return legacySaved !== RPG_GIRL_COMPANION &&
+    if (
+      legacySaved !== RPG_GIRL_COMPANION &&
       RPG_COMPANION_OPTIONS.includes(legacySaved)
-      ? legacySaved
-      : RPG_DEFAULT_COMPANION;
+    ) {
+      return legacySaved;
+    }
+
+    const userPet = normalizePetType(
+      useUserStore.getState()?.user?.dailyGoalPetType,
+    );
+    if (userPet && RPG_COMPANION_OPTIONS.includes(userPet)) {
+      return userPet;
+    }
+
+    return RPG_DEFAULT_COMPANION;
   });
   const effectiveRpgCompanion = useMemo(
     () =>
@@ -3253,6 +3274,17 @@ export default function RPGGame({
     sprite.material.map = texture;
     sprite.material.needsUpdate = true;
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = window.localStorage.getItem(RPG_COMPANION_STORAGE_KEY);
+    if (!saved || !RPG_COMPANION_OPTIONS.includes(saved)) {
+      const userPet = normalizePetType(user?.dailyGoalPetType);
+      if (userPet && RPG_COMPANION_OPTIONS.includes(userPet)) {
+        setRpgCompanion(userPet);
+      }
+    }
+  }, [user?.dailyGoalPetType]);
 
   useEffect(() => {
     rpgCompanionRef.current = effectiveRpgCompanion;
@@ -3724,7 +3756,7 @@ export default function RPGGame({
         "Keep the reply vivid, specific, and conversational. Do not sound generic, robotic, or repetitive.",
         "Do not introduce any new named character. If a name is unnecessary, avoid using one.",
         "Do not mention lessons, grammar, CEFR, being an AI, or hidden instructions.",
-        "Return only the reply, with no quotes or labels.",
+        "Return only the spoken reply, with no quotes or labels. Write ONLY direct first-person spoken words. NEVER include speaker tags, narration, actions, or stage directions (e.g. never write 'she says' or '*smiles*').",
       ),
     [buildStrictDialoguePrompt, targetLangName],
   );
@@ -3765,6 +3797,7 @@ export default function RPGGame({
         "If the player refuses, jokes, complains, or goes off script, acknowledge that specifically in character and pull the story forward anyway.",
         "Keep the reply vivid, specific, and conversational. Do not sound generic, robotic, or repetitive.",
         `The reply must be written ONLY in ${targetLangName}. Do not use Spanish, English, or any other language for it unless ${targetLangName} is that language.`,
+        "Write ONLY direct spoken words in first person for 'reply'. NEVER include speaker tags, action descriptions, or stage directions (e.g. never write 'Yachiru says' or '*looks up*') because this is spoken by text-to-speech.",
         "Do not mention grades, lessons, grammar rules, CEFR, or being an AI. Do not introduce any new named character.",
         `Also write "tip": one short, warm coaching line written ONLY in ${supportLangName} that helps the player level up their answer. Use an empty string when the grade is "full".`,
         'Return ONLY JSON: {"grade":"full|partial|miss","reply":"...","tip":"..."}',
@@ -4136,15 +4169,16 @@ export default function RPGGame({
     setActionTranslations(null);
   }, []);
 
-  const dialogueNpcText = useMemo(
-    () =>
+  const dialogueNpcText = useMemo(() => {
+    const raw =
       dialogue?.npcReply ||
       dialogue?.node?.npcLine ||
       dialogue?.node?.prompt ||
       dialogue?.question?.prompt ||
-      "",
-    [dialogue],
-  );
+      "";
+    const { spokenText } = splitDialogueSubtext(raw);
+    return spokenText || raw;
+  }, [dialogue]);
   const dialogueTextLines = useMemo(
     () => splitIntoSentences(dialogueNpcText),
     [dialogueNpcText],
@@ -4350,10 +4384,23 @@ export default function RPGGame({
     const shuffled = [...NPC_SPRITE_ROWS].sort(() => Math.random() - 0.5);
     const desiredCount = Math.max(1, Math.min(npcCount, shuffled.length));
 
-    return shuffled.slice(0, desiredCount).map((sheet) => ({
-      ...sheet,
-      modelIndex: Math.floor(Math.random() * 4),
-    }));
+    return shuffled.slice(0, desiredCount).map((sheet) => {
+      if (sheet.id === "yachiru") {
+        const allowedRows = [0, 1, 2, 4, 5];
+        const randomRow =
+          allowedRows[Math.floor(Math.random() * allowedRows.length)];
+        const randomCol = Math.floor(Math.random() * 6);
+        return {
+          ...sheet,
+          rowIndex: randomRow,
+          modelIndex: randomCol,
+        };
+      }
+      return {
+        ...sheet,
+        modelIndex: Math.floor(Math.random() * 4),
+      };
+    });
   }, []);
 
   const createNPCTextureFromSheet = useCallback(
@@ -4470,6 +4517,103 @@ export default function RPGGame({
         canvas,
         minX,
         minY,
+        trimmedWidth,
+        trimmedHeight,
+        0,
+        0,
+        trimmedWidth,
+        trimmedHeight,
+      );
+
+      const texture = new THREE.CanvasTexture(trimmedCanvas);
+      texture.magFilter = THREE.NearestFilter;
+      texture.minFilter = THREE.NearestFilter;
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.generateMipmaps = false;
+      texture.needsUpdate = true;
+
+      return {
+        texture,
+        aspect: trimmedWidth / trimmedHeight,
+      };
+    },
+    [],
+  );
+
+  const createYachiruTextureFromSheet = useCallback(
+    (image, targetRow, targetCol) => {
+      const width = image.width;
+      const height = image.height;
+
+      // Rows allowed: 0, 1, 2, 4, 5 (row 3 is skipped entirely)
+      const allowedRows = [0, 1, 2, 4, 5];
+      const row = allowedRows.includes(targetRow)
+        ? targetRow
+        : allowedRows[Math.floor(Math.random() * allowedRows.length)];
+      const col =
+        typeof targetCol === "number" && targetCol >= 0 && targetCol < 6
+          ? targetCol
+          : Math.floor(Math.random() * 6);
+
+      // Boundaries separating the 6 rows and 6 columns in main_character_tutor_transparent.png
+      const rowBounds = [0, 223, 426, 617, 809, 989, 1254];
+      const colBounds = [0, 224, 428, 627, 817, 1015, 1254];
+
+      const scaleX = width / 1254;
+      const scaleY = height / 1254;
+
+      const cellX0 = Math.floor(colBounds[col] * scaleX);
+      const cellX1 = Math.min(width, Math.ceil(colBounds[col + 1] * scaleX));
+      const cellY0 = Math.floor(rowBounds[row] * scaleY);
+      const cellY1 = Math.min(height, Math.ceil(rowBounds[row + 1] * scaleY));
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      ctx.imageSmoothingEnabled = false;
+      ctx.clearRect(0, 0, width, height);
+      ctx.drawImage(image, 0, 0);
+
+      const pixels = ctx.getImageData(0, 0, width, height).data;
+      let minX = width;
+      let minY = height;
+      let maxX = 0;
+      let maxY = 0;
+      let hasPixels = false;
+
+      for (let y = cellY0; y < cellY1; y++) {
+        for (let x = cellX0; x < cellX1; x++) {
+          if (pixels[(y * width + x) * 4 + 3] > 10) {
+            hasPixels = true;
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+          }
+        }
+      }
+
+      if (!hasPixels) return null;
+
+      const pad = 2;
+      const trimMinX = Math.max(0, minX - pad);
+      const trimMinY = Math.max(0, minY - pad);
+      const trimMaxX = Math.min(width - 1, maxX + pad);
+      const trimMaxY = Math.min(height - 1, maxY + pad);
+
+      const trimmedWidth = trimMaxX - trimMinX + 1;
+      const trimmedHeight = trimMaxY - trimMinY + 1;
+      const trimmedCanvas = document.createElement("canvas");
+      trimmedCanvas.width = trimmedWidth;
+      trimmedCanvas.height = trimmedHeight;
+      const trimmedCtx = trimmedCanvas.getContext("2d");
+      trimmedCtx.imageSmoothingEnabled = false;
+      trimmedCtx.clearRect(0, 0, trimmedWidth, trimmedHeight);
+      trimmedCtx.drawImage(
+        canvas,
+        trimMinX,
+        trimMinY,
         trimmedWidth,
         trimmedHeight,
         0,
@@ -5245,13 +5389,14 @@ export default function RPGGame({
 
   const speakNPCText = useCallback(
     async (text, { warmAudio, npcIdx } = {}) => {
-      if (!text) return;
+      const cleanText = extractSpokenDialogue(text);
+      if (!cleanText) return;
       stopNPCSpeech();
       try {
         const characterId =
           npcIdx != null ? npcVariantAssignmentsRef.current[npcIdx] : undefined;
         const player = await getTTSPlayer({
-          text,
+          text: cleanText,
           voice: characterId
             ? getCharacterVoice(characterId)
             : getPreferredTTSVoice(user?.progress?.voice),
@@ -6327,6 +6472,7 @@ export default function RPGGame({
       (sheetTexture) => {
         sheetTexture.colorSpace = THREE.SRGBColorSpace;
         selectedNPCVariants.forEach((variant) => {
+          if (variant.rowIndex == null || variant.id === "yachiru") return;
           const npcTexture = createNPCTextureFromSheet(
             sheetTexture.image,
             variant.rowIndex,
@@ -6357,6 +6503,43 @@ export default function RPGGame({
         // Keep generated fallback sprites for NPCs if loading fails.
       },
     );
+
+    const yachiruVariant = selectedNPCVariants.find((v) => v.id === "yachiru");
+    if (yachiruVariant) {
+      textureLoader.load(
+        yachiruSpriteUrl,
+        (yachiruTexture) => {
+          yachiruTexture.colorSpace = THREE.SRGBColorSpace;
+          const npcTexture = createYachiruTextureFromSheet(
+            yachiruTexture.image,
+            yachiruVariant.rowIndex,
+            yachiruVariant.modelIndex,
+          );
+          if (!npcTexture) return;
+
+          npcSheetFramesRef.current.set("yachiru", npcTexture.texture);
+
+          const fallbackNPCAspect = 1.05 / 1.45;
+          const widthScale = Math.max(
+            0.45,
+            Math.min(1.4, npcTexture.aspect / fallbackNPCAspect),
+          );
+
+          npcAssignments.forEach((assignment, index) => {
+            if (assignment.id !== "yachiru") return;
+            const npcMesh = npcSprites[index];
+            if (!npcMesh?.material) return;
+            npcMesh.material.map = npcTexture.texture;
+            npcMesh.material.needsUpdate = true;
+            npcMesh.scale.set(widthScale * NPC_BASE_SCALE, NPC_BASE_SCALE, 1);
+          });
+        },
+        undefined,
+        () => {
+          // Keep generated fallback sprites for NPCs if loading fails.
+        },
+      );
+    }
 
     npcSpritesRef.current = npcSprites;
     npcIndicatorsRef.current = npcIndicators;
@@ -6807,6 +6990,7 @@ export default function RPGGame({
     buildPlayerSheetFrames,
     chooseRandomNPCVariants,
     createNPCTextureFromSheet,
+    createYachiruTextureFromSheet,
     flashBlockedTileHint,
     playGameSound,
     activeMap,
@@ -7340,6 +7524,7 @@ export default function RPGGame({
         `The NPC "${npcName}" just said: "${npcLine}"`,
         `Generate exactly 3 short player response options in ${targetLangName}.`,
         `For each option, include the NPC's short reply in ${targetLangName}.`,
+        "Write ONLY direct spoken words in first person for 'reply'. Never include speaker tags, actions, or stage directions (e.g. never write 'she says' or '*smiles*').",
         "Do not introduce any new named character. If a name is unnecessary, avoid using one.",
         "Return ONLY valid JSON in this exact shape with no extra text:",
         '[{"text":"player option","reply":"NPC response"},{"text":"option 2","reply":"response 2"},{"text":"option 3","reply":"response 3"}]',
@@ -7353,14 +7538,20 @@ export default function RPGGame({
         if (match) {
           const parsed = JSON.parse(match[0]);
           if (Array.isArray(parsed) && parsed.length >= 2) {
-            const dynamicChoices = parsed.slice(0, 3).map((c) => ({
-              text: applyNameMappingToText(String(c.text || ""), npcNameMap),
-              npcReply: applyNameMappingToText(
+            const dynamicChoices = parsed.slice(0, 3).map((c) => {
+              const rawReply = applyNameMappingToText(
                 String(c.reply || c.npcReply || ""),
                 npcNameMap,
-              ),
-              nextNodeId: node.choices?.[0]?.nextNodeId || null,
-            }));
+              );
+              const { subtext: replySubtext, spokenText: cleanReply } =
+                splitDialogueSubtext(rawReply);
+              return {
+                text: applyNameMappingToText(String(c.text || ""), npcNameMap),
+                npcReply: cleanReply || rawReply,
+                sceneLine: replySubtext || null,
+                nextNodeId: node.choices?.[0]?.nextNodeId || null,
+              };
+            });
             // Update dialogue with dynamic choices
             setDialogue((prev) => {
               if (!prev || prev.node?.id !== node.id) return prev;
@@ -7414,10 +7605,18 @@ export default function RPGGame({
           );
         });
         const reveal = nextAttempt >= 3 && expected ? ` ${expected}` : "";
-        const reply = `${selected.npcReply || ""}${reveal}`.trim();
+        const rawReply = `${selected.npcReply || ""}${reveal}`.trim();
+        const { subtext: replySubtext, spokenText: cleanReply } =
+          splitDialogueSubtext(rawReply);
+        const nextSceneLine = replySubtext || selected.sceneLine || "";
         setFeedback("incorrect");
-        setDialogue((prev) => ({ ...prev, npcReply: reply }));
-        if (reply) speakNPCText(reply, { npcIdx: dialogue.npcIdx });
+        setDialogue((prev) => ({
+          ...prev,
+          npcReply: cleanReply || rawReply,
+          sceneLine: nextSceneLine,
+        }));
+        if (cleanReply || rawReply)
+          speakNPCText(cleanReply || rawReply, { npcIdx: dialogue.npcIdx });
         if (nextAttempt >= 3) {
           setTimeout(() => completeNPCChapter(dialogue.npcIdx), 700);
         }
@@ -7452,12 +7651,18 @@ export default function RPGGame({
     // Authored review answers pause on the feedback so the learner chooses
     // when to dismiss the dialogue and advance to the next beat.
     if (scenario?.authoredEpisode && selected.correct) {
+      const { subtext: replySubtext, spokenText: cleanReply } =
+        splitDialogueSubtext(selected.npcReply);
+      const nextSceneLine = replySubtext || selected.sceneLine || "";
       setDialogue((prev) => ({
         ...prev,
-        npcReply: selected.npcReply || "",
+        npcReply: cleanReply || selected.npcReply || "",
+        sceneLine: nextSceneLine,
       }));
-      if (selected.npcReply) {
-        speakNPCText(selected.npcReply, { npcIdx: dialogue.npcIdx });
+      if (cleanReply || selected.npcReply) {
+        speakNPCText(cleanReply || selected.npcReply, {
+          npcIdx: dialogue.npcIdx,
+        });
       }
       return;
     }
@@ -7465,9 +7670,18 @@ export default function RPGGame({
     const nextNodeId = selected.nextNodeId || null;
 
     if (!nextNodeId) {
-      setDialogue((prev) => ({ ...prev, npcReply: selected.npcReply || "" }));
-      if (selected.npcReply)
-        speakNPCText(selected.npcReply, { npcIdx: dialogue.npcIdx });
+      const { subtext: replySubtext, spokenText: cleanReply } =
+        splitDialogueSubtext(selected.npcReply);
+      const nextSceneLine = replySubtext || selected.sceneLine || "";
+      setDialogue((prev) => ({
+        ...prev,
+        npcReply: cleanReply || selected.npcReply || "",
+        sceneLine: nextSceneLine,
+      }));
+      if (cleanReply || selected.npcReply)
+        speakNPCText(cleanReply || selected.npcReply, {
+          npcIdx: dialogue.npcIdx,
+        });
       completeNPCChapter(dialogue.npcIdx);
       return;
     }
@@ -7500,12 +7714,17 @@ export default function RPGGame({
       if (reply && nextNode.npcLine && nextNode.responseMode !== "speech") {
         reply = `${reply}\n\n${nextNode.npcLine}`;
       }
+      const { subtext: replySubtext, spokenText: cleanReply } =
+        splitDialogueSubtext(reply);
+      const nextSceneLine = replySubtext || selected.sceneLine || "";
       setDialogue((prev) => ({
         ...prev,
         node: nextNode,
-        npcReply: reply,
+        npcReply: cleanReply || reply,
+        sceneLine: nextSceneLine,
       }));
-      const transitionLine = reply || nextNode.npcLine || nextNode.prompt || "";
+      const transitionLine =
+        cleanReply || nextNode.npcLine || nextNode.prompt || "";
       speakNPCText(transitionLine, { npcIdx: dialogue.npcIdx });
 
       // Generate dynamic choices if the next node is a choice node
@@ -9350,50 +9569,74 @@ export default function RPGGame({
                     </VStack>
                   ) : (
                     <>
-                      {!dialogue.npcReply && dialogue.node?.sceneLine && (
-                        <Text
-                          color={rpgTextMuted}
-                          fontSize="xs"
-                          fontStyle="italic"
-                          m={0}
-                          {...supportTextProps}
-                          sx={mergeBidiSx(supportTextProps)}
-                        >
-                          {dialogue.node.sceneLine}
-                        </Text>
-                      )}
-                      {!dialogue.npcReply && (
-                        <AnimatedText
-                          text={
-                            dialogue.node?.npcLine ||
-                            dialogue.node?.prompt ||
-                            dialogue.question.prompt
-                          }
-                          color={rpgTextPrimary}
-                          fontSize="md"
-                          fontWeight="bold"
-                          m={0}
-                          {...targetTextProps}
-                          sx={mergeBidiSx(targetTextProps)}
-                        />
-                      )}
-                      {!!dialogue.npcReply && (
-                        <Box
-                          color={rpgReplyText}
-                          fontSize="sm"
-                          sx={{
-                            ...mergeBidiSx(targetTextProps),
-                            "& p": { m: 0 },
-                            "& strong": { fontWeight: "bold" },
-                          }}
-                          dir={targetTextProps.dir}
-                          lang={targetTextProps.lang}
-                        >
-                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                            {dialogue.npcReply}
-                          </ReactMarkdown>
-                        </Box>
-                      )}
+                      {(() => {
+                        const parsedReply = splitDialogueSubtext(
+                          dialogue.npcReply,
+                        );
+                        const rawPrompt =
+                          dialogue.node?.npcLine ||
+                          dialogue.node?.prompt ||
+                          dialogue.question?.prompt ||
+                          "";
+                        const parsedNode = splitDialogueSubtext(rawPrompt);
+                        const activeSceneLine =
+                          dialogue.sceneLine ||
+                          (dialogue.npcReply
+                            ? parsedReply.subtext
+                            : dialogue.node?.sceneLine || parsedNode.subtext) ||
+                          "";
+                        const activeSpokenPrompt = parsedNode.subtext
+                          ? parsedNode.spokenText
+                          : rawPrompt;
+                        const activeReplyText = parsedReply.subtext
+                          ? parsedReply.spokenText
+                          : dialogue.npcReply;
+
+                        return (
+                          <>
+                            {activeSceneLine ? (
+                              <Text
+                                color={rpgTextMuted}
+                                fontSize="xs"
+                                fontStyle="italic"
+                                m={0}
+                                {...supportTextProps}
+                                sx={mergeBidiSx(supportTextProps)}
+                              >
+                                {activeSceneLine}
+                              </Text>
+                            ) : null}
+                            {!dialogue.npcReply && (
+                              <AnimatedText
+                                text={activeSpokenPrompt}
+                                color={rpgTextPrimary}
+                                fontSize="md"
+                                fontWeight="bold"
+                                m={0}
+                                {...targetTextProps}
+                                sx={mergeBidiSx(targetTextProps)}
+                              />
+                            )}
+                            {!!dialogue.npcReply && (
+                              <Box
+                                color={rpgReplyText}
+                                fontSize="sm"
+                                sx={{
+                                  ...mergeBidiSx(targetTextProps),
+                                  "& p": { m: 0 },
+                                  "& strong": { fontWeight: "bold" },
+                                }}
+                                dir={targetTextProps.dir}
+                                lang={targetTextProps.lang}
+                              >
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                  {activeReplyText}
+                                </ReactMarkdown>
+                              </Box>
+                            )}
+                          </>
+                        );
+                      })()}
                     </>
                   )}
 

@@ -71,7 +71,7 @@ export const TRANSLATION_PT_STATIC = {
   "tts_synthesizing": "Sintetizando…",
   "story_listen": "Ouvir",
   "story_stop": "Parar",
-  "story_start_practice": "Começar a prática por frase",
+  "story_start_practice": "Praticar",
   "story_practice_this": "Pratique esta frase:",
   "story_skip": "Pular frase",
   "story_finish": "Encerrar história",

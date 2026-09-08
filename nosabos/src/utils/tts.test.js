@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import vm from "node:vm";
+import { createStoryAudio } from "../features/stories/storyAudio.js";
 
 // Execute the real player with controllable browser/media APIs. Only Firebase
 // and Vite's environment binding are replaced; completion/cache code is intact.
@@ -188,6 +189,7 @@ test("generation completion and a stalled media clock cannot truncate playback o
   await h.advance(500);
   await player.finalize;
   assert.equal(responseComplete, true);
+  assert.equal((await player.completion).status, "ended");
   assert.equal(h.peers[0].track.stopped, true);
   assert.equal(h.stored.size, 1);
   assert.equal(await [...h.stored.values()][0].blob.text(), first + last);
@@ -203,6 +205,7 @@ test("generation completion and a stalled media clock cannot truncate playback o
   replay.audio.dispatchEvent(new Event("ended"));
   await replay.finalize;
   assert.equal(replayFinished, true);
+  assert.equal((await replay.completion).status, "ended");
 
   const reloaded = harness({ stored: h.stored });
   const persistedReplay = await reloaded.api.getTTSPlayer(options);
@@ -210,6 +213,27 @@ test("generation completion and a stalled media clock cannot truncate playback o
   assert.equal(reloaded.posts, 0);
   assert.equal(await reloaded.urls.get(persistedReplay.audioUrl).text(), first + last);
   persistedReplay.cleanup();
+});
+
+test("radio advances two real TTS lifecycles even if browser play promises never settle", async () => {
+  const h = harness(); let complete = false;
+  const queue = createStoryAudio({
+    getPlayer: async (turn) => {
+      const player = await h.api.getTTSPlayer({ ...options, text: turn.target });
+      player.audio.play = () => new Promise(() => {});
+      return player;
+    },
+    onState() {}, onError: assert.fail,
+  });
+  const pending = queue.play([{ speaker: "Host", target: "Hola, bienvenida a la radio." }, { speaker: "Caller", target: "Gracias, quiero hablar de mi familia." }], () => { complete = true; });
+  await flush();
+  h.send(generated); h.send(drained); await h.advance(1000); await flush();
+  assert.equal(h.peers.length, 2, "The caller starts after the host's actual playout drain");
+  assert.equal(complete, false);
+  h.send(generated); h.send(drained); await h.advance(1000);
+  await pending; await flush();
+  assert.equal(complete, true);
+  assert.equal(h.peers.every((peer) => peer.track.stopped), true);
 });
 
 for (const reason of ["cancelled", "failed", "incomplete", "cleared", "connection", "channel", "user", "timeout", "media", "recorder"]) {
@@ -227,6 +251,7 @@ for (const reason of ["cancelled", "failed", "incomplete", "cleared", "connectio
     if (reason === "media") player.audio.dispatchEvent(new Event("error"));
     if (reason === "recorder") { h.send(drained); await h.advance(1000); }
     await player.finalize;
+    assert.equal((await player.completion).status, reason === "user" ? "cancelled" : reason === "recorder" ? "ended" : "error");
     assert.equal(h.stored.size, 0);
     assert.equal(await h.api.isCached(options.text, options.langTag, options), false);
     assert.equal(h.peers[0].track.stopped, true);

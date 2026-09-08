@@ -24,7 +24,7 @@ export const LANDING_PAGE_DE_STATIC = {
   feature_memory: "Erinnerungssystem",
   feature_memory_desc:
     "Merkt sich Fehler und Fortschritte und macht daraus gezielte Wiederholungen.",
-  feature_daily_quests: "Tägliche Quests",
+  feature_daily_quests: "Heutiger Fokus",
   feature_daily_quests_desc:
     "Erhalte täglich einen persönlichen Mix aus Übung, Wiederholung und Belohnungen.",
   feature_companion: "Lernbegleiter",

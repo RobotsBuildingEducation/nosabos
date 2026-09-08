@@ -23,7 +23,7 @@ export const LANDING_PAGE_ZH_STATIC = {
     "完整的端到端实时导师，会根据你的水平调整并帮助你学习。",
   feature_memory: "记忆系统",
   feature_memory_desc: "记住你的错误和进度，并转化为有针对性的复习。",
-  feature_daily_quests: "每日任务",
+  feature_daily_quests: "今日重点",
   feature_daily_quests_desc:
     "每天获得个性化的练习、复习和奖励组合。",
   feature_companion: "学习伙伴",

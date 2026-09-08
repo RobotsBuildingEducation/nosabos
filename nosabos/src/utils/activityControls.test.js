@@ -6,7 +6,7 @@ test("lessons skill tree ('path') uses the full bottom navigation bar", () => {
   assert.equal(isFullNavigationSkillTreeMode("skillTree", "path"), true);
 });
 
-test("daily quest ('plate') and flashcards use the full bottom navigation bar", () => {
+test("today's focus ('plate') and flashcards use the full bottom navigation bar", () => {
   assert.equal(isFullNavigationSkillTreeMode("skillTree", "plate"), true);
   assert.equal(isFullNavigationSkillTreeMode("skillTree", "flashcards"), true);
 });

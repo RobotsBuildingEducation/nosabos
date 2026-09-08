@@ -54,7 +54,7 @@ import {
 } from "../utils/softStopButton";
 import { submitActionSound, deliciousSound, clickSound } from "../constants/sounds";
 import RandomCharacter from "./RandomCharacter";
-import VoiceOrb from "./VoiceOrb";
+import AnimatedEllipsis from "./AnimatedEllipsis";
 import { useThemeStore } from "../useThemeStore";
 import {
   getLanguageDirection,
@@ -1005,15 +1005,10 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
             position="relative"
             zIndex={1}
           >
-            <VoiceOrb
-              state={
-                ["idle", "listening", "speaking"][Math.floor(Math.random() * 3)]
-              }
-              size={32}
+            <AnimatedEllipsis
+              color={isLightTheme ? "black" : "white"}
+              ariaLabel={t("generating") || "Generating..."}
             />
-            <Text color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"} fontSize="sm">
-              {t("generating")}
-            </Text>
           </VStack>
         </Box>
         {deckDisplay}
@@ -1229,20 +1224,10 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                     minH="140px"
                     justify="center"
                   >
-                    <VoiceOrb
-                      state={
-                        ["idle", "listening", "speaking"][
-                          Math.floor(Math.random() * 3)
-                        ]
-                      }
-                      size={32}
+                    <AnimatedEllipsis
+                      color={isLightTheme ? "black" : "white"}
+                      ariaLabel={t("grading") || "Grading..."}
                     />
-                    <Text
-                      color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.700"}
-                      fontSize="sm"
-                    >
-                      {t("grading")}
-                    </Text>
                   </VStack>
                 ) : (
                   <VStack spacing={2} w="100%">
