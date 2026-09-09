@@ -2542,10 +2542,14 @@ export default function PlatePetPanel({
           rounded="2xl"
           mx={4}
         >
-          <ModalHeader fontSize="md" fontWeight="bold" pb={2}>
+          <ModalHeader
+            fontSize="md"
+            fontWeight="bold"
+            pb={{ base: 0, md: 2 }}
+          >
             {customizeModalCopy.edit}
           </ModalHeader>
-          <ModalBody>
+          <ModalBody pt={{ base: 0, md: 6 }}>
             <VStack align="stretch" spacing={4}>
               <Box>
                 <Text

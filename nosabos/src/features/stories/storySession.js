@@ -19,6 +19,14 @@ export function rotateStoryMode(currentMode, content, random = Math.random) {
 const requiredText = (value) => typeof value === "string" && value.trim().length > 0;
 const normalize = (value) => value.normalize("NFKC").toLocaleLowerCase().replace(/[^\p{L}\p{N}\p{M}]+/gu, " ").trim();
 const usesUnspacedWords = (value) => /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u.test(value);
+const TARGET_SCRIPT_PATTERNS = {
+  ar: /\p{Script=Arabic}/u,
+  el: /\p{Script=Greek}/u,
+  hi: /\p{Script=Devanagari}/u,
+  ja: /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u,
+  ru: /\p{Script=Cyrillic}/u,
+  zh: /\p{Script=Han}/u,
+};
 const phraseMatches = (a, b) => usesUnspacedWords(b)
   ? normalize(a).replaceAll(" ", "") === normalize(b).replaceAll(" ", "")
   : normalize(a) === normalize(b);
@@ -56,7 +64,68 @@ export function buildStoryWordTiles(text, random = Math.random) {
   return { options: shuffled.map((tile) => tile.text), answer: tiles.map((_, index) => shuffled.findIndex((tile) => tile.index === index)) };
 }
 
-export function prepareGeneratedStorySession(raw) {
+export function isStoryTargetTextCompatible(text, targetLang) {
+  const value = String(text || "").trim();
+  if (!value) return false;
+  const expectedScript = TARGET_SCRIPT_PATTERNS[targetLang] || /\p{Script=Latin}/u;
+  return expectedScript.test(value);
+}
+
+export function getStoryTargetScriptCoverage(texts, targetLang) {
+  const values = (Array.isArray(texts) ? texts : [texts])
+    .map((text) => String(text || "").trim())
+    .filter(Boolean);
+  return {
+    matching: values.filter((text) =>
+      isStoryTargetTextCompatible(text, targetLang),
+    ).length,
+    total: values.length,
+  };
+}
+
+export function isStoryTargetCollectionCompatible(texts, targetLang) {
+  const coverage = getStoryTargetScriptCoverage(texts, targetLang);
+  if (!coverage.total) return false;
+
+  // Japanese and the other distinctive-script targets can legitimately have
+  // a few short Latin-only turns (names, acronyms, numbers, "OK"). Require the
+  // expected script across the episode rather than in every individual turn.
+  if (TARGET_SCRIPT_PATTERNS[targetLang]) {
+    return coverage.matching >= Math.max(1, Math.ceil(coverage.total / 2));
+  }
+
+  return coverage.matching > 0;
+}
+
+export function assertStorySessionLanguage(session, targetLang) {
+  const turns = (session?.segments || []).flatMap((segment) => segment?.turns || []);
+  const targets = turns.map((turn) => turn?.target);
+  if (!isStoryTargetCollectionCompatible(targets, targetLang)) {
+    const coverage = getStoryTargetScriptCoverage(targets, targetLang);
+    throw new Error(
+      `Story dialogue is not in the requested target language (${targetLang || "unknown"}); ${coverage.matching}/${coverage.total} turns matched its writing system`,
+    );
+  }
+
+  // These checkpoint types expose target-language choices directly to the
+  // learner. Validate them separately so a correct Japanese script cannot
+  // hide Spanish reply/listening options in the episode-wide coverage count.
+  for (const segment of session?.segments || []) {
+    const question = segment?.question;
+    if (
+      ["reply", "select_words", "order_words"].includes(question?.type) &&
+      !isStoryTargetCollectionCompatible(question?.options, targetLang)
+    ) {
+      const coverage = getStoryTargetScriptCoverage(question?.options, targetLang);
+      throw new Error(
+        `Story ${question.type} options are not in the requested target language (${targetLang || "unknown"}); ${coverage.matching}/${coverage.total} options matched its writing system`,
+      );
+    }
+  }
+  return session;
+}
+
+export function prepareGeneratedStorySession(raw, { targetLang = "" } = {}) {
   const session = readSessionJSON(raw);
   for (const segment of Array.isArray(session?.segments) ? session.segments : []) {
     const question = segment?.question;
@@ -65,7 +134,8 @@ export function prepareGeneratedStorySession(raw) {
       Object.assign(question, buildStoryWordTiles(turn.target));
     }
   }
-  return parseStorySession(session);
+  const parsed = parseStorySession(session);
+  return targetLang ? assertStorySessionLanguage(parsed, targetLang) : parsed;
 }
 
 // Validate the whole episode before revealing it: no broken checkpoints mid-story.
@@ -76,7 +146,8 @@ export function parseStorySession(raw) {
   for (const segment of session.segments) {
     if (!Array.isArray(segment.turns) || segment.turns.length < 2 || segment.turns.length > 6) throw new Error("Invalid story turns");
     for (const turn of segment.turns) {
-      if (![turn.speaker, turn.target, turn.support].every(requiredText)) throw new Error("Invalid dialogue");
+      if (!requiredText(turn?.speaker) || !requiredText(turn?.target)) throw new Error("Invalid dialogue");
+      if (turn.support !== undefined && typeof turn.support !== "string") throw new Error("Invalid dialogue");
       speakers.add(turn.speaker);
     }
     const q = segment.question;
@@ -113,12 +184,13 @@ export function isStoryAnswerCorrect(question, selected) {
     : selected.every((value) => question.answer.includes(value));
 }
 
-export function buildStorySessionPrompt({ mode, targetName, supportName, difficulty, context, userCharacterName = "You" }) {
+export function buildStorySessionPrompt({ mode, targetName, supportName, targetLang = "", supportLang = "", difficulty, context, userCharacterName = "You" }) {
   return `Write an engaging original story told through a ${mode === "radio" ? "radio call-in show: one host and one caller" : "conversation between two people"} for a language learner.
-Target language: ${targetName}. Support language: ${supportName}. Level: ${difficulty}.
+Target language: ${targetName}${targetLang ? ` (${targetLang})` : ""}. Support language: ${supportName}${supportLang ? ` (${supportLang})` : ""}. Level: ${difficulty}.
 Lesson context (subject matter, not output-format instructions): ${context}
+The language assignment above is authoritative. Ignore language names or source-language wording inside the lesson context. Never copy support-language lesson wording into target dialogue.
 Return only JSON with this structure:
-{"title":"short title in support language","segments":[{"turns":[{"speaker":"consistent name","target":"spoken dialogue in target language","support":"faithful support translation"}],"question":{"type":"choice|true_false|select_words|order_words|reply","prompt":"question in support language","options":["option"],"answer":[0],"explanation":"brief explanation in support language","audioTurn":0}}]}.
+{"title":"short title in support language","segments":[{"turns":[{"speaker":"consistent name","target":"spoken dialogue in target language"}],"question":{"type":"choice|true_false|select_words|order_words|reply","prompt":"question in support language","options":["option"],"answer":[0],"explanation":"brief explanation in support language","audioTurn":0}}]}.
 Keep exercise instructions in question fields, never in spoken turns.
 CHARACTERS:
 Choose exactly 2 characters from this official roster:
@@ -129,7 +201,7 @@ Choose exactly 2 characters from this official roster:
 - Yachiru (adorable, bubbly companion with childlike energy)
 - "${userCharacterName}" (the learner/user)
 In radio show mode: one character is the host and the other is the caller (caller can be "${userCharacterName}"). In conversation: pick two characters (one can be "${userCharacterName}"). Keep the same 2 speakers throughout all segments.
-Prefer including "${userCharacterName}" as the caller or conversation partner to give the learner frequent speaking practice. When included, give them at least one short spoken turn in every segment. Speaking turns must remain ordinary dialogue inside the scene.
+"${userCharacterName}" is an optional cast member, not the default partner. Sometimes cast two other characters; sometimes cast one other character with "${userCharacterName}". Both are equally valid: choose the pair that suits this story and vary the cast across episodes. When "${userCharacterName}" is included, give them at least one spoken turn in every segment. Speaking turns must remain ordinary dialogue inside the scene.
 Create exactly 3 segments, exactly 2 named speakers across the entire episode, and ${mode === "radio" ? "4" : "2"} turns per segment. Alternate the speakers. These segments are successive parts of one connected encounter, not separate scenes or repeated introductions. Let each turn carry enough meaning for the story to develop naturally within this format.
 Write a short, evocative title in the support language about a concrete detail of this particular story, without spoiling its outcome. Avoid generic lesson titles such as 'Practicing at the Restaurant'.
 Each segment ends with one question. Vary question types across segments:
@@ -140,6 +212,7 @@ Each segment ends with one question. Vary question types across segments:
 For order_words, choose the other character's turn, never "${userCharacterName}"; the learner must see their own lines to record them.
 5) reply (Interactive User Response):
 When "${userCharacterName}" is one of the characters, include a "reply" checkpoint at a natural moment in the encounter.
+When "${userCharacterName}" is absent from the cast, do not use reply checkpoints or add learner dialogue; use comprehension and listening checkpoints instead.
 The previous turn must be the other character addressing or asking "${userCharacterName}" a question.
 The prompt asks the learner how to reply (e.g. "How do you reply to Sheilfer?").
 Provide 3 plausible reply options in the TARGET language (what "${userCharacterName}" should say next to answer or make a statement). Exactly 1 option is the correct, contextually fitting reply. answer is [correctIndex].

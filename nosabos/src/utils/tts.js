@@ -622,6 +622,10 @@ async function getRealtimePlayer({
   let resolveCompletion;
   // Natural playout is distinct from cleanup, and does not wait on cache writes.
   const completion = new Promise((resolve) => { resolveCompletion = resolve; });
+  // WebRTC does not reliably resolve HTMLMediaElement.play() or emit playing.
+  // Expose the transport's start signal separately from generation/completion.
+  let resolvePlaybackStarted;
+  const playbackStarted = new Promise((resolve) => { resolvePlaybackStarted = resolve; });
   let outputBufferStopped = false;
   let resolveResponseComplete;
   // Consumers use this to update playback UI, so it must follow playout,
@@ -857,6 +861,7 @@ async function getRealtimePlayer({
   }).finally(async () => {
     unregisterActiveTTSPlayer(audio, cleanupFn);
     audio.removeEventListener("error", onPlaybackError);
+    resolvePlaybackStarted(false);
     clearFinalizeTimers();
     await stopRealtimeCacheRecording();
     resolveResponseComplete?.();
@@ -919,6 +924,8 @@ async function getRealtimePlayer({
       }
       responseSucceeded = true;
       void finishAfterPlaybackDrain();
+    } else if (msg.type === "output_audio_buffer.started") {
+      resolvePlaybackStarted(true);
     } else if (msg.type === "output_audio_buffer.stopped") {
       outputBufferStopped = true;
       void finishAfterPlaybackDrain();
@@ -1018,6 +1025,7 @@ async function getRealtimePlayer({
     audio,
     audioUrl: null,
     ready,
+    playbackStarted,
     completion,
     responseComplete,
     finalize,

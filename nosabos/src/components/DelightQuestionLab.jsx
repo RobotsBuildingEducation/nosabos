@@ -38,6 +38,7 @@ import useNotesStore from "../hooks/useNotesStore";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import FeedbackRail from "./FeedbackRail";
 import QuestionActionArea from "./QuestionActionArea";
+import { useDndContext } from "@dnd-kit/core";
 import { SortableArea, SortableList, SortableItem } from "./dnd/Sortable";
 import {
   questionModel,
@@ -84,6 +85,7 @@ import {
   getQuestionToolButtonProps,
   questionAssistantMarkdownStyles,
   questionAssistantText,
+  questionDropTargetActiveStyles,
   questionSquircleStyle,
 } from "./questionUiStyles";
 import {
@@ -1885,6 +1887,284 @@ function SentenceShapeshifter({
   );
 }
 
+function WordBank({
+  unassigned,
+  selectedWord,
+  locked,
+  onSelectSound,
+  setSelectedWord,
+  targetDirection,
+  targetLang,
+}) {
+  const dndContext = useDndContext();
+  const active = dndContext?.active;
+  const over = dndContext?.over;
+  const isDraggingPlacedWord = Boolean(
+    active && !unassigned.includes(String(active.id))
+  );
+  const isDropTarget = Boolean(
+    isDraggingPlacedWord &&
+      over &&
+      (over.id === "bank" || unassigned.includes(String(over.id)))
+  );
+
+  return (
+    <Box
+      minH="86px"
+      p={4}
+      borderWidth="2px"
+      borderStyle={isDropTarget ? "solid" : "dashed"}
+      borderColor={
+        isDropTarget
+          ? "purple.300"
+          : selectedWord
+            ? "purple.400"
+            : APP_BORDER_STRONG
+      }
+      bg={isDropTarget ? "rgba(128, 90, 213, 0.08)" : APP_SURFACE_MUTED}
+      borderRadius="xl"
+      style={questionSquircleStyle}
+      boxShadow={
+        isDropTarget
+          ? "0 0 0 2px rgba(168, 85, 247, 0.25), 0 4px 12px rgba(128, 90, 213, 0.12)"
+          : selectedWord
+            ? "0 0 12px rgba(128, 90, 213, 0.15)"
+            : "none"
+      }
+      transform={isDropTarget ? "translateY(-1px)" : "none"}
+      transition="border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease"
+    >
+      <SortableList
+        id="bank"
+        items={unassigned}
+        flexWrap="wrap"
+        gap={2.5}
+        minH="42px"
+        w="100%"
+        dir={targetDirection}
+        lang={targetLang}
+      >
+        {unassigned.map((word) => {
+          const isSelected = selectedWord === word;
+          return (
+            <SortableItem key={word} id={word} disabled={locked}>
+              {({ setNodeRef, attributes, listeners, style, isDragging }) => (
+                <Box
+                  ref={setNodeRef}
+                  style={{
+                    ...style,
+                    ...questionSquircleStyle,
+                    cursor: locked ? "default" : isDragging ? "grabbing" : "grab",
+                    userSelect: "none",
+                  }}
+                  {...attributes}
+                  {...listeners}
+                  px={3.5}
+                  py={2}
+                  borderRadius="lg"
+                  fontSize="md"
+                  fontWeight="semibold"
+                  borderWidth="1.5px"
+                  borderColor={isSelected ? "purple.400" : APP_BORDER}
+                  bg={isSelected ? "purple.500" : APP_SURFACE_ELEVATED}
+                  color={isSelected ? "white" : APP_TEXT_PRIMARY}
+                  boxShadow={
+                    isDragging
+                      ? "0 8px 20px rgba(128,90,213,0.35)"
+                      : isSelected
+                        ? "0 0 0 2px rgba(159, 122, 234, 0.4)"
+                        : "sm"
+                  }
+                  transition="border-color 0.15s ease, background-color 0.15s ease, transform 0.15s ease"
+                  _hover={
+                    !locked && !isSelected
+                      ? {
+                          borderColor: "purple.300",
+                          transform: "translateY(-1px)",
+                        }
+                      : {}
+                  }
+                  onClick={() => {
+                    onSelectSound();
+                    setSelectedWord(isSelected ? "" : word);
+                  }}
+                >
+                  {word}
+                </Box>
+              )}
+            </SortableItem>
+          );
+        })}
+      </SortableList>
+    </Box>
+  );
+}
+
+function WordNeighborhoodBucket({
+  group,
+  groupIndex,
+  members,
+  selectedWord,
+  locked,
+  assign,
+  returnToBank,
+  targetDirection,
+  targetLang,
+  copy,
+}) {
+  const dndContext = useDndContext();
+  const active = dndContext?.active;
+  const over = dndContext?.over;
+  const droppableId = `group-${groupIndex}`;
+  const isTargetGroup = !!selectedWord;
+  const isDraggingForeignWord = Boolean(
+    active && !members.includes(String(active.id))
+  );
+  const isDropTarget = Boolean(
+    isDraggingForeignWord &&
+      over &&
+      (over.id === droppableId || members.includes(String(over.id)))
+  );
+
+  return (
+    <Box
+      key={group.label}
+      display="flex"
+      flexDirection="column"
+      textAlign="left"
+      minH="150px"
+      p={4}
+      borderWidth="2px"
+      borderColor={
+        isDropTarget
+          ? "purple.300"
+          : isTargetGroup
+            ? "purple.400"
+            : APP_BORDER
+      }
+      bg={
+        isDropTarget
+          ? "rgba(128, 90, 213, 0.08)"
+          : APP_SURFACE_ELEVATED
+      }
+      borderRadius="xl"
+      style={questionSquircleStyle}
+      boxShadow={
+        isDropTarget
+          ? "0 0 0 2px rgba(168, 85, 247, 0.25), 0 4px 12px rgba(128, 90, 213, 0.12)"
+          : isTargetGroup
+            ? "0 0 12px rgba(128, 90, 213, 0.15)"
+            : "none"
+      }
+      transform={isDropTarget ? "translateY(-1px)" : "none"}
+      transition="border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease"
+      _hover={
+        isTargetGroup && !locked && !isDropTarget
+          ? {
+              borderColor: "purple.300",
+              transform: "translateY(-2px)",
+              boxShadow: "0 0 16px rgba(128, 90, 213, 0.25)",
+              cursor: "pointer",
+            }
+          : {}
+      }
+      onClick={() => {
+        if (selectedWord && !locked) {
+          assign(selectedWord, groupIndex);
+        }
+      }}
+    >
+      <HStack justify="space-between" align="center" mb={3}>
+        <Text
+          fontWeight="800"
+          fontSize="md"
+          color={isDropTarget ? "purple.400" : APP_TEXT_PRIMARY}
+          transition="color 0.15s ease"
+        >
+          {group.label}
+        </Text>
+      </HStack>
+      <SortableList
+        id={droppableId}
+        items={members}
+        flexWrap="wrap"
+        alignContent="flex-start"
+        flex="1"
+        w="100%"
+        gap={2}
+        minH="50px"
+        dir={targetDirection}
+        lang={targetLang}
+      >
+        {members.map((word) => (
+          <SortableItem key={word} id={word} disabled={locked}>
+            {({ setNodeRef, attributes, listeners, style, isDragging }) => (
+              <Box
+                ref={setNodeRef}
+                style={{
+                  ...style,
+                  ...questionSquircleStyle,
+                  cursor: locked ? "default" : isDragging ? "grabbing" : "grab",
+                  userSelect: "none",
+                }}
+                {...attributes}
+                {...listeners}
+                px={3}
+                py={1.5}
+                borderRadius="lg"
+                fontSize="sm"
+                fontWeight="semibold"
+                bg={APP_SURFACE_MUTED}
+                borderWidth="1px"
+                borderColor={APP_BORDER_STRONG}
+                color={APP_TEXT_PRIMARY}
+                title={copy?.tapToReturn}
+                boxShadow={isDragging ? "0 6px 16px rgba(128,90,213,0.3)" : "none"}
+                _hover={
+                  !locked
+                    ? {
+                        borderColor: "purple.300",
+                        color: APP_TEXT_PRIMARY,
+                        bg: "var(--question-chip-bg-hover)",
+                        transform: "translateY(-1px)",
+                      }
+                    : {}
+                }
+                onClick={(event) => {
+                  event.stopPropagation();
+                  returnToBank(word);
+                }}
+              >
+                {word}
+              </Box>
+            )}
+          </SortableItem>
+        ))}
+        {!members.length && (
+          <Text
+            fontSize="xs"
+            color={isDropTarget ? "purple.400" : APP_TEXT_SECONDARY}
+            fontWeight={isDropTarget ? "semibold" : "normal"}
+            fontStyle="italic"
+            py={2}
+            pointerEvents="none"
+            transition="color 0.15s ease"
+          >
+            {isDropTarget
+              ? copy?.dropPlaceholder || "Drop here"
+              : selectedWord
+                ? formatWordNeighborhoodsCopy(copy?.tapToPlace, {
+                    word: selectedWord,
+                  }) || `Tap to place “${selectedWord}”`
+                : copy?.dropPlaceholder ||
+                  "Drag a word here or tap to place"}
+          </Text>
+        )}
+      </SortableList>
+    </Box>
+  );
+}
+
 function WordNeighborhoods({
   question,
   response,
@@ -1938,10 +2218,20 @@ function WordNeighborhoods({
   );
 
   const handleDragEnd = useCallback(
-    ({ active, over }) => {
-      if (!over || locked) return;
-      const draggableId = active.id;
-      const destination = over;
+    (dragResult) => {
+      if (locked || !dragResult) return;
+      const draggableId = dragResult.draggableId || dragResult.active?.id;
+      const destination =
+        dragResult.destination ||
+        (dragResult.over ? { droppableId: dragResult.over.id } : null);
+      const source =
+        dragResult.source ||
+        (dragResult.active?.data?.current?.containerId
+          ? { droppableId: dragResult.active.data.current.containerId }
+          : null);
+
+      if (!destination?.droppableId || !draggableId) return;
+      if (source?.droppableId === destination.droppableId) return;
 
       if (destination.droppableId === "bank") {
         returnToBank(draggableId);
@@ -1986,79 +2276,15 @@ function WordNeighborhoods({
         </Box>
 
         {/* Word Bank */}
-        <Box
-          minH="86px"
-          p={4}
-          borderWidth="1.5px"
-          borderStyle="dashed"
-          borderColor={selectedWord ? "purple.400" : APP_BORDER_STRONG}
-          bg={APP_SURFACE_MUTED}
-          borderRadius="xl"
-          style={questionSquircleStyle}
-          transition="border-color 0.2s ease"
-        >
-          <SortableList
-            id="bank"
-            items={unassigned}
-            flexWrap="wrap"
-            gap={2.5}
-            minH="42px"
-            dir={targetDirection}
-            lang={targetLang}
-          >
-            {unassigned.map((word) => {
-              const isSelected = selectedWord === word;
-              return (
-                <SortableItem key={word} id={word} disabled={locked}>
-                  {({ setNodeRef, attributes, listeners, style, isDragging }) => (
-                    <Box
-                      ref={setNodeRef}
-                      style={{
-                        ...style,
-                        ...questionSquircleStyle,
-                        cursor: locked ? "default" : isDragging ? "grabbing" : "grab",
-                        userSelect: "none",
-                      }}
-                      {...attributes}
-                      {...listeners}
-                      px={3.5}
-                      py={2}
-                      borderRadius="lg"
-                      fontSize="md"
-                      fontWeight="semibold"
-                      borderWidth="1.5px"
-                      borderColor={isSelected ? "purple.400" : APP_BORDER}
-                      bg={isSelected ? "purple.500" : APP_SURFACE_ELEVATED}
-                      color={isSelected ? "white" : APP_TEXT_PRIMARY}
-                      boxShadow={
-                        isDragging
-                          ? "0 8px 20px rgba(128,90,213,0.35)"
-                          : isSelected
-                            ? "0 0 0 2px rgba(159, 122, 234, 0.4)"
-                            : "sm"
-                      }
-                      transition="border-color 0.15s ease, background-color 0.15s ease, transform 0.15s ease"
-                      _hover={
-                        !locked && !isSelected
-                          ? {
-                              borderColor: "purple.300",
-                              transform: "translateY(-1px)",
-                            }
-                          : {}
-                      }
-                      onClick={() => {
-                        onSelectSound();
-                        setSelectedWord(isSelected ? "" : word);
-                      }}
-                    >
-                      {word}
-                    </Box>
-                  )}
-                </SortableItem>
-              );
-            })}
-          </SortableList>
-        </Box>
+        <WordBank
+          unassigned={unassigned}
+          selectedWord={selectedWord}
+          locked={locked}
+          onSelectSound={onSelectSound}
+          setSelectedWord={setSelectedWord}
+          targetDirection={targetDirection}
+          targetLang={targetLang}
+        />
 
         {/* Group Buckets */}
         <SimpleGrid columns={{ base: 1, sm: question.groups?.length || 2 }} spacing={3.5}>
@@ -2066,109 +2292,20 @@ function WordNeighborhoods({
             const members = wordOrder.filter(
               (word) => Number(assignments[word]) === groupIndex,
             );
-            const isTargetGroup = !!selectedWord;
             return (
-              <Box
+              <WordNeighborhoodBucket
                 key={group.label}
-                textAlign="left"
-                minH="150px"
-                p={4}
-                borderWidth="2px"
-                borderColor={isTargetGroup ? "purple.400" : APP_BORDER}
-                bg={APP_SURFACE_ELEVATED}
-                borderRadius="xl"
-                style={questionSquircleStyle}
-                transition="all 0.2s ease"
-                boxShadow={isTargetGroup ? "0 0 12px rgba(128, 90, 213, 0.15)" : "none"}
-                _hover={
-                  isTargetGroup && !locked
-                    ? {
-                        borderColor: "purple.300",
-                        transform: "translateY(-2px)",
-                        boxShadow: "0 0 16px rgba(128, 90, 213, 0.25)",
-                        cursor: "pointer",
-                      }
-                    : {}
-                }
-                onClick={() => {
-                  if (selectedWord && !locked) {
-                    assign(selectedWord, groupIndex);
-                  }
-                }}
-              >
-                <Text fontWeight="800" fontSize="md" color={APP_TEXT_PRIMARY} mb={3}>
-                  {group.label}
-                </Text>
-                <SortableList
-                  id={`group-${groupIndex}`}
-                  items={members}
-                  flexWrap="wrap"
-                  gap={2}
-                  minH="50px"
-                  dir={targetDirection}
-                  lang={targetLang}
-                >
-                  {members.map((word) => (
-                    <SortableItem key={word} id={word} disabled={locked}>
-                      {({ setNodeRef, attributes, listeners, style, isDragging }) => (
-                        <Box
-                          ref={setNodeRef}
-                          style={{
-                            ...style,
-                            ...questionSquircleStyle,
-                            cursor: locked ? "default" : isDragging ? "grabbing" : "grab",
-                            userSelect: "none",
-                          }}
-                          {...attributes}
-                          {...listeners}
-                          px={3}
-                          py={1.5}
-                          borderRadius="lg"
-                          fontSize="sm"
-                          fontWeight="semibold"
-                          bg={APP_SURFACE_MUTED}
-                          borderWidth="1px"
-                          borderColor={APP_BORDER_STRONG}
-                          color={APP_TEXT_PRIMARY}
-                          title={copy?.tapToReturn}
-                          boxShadow={isDragging ? "0 6px 16px rgba(128,90,213,0.3)" : "none"}
-                          _hover={
-                            !locked
-                              ? {
-                                  borderColor: "purple.300",
-                                  color: APP_TEXT_PRIMARY,
-                                  bg: "var(--question-chip-bg-hover)",
-                                  transform: "translateY(-1px)",
-                                }
-                              : {}
-                          }
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            returnToBank(word);
-                          }}
-                        >
-                          {word}
-                        </Box>
-                      )}
-                    </SortableItem>
-                  ))}
-                  {!members.length && (
-                    <Text
-                      fontSize="xs"
-                      color={APP_TEXT_SECONDARY}
-                      fontStyle="italic"
-                      py={2}
-                    >
-                      {selectedWord
-                        ? formatWordNeighborhoodsCopy(copy?.tapToPlace, {
-                            word: selectedWord,
-                          }) || `Tap to place “${selectedWord}”`
-                        : copy?.dropPlaceholder ||
-                          "Drag a word here or tap to place"}
-                    </Text>
-                  )}
-                </SortableList>
-              </Box>
+                group={group}
+                groupIndex={groupIndex}
+                members={members}
+                selectedWord={selectedWord}
+                locked={locked}
+                assign={assign}
+                returnToBank={returnToBank}
+                targetDirection={targetDirection}
+                targetLang={targetLang}
+                copy={copy}
+              />
             );
           })}
         </SimpleGrid>
@@ -2329,7 +2466,9 @@ function MorphologyForge({
         </Box>
 
         {/* Forge Slot / Assembled Word Box */}
-        <Box
+        <SortableList
+          id="forge"
+          items={chosenIndices.map((idx) => `piece-${idx}`)}
           minH="88px"
           p={4}
           borderWidth="2px"
@@ -2338,105 +2477,100 @@ function MorphologyForge({
           bg={APP_SURFACE_MUTED}
           borderRadius="xl"
           style={questionSquircleStyle}
-          transition="all 0.2s ease"
+          flexWrap="wrap"
+          justify="center"
+          align="center"
+          gap={2}
+          dir={targetDirection}
+          lang={targetLang}
           boxShadow={chosenIndices.length ? "0 0 12px rgba(128, 90, 213, 0.12)" : "none"}
+          transition="border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease"
+          activeStyles={questionDropTargetActiveStyles}
         >
-          <SortableList
-            id="forge"
-            items={chosenIndices.map((idx) => `piece-${idx}`)}
-            flexWrap="wrap"
-            justify="center"
-            align="center"
-            gap={2}
-            minH="48px"
-            dir={targetDirection}
-            lang={targetLang}
-          >
-            {chosenIndices.map((pieceIndex, position) => {
-              const piece = pieces[pieceIndex];
-              return (
-                <SortableItem
-                  key={`chosen-${pieceIndex}-${position}`}
-                  id={`piece-${pieceIndex}`}
-                  disabled={locked}
-                >
-                  {({ setNodeRef, attributes, listeners, style, isDragging }) => (
-                    <Box
-                      ref={setNodeRef}
-                      style={{
-                        ...style,
-                        ...questionSquircleStyle,
-                        cursor: locked ? "default" : isDragging ? "grabbing" : "grab",
-                        userSelect: "none",
-                      }}
-                      {...attributes}
-                      {...listeners}
-                      px={3.5}
-                      py={2}
-                      borderRadius="lg"
-                      fontSize="md"
-                      fontWeight="bold"
-                      bg="purple.500"
-                      color="white"
-                      borderWidth="1.5px"
-                      borderColor="purple.400"
-                      boxShadow={
-                        isDragging
-                          ? "0 8px 20px rgba(128,90,213,0.35)"
-                          : "0 2px 8px rgba(128,90,213,0.2)"
-                      }
-                      title={copy?.tapToRemove}
-                      _hover={
-                        !locked
-                          ? {
-                              bg: "purple.600",
-                              transform: "translateY(-1px)",
-                            }
-                          : {}
-                      }
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        removePiece(position);
-                      }}
-                    >
-                      {piece}
-                    </Box>
-                  )}
-                </SortableItem>
-              );
-            })}
-            {!chosenIndices.length && (
-              <Text
-                fontSize="xs"
-                color={APP_TEXT_SECONDARY}
-                fontStyle="italic"
-                py={2}
+          {chosenIndices.map((pieceIndex, position) => {
+            const piece = pieces[pieceIndex];
+            return (
+              <SortableItem
+                key={`chosen-${pieceIndex}-${position}`}
+                id={`piece-${pieceIndex}`}
+                disabled={locked}
               >
-                {copy?.emptyForge || "Drag or tap pieces below to forge the missing word"}
-              </Text>
-            )}
-          </SortableList>
-        </Box>
+                {({ setNodeRef, attributes, listeners, style, isDragging }) => (
+                  <Box
+                    ref={setNodeRef}
+                    style={{
+                      ...style,
+                      ...questionSquircleStyle,
+                      cursor: locked ? "default" : isDragging ? "grabbing" : "grab",
+                      userSelect: "none",
+                    }}
+                    {...attributes}
+                    {...listeners}
+                    px={3.5}
+                    py={2}
+                    borderRadius="lg"
+                    fontSize="md"
+                    fontWeight="bold"
+                    bg="purple.500"
+                    color="white"
+                    borderWidth="1.5px"
+                    borderColor="purple.400"
+                    boxShadow={
+                      isDragging
+                        ? "0 8px 20px rgba(128,90,213,0.35)"
+                        : "0 2px 8px rgba(128,90,213,0.2)"
+                    }
+                    title={copy?.tapToRemove}
+                    _hover={
+                      !locked
+                        ? {
+                            bg: "purple.600",
+                            transform: "translateY(-1px)",
+                          }
+                        : {}
+                    }
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      removePiece(position);
+                    }}
+                  >
+                    {piece}
+                  </Box>
+                )}
+              </SortableItem>
+            );
+          })}
+          {!chosenIndices.length && (
+            <Text
+              fontSize="xs"
+              color={APP_TEXT_SECONDARY}
+              fontStyle="italic"
+              py={2}
+            >
+              {copy?.emptyForge || "Drag or tap pieces below to forge the missing word"}
+            </Text>
+          )}
+        </SortableList>
 
         {/* Available Pieces Bank */}
-        <Box
+        <SortableList
+          id="bank"
+          items={available.map(({ index }) => `piece-${index}`)}
           p={4}
           borderWidth="1.5px"
           borderColor={APP_BORDER}
           bg={APP_SURFACE_ELEVATED}
           borderRadius="xl"
           style={questionSquircleStyle}
+          flexWrap="wrap"
+          justify="center"
+          gap={2.5}
+          minH="58px"
+          dir={targetDirection}
+          lang={targetLang}
+          transition="border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease"
+          activeStyles={questionDropTargetActiveStyles}
         >
-          <SortableList
-            id="bank"
-            items={available.map(({ index }) => `piece-${index}`)}
-            flexWrap="wrap"
-            justify="center"
-            gap={2.5}
-            minH="42px"
-            dir={targetDirection}
-            lang={targetLang}
-          >
             {available.map(({ piece, index }) => (
               <SortableItem
                 key={`avail-${index}`}
@@ -2496,7 +2630,6 @@ function MorphologyForge({
               </Text>
             )}
           </SortableList>
-        </Box>
       </VStack>
     </SortableArea>
   );
@@ -3278,6 +3411,13 @@ export default function DelightQuestionLab({
   const [assistantSupportText, setAssistantSupportText] = useState("");
   const [isLoadingAssistantSupport, setIsLoadingAssistantSupport] = useState(false);
   const [isAssistantOpen, setIsAssistantOpen] = useState(false);
+
+  useEffect(() => {
+    if (isFinalQuiz) {
+      setIsAssistantOpen(false);
+      setAssistantSupportText("");
+    }
+  }, [isFinalQuiz]);
   const [explanationText, setExplanationText] = useState("");
   const [isLoadingExplanation, setIsLoadingExplanation] = useState(false);
   const [sessionEarnedXp, setSessionEarnedXp] = useState(0);
@@ -3527,7 +3667,9 @@ export default function DelightQuestionLab({
           targetLanguageName: targetName,
         }),
         `Explain and guide directly in ${supportName}. Clearly explain the required grammar or vocabulary, provide the relevant words/phrases in ${targetName} with translations in ${supportName}, and guide the learner to successfully answer the question.`,
-        "Keep replies concise (≤ 60 words).",
+        question.variant === "three_clue_mystery"
+          ? "Keep replies clear, direct, and concise (≤ 80 words)."
+          : "Keep replies concise (≤ 60 words).",
         "Use concise Markdown when helpful (bullets, **bold**).",
       ].join(" ");
 
@@ -3615,14 +3757,23 @@ export default function DelightQuestionLab({
         const cluesDesc = revealedList
           .map((c, i) => `Clue ${i + 1}: "${c}"`)
           .join("\n");
+        const allCluesDesc = (question.clues || [])
+          .map((c, i) => `Clue ${i + 1}: "${c}"`)
+          .join("\n");
         variantContext = [
           `Exercise: Three-Clue Mystery`,
-          `Mystery word (secret answer): "${question.answer || ""}"`,
-          `Example sentence with answer: "${question.example || ""}"`,
-          `Clues currently revealed to the learner:`,
+          `Mystery word (correct answer): "${question.answer || ""}"`,
+          question.acceptableAnswers?.length
+            ? `Acceptable alternative answers: ${question.acceptableAnswers.map((a) => `"${a}"`).join(", ")}`
+            : "",
+          question.example ? `Example sentence with answer: "${question.example}"` : "",
+          `Clues currently revealed to the learner (${revealedList.length} of ${question.clues?.length || 3}):`,
           cluesDesc,
-          `Task: Guide the learner to deduce the mystery word ("${question.answer || ""}") by explaining how the clues connect and providing a helpful hint or definition in ${supportName}.`,
-        ].join("\n");
+          (question.clues && question.clues.length > revealedList.length)
+            ? `All clues for context:\n${allCluesDesc}`
+            : "",
+          `Task: Provide the answer directly to the learner ("${question.answer || ""}") and explain the reasoning behind it in ${supportName}. Do NOT withhold the answer or just provide vague hints/clues. Clearly state the answer word in ${targetName} along with its meaning in ${supportName}, then explain step-by-step how the clues point to this answer so the learner is not stuck. If helpful, mention the example sentence.`,
+        ].filter(Boolean).join("\n");
       } else if (question.variant === "listen_difference") {
         variantContext = [
           `Exercise: Listen for the Difference (Minimal Pairs & Phonetics)`,
@@ -4654,21 +4805,14 @@ export default function DelightQuestionLab({
           <Box w={{ base: "100%", md: "60%" }} justifyContent="center">
             <VStack spacing={2} w="100%">
                 <HStack justify="space-between" w="100%" mb={1}>
-                  <Badge colorScheme="purple" fontSize="md">
+                  <Text fontSize="sm" fontWeight="semibold" color={APP_TEXT_SECONDARY}>
                     {t("vocab_final_quiz") === "vocab_final_quiz"
                       ? "Final Quiz"
                       : t("vocab_final_quiz")}
-                  </Badge>
-                  <Badge
-                    colorScheme={
-                      quizCorrect >= quizConfig.passingScore
-                        ? "green"
-                        : "yellow"
-                    }
-                    fontSize="md"
-                  >
+                  </Text>
+                  <Text fontSize="sm" fontWeight="semibold" color={APP_TEXT_MUTED}>
                     {quizHistory.length}/{quizConfig.questionsRequired}
-                  </Badge>
+                  </Text>
                 </HStack>
 
                 {/* Animated progress bar showing correct (blue) and wrong (red) answers */}

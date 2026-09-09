@@ -24,6 +24,7 @@ import {
   getQuestionAssistantPanelProps,
   getQuestionChipProps,
   getQuestionToolButtonProps,
+  questionDropTargetActiveStyles,
   questionSquircleStyle,
   questionAssistantText,
 } from "./questionUiStyles";
@@ -462,7 +463,9 @@ export default function RepeatWhatYouHear({
               )}
             </HStack>
 
-            <Box
+            <SortableList
+              id="selected-words"
+              items={selectedWords.map((wordIndex) => `selected-${wordIndex}`)}
               bg={APP_SURFACE}
               borderRadius="lg"
               style={questionSquircleStyle}
@@ -476,74 +479,64 @@ export default function RepeatWhatYouHear({
               }
               p={4}
               minH="80px"
+              wrap="wrap"
+              gap={2}
+              align="center"
+              justify={answerDir === "rtl" ? "flex-end" : "flex-start"}
+              dir={answerDir}
+              transition="border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease"
+              activeStyles={questionDropTargetActiveStyles}
             >
-              <SortableList
-                id="selected-words"
-                items={selectedWords.map((wordIndex) => `selected-${wordIndex}`)}
-                wrap="wrap"
-                gap={2}
-                minH="48px"
-                align="center"
-                justify={answerDir === "rtl" ? "flex-end" : "flex-start"}
-                dir={answerDir}
-                bg="transparent"
-                activeStyles={{ bg: "rgba(128, 90, 213, 0.08)" }}
-                borderRadius="md"
-                style={questionSquircleStyle}
-                p={2}
-                transition="background 0.2s ease"
-              >
-                {selectedWords.length === 0 && (
-                  <Text
-                    color={APP_TEXT_MUTED}
-                    fontSize="sm"
-                    fontStyle="italic"
-                    w="100%"
-                    textAlign="center"
-                  >
-                    {instructionLabel}
-                  </Text>
-                )}
+              {selectedWords.length === 0 && (
+                <Text
+                  color={APP_TEXT_MUTED}
+                  fontSize="sm"
+                  fontStyle="italic"
+                  w="100%"
+                  textAlign="center"
+                >
+                  {instructionLabel}
+                </Text>
+              )}
 
-                {selectedWords.map((wordIndex, position) => (
-                  <SortableItem
-                    key={`selected-${wordIndex}`}
-                    id={`selected-${wordIndex}`}
-                    disabled={lastOk === true}
-                  >
-                    {({ setNodeRef, attributes, listeners, style, isDragging }) => (
-                      <Box
-                        ref={setNodeRef}
-                        style={style}
-                        {...attributes}
-                        {...listeners}
-                        px={3}
-                        py={2}
-                        rounded="md"
-                        {...getQuestionChipProps({
-                          dragging: isDragging,
-                        })}
-                        cursor={lastOk === true ? "default" : "grab"}
-                        dir={answerTextProps.dir}
-                        lang={answerTextProps.lang}
-                        sx={{ unicodeBidi: "plaintext" }}
-                        onClick={() => {
-                          if (lastOk !== true) {
-                            playSound(selectSound);
-                            handleSelectedWordClick(position);
-                          }
-                        }}
-                        _hover={
-                          lastOk !== true ? getQuestionChipProps()._hover : {}
+              {selectedWords.map((wordIndex, position) => (
+                <SortableItem
+                  key={`selected-${wordIndex}`}
+                  id={`selected-${wordIndex}`}
+                  disabled={lastOk === true}
+                >
+                  {({ setNodeRef, attributes, listeners, style, isDragging }) => (
+                    <Box
+                      ref={setNodeRef}
+                      style={style}
+                      {...attributes}
+                      {...listeners}
+                      px={3}
+                      py={2}
+                      rounded="md"
+                      {...getQuestionChipProps({
+                        dragging: isDragging,
+                      })}
+                      cursor={lastOk === true ? "default" : "grab"}
+                      dir={answerTextProps.dir}
+                      lang={answerTextProps.lang}
+                      sx={{ unicodeBidi: "plaintext" }}
+                      onClick={() => {
+                        if (lastOk !== true) {
+                          playSound(selectSound);
+                          handleSelectedWordClick(position);
                         }
-                        >
-                          {wordBank[wordIndex]}
-                        </Box>
-                      )}
-                    </SortableItem>
-                  ))}
-                </SortableList>
-            </Box>
+                      }}
+                      _hover={
+                        lastOk !== true ? getQuestionChipProps()._hover : {}
+                      }
+                    >
+                      {wordBank[wordIndex]}
+                    </Box>
+                  )}
+                </SortableItem>
+              ))}
+            </SortableList>
           </VStack>
         </Box>
 
@@ -555,14 +548,15 @@ export default function RepeatWhatYouHear({
           wrap="wrap"
           gap={3}
           justify="center"
-          p={2}
+          p={3}
           minH="60px"
           dir={answerDir}
-          bg="transparent"
-          activeStyles={{ bg: "rgba(128, 90, 213, 0.05)" }}
-          borderRadius="md"
+          borderWidth="1.5px"
+          borderColor="transparent"
+          borderRadius="lg"
           style={questionSquircleStyle}
-          transition="background 0.2s ease"
+          transition="border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease"
+          activeStyles={questionDropTargetActiveStyles}
         >
               {bankOrder.map((wordIndex, position) => (
                 <SortableItem

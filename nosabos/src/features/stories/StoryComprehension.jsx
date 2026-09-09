@@ -1,9 +1,11 @@
 import { getStoryDifficulty } from "./storyPrompts";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Avatar, Badge, Box, Button, Center, Flex, HStack, Icon, IconButton, Progress, SimpleGrid, Spinner, Text, VStack } from "@chakra-ui/react";
-import { FiCheck, FiHeadphones, FiMic, FiPause, FiPlay, FiRadio, FiRotateCcw, FiVolume2, FiX } from "react-icons/fi";
+import { Avatar, Badge, Box, Button, Center, Flex, HStack, Icon, IconButton, SimpleGrid, Spinner, Text, VisuallyHidden, VStack } from "@chakra-ui/react";
+import { FiHeadphones, FiMic, FiPause, FiPlay, FiRadio, FiRotateCcw, FiVolume2 } from "react-icons/fi";
+import { FaStop } from "react-icons/fa";
 import { MdOutlineTranslate } from "react-icons/md";
-import { keyframes } from "@emotion/react";
+import RadioSignal from "./RadioSignal";
+import { primeStoryAudioLevels } from "./storyAudioLevels";
 import { primeTTSAudio, TTS_LANG_TAG } from "../../utils/tts";
 import { buildCurriculumPromptContext } from "../../utils/lessonCurriculum";
 import { getBidiTextProps } from "../../utils/bidiText";
@@ -12,6 +14,8 @@ import { generateStorySession } from "./storyGeneration";
 import { storyCopy } from "./storyCopy";
 import { createStoryAudio } from "./storyAudio";
 import { storyServices } from "./storyServices";
+import AnimatedEllipsis from "../../components/AnimatedEllipsis";
+import StoryLoadingScreen from "./StoryLoadingScreen";
 import useUserStore from "../../hooks/useUserStore";
 import StoryCharacterAvatar from "./StoryCharacterAvatar";
 import {
@@ -27,38 +31,122 @@ import { t } from "../../utils/translation";
 import { useSoundSettings } from "../../hooks/useSoundSettings";
 import { useSpeechPractice } from "../../hooks/useSpeechPractice";
 import { speechReasonTips } from "../../utils/speechEvaluation";
+import { normalizeSupportLanguage } from "../../constants/languages";
 import { selectSound, submitActionSound, completeSound, clickSound, nextButtonSound } from "../../constants/sounds";
 
 const panel = { bg: "var(--app-surface-elevated)", borderWidth: "1px", borderColor: "var(--app-border)", borderRadius: "24px" };
-const radioPulse = keyframes`
-  0%, 100% { transform: scaleY(0.2); }
-  25% { transform: scaleY(0.9); }
-  50% { transform: scaleY(0.35); }
-  75% { transform: scaleY(0.7); }
-`;
+
+const resolveStoryTitleText = (value, uiLang = "en", supportLang = "en", targetLang = "es") => {
+  if (!value) return "";
+  if (typeof value === "string") return value.trim();
+  if (Array.isArray(value)) {
+    return value.map((v) => resolveStoryTitleText(v, uiLang, supportLang, targetLang)).filter(Boolean).join(" ");
+  }
+  if (typeof value === "object") {
+    const candidate =
+      value[uiLang] ||
+      value[supportLang] ||
+      value[targetLang] ||
+      value.en ||
+      value.es ||
+      value.title ||
+      value.name ||
+      Object.values(value).find((v) => typeof v === "string" && v.trim() && !v.startsWith("[object")) ||
+      "";
+    if (typeof candidate === "string") return candidate.trim();
+    if (typeof candidate === "object" && candidate !== null && candidate !== value) {
+      return resolveStoryTitleText(candidate, uiLang, supportLang, targetLang);
+    }
+  }
+  const str = String(value).trim();
+  return str === "[object Object]" ? "" : str;
+};
 
 export default function StoryComprehension({ mode, targetLang, supportLang, targetName, supportName, uiLang, cefrLevel, npub, lesson, lessonContent, onSkip, onNewStory, lessonEarnedXp = 0, services = storyServices, useSpeech = useSpeechPractice }) {
   const user = useUserStore((s) => s.user);
   const playSound = useSoundSettings((s) => s.playSound);
-  const copy = storyCopy(uiLang);
+  const effectiveLang = normalizeSupportLanguage(supportLang || uiLang, "en");
+  const copy = storyCopy(effectiveLang);
   const [episode, setEpisode] = useState(null);
   const [generation, setGeneration] = useState(0);
   const [generationError, setGenerationError] = useState(false);
   const [part, setPart] = useState(0);
+  const [hasPlayed, setHasPlayed] = useState(false);
   const [heard, setHeard] = useState(false);
   const [questionVisible, setQuestionVisible] = useState(false);
   const [selected, setSelected] = useState([]);
   const [result, setResult] = useState(null);
   const [score, setScore] = useState(0);
   const [revealedTranslations, setRevealedTranslations] = useState({});
+  const [turnTranslations, setTurnTranslations] = useState({});
+  const [translatingKeys, setTranslatingKeys] = useState({});
   const [playback, setPlayback] = useState("idle");
   const [speaker, setSpeaker] = useState("");
   const [currentTurn, setCurrentTurn] = useState(null);
   const [preview, setPreview] = useState(null);
+  const [playbackElement, setPlaybackElement] = useState(null);
+  const [previewElement, setPreviewElement] = useState(null);
   const [audioError, setAudioError] = useState(false);
   const [speechError, setSpeechError] = useState("");
   const [speechResult, setSpeechResult] = useState(null);
   const [speechTranslation, setSpeechTranslation] = useState(false);
+
+  const toggleTurnTranslation = useCallback(async (key, turn) => {
+    playSound(selectSound);
+    if (revealedTranslations[key]) {
+      setRevealedTranslations((value) => ({ ...value, [key]: false }));
+      return;
+    }
+    setRevealedTranslations((value) => ({ ...value, [key]: true }));
+    if (turnTranslations[key] || turn?.support) return;
+
+    if (typeof services?.translate === "function" && turn?.target) {
+      setTranslatingKeys((value) => ({ ...value, [key]: true }));
+      try {
+        const translated = await services.translate(
+          turn.target,
+          targetName || targetLang,
+          supportName || supportLang
+        );
+        if (translated) {
+          setTurnTranslations((value) => ({ ...value, [key]: translated }));
+        }
+      } catch (err) {
+        console.warn("[Stories] Translation request failed", err);
+      } finally {
+        setTranslatingKeys((value) => ({ ...value, [key]: false }));
+      }
+    }
+  }, [playSound, revealedTranslations, turnTranslations, services, targetName, targetLang, supportName, supportLang]);
+
+  const toggleSpeechTranslation = useCallback(async (turn) => {
+    playSound(selectSound);
+    if (speechTranslation) {
+      setSpeechTranslation(false);
+      return;
+    }
+    setSpeechTranslation(true);
+    if (turnTranslations["speech"] || turn?.support) return;
+
+    if (typeof services?.translate === "function" && turn?.target) {
+      setTranslatingKeys((value) => ({ ...value, speech: true }));
+      try {
+        const translated = await services.translate(
+          turn.target,
+          targetName || targetLang,
+          supportName || supportLang
+        );
+        if (translated) {
+          setTurnTranslations((value) => ({ ...value, speech: translated }));
+        }
+      } catch (err) {
+        console.warn("[Stories] Speech translation request failed", err);
+      } finally {
+        setTranslatingKeys((value) => ({ ...value, speech: false }));
+      }
+    }
+  }, [playSound, speechTranslation, turnTranslations, services, targetName, targetLang, supportName, supportLang]);
+
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(false);
   const [reward, setReward] = useState(0);
@@ -85,6 +173,7 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
   // It must never consume that turn or unlock its question.
   const previewAudio = useMemo(() => createStoryAudio({
     getPlayer,
+    onPlayer: setPreviewElement,
     onState: (state, name, turn) => setPreview(state === "idle" ? null : { state, speaker: name, turn }),
     onError: () => setAudioError(true),
   }), [getPlayer]);
@@ -92,6 +181,7 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
 
   const audio = useMemo(() => createStoryAudio({
     getPlayer,
+    onPlayer: setPlaybackElement,
     onState: (state, name, turn) => {
       speechTurnRef.current = state === "awaiting_speech" ? turn : null;
       if (state === "awaiting_speech") {
@@ -128,7 +218,7 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
       const correct = Boolean(evaluation.pass);
       setSpeechResult({
         correct,
-        explanation: correct ? "" : speechReasonTips(evaluation.reasons, { uiLang, targetLabel: targetName }).join("\n\n"),
+        explanation: correct ? "" : speechReasonTips(evaluation.reasons, { uiLang: effectiveLang, targetLabel: targetName }).join("\n\n"),
       });
       playSound(correct ? completeSound : clickSound);
     },
@@ -154,12 +244,15 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
           mode,
           targetName,
           supportName,
+          targetLang,
+          supportLang,
           difficulty: getStoryDifficulty(cefrLevel),
           context,
           userCharacterName: "You",
         });
         const parsed = await generateStorySession({
           generate: (request) => services.generate(request), prompt,
+          targetLang,
           isCancelled: () => cancelled,
           onDiagnostic: (detail) => console.warn("[Stories] Generation attempt failed", { mode, targetLang, supportLang, ...detail }),
         });
@@ -174,6 +267,10 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
     generate();
     return () => { cancelled = true; };
   }, [mode, targetName, supportName, targetLang, supportLang, cefrLevel, context, generation, services]);
+
+  useEffect(() => {
+    setHasPlayed(false);
+  }, [episode]);
 
   const segment = episode?.segments[part];
   const question = segment?.question;
@@ -194,7 +291,9 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
     audio.stop(); setPlayback("idle");
   }, [audio, cancelRecording, stopPreview]);
   const play = (turns, onComplete) => {
-    primeTTSAudio(); setAudioError(false); stopPreview();
+    primeTTSAudio();
+    if (mode === "radio") primeStoryAudioLevels();
+    setAudioError(false); stopPreview();
     if (awaitingSpeech) {
       speechTurnRef.current = null;
       cancelRecording();
@@ -204,14 +303,18 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
     }
   };
   const startSegment = (section, replay = false) => {
+    setHasPlayed(true);
     stop();
-    primeTTSAudio(); setAudioError(false); setSpeechError("");
+    primeTTSAudio();
+    if (mode === "radio") primeStoryAudioLevels();
+    setAudioError(false); setSpeechError("");
     const turns = replay ? section.turns.filter((turn) => !isUserCharacter(turn.speaker)) : section.turns;
     audio.play(turns, () => { setHeard(true); setQuestionVisible(true); }, {
       requiresSpeech: (turn) => !replay && isUserCharacter(turn.speaker),
     });
   };
   const playSegment = () => {
+    setHasPlayed(true);
     if (awaitingSpeech) {
       const contextTurns = segment.turns.slice(0, segment.turns.indexOf(currentTurn) + 1)
         .filter((turn) => !isUserCharacter(turn.speaker));
@@ -236,6 +339,7 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
     if (!speechResult?.correct) return;
     stopPreview();
     primeTTSAudio();
+    if (mode === "radio") primeStoryAudioLevels();
     playSound(nextButtonSound);
     setSpeechResult(null);
     if (!audio.completeSpeech()) {
@@ -266,7 +370,7 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
       });
       playSound(completeSound);
     } else {
-      const tips = speechReasonTips(["pronunciation"], { uiLang, targetLabel: targetName });
+      const tips = speechReasonTips(["pronunciation"], { uiLang: effectiveLang, targetLabel: targetName });
       setSpeechResult({
         correct: false,
         explanation: tips.join("\n\n") || copy.speechIncorrect,
@@ -337,7 +441,19 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
       handleTestQuestion(isCorrect);
     }
   };
-  const togglePlayback = () => playback === "playing" ? audio.pause() : playback === "paused" ? audio.resume() : playSegment();
+  const togglePlayback = () => {
+    if (playback === "playing") {
+      setAudioError(false);
+      audio.pause();
+      return;
+    }
+    if (playback === "paused") {
+      setAudioError(false);
+      audio.resume();
+      return;
+    }
+    playSegment();
+  };
 
   const check = () => {
     if (result !== null || !questionVisible) return;
@@ -404,21 +520,25 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
     setQuestionVisible(false); setSelected([]); setResult(null); setScore(0);
     setReward(0); setSaveError(false); setAudioError(false); setRevealedTranslations({}); awarded.current = false;
     setCurrentTurn(null); setSpeaker("");
+    setHasPlayed(false);
     setGeneration((value) => value + 1);
   };
 
-  if (!episode) return <VStack spacing={6} minH="60vh" justify="space-between" w="100%">
-    <Center py={16} flex="1">
-      <VStack spacing={5} maxW="420px" textAlign="center">
-        <Icon as={mode === "radio" ? FiRadio : FiHeadphones} boxSize={10} color="teal.400" />
-        <Text role={generationError ? "alert" : "status"}>{generationError ? copy.generationError : copy.loading}</Text>
-        {generationError ? <Button onClick={onNewStory || restart}>{copy.retry}</Button> : <Spinner color="teal.400" />}
-      </VStack>
-    </Center>
-    <Box w="full" maxW="760px" mx="auto">
-      <QuestionActionArea actions={<ActivityActionRow tone="primary" primary={<Button isLoading={!generationError} isDisabled colorScheme="teal" rounded="full" px={8}>{copy.loading}</Button>}>{onSkip && <Button variant="ghost" onClick={onSkip}>{copy.skip}</Button>}</ActivityActionRow>} />
-    </Box>
-  </VStack>;
+  if (!episode) {
+    return (
+      <StoryLoadingScreen
+        title={copy.loading}
+        subtitle={copy.loadingSub}
+        error={generationError ? copy.generationError : null}
+        onRetry={onNewStory || restart}
+        retryLabel={copy.retry}
+        onSkip={onSkip}
+        skipLabel={copy.skip}
+        variant={mode === "radio" ? "radio" : "conversation"}
+        minH="60vh"
+      />
+    );
+  }
 
   const displayPlayback = preview?.state || playback;
   const displaySpeaker = preview?.speaker || speaker;
@@ -430,64 +550,64 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
   const canCheck = question.type === "order_words" || question.type === "select_words" ? selected.length === question.answer.length : selected.length === 1;
   const displayedParts = episode.segments.slice(0, part + 1);
 
-  const lessonXpGoal = lesson?.xpReward || 0;
-  const normalizedLessonEarnedXp = Math.max(0, Number(lessonEarnedXp) || 0);
-  const lessonProgress =
-    lesson && !lesson.isTutorial && lessonXpGoal > 0
+  const totalSegments = episode?.segments?.length || 0;
+  const earnedSegments = part + (result === true ? 1 : 0);
+  const storyProgress =
+    totalSegments > 0
       ? {
-          pct: Math.min(100, (normalizedLessonEarnedXp / lessonXpGoal) * 100),
-          earned: Math.min(normalizedLessonEarnedXp, lessonXpGoal),
-          total: lessonXpGoal,
-          label: t(uiLang, "vocab_lesson_progress") || "Lesson progress",
-          showAlways: true,
-        }
-      : episode?.segments?.length > 0
-      ? {
-          pct: Math.round(((part + (result !== null ? 1 : 0)) / episode.segments.length) * 100),
-          earned: part + (result !== null ? 1 : 0),
-          total: episode.segments.length,
-          label: t(uiLang, "vocab_lesson_progress") || "Lesson progress",
+          pct: Math.round((earnedSegments / totalSegments) * 100),
+          earned: earnedSegments,
+          total: totalSegments,
+          label:
+            t(effectiveLang, "story_progress") ||
+            t(effectiveLang, "vocab_lesson_progress") ||
+            "Lesson progress",
           showAlways: true,
         }
       : null;
+
+  const speechProgress =
+    totalSegments > 0
+      ? {
+          pct: Math.min(
+            100,
+            Math.round(((part + (speechResult?.correct ? 0.5 : 0)) / totalSegments) * 100)
+          ),
+          earned: part + (speechResult?.correct ? 1 : 0),
+          total: totalSegments,
+          label:
+            t(effectiveLang, "story_progress") ||
+            t(effectiveLang, "vocab_lesson_progress") ||
+            "Lesson progress",
+          showAlways: true,
+        }
+      : null;
+
+  const rawTitle =
+    resolveStoryTitleText(episode?.title, uiLang, supportLang, targetLang) ||
+    resolveStoryTitleText(lessonContent?.title, uiLang, supportLang, targetLang) ||
+    resolveStoryTitleText(lesson?.title, uiLang, supportLang, targetLang);
+  const prefix = mode === "radio" ? (copy.call || "Call") : (copy.story || "Story");
+  const escapedPrefixes = ["sentence practice", "practice", "call", "story", copy.call, copy.practice, copy.story, copy.speaking]
+    .filter(Boolean)
+    .map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    .join("|");
+  const cleanTitle = rawTitle.replace(new RegExp(`^(?:${escapedPrefixes}):\\s*`, "i"), "").trim();
+  const displayTitle = cleanTitle ? `${prefix}: ${cleanTitle}` : prefix;
+  const isStopAction =
+    !questionVisible &&
+    ((awaitingSpeech && isRecording) ||
+      (!awaitingSpeech && playback === "playing"));
+
   return <VStack align="stretch" spacing={5} maxW="760px" mx="auto" w="100%" color="var(--app-text-primary)">
-    <HStack justify="space-between" align="center" wrap="wrap" gap={2}>
-      <Badge colorScheme="teal">{copy[mode]}</Badge>
-      <HStack spacing={2} align="center">
-        <Button
-          size="xs"
-          variant="outline"
-          colorScheme="teal"
-          rounded="full"
-          leftIcon={<FiCheck />}
-          onClick={() => handleTest(true)}
-          isDisabled={result === true || speechResult?.correct === true}
-          title="Test step correctly"
-          aria-label="Test step correctly"
-        >
-          Test Correct
-        </Button>
-        <Button
-          size="xs"
-          variant="outline"
-          colorScheme="red"
-          rounded="full"
-          leftIcon={<FiX />}
-          onClick={() => handleTest(false)}
-          isDisabled={result === true || speechResult?.correct === true}
-          title="Test step incorrectly"
-          aria-label="Test step incorrectly"
-        >
-          Test Incorrect
-        </Button>
-        <Text fontSize="sm" color="var(--app-text-secondary)">{copy.segment} {part + 1} {copy.of} {episode.segments.length}</Text>
-      </HStack>
-    </HStack>
-    <Progress aria-label={copy.modes} value={100 * (part + (result !== null ? 1 : 0)) / episode.segments.length} colorScheme="teal" size="sm" borderRadius="full" />
-    <Box><Text as="h2" fontSize="2xl" fontWeight="700" {...getBidiTextProps(supportLang)}>{episode.title}</Text><Text mt={2} fontSize="sm" color="var(--app-text-secondary)">{copy[`${mode}Intro`]}</Text></Box>
+    <Box>
+      <Text as="h2" fontSize={{ base: "md", md: "lg" }} fontWeight="600" {...getBidiTextProps(supportLang)}>
+        {displayTitle}
+      </Text>
+    </Box>
 
     {mode === "radio" ? <VStack ref={currentPartRef} scrollMarginTop="24px" {...panel} p={{ base: 6, md: 10 }} spacing={7} bg="linear-gradient(145deg, var(--app-surface-elevated), var(--app-surface-muted))">
-      <Badge colorScheme={isAudioSessionActive ? "teal" : "gray"} letterSpacing="0.15em">{displayPlayback === "awaiting_speech" ? copy.yourTurn : displayPlayback === "loading" ? copy.preparingAudio : displayPlayback === "paused" ? copy.paused : isAudioSessionActive ? copy.onAir : copy.ready}</Badge>
+      <VisuallyHidden>{displayPlayback === "awaiting_speech" ? copy.yourTurn : displayPlayback === "loading" ? copy.preparingAudio : displayPlayback === "paused" ? copy.paused : isAudioSessionActive ? copy.onAir : copy.ready}</VisuallyHidden>
       <HStack spacing={{ base: 6, md: 14 }} justify="center">
         {speakers.map((name, i) => {
           const isSpeaking = isAudioSessionActive && normName(displaySpeaker) === normName(name);
@@ -509,6 +629,7 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
                 name={name}
                 portraitId={sessionCharacterPortraits[name]}
                 user={user}
+                userLabel={(copy.you || "You").toUpperCase()}
                 size={{ base: "64px", md: "80px" }}
                 isSpeaking={isSpeaking}
                 accentColor={accentColor}
@@ -517,7 +638,7 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
               />
               <VStack spacing={1}>
                 <Text fontWeight={isSpeaking ? "700" : "600"} fontSize="md" color="var(--app-text-primary)">
-                  {name}
+                  {isUserCharacter(name, user) ? (copy.you || name) : name}
                 </Text>
                 {isSpeaking && (
                   <Badge
@@ -572,38 +693,43 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
           </Text>
         </Box>
       )}
-      <HStack h="32px" spacing={1} aria-hidden="true" data-testid="radio-signal">
-        {[10, 18, 28, 14, 32, 22, 12, 26, 18, 30, 14, 8].map((height, i) => <Box
-          key={i} w="4px" h={`${activeAudio || isRecording ? height : 6}px`} bg="teal.400" rounded="full"
-          animation={activeAudio || isRecording ? `${radioPulse} ${0.65 + (i % 4) * 0.13}s ease-in-out ${-i * 0.11}s infinite` : "none"}
-          transition="height 0.2s"
-          sx={{ "@media (prefers-reduced-motion: reduce)": { animation: "none", transition: "none" } }}
-        />)}
-      </HStack>
-      <IconButton aria-label={copy.replay} icon={<FiRotateCcw />} variant="ghost" isDisabled={saving} onClick={playSegment} />
-      {!heard && !awaitingSpeech && <Text fontSize="sm" textAlign="center" color="var(--app-text-secondary)">{copy.heard}</Text>}
+      <RadioSignal audio={preview ? previewElement : playbackElement} playing={activeAudio} recording={isRecording} />
+      {hasPlayed && (
+        <Button
+          size="sm"
+          variant="ghost"
+          leftIcon={<FiRotateCcw />}
+          isDisabled={saving}
+          onClick={playSegment}
+          aria-label={copy.replay || "Replay"}
+        >
+          {copy.replay || "Replay"}
+        </Button>
+      )}
     </VStack> : <VStack align="stretch" spacing={5}>
       {displayedParts.map((section, sectionIndex) => <VStack key={sectionIndex} ref={sectionIndex === part ? currentPartRef : undefined} scrollMarginTop="24px" align="stretch" spacing={4} opacity={sectionIndex < part ? 0.7 : 1}>
         {section.turns.map((turn, turnIndex) => {
           const key = `${sectionIndex}-${turnIndex}`;
           const isRight = speakers.indexOf(turn.speaker) === 1;
+          const speakerDisplay = isUserCharacter(turn.speaker, user) ? (copy.you || turn.speaker) : turn.speaker;
           return <Flex key={key} gap={3} direction={isRight ? "row-reverse" : "row"} align="start">
             <StoryCharacterAvatar
               name={turn.speaker}
               portraitId={sessionCharacterPortraits[turn.speaker]}
               user={user}
+              userLabel={(copy.you || "You").toUpperCase()}
               size="42px"
               isSpeaking={displaySpeaker === turn.speaker && activeAudio}
               accentColor={isRight ? "purple.400" : "teal.400"}
             />
             <Box {...panel} p={4} maxW="85%" flex="1" borderColor={displaySpeaker === turn.speaker && activeAudio ? "teal.400" : "var(--app-border)"}>
               <HStack justify="space-between" mb={2}>
-                <Text fontSize="xs" fontWeight="700" color="var(--app-text-secondary)">{turn.speaker}</Text>
+                <Text fontSize="xs" fontWeight="700" color="var(--app-text-secondary)">{speakerDisplay}</Text>
                 <HStack spacing={1}>
                   <IconButton
                     size="sm"
                     variant="ghost"
-                    aria-label={`${copy.play}: ${turn.speaker}`}
+                    aria-label={`${copy.play}: ${speakerDisplay}`}
                     icon={<FiVolume2 />}
                     onClick={() => play([turn])}
                     isDisabled={saving || (!heard && isAudioSessionActive && !awaitingSpeech)}
@@ -616,19 +742,24 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
                       aria-label={revealedTranslations[key] ? copy.hideTranslation : copy.translation}
                       title={revealedTranslations[key] ? copy.hideTranslation : copy.translation}
                       icon={<MdOutlineTranslate size={18} />}
-                      onClick={() => {
-                        playSound(selectSound);
-                        setRevealedTranslations((value) => ({ ...value, [key]: !value[key] }));
-                      }}
+                      onClick={() => toggleTurnTranslation(key, turn)}
                       isDisabled={saving}
                     />
                 </HStack>
               </HStack>
               <Text fontSize="lg" lineHeight="1.7" {...getBidiTextProps(targetLang)}>{turn.target}</Text>
               {revealedTranslations[key] && (
-                <Text mt={2} fontSize="sm" color="var(--app-text-secondary)" {...getBidiTextProps(supportLang)}>
-                  {turn.support}
-                </Text>
+                <Box mt={2}>
+                  {translatingKeys[key] ? (
+                    <Box py={1}>
+                      <AnimatedEllipsis color="teal.400" ariaLabel={copy.preparingAudio || "Loading"} justify="flex-start" />
+                    </Box>
+                  ) : (
+                    <Text fontSize="sm" color="var(--app-text-secondary)" {...getBidiTextProps(supportLang)}>
+                      {turnTranslations[key] || turn.support}
+                    </Text>
+                  )}
+                </Box>
               )}
             </Box>
           </Flex>;
@@ -639,18 +770,19 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
               name="You"
               portraitId={sessionCharacterPortraits["You"]}
               user={user}
+              userLabel={(copy.you || "You").toUpperCase()}
               size="42px"
               isSpeaking={displaySpeaker === "You" && activeAudio}
               accentColor="purple.400"
             />
             <Box {...panel} p={4} maxW="85%" flex="1" borderColor={displaySpeaker === "You" && activeAudio ? "teal.400" : "var(--app-border)"}>
               <HStack justify="space-between" mb={2}>
-                <Text fontSize="xs" fontWeight="700" color="var(--app-text-secondary)">You</Text>
+                <Text fontSize="xs" fontWeight="700" color="var(--app-text-secondary)">{copy.you || "You"}</Text>
                 <HStack spacing={1}>
                   <IconButton
                     size="sm"
                     variant="ghost"
-                    aria-label={`${copy.play}: You`}
+                    aria-label={`${copy.play}: ${copy.you || "You"}`}
                     icon={<FiVolume2 />}
                     onClick={() => play([{ speaker: "You", target: question.options[question.answer[0]], support: question.explanation }])}
                     isDisabled={saving}
@@ -691,8 +823,16 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
     </VStack>}
 
     {mode === "conversation" && <HStack>
-      <IconButton aria-label={copy.replay} icon={<FiRotateCcw />} variant="ghost" isDisabled={saving} onClick={playSegment} />
-      {!heard && !awaitingSpeech && <Text fontSize="sm" color="var(--app-text-secondary)">{copy.heard}</Text>}
+      <Button
+        size="sm"
+        variant="ghost"
+        leftIcon={<FiRotateCcw />}
+        isDisabled={saving}
+        onClick={playSegment}
+        aria-label={copy.replay || "Replay"}
+      >
+        {copy.replay || "Replay"}
+      </Button>
     </HStack>}
     {awaitingSpeech && currentTurn && <VStack {...panel} p={5} align="stretch" aria-live="polite" data-testid="story-speech-turn">
       <HStack justify="space-between">
@@ -700,7 +840,7 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
         <HStack spacing={1}>
           <IconButton
             size="sm" variant="ghost" icon={<FiVolume2 />}
-            aria-label={`${copy.play}: ${currentTurn.speaker}`}
+            aria-label={`${copy.play}: ${isUserCharacter(currentTurn.speaker, user) ? (copy.you || currentTurn.speaker) : currentTurn.speaker}`}
             onClick={() => play([currentTurn])} isDisabled={saving}
           />
           <IconButton
@@ -708,15 +848,27 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
             aria-label={speechTranslation ? copy.hideTranslation : copy.translation}
             aria-pressed={speechTranslation}
             color={speechTranslation ? "teal.400" : "var(--app-text-secondary)"}
-            onClick={() => { playSound(selectSound); setSpeechTranslation((value) => !value); }}
+            onClick={() => toggleSpeechTranslation(currentTurn)}
           />
         </HStack>
       </HStack>
       <Text fontSize="lg" {...getBidiTextProps(targetLang)}>{currentTurn.target}</Text>
-      {speechTranslation && <Text color="var(--app-text-secondary)" {...getBidiTextProps(supportLang)}>{currentTurn.support}</Text>}
+      {speechTranslation && (
+        <Box mt={2}>
+          {translatingKeys["speech"] ? (
+            <Box py={1}>
+              <AnimatedEllipsis color="teal.400" ariaLabel={copy.preparingAudio || "Loading"} justify="flex-start" />
+            </Box>
+          ) : (
+            <Text color="var(--app-text-secondary)" {...getBidiTextProps(supportLang)}>
+              {turnTranslations["speech"] || currentTurn.support}
+            </Text>
+          )}
+        </Box>
+      )}
       {speechError && <Text role="alert" color="orange.400">{speechError}</Text>}
     </VStack>}
-    {audioError && <Text role="alert" color="orange.400">{copy.audioError}</Text>}
+    {audioError && playback !== "paused" && <Text role="alert" color="orange.400">{copy.audioError}</Text>}
     {questionVisible && <VStack {...panel} p={{ base: 4, md: 6 }} align="stretch" spacing={4}>
       <Text fontSize="lg" fontWeight="600" {...getBidiTextProps(supportLang)}>{question.prompt}</Text>
       {listeningQuestion && <Button variant="outline" alignSelf="start" leftIcon={<FiVolume2 />} isDisabled={saving} onClick={() => play([segment.turns[question.audioTurn]])}>{copy.listen}</Button>}
@@ -752,11 +904,11 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
             indicatorBorderColor = "red.500";
             indicatorContent = "✕";
           } else if (isSelected) {
-            borderColor = "teal.400";
-            bg = "rgba(56, 178, 172, 0.16)";
-            boxShadow = "0 0 0 1px var(--chakra-colors-teal-400), 0 4px 12px rgba(56, 178, 172, 0.25)";
-            indicatorBg = "teal.400";
-            indicatorBorderColor = "teal.400";
+            borderColor = "purple.400";
+            bg = "rgba(128, 90, 213, 0.16)";
+            boxShadow = "0 0 0 1px var(--chakra-colors-purple-400), 0 4px 12px rgba(128, 90, 213, 0.25)";
+            indicatorBg = "purple.400";
+            indicatorBorderColor = "purple.400";
             indicatorContent = "✓";
           }
 
@@ -781,8 +933,8 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
               _hover={
                 result === null
                   ? {
-                      bg: isSelected ? "rgba(56, 178, 172, 0.22)" : "var(--app-surface-muted)",
-                      borderColor: isSelected ? "teal.300" : "var(--app-border-strong)",
+                      bg: isSelected ? "rgba(128, 90, 213, 0.22)" : "var(--app-surface-muted)",
+                      borderColor: isSelected ? "purple.300" : "var(--app-border-strong)",
                       transform: "translateY(-1px)",
                     }
                   : {}
@@ -846,15 +998,16 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
       actions={
         result !== null || speechResult !== null ? null : (
           <ActivityActionRow
-            tone="primary"
+            tone={isStopAction ? "stop" : "primary"}
             primary={
               <Button
-                colorScheme="teal"
+                colorScheme={isStopAction ? "reddit" : "purple"}
                 isLoading={saving || (!questionVisible && (playback === "loading" || isConnecting))}
                 loadingText={isConnecting ? copy.connectingMic : copy.preparingAudio}
                 isDisabled={questionVisible && !canCheck}
-                leftIcon={!questionVisible ? (awaitingSpeech ? <FiMic /> : playback === "playing" ? <FiPause /> : <FiPlay />) : undefined}
+                leftIcon={!questionVisible ? (awaitingSpeech ? (isRecording ? <FaStop /> : <FiMic />) : playback === "playing" ? <FiPause /> : <FiPlay />) : undefined}
                 onClick={questionVisible ? check : awaitingSpeech ? recordLine : togglePlayback}
+                aria-label={awaitingSpeech && isRecording ? "Stop recording" : undefined}
               >
                 {questionVisible ? copy.check : awaitingSpeech ? (isRecording ? copy.stopRecording : copy.record) : playback === "playing" ? copy.pause : playback === "paused" ? copy.resume : copy.play}
               </Button>
@@ -872,6 +1025,7 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
                 {copy.skip}
               </Button>
             )}
+            {/* Test buttons commented out
             <Button
               variant="ghost"
               isDisabled={saving || result === true || speechResult?.correct === true}
@@ -890,6 +1044,7 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
             >
               Test ✗
             </Button>
+            */}
           </ActivityActionRow>
         )
       }
@@ -900,11 +1055,12 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
           ok={speechResult.correct}
           statusLabel={speechResult.correct ? copy.correct : copy.speechIncorrect}
           explanationText={speechResult.explanation}
+          lessonProgress={speechProgress}
           showNext={true}
           onNext={speechResult.correct ? continueSpeech : retrySpeech}
           nextLabel={speechResult.correct ? copy.next : copy.retry}
-          t={(k) => t(uiLang, k)}
-          userLanguage={uiLang}
+          t={(k) => t(effectiveLang, k)}
+          userLanguage={effectiveLang}
         />
       )}
       {result !== null && (
@@ -917,12 +1073,12 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
               ? `${question.answer.map((i) => question.options[i]).join(question.type === "order_words" ? " " : " · ")}\n\n${question.explanation}`
               : question?.explanation) || ""
           }
-          lessonProgress={lessonProgress}
+          lessonProgress={storyProgress}
           showNext={true}
           onNext={part === episode.segments.length - 1 ? finish : advance}
           nextLabel={part === episode.segments.length - 1 ? copy.finish : copy.next}
-          t={(k) => t(uiLang, k)}
-          userLanguage={uiLang}
+          t={(k) => t(effectiveLang, k)}
+          userLanguage={effectiveLang}
         />
       )}
     </QuestionActionArea>

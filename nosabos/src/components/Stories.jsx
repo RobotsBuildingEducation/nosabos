@@ -30,7 +30,8 @@ import {
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import { FaArrowLeft, FaStop, FaPen, FaMicrophone } from "react-icons/fa";
-import { FiArrowRight, FiRadio, FiHeadphones, FiRotateCcw, FiCheck, FiX } from "react-icons/fi";
+import { FiRadio, FiHeadphones } from "react-icons/fi";
+import { MdOutlineTranslate } from "react-icons/md";
 import { FaWandMagicSparkles } from "react-icons/fa6";
 import { PiSpeakerHighDuotone } from "react-icons/pi";
 import { useNavigate } from "react-router-dom";
@@ -60,8 +61,8 @@ import {
   SOFT_STOP_BUTTON_HOVER_BG,
 } from "../utils/softStopButton";
 import {
-  LOW_LATENCY_TTS_FORMAT,
   getTTSPlayer,
+  primeTTSAudio,
   stopAllTTSPlayback,
   TTS_LANG_TAG,
 } from "../utils/tts";
@@ -70,18 +71,29 @@ import { getUserProficiencyLevel } from "../utils/cefrProgress";
 import { speechReasonTips } from "../utils/speechEvaluation";
 import { SpeakSuccessCard } from "./SpeakSuccessCard";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
-import VoiceOrb from "./VoiceOrb";
+import StoryLoadingScreen from "../features/stories/StoryLoadingScreen";
 import RandomCharacter from "./RandomCharacter";
 import useSoundSettings from "../hooks/useSoundSettings";
-import { submitActionSound, nextButtonSound, deliciousSound } from "../constants/sounds";
+import { submitActionSound, nextButtonSound, deliciousSound, selectSound } from "../constants/sounds";
 import { getBidiTextProps, mergeBidiSx } from "../utils/bidiText";
 import { buildCurriculumPromptContext } from "../utils/lessonCurriculum";
 import { questionSquircleStyle } from "./questionUiStyles";
 import StoryComprehension from "../features/stories/StoryComprehension";
-import { chooseStoryMode, rotateStoryMode, STORY_MODES } from "../features/stories/storySession";
-import { storyCopy } from "../features/stories/storyCopy";
+import { chooseStoryMode, isStoryTargetCollectionCompatible, rotateStoryMode, STORY_MODES } from "../features/stories/storySession";
 import { buildSpeakingStoryPrompt, getStoryDifficulty, STORY_THINKING_BUDGET } from "../features/stories/storyPrompts";
 import StoryCharacterAvatar from "../features/stories/StoryCharacterAvatar";
+import { storyCopy } from "../features/stories/storyCopy";
+import { storyServices } from "../features/stories/storyServices";
+import {
+  PRACTICE_STORY_TURN_XP,
+  claimPracticeStoryTurnReward,
+} from "../features/stories/practiceStoryRewards";
+import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  DEFAULT_TARGET_LANGUAGE,
+  normalizePracticeLanguage,
+  normalizeSupportLanguage,
+} from "../constants/languages";
 import {
   getStoryCharacterVoice,
   getStoryCharacterPersonality,
@@ -168,6 +180,48 @@ const BCP47 = {
 const supportStoryText = (lang, values) =>
   values?.[lang] || values?.en || "";
 
+const resolveStoryLanguages = ({ targetLang, supportLang, progress, uiLang }) => {
+  const resolvedTargetLang = normalizePracticeLanguage(
+    targetLang || progress?.targetLang,
+    DEFAULT_TARGET_LANGUAGE,
+  );
+  const requestedSupportLang = supportLang || progress?.supportLang;
+  const resolvedSupportLang =
+    requestedSupportLang === "bilingual"
+      ? normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE)
+      : normalizeSupportLanguage(
+          requestedSupportLang || uiLang,
+          DEFAULT_SUPPORT_LANGUAGE,
+        );
+  return { targetLang: resolvedTargetLang, supportLang: resolvedSupportLang };
+};
+
+const resolveStoryTitleText = (value, uiLang = "en", supportLang = "en", targetLang = "es") => {
+  if (!value) return "";
+  if (typeof value === "string") return value.trim();
+  if (Array.isArray(value)) {
+    return value.map((v) => resolveStoryTitleText(v, uiLang, supportLang, targetLang)).filter(Boolean).join(" ");
+  }
+  if (typeof value === "object") {
+    const candidate =
+      value[uiLang] ||
+      value[supportLang] ||
+      value[targetLang] ||
+      value.en ||
+      value.es ||
+      value.title ||
+      value.name ||
+      Object.values(value).find((v) => typeof v === "string" && v.trim() && !v.startsWith("[object")) ||
+      "";
+    if (typeof candidate === "string") return candidate.trim();
+    if (typeof candidate === "object" && candidate !== null && candidate !== value) {
+      return resolveStoryTitleText(candidate, uiLang, supportLang, targetLang);
+    }
+  }
+  const str = String(value).trim();
+  return str === "[object Object]" ? "" : str;
+};
+
 const toLangKey = (value) => {
   const raw = String(value ?? "")
     .trim()
@@ -245,9 +299,9 @@ function textFromChunk(chunk) {
 /* ================================
    Shared Progress (global XP + settings)
 =================================== */
-function useSharedProgress() {
+function useSharedProgress(activeNpub = "") {
   const user = useUserStore((s) => s.user);
-  const npub = strongNpub(user);
+  const npub = activeNpub?.trim?.() || strongNpub(user);
   const [xp, setXp] = useState(0);
   const [progress, setProgress] = useState({
     level: "beginner",
@@ -400,8 +454,6 @@ function useUIText(uiLang, level) {
 =================================== */
 export default function StoryMode(props) {
   const user = useUserStore((s) => s.user);
-  const uiLang = getAppUILang();
-  const copy = storyCopy(uiLang);
   const pinnedMode =
     props.lessonContent?.topic === "tutorial"
       ? "speaking"
@@ -417,8 +469,8 @@ export default function StoryMode(props) {
 
   const baseScope = JSON.stringify([
     user?.id,
-    user?.progress?.targetLang,
-    user?.progress?.supportLang,
+    props.targetLang || user?.progress?.targetLang,
+    props.supportLang || user?.progress?.supportLang,
     props.lesson?.id,
     props.lessonContent?.topic,
     props.lessonContent?.scenario,
@@ -429,12 +481,6 @@ export default function StoryMode(props) {
       setActiveMode(pinnedMode);
     }
   }, [pinnedMode, activeMode]);
-
-  const handleSelectMode = useCallback((newMode) => {
-    if (!STORY_MODES.includes(newMode)) return;
-    setActiveMode(newMode);
-    setCycle((c) => c + 1);
-  }, []);
 
   const handleNewStory = useCallback(() => {
     if (pinnedMode) {
@@ -448,74 +494,11 @@ export default function StoryMode(props) {
 
   return (
     <Box w="100%" maxW="1280px" mx="auto" px={{ base: 2, md: 4 }}>
-      {props.lessonContent?.topic !== "tutorial" && (
-        <Flex
-          align="center"
-          justify="space-between"
-          gap={2}
-          wrap="wrap"
-          mb={4}
-          pb={3}
-          borderBottom="1px solid"
-          borderColor={APP_BORDER}
-        >
-          <HStack spacing={2} wrap="wrap" role="tablist" aria-label={copy.modes}>
-            {STORY_MODES.map((m) => {
-              const isActive = activeMode === m;
-              const icon =
-                m === "speaking" ? (
-                  <FaMicrophone />
-                ) : m === "radio" ? (
-                  <FiRadio />
-                ) : (
-                  <FiHeadphones />
-                );
-              const label =
-                m === "speaking"
-                  ? copy.speaking || "Practice"
-                  : m === "radio"
-                  ? copy.radio || "Radio"
-                  : copy.conversation || "Conversation";
-
-              return (
-                <Button
-                  key={m}
-                  size="sm"
-                  role="tab"
-                  aria-selected={isActive}
-                  variant={isActive ? "solid" : "ghost"}
-                  colorScheme="teal"
-                  leftIcon={icon}
-                  rounded="full"
-                  fontWeight={isActive ? "700" : "500"}
-                  onClick={() => handleSelectMode(m)}
-                >
-                  {label}
-                </Button>
-              );
-            })}
-          </HStack>
-
-          <Button
-            size="sm"
-            variant="outline"
-            colorScheme="teal"
-            rounded="full"
-            leftIcon={<FiRotateCcw />}
-            onClick={handleNewStory}
-            aria-label={copy.back || "New story"}
-          >
-            {copy.back || "New story"}
-          </Button>
-        </Flex>
-      )}
-
       <StoryActivity
         key={`${baseScope}-${activeMode}-${cycle}`}
         {...props}
         mode={activeMode}
         onNewStory={handleNewStory}
-        onSelectMode={handleSelectMode}
       />
     </Box>
   );
@@ -531,14 +514,32 @@ function StoryActivity(props) {
 }
 
 function StoryComprehensionSettings(props) {
-  const { progress, npub, progressReady } = useSharedProgress();
+  const { progress, npub, progressReady } = useSharedProgress(props.activeNpub);
   const uiLang = getAppUILang();
-  const supportLang = progress.supportLang === "bilingual" ? uiLang : progress.supportLang;
-  if (!progressReady) return <Center p={12}><Spinner /></Center>;
+  const { targetLang, supportLang } = resolveStoryLanguages({
+    targetLang: props.targetLang,
+    supportLang: props.supportLang,
+    progress,
+    uiLang,
+  });
+  const effectiveLang = normalizeSupportLanguage(supportLang || uiLang, "en");
+  const copy = storyCopy(effectiveLang);
+
+  if (!progressReady) {
+    return (
+      <StoryLoadingScreen
+        title={copy.loading}
+        subtitle={copy.loadingSub}
+        onSkip={props.onSkip}
+        skipLabel={copy.skip}
+        variant={props.mode || "radio"}
+      />
+    );
+  }
   return <StoryComprehension {...props} npub={npub} uiLang={uiLang}
-    targetLang={progress.targetLang} supportLang={supportLang}
-    targetName={LLM_LANG_NAME(progress.targetLang)} supportName={LLM_LANG_NAME(supportLang)}
-    cefrLevel={props.lesson?.cefrLevel || props.lessonContent?.cefrLevel || (props.lesson?.id ? extractCEFRLevel(props.lesson.id) : getUserProficiencyLevel(progress, progress.targetLang))} />;
+    targetLang={targetLang} supportLang={supportLang}
+    targetName={LLM_LANG_NAME(targetLang)} supportName={LLM_LANG_NAME(supportLang)}
+    cefrLevel={props.lesson?.cefrLevel || props.lessonContent?.cefrLevel || (props.lesson?.id ? extractCEFRLevel(props.lesson.id) : getUserProficiencyLevel(progress, targetLang))} />;
 }
 
 function SpeakingStoryMode({
@@ -549,6 +550,9 @@ function SpeakingStoryMode({
   onNewStory = null,
   pauseMs = 2000,
   lessonEarnedXp = 0,
+  targetLang: targetLangProp = "",
+  supportLang: supportLangProp = "",
+  activeNpub = "",
 }) {
   const navigate = useNavigate();
   const toast = useToast();
@@ -560,9 +564,15 @@ function SpeakingStoryMode({
   }, []);
 
   // Shared settings + XP
-  const { progress, npub, progressReady } = useSharedProgress();
+  const { progress, npub, progressReady } = useSharedProgress(activeNpub);
 
-  const targetLang = progress.targetLang;
+  const uiLang = getAppUILang();
+  const { targetLang, supportLang } = resolveStoryLanguages({
+    targetLang: targetLangProp,
+    supportLang: supportLangProp,
+    progress,
+    uiLang,
+  });
 
   // Repair/ephemeral lessons carry an explicit CEFR level; regular path lessons
   // can still derive it from their level-coded id.
@@ -573,41 +583,28 @@ function SpeakingStoryMode({
       ? extractCEFRLevel(lesson.id)
       : getUserProficiencyLevel(progress, targetLang));
 
-  // APP UI language (drives all UI copy)
-  const uiLang = getAppUILang();
-  const uiText = useUIText(uiLang, progress.level);
-
-  // Content languages
-  const supportLang =
-    progress.supportLang === "bilingual"
-      ? ([
-          "es",
-          "pt",
-          "it",
-          "fr",
-          "de",
-          "ja",
-          "hi",
-          "ar",
-          "zh",
-        ].includes(uiLang)
-          ? uiLang
-          : "en")
-      : progress.supportLang;
+  // APP/UI copy and support translations follow the resolved support language.
+  const effectiveLang = normalizeSupportLanguage(supportLang || uiLang, "en");
+  const copy = storyCopy(effectiveLang);
+  const uiText = useUIText(effectiveLang, progress.level);
   const targetTextProps = getBidiTextProps(targetLang);
   const supportTextProps = getBidiTextProps(supportLang);
 
-  const targetDisplayName = DISPLAY_LANG_NAME(targetLang, uiLang);
+  const targetDisplayName = DISPLAY_LANG_NAME(targetLang, effectiveLang);
 
   // State
   const [storyData, setStoryData] = useState(null);
   const [storyType, setStoryType] = useState(null); // 'paragraph' | 'conversation'
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [generationError, setGenerationError] = useState(false);
 
   const [isPlayingTarget, setIsPlayingTarget] = useState(false);
   const [isSynthesizingTarget, setIsSynthesizingTarget] = useState(false);
   const [playingLineIndex, setPlayingLineIndex] = useState(null);
+  const [revealedTranslations, setRevealedTranslations] = useState({});
+  const [sentenceTranslations, setSentenceTranslations] = useState({});
+  const [translatingSentences, setTranslatingSentences] = useState({});
   const [sentenceCompleted, setSentenceCompleted] = useState(false); // Track when sentence is completed but not advanced
   const [lastSuccessInfo, setLastSuccessInfo] = useState(null);
   const [lastFeedback, setLastFeedback] = useState(null);
@@ -615,7 +612,6 @@ function SpeakingStoryMode({
   // accumulate this session, but award only at end
   const [sessionXp, setSessionXp] = useState(0);
   const [sessionSummary, setSessionSummary] = useState({ passed: 0, total: 0 });
-  const [passedCount, setPassedCount] = useState(0);
 
   // Highlighting (target full story)
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
@@ -645,6 +641,7 @@ function SpeakingStoryMode({
   }, [currentSentenceIndex]);
   const currentAudioUrlRef = useRef(null);
   const sessionAwardedRef = useRef(false);
+  const rewardedSentenceKeysRef = useRef(new Set());
   const usageStatsRef = useRef({
     ttsCalls: 0,
     storyGenerations: 0,
@@ -831,8 +828,9 @@ function SpeakingStoryMode({
   }
 
   /* --------------------------- Story data shaping --------------------------- */
-  // Normalize incoming story to { fullStory: { tgt, sup }, sentences: [{tgt,sup}, ...] }
-  function normalizeStory(raw, tgtCode, supCode) {
+  // Practice stories load target-language dialogue only. Support translations
+  // are fetched per line when the learner asks for one.
+  function normalizeStory(raw, tgtCode) {
     if (!raw) return null;
     const pick = (obj, code, fallback) =>
       obj?.[code] ??
@@ -840,10 +838,9 @@ function SpeakingStoryMode({
       obj?.[fallback];
 
     const fullTgt = pick(raw.fullStory || {}, tgtCode, "es");
-    const fullSup = pick(raw.fullStory || {}, supCode, "en");
     const sentences = (raw.sentences || []).map((s) => ({
       tgt: s?.[tgtCode] ?? s?.es ?? s?.en ?? "",
-      sup: s?.[supCode] ?? s?.en ?? s?.es ?? "",
+      sup: "",
       ...(s?.character && { character: String(s.character).trim() }),
       ...(normalizeCharacterGender(s?.gender) && {
         gender: normalizeCharacterGender(s.gender),
@@ -853,7 +850,7 @@ function SpeakingStoryMode({
     if (!fullTgt || !sentences.length) return null;
 
     return {
-      fullStory: { tgt: fullTgt, sup: fullSup || "" },
+      fullStory: { tgt: fullTgt, sup: "" },
       sentences,
     };
   }
@@ -913,7 +910,14 @@ function SpeakingStoryMode({
   /* ----------------------------- Story generation (backend, fallback) ----------------------------- */
   const generateStory = useCallback(async () => {
     setIsLoading(true);
+    setGenerationError(false);
     stopAllAudio();
+    setRevealedTranslations({});
+    setSentenceTranslations({});
+    setTranslatingSentences({});
+    setSessionXp(0);
+    sessionAwardedRef.current = false;
+    rewardedSentenceKeysRef.current.clear();
     const isTutorial = lessonContent?.topic === "tutorial";
     try {
       usageStatsRef.current.storyGenerations++;
@@ -938,6 +942,7 @@ function SpeakingStoryMode({
             cefrLevel, // CEFR-based difficulty level
             targetLang, // content target language
             supportLang, // effective support language (bilingual mirrors UI)
+            includeTranslations: false,
             lessonTopic, // Use lesson context instead of role
           },
         }),
@@ -951,6 +956,14 @@ function SpeakingStoryMode({
       );
       if (!normalized) throw new Error("Story payload missing expected fields");
       const validated = validateAndFixStorySentences(normalized, "tgt", "sup");
+      if (!isStoryTargetCollectionCompatible(
+        validated.sentences.map((sentence) => sentence?.tgt),
+        targetLang,
+      )) {
+        throw new Error(
+          `Story dialogue is not in the requested target language (${targetLang})`,
+        );
+      }
       setStoryData(validated);
       storyCacheRef.current = validated;
       setCurrentSentenceIndex(0);
@@ -960,12 +973,21 @@ function SpeakingStoryMode({
         passed: 0,
         total: validated?.sentences?.length || 0,
       });
-      setPassedCount(0);
       sessionAwardedRef.current = false;
       setHighlightedWordIndex(-1);
       setLastSuccessInfo(null);
       setLastFeedback(null);
     } catch (error) {
+      if (!new Set(["en", "es"]).has(targetLang)) {
+        console.error("Story generation failed for the requested language", {
+          targetLang,
+          supportLang,
+          message: error?.message || String(error),
+        });
+        setStoryData(null);
+        setGenerationError(true);
+        return;
+      }
       // Bilingual fallback that respects target/support languages
       setStoryType("paragraph"); // Fallback is always a paragraph story
       const fallback = isTutorial
@@ -1216,14 +1238,19 @@ function SpeakingStoryMode({
    */
   const generateStoryGeminiStream = useCallback(async () => {
     setIsLoading(true);
+    setGenerationError(false);
     stopAllAudio();
+    setRevealedTranslations({});
+    setSentenceTranslations({});
+    setTranslatingSentences({});
+    setSessionXp(0);
+    sessionAwardedRef.current = false;
+    rewardedSentenceKeysRef.current.clear();
     try {
       usageStatsRef.current.storyGenerations++;
       const tLang = targetLang; // 'es' | 'en' | 'nah'
-      const sLang = supportLang; // 'en' | 'es'
       const tName = LLM_LANG_NAME(tLang);
-      const sName = LLM_LANG_NAME(sLang);
-      const diff = getStoryDifficulty(cefrLevel);
+      const diff = getStoryDifficulty(cefrLevel, { includeTranslations: false });
 
       // Check for tutorial mode first
       const isTutorial = lessonContent?.topic === "tutorial";
@@ -1249,8 +1276,6 @@ function SpeakingStoryMode({
       const prompt = buildSpeakingStoryPrompt({
         targetName: tName,
         targetLang: tLang,
-        supportName: sName,
-        supportLang: sLang,
         difficulty: diff,
         isTutorial,
         scenarioDirective,
@@ -1279,53 +1304,66 @@ function SpeakingStoryMode({
         } catch {
           return;
         }
-        if (obj?.type === "sentence" && (obj.tgt || obj.sup)) {
+        if (obj?.type === "sentence" && obj.tgt) {
           const item = {
             tgt: String(obj.tgt || "").trim(),
-            sup: String(obj.sup || "").trim(),
+            sup: "",
             // Include character name for conversation scripts
             ...(obj.character && { character: String(obj.character).trim() }),
             ...(normalizeCharacterGender(obj.gender) && {
               gender: normalizeCharacterGender(obj.gender),
             }),
           };
-          const key = `${item.tgt}|||${item.sup}`;
+          const key = `${item.character || ""}|||${item.tgt}`;
           if (seenLineKeys.has(key)) return;
           seenLineKeys.add(key);
           sentences.push(item);
 
-          // Reveal UI as soon as we have the first sentence
+          // Distinct-script targets may begin with a name, acronym, or "OK".
+          // Buffer those short Latin-only lines until the episode has enough
+          // target-script evidence to safely reveal it.
           if (!revealed) {
-            setStoryData({
-              fullStory: { tgt: item.tgt, sup: item.sup || "" },
-              sentences: [item],
-              storyType: selectedStoryType,
-            });
-            setIsLoading(false);
-            revealed = true;
-          } else {
-            // incrementally append
-            setStoryData((prev) => {
-              const prevSentences = prev?.sentences || [];
-              const alreadyExists = prevSentences.some(
-                (s) => s.tgt === item.tgt && s.sup === item.sup,
-              );
-              if (alreadyExists) return prev;
-              const nextSentences = [...prevSentences, item];
-              return {
+            if (
+              isStoryTargetCollectionCompatible(
+                sentences.map((sentence) => sentence.tgt),
+                tLang,
+              )
+            ) {
+              setStoryData({
                 fullStory: {
-                  tgt:
-                    (prev?.fullStory?.tgt ? prev.fullStory.tgt + " " : "") +
-                    item.tgt,
-                  sup:
-                    (prev?.fullStory?.sup ? prev.fullStory.sup + " " : "") +
-                    (item.sup || ""),
+                  tgt: sentences.map((sentence) => sentence.tgt).join(" "),
+                  sup: "",
                 },
-                sentences: nextSentences,
+                sentences: [...sentences],
                 storyType: selectedStoryType,
-              };
-            });
+              });
+              setIsLoading(false);
+              revealed = true;
+            }
+            return;
           }
+
+          // Once the buffered opening passes validation, append new lines.
+          setStoryData((prev) => {
+            const prevSentences = prev?.sentences || [];
+            const alreadyExists = prevSentences.some(
+              (s) => s.tgt === item.tgt && s.sup === item.sup,
+            );
+            if (alreadyExists) return prev;
+            const nextSentences = [...prevSentences, item];
+            return {
+              fullStory: {
+                tgt:
+                  (prev?.fullStory?.tgt ? prev.fullStory.tgt + " " : "") +
+                  item.tgt,
+                sup:
+                  (prev?.fullStory?.sup ? prev.fullStory.sup + " " : "") +
+                  (item.sup || ""),
+              },
+              sentences: nextSentences,
+              storyType: selectedStoryType,
+            };
+          });
           return;
         }
         if (obj?.type === "done") {
@@ -1383,7 +1421,13 @@ function SpeakingStoryMode({
           tgt: s.endsWith(".") ? s : s + ".",
           sup: "",
         }));
-        if (sentences.length) {
+        if (
+          sentences.length &&
+          isStoryTargetCollectionCompatible(
+            sentences.map((sentence) => sentence.tgt),
+            tLang,
+          )
+        ) {
           setIsLoading(false);
           setStoryData({
             fullStory: {
@@ -1396,27 +1440,30 @@ function SpeakingStoryMode({
         }
       }
 
+      if (
+        sentences.length &&
+        !isStoryTargetCollectionCompatible(
+          sentences.map((sentence) => sentence.tgt),
+          tLang,
+        )
+      ) {
+        throw new Error(
+          `Story dialogue is not in the requested target language (${tLang})`,
+        );
+      }
       if (!revealed) throw new Error("No story produced.");
 
       // Final tidy/validation (keeps your existing UX expectations)
       setStoryData((prev) => {
-        const normalized = normalizeStory(
-          {
-            fullStory: {
-              [tLang]: prev.fullStory.tgt,
-              [sLang]: prev.fullStory.sup,
-            },
-            sentences: prev.sentences.map((s) => ({
-              [tLang]: s.tgt,
-              [sLang]: s.sup,
-              // Preserve character for conversation scripts
-              ...(s.character && { character: s.character }),
-              ...(s.gender && { gender: s.gender }),
-            })),
-          },
-          tLang,
-          sLang,
-        );
+        const normalized = {
+          fullStory: { tgt: prev.fullStory.tgt, sup: "" },
+          sentences: prev.sentences.map((s) => ({
+            tgt: s.tgt,
+            sup: "",
+            ...(s.character && { character: s.character }),
+            ...(s.gender && { gender: s.gender }),
+          })),
+        };
         const validated = validateAndFixStorySentences(
           normalized,
           "tgt",
@@ -1469,13 +1516,14 @@ function SpeakingStoryMode({
     // ⚠️ if we don't have progress yet, don't generate
     if (!progressReady) return;
 
-    if (storyData || isLoading) return;
+    if (storyData || isLoading || generationError) return;
     generateStoryGeminiStream();
   }, [
     lessonContent,
     storyData,
     isLoading,
     progressReady,
+    generationError,
     generateStoryGeminiStream,
   ]);
 
@@ -1535,7 +1583,6 @@ function SpeakingStoryMode({
         langTag,
         voice: voice || STORY_NARRATOR_VOICE,
         personality,
-        responseFormat: LOW_LATENCY_TTS_FORMAT,
       });
       if (request !== audioRequestRef.current) {
         player.ready?.catch(() => {});
@@ -1564,7 +1611,7 @@ function SpeakingStoryMode({
           );
         }
       };
-      audio.onplay = () => onStart?.();
+      audio.onplaying = () => onStart?.();
       audio.onended = () => {
         stopHighlighter?.();
         onEnd?.();
@@ -1584,7 +1631,19 @@ function SpeakingStoryMode({
       await player.ready;
       if (request !== audioRequestRef.current) { player.cleanup?.(); return; }
       setSynthesizing?.(false);
-      await audio.play();
+      const playAttempt = Promise.resolve(audio.play());
+      // Realtime/WebRTC audio does not consistently settle play() or fire the
+      // media element's playing event. Its transport signal is the reliable
+      // indication that the requested narration has started.
+      if (player.playbackStarted) {
+        await Promise.race([
+          playAttempt.then(() => true),
+          player.playbackStarted,
+        ]);
+        void playAttempt.catch(() => {});
+      } else {
+        await playAttempt;
+      }
     } catch (e) {
       if (request !== audioRequestRef.current) return;
       setSynthesizing?.(false);
@@ -1616,6 +1675,7 @@ function SpeakingStoryMode({
 
   const playTargetTTS = async (text, voice = null, personality = null) => {
     if (!text) return;
+    primeTTSAudio();
     stopAllAudio();
     setIsPlayingTarget(true);
     try {
@@ -1626,11 +1686,43 @@ function SpeakingStoryMode({
         voice,
         personality,
       });
-    } catch {
+    } catch (error) {
+      console.warn("[Stories] Practice audio playback failed", error);
       stopAllAudio();
       setIsSynthesizingTarget(false);
     }
   };
+
+  const toggleSentenceTranslation = useCallback(async (index, sentence) => {
+    const key = `${index}::${sentence?.tgt || ""}`;
+    if (!sentence?.tgt) return;
+    playSound(selectSound);
+
+    if (revealedTranslations[key]) {
+      setRevealedTranslations((value) => ({ ...value, [key]: false }));
+      return;
+    }
+
+    setRevealedTranslations((value) => ({ ...value, [key]: true }));
+    if (sentenceTranslations[key] || translatingSentences[key]) return;
+
+    setTranslatingSentences((value) => ({ ...value, [key]: true }));
+    try {
+      const translated = await storyServices.translate(
+        sentence.tgt,
+        LLM_LANG_NAME(targetLang),
+        LLM_LANG_NAME(supportLang),
+      );
+      if (translated) {
+        setSentenceTranslations((value) => ({ ...value, [key]: translated }));
+      }
+    } catch (error) {
+      console.warn("[Stories] Practice translation request failed", error);
+      setRevealedTranslations((value) => ({ ...value, [key]: false }));
+    } finally {
+      setTranslatingSentences((value) => ({ ...value, [key]: false }));
+    }
+  }, [playSound, revealedTranslations, sentenceTranslations, translatingSentences, targetLang, supportLang]);
 
   const setupBoundaryHighlighting = useCallback(
     (text, onComplete) => {
@@ -1722,9 +1814,39 @@ function SpeakingStoryMode({
         }
       : null;
 
+  const rawStoryName =
+    resolveStoryTitleText(storyData?.title, uiLang, supportLang, targetLang) ||
+    resolveStoryTitleText(lessonContent?.title, uiLang, supportLang, targetLang) ||
+    resolveStoryTitleText(lesson?.title, uiLang, supportLang, targetLang) ||
+    resolveStoryTitleText(lessonContent?.scenario, uiLang, supportLang, targetLang) ||
+    resolveStoryTitleText(lessonContent?.topic, uiLang, supportLang, targetLang) ||
+    t(effectiveLang, "story_title") ||
+    copy.story ||
+    "Story";
+  const practicePrefix = copy.practice || "Practice";
+  const escapedPrefixes = [
+    "sentence practice",
+    "practice",
+    "call",
+    "story",
+    copy.call,
+    copy.practice,
+    copy.story,
+    copy.speaking,
+  ]
+    .filter(Boolean)
+    .map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    .join("|");
+  const cleanSpeakingTitle = rawStoryName
+    .replace(new RegExp(`^(?:${escapedPrefixes}):\\s*`, "i"), "")
+    .trim();
+  const displaySpeakingTitle = cleanSpeakingTitle
+    ? `${practicePrefix}: ${cleanSpeakingTitle}`
+    : practicePrefix;
+
   const nextSentenceLabel =
-    t(uiLang, "stories_next_sentence") ||
-    supportStoryText(uiLang, {
+    t(effectiveLang, "stories_next_sentence") ||
+    supportStoryText(effectiveLang, {
       en: "Next Sentence",
       es: "Siguiente Oración",
       hi: "अगला वाक्य",
@@ -1733,8 +1855,8 @@ function SpeakingStoryMode({
       ar: "الجملة التالية",
     });
   const finishLabel =
-    t(uiLang, "stories_finish") ||
-    supportStoryText(uiLang, {
+    t(effectiveLang, "stories_finish") ||
+    supportStoryText(effectiveLang, {
       en: "Finish",
       es: "Terminar",
       hi: "समाप्त करें",
@@ -1758,8 +1880,8 @@ function SpeakingStoryMode({
 
       if (error) {
         toast({
-          title: t(uiLang, "story_audio_eval_error_title"),
-          description: t(uiLang, "story_audio_eval_error_desc"),
+          title: t(effectiveLang, "story_audio_eval_error_title"),
+          description: t(effectiveLang, "story_audio_eval_error_desc"),
           status: "error",
           duration: 2500,
           position: "top",
@@ -1771,7 +1893,7 @@ function SpeakingStoryMode({
 
       if (!evaluation.pass) {
         const tips = speechReasonTips(evaluation.reasons, {
-          uiLang,
+          uiLang: effectiveLang,
           targetLabel: targetDisplayName,
         });
 
@@ -1783,7 +1905,8 @@ function SpeakingStoryMode({
           explanation:
             tips.length > 0
               ? tips.join(" ")
-              : t(uiLang, "practice_try_again_hint") ||
+              : t(effectiveLang, "practice_try_again_hint") ||
+                copy.speechIncorrect ||
                 "Try saying the sentence again clearly.",
         });
 
@@ -1819,10 +1942,22 @@ function SpeakingStoryMode({
         return;
       }
 
-      // Passed — advance (XP awarded once at the end of the story)
-      setPassedCount((c) => c + 1);
+      const sentenceKey = `${currentSentenceIndex}::${target}`;
+      const xpAwarded = claimPracticeStoryTurnReward(
+        rewardedSentenceKeysRef.current,
+        sentenceKey,
+      );
 
-      // log passing attempt with 0 awarded now (we award at session end)
+      if (xpAwarded > 0) {
+        setSessionXp((xp) => xp + xpAwarded);
+        if (npubLive) {
+          awardXp(npubLive, xpAwarded, targetLang, {
+            skillTreeLessonId: lesson?.id,
+          }).catch(() => {});
+        }
+      }
+
+      // Each line awards once; repeated callbacks for the same line log 0 XP.
       saveStoryTurn(npubLive, {
         ok: true,
         mode: "sentence",
@@ -1834,7 +1969,7 @@ function SpeakingStoryMode({
         confidence,
         audioMetrics: audioMetrics || null,
         eval: evaluation,
-        xpAwarded: 0,
+        xpAwarded,
         method,
       }).catch(() => {});
 
@@ -1847,6 +1982,7 @@ function SpeakingStoryMode({
       setLastFeedback({
         ok: true,
         label: uiText.wellDone,
+        xp: xpAwarded,
         subtext:
           typeof evaluation.score === "number"
             ? `${uiText.score}: ${evaluation.score}%`
@@ -1859,6 +1995,7 @@ function SpeakingStoryMode({
     [
       currentSentence,
       currentSentenceIndex,
+      lesson?.id,
       supportLang,
       targetDisplayName,
       targetLang,
@@ -1974,22 +2111,14 @@ function SpeakingStoryMode({
     uiLang,
   ]);
 
-  /* ----------------------------- Award once at session end ----------------------------- */
-  const computeStoryXpReward = () =>
-    Math.max(4, Math.min(7, 4 + Math.round(Math.random() * 3)));
-
-  const finalizePracticeSession = async (awardedXp) => {
+  /* ----------------------------- Log session completion once ----------------------------- */
+  const finalizePracticeSession = async (earnedXp, passedSentences) => {
     const npubLive = strongNpub(useUserStore.getState().user);
     if (!npubLive) return;
 
     if (sessionAwardedRef.current) return;
     sessionAwardedRef.current = true;
 
-    if (awardedXp > 0) {
-      await awardXp(npubLive, Math.round(awardedXp), targetLang, {
-        skillTreeLessonId: lesson?.id,
-      }).catch(() => {});
-    }
     try {
       await saveStoryTurn(npubLive, {
         ok: true,
@@ -1997,8 +2126,9 @@ function SpeakingStoryMode({
         lang: targetLang,
         supportLang,
         totalSentences: storyData?.sentences?.length || 0,
-        passedSentences: passedCount,
-        xpAwarded: Math.round(awardedXp || 0),
+        passedSentences,
+        xpAwarded: 0,
+        sessionXp: earnedXp,
       });
     } catch {}
   };
@@ -2017,13 +2147,13 @@ function SpeakingStoryMode({
     } else {
       const totalSentences = storyData?.sentences?.length || 0;
       const latestPassed = Math.min(
-        totalSentences || passedCount + 1,
-        passedCount + 1,
+        totalSentences,
+        rewardedSentenceKeysRef.current.size,
       );
-      const totalSessionXp = computeStoryXpReward();
+      const totalSessionXp = latestPassed * PRACTICE_STORY_TURN_XP;
       setSessionXp(totalSessionXp);
       setSessionSummary({ passed: latestPassed, total: totalSentences });
-      await finalizePracticeSession(totalSessionXp);
+      await finalizePracticeSession(totalSessionXp, latestPassed);
 
       setSentenceCompleted(false);
       setLastSuccessInfo(null);
@@ -2075,45 +2205,31 @@ function SpeakingStoryMode({
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   /* ----------------------------- Loading / Empty ----------------------------- */
+  if (generationError && !storyData) {
+    return (
+      <StoryLoadingScreen
+        error={copy.generationError}
+        onRetry={() => {
+          setGenerationError(false);
+          generateStoryGeminiStream();
+        }}
+        retryLabel={copy.retry}
+        onSkip={onSkip ? handleSkipModule : null}
+        skipLabel={copy.skip || t(effectiveLang, "practice_skip_question")}
+        variant="practice"
+      />
+    );
+  }
+
   if (isLoading || !storyData) {
     return (
-      <Box
-        minH="300px"
-        py={{ base: 6, md: 12 }}
-        display="flex"
-        flexDirection="column"
-        alignItems="center"
-        justifyContent="center"
-      >
-        <VStack spacing={6}>
-          <Text color={APP_TEXT_PRIMARY} fontSize="xl" fontWeight="600">
-            {uiText.generatingTitle}
-          </Text>
-          <Text color={APP_TEXT_SECONDARY} fontSize="sm">
-            {uiText.generatingSub}
-          </Text>
-          <VoiceOrb size={32} />
-        </VStack>
-        {onSkip && (
-          <Box w="full" maxW="720px" mx="auto" mt={8}>
-            <QuestionActionArea
-              actions={
-                <ActivityActionRow>
-                  <Button
-                    onClick={handleSkipModule}
-                    variant="ghost"
-                    color={APP_TEXT_PRIMARY}
-                    _hover={{ bg: APP_SURFACE_MUTED }}
-                    width="fit-content"
-                  >
-                    {t(uiLang, "practice_skip_question")}
-                  </Button>
-                </ActivityActionRow>
-              }
-            />
-          </Box>
-        )}
-      </Box>
+      <StoryLoadingScreen
+        title={copy.loading || uiText.generatingTitle}
+        subtitle={copy.loadingSub || uiText.generatingSub}
+        onSkip={onSkip ? handleSkipModule : null}
+        skipLabel={copy.skip || t(effectiveLang, "practice_skip_question")}
+        variant="practice"
+      />
     );
   }
 
@@ -2165,6 +2281,18 @@ function SpeakingStoryMode({
           style={{ width: "100%", maxWidth: "1280px" }}
         >
           <VStack spacing={{ base: 3, md: 6 }} align="stretch" w="100%">
+            <Box>
+              <Text
+                as="h2"
+                fontSize={{ base: "md", md: "lg" }}
+                fontWeight="600"
+                color={APP_TEXT_PRIMARY}
+                {...supportTextProps}
+                sx={mergeBidiSx(supportTextProps)}
+              >
+                {displaySpeakingTitle}
+              </Text>
+            </Box>
             <Box
               bg={APP_SURFACE_ELEVATED}
               p={6}
@@ -2173,34 +2301,6 @@ function SpeakingStoryMode({
               border={`1px solid ${APP_BORDER}`}
               boxShadow={APP_SHADOW}
             >
-              <Flex justify="flex-end" align="center" gap={2} mb={3}>
-                <Button
-                  size="xs"
-                  variant="outline"
-                  colorScheme="teal"
-                  rounded="full"
-                  leftIcon={<FiCheck />}
-                  onClick={() => handleTestSubmit(true)}
-                  isDisabled={!currentSentence || (lastFeedback && lastFeedback.ok)}
-                  title="Test correct answer"
-                  aria-label="Test correct answer"
-                >
-                  Test Correct
-                </Button>
-                <Button
-                  size="xs"
-                  variant="outline"
-                  colorScheme="red"
-                  rounded="full"
-                  leftIcon={<FiX />}
-                  onClick={() => handleTestSubmit(false)}
-                  isDisabled={!currentSentence || (lastFeedback && lastFeedback.ok)}
-                  title="Test incorrect answer"
-                  aria-label="Test incorrect answer"
-                >
-                  Test Incorrect
-                </Button>
-              </Flex>
               {isCharacterStory ? (
                 <VStack spacing={4} align="stretch">
                   {visibleSentences.map((sentence, idx) => {
@@ -2215,6 +2315,13 @@ function SpeakingStoryMode({
                     const characterPersonality = sentence.character
                       ? getStoryCharacterPersonality(sentence.character)
                       : null;
+                    const translationKey = `${idx}::${sentence.tgt}`;
+                    const translationVisible = Boolean(
+                      revealedTranslations[translationKey],
+                    );
+                    const isTranslating = Boolean(
+                      translatingSentences[translationKey],
+                    );
 
                     return (
                       <Flex
@@ -2239,6 +2346,7 @@ function SpeakingStoryMode({
                                   : undefined
                             }
                             user={user}
+                            userLabel={(copy.you || "You").toUpperCase()}
                             size="36px"
                             isSpeaking={isThisLinePlaying}
                             accentColor={isLeft ? "teal.400" : "purple.400"}
@@ -2263,7 +2371,7 @@ function SpeakingStoryMode({
                             color={APP_TEXT_PRIMARY}
                             _hover={{ bg: APP_SURFACE_MUTED }}
                             size="xs"
-                            aria-label={`Play ${
+                            aria-label={`${copy.play}: ${
                               sentence.character || "line"
                             }`}
                             icon={renderSpeakerIcon(
@@ -2300,18 +2408,38 @@ function SpeakingStoryMode({
                             opacity={isCurrent ? 1 : 0.85}
                             transition="all 0.25s ease"
                           >
-                            {sentence.character && (
+                            <HStack justify="space-between" align="start" spacing={2} mb={1}>
+                              {sentence.character ? (
                               <Text
                                 fontSize="sm"
                                 fontWeight="700"
                                 color={
                                   isLeft ? "teal.300" : "purple.300"
                                 }
-                                mb={1}
                               >
-                                {sentence.character}
+                                {sentence.character.toLowerCase() === "you"
+                                  ? (copy.you || sentence.character)
+                                  : sentence.character}
                               </Text>
-                            )}
+                              ) : <Box />}
+                              <IconButton
+                                onClick={() => toggleSentenceTranslation(idx, sentence)}
+                                variant="ghost"
+                                color={translationVisible ? "teal.400" : APP_TEXT_SECONDARY}
+                                _hover={{ color: translationVisible ? "teal.300" : APP_TEXT_PRIMARY }}
+                                size="xs"
+                                minW="28px"
+                                h="28px"
+                                aria-label={translationVisible ? copy.hideTranslation : copy.translation}
+                                title={translationVisible ? copy.hideTranslation : copy.translation}
+                                aria-pressed={translationVisible}
+                                isDisabled={isTranslating}
+                                icon={isTranslating ? <Spinner size="xs" /> : <MdOutlineTranslate size={18} />}
+                                flexShrink={0}
+                                mt={-1}
+                                me={-1}
+                              />
+                            </HStack>
                             <Text
                               fontSize="lg"
                               fontWeight="500"
@@ -2322,7 +2450,7 @@ function SpeakingStoryMode({
                             >
                               {sentence.tgt}
                             </Text>
-                            {!!sentence.sup && (
+                            {translationVisible && sentenceTranslations[translationKey] && (
                               <Text
                                 fontSize="sm"
                                 color={APP_TEXT_SECONDARY}
@@ -2331,7 +2459,7 @@ function SpeakingStoryMode({
                                 {...supportTextProps}
                                 sx={mergeBidiSx(supportTextProps)}
                               >
-                                {sentence.sup}
+                                {sentenceTranslations[translationKey]}
                               </Text>
                             )}
                           </Box>
@@ -2347,6 +2475,13 @@ function SpeakingStoryMode({
                     const isThisLinePlaying =
                       playingLineIndex === idx ||
                       (isCurrent && isPlayingTarget);
+                    const translationKey = `${idx}::${sentence.tgt}`;
+                    const translationVisible = Boolean(
+                      revealedTranslations[translationKey],
+                    );
+                    const isTranslating = Boolean(
+                      translatingSentences[translationKey],
+                    );
 
                     return (
                       <Flex
@@ -2380,7 +2515,7 @@ function SpeakingStoryMode({
                             color={APP_TEXT_PRIMARY}
                             _hover={{ bg: APP_SURFACE_MUTED }}
                             size="xs"
-                            aria-label={`Play line ${idx + 1}`}
+                            aria-label={`${copy.play}: ${idx + 1}`}
                             icon={renderSpeakerIcon(
                               isThisLinePlaying &&
                                 (isSynthesizingTarget || isPlayingTarget),
@@ -2402,18 +2537,37 @@ function SpeakingStoryMode({
                             }
                             opacity={isCurrent ? 1 : 0.85}
                             transition="all 0.25s ease"
+                            position="relative"
                           >
+                            <IconButton
+                              onClick={() => toggleSentenceTranslation(idx, sentence)}
+                              variant="ghost"
+                              color={translationVisible ? "teal.400" : APP_TEXT_SECONDARY}
+                              _hover={{ color: translationVisible ? "teal.300" : APP_TEXT_PRIMARY }}
+                              size="xs"
+                              minW="28px"
+                              h="28px"
+                              position="absolute"
+                              top={1}
+                              right={1}
+                              aria-label={translationVisible ? copy.hideTranslation : copy.translation}
+                              title={translationVisible ? copy.hideTranslation : copy.translation}
+                              aria-pressed={translationVisible}
+                              isDisabled={isTranslating}
+                              icon={isTranslating ? <Spinner size="xs" /> : <MdOutlineTranslate size={18} />}
+                            />
                             <Text
                               fontSize="lg"
                               fontWeight="500"
                               color={APP_TEXT_PRIMARY}
                               lineHeight="1.6"
+                              pe={8}
                               {...targetTextProps}
                               sx={mergeBidiSx(targetTextProps)}
                             >
                               {sentence.tgt}
                             </Text>
-                            {!!sentence.sup && (
+                            {translationVisible && sentenceTranslations[translationKey] && (
                               <Text
                                 fontSize="sm"
                                 color={APP_TEXT_SECONDARY}
@@ -2422,7 +2576,7 @@ function SpeakingStoryMode({
                                 {...supportTextProps}
                                 sx={mergeBidiSx(supportTextProps)}
                               >
-                                {sentence.sup}
+                                {sentenceTranslations[translationKey]}
                               </Text>
                             )}
                           </Box>
@@ -2491,13 +2645,13 @@ function SpeakingStoryMode({
                           transform: "translateY(-2px)",
                         }}
                         _active={{ transform: "translateY(0)" }}
-                        transition="all 0.2s ease"
+                        aria-label={isRecording ? "Stop recording" : undefined}
                       >
                         {isConnecting
-                          ? t(uiLang, "vocab_connecting")
+                          ? (copy.connectingMic || "Connecting")
                           : isRecording
-                          ? uiText.stopRecording
-                          : uiText.record}
+                          ? (copy.stopRecording || "Stop")
+                          : (copy.record || uiText.record)}
                       </Button>
                     }
                   >
@@ -2509,9 +2663,10 @@ function SpeakingStoryMode({
                         _hover={{ bg: APP_SURFACE_MUTED }}
                         width="fit-content"
                       >
-                        {t(uiLang, "practice_skip_question")}
+                        {copy.skip || t(effectiveLang, "practice_skip_question")}
                       </Button>
                     )}
+                    {/* Test buttons commented out
                     <Button
                       onClick={() => handleTestSubmit(true)}
                       variant="ghost"
@@ -2534,6 +2689,7 @@ function SpeakingStoryMode({
                     >
                       Test ✗
                     </Button>
+                    */}
                   </ActivityActionRow>
                 )
               }
@@ -2542,6 +2698,7 @@ function SpeakingStoryMode({
                 <FeedbackRail
                   compact
                   ok={lastFeedback.ok}
+                  xp={lastFeedback.xp || 0}
                   statusLabel={lastFeedback.label}
                   subtext={lastFeedback.subtext}
                   explanationText={lastFeedback.explanation}
@@ -2549,8 +2706,8 @@ function SpeakingStoryMode({
                   showNext={lastFeedback.ok}
                   onNext={handleNextSentence}
                   nextLabel={isLastSentence ? finishLabel : nextSentenceLabel}
-                  t={(k) => t(uiLang, k)}
-                  userLanguage={uiLang}
+                  t={(k) => t(effectiveLang, k)}
+                  userLanguage={effectiveLang}
                 />
               )}
             </QuestionActionArea>

@@ -100,7 +100,9 @@ function Activity({ second, phase, keyboard, onSubmit, onNext, onSkip }) {
         nextLabel="Continue"
         onExplainAnswer={() => {}}
         explanationText={
-          phase === "explanation" ? "A longer explanation. ".repeat(80) : ""
+          phase === "explanation"
+            ? 'Use <span lang="ja">は</span>, not <span lang="ja">を</span>. <script>window.__unsafeFeedbackScript = true</script> '.repeat(40)
+            : ""
         }
       />
     </QuestionActionArea>
@@ -284,6 +286,25 @@ async function run(report) {
         progress.querySelector("stop").getAttribute("stop-color") === "#4aa8ff",
         "Use the light-blue WaveBar",
       );
+      const character = panel.querySelector(
+        "[data-positive-feedback-character]",
+      );
+      assert(character?.querySelector("img"), "Correct feedback shows a sticker");
+      assert(
+        character.closest("[data-activity-feedback-content]")?.querySelector("[role='status']")
+          ?.previousElementSibling === character,
+        "The sticker replaces the top-left success checkmark",
+      );
+      assert(
+        character.querySelector("img").getBoundingClientRect().width <= 34,
+        "The top-left sticker stays compact",
+      );
+      assert(
+        !["0", "1", "2", "3", "4", "5", "6", "13", "16", "17"].includes(
+          character?.dataset.positiveFeedbackCharacter,
+        ),
+        "Correct feedback only uses an allowed sticker",
+      );
     });
     await test("Incorrect feedback has a centered full-width explanation button", async () => {
       await render({ phase: "incorrect" });
@@ -305,6 +326,10 @@ async function run(report) {
       assert(
         getComputedStyle(button).textAlign === "center",
         "Explain is centered",
+      );
+      assert(
+        !panel.querySelector("[data-positive-feedback-character]"),
+        "Incorrect feedback does not show a sticker",
       );
     });
     await test("The next question returns to the neutral compact bar", async () => {
@@ -399,6 +424,16 @@ async function run(report) {
     await test("Long feedback keeps actions aligned and reserves content space", async () => {
       await render({ phase: "explanation" });
       checkRow("Submit");
+      const feedback = panels()[0].querySelector("[data-activity-feedback-content]");
+      assert(
+        feedback.querySelector('span[lang="ja"]')?.textContent === "は",
+        "Language spans render semantically instead of exposing HTML tags",
+      );
+      assert(
+        !feedback.textContent.includes('<span lang="ja">') &&
+          !window.__unsafeFeedbackScript,
+        "Feedback HTML is sanitized before rendering",
+      );
       window.scrollTo(0, document.body.scrollHeight);
       await settle();
       const answer = document.querySelector('[aria-label="Final answer"]');

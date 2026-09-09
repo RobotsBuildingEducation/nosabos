@@ -416,16 +416,21 @@ export default function QuestionActionArea({
                     </AnimatePresence>
                   </Box>
                 </Box>
-                <Box
-                  ref={menuSlotRef}
-                  data-question-menu-slot=""
-                  position="absolute"
-                  insetInlineStart={{ base: 3, md: 6 }}
-                  bottom="14px"
-                  w="44px"
-                  h="44px"
-                />
               </GlassContainer>
+              {/* Keep the menu trigger visually inside the action bar but out
+                  of the glass renderer's clipping boundary. Capture shards
+                  need to travel beyond the 44px trigger to complete. */}
+              <Box
+                ref={menuSlotRef}
+                data-question-menu-slot=""
+                position="absolute"
+                insetInlineStart={{ base: 3, md: 6 }}
+                bottom="14px"
+                w="44px"
+                h="44px"
+                zIndex={81}
+                overflow="visible"
+              />
             </MotionBox>
           </MotionBox>
         </Box>,

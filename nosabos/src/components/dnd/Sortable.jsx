@@ -33,6 +33,7 @@ import {
   closestCorners,
   pointerWithin,
   rectIntersection,
+  useDndContext,
   useDroppable,
   useSensor,
   useSensors,
@@ -225,7 +226,15 @@ export function SortableList({
   }, [id]);
 
   const { setNodeRef, isOver } = useDroppable({ id });
-  const containerValue = useMemo(() => ({ id }), [id]);
+  const dndContext = useDndContext();
+  const overId = dndContext?.over?.id != null ? String(dndContext.over.id) : null;
+  const isOverContainer = Boolean(
+    dndContext?.active && (isOver || (overId != null && (overId === id || items?.includes(overId))))
+  );
+  const containerValue = useMemo(
+    () => ({ id, isOver: isOverContainer, isDragging: Boolean(dndContext?.active) }),
+    [id, isOverContainer, dndContext?.active],
+  );
 
   return (
     <ContainerContext.Provider value={containerValue}>
@@ -233,9 +242,11 @@ export function SortableList({
         <Flex
           ref={setNodeRef}
           {...boxProps}
-          {...(isOver && activeStyles ? activeStyles : null)}
+          {...(isOverContainer && activeStyles ? activeStyles : null)}
         >
-          {children}
+          {typeof children === "function"
+            ? children({ isOver: isOverContainer, isDragging: Boolean(dndContext?.active) })
+            : children}
         </Flex>
       </SortableContext>
     </ContainerContext.Provider>

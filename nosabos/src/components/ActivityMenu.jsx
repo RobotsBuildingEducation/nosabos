@@ -408,8 +408,8 @@ export default function ActivityMenu({
           p={0}
           border={0}
           borderRadius="xl"
-          bg="transparent !important"
-          boxShadow="none !important"
+          bg={triggerProps?.bg || "transparent !important"}
+          boxShadow={triggerProps?.boxShadow || "none !important"}
           color={triggerProps?.color || "var(--app-text-primary)"}
           _hover={{ opacity: 0.7 }}
           _active={{ transform: "none" }}

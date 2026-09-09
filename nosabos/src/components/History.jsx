@@ -63,6 +63,10 @@ import useSoundSettings from "../hooks/useSoundSettings";
 import { submitActionSound, nextButtonSound, deliciousSound, clickSound, selectSound } from "../constants/sounds";
 import RandomCharacter from "./RandomCharacter";
 import VoiceOrb from "./VoiceOrb";
+import {
+  HistoryLectureSkeleton,
+  HistoryQuestionSkeleton,
+} from "./HistorySkeletons";
 import { useThemeStore } from "../useThemeStore";
 import {
   SOFT_STOP_BUTTON_BG,
@@ -2030,33 +2034,13 @@ Return ONLY valid JSON:
             width="100%"
           >
             {isLoading ? (
-              <VStack spacing={3} width="100%" justify="center" minH="280px">
-                <VoiceOrb
-                  state={
-                    ["idle", "listening", "speaking"][
-                      Math.floor(Math.random() * 3)
-                    ]
-                  }
-                  size={48}
-                />
-                <Text fontSize="lg" opacity={0.9}>
-                  {t("reading_loading") || "Loading settings..."}
-                </Text>
-              </VStack>
+              <HistoryLectureSkeleton
+                statusText={t("reading_loading") || "Loading settings..."}
+              />
             ) : isGenerating && !draftLecture ? (
-              <VStack spacing={3} width="100%" justify="center" minH="280px">
-                <VoiceOrb
-                  state={
-                    ["idle", "listening", "speaking"][
-                      Math.floor(Math.random() * 3)
-                    ]
-                  }
-                  size={48}
-                />
-                <Text fontSize="lg" opacity={0.9}>
-                  {t("reading_generating") || "Creating lecture..."}
-                </Text>
-              </VStack>
+              <HistoryLectureSkeleton
+                statusText={t("reading_generating") || "Creating lecture..."}
+              />
             ) : viewLecture ? (
               <VStack align="stretch" spacing={4}>
                 <Text
@@ -2079,14 +2063,7 @@ Return ONLY valid JSON:
                     <IconButton
                       icon={
                         isSynthesizingTarget ? (
-                          <VoiceOrb
-                            state={
-                              ["idle", "listening", "speaking"][
-                                Math.floor(Math.random() * 3)
-                              ]
-                            }
-                            size={24}
-                          />
+                          <Spinner size="xs" color="teal.400" />
                         ) : (
                           <PiLightningDuotone size="20px" />
                         )
@@ -2731,23 +2708,9 @@ Return ONLY valid JSON:
                         )}
                       </VStack>
                     ) : isGeneratingQuestion ? (
-                      <Center w="100%" minH="140px" py={4}>
-                        <HStack spacing={3} align="center">
-                          <Box flexShrink={0} lineHeight="0">
-                            <VoiceOrb
-                              state={
-                                ["idle", "listening", "speaking"][
-                                  Math.floor(Math.random() * 3)
-                                ]
-                              }
-                              size={24}
-                            />
-                          </Box>
-                          <Text fontSize="sm" opacity={0.7} textAlign="center">
-                            {t("history_generating_question")}
-                          </Text>
-                        </HStack>
-                      </Center>
+                      <HistoryQuestionSkeleton
+                        statusText={t("history_generating_question") || "Generating question…"}
+                      />
                     ) : reviewQuestion ? (
                       <VStack align="stretch" spacing={3}>
                         {/* <Text fontWeight="600" fontSize="sm">

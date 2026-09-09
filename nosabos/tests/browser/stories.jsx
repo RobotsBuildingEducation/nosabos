@@ -89,6 +89,7 @@ window.runStoryChecks = async () => {
   }
   await click("Pause");
   assert(getComputedStyle(signal).animationName === "none", "Radio bars stop when paused");
+  assert(!text().includes("Audio couldn’t play."), "Pausing audio does not show a playback error");
   await click("Resume");
   await waitFor(() => text().includes("Who are the flowers for?"));
   assert(getComputedStyle(signal).animationName === "none", "Radio bars stop after playback");

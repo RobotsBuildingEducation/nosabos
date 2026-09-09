@@ -712,6 +712,7 @@ export default function RealTimeTest({
   lesson = null,
   lessonContent = null,
   supportLang: initialSupportLang = "",
+  targetLang: initialTargetLang = "",
   onSkip = null,
 }) {
   const toast = useToast();
@@ -753,6 +754,18 @@ export default function RealTimeTest({
         : ""),
     DEFAULT_SUPPORT_LANGUAGE,
   );
+  const initialTargetLanguage = normalizePracticeLanguage(
+    initialTargetLang || user?.progress?.targetLang,
+    DEFAULT_TARGET_LANGUAGE,
+  );
+  const languagePropsRef = useRef({
+    supportLang: initialSupportLang,
+    targetLang: initialTargetLang,
+  });
+  languagePropsRef.current = {
+    supportLang: initialSupportLang,
+    targetLang: initialTargetLang,
+  };
 
   // Repair/ephemeral lessons carry an explicit CEFR level; regular path lessons
   // can still derive it from their level-coded id.
@@ -808,7 +821,7 @@ export default function RealTimeTest({
   const [level, setLevel] = useState("beginner");
   const [supportLang, setSupportLang] = useState(initialSupportLanguage);
   const [voice, setVoice] = useState(() => getPreferredTTSVoice());
-  const [targetLang, setTargetLang] = useState("es");
+  const [targetLang, setTargetLang] = useState(initialTargetLanguage);
   const [showTranslations, setShowTranslations] = useState(true);
   const [practicePronunciation, setPracticePronunciation] = useState(
     !!user?.progress?.practicePronunciation,
@@ -1119,7 +1132,7 @@ export default function RealTimeTest({
           if (Number.isFinite(data?.streak)) setStreak(data.streak);
           const p = data?.progress || {};
           // Prime all local states from saved progress
-          primeRefsFromPrefs(p);
+          primeRefsFromPrefs(applyLanguagePropOverrides(p));
           // helpRequest
           const hr = (p.helpRequest ?? data.helpRequest ?? "").trim();
           if (hr && hr !== helpRequestRef.current) setHelpRequest(hr);
@@ -1146,7 +1159,7 @@ export default function RealTimeTest({
   useEffect(() => {
     const p = user?.progress;
     if (!p) return;
-    primeRefsFromPrefs(p);
+    primeRefsFromPrefs(applyLanguagePropOverrides(p));
     scheduleSessionUpdate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.progress]);
@@ -1235,6 +1248,29 @@ export default function RealTimeTest({
     supportLangRef.current = v;
     setSupportLang(v);
   }, [initialSupportLang]);
+
+  useEffect(() => {
+    if (!initialTargetLang) return;
+    const v = normalizePracticeLanguage(
+      initialTargetLang,
+      DEFAULT_TARGET_LANGUAGE,
+    );
+    targetLangRef.current = v;
+    setTargetLang(v);
+  }, [initialTargetLang]);
+
+  function applyLanguagePropOverrides(p = {}) {
+    const languageProps = languagePropsRef.current;
+    return {
+      ...p,
+      ...(languageProps.supportLang
+        ? { supportLang: languageProps.supportLang }
+        : {}),
+      ...(languageProps.targetLang
+        ? { targetLang: languageProps.targetLang }
+        : {}),
+    };
+  }
 
   function primeRefsFromPrefs(p = {}) {
     if (p.level) {
@@ -1441,7 +1477,7 @@ export default function RealTimeTest({
     setStatus("connecting");
     setUiState("idle");
     try {
-      const npub = strongNpub(user);
+      const npub = currentNpub;
       if (npub) await ensureUserDoc(npub);
 
       const pc = new RTCPeerConnection();
@@ -1500,19 +1536,20 @@ export default function RealTimeTest({
       dc.onopen = async () => {
         let savedPrefs = null;
         try {
-          const npub = strongNpub(user);
+          const npub = currentNpub;
           if (npub) {
             const snap = await getDoc(doc(database, "users", npub));
             savedPrefs = snap.exists() ? snap.data()?.progress || null : null;
           }
         } catch {}
-        if (savedPrefs) primeRefsFromPrefs(savedPrefs);
+        const sessionPrefs = applyLanguagePropOverrides(savedPrefs || {});
+        primeRefsFromPrefs(sessionPrefs);
 
         const voiceName = getPreferredTTSVoice(voiceRef.current);
         voiceRef.current = voiceName;
         setVoice(voiceName);
-        const instructions = buildLanguageInstructions(savedPrefs || undefined);
-        const tLang = savedPrefs?.targetLang || targetLangRef.current || "es";
+        const instructions = buildLanguageInstructions(sessionPrefs);
+        const tLang = sessionPrefs.targetLang || targetLangRef.current || "es";
         const WHISPER_STT_LANG = {
           ar: "ar",
           zh: "zh",
@@ -2374,9 +2411,9 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
           rubric_hi: "",
           rubric_ar: "",
           [localizedTitleKey]: goalText,
-          [localizedRubricKey]: "",
+          [localizedRubricKey]: goalText,
           lessonScenario: goalText,
-          successCriteria: "",
+          successCriteria: goalText,
           roleplayPrompt: `Help the learner to: ${goalText}. Create a realistic scenario and guide them.`,
           goalIndex: (currentGoal?.goalIndex || 0) + 1,
           attempts: 0,
@@ -2562,7 +2599,7 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
   }
 
   async function persistCurrentGoal(next) {
-    const npub = strongNpub(user);
+    const npub = currentNpub;
     if (!npub) return;
     await setDoc(
       doc(database, "users", npub),
@@ -2571,7 +2608,7 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
     );
   }
   async function recordGoalCompletion(prevGoal, confidence = 0) {
-    const npub = strongNpub(user);
+    const npub = currentNpub;
     if (!npub || !prevGoal) return;
     const payload = {
       ...prevGoal,
@@ -2745,6 +2782,7 @@ Return ONLY JSON:
       if (met) {
         playSound(deliciousSound);
         await recordGoalCompletion(goal, conf);
+        stop();
         setGoalCompleted(true); // Mark goal as completed, wait for user to click "Next Goal"
       } else {
         // Companion brain: the learner's turn did NOT meet the goal — that's the
@@ -3408,7 +3446,10 @@ Return ONLY JSON:
     if (!src) return;
     if (m.role !== "assistant") return;
 
-    const target = normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE);
+    const target = normalizeSupportLanguage(
+      supportLangRef.current,
+      DEFAULT_SUPPORT_LANGUAGE,
+    );
 
     if (getBaseLanguageCode(m.lang || targetLangRef.current) === target) {
       updateMessage(id, (prev) => ({
@@ -3491,7 +3532,7 @@ Return ONLY JSON:
   }
 
   async function upsertAssistantTurn(mid, { text, lang, translation, pairs }) {
-    const npub = strongNpub(user);
+    const npub = currentNpub;
     if (!npub) return;
     if (!(await ensureUserDoc(npub))) return;
 
@@ -3528,7 +3569,7 @@ Return ONLY JSON:
   }
 
   async function persistUserTurn(text, lang = "en") {
-    const npub = strongNpub(user);
+    const npub = currentNpub;
     if (!npub) return;
     const now = Date.now();
     lastUserSaveRef.current = { text, ts: now };
@@ -3536,7 +3577,7 @@ Return ONLY JSON:
 
   async function saveProfile(partial = {}) {
     if (!hydrated) return;
-    const npub = strongNpub(user);
+    const npub = currentNpub;
     if (!npub) return;
 
     const nextProgress = {
@@ -3757,7 +3798,7 @@ Return ONLY JSON:
                       <HStack spacing={2} align="center" flex="1">
                         <IconButton
                           icon={<FaDice />}
-                          size="xs"
+                          size="sm"
                           variant="ghost"
                           color={isLightTheme ? APP_TEXT_SECONDARY : "white"}
                           aria-label={uiText("ra_new_goal", "New goal")}
@@ -3771,13 +3812,14 @@ Return ONLY JSON:
                               : "whiteAlpha.100",
                           }}
                           isDisabled={status === "connected"}
-                          minW="24px"
-                          h="24px"
+                          minW="28px"
+                          h="28px"
                         />
                         {currentGoalTitleText ? (
                           <Text
-                            fontSize="xs"
-                            opacity={0.9}
+                            fontSize={{ base: "sm", md: "md" }}
+                            fontWeight="600"
+                            opacity={0.95}
                             color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
                             flex="1"
                           >
@@ -3798,8 +3840,8 @@ Return ONLY JSON:
                     )}
                     <IconButton
                       ref={chatLogButtonRef}
-                      icon={<FaRegCommentDots size={14} />}
-                      size="xs"
+                      icon={<FaRegCommentDots size={16} />}
+                      size="sm"
                       variant="ghost"
                       colorScheme="cyan"
                       {...chatLogButtonHighlightProps}
@@ -3811,13 +3853,14 @@ Return ONLY JSON:
                   </HStack>
                   {currentGoal && !isGeneratingGoal && currentGoalRubricText ? (
                     <Text
-                      fontSize="xs"
-                      opacity={0.8}
+                      fontSize={{ base: "xs", md: "sm" }}
+                      lineHeight="1.5"
+                      opacity={0.85}
                       color={
                         isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"
                       }
                     >
-                      <strong style={{ opacity: 0.85 }}>{tGoalCriteria}</strong>{" "}
+                      <strong style={{ opacity: 0.9 }}>{tGoalCriteria}</strong>{" "}
                       {currentGoalRubricText}
                     </Text>
                   ) : null}
@@ -3838,8 +3881,8 @@ Return ONLY JSON:
                     >
                       <Box
                         mt="2px"
-                        width="14px"
-                        height="14px"
+                        width="18px"
+                        height="18px"
                         display="inline-flex"
                         alignItems="center"
                         justifyContent="center"
@@ -3880,13 +3923,13 @@ Return ONLY JSON:
                         flexShrink={0}
                       >
                         {goalCompleted ? (
-                          <FaCheck size={7} />
+                          <FaCheck size={9} />
                         ) : (
-                          <FaExclamation size={7} />
+                          <FaExclamation size={9} />
                         )}
                       </Box>
                       <Text
-                        fontSize="xs"
+                        fontSize="sm"
                         opacity={0.95}
                         color={
                           goalCompleted

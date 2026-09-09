@@ -139,8 +139,11 @@ import { isMasterUnlockActive } from "./utils/masterUnlock";
 import Vocabulary from "./components/Vocabulary";
 import StoryMode from "./components/Stories";
 import History from "./components/History";
-import ActivityMenu, { ImmersionPracticeMenuIcon } from "./components/ActivityMenu";
+import ActivityMenu, {
+  ImmersionPracticeMenuIcon,
+} from "./components/ActivityMenu";
 import QuestionActionArea from "./components/QuestionActionArea";
+import ActivityActionRow from "./components/ActivityActionRow";
 import { isFullNavigationSkillTreeMode } from "./utils/activityControls";
 import useQuestionActionStore from "./hooks/useQuestionActionStore";
 import HelpChatFab from "./components/HelpChatFab";
@@ -622,20 +625,33 @@ function TutorialGameLoadingFallback({ supportLang = "en", onSkip }) {
   }, [messages]);
 
   return (
-    <Box display="flex" flexDirection="column" h="100%" overflow="hidden">
+    <>
       <Box
-        position="absolute"
-        top={0}
-        left={0}
-        right={0}
-        zIndex={2}
-        px={{ base: 3, md: 4 }}
-        py={{ base: 3, md: 4 }}
-        bgGradient="linear(to-b, rgba(10, 13, 27, 0.96), rgba(10, 13, 27, 0.72), transparent)"
+        position="relative"
+        w="100%"
+        h={{
+          base: "min(62vh, calc(100dvh - 220px))",
+          md: "min(70vh, calc(100dvh - 170px))",
+        }}
+        minH={{ base: "300px", md: "320px" }}
+        maxH="720px"
+        borderRadius="xl"
+        overflow="hidden"
+        mt={{ base: 2, md: 0 }}
+        display="flex"
+        flexDirection="column"
       >
-        <HStack align="center" justify="space-between" spacing={3}>
+        <Box
+          position="absolute"
+          top={0}
+          left={0}
+          right={0}
+          zIndex={2}
+          px={{ base: 3, md: 4 }}
+          py={{ base: 3, md: 4 }}
+          bgGradient="linear(to-b, rgba(10, 13, 27, 0.96), rgba(10, 13, 27, 0.72), transparent)"
+        >
           <Text
-            flex="1"
             fontSize={{ base: "sm", md: "md" }}
             color="blue.100"
             minH="24px"
@@ -651,30 +667,25 @@ function TutorialGameLoadingFallback({ supportLang = "en", onSkip }) {
           >
             {messages[messageIndex]}
           </Text>
-          <Button
-            size="sm"
-            variant="solid"
-            bg="rgba(9, 16, 34, 0.7)"
-            color="white"
-            border="1px solid"
-            borderColor="rgba(170, 201, 255, 0.26)"
-            boxShadow="0 10px 18px rgba(0, 0, 0, 0.24)"
-            backdropFilter="blur(10px)"
-            onClick={onSkip}
-            flexShrink={0}
-            _hover={{ bg: "rgba(14, 24, 46, 0.82)" }}
-            _active={{ bg: "rgba(6, 12, 28, 0.92)" }}
-          >
-            {skipLabel}
-          </Button>
-        </HStack>
+        </Box>
+        <Box flex="1" overflow="hidden" position="relative">
+          <Suspense fallback={<GameLoadingFallback minH="100dvh" />}>
+            <LoadingMiniGame supportLang={supportLang} />
+          </Suspense>
+        </Box>
       </Box>
-      <Box flex="1" overflow="hidden" position="relative">
-        <Suspense fallback={<GameLoadingFallback minH="100dvh" />}>
-          <LoadingMiniGame supportLang={supportLang} />
-        </Suspense>
-      </Box>
-    </Box>
+      {onSkip && (
+        <QuestionActionArea
+          actions={
+            <ActivityActionRow>
+              <Button variant="ghost" onClick={onSkip}>
+                {skipLabel}
+              </Button>
+            </ActivityActionRow>
+          }
+        />
+      )}
+    </>
   );
 }
 
@@ -1919,7 +1930,7 @@ function TopBar({
                   fontSize={{ base: "xs", md: "xs" }}
                   fontWeight="bold"
                   color={dailyGoalHudTextColor}
-                  lineHeight="1"
+                  lineHeight="1.2"
                   whiteSpace="nowrap"
                   maxW={{ base: "92px", sm: "140px", md: "none" }}
                   overflow="hidden"
@@ -1931,7 +1942,7 @@ function TopBar({
                   fontSize={{ base: "xs", md: "xs" }}
                   fontWeight="bold"
                   color={dailyGoalHudTextColor}
-                  lineHeight="1"
+                  lineHeight="1.2"
                   fontVariantNumeric="tabular-nums"
                   whiteSpace="nowrap"
                 >
@@ -7298,8 +7309,8 @@ export default function App({ onBootReady } = {}) {
               activeNpub={activeNpub}
               activeNsec={activeNsec}
               level={user?.progress?.level}
-              supportLang={user?.progress?.supportLang}
-              targetLang={user?.progress?.targetLang}
+              supportLang={resolvedSupportLang}
+              targetLang={resolvedTargetLang}
               showTranslations={user?.progress?.showTranslations}
               pauseMs={user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS}
               helpRequest={user?.progress?.helpRequest}
@@ -7317,6 +7328,8 @@ export default function App({ onBootReady } = {}) {
               userLanguage={appLanguage}
               activeNpub={activeNpub}
               activeNsec={activeNsec}
+              targetLang={resolvedTargetLang}
+              supportLang={resolvedSupportLang}
               pauseMs={user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS}
             />
           </>
@@ -10105,7 +10118,12 @@ export default function App({ onBootReady } = {}) {
       )}
 
       {viewMode === "lesson" && !isGameFullScreen && (
-        <Box px={[2, 3, 4]} pt={{ base: 2, md: 3 }} pb={{ base: 32, md: 24 }} w="100%">
+        <Box
+          px={[2, 3, 4]}
+          pt={{ base: 2, md: 3 }}
+          pb={{ base: 32, md: 24 }}
+          w="100%"
+        >
           {/* Tutorial Stepper - shows progress through tutorial modules */}
           {isTutorialMode && activeLesson?.isTutorial && (
             <TutorialStepper
@@ -10142,7 +10160,7 @@ export default function App({ onBootReady } = {}) {
                           activeNsec={activeNsec}
                           level={user?.progress?.level}
                           supportLang={resolvedSupportLang}
-                          targetLang={user?.progress?.targetLang}
+                          targetLang={resolvedTargetLang}
                           showTranslations={user?.progress?.showTranslations}
                           pauseMs={
                             user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS
@@ -10161,16 +10179,14 @@ export default function App({ onBootReady } = {}) {
                     );
                   case "stories":
                     return (
-                      <TabPanel
-                        key="stories"
-                        px={0}
-                        py={{ base: 0, md: 2 }}
-                      >
+                      <TabPanel key="stories" px={0} py={{ base: 0, md: 2 }}>
                         <StoryMode
                           key={`stories-${lessonModuleNonce}`}
                           userLanguage={appLanguage}
                           activeNpub={activeNpub}
                           activeNsec={activeNsec}
+                          targetLang={resolvedTargetLang}
+                          supportLang={resolvedSupportLang}
                           pauseMs={
                             user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS
                           }
@@ -10254,23 +10270,10 @@ export default function App({ onBootReady } = {}) {
                         {activeLesson?.isTutorial &&
                         !preGeneratedGameScenario &&
                         !tutorialGamePreparationFailed ? (
-                          <Box
-                            w="100%"
-                            h={{
-                              base: "min(62vh, calc(100dvh - 220px))",
-                              md: "min(70vh, calc(100dvh - 170px))",
-                            }}
-                            minH={{ base: "300px", md: "320px" }}
-                            maxH="720px"
-                            borderRadius="xl"
-                            overflow="hidden"
-                            mt={{ base: 2, md: 0 }}
-                          >
-                            <TutorialGameLoadingFallback
-                              supportLang={resolvedSupportLang}
-                              onSkip={switchToRandomLessonMode}
-                            />
-                          </Box>
+                          <TutorialGameLoadingFallback
+                            supportLang={resolvedSupportLang}
+                            onSkip={switchToRandomLessonMode}
+                          />
                         ) : GameRouterComponent ? (
                           <GameRouterComponent
                             lessonContext={activeLesson}
@@ -10827,11 +10830,7 @@ export default function App({ onBootReady } = {}) {
                     })}
                   </Text>
 
-                  <Box
-                    w="100%"
-                    pt={{ base: 2, md: 4 }}
-                    mt={{ base: 1, md: 2 }}
-                  >
+                  <Box w="100%" pt={{ base: 2, md: 4 }} mt={{ base: 1, md: 2 }}>
                     {(() => {
                       const totalXp = Math.max(
                         0,
@@ -12054,15 +12053,42 @@ function BottomActionBar({
           }
         }}
         onOpen={() => playSound?.(selectSound)}
+        decoration={notesIsDone ? <NoteCaptureCrystalShards /> : null}
         triggerIcon={
-          <PiDotsNineBold
-            size={22}
-            color={isLightTheme ? "#1f1912" : "var(--app-text-primary)"}
-          />
+          notesIsDone ? (
+            <RiBookmarkFill
+              size={20}
+              color="var(--chakra-colors-yellow-400, #D69E2E)"
+            />
+          ) : (
+            <PiDotsNineBold
+              size={22}
+              color={isLightTheme ? "#1f1912" : "var(--app-text-primary)"}
+            />
+          )
         }
         triggerProps={{
           "aria-label": currentMode.label || modeMenuLabel,
-          color: isLightTheme ? "#1f1912" : "var(--app-text-primary)",
+          color: notesIsDone
+            ? "var(--chakra-colors-yellow-400, #D69E2E)"
+            : isLightTheme
+              ? "#1f1912"
+              : "var(--app-text-primary)",
+          animation: notesIsDone
+            ? "activityMenuMemoryCatch 2760ms linear both"
+            : undefined,
+          sx: {
+            "@keyframes activityMenuMemoryCatch": {
+              "0%": { transform: "translateY(0) scale(1)" },
+              "36%": { transform: "translateY(-0.5px) scale(1.015)" },
+              "66%": { transform: "translateY(1px) scale(0.965)" },
+              "84%": { transform: "translateY(-2px) scale(1.075)" },
+              "100%": { transform: "translateY(0) scale(1)" },
+            },
+            "@media (prefers-reduced-motion: reduce)": {
+              animation: "none",
+            },
+          },
         }}
       />,
       questionMenuSlot,
@@ -12159,69 +12185,70 @@ function BottomActionBar({
               style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
             >
               <Box position="relative" flexShrink={0}>
-                {realWorldTasksTimerProgress > 0 && !realWorldTasksHasNotification && (
-                  <Box
-                    as="svg"
-                    position="absolute"
-                    top="calc(50% + 2px)"
-                    left="50%"
-                    transform="translate(-50%, -50%)"
-                    width="44px"
-                    height="48px"
-                    viewBox="0 0 44 48"
-                    pointerEvents="none"
-                    aria-hidden="true"
-                    zIndex={1}
-                    overflow="visible"
-                  >
-                    <defs>
-                      <linearGradient
-                        id="immersionProgressGradient"
-                        x1="0%"
-                        y1="0%"
-                        x2="100%"
-                        y2="100%"
-                        gradientTransform="rotate(135 0.5 0.5)"
-                      >
-                        <stop offset="0%" stopColor="#14b8a6" />
-                        <stop offset="100%" stopColor="#06b6d4" />
-                      </linearGradient>
-                    </defs>
-                    <rect
-                      x="1.75"
-                      y="1.75"
-                      width="40.5"
-                      height="44.5"
-                      rx="17"
-                      ry="18"
-                      fill="none"
-                      stroke={
-                        isLightTheme
-                          ? "rgba(120, 94, 61, 0.18)"
-                          : "rgba(255,255,255,0.08)"
-                      }
-                      strokeWidth="3.5"
-                    />
-                    <rect
-                      x="1.75"
-                      y="1.75"
-                      width="40.5"
-                      height="44.5"
-                      rx="17"
-                      ry="18"
-                      fill="none"
-                      stroke="url(#immersionProgressGradient)"
-                      strokeWidth="3.5"
-                      strokeLinecap="round"
-                      pathLength="100"
-                      strokeDasharray="100"
-                      strokeDashoffset={100 - realWorldTasksTimerProgress}
-                      style={{
-                        transition: "stroke-dashoffset 0.8s ease",
-                      }}
-                    />
-                  </Box>
-                )}
+                {realWorldTasksTimerProgress > 0 &&
+                  !realWorldTasksHasNotification && (
+                    <Box
+                      as="svg"
+                      position="absolute"
+                      top="calc(50% + 2px)"
+                      left="50%"
+                      transform="translate(-50%, -50%)"
+                      width="44px"
+                      height="48px"
+                      viewBox="0 0 44 48"
+                      pointerEvents="none"
+                      aria-hidden="true"
+                      zIndex={1}
+                      overflow="visible"
+                    >
+                      <defs>
+                        <linearGradient
+                          id="immersionProgressGradient"
+                          x1="0%"
+                          y1="0%"
+                          x2="100%"
+                          y2="100%"
+                          gradientTransform="rotate(135 0.5 0.5)"
+                        >
+                          <stop offset="0%" stopColor="#14b8a6" />
+                          <stop offset="100%" stopColor="#06b6d4" />
+                        </linearGradient>
+                      </defs>
+                      <rect
+                        x="1.75"
+                        y="1.75"
+                        width="40.5"
+                        height="44.5"
+                        rx="17"
+                        ry="18"
+                        fill="none"
+                        stroke={
+                          isLightTheme
+                            ? "rgba(120, 94, 61, 0.18)"
+                            : "rgba(255,255,255,0.08)"
+                        }
+                        strokeWidth="3.5"
+                      />
+                      <rect
+                        x="1.75"
+                        y="1.75"
+                        width="40.5"
+                        height="44.5"
+                        rx="17"
+                        ry="18"
+                        fill="none"
+                        stroke="url(#immersionProgressGradient)"
+                        strokeWidth="3.5"
+                        strokeLinecap="round"
+                        pathLength="100"
+                        strokeDasharray="100"
+                        strokeDashoffset={100 - realWorldTasksTimerProgress}
+                        style={{
+                          transition: "stroke-dashoffset 0.8s ease",
+                        }}
+                      />
+                    </Box>
+                  )}
                 <IconButton
                   data-tutorial-id="teams"
                   touchAction="manipulation"

@@ -1,5 +1,5 @@
 // One cancellable queue owns all audio for an episode, including excerpt replays.
-export function createStoryAudio({ getPlayer, onState, onError, setupTimeoutMs = 30000, playbackTimeoutMs = 90000 }) {
+export function createStoryAudio({ getPlayer, onState, onError, onPlayer = () => {}, setupTimeoutMs = 30000, playbackTimeoutMs = 90000 }) {
   let version = 0;
   let player = null;
   let cancelWait = null;
@@ -23,6 +23,7 @@ export function createStoryAudio({ getPlayer, onState, onError, setupTimeoutMs =
     detachEvents = null;
     if (player) dispose(player);
     player = null;
+    onPlayer(null);
   };
 
   return {
@@ -43,11 +44,18 @@ export function createStoryAudio({ getPlayer, onState, onError, setupTimeoutMs =
     async resume() {
       if (!player || !paused) return;
       const token = version;
+      const currentPlayer = player;
       paused = false;
       resetPlaybackTimeout?.();
       try {
-        await player.audio.play();
-        if (token === version) onState("playing");
+        const playAttempt = Promise.resolve(currentPlayer.audio.play());
+        void playAttempt.catch((error) => {
+          if (token === version && player === currentPlayer) { stop(); onState("idle"); onError(error); }
+        });
+        await Promise.race([playAttempt, currentPlayer.playbackStarted
+          ? currentPlayer.playbackStarted.then((didStart) => didStart ? undefined : playAttempt)
+          : playAttempt]);
+        if (token === version && player === currentPlayer && !paused) onState("playing");
       } catch (error) {
         if (token === version) { stop(); onState("idle"); onError(error); }
       }
@@ -101,6 +109,28 @@ export function createStoryAudio({ getPlayer, onState, onError, setupTimeoutMs =
           if (token !== version || prepared.status === "cancelled") return;
           const nextPlayer = prepared.value;
           player = nextPlayer;
+          onPlayer(nextPlayer.audio);
+
+          // WebRTC autoplay can start while play() is still pending. Follow
+          // the media event immediately instead of leaving audible speech in loading.
+          let resolveStarted;
+          const playbackStarted = new Promise((resolve) => { resolveStarted = resolve; });
+          const started = () => {
+            if (token === version && player === nextPlayer && !paused) {
+              resolveStarted();
+              onState("playing", turn.speaker, turn);
+            }
+          };
+          nextPlayer.audio.addEventListener?.("playing", started);
+          nextPlayer.playbackStarted?.then((didStart) => { if (didStart) started(); }, () => {});
+          detachEvents = () => {
+            nextPlayer.audio.removeEventListener?.("playing", started);
+            if (!nextPlayer.completion) {
+              nextPlayer.audio.onended = null;
+              nextPlayer.audio.onerror = null;
+            }
+          };
+          if (nextPlayer.audio.paused === false && nextPlayer.audio.readyState >= 3) started();
 
           // Subscribe before ready/play: live streams may finish while the
           // browser's play() promise is pending, or before listeners attach.
@@ -112,16 +142,28 @@ export function createStoryAudio({ getPlayer, onState, onError, setupTimeoutMs =
             } else {
               nextPlayer.audio.onended = ended;
               nextPlayer.audio.onerror = failed;
-              detachEvents = () => { nextPlayer.audio.onended = null; nextPlayer.audio.onerror = null; };
             }
           });
           let outcome = await wait(nextPlayer.ready || Promise.resolve(), "readiness", completion);
           if (token !== version) return;
           if (outcome.status === "value") {
-            outcome = await wait(nextPlayer.audio.play(), "starting playback", completion);
+            const playAttempt = Promise.resolve(nextPlayer.audio.play());
+            // A transport start signal must not hide an autoplay rejection.
+            void playAttempt.catch((error) => {
+              if (token === version && player === nextPlayer && !paused) { stop(); onState("idle", null, null); onError(error); }
+            });
+            try {
+              outcome = await wait(Promise.race([playAttempt, playbackStarted]), "starting playback", completion);
+            } catch (error) {
+              // Calling pause() can reject an unresolved HTMLMediaElement.play()
+              // promise with AbortError. That is an intentional state change,
+              // not a playback failure; keep the queue alive for resume().
+              if (!paused || error?.name !== "AbortError") throw error;
+              outcome = { status: "paused" };
+            }
             if (token !== version) return;
-            if (outcome.status === "value") {
-              onState("playing", turn.speaker, turn);
+            if (["value", "paused"].includes(outcome.status)) {
+              if (!paused) onState("playing", turn.speaker, turn);
               outcome = await wait(null, "playback", completion);
             }
           }
@@ -133,6 +175,7 @@ export function createStoryAudio({ getPlayer, onState, onError, setupTimeoutMs =
           // here would turn a natural end into a cancelled recording.
           if (!nextPlayer.completion) nextPlayer.cleanup?.();
           player = null;
+          onPlayer(null);
         }
         if (token === version) { onState("idle", null, null); onComplete?.(); }
       } catch (error) {

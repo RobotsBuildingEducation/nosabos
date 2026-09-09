@@ -15,6 +15,8 @@ import { create } from "zustand";
 // }
 
 const STORAGE_KEY = "nosabo_notes";
+let doneAnimationTimer = null;
+let doneAnimationRestartTimer = null;
 
 // Load notes from localStorage
 const loadNotes = () => {
@@ -91,10 +93,32 @@ const useNotesStore = create((set, get) => ({
   // Trigger the capture celebration. The 3.07s window lets the extended
   // crystal gather finish, then holds the bright state for about 300ms.
   triggerDoneAnimation: () => {
-    set({ isLoading: false, isDone: true });
-    setTimeout(() => {
-      set({ isDone: false });
-    }, 3070);
+    const beginAnimation = () => {
+      doneAnimationRestartTimer = null;
+      if (doneAnimationTimer) clearTimeout(doneAnimationTimer);
+      set({ isLoading: false, isDone: true });
+      doneAnimationTimer = setTimeout(() => {
+        doneAnimationTimer = null;
+        set({ isDone: false });
+      }, 3070);
+    };
+
+    if (doneAnimationRestartTimer) {
+      clearTimeout(doneAnimationRestartTimer);
+      doneAnimationRestartTimer = null;
+    }
+
+    // A second capture can arrive while the previous celebration is still
+    // active (some exercises save and render feedback in the same turn).
+    // Briefly unmount the animation before restarting it so every capture gets
+    // the complete shard-gather sequence and its own full timeout.
+    if (get().isDone) {
+      set({ isLoading: false, isDone: false });
+      doneAnimationRestartTimer = setTimeout(beginAnimation, 0);
+      return;
+    }
+
+    beginAnimation();
   },
 }));
 

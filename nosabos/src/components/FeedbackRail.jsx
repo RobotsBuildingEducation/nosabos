@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import ActivityActionRow from "./ActivityActionRow";
 import {
@@ -15,9 +15,12 @@ import { FiArrowRight, FiHelpCircle, FiX } from "react-icons/fi";
 import { MdOutlineSupportAgent } from "react-icons/md";
 import { RiBookmarkLine } from "react-icons/ri";
 import ReactMarkdown from "react-markdown";
+import rehypeRaw from "rehype-raw";
+import rehypeSanitize from "rehype-sanitize";
 import { WaveBar } from "./WaveBar";
-import RandomCharacter from "./RandomCharacter";
+import RandomCharacter, { characterImagesMap } from "./RandomCharacter";
 import useSoundSettings from "../hooks/useSoundSettings";
+import useNotesStore from "../hooks/useNotesStore";
 import { deliciousSound, clickSound, sparkleSound } from "../constants/sounds";
 import VoiceOrb from "./VoiceOrb";
 import AnimatedEllipsis from "./AnimatedEllipsis";
@@ -33,6 +36,27 @@ import {
 const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
 const APP_BORDER = "var(--app-border)";
 const MotionBox = motion.create(Box);
+const SAFE_FEEDBACK_REHYPE_PLUGINS = [rehypeRaw, rehypeSanitize];
+const FeedbackMarkdown = ({ children }) => (
+  <ReactMarkdown rehypePlugins={SAFE_FEEDBACK_REHYPE_PLUGINS}>
+    {children}
+  </ReactMarkdown>
+);
+const POSITIVE_FEEDBACK_CHARACTER_EXCLUSIONS = new Set([
+  "0",
+  "1",
+  "2",
+  "3",
+  "4",
+  "5",
+  "6",
+  "13",
+  "16",
+  "17",
+]);
+const POSITIVE_FEEDBACK_CHARACTER_IDS = Object.keys(characterImagesMap).filter(
+  (id) => !POSITIVE_FEEDBACK_CHARACTER_EXCLUSIONS.has(id),
+);
 
 /**
  * Stable, memoized feedback rail used by GrammarBook and Vocabulary.
@@ -70,8 +94,19 @@ const FeedbackRail = React.memo(
     const hasPlayedRef = useRef(false);
     const reduceMotion = useReducedMotion();
     const playSound = useSoundSettings((s) => s.playSound);
+    const triggerDoneAnimation = useNotesStore(
+      (s) => s.triggerDoneAnimation,
+    );
+    const positiveFeedbackCharacter = useMemo(() => {
+      if (ok !== true) return null;
+      return POSITIVE_FEEDBACK_CHARACTER_IDS[
+        Math.floor(Math.random() * POSITIVE_FEEDBACK_CHARACTER_IDS.length)
+      ];
+    }, [ok]);
 
-    // Play sound feedback based on answer correctness
+    // Keep incorrect feedback and the global Memory button in sync. Every
+    // wrong result represented by this shared rail gets one capture animation,
+    // including phonics and any future exercise that adopts FeedbackRail.
     useEffect(() => {
       if (ok === true && !hasPlayedRef.current) {
         hasPlayedRef.current = true;
@@ -79,12 +114,13 @@ const FeedbackRail = React.memo(
       } else if (ok === false && !hasPlayedRef.current) {
         hasPlayedRef.current = true;
         playSound(clickSound);
+        triggerDoneAnimation();
       }
       // Reset when ok changes to null (new question)
       if (ok === null) {
         hasPlayedRef.current = false;
       }
-    }, [ok, playSound]);
+    }, [ok, playSound, triggerDoneAnimation]);
 
     if (ok === null && !isAssistant) return null;
 
@@ -161,7 +197,7 @@ const FeedbackRail = React.memo(
                   lineHeight="1.6"
                   sx={questionAssistantMarkdownStyles}
                 >
-                  <ReactMarkdown>{assistantSupportText}</ReactMarkdown>
+                  <FeedbackMarkdown>{assistantSupportText}</FeedbackMarkdown>
                 </Box>
               ) : null}
             </MotionBox>
@@ -236,7 +272,7 @@ const FeedbackRail = React.memo(
                   lineHeight="1.6"
                   sx={questionAssistantMarkdownStyles}
                 >
-                  <ReactMarkdown>{assistantSupportText}</ReactMarkdown>
+                  <FeedbackMarkdown>{assistantSupportText}</FeedbackMarkdown>
                 </Box>
               ) : null}
             </VStack>
@@ -286,15 +322,28 @@ const FeedbackRail = React.memo(
             pb={1}
           >
             <HStack align="start" spacing={3}>
-              <Text
-                aria-hidden="true"
-                fontWeight="bold"
-                color={
-                  ok ? questionFeedbackAccent.ok : questionFeedbackAccent.error
-                }
-              >
-                {ok ? "✓" : "✖"}
-              </Text>
+              {ok && positiveFeedbackCharacter ? (
+                <Box
+                  flexShrink={0}
+                  mt="-1"
+                  data-positive-feedback-character={positiveFeedbackCharacter}
+                >
+                  <RandomCharacter
+                    key={positiveFeedbackCharacter}
+                    width="32px"
+                    containerHeight={36}
+                    notSoRandomCharacter={positiveFeedbackCharacter}
+                  />
+                </Box>
+              ) : (
+                <Text
+                  aria-hidden="true"
+                  fontWeight="bold"
+                  color={questionFeedbackAccent.error}
+                >
+                  ✖
+                </Text>
+              )}
               <Box
                 flex="1"
                 minW={0}
@@ -372,13 +421,13 @@ const FeedbackRail = React.memo(
                 variant="solid"
                 bg="var(--app-surface-elevated)"
                 color={questionToneText.primary}
-                border="1px solid var(--question-error-accent)"
+                border="0"
                 borderRadius="18px"
                 boxShadow="0 3px 0 var(--question-error-bg)"
                 _hover={{ bg: "var(--app-surface-muted)" }}
                 _active={{ transform: "translateY(1px)", boxShadow: "none" }}
                 _focusVisible={{
-                  outline: "2px solid var(--question-error-accent)",
+                  outline: "2px solid var(--question-tool-accent-strong)",
                   outlineOffset: "2px",
                 }}
                 leftIcon={<FiHelpCircle />}
@@ -401,7 +450,7 @@ const FeedbackRail = React.memo(
                   "& ul, & ol": { ps: 4 },
                 }}
               >
-                <ReactMarkdown>{explanationText}</ReactMarkdown>
+                <FeedbackMarkdown>{explanationText}</FeedbackMarkdown>
               </Box>
             )}
           </MotionBox>
@@ -440,23 +489,39 @@ const FeedbackRail = React.memo(
             {...getQuestionFeedbackPanelProps({ ok })}
           >
             <HStack spacing={3} align="center">
-              <Flex
-                w="44px"
-                h="44px"
-                rounded="full"
-                align="center"
-                justify="center"
-                bg={
-                  ok ? questionFeedbackAccent.ok : questionFeedbackAccent.error
-                }
-                color="white"
-                fontWeight="bold"
-                fontSize="lg"
-                boxShadow="var(--question-feedback-shadow)"
-                flexShrink={0}
-              >
-                {ok ? "✓" : "✖"}
-              </Flex>
+              {ok && positiveFeedbackCharacter ? (
+                <Flex
+                  w="44px"
+                  h="44px"
+                  align="center"
+                  justify="center"
+                  flexShrink={0}
+                  data-positive-feedback-character={positiveFeedbackCharacter}
+                >
+                  <RandomCharacter
+                    key={positiveFeedbackCharacter}
+                    width="36px"
+                    containerHeight={44}
+                    notSoRandomCharacter={positiveFeedbackCharacter}
+                  />
+                </Flex>
+              ) : (
+                <Flex
+                  w="44px"
+                  h="44px"
+                  rounded="full"
+                  align="center"
+                  justify="center"
+                  bg={questionFeedbackAccent.error}
+                  color="white"
+                  fontWeight="bold"
+                  fontSize="lg"
+                  boxShadow="var(--question-feedback-shadow)"
+                  flexShrink={0}
+                >
+                  ✖
+                </Flex>
+              )}
               <Box flex="1">
                 <Text fontWeight="semibold" color={questionToneText.primary}>
                   {label}
@@ -564,8 +629,7 @@ const FeedbackRail = React.memo(
                 colorScheme={undefined}
                 bg="#d8a4b6"
                 color="#432b33"
-                border="1px solid"
-                borderColor="rgba(176, 94, 122, 0.28)"
+                border="0"
                 boxShadow="0px 4px 0px #c08aa0"
                 _hover={{
                   bg: "#d3a0b2",
@@ -649,13 +713,10 @@ const FeedbackRail = React.memo(
                   },
                 }}
               >
-                <ReactMarkdown>{explanationText}</ReactMarkdown>
+                <FeedbackMarkdown>{explanationText}</FeedbackMarkdown>
               </Box>
             </Box>
           )}
-          <Box mt="-6" paddingBottom={6}>
-            <RandomCharacter />
-          </Box>
         </VStack>
       </SlideFade>
     );

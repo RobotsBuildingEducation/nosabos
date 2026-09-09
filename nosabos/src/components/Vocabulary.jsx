@@ -9,7 +9,6 @@ import React, {
 } from "react";
 import {
   Box,
-  Badge,
   Button,
   Flex,
   HStack,
@@ -89,6 +88,8 @@ import {
   getQuestionDropZoneProps,
   getQuestionToolButtonProps,
   questionAssistantText,
+  questionDropTargetActiveStyles,
+  questionInlineDropSlotActiveStyles,
   questionSquircleStyle,
 } from "./questionUiStyles";
 import {
@@ -1309,6 +1310,13 @@ function VocabularyLegacy({
     useState(false);
   const [isAssistantOpen, setIsAssistantOpen] = useState(false);
 
+  useEffect(() => {
+    if (isFinalQuiz) {
+      setIsAssistantOpen(false);
+      setAssistantSupportText("");
+    }
+  }, [isFinalQuiz]);
+
   const handleCloseAssistant = useCallback(() => {
     setIsAssistantOpen(false);
   }, []);
@@ -1342,6 +1350,7 @@ function VocabularyLegacy({
   }
 
   async function copyAll(q, h, tr) {
+    if (isFinalQuiz) return;
     const text = makeBundle(q, h, tr);
     if (!text) return;
     try {
@@ -1367,7 +1376,7 @@ function VocabularyLegacy({
 
   // Inline assistant support - streams response directly in the UI
   async function handleAskAssistant(questionContext) {
-    if (!questionContext) return;
+    if (isFinalQuiz || !questionContext) return;
     if (isAssistantOpen) {
       setIsAssistantOpen(false);
       return;
@@ -4435,6 +4444,7 @@ Return JSON ONLY:
   }
 
   const sendMatchHelp = useCallback(() => {
+    if (isFinalQuiz) return;
     if (isAssistantOpen) {
       setIsAssistantOpen(false);
       return;
@@ -4535,6 +4545,7 @@ Return JSON ONLY:
   ]);
 
   const sendSpeakHelp = useCallback(() => {
+    if (isFinalQuiz) return;
     if (isAssistantOpen) {
       setIsAssistantOpen(false);
       return;
@@ -4740,6 +4751,7 @@ Return JSON ONLY:
 
   // Single copy button (left of question) - now triggers inline assistant
   const CopyAllBtn = ({ q, h, tr }) => {
+    if (isFinalQuiz) return null;
     const has = (q && q.trim()) || (h && h.trim()) || (tr && tr.trim());
     if (!has) return null;
     return (
@@ -4806,10 +4818,7 @@ Return JSON ONLY:
             borderBottomWidth="2px"
             borderBottomColor={APP_BORDER_STRONG}
             bg={APP_SURFACE_MUTED}
-            activeStyles={{
-              borderBottomColor: "purple.300",
-              bg: "rgba(128,90,213,0.18)",
-            }}
+            activeStyles={questionInlineDropSlotActiveStyles}
             transition="all 0.2s ease"
           >
             {mcSlotIndex != null ? (
@@ -4893,10 +4902,7 @@ Return JSON ONLY:
             borderBottomWidth="2px"
             borderBottomColor={APP_BORDER_STRONG}
             bg={APP_SURFACE_MUTED}
-            activeStyles={{
-              borderBottomColor: "purple.300",
-              bg: "rgba(128,90,213,0.18)",
-            }}
+            activeStyles={questionInlineDropSlotActiveStyles}
             transition="all 0.2s ease"
           >
             {choiceIdx != null ? (
@@ -5275,19 +5281,12 @@ Return JSON ONLY:
           <Box w="50%" justifyContent={"center"}>
             <VStack spacing={2}>
                 <HStack justify="space-between" w="100%" mb={1}>
-                  <Badge colorScheme="purple" fontSize="md">
+                  <Text fontSize="sm" fontWeight="semibold" color={APP_TEXT_SECONDARY}>
                     {t("vocab_final_quiz")}
-                  </Badge>
-                  <Badge
-                    colorScheme={
-                      quizCorrectAnswers >= quizConfig.passingScore
-                        ? "green"
-                        : "yellow"
-                    }
-                    fontSize="md"
-                  >
+                  </Text>
+                  <Text fontSize="sm" fontWeight="semibold" color={APP_TEXT_MUTED}>
                     {quizQuestionsAnswered}/{quizConfig.questionsRequired}
-                  </Badge>
+                  </Text>
                 </HStack>
 
                 {/* Animated progress bar showing correct (blue) and wrong (red) answers */}
@@ -5585,6 +5584,13 @@ Return JSON ONLY:
                     wrap="wrap"
                     gap={3}
                     w="full"
+                    p={2.5}
+                    borderRadius="xl"
+                    borderWidth="1.5px"
+                    borderColor="transparent"
+                    style={questionSquircleStyle}
+                    transition="border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease"
+                    activeStyles={questionDropTargetActiveStyles}
                   >
                     {mcBankOrder.map((idx, position) => (
                       <SortableItem id={`mc-${idx}`} key={`mc-bank-${idx}`}>
@@ -5847,6 +5853,13 @@ Return JSON ONLY:
                     wrap="wrap"
                     gap={3}
                     w="full"
+                    p={2.5}
+                    borderRadius="xl"
+                    borderWidth="1.5px"
+                    borderColor="transparent"
+                    style={questionSquircleStyle}
+                    transition="border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease"
+                    activeStyles={questionDropTargetActiveStyles}
                   >
                     {maBankOrder.map((idx, position) => (
                       <SortableItem id={`ma-${idx}`} key={`ma-bank-${idx}`}>
@@ -6075,7 +6088,7 @@ Return JSON ONLY:
               >
                 {t("vocab_say_it_aloud")}
               </Text>
-              {sVariant === "translate" || sVariant === "complete" ? (
+              {!isFinalQuiz && (sVariant === "translate" || sVariant === "complete") ? (
                 <IconButton
                   aria-label={t("vocab_ask_assistant")}
                   icon={<MdOutlineSupportAgent />}
@@ -6340,16 +6353,18 @@ Return JSON ONLY:
                 >
                   {t("vocab_match_instruction")}
                 </Text>
-                <IconButton
-                  aria-label={t("vocab_ask_assistant")}
-                  icon={<MdOutlineSupportAgent />}
-                  size="sm"
-                  fontSize="lg"
-                  rounded="xl"
-                  onClick={sendMatchHelp}
-                  isDisabled={isLoadingAssistantSupport}
-                  {...getQuestionToolButtonProps({ active: isAssistantOpen })}
-                />
+                {!isFinalQuiz && (
+                  <IconButton
+                    aria-label={t("vocab_ask_assistant")}
+                    icon={<MdOutlineSupportAgent />}
+                    size="sm"
+                    fontSize="lg"
+                    rounded="xl"
+                    onClick={sendMatchHelp}
+                    isDisabled={isLoadingAssistantSupport}
+                    {...getQuestionToolButtonProps({ active: isAssistantOpen })}
+                  />
+                )}
               </HStack>
 
               <SortableArea onDragEnd={onDragEnd}>
@@ -6426,6 +6441,8 @@ Return JSON ONLY:
                         })}
                         rounded="lg"
                         w="100%"
+                        transition="border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease"
+                        activeStyles={questionDropTargetActiveStyles}
                       >
                         {mSlots[i] !== null && mRight[mSlots[i]] != null ? (
                           <SortableItem id={`r-${mSlots[i]}`}>
@@ -6518,10 +6535,14 @@ Return JSON ONLY:
                     flexWrap="wrap"
                     minH="44px"
                     p={2}
-                    border={`1px dashed ${APP_BORDER_STRONG}`}
+                    borderWidth="1px"
+                    borderStyle="dashed"
+                    borderColor={APP_BORDER_STRONG}
                     rounded="lg"
                     style={questionSquircleStyle}
                     bg={APP_SURFACE_MUTED}
+                    transition="border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease"
+                    activeStyles={questionDropTargetActiveStyles}
                   >
                     {(mBank.length
                       ? mBank
@@ -6675,7 +6696,7 @@ Return JSON ONLY:
               onPlayTTS={(text, options) =>
                 handlePlayQuestionTTS(text, questionTTsLang, options)
               }
-              onAskAssistant={handleAskAssistant}
+              onAskAssistant={isFinalQuiz ? null : handleAskAssistant}
               isAssistantOpen={isAssistantOpen}
               onCloseAssistant={handleCloseAssistant}
               assistantSupportText={assistantSupportText}
@@ -6711,7 +6732,7 @@ Return JSON ONLY:
               onPlayTTS={(text, options) =>
                 handlePlayQuestionTTS(text, questionTTsLang, options)
               }
-              onAskAssistant={handleAskAssistant}
+              onAskAssistant={isFinalQuiz ? null : handleAskAssistant}
               isAssistantOpen={isAssistantOpen}
               onCloseAssistant={handleCloseAssistant}
               assistantSupportText={assistantSupportText}

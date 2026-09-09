@@ -12,6 +12,18 @@ export const storyServices = {
     }
     return response.response.text();
   },
+  async translate(text, targetLang, supportLang) {
+    const prompt = `Translate this ${targetLang || "target"} text into clear, natural, learner-friendly ${supportLang || "support language"}. Return ONLY the direct translation text without quotes or explanation:
+"${text}"`;
+    const response = await storyModel.generateContent({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.2,
+        maxOutputTokens: 128,
+      },
+    });
+    return response.response.text().trim().replace(/^["']|["']$/g, "");
+  },
   getPlayer: getTTSPlayer,
   award: awardXp,
   log(npub, payload) {

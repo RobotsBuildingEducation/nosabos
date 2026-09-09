@@ -43,6 +43,44 @@ test("queue completes only after every turn ends, and supports pause/resume", as
   players[1].audio.onended(); await playing; assert.equal(completed, true);
   assert.equal(players.every((player) => player.cleaned), true);
 });
+
+test("pausing a pending browser play request is not reported as an audio failure", async () => {
+  const player = fakePlayer();
+  let rejectStartingPlay;
+  let starting = true;
+  player.audio.play = () => starting
+    ? new Promise((resolve, reject) => { rejectStartingPlay = reject; })
+    : Promise.resolve();
+  player.audio.pause = () => {
+    if (!rejectStartingPlay) return;
+    const error = new Error("The play() request was interrupted by pause().");
+    error.name = "AbortError";
+    rejectStartingPlay(error);
+    rejectStartingPlay = null;
+  };
+
+  const states = [];
+  const errors = [];
+  const controller = createStoryAudio({
+    getPlayer: async () => player,
+    onState: (state) => states.push(state),
+    onError: (error) => errors.push(error),
+  });
+  const playing = controller.play([{ speaker: "Host" }]);
+
+  await tick();
+  controller.pause();
+  await tick();
+  assert.equal(states.at(-1), "paused");
+  assert.equal(errors.length, 0);
+
+  starting = false;
+  await controller.resume();
+  assert.equal(states.at(-1), "playing");
+  player.audio.onended();
+  await playing;
+  assert.equal(errors.length, 0);
+});
 test("stopping pending generation disposes late audio without playing or unlocking a question", async () => {
   let resolvePlayer; let played = false; let completed = false;
   const player = fakePlayer(); player.audio.play = async () => { played = true; };
@@ -116,4 +154,71 @@ test("pause suspends the watchdog and resume restores completion", async () => {
   await tick(); queue.pause(); await new Promise((resolve) => setTimeout(resolve, 35));
   assert.equal(complete, false); await queue.resume();
   player.audio.onended(); await pending; assert.equal(complete, true);
+});
+
+test("live playing events update the speaker while play() remains pending", async () => {
+  const player = fakePlayer();
+  const events = new EventTarget();
+  player.audio.addEventListener = events.addEventListener.bind(events);
+  player.audio.removeEventListener = events.removeEventListener.bind(events);
+  player.audio.play = () => new Promise(() => {});
+  let complete;
+  player.completion = new Promise((resolve) => { complete = resolve; });
+  const states = []; const elements = [];
+  const queue = createStoryAudio({ getPlayer: async () => player, onState: (state, speaker) => states.push([state, speaker]), onPlayer: (audio) => elements.push(audio), onError: assert.fail, setupTimeoutMs: 15 });
+  const pending = queue.play([{ speaker: "Yoruichi" }]);
+  await tick();
+  assert.equal(states.at(-1)[0], "loading");
+  events.dispatchEvent(new Event("playing"));
+  assert.deepEqual(states.at(-1), ["playing", "Yoruichi"]);
+  await new Promise((resolve) => setTimeout(resolve, 25));
+  assert.equal(states.at(-1)[0], "playing", "Audible speech must leave the setup timeout behind");
+  assert.equal(elements.at(-1), player.audio);
+  complete({ status: "ended" }); await pending;
+  assert.equal(elements.at(-1), null);
+  const count = states.length;
+  events.dispatchEvent(new Event("playing"));
+  assert.equal(states.length, count, "Finished players cannot change the next turn's UI");
+});
+
+test("autoplay already in progress is reflected when the player is received", async () => {
+  const player = fakePlayer();
+  player.audio.paused = false;
+  player.audio.readyState = 4;
+  player.audio.play = () => new Promise(() => {});
+  let complete;
+  player.completion = new Promise((resolve) => { complete = resolve; });
+  const states = [];
+  const queue = createStoryAudio({ getPlayer: async () => player, onState: (state) => states.push(state), onError: assert.fail });
+  const pending = queue.play([{ speaker: "Host" }]);
+  await tick();
+  assert.equal(states.at(-1), "playing");
+  queue.pause(); assert.equal(states.at(-1), "paused");
+  complete({ status: "ended" }); await pending;
+});
+
+test("a transport start cannot hide a later browser playback rejection", async () => {
+  const player = fakePlayer();
+  let rejectPlay; let error; let completed = false;
+  player.audio.play = () => new Promise((_, reject) => { rejectPlay = reject; });
+  player.playbackStarted = Promise.resolve(true);
+  const queue = createStoryAudio({ getPlayer: async () => player, onState() {}, onError: (value) => { error = value; } });
+  const pending = queue.play([{ speaker: "Host" }], () => { completed = true; });
+  await tick();
+  rejectPlay(new Error("Autoplay blocked")); await pending;
+  assert.match(error.message, /Autoplay blocked/);
+  assert.equal(completed, false);
+});
+
+test("resuming realtime audio restores playing even if play() stays pending", async () => {
+  const player = fakePlayer();
+  player.audio.play = () => new Promise(() => {});
+  player.playbackStarted = Promise.resolve(true);
+  const states = [];
+  const queue = createStoryAudio({ getPlayer: async () => player, onState: (state) => states.push(state), onError: assert.fail });
+  const pending = queue.play([{ speaker: "Host" }]);
+  await tick();
+  queue.pause(); assert.equal(states.at(-1), "paused");
+  await queue.resume(); assert.equal(states.at(-1), "playing");
+  player.audio.onended(); await pending;
 });

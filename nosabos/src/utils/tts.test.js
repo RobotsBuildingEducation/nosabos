@@ -358,3 +358,28 @@ test("cancelling before a track arrives settles ready and releases the player", 
   assert.equal(h.peers[0].connectionState, "closed");
   assert.equal(h.timers.size, 0);
 });
+
+test("radio follows transport playback start when WebRTC emits no media playing event", async () => {
+  const h = harness();
+  const player = await h.api.getTTSPlayer(options);
+  player.audio.play = () => new Promise(() => {});
+  const states = [];
+  const queue = createStoryAudio({ getPlayer: async () => player, onState: (state) => states.push(state), onError: assert.fail });
+  const pending = queue.play([{ speaker: "Host" }]);
+  await flush();
+  assert.equal(states.at(-1), "loading");
+  h.send({ type: "output_audio_buffer.started" });
+  await flush();
+  assert.equal(states.at(-1), "playing");
+  assert.equal(await player.playbackStarted, true);
+  h.send(generated); h.send(drained);
+  await h.advance(1100); await pending;
+  assert.equal(states.at(-1), "idle");
+});
+
+test("cancelled TTS does not claim that transport playback started", async () => {
+  const h = harness();
+  const player = await h.api.getTTSPlayer(options);
+  player.cleanup();
+  assert.equal(await player.playbackStarted, false);
+});

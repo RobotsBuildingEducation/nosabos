@@ -349,6 +349,18 @@ export default function Randomize() {
               userLanguage={uiLang}
               activeNpub={npub}
               activeNsec={nsec}
+              targetLang={normalizePracticeLanguage(
+                user?.progress?.targetLang,
+                DEFAULT_TARGET_LANGUAGE,
+              )}
+              supportLang={
+                user?.progress?.supportLang === "bilingual"
+                  ? uiLang
+                  : normalizeSupportLanguage(
+                      user?.progress?.supportLang || uiLang,
+                      DEFAULT_SUPPORT_LANGUAGE,
+                    )
+              }
             />
           ) : currentMode.key === "grammar" ? (
             <GrammarBook

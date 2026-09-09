@@ -132,6 +132,7 @@ export default function StoryCharacterAvatar({
   indicatorIcon = null,
   borderRadius = "full",
   portraitId: explicitPortraitId = null,
+  userLabel = "YOU",
   ...rest
 }) {
   const isUser = isUserCharacter(name, user);
@@ -234,7 +235,7 @@ export default function StoryCharacterAvatar({
           pointerEvents="none"
           whiteSpace="nowrap"
         >
-          YOU
+          {userLabel || "YOU"}
         </Box>
       )}
     </Box>

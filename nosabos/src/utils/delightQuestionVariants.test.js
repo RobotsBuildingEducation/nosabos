@@ -152,7 +152,7 @@ test("parses JSON surrounded by model commentary", () => {
   });
 });
 
-test("every completed variant delegates grading to semantic judgment", () => {
+test("open-ended variants delegate grading while Natural or Weird is stable", () => {
   for (const variant of DELIGHT_VARIANT_IDS) {
     const question = getDelightFallbackQuestion(variant, "grammar");
     const response = buildReferenceResponse(question);
@@ -161,12 +161,60 @@ test("every completed variant delegates grading to semantic judgment", () => {
       true,
       `${variant} reference response should be ready`,
     );
-    assert.equal(
-      gradeDelightResponse(question, response),
-      null,
-      `${variant} should delegate instead of grading deterministically`,
-    );
+    const expectedGrade = variant === "natural_or_weird" ? true : null;
+    assert.equal(gradeDelightResponse(question, response), expectedGrade);
   }
+});
+
+test("Natural or Weird gives one deterministic verdict for clear examples", () => {
+  const naturalEnglish = {
+    variant: "natural_or_weird",
+    sentence: "I have a sister.",
+    isNatural: true,
+    correction: "I have a sister.",
+  };
+  assert.equal(
+    gradeDelightResponse(naturalEnglish, { choice: true }),
+    true,
+  );
+  assert.equal(
+    gradeDelightResponse(naturalEnglish, { choice: false }),
+    false,
+  );
+
+  const weirdSpanish = {
+    variant: "natural_or_weird",
+    sentence: "Tres libro.",
+    isNatural: false,
+    correction: "Tres libros.",
+  };
+  assert.equal(
+    gradeDelightResponse(weirdSpanish, { choice: false }),
+    true,
+  );
+  assert.equal(
+    gradeDelightResponse(weirdSpanish, { choice: true }),
+    false,
+  );
+});
+
+test("Natural or Weird rejects a contradictory generated answer key", () => {
+  assert.equal(
+    normalizeDelightQuestion("natural_or_weird", {
+      sentence: "I have a sister.",
+      isNatural: false,
+      correction: "I have a sister.",
+    }),
+    null,
+  );
+  assert.equal(
+    normalizeDelightQuestion("natural_or_weird", {
+      sentence: "Tres libro.",
+      isNatural: true,
+      correction: "Tres libros.",
+    }),
+    null,
+  );
 });
 
 test("buildSentenceDetectiveJudgePrompt formats context for AI grading", () => {

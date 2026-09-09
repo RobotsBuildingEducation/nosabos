@@ -45,6 +45,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { layoutWithLines, prepareWithSegments } from "@chenglou/pretext";
 import { FaMicrophone, FaStop, FaRegCommentDots } from "react-icons/fa";
 import { MdOutlineTranslate } from "react-icons/md";
+import { LuChartColumnIncreasing } from "react-icons/lu";
 import {
   RiArrowLeftLine,
   RiArrowRightLine,
@@ -52,7 +53,6 @@ import {
   RiCheckLine,
   RiLockLine,
   RiRoadMapLine,
-  RiStarFill,
   RiTrophyLine,
   RiVolumeUpLine,
 } from "react-icons/ri";
@@ -240,13 +240,17 @@ function loadTutorGameRouterComponent() {
   return tutorGameRouterComponentPromise;
 }
 
-function TutorGameReviewLoadingExperience({ supportLang = "en" }) {
+function TutorGameReviewLoadingExperience({ supportLang = "en", onCancel = null }) {
   const normalizedSupport = normalizeSupportLanguage(
     supportLang,
     DEFAULT_SUPPORT_LANGUAGE,
   );
   const messages =
     GAME_LOADING_MESSAGES[normalizedSupport] || GAME_LOADING_MESSAGES.en;
+  const cancelLabel =
+    translations[normalizedSupport]?.common_cancel ||
+    translations.en?.common_cancel ||
+    "Cancel";
   const [messageIndex, setMessageIndex] = useState(0);
 
   useEffect(() => {
@@ -276,22 +280,38 @@ function TutorGameReviewLoadingExperience({ supportLang = "en" }) {
         py={{ base: 3, md: 4 }}
         bgGradient="linear(to-b, rgba(10, 13, 27, 0.96), rgba(10, 13, 27, 0.72), transparent)"
       >
-        <Text
-          fontSize={{ base: "sm", md: "md" }}
-          color="blue.100"
-          minH="24px"
-          key={messageIndex}
-          fontFamily="monospace"
-          sx={{
-            animation: "fadeIn 0.4s ease-in-out",
-            "@keyframes fadeIn": {
-              "0%": { opacity: 0, transform: "translateY(-4px)" },
-              "100%": { opacity: 1, transform: "translateY(0)" },
-            },
-          }}
-        >
-          {messages[messageIndex]}
-        </Text>
+        <Flex align="center" justify="space-between" gap={3}>
+          <Text
+            flex="1"
+            fontSize={{ base: "sm", md: "md" }}
+            color="blue.100"
+            minH="24px"
+            key={messageIndex}
+            fontFamily="monospace"
+            sx={{
+              animation: "fadeIn 0.4s ease-in-out",
+              "@keyframes fadeIn": {
+                "0%": { opacity: 0, transform: "translateY(-4px)" },
+                "100%": { opacity: 1, transform: "translateY(0)" },
+              },
+            }}
+          >
+            {messages[messageIndex]}
+          </Text>
+          {onCancel ? (
+            <Button
+              size="sm"
+              variant="ghost"
+              color="whiteAlpha.900"
+              onClick={onCancel}
+              flexShrink={0}
+              _hover={{ bg: "whiteAlpha.200" }}
+              _active={{ bg: "whiteAlpha.300" }}
+            >
+              {cancelLabel}
+            </Button>
+          ) : null}
+        </Flex>
       </Box>
       <Box flex="1" overflow="hidden" position="relative">
         <Suspense
@@ -4990,6 +5010,15 @@ export default function Tutor({
     } finally {
       setIsStartingPreviewedLesson(false);
     }
+  }
+
+  function handleCancelTutorGameLoading() {
+    tutorGameLaunchTokenRef.current += 1;
+    setIsStartingPreviewedLesson(false);
+    setTutorGameLaunch(null);
+    setTutorGameLoaderFrame(null);
+    setPreviewedTutorObjectivesExpanded(false);
+    setPreviewedTutorLesson(null);
   }
 
   function handleTutorGameExit() {
@@ -11545,11 +11574,17 @@ export default function Tutor({
 
       <Modal
         isOpen={!!previewedTutorLesson}
-        onClose={closeTutorLessonPreview}
+        onClose={
+          tutorGameLaunch?.phase === "loading"
+            ? handleCancelTutorGameLoading
+            : closeTutorLessonPreview
+        }
         isCentered
         size="lg"
         scrollBehavior="inside"
-        closeOnEsc={!isStartingPreviewedLesson}
+        closeOnEsc={
+          !isStartingPreviewedLesson || tutorGameLaunch?.phase === "loading"
+        }
         closeOnOverlayClick={!isStartingPreviewedLesson}
         motionPreset="none"
       >
@@ -11604,7 +11639,10 @@ export default function Tutor({
         >
           {tutorGameLaunch?.phase === "loading" ? (
             <Box position="absolute" inset={0} zIndex={20}>
-              <TutorGameReviewLoadingExperience supportLang={uiLang} />
+              <TutorGameReviewLoadingExperience
+                supportLang={uiLang}
+                onCancel={handleCancelTutorGameLoading}
+              />
             </Box>
           ) : null}
           <ModalHeader
@@ -11853,13 +11891,35 @@ export default function Tutor({
                     borderRadius="lg"
                     style={APP_SQUIRCLE_STYLE}
                     bg={
-                      previewedTutorLesson?.unit?.color ||
-                      (isLightTheme ? "teal.500" : "teal.400")
+                      isTutorStarterAgendaLesson(previewedTutorLesson?.lesson)
+                        ? previewedTutorLesson?.unit?.color ||
+                          (isLightTheme ? "teal.500" : "teal.400")
+                        : isLightTheme
+                          ? "rgba(234, 179, 8, 0.14)"
+                          : "yellow.500"
                     }
-                    color="white"
+                    color={
+                      isTutorStarterAgendaLesson(previewedTutorLesson?.lesson)
+                        ? "white"
+                        : isLightTheme
+                          ? "#d69e2e"
+                          : "white"
+                    }
+                    border="1px solid"
+                    borderColor={
+                      isTutorStarterAgendaLesson(previewedTutorLesson?.lesson)
+                        ? "transparent"
+                        : isLightTheme
+                          ? "rgba(202, 138, 4, 0.24)"
+                          : "transparent"
+                    }
                     flexShrink={0}
                   >
-                    <RiStarFill size={18} />
+                    {isTutorStarterAgendaLesson(previewedTutorLesson?.lesson) ? (
+                      <RiTrophyLine size={18} />
+                    ) : (
+                      <LuChartColumnIncreasing size={18} />
+                    )}
                   </Center>
                   <Text
                     fontSize="sm"

@@ -156,9 +156,12 @@ const VARIANT_RULES = {
     "instruction, hint, and explanation must be in the support language.",
   ],
   natural_or_weird: [
-    "Create a short sentence in the target language that is either fully natural or contains one common learner error.",
+    "Create a short sentence in the target language that is either fully natural or contains exactly one clear, undisputed learner error.",
     "Choose natural versus weird unpredictably.",
-    "If natural, correction must equal sentence. If weird, provide the natural correction in the target language.",
+    "isNatural is the definitive answer key: true only when the sentence is fully grammatical and idiomatic in ordinary everyday usage; false when it contains the error.",
+    "Avoid subjective style, uncommon-but-valid registers, and sentences that could reasonably be classified either way.",
+    "If natural, correction must equal sentence exactly. If weird, correction must be different and must repair the error in the target language.",
+    "Before returning, verify agreement, number, articles, verb forms, word order, and idiomatic usage agree with isNatural.",
     "instruction, hint, and explanation must be in the support language.",
   ],
 };
@@ -911,6 +914,12 @@ export function normalizeDelightQuestion(
     const sentence = cleanTarget(source.sentence);
     const correction = cleanTarget(source.correction || source.sentence);
     if (!sentence || typeof source.isNatural !== "boolean") return null;
+    const correctionMatchesSentence =
+      normalizeDelightText(correction) === normalizeDelightText(sentence);
+    // The correction is an independent consistency check on the binary key.
+    // Reject contradictory drafts instead of showing a question whose two
+    // generated fields imply different correct buttons.
+    if (source.isNatural !== correctionMatchesSentence) return null;
     return {
       ...base,
       sentence,
@@ -1242,9 +1251,21 @@ export function getInitialDelightResponse(question) {
 
 export function gradeDelightResponse(question, response) {
   if (!question || !response) return false;
+  // Natural or Weird is a binary classification with an explicit answer key.
+  // Re-asking a semantic model on every submission can make the same sentence
+  // receive different verdicts (and can even accept both buttons). Keep this
+  // interaction stable by grading against the validated question contract.
+  if (
+    question.variant === "natural_or_weird" &&
+    typeof question.isNatural === "boolean" &&
+    typeof response.choice === "boolean"
+  ) {
+    return response.choice === question.isNatural;
+  }
   // Question generation can produce more than one defensible answer. Every
-  // completed interaction is therefore judged from its linguistic context;
-  // generated answer keys are references, never exhaustive truth tables.
+  // other completed interaction is therefore judged from its linguistic
+  // context; generated answer keys are references, never exhaustive truth
+  // tables.
   return null;
 }
 

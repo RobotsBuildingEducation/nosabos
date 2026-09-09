@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { chooseStoryMode, rotateStoryMode, parseStorySession, isStoryAnswerCorrect, buildStoryWordTiles, prepareGeneratedStorySession, buildStorySessionPrompt } from "./storySession.js";
+import { chooseStoryMode, rotateStoryMode, parseStorySession, isStoryAnswerCorrect, buildStoryWordTiles, prepareGeneratedStorySession, buildStorySessionPrompt, assertStorySessionLanguage, isStoryTargetCollectionCompatible, isStoryTargetTextCompatible } from "./storySession.js";
 
 const fixture = () => ({ title: "A surprise", segments: [
   { turns: [{ speaker: "Ana", target: "Tengo flores rojas.", support: "I have red flowers." }, { speaker: "Luis", target: "Son para mi madre.", support: "They are for my mother." }], question: { type: "select_words", prompt: "Select two words you hear.", options: ["azules", "flores", "rojas", "nunca"], answer: [1, 2], audioTurn: 0, explanation: "Ana has red flowers." } },
@@ -122,6 +122,8 @@ test("buildStorySessionPrompt includes the RPG character roster and reply instru
     mode: "radio",
     targetName: "Spanish",
     supportName: "English",
+    targetLang: "es",
+    supportLang: "en",
     difficulty: "A1",
     context: "daily routine",
     userCharacterName: "You",
@@ -134,6 +136,82 @@ test("buildStorySessionPrompt includes the RPG character roster and reply instru
   assert.ok(prompt.includes("Yachiru"));
   assert.ok(prompt.includes('"You"'));
   assert.ok(prompt.includes("reply"));
+  assert.match(prompt, /Target language: Spanish \(es\)/);
+  assert.match(prompt, /Support language: English \(en\)/);
+  assert.match(prompt, /language assignment above is authoritative/i);
+});
+
+test("story language validation rejects support-language dialogue for a Japanese target", () => {
+  assert.equal(isStoryTargetTextCompatible("こんにちは。", "ja"), true);
+  assert.equal(isStoryTargetTextCompatible("Hola, ¿cómo estás?", "ja"), false);
+
+  const wrongLanguage = {
+    segments: [
+      { turns: [{ target: "Hola." }, { target: "Estoy en casa." }] },
+    ],
+  };
+  assert.throws(
+    () => assertStorySessionLanguage(wrongLanguage, "ja"),
+    /requested target language \(ja\)/,
+  );
+});
+
+test("story language validation accepts every Japanese dialogue turn", () => {
+  const japanese = {
+    segments: [
+      { turns: [{ target: "こんにちは。" }, { target: "祖父母の家にいます。" }] },
+    ],
+  };
+  assert.equal(assertStorySessionLanguage(japanese, "ja"), japanese);
+});
+
+test("story language validation rejects support-language reply options for a Japanese target", () => {
+  const mixedLanguage = {
+    segments: [
+      {
+        turns: [{ target: "こんにちは。" }, { target: "今日は何をしますか。" }],
+        question: {
+          type: "reply",
+          options: ["Voy al parque.", "Estoy cansado.", "Hasta mañana."],
+        },
+      },
+    ],
+  };
+
+  assert.throws(
+    () => assertStorySessionLanguage(mixedLanguage, "ja"),
+    /reply options are not in the requested target language \(ja\)/,
+  );
+});
+
+test("story language validation allows occasional Latin-only Japanese turns", () => {
+  const targets = ["こんにちは。", "OK!", "NHKを聞いています。", "Sheilfer! "];
+
+  assert.equal(isStoryTargetCollectionCompatible(targets, "ja"), true);
+  assert.equal(
+    isStoryTargetCollectionCompatible(
+      ["Hola.", "Estoy en casa.", "OK!", "Sheilfer!"],
+      "ja",
+    ),
+    false,
+  );
+});
+
+test("Japanese-target Spanish-support radio sessions keep both language roles explicit", () => {
+  const prompt = buildStorySessionPrompt({
+    mode: "radio",
+    targetName: "Japanese",
+    supportName: "Spanish",
+    targetLang: "ja",
+    supportLang: "es",
+    difficulty: "Pre-A1",
+    context: "Familia extendida",
+  });
+
+  assert.match(prompt, /Target language: Japanese \(ja\)/);
+  assert.match(prompt, /Support language: Spanish \(es\)/);
+  assert.match(prompt, /dialogue targets.*Japanese/i);
+  assert.match(prompt, /question prompts.*Spanish/i);
 });
 
 test("test answer logic reliably generates matching correct and wrong selections", () => {
@@ -159,5 +237,3 @@ test("test answer logic reliably generates matching correct and wrong selections
   const orderWrong = [orderQuestion.answer[0]]; // incomplete
   assert.equal(isStoryAnswerCorrect(orderQuestion, orderWrong), false);
 });
-
-

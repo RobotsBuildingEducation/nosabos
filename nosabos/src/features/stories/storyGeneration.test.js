@@ -25,7 +25,7 @@ test("requests constrained JSON with nested turn/checkpoint fields and integer a
   assert.deepEqual(schema.required, ["title", "segments"]);
   const segment = schema.properties.segments.items;
   assert.deepEqual(segment.required, ["turns", "question"]);
-  assert.deepEqual(segment.properties.turns.items.required, ["speaker", "target", "support"]);
+  assert.deepEqual(segment.properties.turns.items.required, ["speaker", "target"]);
   assert.equal(segment.properties.question.properties.answer.items.type, "INTEGER");
   assert.deepEqual(segment.properties.question.properties.type.enum, ["choice", "true_false", "select_words", "order_words", "reply"]);
 });
@@ -66,4 +66,31 @@ test("cancelled generation does not log errors or launch a repair request", asyn
   let calls = 0;
   assert.equal(await generateStorySession({ prompt: "Radio", generate: async () => { calls++; return "invalid"; }, isCancelled: () => true, onDiagnostic: () => assert.fail("Cancelled work must be ignored") }), null);
   assert.equal(calls, 1);
+});
+
+test("wrong-script dialogue is retried using the requested target language", async () => {
+  const spanish = JSON.stringify(valid);
+  const japanese = structuredClone(valid);
+  japanese.segments.forEach((segment) => {
+    segment.turns.forEach((turn, index) => {
+      turn.target = index === 0 ? "こんにちは。" : "祖父母の家にいます。";
+    });
+  });
+  japanese.segments[1].question.type = "choice";
+  japanese.segments[1].question.options = ["Sí", "No"];
+  japanese.segments[1].question.answer = [0];
+
+  const prompts = [];
+  const session = await generateStorySession({
+    prompt: "Japanese story",
+    targetLang: "ja",
+    generate: async (prompt) => {
+      prompts.push(prompt);
+      return prompts.length === 1 ? spanish : JSON.stringify(japanese);
+    },
+  });
+
+  assert.equal(prompts.length, 2);
+  assert.match(prompts[1], /every turn\.target.*requested target language/i);
+  assert.equal(session.segments[0].turns[0].target, "こんにちは。");
 });

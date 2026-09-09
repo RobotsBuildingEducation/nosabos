@@ -35,7 +35,11 @@ import {
   AccordionIcon,
 } from "@chakra-ui/react";
 import { CloseIcon } from "@chakra-ui/icons";
-import { LuBlocks, LuSparkles } from "react-icons/lu";
+import {
+  LuBlocks,
+  LuChartColumnIncreasing,
+  LuSparkles,
+} from "react-icons/lu";
 import CEFRLevelNavigator from "./CEFRLevelNavigator";
 import { useThemeStore } from "../useThemeStore";
 import { APP_SQUIRCLE_SHAPE } from "../theme";
@@ -44,7 +48,6 @@ import {
   RiLockLine,
   RiCheckLine,
   RiStarLine,
-  RiStarFill,
   RiTrophyLine,
   RiBookOpenLine,
   RiPencilLine,
@@ -1850,7 +1853,6 @@ function LessonDetailModal({
   const lessonWithReviewContext = reviewContext
     ? { ...lesson, gameReviewContext: reviewContext }
     : lesson;
-  const showTutorialGameSkip = !!lesson?.isTutorial && !!lesson?.isGame;
 
   const handleStartStandardLesson = async () => {
     if (lessonLoading || gameLoading) return;
@@ -1975,7 +1977,7 @@ function LessonDetailModal({
       size={gameLoading && !isDesktop ? "full" : "xl"}
       isCentered={!gameLoading || isDesktop}
       closeOnOverlayClick={!isTransitioningToLesson}
-      closeOnEsc={!isTransitioningToLesson}
+      closeOnEsc={!lessonLoading}
       motionPreset="none"
     >
       <ModalOverlay
@@ -2109,27 +2111,25 @@ function LessonDetailModal({
                 >
                   {loadingMessages[loadingMsgIdx]}
                 </Text>
-                {showTutorialGameSkip ? (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    color={isLightTheme ? "gray.100" : "whiteAlpha.900"}
-                    onClick={handleCancelGameLoading}
-                    flexShrink={0}
-                    _hover={{
-                      bg: isLightTheme
-                        ? "var(--app-glass-bg-soft)"
-                        : "whiteAlpha.200",
-                    }}
-                    _active={{
-                      bg: isLightTheme
-                        ? "var(--app-surface-muted)"
-                        : "whiteAlpha.300",
-                    }}
-                  >
-                    {t("practice_skip_question")}
-                  </Button>
-                ) : null}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  color={isLightTheme ? "gray.100" : "whiteAlpha.900"}
+                  onClick={handleCancelGameLoading}
+                  flexShrink={0}
+                  _hover={{
+                    bg: isLightTheme
+                      ? "var(--app-glass-bg-soft)"
+                      : "whiteAlpha.200",
+                  }}
+                  _active={{
+                    bg: isLightTheme
+                      ? "var(--app-surface-muted)"
+                      : "whiteAlpha.300",
+                  }}
+                >
+                  {t("common_cancel")}
+                </Button>
               </Flex>
             </Box>
             <Box flex="1" overflow="hidden" position="relative">
@@ -2420,8 +2420,8 @@ function LessonDetailModal({
                               : lesson.isGame
                                 ? "rgba(13, 148, 136, 0.10)"
                                 : lesson.isFinalQuiz
-                                  ? "rgba(147, 51, 234, 0.10)"
-                                  : "rgba(217, 119, 6, 0.12)"
+                                ? "rgba(147, 51, 234, 0.10)"
+                                  : "rgba(234, 179, 8, 0.12)"
                             : undefined
                         }
                         bgGradient={
@@ -2443,8 +2443,8 @@ function LessonDetailModal({
                               : lesson.isGame
                                 ? "rgba(13, 148, 136, 0.22)"
                                 : lesson.isFinalQuiz
-                                  ? "rgba(147, 51, 234, 0.22)"
-                                  : "rgba(217, 119, 6, 0.24)"
+                                ? "rgba(147, 51, 234, 0.22)"
+                                  : "rgba(202, 138, 4, 0.24)"
                             : "transparent"
                         }
                         boxShadow={
@@ -2475,8 +2475,8 @@ function LessonDetailModal({
                             size={24}
                           />
                         ) : (
-                          <RiStarFill
-                            color={isLightTheme ? "#b45309" : "white"}
+                          <LuChartColumnIncreasing
+                            color={isLightTheme ? "#d69e2e" : "white"}
                             size={24}
                           />
                         )}

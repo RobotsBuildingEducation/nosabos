@@ -111,12 +111,26 @@ export function getQuestionChipProps({ dragging = false } = {}) {
   };
 }
 
+export const questionDropTargetActiveStyles = {
+  borderColor: "purple.300",
+  bg: "rgba(128, 90, 213, 0.08)",
+  boxShadow:
+    "0 0 0 2px rgba(168, 85, 247, 0.25), 0 4px 12px rgba(128, 90, 213, 0.12)",
+  transform: "translateY(-1px)",
+};
+
+export const questionInlineDropSlotActiveStyles = {
+  borderBottomColor: "purple.400",
+  bg: "rgba(128, 90, 213, 0.18)",
+  boxShadow: "0 0 0 2px rgba(168, 85, 247, 0.25)",
+};
+
 export function getQuestionDropZoneProps({ filled = false } = {}) {
   return {
     style: questionSquircleStyle,
-    border: filled
-      ? "1px solid var(--question-chip-border)"
-      : `1px dashed ${APP_BORDER_STRONG}`,
+    borderWidth: "1px",
+    borderStyle: filled ? "solid" : "dashed",
+    borderColor: filled ? "var(--question-chip-border)" : APP_BORDER_STRONG,
     bg: filled ? "var(--question-chip-bg)" : APP_SURFACE_MUTED,
     color: APP_TEXT_PRIMARY,
     transition: "all 0.2s ease",
