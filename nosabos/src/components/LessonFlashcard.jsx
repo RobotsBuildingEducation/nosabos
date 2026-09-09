@@ -163,7 +163,7 @@ const FLASHCARD_UI = {
     tap_to_flip: "Toca para voltear",
     answer_label: "Respuesta",
     type_placeholder: "Escribe tu traducción...",
-    submit: "Enviar",
+    submit: "Comprobar",
     record: "Grabar respuesta",
     stop_recording: "Detener",
     grading: "Verificando...",

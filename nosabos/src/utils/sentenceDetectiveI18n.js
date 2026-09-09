@@ -73,7 +73,7 @@ export const SENTENCE_DETECTIVE_COPY = Object.freeze({
     clue: "Pista",
     checking: "Comprobando…",
     skip: "Saltar",
-    submit: "Enviar",
+    submit: "Comprobar",
     checkRepair: "Comprobar mi corrección",
     chooseRepairAbove: "Elige una corrección arriba",
     caseSolved: "¡Caso resuelto!",

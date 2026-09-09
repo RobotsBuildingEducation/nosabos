@@ -21,7 +21,7 @@ export const DIALOGUE_FORK_COPY = Object.freeze({
     helpRequest:
       "Ayúdame a entender cuál sería una respuesta natural a «{speaker}: {line}» sin darme la respuesta.",
     skip: "Saltar",
-    submit: "Enviar",
+    submit: "Comprobar",
     checking: "Comprobando…",
     tryAgain: "Intentar de nuevo",
     nextQuestion: "Siguiente pregunta",

@@ -63,7 +63,7 @@ const COPY = {
     speechPass: "¡Muy bien! Bono ganado",
     speechMiss: "¡Casi! Sin bono esta vez",
     skip: "Saltar",
-    submit: "Enviar",
+    submit: "Comprobar",
     task: "Tarea {n} de {total}",
     finalTask: "Tarea final",
     score: "Puntos",

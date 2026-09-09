@@ -25,7 +25,7 @@ const es = {
   speechIncorrect: "Todavía no. Inténtalo de nuevo.", recordingError: "No se pudo completar la grabación. Revisa tu micrófono e inténtalo de nuevo.", micDenied: "Permite el acceso al micrófono y vuelve a grabar.",
   loading: "Preparando tu historia…", loadingSub: "Generando el contenido de tu lección…", generationError: "No pudimos preparar la historia. Inténtalo de nuevo.", audioError: "No se pudo reproducir el audio. Pulsa reproducir para reintentar.",
   retry: "Reintentar", play: "Reproducir", pause: "Pausar", resume: "Reanudar", replay: "Repetir", listen: "Escuchar el fragmento", start: "Comenzar historia", nextPair: "Siguiente par",
-  check: "Enviar", next: "Continuar", finish: "Terminar historia", skip: "Saltar", back: "Nueva historia", checkpoint: "Comprueba lo que entendiste", heard: "Escucha esta parte para desbloquear la pregunta.", showQuestion: "Responder pregunta",
+  check: "Comprobar", next: "Continuar", finish: "Terminar historia", skip: "Saltar", back: "Nueva historia", checkpoint: "Comprueba lo que entendiste", heard: "Escucha esta parte para desbloquear la pregunta.", showQuestion: "Responder pregunta",
   correct: "¡Correcto!", incorrect: "No exactamente. Esto es lo que pasó:", translation: "Mostrar traducción", hideTranslation: "Ocultar traducción",
   complete: "Historia completada", score: "correctas al primer intento", saving: "Guardando progreso…", saveError: "Completaste la historia, pero no se guardó el progreso. Inténtalo de nuevo.",
   onAir: "AL AIRE", ready: "LISTO PARA ESCUCHAR", paused: "EN PAUSA", segment: "Parte", of: "de", clear: "Borrar", answer: "Tu respuesta", xp: "XP", review: "Revisa la respuesta y continúa.",
@@ -312,4 +312,3 @@ export const storyCopy = (language) => {
   const dict = dictionaries[normalized] || dictionaries.en;
   return { ...en, ...dict };
 };
-
