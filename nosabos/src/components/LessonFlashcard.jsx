@@ -603,6 +603,7 @@ export default function LessonFlashcard({
   onNext, // () => void — proceed to next question
   onSkip, // () => void
   // deck
+  lessonProgress = null,
   deckSize = 0, // how many cards collected so far
   onOpenDeck, // () => void — open the review deck overlay
   // UI lang
@@ -701,11 +702,11 @@ export default function LessonFlashcard({
       }
       setIsCorrect(isYes);
       setXpAwarded(xp);
+      if (isYes) await onCorrect?.(xp);
       setShowResult(true);
       playSound(isYes ? deliciousSound : clickSound);
 
       if (isYes) {
-        onCorrect?.(xp);
         // Auto-collect to deck
         if (!collected) {
           setCollected(true);
@@ -1416,6 +1417,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
         {showResult && (
           <FeedbackRail
             compact
+            lessonProgress={lessonProgress}
             ok={isCorrect}
             xp={xpAwarded}
             showNext={isCorrect}

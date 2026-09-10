@@ -1,3 +1,17 @@
+import { awardXp } from "../utils/utils";
+import useGoalFocusStore from "../hooks/useGoalFocusStore";
+import {
+  currentGoalFocus,
+  recordGoalAttempt,
+  recordLearningEvidence,
+} from "../utils/learningIntelligence";
+import {
+  getGoalFlashcards,
+  practiceArtifact,
+  practiceArtifactKey,
+  savePracticeOutcome,
+} from "../utils/focusedPracticeDecks";
+import { goalCopy } from "../utils/learningGoalCopy";
 import React, {
   useState,
   useEffect,
@@ -11,6 +25,7 @@ import {
   HStack,
   Text,
   Button,
+  useToast,
 } from "@chakra-ui/react";
 import { keyframes } from "@emotion/react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -34,7 +49,7 @@ import {
   getOrBuildRepairDeck,
 } from "../utils/companionMemory";
 import { repairCopy } from "../utils/companionMemoryCopy";
-import useRepairFocusStore from "../hooks/useRepairFocusStore";
+import useRepairFocusStore, { currentRepairFocus } from "../hooks/useRepairFocusStore";
 import useSoundSettings from "../hooks/useSoundSettings";
 import useModalStore from "../hooks/useModalStore";
 import { selectSound } from "../constants/sounds";
@@ -648,6 +663,7 @@ export default function FlashcardSkillTree({
   isActive = true,
   isProgressReady = true,
 }) {
+  const toast = useToast();
   // Practice modal lives in useModalStore so tapping a card doesn't
   // re-render this 1,500-line FlashcardSkillTree before the modal opens.
   // The modal subscribes via FlashcardPracticeGate at the bottom of render.
@@ -774,16 +790,16 @@ export default function FlashcardSkillTree({
   // Daily Quest repair step routed here: build (or restore) the small
   // generated deck around the weak spot. Answering every card banks the step.
   const repairFocus = useRepairFocusStore((s) => s.focus);
-  const activeRepairFocus =
-    repairFocus?.surface === "flashcards" ? repairFocus : null;
+  const goalFocus = useGoalFocusStore(s => s.focus);
+  const activePracticeFocus = currentGoalFocus("flashcards") || (repairFocus?.surface === "flashcards" ? currentRepairFocus() : null);
   const [repairDeck, setRepairDeck] = useState([]);
   const [isLoadingRepairDeck, setIsLoadingRepairDeck] = useState(false);
   useEffect(() => {
     if (
       !isActive ||
-      !activeRepairFocus ||
+      !activePracticeFocus ||
       // A step routed for another language is stale on this surface.
-      String(activeRepairFocus.targetLang || "").toLowerCase() !==
+      String(activePracticeFocus.targetLang || "").toLowerCase() !==
         String(targetLang || "").toLowerCase()
     ) {
       setRepairDeck([]);
@@ -792,9 +808,13 @@ export default function FlashcardSkillTree({
     }
     let alive = true;
     setIsLoadingRepairDeck(true);
-    getOrBuildRepairDeck({ focus: activeRepairFocus })
-      .then((cards) => {
-        if (alive) setRepairDeck(Array.isArray(cards) ? cards : []);
+    (activePracticeFocus.blueprint
+      ? getGoalFlashcards(activePracticeFocus)
+      : practiceArtifact(activePracticeFocus, "flashcards", () => getOrBuildRepairDeck({ focus: activePracticeFocus })))
+      .then((artifact) => {
+        if (!alive) return;
+        setRepairDeck(artifact.cards);
+        setLocalProgressOverrides(previous => ({ ...previous, ...Object.fromEntries(Object.entries(artifact.outcomes || {}).map(([id, outcome]) => [id, { completed: outcome.success }])) }));
       })
       .catch(() => {
         if (alive) setRepairDeck([]);
@@ -805,14 +825,13 @@ export default function FlashcardSkillTree({
     return () => {
       alive = false;
     };
-  }, [activeRepairFocus, isActive, targetLang]);
+  }, [activePracticeFocus, goalFocus, isActive, targetLang]);
 
   // A repair card is answered once its progress exists (persisted doc, or the
   // instant local override written on completion).
   const isRepairCardAnswered = useCallback(
     (card) =>
-      Boolean(userProgress.flashcards?.[card.id]) ||
-      Boolean(localProgressOverrides[card.id]),
+      localProgressOverrides[card.id]?.completed === true || userProgress.flashcards?.[card.id]?.completed === true,
     [localProgressOverrides, userProgress.flashcards],
   );
   const repairAnsweredCount = useMemo(
@@ -825,13 +844,46 @@ export default function FlashcardSkillTree({
   // the main deck via customDeckCards).
   const repairDeckCompletedRef = useRef("");
   useEffect(() => {
-    if (!isActive || !activeRepairFocus || !repairDeck.length) return;
+    if (!isActive || !activePracticeFocus || activePracticeFocus.blueprint || !repairDeck.length) return;
     if (repairAnsweredCount < repairDeck.length) return;
     const onceKey = repairDeck[0]?.id || "repair-deck";
     if (repairDeckCompletedRef.current === onceKey) return;
     repairDeckCompletedRef.current = onceKey;
-    void completeRepairFocus();
-  }, [activeRepairFocus, isActive, repairAnsweredCount, repairDeck]);
+    void completeRepairFocus({ success: true, support: "prompted", observation: `Correct recall of ${repairDeck.map(c => c.concept?.[targetLang]).filter(Boolean).join("; ")}; recall only, not independent production.` });
+  }, [activePracticeFocus, isActive, repairAnsweredCount, repairDeck, targetLang]);
+
+  // Goal recall is a fixed three-card modality. Completing all three cards
+  // advances the Goal bundle once; individual cards still feed durable goal
+  // memory without prematurely finishing the modality.
+  const goalDeckCompletedRef = useRef("");
+  useEffect(() => {
+    if (
+      !isActive ||
+      !activePracticeFocus?.blueprint ||
+      !repairDeck.length ||
+      repairAnsweredCount < 3
+    )
+      return;
+    const onceKey = practiceArtifactKey(activePracticeFocus, "flashcards");
+    if (goalDeckCompletedRef.current === onceKey) return;
+    goalDeckCompletedRef.current = onceKey;
+    void recordGoalAttempt(activePracticeFocus, {
+      id: `flashcards:${onceKey}`,
+      success: true,
+      support: "prompted",
+      domain: "recall",
+      observation: `Completed three goal-specific recall cards: ${repairDeck
+        .map((card) => card.concept?.[targetLang])
+        .filter(Boolean)
+        .join("; ")}`,
+    });
+  }, [
+    activePracticeFocus,
+    isActive,
+    repairAnsweredCount,
+    repairDeck,
+    targetLang,
+  ]);
 
   const effectiveProgressMap = useMemo(() => {
     const map = {};
@@ -1078,8 +1130,24 @@ export default function FlashcardSkillTree({
   );
 
   const handleComplete = useCallback(
-    (card) => {
+    async (card) => {
       if (!card?.id) return;
+      if (card.isGoal || card.isRepair) {
+        try {
+        const focus = card.isGoal ? currentGoalFocus("flashcards") : currentRepairFocus();
+        if (!focus) return;
+        const success = card.reviewOutcome ? ["good", "easy"].includes(card.reviewOutcome) : card.reviewPatch?.completed === true;
+        await savePracticeOutcome(focus, "flashcards", card, success, "prompted");
+        if (card.isGoal) await recordLearningEvidence({ npub: focus.npub, targetLang, kind: "goal", event: {
+          id: `recall:${card.id}:${success}`, goalId: focus.blueprint.goalId, target: card.concept?.[targetLang] || focus.blueprint.objective,
+          mode: "flashcards", domain: "recall", support: "prompted", success, observation: `${success ? "Correct" : "Unsuccessful"} recall; not independent production`, expectedAnswer: card.concept?.[targetLang] || "",
+        } });
+        if (success) await awardXp(focus.npub, 2, targetLang, card.isGoal ? "goalFlashcards" : "repairFlashcards");
+        setLocalProgressOverrides(previous => ({ ...previous, [card.id]: { completed: success } }));
+        closeFlashcardPractice();
+        } catch (error) { toast({ title: "Could not save practice. Please try again.", description: error.message, status: "error" }); }
+        return;
+      }
 
       setLocalProgressOverrides((current) => ({
         ...current,
@@ -1102,7 +1170,7 @@ export default function FlashcardSkillTree({
 
       closeFlashcardPractice();
     },
-    [closeFlashcardPractice, onRandomPractice, onStartFlashcard],
+    [closeFlashcardPractice, onRandomPractice, onStartFlashcard, targetLang, toast],
   );
 
   const handleClosePractice = useCallback(() => {
@@ -1162,9 +1230,9 @@ export default function FlashcardSkillTree({
   // spot. Answered cards flip to "scheduled" (they've just joined the main
   // deck); answering the whole rail completes the step and the rail hides.
   const repairDeckSection =
-    activeRepairFocus && repairDeck.length ? (
+    activePracticeFocus && repairDeck.length ? (
       <DeckSection
-        title={repairCopy(appLanguage, "title")}
+        title={activePracticeFocus?.blueprint ? goalCopy(appLanguage).title : repairCopy(appLanguage, "title")}
         subtitle={`${Math.min(repairAnsweredCount, repairDeck.length)}/${repairDeck.length} · ${repairCopy(appLanguage, "intro")}`}
         cards={repairDeck}
         reviewSnapshotMap={reviewSnapshotMap}
@@ -1260,7 +1328,7 @@ export default function FlashcardSkillTree({
           </VStack>
         </Box>
 
-        {activeRepairFocus && isLoadingRepairDeck && !repairDeck.length ? (
+        {activePracticeFocus && isLoadingRepairDeck && !repairDeck.length ? (
           <Box px={2}>
             <Text fontSize="sm" color={APP_TEXT_SECONDARY}>
               {getTranslation("flashcard_session_loading")}
@@ -1269,7 +1337,7 @@ export default function FlashcardSkillTree({
         ) : null}
         {repairDeckSection}
 
-        {dueCards.length > 0 ? (
+        {!activePracticeFocus && (dueCards.length > 0 ? (
           <>
             {dueCardsSection}
             {weakCardsSection}
@@ -1281,15 +1349,15 @@ export default function FlashcardSkillTree({
             {newCardsSection}
             {dueCardsSection}
           </>
-        )}
+        ))}
 
-        {learningCards.length > 0 || remainingScheduledCards.length > 0 ? (
+        {!activePracticeFocus && (learningCards.length > 0 || remainingScheduledCards.length > 0) ? (
           <Box textAlign="center" py={1}>
             <RiArrowDownLine size={30} color="rgba(148,163,184,0.32)" />
           </Box>
         ) : null}
 
-        {learningCards.length > 0 || remainingScheduledCards.length > 0 ? (
+        {!activePracticeFocus && (learningCards.length > 0 || remainingScheduledCards.length > 0) ? (
           <VStack align="stretch" spacing={4}>
             <VStack align="stretch" spacing={1}>
               <Text fontSize="lg" fontWeight="black" color={APP_TEXT_PRIMARY}>
@@ -1353,7 +1421,7 @@ export default function FlashcardSkillTree({
           </VStack>
         ) : null}
 
-        {!firstNewCard && completedCards.length === 0 && !isLoadingFlashcards ? (
+        {!activePracticeFocus && !firstNewCard && completedCards.length === 0 && !isLoadingFlashcards ? (
           <MotionBox
             initial={{ opacity: 0, scale: 0.94 }}
             animate={{ opacity: 1, scale: 1 }}

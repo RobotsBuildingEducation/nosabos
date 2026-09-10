@@ -1,3 +1,16 @@
+import GoalLessonCompletion from "./components/GoalLessonCompletion";
+import { getGoalPreparationXp, isGoalLessonReady } from "./utils/lessonProgress";
+import { resetFocusedPracticeArtifacts } from "./utils/focusedPracticeDecks";
+import LearningGoalSettings from "./components/LearningGoalSettings";
+import useGoalFocusStore from "./hooks/useGoalFocusStore";
+import {
+  activeGoalFor,
+  composeQuestKinds,
+  buildGoalLesson,
+  changeGoal,
+  nextGoalMode,
+} from "./utils/learningIntelligenceModel";
+import { astraGoalsEnabled, getOrBuildGoalBlueprint, GOAL_SURFACES, resetGoalTask, currentGoalFocus } from "./utils/learningIntelligence";
 // src/App.jsx
 import React, {
   Suspense,
@@ -28,7 +41,6 @@ import {
   Textarea,
   useToast,
   VStack,
-  Wrap,
   Tab,
   TabList,
   Tabs,
@@ -55,6 +67,11 @@ import {
   MenuOptionGroup,
   Portal,
   Badge,
+  Accordion,
+  AccordionButton,
+  AccordionIcon,
+  AccordionItem,
+  AccordionPanel,
   Tooltip,
   useDisclosure,
   useBreakpointValue,
@@ -176,6 +193,7 @@ import {
   PLATE_CONTINUE_COPY,
   PLATE_COURSE_META,
   PLATE_EXERCISE_COMPLETE_COPY,
+  PLATE_PRACTICE_DETAILS_COPY,
   PLATE_NEXT_COPY,
   PLATE_VIEW_NOTES_COPY,
   PLATE_TITLE_COPY,
@@ -185,6 +203,7 @@ import {
   DAILY_PLATE_BONUS_XP,
   DAILY_PLATE_COURSE_ORDER,
   applyPlateBonusMarker,
+  buildPlateCelebrationKey,
   claimDailyPlateBonus,
   clearPlateSession,
   electDailyQuestCourses,
@@ -344,6 +363,7 @@ import {
   normalizePracticeLanguage,
   normalizeSupportLanguage,
 } from "./constants/languages";
+
 import { syncDocumentLanguage } from "./utils/documentLanguage";
 import { getGermanCopy } from "./utils/germanCopy";
 import {
@@ -368,6 +388,45 @@ import {
   isOpenAITutorProvider,
   normalizeTutorVoice,
 } from "./utils/tutorRealtime";
+
+function PracticeCompletionDetails({ details, appLanguage }) {
+  if (!details?.what && !details?.why) return null;
+  return (
+    <Accordion allowToggle width="100%">
+      <AccordionItem
+        border="1px solid rgba(255, 255, 255, 0.35)"
+        borderRadius="xl"
+        overflow="hidden"
+        bg="rgba(255, 255, 255, 0.14)"
+      >
+        <AccordionButton py={3} px={4} _hover={{ bg: "rgba(255,255,255,0.1)" }}>
+          <Box flex="1" textAlign="left" fontWeight="bold">
+            {plateUiCopy(appLanguage, PLATE_PRACTICE_DETAILS_COPY.title)}
+          </Box>
+          <AccordionIcon />
+        </AccordionButton>
+        <AccordionPanel pb={4} px={4} textAlign="left">
+          {details.what ? (
+            <Box mb={details.why ? 3 : 0}>
+              <Text fontSize="xs" fontWeight="bold" opacity={0.78} textTransform="uppercase">
+                {plateUiCopy(appLanguage, PLATE_PRACTICE_DETAILS_COPY.what)}
+              </Text>
+              <Text mt={1}>{details.what}</Text>
+            </Box>
+          ) : null}
+          {details.why ? (
+            <Box>
+              <Text fontSize="xs" fontWeight="bold" opacity={0.78} textTransform="uppercase">
+                {plateUiCopy(appLanguage, PLATE_PRACTICE_DETAILS_COPY.why)}
+              </Text>
+              <Text mt={1}>{details.why}</Text>
+            </Box>
+          ) : null}
+        </AccordionPanel>
+      </AccordionItem>
+    </Accordion>
+  );
+}
 
 // The game client is resolved ahead of the view flip instead of going through
 // React.lazy: handleStartLesson awaits this and stores the component in state
@@ -1330,12 +1389,6 @@ function TopBar({
     normalizePracticeLanguage(p.targetLang, DEFAULT_TARGET_LANGUAGE),
   );
   const [communityLanguageCode, setCommunityLanguageCode] = useState(null);
-  const normalizedTargetLang = String(targetLang || "").toLowerCase();
-  const hasProficiencyDecisionForTargetLang =
-    Object.prototype.hasOwnProperty.call(
-      user?.proficiencyPlacements || {},
-      normalizedTargetLang,
-    );
   const [showTranslations, setShowTranslations] = useState(
     typeof p.showTranslations === "boolean" ? p.showTranslations : true,
   );
@@ -2279,8 +2332,18 @@ function TopBar({
                   >
                     <Box maxW="600px" mx="auto" w="100%">
                       <VStack align="stretch" spacing={3} pb={14}>
-                        <Wrap spacing={4}>
-                          <VStack align="flex-start" spacing={1}>
+                        <Flex
+                          direction={{ base: "column", md: "row" }}
+                          align={{ base: "center", md: "flex-start" }}
+                          gap={4}
+                          width="100%"
+                        >
+                          <VStack
+                            align="flex-start"
+                            spacing={1}
+                            width={{ base: "100%", md: "auto" }}
+                            maxWidth={{ base: "320px", md: "none" }}
+                          >
                             <Text
                               fontSize="xs"
                               fontWeight="semibold"
@@ -2303,6 +2366,7 @@ function TopBar({
                                 bg="gray.800"
                                 _hover={{ bg: "gray.750" }}
                                 _active={{ bg: "gray.750" }}
+                                width={{ base: "100%", md: "auto" }}
                                 padding={5}
                                 onClick={() => playSound(selectSound)}
                               >
@@ -2404,7 +2468,12 @@ function TopBar({
                             </Menu>
                           </VStack>
 
-                          <VStack align="flex-start" spacing={1}>
+                          <VStack
+                            align="flex-start"
+                            spacing={1}
+                            width={{ base: "100%", md: "auto" }}
+                            maxWidth={{ base: "320px", md: "none" }}
+                          >
                             <Text
                               fontSize="xs"
                               fontWeight="semibold"
@@ -2427,6 +2496,7 @@ function TopBar({
                                 bg="gray.800"
                                 _hover={{ bg: "gray.750" }}
                                 _active={{ bg: "gray.750" }}
+                                width={{ base: "100%", md: "auto" }}
                                 px={4}
                                 title={
                                   translations[appLanguage]
@@ -2498,43 +2568,47 @@ function TopBar({
                               </MenuList>
                             </Menu>
                           </VStack>
-                        </Wrap>
+                        </Flex>
 
-                        {!hasProficiencyDecisionForTargetLang && (
-                          <Button
-                            leftIcon={<LuBadgeCheck />}
-                            size="sm"
-                            variant="outline"
-                            borderColor={
-                              themeMode === "light" ? "cyan.700" : "cyan.600"
-                            }
-                            color={
-                              themeMode === "light" ? "cyan.800" : "cyan.200"
-                            }
-                            padding={6}
-                            _hover={{
-                              bg:
-                                themeMode === "light" ? "cyan.50" : "cyan.900",
-                            }}
-                            onClick={() => {
-                              closeSettings();
-                              navigate("/proficiency");
-                            }}
-                            mt={4}
-                          >
-                            {uiCopy(appLanguage, {
-                              en: "Start proficiency test",
-                              es: "Iniciar prueba de nivel",
-                              pt: "Iniciar teste de nível",
-                              it: "Inizia test di livello",
-                              fr: "Commencer le test de niveau",
-                              ja: "レベルテストを始める",
-                              hi: "प्रवीणता परीक्षण शुरू करें",
-                              ar: "ابدأ اختبار المستوى",
-                              zh: "开始水平测试",
-                            })}
-                          </Button>
-                        )}
+                        <Button
+                          leftIcon={<LuBadgeCheck />}
+                          size="sm"
+                          variant="outline"
+                          borderColor={
+                            themeMode === "light" ? "cyan.700" : "cyan.600"
+                          }
+                          color={
+                            themeMode === "light" ? "cyan.800" : "cyan.200"
+                          }
+                          padding={6}
+                          _hover={{
+                            bg:
+                              themeMode === "light" ? "cyan.50" : "cyan.900",
+                          }}
+                          onClick={() => {
+                            closeSettings();
+                            navigate("/proficiency");
+                          }}
+                          mt={4}
+                        >
+                          {uiCopy(appLanguage, {
+                            en: "Take proficiency proficiency test",
+                            es: "Realizar prueba de nivel",
+                            pt: "Fazer teste de nível",
+                            it: "Fai il test di livello",
+                            fr: "Passer le test de niveau",
+                            ja: "レベルテストを受ける",
+                            hi: "प्रवीणता परीक्षण दें",
+                            ar: "إجراء اختبار المستوى",
+                            zh: "参加水平测试",
+                          })}
+                        </Button>
+
+                        <LearningGoalSettings
+                          npub={activeNpub}
+                          targetLang={targetLang}
+                          appLanguage={appLanguage}
+                        />
 
                         <VoicePreferenceField
                           t={t}
@@ -5465,10 +5539,15 @@ export default function App({ onBootReady } = {}) {
         draft: null,
       };
 
+      const learningIntelligence = { ...user?.learningIntelligence };
+      if (astraGoalsEnabled()) for (const [lang, goalText] of Object.entries(payload.learningGoals || {})) {
+        if (typeof goalText === "string" && goalText.trim()) learningIntelligence[lang] = changeGoal(learningIntelligence[lang], { text: goalText, id: globalThis.crypto.randomUUID(), now });
+      }
       await setDoc(
         doc(database, "users", id),
         {
           local_npub: id,
+          learningIntelligence,
           updatedAt: now,
           appLanguage: uiLangForPersist,
           onboarding: completedOnboarding,
@@ -5491,6 +5570,7 @@ export default function App({ onBootReady } = {}) {
       // gate immediately instead of depending on another full DB hydration.
       setUser?.({
         ...(user || {}),
+        learningIntelligence,
         id: user?.id || id,
         local_npub: id,
         updatedAt: now,
@@ -5549,7 +5629,7 @@ export default function App({ onBootReady } = {}) {
     if (!lesson) return false;
     // Ephemeral repair lessons aren't part of the learning path: no game-review
     // enrichment (their id isn't in any unit) and no lesson-progress writes.
-    const enrichedLesson = lesson.isRepair
+    const enrichedLesson = (lesson.isRepair || lesson.isGoal)
       ? lesson
       : await enrichLessonForGameReview(lesson);
 
@@ -5620,7 +5700,7 @@ export default function App({ onBootReady } = {}) {
       const langKey = (lessonLang || "es").toLowerCase();
       let freshProgressSource = user?.progress || {};
 
-      if (npub && !enrichedLesson.isRepair) {
+      if (npub && !enrichedLesson.isRepair && !enrichedLesson.isGoal) {
         // Pass current user progress so startLesson can preserve COMPLETED/IN_PROGRESS status
         const startedLessonProgress = await startLesson(
           npub,
@@ -5759,6 +5839,7 @@ export default function App({ onBootReady } = {}) {
     async (card) => {
       const npub = resolveNpub();
       if (!npub || !card) return;
+      if (card.isGoal || card.isRepair) return; // Ephemeral practice never writes normal SRS or Review progress.
 
       try {
         const xpAmount = card.xpReward || 5;
@@ -5980,9 +6061,19 @@ export default function App({ onBootReady } = {}) {
     }
   }, [resolvedTargetLang]);
 
+  const handleGoalLessonComplete = useCallback(() => {
+    // Stay on the answered question while the plate conductor opens the
+    // task-complete modal. Its Continue button owns the transition to the
+    // next course (Tutor in the usual goal -> speak sequence) and clears the
+    // ephemeral goal focus as part of that navigation.
+    lessonCompletionSequenceActiveRef.current = false;
+  }, []);
+
   const triggerLessonCompletion = useCallback(
     async (reason = "manual", completion = null) => {
-      if (!activeLesson || lessonCompletionTriggeredRef.current) return;
+      // Goal lessons finish through GoalLessonCompletion, which commits the
+      // daily task once while the answered question stays mounted.
+      if (!activeLesson || activeLesson.isGoal || lessonCompletionTriggeredRef.current) return;
 
       console.log("[Lesson Completion] Triggered", { reason, activeLesson });
       lessonCompletionTriggeredRef.current = true;
@@ -6158,6 +6249,10 @@ export default function App({ onBootReady } = {}) {
       return;
     }
 
+    // Read the latest store: a click may race the render that replaces the
+    // engine with the completion screen. Never enqueue another question then.
+    if (isGoalLessonReady(useUserStore.getState().user?.learningIntelligence?.[resolvedTargetLang], activeLesson)) return;
+
     const availableModes = activeLesson.modes;
 
     // TUTORIAL MODE: Sequential navigation through modules
@@ -6232,6 +6327,7 @@ export default function App({ onBootReady } = {}) {
     isTutorialMode,
     tutorialCompletedModules,
     triggerLessonCompletion,
+    resolvedTargetLang,
   ]);
 
   // Handle closing the completion modal and returning to skill tree
@@ -7313,7 +7409,7 @@ export default function App({ onBootReady } = {}) {
               targetLang={resolvedTargetLang}
               showTranslations={user?.progress?.showTranslations}
               pauseMs={user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS}
-              helpRequest={user?.progress?.helpRequest}
+              helpRequest={activeLesson?.isGoal || activeLesson?.isRepair ? "" : user?.progress?.helpRequest}
               practicePronunciation={user?.progress?.practicePronunciation}
               bottomActionBarMinimized={isBottomActionBarMinimized}
               onSwitchedAccount={handleSwitchedAccount}
@@ -7483,7 +7579,10 @@ export default function App({ onBootReady } = {}) {
   const activeSkillTreeLessonProgress = activeLesson?.id
     ? userProgress.lessons?.[activeLesson.id]
     : null;
-  const activeLessonEarnedXp = getLessonEarnedXp(activeSkillTreeLessonProgress);
+  const goalLessonReady = isGoalLessonReady(user?.learningIntelligence?.[resolvedTargetLang], activeLesson);
+  const activeLessonEarnedXp = activeLesson?.isGoal
+    ? getGoalPreparationXp(user?.learningIntelligence?.[resolvedTargetLang], activeLesson.goalBlueprint)
+    : getLessonEarnedXp(activeSkillTreeLessonProgress);
 
   // Completion is driven by the active lesson's own counter. Shared language
   // XP from Tutor, flashcards, conversations, or other surfaces cannot satisfy
@@ -7492,7 +7591,7 @@ export default function App({ onBootReady } = {}) {
     if (
       viewMode !== "lesson" ||
       !activeLesson ||
-      activeLesson.isRepair ||
+      activeLesson.isRepair || activeLesson.isGoal ||
       activeSkillTreeLessonProgress?.status !== "in_progress" ||
       lessonCompletionTriggeredRef.current
     ) {
@@ -8811,14 +8910,54 @@ export default function App({ onBootReady } = {}) {
   // The plate's display kinds = elected base, with carried-over unfinished
   // kinds and "repair" prepended (deduped). The elected base (persisted) never
   // contains either, so this stays purely derived and can't fight the elector.
-  const questKinds = useMemo(() => {
-    const base = electedQuestKinds.filter((k) => k !== "repair");
-    const withRepair = repairPlanToday ? ["repair", ...base] : base;
-    if (!carryOverKinds.length) return withRepair;
-    const carry = carryOverKinds.filter((k) => !withRepair.includes(k));
-    return [...carry, ...withRepair];
-  }, [repairPlanToday, electedQuestKinds, carryOverKinds]);
+  const goalToday = astraGoalsEnabled() ? activeGoalFor(user, resolvedTargetLang) : null;
+  const questKinds = useMemo(() => composeQuestKinds(
+    electedQuestKinds, carryOverKinds, Boolean(repairPlanToday), Boolean(goalToday),
+  ), [repairPlanToday, electedQuestKinds, carryOverKinds, goalToday]);
 
+  // Prepare a Goal blueprint while the learner is still reading Today’s Focus.
+  // Starting the task can then route immediately instead of showing an
+  // unexplained pause while the plan is generated and persisted.
+  const goalBlueprintPreloadRef = useRef("");
+  useEffect(() => {
+    if (
+      isLoadingApp ||
+      !activeNpub ||
+      !goalToday ||
+      !questKinds.includes("goal")
+    )
+      return;
+    const onceKey = `${activeNpub}:${resolvedTargetLang}:${plateDayKey}:${goalToday.id}`;
+    if (goalBlueprintPreloadRef.current === onceKey) return;
+    goalBlueprintPreloadRef.current = onceKey;
+    void getOrBuildGoalBlueprint({
+      npub: activeNpub,
+      targetLang: resolvedTargetLang,
+      supportLang: appLanguage,
+      cefrLevel: repairLessonCefrLevel,
+      dayKey: plateDayKey,
+    }).catch(() => {
+      if (goalBlueprintPreloadRef.current === onceKey) {
+        goalBlueprintPreloadRef.current = "";
+      }
+    });
+  }, [
+    activeNpub,
+    appLanguage,
+    goalToday,
+    isLoadingApp,
+    plateDayKey,
+    questKinds,
+    repairLessonCefrLevel,
+    resolvedTargetLang,
+  ]);
+
+  // Guard the current in-memory focus against account, language, or day changes.
+  useEffect(() => {
+    if (!isLoadingApp && !currentGoalFocus()) useGoalFocusStore.getState().clearFocus();
+    const repair = useRepairFocusStore.getState().focus;
+    if (!isLoadingApp && repair && (repair.npub !== activeNpub || repair.targetLang !== resolvedTargetLang || repair.plan?.dayKey !== plateDayKey)) useRepairFocusStore.getState().clearFocus();
+  }, [activeNpub, resolvedTargetLang, plateDayKey, isLoadingApp, goalToday?.id, goalToday?.status]);
   const plateSnapshot = useMemo(
     () =>
       getDailyPlateSnapshot(user, resolvedTargetLang, undefined, questKinds),
@@ -8930,7 +9069,7 @@ export default function App({ onBootReady } = {}) {
     const currentUser = useUserStore.getState?.()?.user || user;
     if (!shouldRunDailyBatch(currentUser, plateLangKey, tomorrowKey)) return;
     const sourceNotes = getTodaysCapturedNotes(currentUser, plateLangKey);
-    if (!sourceNotes.length) return;
+    if (!sourceNotes.length && !goalToday) return;
     const onceKey = `${plateLangKey}:${tomorrowKey}`;
     if (blueprintCompletionRef.current === onceKey) return;
     blueprintCompletionRef.current = onceKey;
@@ -8953,6 +9092,7 @@ export default function App({ onBootReady } = {}) {
     plateSnapshot.isCleared,
     appLanguage,
     repairLessonCefrLevel,
+    goalToday,
   ]);
 
   // Companion batch — fallback. On open, if today has no blueprint yet (the
@@ -8968,7 +9108,7 @@ export default function App({ onBootReady } = {}) {
     if (!isPastFirstQuest(currentUser, plateDayKey)) return;
     if (!shouldRunDailyBatch(currentUser, plateLangKey, plateDayKey)) return;
     const sourceNotes = getReusableMemory(currentUser, plateLangKey);
-    if (!sourceNotes.length) return;
+    if (!sourceNotes.length && !goalToday) return;
     const onceKey = `${plateLangKey}:${plateDayKey}`;
     if (blueprintFallbackRef.current === onceKey) return;
     blueprintFallbackRef.current = onceKey;
@@ -9011,6 +9151,7 @@ export default function App({ onBootReady } = {}) {
     plateDayKey,
     appLanguage,
     repairLessonCefrLevel,
+    goalToday,
   ]);
 
   // Repair surface (a short ephemeral flashcard pass) opens over the plate —
@@ -9019,6 +9160,12 @@ export default function App({ onBootReady } = {}) {
   const [repairModalOpen, setRepairModalOpen] = useState(false);
 
   const [plateSessionActive, setPlateSessionActive] = useState(false);
+  const storedPlateSessionActive = isPlateSessionFor(
+    readPlateSession(activeNpub),
+    plateSnapshot.langKey,
+    plateSnapshot.dayKey,
+  );
+  const [isLaunchingPlateCourse, setIsLaunchingPlateCourse] = useState(false);
 
   const endPlateSession = useCallback(() => {
     clearPlateSession(activeNpub);
@@ -9041,6 +9188,10 @@ export default function App({ onBootReady } = {}) {
   // unlike the bottom-bar mode switcher).
   const goToSkillTreeMode = useCallback(
     (mode) => {
+      const goalFocus = useGoalFocusStore.getState().focus;
+      if (goalFocus && goalFocus.surface !== mode) useGoalFocusStore.getState().clearFocus();
+      const repairFocus = useRepairFocusStore.getState().focus;
+      if (repairFocus && repairFocus.surface !== mode) useRepairFocusStore.getState().clearFocus();
       if (viewMode !== "skillTree") {
         handleReturnToSkillTree();
       }
@@ -9056,7 +9207,27 @@ export default function App({ onBootReady } = {}) {
   // themselves (press connect in the Tutor, tap a lesson, start a card), so
   // the quest never auto-starts a session or picks the activity for them.
   const navigateToPlateCourse = useCallback(
-    (kind) => {
+    async (kind) => {
+      useGoalFocusStore.getState().clearFocus();
+      useRepairFocusStore.getState().clearFocus();
+      if (kind === "goal") {
+        try {
+          const blueprint = await getOrBuildGoalBlueprint({ npub: activeNpub, targetLang: resolvedTargetLang, supportLang: appLanguage, cefrLevel: repairLessonCefrLevel, dayKey: plateDayKey });
+          if (!blueprint) return;
+          // Async generation may finish after the learner switches language.
+          const latest = useUserStore.getState().user;
+          if (latest?.progress?.targetLang !== resolvedTargetLang || activeGoalFor(latest, resolvedTargetLang)?.id !== blueprint.goalId) return;
+          const bucket = latest?.learningIntelligence?.[resolvedTargetLang];
+          const mode = nextGoalMode(bucket, blueprint);
+          if (!mode) return;
+          const routedBlueprint = { ...blueprint, mode };
+          const surface = GOAL_SURFACES[mode];
+          useGoalFocusStore.getState().setFocus({ npub: activeNpub, targetLang: resolvedTargetLang, supportLang: appLanguage, surface, blueprint: routedBlueprint });
+          if (surface === "lesson") await handleStartLessonRef.current?.(buildGoalLesson(routedBlueprint));
+          else goToSkillTreeMode(surface);
+        } catch (error) { toast({ title: error.message, status: "error", duration: 6000 }); }
+        return;
+      }
       if (kind === "repair") {
         // Repair is a SEQUENCE of short steps — one per curated weak spot,
         // each in its own practice mode (that's why the course counts 0/N).
@@ -9132,6 +9303,7 @@ export default function App({ onBootReady } = {}) {
     },
     [
       goToSkillTreeMode,
+      toast,
       repairPlanToday,
       plateSnapshot,
       resolvedTargetLang,
@@ -9142,16 +9314,22 @@ export default function App({ onBootReady } = {}) {
     ],
   );
 
-  const handleStartDailyPractice = () => {
+  const handleStartDailyPractice = async () => {
+    if (isLaunchingPlateCourse) return;
     const next = getNextPlateCourse(plateSnapshot);
     if (!next) {
       // Plate already cleared — keep practicing with the tutor
       goToSkillTreeMode("tutor");
       return;
     }
-    startPlateSession(activeNpub, plateSnapshot.langKey, plateSnapshot.dayKey);
-    setPlateSessionActive(true);
-    navigateToPlateCourse(next);
+    setIsLaunchingPlateCourse(true);
+    try {
+      startPlateSession(activeNpub, plateSnapshot.langKey, plateSnapshot.dayKey);
+      setPlateSessionActive(true);
+      await navigateToPlateCourse(next);
+    } finally {
+      setIsLaunchingPlateCourse(false);
+    }
   };
 
   // Celebration modals for the guided session: "Exercise Complete" with a
@@ -9165,6 +9343,7 @@ export default function App({ onBootReady } = {}) {
   const pendingPlateCelebrationRef = useRef(null);
   const plateCelebrationFlushTimerRef = useRef(null);
   const plateClearedCelebratedKeyRef = useRef("");
+  const plateCourseCelebratedKeysRef = useRef(new Set());
   const plateCelebrationBlockersRef = useRef({});
   plateCelebrationBlockersRef.current = {
     celebrateOpen,
@@ -9377,6 +9556,18 @@ export default function App({ onBootReady } = {}) {
         if (plateClearedCelebratedKeyRef.current === onceKey) return;
         plateClearedCelebratedKeyRef.current = onceKey;
       }
+      if (celebration?.type === "course" && celebration.completed) {
+        const courseKey = buildPlateCelebrationKey(
+          plateSnapshot.langKey,
+          plateSnapshot.dayKey,
+          celebration.completed,
+          celebration.progress,
+        );
+        if (courseKey) {
+          if (plateCourseCelebratedKeysRef.current.has(courseKey)) return;
+          plateCourseCelebratedKeysRef.current.add(courseKey);
+        }
+      }
       pendingPlateCelebrationRef.current = celebration;
       flushPlateCelebrationWhenQuiet();
     },
@@ -9386,6 +9577,86 @@ export default function App({ onBootReady } = {}) {
       plateSnapshot.dayKey,
     ],
   );
+
+  const getGoalCompletionDetails = useCallback(() => {
+    const currentUser = useUserStore.getState()?.user || user;
+    const blueprint =
+      currentUser?.learningIntelligence?.[resolvedTargetLang]?.dailyGoal
+        ?.blueprint;
+    if (!blueprint) return null;
+    return {
+      what: blueprint.objective || blueprint.goalText || "",
+      why: blueprint.rationale || blueprint.scenario || "",
+    };
+  }, [resolvedTargetLang, user]);
+
+  const getRepairCompletionDetails = useCallback(
+    (completedCount) => {
+      const repairItems = Array.isArray(repairPlanToday?.items)
+        ? repairPlanToday.items
+        : [];
+      const wholeRepairCompleted =
+        repairItems.length > 0 &&
+        Number(completedCount) >= repairItems.length;
+      if (wholeRepairCompleted) {
+        return {
+          what: repairItems
+            .map((item) => item.originalConcept || item.concept || "")
+            .filter(Boolean)
+            .join(" · "),
+          why:
+            repairPlanToday?.summary ||
+            repairItems
+              .map((item) => item.summary || item.expectedAnswer || "")
+              .filter(Boolean)
+              .join(" "),
+        };
+      }
+      const step = getNextRepairStep(
+        repairPlanToday,
+        Math.max(0, Number(completedCount) - 1),
+      );
+      const item = step?.item || step?.plan?.items?.[0];
+      if (!item) return null;
+      return {
+        what: item.originalConcept || item.concept || "",
+        why:
+          item.summary ||
+          repairPlanToday?.summary ||
+          item.expectedAnswer ||
+          "",
+      };
+    },
+    [repairPlanToday],
+  );
+
+  // Goal modalities advance silently inside the 2–5 part bundle. Only the
+  // final modality flips the Goal course and reaches the celebration
+  // conductor below, so the learner sees one task-complete modal per Goal.
+  useEffect(() => {
+    const handleGoalModeCompleted = (event) => {
+      const detail = event?.detail || {};
+      if (
+        detail.goalCompleted ||
+        detail.targetLang !== resolvedTargetLang ||
+        detail.dayKey !== plateSnapshot.dayKey
+      )
+        return;
+      window.setTimeout(() => {
+        void navigateToPlateCourse("goal");
+      }, 0);
+    };
+    window.addEventListener("astra:goalModeCompleted", handleGoalModeCompleted);
+    return () =>
+      window.removeEventListener(
+        "astra:goalModeCompleted",
+        handleGoalModeCompleted,
+      );
+  }, [
+    navigateToPlateCourse,
+    plateSnapshot.dayKey,
+    resolvedTargetLang,
+  ]);
 
   // Dismissing a celebration: a course modal moves into the next course; the
   // cleared modal (when finishing a guided session) returns home — but only
@@ -9400,7 +9671,7 @@ export default function App({ onBootReady } = {}) {
     // there's no next course to move to, Continue must still leave the spent
     // lesson rather than strand the learner on it.
     const finishedRepairLesson =
-      viewMode === "lesson" && Boolean(activeLesson?.isRepair);
+      viewMode === "lesson" && Boolean(activeLesson?.isRepair || activeLesson?.isGoal);
     if (celebration?.type === "course" && celebration.next) {
       navigateToPlateCourse(celebration.next);
     } else if (
@@ -9459,7 +9730,19 @@ export default function App({ onBootReady } = {}) {
     platePrevSnapshotRef.current = plateSnapshot;
     if (!prev) return;
     // Only celebrate genuine in-session completions, not hydration transitions.
-    if (!plateConductorArmedRef.current) return;
+    if (!plateConductorArmedRef.current) {
+      plateSnapshot.courses.forEach((c) => {
+        if (c.done) {
+          const key = buildPlateCelebrationKey(
+            plateSnapshot.langKey,
+            plateSnapshot.dayKey,
+            c.kind,
+          );
+          if (key) plateCourseCelebratedKeysRef.current.add(key);
+        }
+      });
+      return;
+    }
     if (
       prev.dayKey !== plateSnapshot.dayKey ||
       prev.langKey !== plateSnapshot.langKey
@@ -9472,11 +9755,8 @@ export default function App({ onBootReady } = {}) {
         (kind) => plateSnapshot.byKind[kind]?.done && !prev.byKind[kind]?.done,
       );
     if (!justDone) {
-      // Repair advances one step (one increment) at a time, so intermediate
-      // steps never flip the course done — celebrate each banked step like a
-      // course completion. In a guided session the Continue button re-routes
-      // into "repair", which serves the NEXT step in its own mode; outside a
-      // session it's a plain acknowledgement (Continue leaves the spent step).
+      // Repair advances one step at a time. Intermediate steps switch directly
+      // to the next modality; only the completed Repair bundle is celebrated.
       const prevRepair = prev.byKind?.repair;
       const nowRepair = plateSnapshot.byKind?.repair;
       const repairStepped =
@@ -9485,27 +9765,28 @@ export default function App({ onBootReady } = {}) {
         !nowRepair.done &&
         nowRepair.count > prevRepair.count;
       if (!repairStepped) return;
-      requestPlateCelebration({
-        type: "course",
-        completed: "repair",
-        next: plateSessionActive ? getNextPlateCourse(plateSnapshot) : null,
-        expectsModal: false,
-        // Step progress ("1/3") so the celebration reads as one step of the
-        // multi-mode repair sequence, not the whole task.
-        progress: {
-          count: Math.min(nowRepair.count, nowRepair.target),
-          target: nowRepair.target,
-        },
-      });
+      window.setTimeout(() => {
+        void navigateToPlateCourse("repair");
+      }, 0);
       return;
     }
 
+    const courseKey = buildPlateCelebrationKey(
+      plateSnapshot.langKey,
+      plateSnapshot.dayKey,
+      justDone,
+    );
+    if (courseKey && plateCourseCelebratedKeysRef.current.has(courseKey)) return;
+
     const next = getNextPlateCourse(plateSnapshot);
-    // Only surfaces that render their own completion modal need the
-    // celebration to wait behind them: lessons and Tutor lessons. Repair
-    // deliberately shows NO lesson-completion modal (triggerLessonCompletion
-    // early-returns for isRepair), so its "task complete" celebration is the
-    // one and only modal — show it promptly over the finished repair view.
+    const details =
+      justDone === "goal"
+        ? getGoalCompletionDetails()
+        : justDone === "repair"
+          ? getRepairCompletionDetails(plateSnapshot.byKind?.repair?.count)
+          : null;
+    // Only ordinary lesson/Tutor courses render their own completion modal.
+    // Goal and Repair modalities are silent until their entire bundle is done.
     const expectsModal = justDone === "learn" || justDone === "speak";
 
     // Live voice surfaces are keep-alive across mode switches, so finishing
@@ -9533,6 +9814,7 @@ export default function App({ onBootReady } = {}) {
           completed: justDone,
           next: null,
           expectsModal,
+          details,
         });
       }
       return;
@@ -9546,6 +9828,7 @@ export default function App({ onBootReady } = {}) {
         type: "cleared",
         navigateHome: true,
         expectsModal,
+        details,
       });
       return;
     }
@@ -9557,12 +9840,16 @@ export default function App({ onBootReady } = {}) {
       completed: justDone,
       next,
       expectsModal,
+      details,
     });
   }, [
     plateSnapshot,
     plateSessionActive,
     endPlateSession,
+    getGoalCompletionDetails,
+    getRepairCompletionDetails,
     goToSkillTreeMode,
+    navigateToPlateCourse,
     playSound,
     requestPlateCelebration,
   ]);
@@ -9616,12 +9903,15 @@ export default function App({ onBootReady } = {}) {
       plateCelebrationFlushTimerRef.current = null;
     }
     plateClearedCelebratedKeyRef.current = "";
+    plateCourseCelebratedKeysRef.current.clear();
     platePrevSnapshotRef.current = null;
     pendingPlateCelebrationRef.current = null;
     setPlateCelebration(null);
     endPlateSession();
     await Promise.all([
       resetTodayPlate(activeNpub, resolvedTargetLang),
+      resetGoalTask(activeNpub, resolvedTargetLang),
+      resetFocusedPracticeArtifacts(activeNpub, resolvedTargetLang),
       resetTodayRepairArtifacts({
         npub: activeNpub,
         targetLang: resolvedTargetLang,
@@ -9639,6 +9929,8 @@ export default function App({ onBootReady } = {}) {
         window.scrollTo({ top: 0, behavior: "auto" });
       }
 
+      useGoalFocusStore.getState().clearFocus();
+      useRepairFocusStore.getState().clearFocus();
       // Manually picking a mode opts out of the guided daily session.
       endPlateSession();
       setPathMode(newMode);
@@ -9992,7 +10284,8 @@ export default function App({ onBootReady } = {}) {
               dailyXp={dailyXpToday}
               dailyGoalXp={dailyGoalTarget}
               languageXp={companionXp}
-              sessionActive={plateSessionActive}
+              sessionActive={plateSessionActive || storedPlateSessionActive}
+              isStartingPractice={isLaunchingPlateCourse}
               onStartPractice={handleStartDailyPractice}
               onResetPlate={handleResetQuestPlate}
               questKinds={questKinds}
@@ -10308,7 +10601,18 @@ export default function App({ onBootReady } = {}) {
               })}
             </TabPanels>
           </Tabs>
-          <QuestionActionArea fallback />
+          {goalLessonReady && (
+            <GoalLessonCompletion
+              key={activeLesson.id}
+              lesson={activeLesson}
+              npub={activeNpub}
+              targetLang={resolvedTargetLang}
+              appLanguage={appLanguage}
+              onComplete={handleGoalLessonComplete}
+              preserveLesson
+            />
+          )}
+          {!goalLessonReady && <QuestionActionArea fallback />}
         </Box>
       )}
 
@@ -10958,6 +11262,10 @@ export default function App({ onBootReady } = {}) {
                     {plateUiCopy(appLanguage, PLATE_BONUS_TOAST_COPY)}
                   </Text>
                 </VStack>
+                <PracticeCompletionDetails
+                  details={plateCelebration.details}
+                  appLanguage={appLanguage}
+                />
                 <Box
                   bg="rgba(255, 255, 255, 0.2)"
                   borderRadius="xl"
@@ -11059,6 +11367,10 @@ export default function App({ onBootReady } = {}) {
                     ✓
                   </Text>
                 </VStack>
+                <PracticeCompletionDetails
+                  details={plateCelebration.details}
+                  appLanguage={appLanguage}
+                />
                 {plateCelebration.next ? (
                   <Box
                     bg="rgba(255, 255, 255, 0.18)"

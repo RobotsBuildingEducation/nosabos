@@ -290,6 +290,20 @@ const BUBBLE_WELCOME = {
   hi: "नमस्ते! मैं आपका लर्निंग साथी हूँ। आपको जिन चीज़ों में कठिनाई होती है, मैं उन्हें याद रखूँगा ताकि हम अगले दिन उन्हें दोहरा सकें। आज का फ़ोकस शुरू करें?",
 };
 
+const BUBBLE_WELCOME_GOAL = {
+  en: "Hi! I'm your learning companion. I'll shape your daily practice around your goal — “{goal}” — and remember what you struggle with so we can review it the next day. Ready for today’s focus?",
+  es: "¡Hola! Soy tu compañero de aprendizaje. Adaptaré tu práctica diaria a tu meta —“{goal}”— y recordaré lo que te cueste para que podamos repasarlo al día siguiente. ¿Empezamos con el enfoque de hoy?",
+  pt: "Oi! Sou seu companheiro de aprendizado. Vou adaptar sua prática diária à sua meta — “{goal}” — e lembrar do que você achar difícil para revisarmos no dia seguinte. Vamos começar o foco de hoje?",
+  fr: "Salut ! Je suis ton compagnon d'apprentissage. J'adapterai ta pratique quotidienne à ton objectif — « {goal} » — et je retiendrai ce qui te pose problème pour qu'on puisse le revoir le lendemain. Prêt pour le focus du jour ?",
+  it: "Ciao! Sono il tuo compagno di studio. Adatterò la pratica quotidiana al tuo obiettivo — “{goal}” — e ricorderò ciò che ti mette in difficoltà per ripassarlo il giorno dopo. Pronto per il focus di oggi?",
+  de: "Hi! Ich bin dein Lernbegleiter. Ich richte deine tägliche Übung an deinem Ziel „{goal}“ aus und merke mir, womit du Schwierigkeiten hast, damit wir es am nächsten Tag wiederholen können. Bereit für den heutigen Fokus?",
+  ja: "やあ！ぼくはきみの学習バディ。毎日の練習を「{goal}」という目標に合わせて、苦手なところも覚えておくから、次の日にいっしょに復習できるよ。今日のフォーカスを始めよう！",
+  zh: "嗨！我是你的学习伙伴。我会围绕你的目标“{goal}”安排每日练习，并记住你觉得困难的地方，方便第二天一起复习。准备好开始今日重点了吗？",
+  ru: "Привет! Я твой помощник в учёбе. Я буду строить ежедневные занятия вокруг твоей цели — «{goal}» — и запоминать трудные моменты, чтобы мы повторили их на следующий день. Начнём фокус дня?",
+  ar: "أهلاً! أنا رفيقك في التعلّم. هظبط تمرينك اليومي على هدفك — “{goal}” — وهفتكر الحاجات اللي بتصعب عليك علشان نراجعها تاني يوم. جاهز لتركيز اليوم؟",
+  hi: "नमस्ते! मैं आपका लर्निंग साथी हूँ। मैं आपके रोज़ के अभ्यास को आपके लक्ष्य — “{goal}” — के अनुसार बनाऊँगा और मुश्किल चीज़ों को याद रखूँगा ताकि हम अगले दिन उन्हें दोहरा सकें। आज का फ़ोकस शुरू करें?",
+};
+
 const BUBBLE_LEAD_FRESH = {
   en: "Fresh start today — nothing left over from yesterday. Let's keep the streak going.",
   es: "Hoy empezamos frescos, sin pendientes de ayer. Sigamos la racha.",
@@ -356,6 +370,7 @@ export function buildQuestBubble({
   lang,
   leadKind = "fresh",
   concept = "",
+  goal = "",
   taskList = "",
   cleared = false,
 }) {
@@ -366,16 +381,17 @@ export function buildQuestBubble({
 
   let leadTpl;
   if (leadKind === "welcome") leadTpl = BUBBLE_WELCOME;
+  else if (leadKind === "welcomeGoal") leadTpl = BUBBLE_WELCOME_GOAL;
   else if (leadKind === "repair") leadTpl = BUBBLE_LEAD_REPAIR;
   else if (leadKind === "repairMulti") leadTpl = BUBBLE_LEAD_REPAIR_MULTI;
   else leadTpl = BUBBLE_LEAD_FRESH;
 
-  const short = fill(memoryCopy(lang, leadTpl), { concept });
+  const short = fill(memoryCopy(lang, leadTpl), { concept, goal });
   const planLabel = memoryCopy(lang, BUBBLE_PLAN_LABEL);
   // The welcome stays short — the course rows are listed right below it, so
   // appending the task list there is redundant and makes the balloon tall.
   const long =
-    taskList && leadKind !== "welcome"
+    taskList && !["welcome", "welcomeGoal"].includes(leadKind)
       ? `${short} ${planLabel}: ${taskList}.`
       : short;
   return { short, long };

@@ -33,7 +33,7 @@ import { CloseIcon } from "@chakra-ui/icons";
 import { FaMicrophone, FaRegCommentDots, FaStop } from "react-icons/fa";
 import { LuBadgeCheck } from "react-icons/lu";
 import { useNavigate } from "react-router-dom";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, runTransaction } from "firebase/firestore";
 import {
   appCheckFetch,
   database,
@@ -71,6 +71,11 @@ import {
   nativeModalMotionProps,
   nativeOverlayMotionProps,
 } from "../utils/modalMotion";
+import {
+  CEFR_PLACEMENT_LEVELS,
+  getHighestProficiencyPlacement,
+  isHigherProficiencyPlacement,
+} from "../utils/proficiencyPlacement";
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-2.1-mini") + "";
@@ -160,7 +165,7 @@ const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
 const APP_TEXT_MUTED = "var(--app-text-muted)";
 const APP_SHADOW = "var(--app-shadow-soft)";
 
-const CEFR_LEVELS = ["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"];
+const CEFR_LEVELS = CEFR_PLACEMENT_LEVELS;
 
 const CEFR_LEVEL_INFO = {
   "Pre-A1": {
@@ -1974,47 +1979,83 @@ Return ONLY valid JSON:
     }
 
     try {
-      queueTutorPlacementStart(targetLang, assessedLevel);
-
-      await setDoc(
-        doc(database, "users", currentNpub),
-        {
-          proficiencyPlacement: assessedLevel,
-          proficiencyPlacements: { [targetLang]: assessedLevel },
-          proficiencyPlacementAt: new Date().toISOString(),
-          activeLessonLevel: assessedLevel,
-          activeFlashcardLevel: assessedLevel,
-          progress: {
-            level: assessedLevel,
-            activeLessonLevels: { [targetLang]: assessedLevel },
-            activeFlashcardLevels: { [targetLang]: assessedLevel },
-          },
-          updatedAt: new Date().toISOString(),
-        },
-        { merge: true },
+      const userRef = doc(database, "users", currentNpub);
+      const localPlacement = user?.proficiencyPlacements?.[targetLang];
+      let savedPlacement = getHighestProficiencyPlacement(
+        localPlacement,
+        assessedLevel,
       );
+      let placementRaised = false;
+
+      await runTransaction(database, async (transaction) => {
+        const snapshot = await transaction.get(userRef);
+        const storedPlacement = snapshot.data()?.proficiencyPlacements?.[
+          targetLang
+        ];
+        const previousPlacement = getHighestProficiencyPlacement(
+          storedPlacement,
+          localPlacement,
+        );
+        savedPlacement = getHighestProficiencyPlacement(
+          previousPlacement,
+          assessedLevel,
+        );
+        placementRaised = isHigherProficiencyPlacement(
+          assessedLevel,
+          previousPlacement,
+        );
+
+        if (!placementRaised) return;
+
+        const now = new Date().toISOString();
+        transaction.set(
+          userRef,
+          {
+            proficiencyPlacement: savedPlacement,
+            proficiencyPlacements: { [targetLang]: savedPlacement },
+            proficiencyPlacementAt: now,
+            activeLessonLevel: savedPlacement,
+            activeFlashcardLevel: savedPlacement,
+            progress: {
+              level: savedPlacement,
+              activeLessonLevels: { [targetLang]: savedPlacement },
+              activeFlashcardLevels: { [targetLang]: savedPlacement },
+            },
+            updatedAt: now,
+          },
+          { merge: true },
+        );
+      });
+
+      if (placementRaised) {
+        queueTutorPlacementStart(targetLang, savedPlacement);
+      }
 
       // Update local user state
       patchUser({
-        proficiencyPlacement: assessedLevel,
+        proficiencyPlacement: savedPlacement,
         proficiencyPlacements: {
           ...(user?.proficiencyPlacements || {}),
-          [targetLang]: assessedLevel,
+          [targetLang]: savedPlacement,
         },
-        activeLessonLevel: assessedLevel,
-        activeFlashcardLevel: assessedLevel,
-        progress: {
-          ...(user?.progress || {}),
-          level: assessedLevel,
-          activeLessonLevels: {
-            ...(user?.progress?.activeLessonLevels || {}),
-            [targetLang]: assessedLevel,
-          },
-          activeFlashcardLevels: {
-            ...(user?.progress?.activeFlashcardLevels || {}),
-            [targetLang]: assessedLevel,
-          },
-        },
+        ...(placementRaised
+          ? {
+              activeLessonLevel: savedPlacement,
+              activeFlashcardLevel: savedPlacement,
+              progress: {
+                ...(user?.progress || {}),
+                level: savedPlacement,
+                activeLessonLevels: {
+                  ...(user?.progress?.activeLessonLevels || {}),
+                  [targetLang]: savedPlacement,
+                },
+                activeFlashcardLevels: {
+                  ...(user?.progress?.activeFlashcardLevels || {}),
+                  [targetLang]: savedPlacement,
+                },
+              },
+            }
+          : {}),
       });
     } catch (e) {
       console.error("Failed to save proficiency placement:", e);
@@ -2036,20 +2077,36 @@ Return ONLY valid JSON:
     setShowExitConfirm(false);
     if (currentNpub) {
       try {
-        await setDoc(
-          doc(database, "users", currentNpub),
-          {
-            proficiencyPlacement: "skipped",
-            proficiencyPlacements: { [targetLang]: "skipped" },
-            updatedAt: new Date().toISOString(),
-          },
-          { merge: true },
+        const userRef = doc(database, "users", currentNpub);
+        let savedPlacement = getHighestProficiencyPlacement(
+          user?.proficiencyPlacements?.[targetLang],
         );
+
+        await runTransaction(database, async (transaction) => {
+          const snapshot = await transaction.get(userRef);
+          savedPlacement = getHighestProficiencyPlacement(
+            snapshot.data()?.proficiencyPlacements?.[targetLang],
+            savedPlacement,
+          );
+          if (savedPlacement) return;
+
+          const now = new Date().toISOString();
+          transaction.set(
+            userRef,
+            {
+              proficiencyPlacement: "skipped",
+              proficiencyPlacements: { [targetLang]: "skipped" },
+              updatedAt: now,
+            },
+            { merge: true },
+          );
+        });
+
         patchUser({
-          proficiencyPlacement: "skipped",
+          proficiencyPlacement: savedPlacement || "skipped",
           proficiencyPlacements: {
             ...(user?.proficiencyPlacements || {}),
-            [targetLang]: "skipped",
+            [targetLang]: savedPlacement || "skipped",
           },
         });
       } catch (e) {
@@ -2631,13 +2688,20 @@ Return ONLY valid JSON:
 
                 <Box mt={3}>
                   <HStack justifyContent="space-between" mb={1}>
-                    <Badge colorScheme="cyan" variant="subtle" fontSize="10px">
+                    <Text
+                      fontSize="xs"
+                      color={isLightTheme ? APP_TEXT_SECONDARY : "gray.300"}
+                    >
                       {ui.ra_progress_header}
-                    </Badge>
-                    <Badge colorScheme="teal" variant="subtle" fontSize="10px">
+                    </Text>
+                    <Text
+                      fontSize="xs"
+                      color={isLightTheme ? APP_TEXT_SECONDARY : "gray.300"}
+                      dir="ltr"
+                    >
                       {Math.min(userMessageCount, MAX_EXCHANGES)}/
                       {MAX_EXCHANGES}
-                    </Badge>
+                    </Text>
                   </HStack>
                   <WaveBar value={progressPct} />
                 </Box>

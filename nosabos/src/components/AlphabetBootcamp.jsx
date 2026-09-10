@@ -1,3 +1,6 @@
+import useGoalFocusStore from "../hooks/useGoalFocusStore";
+import { currentGoalFocus, recordGoalAttempt } from "../utils/learningIntelligence";
+import { getFocusedPhonicsDeck, savePracticeOutcome } from "../utils/focusedPracticeDecks";
 import ActivityActionRow from "./ActivityActionRow";
 import QuestionActionArea from "./QuestionActionArea";
 import React, {
@@ -90,8 +93,7 @@ import {
   captureCompanionMemory,
   completeRepairFocus,
 } from "../utils/companionMemory";
-import useRepairFocusStore from "../hooks/useRepairFocusStore";
-import RepairFocusBanner from "./RepairFocusBanner";
+import useRepairFocusStore, { currentRepairFocus } from "../hooks/useRepairFocusStore";
 import {
   SOFT_STOP_BUTTON_BG,
   SOFT_STOP_BUTTON_HOVER_BG,
@@ -1127,13 +1129,14 @@ const normalizeMeaning = (meaning) => {
 };
 
 // Build AI grading prompt for alphabet practice
-function buildAlphabetJudgePrompt({ practiceWord, userAnswer, targetLang }) {
+function buildAlphabetJudgePrompt({ practiceWord, userAnswer, targetLang, phoneme = "" }) {
   const langName = LANGUAGE_NAMES[targetLang] || "the target";
 
   return `
 Judge if the user correctly pronounced a ${langName} word.
 
 Target word: ${practiceWord}
+${phoneme ? `Focus sound: ${phoneme}. The target sound must be recognizable in the attempt; do not accept a different sound just because the overall word is close.` : ""}
 User's pronunciation (transcribed): ${userAnswer}
 
 Policy:
@@ -1598,6 +1601,7 @@ function LetterCard({
         model: DEFAULT_RESPONSES_MODEL,
         input: buildAlphabetJudgePrompt({
           practiceWord,
+          phoneme: letter?.phoneme || "",
           userAnswer: answer,
           targetLang,
         }),
@@ -1621,7 +1625,7 @@ function LetterCard({
       // Companion brain: a missed pronunciation is a high-signal phonics slip —
       // bank it for tomorrow's repair quest (it enriches itself via the cheap
       // model). Fire-and-forget so grading UI stays snappy.
-      if (!isYes) {
+      if (!isYes && !letter.isGoal) {
         captureCompanionMemory({
           npub,
           targetLang,
@@ -1636,8 +1640,31 @@ function LetterCard({
           // The letter/sound card id, not a generic label — lets a routed
           // repair deep-seed the deck with this exact card instead of a
           // random one (see the repair-focus deck reorder on mount).
-          sourceContext: letter?.id || "",
+          sourceContext: { card: { id: letter?.id || "", letter: letter?.letter || "", tts: letter?.tts || "", phoneme: letter?.phoneme || "", practiceWord, practiceWordMeaning: practiceWordMeaningData || {} } },
         });
+      }
+
+      const focused = letter.isGoal ? currentGoalFocus("alphabet") : letter.isRepair ? currentRepairFocus() : null;
+      if (letter.isGoal || letter.isRepair) {
+        if (!focused || focused.targetLang !== targetLang || focused.npub !== npub) return;
+        const artifact = await savePracticeOutcome(focused, "phonics", letter, isYes, "modeled");
+        if (isYes) {
+          playSound("correct"); setCorrectCount(c => c + 1);
+          await awardXp(npub, xp, targetLang, letter.isGoal ? "goalPhonics" : "repairPhonics");
+          const required = letter.isGoal
+            ? artifact?.cards?.slice(0, 2) || []
+            : artifact?.cards?.filter(
+                (card) =>
+                  card.practiceRole === "original" ||
+                  card.practiceRole === "transfer",
+              ) || [];
+          if (required.length && required.every(c => artifact.outcomes[c.id]?.success)) {
+            const observation = required.map(c => `${c.practiceRole}: ${artifact.outcomes[c.id].item} pronounced successfully after a model`).join("; ");
+            if (letter.isGoal) await recordGoalAttempt(focused, { success: true, support: "modeled", observation, domain: "pronunciation" });
+            else await completeRepairFocus({ success: true, support: "modeled", observation });
+          }
+        }
+        return;
       }
 
       let nextPracticeWord = practiceWord;
@@ -1648,11 +1675,6 @@ function LetterCard({
         // Auditory cue that the answer was correct.
         playSound("correct");
         setCorrectCount((c) => c + 1);
-        // Routed repair: a correct pronunciation here clears today's repair if
-        // the companion sent the learner to phonics to fix a weak sound.
-        if (useRepairFocusStore.getState().focus?.surface === "alphabet") {
-          void completeRepairFocus();
-        }
         if (npub) {
           await awardXp(npub, xp, targetLang);
           onXpAwarded?.(xp);
@@ -1854,7 +1876,7 @@ function LetterCard({
       if (!collectedThisMountRef.current) {
         collectedThisMountRef.current = true;
         onCardCollected(letter.id);
-        if (npub) {
+        if (npub && !letter.isGoal && !letter.isRepair) {
           void recordPlateActivity(npub, "phonics", targetLang);
         }
       }
@@ -2440,7 +2462,7 @@ function shuffleArray(arr) {
 // random one. No match (e.g. the card was a generated round that's since
 // expired) → deck order is left untouched, a safe no-op.
 function reorderDeckForRepairFocus(cards) {
-  const focus = useRepairFocusStore.getState().focus;
+  const focus = currentRepairFocus();
   if (focus?.surface !== "alphabet") return cards;
   const targetIds = new Set(
     (focus.plan?.items || []).map((it) => it.sourceContext).filter(Boolean),
@@ -2469,6 +2491,9 @@ export default function AlphabetBootcamp({
   const uiLang = normalizeSupportLanguage(appLanguage, DEFAULT_SUPPORT_LANGUAGE);
   const isLightTheme = useThemeStore((s) => s.themeMode) === "light";
   const alphabet = LANGUAGE_ALPHABETS[targetLang] || RUSSIAN_ALPHABET;
+  const repairFocus = useRepairFocusStore(s => s.focus);
+  const goalFocus = useGoalFocusStore(s => s.focus);
+  const focusedPractice = currentGoalFocus("alphabet") || (repairFocus?.surface === "alphabet" && repairFocus.targetLang === targetLang && repairFocus.npub === npub ? repairFocus : null);
   const playerRef = useRef(null);
   const playbackRequestRef = useRef(0);
   const playSound = useSoundSettings((s) => s.playSound);
@@ -2731,7 +2756,7 @@ export default function AlphabetBootcamp({
     }
     let cancelled = false;
     const fallbackTimer = setTimeout(() => {
-      if (cancelled) return;
+      if (cancelled || focusedPractice) return;
       setDeck((currentDeck) =>
         currentDeck.length ? currentDeck : shuffleArray(alphabet),
       );
@@ -2741,6 +2766,16 @@ export default function AlphabetBootcamp({
 
     const loadProgress = async () => {
       try {
+        if (focusedPractice) {
+          const artifact = await getFocusedPhonicsDeck(focusedPractice, alphabet);
+          if (!cancelled) {
+            clearTimeout(fallbackTimer);
+            setDeck(artifact.cards.filter(c => !artifact.outcomes[c.id]?.success));
+            setCollectedLetters(artifact.cards.filter(c => artifact.outcomes[c.id]?.success));
+            setIsInitialized(true);
+          }
+          return;
+        }
         // Load practice words and correctCounts from subcollection
         const snapshot = await getDocs(
           query(
@@ -2824,7 +2859,7 @@ export default function AlphabetBootcamp({
       cancelled = true;
       clearTimeout(fallbackTimer);
     };
-  }, [npub, targetLang, alphabet]);
+  }, [npub, targetLang, alphabet, repairFocus, goalFocus, focusedPractice]);
 
   useEffect(() => {
     return () => {
@@ -2841,14 +2876,6 @@ export default function AlphabetBootcamp({
       px={6}
       pt={{ base: 5, md: 6 }}
     >
-      {/* Repair focus: shown only when the Daily Quest routed a phonics repair
-          here (returns null otherwise, so it adds no gap on a normal visit). */}
-      <RepairFocusBanner
-        surface="alphabet"
-        appLanguage={appLanguage}
-        maxW="400px"
-        mt={12}
-      />
       <Heading
         size="md"
         color={APP_TEXT_PRIMARY}

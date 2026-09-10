@@ -1,3 +1,8 @@
+import { currentGoalFocus, recordLearningEvidence, repairSummaryFor } from "./learningIntelligence";
+import {
+  activeGoalFor,
+  compactSummary,
+} from "./learningIntelligenceModel";
 // src/utils/companionMemory.js
 //
 // The "companion brain": a small, intentionally temporary memory of the
@@ -16,7 +21,7 @@ import { doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
 import useUserStore from "../hooks/useUserStore";
 import useNotesStore from "../hooks/useNotesStore";
-import useRepairFocusStore from "../hooks/useRepairFocusStore";
+import useRepairFocusStore, { currentRepairFocus } from "../hooks/useRepairFocusStore";
 import { getLocalDayKey } from "./flashcardReview";
 import { normalizePlateLang, recordPlateActivity } from "./dailyPlate";
 import {
@@ -854,6 +859,15 @@ export async function captureCompanionMemory({
   sourceContext,
   now = new Date(),
 }) {
+  const goalFocus = currentGoalFocus();
+  if (goalFocus && goalFocus.npub === npub && goalFocus.targetLang === normalizePlateLang(targetLang)) {
+    await recordLearningEvidence({ npub, targetLang, kind: "goal", event: {
+      id: `goal-slip:${Date.now()}:${sourceMode}`, goalId: goalFocus.blueprint.goalId,
+      target: concept, observation: userAnswer || "", expectedAnswer: expectedAnswer || "", mode: goalFocus.blueprint.mode,
+      domain: sourceMode, success: false, support: "prompted",
+    } });
+    return null;
+  }
   const langKey = normalizePlateLang(targetLang);
   const normalizedSupportLang = normalizeMemorySupportLang(supportLang);
   const trimmedConcept = cleanMemoryConceptForSupportLanguage(
@@ -926,6 +940,12 @@ export async function captureCompanionMemory({
     notes: trimmed,
     lastPrunedDayKey: bucket.lastPrunedDayKey,
   });
+
+  void recordLearningEvidence({ npub, targetLang: langKey, event: {
+    id: `${stored.id}:${stored.severity}`, target: stored.concept, expectedAnswer: stored.expectedAnswer,
+    observation: stored.userAnswer, mode: stored.recommendedRepairMode, domain: stored.errorType,
+    severity: stored.severity, success: false, support: "prompted",
+  } }).catch(error => console.warn("Repair intelligence save failed:", error));
 
   // Celebrate the notes/memory action-bar button so the capture is visible —
   // centralized here so EVERY capture source (flashcards, vocab, grammar,
@@ -1063,18 +1083,6 @@ function repairLessonLevelGuard(cefrLevel) {
   return `REPAIR LEVEL GUARD: Keep every exercise within CEFR ${level}; the repair topic must not exceed that level.`;
 }
 
-const FOUNDATION_ADVANCED_REPAIR_PATTERN =
-  /\b(pret[eé]rito|indefinid[oa]|imperfect[oa]|subjunctive|subjuntivo|conditional|condicional|past\s+tense|preterite|future\s+tense|object\s+pronoun|pronombres?\s+de\s+objeto|ayer|anoche|pasado|pasada|cuando\s+era|cuando\s+fui)\b/i;
-
-function isBeginnerSafeRepairTarget(value) {
-  const text = String(value || "").trim();
-  if (!text) return false;
-  if (FOUNDATION_ADVANCED_REPAIR_PATTERN.test(text)) return false;
-  if (/[.?!;:]/.test(text)) return false;
-  const wordCount = text.split(/\s+/).filter(Boolean).length;
-  return wordCount <= 4 && text.length <= 42;
-}
-
 /**
  * Build an ephemeral skill-tree lesson from a repair plan. This is a REAL
  * lesson object — same shape handleStartLesson consumes — so repair runs
@@ -1105,17 +1113,13 @@ export function buildEphemeralRepairLesson({
   const rawWords = items
     .map((it) => it?.expectedAnswer || it?.concept)
     .filter(Boolean);
-  const words = isFoundationLevel
-    ? rawWords.filter(isBeginnerSafeRepairTarget)
-    : rawWords;
+  const words = rawWords;
   const repairTargets = isFoundationLevel
     ? words
     : words.length
       ? words
       : concepts;
-  const focusPoints = isFoundationLevel
-    ? []
-    : [
+  const focusPoints = [
         ...items
           .map((it) => {
             const tip = it?.summary || "";
@@ -1125,13 +1129,12 @@ export function buildEphemeralRepairLesson({
       ];
 
   // `flashcards` repair = pure recall → the vocabulary engine (it includes the
-  // flashcard submodule). `lesson` repair = the FULL lesson experience: every
-  // submodule except game review, all seeded with the same weak material.
+  // flashcard submodule). `lesson` repair = the FULL lesson experience at every
+  // CEFR level: every submodule except game review, all seeded with the same
+  // weak material. The level guard controls difficulty without hiding modes.
   const modes =
     recommendedMode === "flashcards"
       ? ["vocabulary"]
-      : isFoundationLevel
-        ? ["vocabulary"]
       : [...REPAIR_LESSON_MODES];
 
   const topic = isFoundationLevel
@@ -1172,6 +1175,7 @@ export function buildEphemeralRepairLesson({
     // from localStorage).
     repairTarget: Math.max(1, Number(plan?.target) || items.length || 1),
     repairMemoryIds: Array.isArray(plan?.memoryIds) ? plan.memoryIds : [],
+    repairItems: items,
   };
 }
 
@@ -1183,10 +1187,10 @@ export function buildEphemeralRepairLesson({
  * repair course. Step lessons carry target 1, so finishing one advances the
  * repair course by exactly one step.
  */
-export async function completeRepairLesson({ lesson, npub, targetLang }) {
-  const focus = useRepairFocusStore.getState?.()?.focus;
+export async function completeRepairLesson({ lesson, npub, targetLang, evidence = lesson?.repairEvidence || {} }) {
+  const focus = currentRepairFocus();
   if (focus) {
-    await completeRepairFocus();
+    await completeRepairFocus(evidence);
     return;
   }
   const target = Math.max(1, Number(lesson?.repairTarget) || 1);
@@ -1195,6 +1199,13 @@ export async function completeRepairLesson({ lesson, npub, targetLang }) {
   const pending = [];
   for (let i = 0; i < target; i += 1) {
     pending.push(recordPlateActivity(npub, "repair", targetLang));
+  }
+  for (const item of lesson?.repairItems || []) {
+    pending.push(recordLearningEvidence({ npub, targetLang, event: {
+      id: `repair:${lesson.id}:${item.memoryId || item.concept}`, target: item.originalConcept || item.concept,
+      expectedAnswer: item.expectedAnswer, mode: "lesson", domain: item.errorType,
+      success: evidence.success === true, observation: evidence.observation || "", support: evidence.support || "prompted",
+    } }));
   }
   const memoryIds = Array.isArray(lesson?.repairMemoryIds)
     ? lesson.repairMemoryIds
@@ -1291,9 +1302,9 @@ export async function markMemoryReinforced({
  * cleared focus is a no-op, so a second call from the same session does
  * nothing.
  */
-export async function completeRepairFocus() {
+export async function completeRepairFocus(evidence = {}) {
   const focusStore = useRepairFocusStore.getState?.();
-  const focus = focusStore?.focus;
+  const focus = currentRepairFocus();
   if (!focus) return;
   const { plan, targetLang, npub } = focus;
   const memoryIds = Array.isArray(plan?.memoryIds) ? plan.memoryIds : [];
@@ -1308,6 +1319,15 @@ export async function completeRepairFocus() {
   // immediately — the task-complete modal shouldn't wait on N sequential
   // round-trips), and the writes use increment(1), which is commutative.
   const pending = [];
+  for (const item of plan?.items || []) {
+    pending.push(recordLearningEvidence({ npub, targetLang, event: {
+      id: `repair:${plan.dayKey}:${focus.stepIndex}:${item.memoryId || item.concept}`,
+      target: item.originalConcept || item.concept, expectedAnswer: item.expectedAnswer, mode: focus.mode,
+      domain: item.errorType, success: evidence.success === true,
+      observation: evidence.observation || "", support: evidence.support || "prompted",
+    } }));
+  }
+
   for (let i = 0; i < target; i += 1) {
     pending.push(recordPlateActivity(npub, "repair", targetLang));
   }
@@ -1399,6 +1419,8 @@ function repairItemsFromNotes(ranked = []) {
     // phonics letter id) so a routed repair can deep-seed the right material
     // instead of just naming the concept. Free-form per sourceMode.
     sourceContext: n.sourceContext || "",
+    originalConcept: n.concept,
+    originalAnswer: n.expectedAnswer || "",
     cefrLevel: n.cefrLevel,
     summary: n.companionSummary || "",
   }));
@@ -1764,7 +1786,7 @@ export async function getOrBuildRepairDeck({ focus, now = new Date() }) {
   const stepIndex = Math.max(0, Number(focus?.stepIndex) || 0);
   const level = displayCEFRLevel(item?.cefrLevel, "Pre-A1");
 
-  const cacheKey = repairDeckStorageKey(langKey, dayKey, stepIndex);
+  const cacheKey = `${focus?.npub || "anonymous"}:${repairDeckStorageKey(langKey, dayKey, stepIndex)}`;
   const cached = readCachedRepairDeck(cacheKey);
   if (cached?.length) return cached;
 
@@ -1781,7 +1803,7 @@ export async function getOrBuildRepairDeck({ focus, now = new Date() }) {
   const floorCard = buildRepairCard({
     ...common,
     support: item.concept,
-    target: item.expectedAnswer || item.concept,
+    target: item.originalAnswer || item.expectedAnswer || item.concept,
     cardIndex: 0,
   });
   if (!floorCard) return [];
@@ -1795,12 +1817,12 @@ export async function getOrBuildRepairDeck({ focus, now = new Date() }) {
     count: REPAIR_DECK_SIZE,
   });
   if (entries?.length) {
-    cards = entries
-      .slice(0, REPAIR_DECK_SIZE)
+    cards = [floorCard, ...entries
+      .slice(1, REPAIR_DECK_SIZE)
       .map((entry, index) =>
-        buildRepairCard({ ...common, ...entry, cardIndex: index }),
+        buildRepairCard({ ...common, ...entry, cardIndex: index + 1 }),
       )
-      .filter(Boolean);
+      .filter(Boolean)];
     if (!cards.length) cards = [floorCard];
   }
 
@@ -1831,7 +1853,7 @@ export async function resetTodayRepairArtifacts({
 
   if (typeof window !== "undefined") {
     try {
-      const prefix = `repairDeck:${langKey}:${dayKey}:`;
+      const prefix = `${npub || "anonymous"}:repairDeck:${langKey}:${dayKey}:`;
       const stale = [];
       for (let i = 0; i < window.localStorage.length; i += 1) {
         const key = window.localStorage.key(i);
@@ -2042,6 +2064,8 @@ function buildBatchInput({
   todayCleared,
   carryOverKinds,
   cefrLevel,
+  goal,
+  goalProgress,
 }) {
   const targetName = langName(targetLang);
   const supportName = langName(appLanguage);
@@ -2074,8 +2098,19 @@ function buildBatchInput({
     JSON.stringify(notes),
     completion,
     carry,
+    goal
+      ? `The learner also has this active long-term goal: ${JSON.stringify(
+          goal.text,
+        )}. Today's quest contains a dedicated Goal task. Make the companion message inclusive of that goal as well as any repair: briefly connect today's practice to forward movement toward the goal without claiming mastery.`
+      : "The learner has no active personal goal today.",
+    goal
+      ? `Durable goal learning intelligence (use demonstrated abilities, open capabilities, useful language, and next-step guidance): ${JSON.stringify(
+          goalProgress,
+        )}`
+      : "",
     `The learner is at CEFR level ${level}. Keep every prompt, answer, and the overall difficulty appropriate for ${level} — simpler and more concrete for Pre-A1/A1, more nuanced for higher levels. Never exceed their level.`,
     levelGuard,
+    `Durable repair learning intelligence (use prior outcomes, avoid recently repaired targets unless checking transfer): ${JSON.stringify(repairSummaryFor(useUserStore.getState().user, targetLang))}`,
     `The repair runs as a SEQUENCE of short activities — one per item — so pick each item's "mode" to match how THAT weak concept is best PRACTICED. Every mode is a real interactive surface, so choose deliberately:`,
     `- "tutor": producing a specific target-language phrase or sentence correctly out loud, functional language you'd say to another person, or focused grammar-in-speech coaching.`,
     `- "phonics": pronunciation, specific sounds, letters, or minimal pairs.`,
@@ -2083,7 +2118,7 @@ function buildBatchInput({
     `- "lesson": a richer concept that benefits from VARIED practice (a grammar pattern, conjugations, agreement, word order) — this generates a short mixed-question mini-lesson.`,
     `Match each mode to its concept; when there are multiple items, give them DIFFERENT modes whenever sensible so the repair sequence feels varied. Use "flashcards" for pure recall and "lesson" for anything with structure/rules.`,
     `Compose a short, game-like repair for their next session.`,
-    `SCOPE: the repair is only ONE small task inside today's quest — the other quest tasks continue the learner's regular course progress with new material. When the message explains what you lined up and why, explicitly attribute it to the repair task (call it a "repair" or a quick warm-up before the rest of the quest). NEVER phrase it as if the whole day or the whole quest is about this material (not "today we are going to work on X" — say "our quick repair task today covers X, then we keep pushing ahead").`,
+    `SCOPE: a repair is only ONE small task inside today's quest, while the Goal task moves the learner toward their personal destination. When the message explains what you lined up and why, name both when both exist. Attribute weak material specifically to a "repair" or quick warm-up, then connect the Goal task to forward progress. Never imply the whole quest is repair, and never claim the long-term goal is already mastered.`,
     `Return ONLY strict minified JSON (no markdown, no commentary) with EXACTLY this shape:`,
     `{"message":{"short":"one playful sentence in a manga speech-bubble voice","long":"2-4 warm sentences naming what the repair task focuses on and why, explicitly scoped to the repair task with the rest of the quest framed as their normal progress; never say the learner got something wrong"},"repair":{"items":[{"memoryId":"an id copied from the notes above","mode":"one of ${REPAIR_MODES.join("/")}","prompt":"a FRESH ${level}-appropriate practice cue in ${targetName} that exercises the same concept (do not copy the original)","answer":"the correct answer in ${targetName}","tip":"a short encouraging memory tip in ${supportName}"}]},"summary":"one short line in ${supportName}: why this repair"}`,
     `Use one item per weak spot, max ${REPAIR_MAX_ITEMS}, each memoryId from the list. Stay positive and encouraging.`,
@@ -2111,6 +2146,27 @@ function parseBlueprintJson(raw) {
 
 // Deterministic blueprint (the floor): heuristic repair items + templated
 // manga message. Always valid, used directly when there's no AI or it fails.
+const GOAL_MESSAGE_SUFFIX = {
+  en: "I also included focused practice to move you toward “{goal}”.",
+  es: "También incluí práctica enfocada para acercarte a «{goal}».",
+  pt: "Também incluí prática focada para aproximar você de “{goal}”.",
+  fr: "J’ai aussi prévu une pratique ciblée pour avancer vers « {goal} ».",
+  it: "Ho incluso anche pratica mirata per avvicinarti a “{goal}”.",
+  de: "Ich habe auch gezieltes Üben eingeplant, damit du „{goal}“ näherkommst.",
+  ja: "「{goal}」に近づくための集中練習も入れました。",
+  zh: "我还安排了专项练习，帮助你朝“{goal}”继续前进。",
+  ru: "Я также добавил целевую практику, чтобы приблизить тебя к цели «{goal}».",
+  ar: "أضفت أيضًا تدريبًا مركزًا ليقرّبك من «{goal}».",
+  hi: "मैंने “{goal}” की ओर बढ़ने के लिए केंद्रित अभ्यास भी शामिल किया है।",
+};
+
+function appendGoalToMessage(message, goal, appLanguage) {
+  if (!goal?.text) return message;
+  const template = GOAL_MESSAGE_SUFFIX[appLanguage] || GOAL_MESSAGE_SUFFIX.en;
+  const suffix = template.replace("{goal}", goal.text);
+  return `${String(message || "").trim()} ${suffix}`.trim();
+}
+
 function buildDeterministicBlueprint({
   ranked,
   langKey,
@@ -2119,6 +2175,7 @@ function buildDeterministicBlueprint({
   carryOverKinds,
   targetDayKey,
   now,
+  goal,
 }) {
   const items = repairItemsFromNotes(ranked);
   const concept = items[0]?.concept || "";
@@ -2141,7 +2198,10 @@ function buildDeterministicBlueprint({
     targetLang: langKey,
     yesterdayComplete: todayCleared,
     carryOverKinds: carryOverKinds || [],
-    message: { short: bubble.short, long: bubble.long },
+    message: {
+      short: bubble.short,
+      long: appendGoalToMessage(bubble.long, goal, appLanguage),
+    },
     repair: items.length
       ? {
           dayKey: targetDayKey,
@@ -2180,6 +2240,7 @@ function assembleAiBlueprint({
   const items = aiItems
     .map((it) => {
       const note = noteById.get(it?.memoryId) || null;
+      if (!note) return null;
       const concept = String(it?.prompt || it?.concept || note?.concept || "").trim();
       if (!concept) return null;
       const errorType = note?.errorType || "unknown";
@@ -2198,6 +2259,8 @@ function assembleAiBlueprint({
           normalizeRepairMode(repairModeForError(errorType)) ||
           "lesson",
         sourceContext: note?.sourceContext || "",
+        originalConcept: note?.concept || concept,
+        originalAnswer: note?.expectedAnswer || "",
         cefrLevel: displayCEFRLevel(note?.cefrLevel, "Pre-A1"),
         summary: String(it?.tip || it?.summary || note?.companionSummary || "").trim(),
       };
@@ -2276,6 +2339,12 @@ export async function runDailyBatch({
   });
 
   const ranked = rankReusableNotes(sourceNotes);
+  const currentUser = useUserStore.getState?.()?.user || {};
+  const goal = activeGoalFor(currentUser, langKey);
+  const goalProgress = compactSummary(
+    currentUser?.learningIntelligence?.[langKey]?.goalProgress,
+    "goal",
+  );
   const fallback = buildDeterministicBlueprint({
     ranked,
     langKey,
@@ -2284,10 +2353,11 @@ export async function runDailyBatch({
     carryOverKinds,
     targetDayKey,
     now,
+    goal,
   });
 
   let blueprint = fallback;
-  if (ranked.length) {
+  if (ranked.length || goal) {
     try {
       const raw = await callResponses({
         input: buildBatchInput({
@@ -2297,6 +2367,8 @@ export async function runDailyBatch({
           todayCleared,
           carryOverKinds,
           cefrLevel,
+          goal,
+          goalProgress,
         }),
       });
       const parsed = parseBlueprintJson(raw);

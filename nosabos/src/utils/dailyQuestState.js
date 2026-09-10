@@ -5,6 +5,7 @@ const QUEST_ACTIVITY_FIELDS = [
   "conversationDailyActivity",
   "phonicsDailyActivity",
   "repairDailyActivity",
+  "goalDailyActivity",
 ];
 
 export function getAccountStorageKey(baseKey, userKey) {
@@ -87,4 +88,22 @@ export function shouldUseFixedFirstQuest(user, dayKey) {
       : "";
   if (firstDay) return firstDay === dayKey;
   return !hasPriorLearningActivity(user);
+}
+
+/**
+ * Canonical deduplication key for plate course completions.
+ * Each course (or step in repair) is celebrated at most once per plate day.
+ */
+export function buildPlateCelebrationKey(
+  langKey = "",
+  dayKey = "",
+  completed = "",
+  progress = null,
+) {
+  if (!langKey || !dayKey || !completed) return "";
+  const progressPart =
+    progress && typeof progress.count !== "undefined"
+      ? `:${progress.count}`
+      : "";
+  return `${langKey}:${dayKey}:${completed}${progressPart}`;
 }

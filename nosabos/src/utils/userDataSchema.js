@@ -21,6 +21,7 @@ export const DAILY_ACTIVITY_FIELDS = [
   "conversationDailyActivity",
   "phonicsDailyActivity",
   "repairDailyActivity",
+  "goalDailyActivity",
   "plateBonusDailyActivity",
 ];
 

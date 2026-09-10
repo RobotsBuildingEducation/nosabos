@@ -1048,3 +1048,31 @@ test("getDelightFallbackQuestion generates valid normalized fallbacks across mul
   assert.deepEqual(germanTarget.groups[0].items, ["ging", "aß", "sprachen"]);
   assert.ok(normalizeDelightQuestion("word_neighborhoods", germanTarget));
 });
+
+test("Morphology Forge rejects the malformed coffee question and inconsistent assemblies", () => {
+  const valid = { sentence: "Are you ___ her for coffee?", answerPieces: ["invit", "ing"], answerWord: "inviting", pieces: ["invit", "ing", "ed", "s"] };
+  for (const malformed of [
+    { sentence: "Would you like to grab coffee ___ this weekend?", pieces: ["-ar", "-man", "-ar-", "-ic", "-ly", "Would", "you", "like to grabs? </s>"], answerPieces: ["Would", "you", "like to grabs? </s>"], answerWord: "this" },
+    { ...valid, answerWord: "invited" },
+    { ...valid, sentence: "Are you inviting her for coffee?" },
+    { ...valid, sentence: "Are ___ ___ her for coffee?" },
+    { ...valid, pieces: [...valid.pieces, "</s>"] },
+    { ...valid, answerPieces: ["in", "vi", "t", "ing"] },
+  ]) assert.equal(normalizeDelightQuestion("morphology_forge", malformed, { targetLang: "en" }), null);
+  const normalized = normalizeDelightQuestion("morphology_forge", { ...valid, answerPieces: ["invit-", "-ing"], pieces: ["invit-", "-ing", "-ed", "-s"] }, { targetLang: "en" });
+  assert.equal(normalized.answerPieces.join(""), normalized.answerWord);
+  assert.deepEqual(normalized.pieces, ["invit", "ing", "ed", "s"]);
+});
+
+test("Morphology Forge preflight rejects semantically invalid or uncertain questions", async () => {
+  const { validateMorphologyForgeQuestion } = await import("./delightQuestionVariants.js");
+  const question = normalizeDelightQuestion("morphology_forge", { sentence: "Are you ___ her for coffee?", answerPieces: ["invit", "ing"], answerWord: "inviting", pieces: ["invit", "ing", "ed", "s"] });
+  const options = { targetLang: "en", supportLang: "es", cefrLevel: "A1" };
+  assert.equal(await validateMorphologyForgeQuestion(question, { ...options, judge: async (prompt) => {
+    assert.match(prompt, /Are you inviting her for coffee/);
+    assert.match(prompt, /genuine morphemes/);
+    assert.match(prompt, /solvable as displayed/);
+    return "YES";
+  } }), true);
+  for (const verdict of ["NO", "Maybe", ""]) assert.equal(await validateMorphologyForgeQuestion(question, { ...options, judge: async () => verdict }), false);
+});

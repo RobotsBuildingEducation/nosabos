@@ -1,3 +1,4 @@
+import { focusedLessonPrompt } from "../utils/learningIntelligenceModel";
 import ActivityActionRow from "./ActivityActionRow";
 import QuestionActionArea from "./QuestionActionArea";
 // components/RealtimeAgent.jsx
@@ -81,6 +82,7 @@ import {
   SOFT_STOP_BUTTON_HOVER_BG,
 } from "../utils/softStopButton";
 import { DEFAULT_TTS_VOICE, getPreferredTTSVoice } from "../utils/tts";
+import { REALTIME_PRACTICE_VOICE } from "../utils/realtimePracticeVoice";
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import { getAdultBeginnerToneRule } from "../utils/adultBeginnerTone";
 import useSoundSettings from "../hooks/useSoundSettings";
@@ -820,7 +822,9 @@ export default function RealTimeTest({
   // Learning prefs (now controlled globally; we still mirror them locally)
   const [level, setLevel] = useState("beginner");
   const [supportLang, setSupportLang] = useState(initialSupportLanguage);
-  const [voice, setVoice] = useState(() => getPreferredTTSVoice());
+  const [voice, setVoice] = useState(() =>
+    getPreferredTTSVoice(REALTIME_PRACTICE_VOICE),
+  );
   const [targetLang, setTargetLang] = useState(initialTargetLanguage);
   const [showTranslations, setShowTranslations] = useState(true);
   const [practicePronunciation, setPracticePronunciation] = useState(
@@ -1818,13 +1822,10 @@ export default function RealTimeTest({
       lessonData?.cefrLevel ||
       lessonContentData?.cefrLevel ||
       (lessonData?.id ? extractCEFRLevel(lessonData.id) : "A1");
-    const cefrHint = getCEFRPromptHint(cefrLvl);
+    const cefrHint = lessonContentData?.isGoal ? focusedLessonPrompt(lessonContentData) : getCEFRPromptHint(cefrLvl);
     const goalLangCode = uiLang;
     const goalLangName = getLanguagePromptName(goalLangCode) || "English";
-    const curriculumPromptContext = buildCurriculumPromptContext(
-      lessonContentData?.curriculumContext,
-      { mode: "realtime" },
-    );
+    const curriculumPromptContext = [buildCurriculumPromptContext(lessonContentData?.curriculumContext, { mode: "realtime" }), focusedLessonPrompt(lessonContentData)].filter(Boolean).join("\n");
 
     // Check if this is an integrated practice lesson
     const isIntegratedPractice =
@@ -2332,13 +2333,10 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
       lesson?.cefrLevel ||
       lessonContent?.cefrLevel ||
       (lesson?.id ? extractCEFRLevel(lesson.id) : "A1");
-    const cefrHint = getCEFRPromptHint(cefrLvl);
+    const cefrHint = lessonContent?.isGoal ? focusedLessonPrompt(lessonContent) : getCEFRPromptHint(cefrLvl);
     const goalLangCode = uiLang;
     const goalLangName = getLanguagePromptName(goalLangCode) || "English";
-    const curriculumPromptContext = buildCurriculumPromptContext(
-      lessonContent?.curriculumContext,
-      { mode: "realtime" },
-    );
+    const curriculumPromptContext = [buildCurriculumPromptContext(lessonContent?.curriculumContext, { mode: "realtime" }), focusedLessonPrompt(lessonContent)].filter(Boolean).join("\n");
 
     // Get current goal for context
     const currentScenario =
@@ -2868,7 +2866,7 @@ Return ONLY JSON:
         "Respond ONLY in English. Do not use Spanish or Eastern Huasteca Nahuatl.";
     }
 
-    const levelHint = getCEFRPromptHint(currentCefrLevel);
+    const levelHint = lessonContentRef.current?.isGoal ? focusedLessonPrompt(lessonContentRef.current) : [getCEFRPromptHint(currentCefrLevel), focusedLessonPrompt(lessonContentRef.current)].filter(Boolean).join("\n");
     const adultBeginnerTone = getAdultBeginnerToneRule(
       currentCefrLevel,
       "conversation",

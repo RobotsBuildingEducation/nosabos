@@ -1,3 +1,6 @@
+import { LearningGoalField } from "./LearningGoalSettings";
+import { goalOnboardingCopy } from "../utils/learningGoalCopy";
+import { astraGoalsEnabled } from "../utils/learningIntelligence";
 // src/components/Onboarding.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -16,7 +19,7 @@ import {
   MenuItemOption,
   MenuOptionGroup,
 } from "@chakra-ui/react";
-import { ChevronDownIcon } from "@chakra-ui/icons";
+import { ChevronDownIcon, SettingsIcon } from "@chakra-ui/icons";
 import { submitActionSound, selectSound } from "../constants/sounds";
 import useSoundSettings, {
   DEFAULT_TUTOR_VOLUME,
@@ -43,6 +46,7 @@ import {
   nativeOverlayMotionProps,
 } from "../utils/modalMotion";
 import { normalizeTutorVoice } from "../utils/tutorRealtime";
+import { motion } from "framer-motion";
 
 const BASE_PATH = "/onboarding";
 const DEFAULT_VOICE_PAUSE_MS = 1200;
@@ -154,8 +158,8 @@ export default function Onboarding({
         initialDraft.themeMode === "dark" || initialDraft.themeMode === "light"
           ? initialDraft.themeMode
           : storedThemeMode === "dark"
-            ? "dark"
-            : "light",
+          ? "dark"
+          : "light",
     };
   }, [initialDraft, initialSupportLang, storedThemeMode]);
 
@@ -169,6 +173,23 @@ export default function Onboarding({
     themeMode,
   } = defaults;
   const [targetLang, setTargetLang] = useState(defaults.targetLang);
+  const [step, setStep] = useState(0);
+  const goalsEnabled = astraGoalsEnabled();
+  const stepCopy = goalOnboardingCopy(supportLang);
+  const stepLabels = goalsEnabled
+    ? [stepCopy.language, stepCopy.goals]
+    : [stepCopy.language];
+  const stepHeadingRef = useRef(null);
+  const stepBodyRef = useRef(null);
+  function goToStep(nextStep) {
+    playOnboardingSound(selectSound);
+    setStep(nextStep);
+    stepBodyRef.current?.scrollTo({ top: 0 });
+    requestAnimationFrame(() => stepHeadingRef.current?.focus());
+  }
+  const [learningGoals, setLearningGoals] = useState(
+    initialDraft.learningGoals || {},
+  );
   const [communityLanguageCode, setCommunityLanguageCode] = useState(null);
   const [voicePersona, setVoicePersona] = useState(defaults.voicePersona);
   const playSound = useSoundSettings((s) => s.playSound);
@@ -209,9 +230,7 @@ export default function Onboarding({
       setCommunityLanguageCode(value);
       return;
     }
-    setTargetLang(
-      normalizePracticeLanguage(value, DEFAULT_TARGET_LANGUAGE),
-    );
+    setTargetLang(normalizePracticeLanguage(value, DEFAULT_TARGET_LANGUAGE));
   };
 
   const handleSupportLanguageChange = (value) => {
@@ -263,6 +282,7 @@ export default function Onboarding({
         tutorVoice,
         tutorVoicePersona: voicePersona,
         targetLang,
+        learningGoals,
         pauseMs,
         soundEnabled,
         soundVolume,
@@ -284,23 +304,28 @@ export default function Onboarding({
   return (
     <Box
       minH="100vh"
-      bg="gray.900"
-      color="gray.100"
+      bg="var(--app-page-bg)"
+      color="var(--app-text-primary)"
       sx={{
         "@supports (height: 100dvh)": {
           minHeight: "100dvh",
         },
       }}
     >
-      <Drawer isOpen={true} placement="bottom" onClose={() => {}}>
+      <Drawer
+        isOpen={true}
+        placement="bottom"
+        onClose={() => {}}
+        initialFocusRef={stepHeadingRef}
+      >
         <DrawerOverlay
           motionProps={nativeOverlayMotionProps}
           bg="var(--app-overlay)"
         />
         <DrawerContent
           motionProps={nativeDrawerMotionProps}
-          bg="gray.900"
-          color="gray.100"
+          bg="var(--app-surface)"
+          color="var(--app-text-primary)"
           borderTopRadius="24px"
           display="flex"
           flexDirection="column"
@@ -317,20 +342,35 @@ export default function Onboarding({
             },
           }}
         >
-          <DrawerBody px={6} pt={6} pb={4} flex="1" overflowY="auto">
+          <DrawerBody
+            ref={stepBodyRef}
+            px={6}
+            pt="max(24px, env(safe-area-inset-top))"
+            pb={4}
+            flex="1"
+            overflowY="auto"
+          >
             <Box
               maxW="600px"
               mx="auto"
               w="100%"
-              minH="100%"
               display="flex"
               flexDirection="column"
             >
-              <VStack align="stretch" spacing={1}>
-                <HStack display="flex" alignItems={"center"}>
-                  <RandomCharacter notSoRandomCharacter={"24"} />
-                  <Text fontWeight="bold" fontSize="lg">
-                    {ui.onboarding_title}
+              <VStack align="stretch" spacing={1} mb={4}>
+                <HStack display="flex" alignItems="center" spacing={2.5}>
+                  <Box flexShrink={0}>
+                    <RandomCharacter notSoRandomCharacter={"24"} />
+                  </Box>
+                  <Text
+                    as="h1"
+                    ref={stepHeadingRef}
+                    tabIndex={-1}
+                    outline="none"
+                    fontWeight="bold"
+                    fontSize="2xl"
+                  >
+                    {ui.onboarding_title || "Welcome"}
                   </Text>
                 </HStack>
                 <Text opacity={0.85} fontSize="sm">
@@ -338,203 +378,363 @@ export default function Onboarding({
                 </Text>
               </VStack>
 
+              {stepLabels.length > 1 && (
+                <HStack
+                  as="ol"
+                  listStyleType="none"
+                  w="100%"
+                  spacing={3}
+                  mb={5}
+                  aria-label={ui.onboarding_title || "Onboarding steps"}
+                >
+                  {stepLabels.map((label, index) => {
+                    const isActive = step === index;
+                    const isCompleted = index < step;
+                    return (
+                      <Box
+                        as="li"
+                        key={label}
+                        flex="1"
+                        aria-current={isActive ? "step" : undefined}
+                      >
+                        <Box
+                          as="button"
+                          type="button"
+                          w="100%"
+                          textAlign="left"
+                          onClick={() => goToStep(index)}
+                          p={1}
+                          bg="transparent"
+                          border="none"
+                          boxShadow="none"
+                          cursor="pointer"
+                          outline="none"
+                          _hover={{
+                            opacity: 0.85,
+                          }}
+                          _active={{
+                            transform: "scale(0.99)",
+                          }}
+                          transition="opacity 0.2s ease"
+                        >
+                          <Box
+                            position="relative"
+                            h="7px"
+                            borderRadius="full"
+                            bg="var(--app-surface-muted)"
+                            overflow="hidden"
+                            mb={2.5}
+                          >
+                            <motion.div
+                              style={{
+                                height: "100%",
+                                borderRadius: "9999px",
+                                background:
+                                  "linear-gradient(90deg, #22d3ee 0%, #2dd4bf 40%, #5eead4 75%, #67e8f9 100%)",
+                                boxShadow: isActive
+                                  ? "0 0 10px rgba(45, 212, 191, 0.45)"
+                                  : "none",
+                              }}
+                              initial={false}
+                              animate={{
+                                width: index <= step ? "100%" : "0%",
+                                opacity: index <= step ? 1 : 0.3,
+                              }}
+                              transition={{
+                                duration: 0.38,
+                                ease: [0.22, 1, 0.36, 1],
+                              }}
+                            />
+                          </Box>
+
+                          <HStack spacing={2} align="center">
+                            <motion.div
+                              animate={{
+                                scale: isActive ? [0.85, 1.12, 1] : 1,
+                              }}
+                              transition={{
+                                duration: 0.3,
+                                ease: "easeOut",
+                              }}
+                            >
+                              <Box
+                                boxSize="20px"
+                                borderRadius="full"
+                                display="flex"
+                                alignItems="center"
+                                justifyContent="center"
+                                fontSize="xs"
+                                fontWeight="bold"
+                                bg={
+                                  isActive
+                                    ? "#2dd4bf"
+                                    : isCompleted
+                                    ? "#06b6d4"
+                                    : "var(--app-surface-muted)"
+                                }
+                                color={
+                                  isActive || isCompleted
+                                    ? "white"
+                                    : "var(--app-text-muted)"
+                                }
+                                boxShadow="none"
+                                transition="all 0.2s ease"
+                              >
+                                {isCompleted ? "✓" : index + 1}
+                              </Box>
+                            </motion.div>
+                            <Text
+                              fontSize="sm"
+                              fontWeight={isActive ? "bold" : "medium"}
+                              color={
+                                isActive
+                                  ? "var(--app-text-primary)"
+                                  : isCompleted
+                                  ? "var(--app-text-secondary)"
+                                  : "var(--app-text-muted)"
+                              }
+                              transition="color 0.2s ease"
+                            >
+                              {label}
+                            </Text>
+                          </HStack>
+                        </Box>
+                      </Box>
+                    );
+                  })}
+                </HStack>
+              )}
+
               <Box
-                flex="1"
-                minH={{ base: "240px", md: "280px" }}
                 display="flex"
                 flexDirection="column"
-                justifyContent="center"
-                mt={5}
                 mb={{ base: 4, md: 5 }}
               >
-                <VStack align="stretch" spacing={4} w="100%">
-                  {/* Support Language */}
-                  <Box
-                        bg="gray.800"
-                        p={3}
-                        rounded="md"
-                        display="flex"
-                        flexDirection="column"
-                      >
-                        <Text fontSize="sm" fontWeight="semibold" mb={1}>
-                          {ui.onboarding_support_language_title}
-                        </Text>
-                        <Text
-                          fontSize="xs"
-                          opacity={0.7}
-                          mb="12px"
+                {step === 0 ? (
+                  <VStack align="stretch" spacing={4} w="100%">
+                    {/* Support Language */}
+                    <Box
+                      bg="gray.800"
+                      p={3}
+                      rounded="md"
+                      display="flex"
+                      flexDirection="column"
+                    >
+                      <Text fontSize="sm" fontWeight="semibold" mb={1}>
+                        {ui.onboarding_support_language_title}
+                      </Text>
+                      <Text fontSize="xs" opacity={0.7} mb="12px">
+                        {ui.onboarding_support_language_desc}
+                      </Text>
+                      <Menu autoSelect={false} isLazy>
+                        <MenuButton
+                          as={Button}
+                          rightIcon={<ChevronDownIcon />}
+                          variant="outline"
+                          size="sm"
+                          borderColor="gray.700"
+                          bg="gray.800"
+                          _hover={{ bg: "gray.750" }}
+                          _active={{ bg: "gray.750" }}
+                          w="100%"
+                          textAlign="left"
+                          padding={5}
+                          onClick={() => playOnboardingSound(selectSound)}
                         >
-                          {ui.onboarding_support_language_desc}
-                        </Text>
-                        <Menu autoSelect={false} isLazy>
-                          <MenuButton
-                            as={Button}
-                            rightIcon={<ChevronDownIcon />}
-                            variant="outline"
-                            size="sm"
-                            borderColor="gray.700"
-                            bg="gray.800"
-                            _hover={{ bg: "gray.750" }}
-                            _active={{ bg: "gray.750" }}
-                            w="100%"
-                            textAlign="left"
-                            padding={5}
-                            onClick={() => playOnboardingSound(selectSound)}
+                          <HStack spacing={2}>
+                            {supportOption.flag}
+                            <Text as="span">{supportOption.label}</Text>
+                          </HStack>
+                        </MenuButton>
+                        <MenuList
+                          borderColor="gray.700"
+                          bg="gray.900"
+                          maxH="300px"
+                          overflowY="auto"
+                          sx={{
+                            "&::-webkit-scrollbar": {
+                              width: "8px",
+                            },
+                            "&::-webkit-scrollbar-track": {
+                              bg: "gray.800",
+                              borderRadius: "4px",
+                            },
+                            "&::-webkit-scrollbar-thumb": {
+                              bg: "gray.600",
+                              borderRadius: "4px",
+                            },
+                            "&::-webkit-scrollbar-thumb:hover": {
+                              bg: "gray.500",
+                            },
+                          }}
+                        >
+                          <Box
+                            px={3}
+                            pt={2}
+                            pb={1}
+                            fontSize="xs"
+                            fontWeight="semibold"
+                            color="gray.400"
                           >
-                            <HStack spacing={2}>
-                              {supportOption.flag}
-                              <Text as="span">{supportOption.label}</Text>
-                            </HStack>
-                          </MenuButton>
-                          <MenuList
-                            borderColor="gray.700"
-                            bg="gray.900"
-                            maxH="300px"
-                            overflowY="auto"
-                            sx={{
-                              "&::-webkit-scrollbar": {
-                                width: "8px",
-                              },
-                              "&::-webkit-scrollbar-track": {
-                                bg: "gray.800",
-                                borderRadius: "4px",
-                              },
-                              "&::-webkit-scrollbar-thumb": {
-                                bg: "gray.600",
-                                borderRadius: "4px",
-                              },
-                              "&::-webkit-scrollbar-thumb:hover": {
-                                bg: "gray.500",
-                              },
-                            }}
+                            {ui.onboarding_support_menu_label || "Support:"}
+                          </Box>
+                          <MenuOptionGroup
+                            type="radio"
+                            value={supportLang}
+                            onChange={handleSupportLanguageChange}
                           >
-                            <Box
-                              px={3}
-                              pt={2}
-                              pb={1}
-                              fontSize="xs"
-                              fontWeight="semibold"
-                              color="gray.400"
-                            >
-                              {ui.onboarding_support_menu_label || "Support:"}
-                            </Box>
-                            <MenuOptionGroup
-                              type="radio"
-                              value={supportLang}
-                              onChange={handleSupportLanguageChange}
-                            >
-                              {supportLanguageOptions.map((option) => (
-                                <MenuItemOption
-                                  key={option.value}
-                                  value={option.value}
-                                  padding={5}
-                                  pl={1}
-                                >
-                                  <HStack spacing={2}>
-                                    {option.flag}
-                                    <Text as="span">{option.label}</Text>
-                                  </HStack>
-                                </MenuItemOption>
-                              ))}
-                            </MenuOptionGroup>
-                          </MenuList>
-                        </Menu>
-                  </Box>
+                            {supportLanguageOptions.map((option) => (
+                              <MenuItemOption
+                                key={option.value}
+                                value={option.value}
+                                padding={5}
+                                pl={1}
+                              >
+                                <HStack spacing={2}>
+                                  {option.flag}
+                                  <Text as="span">{option.label}</Text>
+                                </HStack>
+                              </MenuItemOption>
+                            ))}
+                          </MenuOptionGroup>
+                        </MenuList>
+                      </Menu>
+                    </Box>
 
-                  {/* Practice Language */}
-                  <Box
-                        bg="gray.800"
-                        p={3}
-                        rounded="md"
-                        display="flex"
-                        flexDirection="column"
-                      >
-                        <Text fontSize="sm" fontWeight="semibold" mb={1}>
-                          {ui.onboarding_practice_language_title}
-                        </Text>
-                        <Text
-                          fontSize="xs"
-                          opacity={0.7}
-                          mb="12px"
+                    {/* Practice Language */}
+                    <Box
+                      bg="gray.800"
+                      p={3}
+                      rounded="md"
+                      display="flex"
+                      flexDirection="column"
+                    >
+                      <Text fontSize="sm" fontWeight="semibold" mb={1}>
+                        {ui.onboarding_practice_language_title}
+                      </Text>
+                      <Text fontSize="xs" opacity={0.7} mb="12px">
+                        {ui.onboarding_practice_language_desc}
+                      </Text>
+                      <Menu autoSelect={false} isLazy>
+                        <MenuButton
+                          as={Button}
+                          rightIcon={<ChevronDownIcon />}
+                          variant="outline"
+                          size="sm"
+                          borderColor="gray.700"
+                          bg="gray.800"
+                          _hover={{ bg: "gray.750" }}
+                          _active={{ bg: "gray.750" }}
+                          w="100%"
+                          textAlign="left"
+                          title={ui.onboarding_practice_label_title}
+                          padding={5}
+                          onClick={() => playOnboardingSound(selectSound)}
                         >
-                          {ui.onboarding_practice_language_desc}
-                        </Text>
-                        <Menu autoSelect={false} isLazy>
-                          <MenuButton
-                            as={Button}
-                            rightIcon={<ChevronDownIcon />}
-                            variant="outline"
-                            size="sm"
-                            borderColor="gray.700"
-                            bg="gray.800"
-                            _hover={{ bg: "gray.750" }}
-                            _active={{ bg: "gray.750" }}
-                            w="100%"
-                            textAlign="left"
-                            title={ui.onboarding_practice_label_title}
-                            padding={5}
-                            onClick={() => playOnboardingSound(selectSound)}
+                          <HStack spacing={2}>
+                            {selectedPracticeOption?.flag}
+                            <Text as="span">
+                              {selectedPracticeOption?.label}
+                            </Text>
+                          </HStack>
+                        </MenuButton>
+                        <MenuList
+                          borderColor="gray.700"
+                          bg="gray.900"
+                          maxH="300px"
+                          overflowY="auto"
+                          sx={{
+                            "&::-webkit-scrollbar": {
+                              width: "8px",
+                            },
+                            "&::-webkit-scrollbar-track": {
+                              bg: "gray.800",
+                              borderRadius: "4px",
+                            },
+                            "&::-webkit-scrollbar-thumb": {
+                              bg: "gray.600",
+                              borderRadius: "4px",
+                            },
+                            "&::-webkit-scrollbar-thumb:hover": {
+                              bg: "gray.500",
+                            },
+                          }}
+                        >
+                          <Box
+                            px={3}
+                            pt={2}
+                            pb={1}
+                            fontSize="xs"
+                            fontWeight="semibold"
+                            color="gray.400"
                           >
-                            <HStack spacing={2}>
-                              {selectedPracticeOption?.flag}
-                              <Text as="span">{selectedPracticeOption?.label}</Text>
-                            </HStack>
-                          </MenuButton>
-                          <MenuList
-                            borderColor="gray.700"
-                            bg="gray.900"
-                            maxH="300px"
-                            overflowY="auto"
-                            sx={{
-                              "&::-webkit-scrollbar": {
-                                width: "8px",
-                              },
-                              "&::-webkit-scrollbar-track": {
-                                bg: "gray.800",
-                                borderRadius: "4px",
-                              },
-                              "&::-webkit-scrollbar-thumb": {
-                                bg: "gray.600",
-                                borderRadius: "4px",
-                              },
-                              "&::-webkit-scrollbar-thumb:hover": {
-                                bg: "gray.500",
-                              },
-                            }}
+                            {ui.onboarding_practice_menu_label || "Practice:"}
+                          </Box>
+                          <MenuOptionGroup
+                            type="radio"
+                            value={targetLang}
+                            onChange={handlePracticeLanguageChange}
                           >
-                            <Box
-                              px={3}
-                              pt={2}
-                              pb={1}
-                              fontSize="xs"
-                              fontWeight="semibold"
-                              color="gray.400"
-                            >
-                              {ui.onboarding_practice_menu_label || "Practice:"}
-                            </Box>
-                            <MenuOptionGroup
-                              type="radio"
-                              value={targetLang}
-                              onChange={handlePracticeLanguageChange}
-                            >
-                              {practiceLanguageOptions.map((option) => (
-                                <MenuItemOption
-                                  key={option.value}
-                                  value={option.value}
-                                  padding={5}
-                                  pl={1}
-                                >
-                                  <div style={{ display: "inline-flex" }}>
-                                    {option?.flag}&nbsp;
-                                    {option.label}
-                                  </div>
-                                </MenuItemOption>
-                              ))}
-                            </MenuOptionGroup>
-                          </MenuList>
-                        </Menu>
+                            {practiceLanguageOptions.map((option) => (
+                              <MenuItemOption
+                                key={option.value}
+                                value={option.value}
+                                padding={5}
+                                pl={1}
+                              >
+                                <div style={{ display: "inline-flex" }}>
+                                  {option?.flag}&nbsp;
+                                  {option.label}
+                                </div>
+                              </MenuItemOption>
+                            ))}
+                          </MenuOptionGroup>
+                        </MenuList>
+                      </Menu>
+                    </Box>
+                  </VStack>
+                ) : (
+                  <Box
+                    bg="var(--app-surface-muted)"
+                    p={{ base: 4, md: 5 }}
+                    borderRadius="xl"
+                  >
+                    <LearningGoalField
+                      lang={supportLang}
+                      value={learningGoals[targetLang] || ""}
+                      onChange={(value) =>
+                        setLearningGoals((previous) => ({
+                          ...previous,
+                          [targetLang]: value,
+                        }))
+                      }
+                      minH="140px"
+                      rows={4}
+                    />
+                    <Text
+                      mt={3}
+                      fontSize="xs"
+                      lineHeight="tall"
+                      color="var(--app-text-secondary)"
+                      opacity={0.88}
+                    >
+                      {stepCopy.hint
+                        .split("{settingsIcon}")
+                        .map((part, index) => (
+                          <React.Fragment key={index}>
+                            {index > 0 && (
+                              <SettingsIcon
+                                aria-hidden="true"
+                                boxSize="0.95em"
+                                verticalAlign="-0.1em"
+                              />
+                            )}
+                            {part}
+                          </React.Fragment>
+                        ))}
+                    </Text>
                   </Box>
-                </VStack>
+                )}
               </Box>
             </Box>
           </DrawerBody>
@@ -543,23 +743,39 @@ export default function Onboarding({
           <Box
             px={6}
             pt={4}
-            pb={6}
+            pb="max(24px, env(safe-area-inset-bottom))"
             display="flex"
             justifyContent="flex-end"
             alignItems="center"
           >
-            <Box maxW="600px" mx="auto" w="100%">
+            <HStack maxW="600px" mx="auto" w="100%" spacing={3}>
+              {step > 0 && (
+                <Button
+                  size="lg"
+                  variant="outline"
+                  isDisabled={isSaving}
+                  onClick={() => goToStep(step - 1)}
+                >
+                  {ui.onboarding_back || ui.onboarding_go_back || "Back"}
+                </Button>
+              )}
               <Button
                 size="lg"
                 colorScheme="teal"
-                onClick={handleStart}
+                onClick={
+                  step < stepLabels.length - 1
+                    ? () => goToStep(step + 1)
+                    : handleStart
+                }
                 isLoading={isSaving}
                 loadingText={ui.common_saving}
-                w="100%"
+                flex="1"
               >
-                {ui.onboarding_cta_start}
+                {step < stepLabels.length - 1
+                  ? ui.onboarding_next || ui.onboarding_cta_next || "Next"
+                  : ui.onboarding_cta_start}
               </Button>
-            </Box>
+            </HStack>
           </Box>
         </DrawerContent>
       </Drawer>

@@ -1,3 +1,7 @@
+import { nextGoalPreparationXp, getGoalPreparationXp } from "./lessonProgress";
+import { practiceXpAttribution } from "./learningIntelligenceModel";
+import { currentGoalFocus } from "./learningIntelligence";
+import { currentRepairFocus } from "../hooks/useRepairFocusStore";
 // src/utils/xp.js
 import { doc, runTransaction, serverTimestamp } from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
@@ -158,12 +162,9 @@ export async function awardXp(
     sourceOrOptions && typeof sourceOrOptions === "object"
       ? sourceOrOptions
       : { source: sourceOrOptions };
-  const source =
-    typeof options.source === "string" ? options.source.trim() : "";
-  const skillTreeLessonId =
-    typeof options.skillTreeLessonId === "string"
-      ? options.skillTreeLessonId.trim()
-      : "";
+  const goalPractice = currentGoalFocus();
+  const repairPractice = currentRepairFocus();
+  const { source, skillTreeLessonId } = practiceXpAttribution(options, goalPractice, repairPractice);
   const ref = doc(database, "users", npub);
   const delta = Math.max(1, Math.round(amount));
   const now = new Date();
@@ -183,6 +184,7 @@ export async function awardXp(
   let awardedLanguageXp = null;
   let awardedActivityCount = null;
   let awardedLessonXp = null;
+  let goalPreparationXp = null;
 
   await runTransaction(database, async (tx) => {
     const [snap, monthSnap] = await Promise.all([tx.get(ref), tx.get(monthRef)]);
@@ -323,6 +325,15 @@ export async function awardXp(
       { merge: true }
     );
 
+    goalPreparationXp = nextGoalPreparationXp({
+      bucket: data.learningIntelligence?.[langKey], focus: goalPractice,
+      npub, targetLang: langKey, dayKey: todayKey,
+      lessonId: options.skillTreeLessonId, amount: delta,
+    });
+    if (goalPreparationXp !== null) {
+      tx.update(ref, { [`learningIntelligence.${langKey}.dailyGoal.preparationXp`]: goalPreparationXp });
+    }
+
     // Skill Tree activity credits the active lesson document in the same
     // transaction as the shared XP wallet. Tutor, flashcards, conversations,
     // and other unscoped awards never touch this counter.
@@ -360,6 +371,21 @@ export async function awardXp(
     skillTreeLessonId,
     lessonEarnedXp: awardedLessonXp,
   });
+
+  if (goalPreparationXp !== null) {
+    const store = useUserStore.getState();
+    const bucket = store.user?.learningIntelligence?.[awardedLangKey];
+    // A response may arrive after a goal/account switch or a newer award.
+    if (getUserNpub(store.user) === npub && bucket?.activeGoal?.id === goalPractice.blueprint.goalId &&
+        bucket.dailyGoal?.blueprint?.dayKey === goalPractice.blueprint.dayKey) {
+      store.patchUser({ learningIntelligence: {
+        ...store.user.learningIntelligence,
+        [awardedLangKey]: { ...bucket, dailyGoal: { ...bucket.dailyGoal,
+          preparationXp: Math.max(getGoalPreparationXp(bucket, goalPractice.blueprint), goalPreparationXp),
+        } },
+      } });
+    }
+  }
 
   const result = {
     amount: delta,

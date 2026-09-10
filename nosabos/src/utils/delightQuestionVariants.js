@@ -124,6 +124,8 @@ const VARIANT_RULES = {
     "answerWord is the single correct word in the target language that fills the '___' blank.",
     "answerPieces gives exactly 2 or 3 morpheme pieces in order in the target language that assemble directly into answerWord; never use a complete word as one answer piece.",
     "pieces contains all elements of answerPieces PLUS 2 or 3 plausible distractor pieces in the target language.",
+    "Choose a real inflected or derived word first, then write a natural sentence using it and replace that entire word with ___. Never insert a blank arbitrarily into a sentence that is already complete.",
+    "Joining answerPieces EXACTLY, without adding spaces, deleting letters, or spelling changes, must equal answerWord. Use literal pieces without hyphen notation, markup, special model tokens, or multiword phrases.",
     "pieces must be authentic morphemes (stems, roots, prefixes, suffixes, endings)—not complete words.",
     "ANTI-SPOILER RULE: Never include the target answerWord or solution morphemes inside learner-facing instructions, hints, or support text.",
     "instruction, hint, and explanation must be in the support language.",
@@ -793,8 +795,18 @@ export function normalizeDelightQuestion(
   }
 
   if (variant === "morphology_forge") {
-    const answerPieces = cleanTargetList(source.answerPieces, 3);
-    const pieces = cleanTargetList(source.pieces, 10);
+    // Display and grading both concatenate literally. Affix notation must not
+    // become part of the submitted word, and provider debris must not become UI.
+    const cleanPiece = (piece) => String(piece || "").trim().replace(/^[-‐‑–]+|[-‐‑–]+$/gu, "");
+    const isWord = (word) => /^[\p{L}\p{M}]+(?:['’-][\p{L}\p{M}]+)*$/u.test(word);
+    if (!Array.isArray(source.answerPieces) || source.answerPieces.length < 2 || source.answerPieces.length > 3 ||
+        !Array.isArray(source.pieces) || source.pieces.length > 10) return null;
+    const answerPieces = source.answerPieces.map(cleanPiece);
+    const pieces = source.pieces.map(cleanPiece);
+    if (![...answerPieces, ...pieces].every(isWord)) return null;
+    const assembled = answerPieces.join("").normalize("NFC");
+    const answerWord = cleanTarget(source.answerWord) || assembled;
+    if (!isWord(answerWord) || answerWord.normalize("NFC") !== assembled) return null;
     const availableCounts = new Map();
     pieces.forEach((piece) => {
       const key = normalizeDelightText(piece);
@@ -812,7 +824,7 @@ export function normalizeDelightQuestion(
     });
     const sentence = cleanTarget(source.sentence);
     if (
-      !sentence ||
+      !sentence || (sentence.match(/___/g) || []).length !== 1 || /[<>]/u.test(sentence) ||
       pieces.length < 3 ||
       answerPieces.length < 2 ||
       answerPieces.length > 3
@@ -823,8 +835,7 @@ export function normalizeDelightQuestion(
       sentence,
       pieces,
       answerPieces,
-      answerWord:
-        cleanTarget(source.answerWord) || answerPieces.join(""),
+      answerWord,
     };
   }
 
@@ -1524,6 +1535,19 @@ function buildMorphologyForgeJudgePrompt({
     "Say NO when the pieces do not form a legitimate word or the resulting sentence is ungrammatical, unnatural, or incoherent.",
     `Use ${getDelightLanguageName(supportLang)} only internally; output one word only: YES or NO.`,
   ].join("\n");
+}
+
+export async function validateMorphologyForgeQuestion(question, { judge, targetLang, supportLang, cefrLevel }) {
+  const remaining = [...question.pieces];
+  const pieceIndices = question.answerPieces.map((piece) => {
+    const index = remaining.indexOf(piece);
+    if (index >= 0) remaining[index] = null;
+    return index;
+  });
+  if (pieceIndices.some((index) => index < 0)) return false;
+  const prompt = buildMorphologyForgeJudgePrompt({ question, response: { pieceIndices }, targetLang, supportLang, cefrLevel });
+  const verdict = await judge(`${prompt}\nPREFLIGHT CHECK: This is a generated exercise, not a learner answer. Also require the offered reference pieces to be genuine morphemes of the target language and the reference word to fit naturally in this exact blank. Reject arbitrary word fragments, mixed-language affixes, markup, or a sentence that needs a different missing word. Output YES only if the exercise is solvable as displayed; otherwise NO.`);
+  return parseDelightJudgeVerdict(verdict) === true;
 }
 
 function buildListenDifferenceJudgePrompt({

@@ -1,3 +1,4 @@
+import { focusedLessonPrompt } from "../utils/learningIntelligenceModel";
 import ActivityActionRow from "./ActivityActionRow";
 import QuestionActionArea from "./QuestionActionArea";
 import FeedbackRail from "./FeedbackRail";
@@ -943,7 +944,7 @@ function SpeakingStoryMode({
             targetLang, // content target language
             supportLang, // effective support language (bilingual mirrors UI)
             includeTranslations: false,
-            lessonTopic, // Use lesson context instead of role
+            lessonTopic: [lessonTopic, focusedLessonPrompt(lessonContent)].filter(Boolean).join("\n"), // Keep exact targets in the server generation path too
           },
         }),
       });
@@ -1250,7 +1251,7 @@ function SpeakingStoryMode({
       usageStatsRef.current.storyGenerations++;
       const tLang = targetLang; // 'es' | 'en' | 'nah'
       const tName = LLM_LANG_NAME(tLang);
-      const diff = getStoryDifficulty(cefrLevel, { includeTranslations: false });
+      const diff = lessonContent?.isGoal ? focusedLessonPrompt(lessonContent) : getStoryDifficulty(cefrLevel, { includeTranslations: false });
 
       // Check for tutorial mode first
       const isTutorial = lessonContent?.topic === "tutorial";
@@ -1268,10 +1269,7 @@ function SpeakingStoryMode({
             ? `STRICT REQUIREMENT: The scenario MUST be about: ${lessonContent.scenario}. Do NOT create stories about other topics. This is lesson-specific content and you MUST NOT diverge.`
             : `STRICT REQUIREMENT: The story MUST focus on the topic: ${lessonContent.topic}. Do NOT create stories about other topics. This is lesson-specific content and you MUST NOT diverge.`
           : "Create a simple conversational story appropriate for language practice.";
-      const curriculumPromptContext = buildCurriculumPromptContext(
-        lessonContent?.curriculumContext,
-        { mode: "stories" },
-      );
+      const curriculumPromptContext = [buildCurriculumPromptContext(lessonContent?.curriculumContext, { mode: "stories" }), focusedLessonPrompt(lessonContent)].filter(Boolean).join("\n");
 
       const prompt = buildSpeakingStoryPrompt({
         targetName: tName,

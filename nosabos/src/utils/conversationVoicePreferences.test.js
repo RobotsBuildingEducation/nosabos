@@ -6,9 +6,10 @@ import {
   resolveConversationVoice,
 } from "./conversationVoicePreferences.js";
 
-test("Conversations consumes the voice selected for Tutor", () => {
-  assert.equal(resolveConversationVoice({ tutorVoice: "cedar" }), "cedar");
-  assert.equal(resolveConversationVoice({ tutorVoice: "marin" }), "marin");
+test("Conversations always uses the Shimmer voice", () => {
+  assert.equal(resolveConversationVoice({ tutorVoice: "cedar" }), "shimmer");
+  assert.equal(resolveConversationVoice({ tutorVoice: "marin" }), "shimmer");
+  assert.equal(resolveConversationVoice({}), "shimmer");
 });
 
 test("Conversations consumes the selected Tutor personality", () => {

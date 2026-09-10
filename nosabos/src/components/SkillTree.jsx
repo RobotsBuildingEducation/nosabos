@@ -1,3 +1,4 @@
+import useGoalFocusStore from "../hooks/useGoalFocusStore";
 import React, {
   Suspense,
   lazy,
@@ -2620,6 +2621,11 @@ export default function SkillTree({
   const openLessonDetail = useModalStore((s) => s.openLessonDetail);
   const closeLessonDetail = useModalStore((s) => s.closeLessonDetail);
 
+  const goalSessionKey = useGoalFocusStore((s) =>
+    s.focus
+      ? `${s.focus.npub}:${s.focus.blueprint.goalId}:${s.focus.blueprint.dayKey}:${s.focus.surface}:${s.focus.blueprint.mode}`
+      : "curriculum",
+  );
   const isModeVisible = (mode) => isKeepAliveModeVisible(pathMode, mode);
   const [visitedModes, setVisitedModes] = useState(
     () => new Set([normalizeKeepAlivePathMode(pathMode)]),
@@ -3179,7 +3185,7 @@ export default function SkillTree({
                 display={isModeVisible("flashcards") ? "block" : "none"}
                 aria-hidden={!isModeVisible("flashcards")}
               >
-                <KeepAliveFlashcardSkillTree
+                <KeepAliveFlashcardSkillTree key={goalSessionKey}
                   userProgress={userProgress}
                   onStartFlashcard={handleFlashcardComplete}
                   onRandomPractice={handleRandomPractice}
@@ -3198,7 +3204,7 @@ export default function SkillTree({
                 display={isModeVisible("conversations") ? "block" : "none"}
                 aria-hidden={!isModeVisible("conversations")}
               >
-                <KeepAliveConversations
+                <KeepAliveConversations key={goalSessionKey}
                   activeNpub={activeNpub}
                   targetLang={targetLang}
                   supportLang={supportLang}
@@ -3218,7 +3224,7 @@ export default function SkillTree({
                 display={isModeVisible("tutor") ? "block" : "none"}
                 aria-hidden={!isModeVisible("tutor")}
               >
-                <KeepAliveTutor
+                <KeepAliveTutor key={goalSessionKey}
                   activeNpub={activeNpub}
                   targetLang={targetLang}
                   supportLang={supportLang}
@@ -3237,7 +3243,7 @@ export default function SkillTree({
           <>
             {isModeVisible("path") && pathModeContent}
             {isModeVisible("flashcards") && (
-              <KeepAliveFlashcardSkillTree
+              <KeepAliveFlashcardSkillTree key={goalSessionKey}
                 userProgress={userProgress}
                 onStartFlashcard={handleFlashcardComplete}
                 onRandomPractice={handleRandomPractice}
@@ -3250,7 +3256,7 @@ export default function SkillTree({
               />
             )}
             {isModeVisible("conversations") && (
-              <KeepAliveConversations
+              <KeepAliveConversations key={goalSessionKey}
                 activeNpub={activeNpub}
                 targetLang={targetLang}
                 supportLang={supportLang}
@@ -3264,7 +3270,7 @@ export default function SkillTree({
               />
             )}
             {isModeVisible("tutor") && (
-              <KeepAliveTutor
+              <KeepAliveTutor key={goalSessionKey}
                 activeNpub={activeNpub}
                 targetLang={targetLang}
                 supportLang={supportLang}

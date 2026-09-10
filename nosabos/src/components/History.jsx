@@ -1,3 +1,4 @@
+import { focusedLessonPrompt } from "../utils/learningIntelligenceModel";
 import ActivityActionRow from "./ActivityActionRow";
 import QuestionActionArea from "./QuestionActionArea";
 import FeedbackRail from "./FeedbackRail";
@@ -486,7 +487,7 @@ function buildSeedLecturePrompt({
 }) {
   const TARGET = LANG_NAME(targetLang);
   const SUPPORT = LANG_NAME(supportLang);
-  const diff = difficultyHint(cefrLevel);
+  const diff = lessonContent?.isGoal ? focusedLessonPrompt(lessonContent) : difficultyHint(cefrLevel);
 
   // Tutorial reading is a fixed four-sentence welcome so model variance cannot
   // turn the first reading activity into a normal lecture.
@@ -502,10 +503,7 @@ function buildSeedLecturePrompt({
   const tutorialDirective = isTutorial
     ? tutorialReadingDirective(TARGET)
     : "";
-  const curriculumPromptContext = buildCurriculumPromptContext(
-    lessonContent?.curriculumContext,
-    { mode: "reading" },
-  );
+  const curriculumPromptContext = [buildCurriculumPromptContext(lessonContent?.curriculumContext, { mode: "reading" }), focusedLessonPrompt(lessonContent)].filter(Boolean).join("\n");
 
   return `
 Write ONE short educational lecture about ${topicText}. ${promptText}. Difficulty: ${
@@ -554,7 +552,7 @@ function buildLecturePrompt({
 }) {
   const TARGET = LANG_NAME(targetLang);
   const SUPPORT = LANG_NAME(supportLang);
-  const diff = difficultyHint(cefrLevel);
+  const diff = lessonContent?.isGoal ? focusedLessonPrompt(lessonContent) : difficultyHint(cefrLevel);
   const prev =
     previousTitles && previousTitles.length
       ? previousTitles.map((t) => `- ${t}`).join("\n")
@@ -573,10 +571,7 @@ function buildLecturePrompt({
   const tutorialDirective = isTutorial
     ? tutorialReadingDirective(TARGET)
     : "";
-  const curriculumPromptContext = buildCurriculumPromptContext(
-    lessonContent?.curriculumContext,
-    { mode: "reading" },
-  );
+  const curriculumPromptContext = [buildCurriculumPromptContext(lessonContent?.curriculumContext, { mode: "reading" }), focusedLessonPrompt(lessonContent)].filter(Boolean).join("\n");
 
   return `
 You are creating educational reading material for language learners focused on ${topicText}. ${promptText}${tutorialDirective}
@@ -756,7 +751,7 @@ function buildStreamingPrompt({
 }) {
   const TARGET = LANG_NAME(targetLang);
   const SUPPORT = LANG_NAME(supportLang);
-  const diff = difficultyHint(cefrLevel);
+  const diff = lessonContent?.isGoal ? focusedLessonPrompt(lessonContent) : difficultyHint(cefrLevel);
   const prev =
     previousTitles && previousTitles.length
       ? previousTitles.map((t) => `- ${t}`).join("\n")
@@ -767,10 +762,7 @@ function buildStreamingPrompt({
     lessonContent?.scenario ||
     "general cultural and linguistic concepts";
   const promptText = lessonContent?.prompt || "";
-  const curriculumPromptContext = buildCurriculumPromptContext(
-    lessonContent?.curriculumContext,
-    { mode: "reading" },
-  );
+  const curriculumPromptContext = [buildCurriculumPromptContext(lessonContent?.curriculumContext, { mode: "reading" }), focusedLessonPrompt(lessonContent)].filter(Boolean).join("\n");
 
   const isTutorial = lessonContent?.topic === "tutorial";
   if (isTutorial) {

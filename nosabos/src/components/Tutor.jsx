@@ -1,3 +1,10 @@
+import useGoalFocusStore from "../hooks/useGoalFocusStore";
+import {
+  currentGoalFocus,
+  evaluateGoalAttempt,
+  recordGoalAttempt,
+} from "../utils/learningIntelligence";
+import { goalInstructions, buildGoalLesson } from "../utils/learningIntelligenceModel";
 import ActivityActionRow from "./ActivityActionRow";
 import QuestionActionArea from "./QuestionActionArea";
 // components/Tutor.jsx
@@ -102,7 +109,7 @@ import {
   REPAIR_MAX_ITEMS,
 } from "../utils/companionMemory";
 import { REPAIR_COPY } from "../utils/companionMemoryCopy";
-import useRepairFocusStore from "../hooks/useRepairFocusStore";
+import useRepairFocusStore, { currentRepairFocus } from "../hooks/useRepairFocusStore";
 import {
   completeTutorLesson,
   getLanguageXp,
@@ -1162,7 +1169,7 @@ function getStableTutorLessonXpRequired(lesson) {
 }
 
 function getTutorLessonXpRequired(lesson) {
-  if (lesson?.isRepair) {
+  if ((lesson?.isRepair || lesson?.isGoal)) {
     return Math.max(
       0,
       Number(lesson.xpRequired) || TUTOR_REPAIR_LESSON_XP_REQUIRED,
@@ -1182,6 +1189,10 @@ function getTutorLessonXpRequired(lesson) {
 // message log keys off the step-scoped id — so the regular lesson (and its
 // transcript) resume exactly where they were once the repair ends.
 function buildTutorRepairLessonFromFocus(focus) {
+  if (focus.blueprint) return {
+    ...buildGoalLesson(focus.blueprint), xpRequired: 25,
+    content: { goal: { topic: focus.blueprint.objective, focusPoints: [...focus.blueprint.targetLanguage, ...focus.blueprint.successCriteria] } },
+  };
   const items = Array.isArray(focus?.plan?.items) ? focus.plan.items : [];
   const phrases = compactUnique(
     items
@@ -4341,7 +4352,9 @@ export default function Tutor({
   // mounted still swaps the ephemeral repair session in). The tick forces the
   // path-resume effect to re-apply the regular lesson after a repair ends —
   // none of its other deps change when the focus clears.
-  const tutorRepairFocus = useRepairFocusStore((s) => s.focus);
+  const repairFocus = useRepairFocusStore((s) => s.focus);
+  const goalFocus = useGoalFocusStore((s) => s.focus);
+  const tutorRepairFocus = currentGoalFocus("tutor") || (repairFocus && currentRepairFocus());
   const [tutorRepairRestoreTick, setTutorRepairRestoreTick] = useState(0);
   // Focus cleared (skip) while the live session was still up: restore on stop
   // instead of yanking the lesson out from under the conversation.
@@ -4721,8 +4734,8 @@ export default function Tutor({
     // repair-focus effect below selects the ephemeral repair lesson): don't
     // let path resume clobber it. The hydrating bookkeeping still runs.
     const tutorRepairOwnsSurface =
-      useRepairFocusStore.getState().focus?.surface === "tutor" ||
-      selectedTutorLessonRef.current?.isRepair;
+      Boolean(currentGoalFocus("tutor")) || currentRepairFocus()?.surface === "tutor" ||
+      (selectedTutorLessonRef.current?.isRepair || selectedTutorLessonRef.current?.isGoal);
 
     if (resumeLesson && !tutorRepairOwnsSurface) {
       const resumeKey = `${langKey}:${resumeLesson.lesson.id}`;
@@ -4808,9 +4821,9 @@ export default function Tutor({
   // lesson — untouched, exactly where it was.
   function restoreTutorLessonAfterRepair() {
     pendingTutorRepairRestoreRef.current = false;
-    if (!selectedTutorLessonRef.current?.isRepair) return;
+    if (!(selectedTutorLessonRef.current?.isRepair || selectedTutorLessonRef.current?.isGoal)) return;
     // A new step took over in the meantime — nothing to restore yet.
-    if (useRepairFocusStore.getState().focus?.surface === "tutor") return;
+    if (currentGoalFocus("tutor") || currentRepairFocus()?.surface === "tutor") return;
     tutorResumeAppliedRef.current = "";
     selectedTutorLessonRef.current = null;
     selectedTutorUnitRef.current = null;
@@ -4854,14 +4867,14 @@ export default function Tutor({
       }
       return;
     }
-    if (selectedTutorLessonRef.current?.isRepair) {
+    if ((selectedTutorLessonRef.current?.isRepair || selectedTutorLessonRef.current?.isGoal)) {
       if (aliveRef.current) {
         pendingTutorRepairRestoreRef.current = true;
       } else {
         restoreTutorLessonAfterRepair();
       }
     }
-  }, [tutorRepairFocus]);
+  }, [tutorRepairFocus, goalFocus]);
 
   // Inline coaching feedback for incomplete attempts
   const [inlineFeedback] = useState("");
@@ -5162,7 +5175,7 @@ export default function Tutor({
     const lesson = selectedTutorLessonRef.current;
     if (!currentNpub || !lesson) return;
     // Ephemeral repair sessions never enter tutor-path progress.
-    if (lesson.isRepair) return;
+    if ((lesson.isRepair || lesson.isGoal)) return;
 
     const existingStatus = tutorUserProgress.lessons?.[lesson.id]?.status;
     if (
@@ -5251,7 +5264,7 @@ export default function Tutor({
     if (
       !currentNpub ||
       !selectedTutorLessonRef.current?.id ||
-      selectedTutorLessonRef.current.isRepair ||
+      (selectedTutorLessonRef.current.isRepair || selectedTutorLessonRef.current.isGoal) ||
       tutorLessonCompletionTriggeredRef.current ||
       !normalizedMessages.length
     ) {
@@ -5291,7 +5304,7 @@ export default function Tutor({
     lessonProgress,
     { identity = "" } = {},
   ) {
-    const session = lesson?.isRepair
+    const session = (lesson?.isRepair || lesson?.isGoal)
       ? { visibleMessages: [], resumeContextMessages: [] }
       : getTutorConversationSessionState(lessonProgress, {
           sanitizeText: sanitizeTutorAssistantText,
@@ -5378,6 +5391,7 @@ export default function Tutor({
     currentNpub,
     selectedTutorLesson?.id,
     selectedTutorLesson?.isRepair,
+    selectedTutorLesson?.isGoal,
     targetLang,
     tutorUserProgress.lessons,
   ]);
@@ -6014,7 +6028,7 @@ export default function Tutor({
   function getOpenAIRegularTutorAgendaSnapshot({ requireOpenAI = false } = {}) {
     if (requireOpenAI && realtimeProviderRef.current !== "openai") return null;
     const lesson = selectedTutorLessonRef.current;
-    if (!lesson || lesson.isRepair || isTutorStarterAgendaLesson(lesson)) {
+    if (!lesson || (lesson.isRepair || lesson.isGoal) || isTutorStarterAgendaLesson(lesson)) {
       return null;
     }
 
@@ -6749,6 +6763,8 @@ export default function Tutor({
      Language instructions with proficiency level
   --------------------------- */
   function buildLanguageInstructions() {
+    const goal = currentGoalFocus("tutor");
+    if (goal) return goalInstructions(goal.blueprint, goal.supportLang);
     const persona = String((voicePersonaRef.current ?? "").slice(0, 240));
     const personaPolicy = buildVoicePersonaPolicy(persona, "tutor");
     const tLang = targetLangRef.current;
@@ -6815,7 +6831,7 @@ export default function Tutor({
     const openAIRegularAgendaLesson =
       realtimeProviderRef.current === "openai" &&
       !!selectedTutorLessonRef.current &&
-      !selectedTutorLessonRef.current.isRepair &&
+      !(selectedTutorLessonRef.current.isRepair || selectedTutorLessonRef.current.isGoal) &&
       !starterAgendaLesson;
 
     const strict = (() => {
@@ -7108,6 +7124,8 @@ export default function Tutor({
   }
 
   function buildOpenAIResponseInstructionsPrefix() {
+    const goal = currentGoalFocus("tutor");
+    if (goal) return goalInstructions(goal.blueprint, goal.supportLang);
     const tLang = targetLangRef.current || targetLang || "es";
     const supportCode = normalizeSupportLanguage(
       supportLangRef.current || resolvedSupportLang,
@@ -7181,7 +7199,7 @@ export default function Tutor({
   // Self-terminating: once judgeTutorTurnSuccessfulForXp clears the focus, the
   // next instruction build naturally omits this block.
   function buildTutorRepairAgendaInstruction({ isKickoff = false } = {}) {
-    const focus = useRepairFocusStore.getState().focus;
+    const focus = currentRepairFocus();
     if (focus?.surface !== "tutor") return "";
     if (isTutorStarterAgendaLesson(selectedTutorLessonRef.current)) return "";
     const items = (focus.plan?.items || []).slice(0, REPAIR_MAX_ITEMS);
@@ -7203,7 +7221,7 @@ export default function Tutor({
     // it IS the whole (short) session, generated fresh around the weak
     // material, so the instruction keeps the tutor on it until the app ends
     // the session.
-    if (selectedTutorLessonRef.current?.isRepair) {
+    if ((selectedTutorLessonRef.current?.isRepair || selectedTutorLessonRef.current?.isGoal)) {
       return [
         `REPAIR SESSION (this entire short session IS the repair — there is no other lesson topic): the companion saved this ${targetLanguageName} material the learner found tricky recently: ${phraseList}.`,
         `Treat this as fresh practice in ${supportLanguageName} framing — never say they got it wrong before or present it as a test. Model a phrase, ask the learner to repeat or produce it, then use it in one tiny realistic exchange.`,
@@ -7218,6 +7236,8 @@ export default function Tutor({
   }
 
   function buildTutorKickoffInstructions() {
+    const goal = currentGoalFocus("tutor");
+    if (goal) return goalInstructions(goal.blueprint, goal.supportLang);
     const tLang = targetLangRef.current || targetLang || "es";
     const lesson = selectedTutorLessonRef.current;
     const unit = selectedTutorUnitRef.current;
@@ -7309,7 +7329,7 @@ export default function Tutor({
     }
 
     if (realtimeProviderRef.current === "openai" && lesson) {
-      if (lesson.isRepair) {
+      if ((lesson.isRepair || lesson.isGoal)) {
         return buildOpenAIRepairTurnInstructions({
           isKickoff: true,
           repairDirective: buildTutorRepairAgendaInstruction({
@@ -7384,6 +7404,8 @@ export default function Tutor({
   }
 
   function buildTutorWelcomeInstructions() {
+    const goal = currentGoalFocus("tutor");
+    if (goal) return goalInstructions(goal.blueprint, goal.supportLang);
     const tLang = targetLangRef.current || targetLang || "es";
     const targetLanguageName =
       getLanguagePromptName(tLang) || "the target language";
@@ -7849,6 +7871,8 @@ export default function Tutor({
       ? TUTOR_TURN_VERDICT.ACCEPTED
       : TUTOR_TURN_VERDICT.REJECTED,
   ) {
+    const goal = currentGoalFocus("tutor");
+    if (goal) return goalInstructions(goal.blueprint, goal.supportLang);
     const lesson = selectedTutorLessonRef.current;
     const unit = selectedTutorUnitRef.current;
     const tutorPurpose = lesson?.tutorPurpose || "instruction";
@@ -7954,7 +7978,7 @@ export default function Tutor({
     }
 
     if (realtimeProviderRef.current === "openai") {
-      if (lesson?.isRepair) {
+      if ((lesson?.isRepair || lesson?.isGoal)) {
         return buildOpenAIRepairTurnInstructions({
           repairDirective: buildTutorRepairAgendaInstruction(),
           turnVerdict,
@@ -8869,13 +8893,13 @@ export default function Tutor({
     // transcript write from racing the delete in completeTutorLesson.
     cancelTutorConversationDraftSave();
 
-    if (lesson.isRepair) {
+    if ((lesson.isRepair || lesson.isGoal)) {
       // Ephemeral repair step: no tutor-path writes (completeTutorLesson,
       // next-lesson advance, stored-lesson pointer) and no "speak" plate
       // count — finishing it banks ONE Repair-course increment via
-      // completeRepairFocus and reinforces the step's note. The completion
-      // modal is shown BEFORE the focus completes so the plate's step
-      // celebration queues behind it instead of racing it.
+      // completeRepairFocus and reinforces the step's note. Goal and Repair
+      // are multi-modality bundles, so their Tutor step intentionally has no
+      // lesson-complete modal; the plate celebrates only the whole bundle.
       tutorLessonCompletionTriggeredRef.current = true;
       dispatchTutorCompletionSequenceStart();
       await stop();
@@ -8897,33 +8921,27 @@ export default function Tutor({
             "tutor_repair_final_turn_local",
           );
         });
-        setCompletedTutorLessonData({
-          title: lesson.title,
-          xpEarned: xpRequired,
-          lessonId: lesson.id,
-          unitTitle: null,
-        });
-        setCompletedTutorAgendaData(
-          buildTutorCompletedAgendaData({
+        if (lesson.isGoal) {
+          const routedGoal = currentGoalFocus("tutor");
+          if (routedGoal) {
+            await recordGoalAttempt(routedGoal, {
+              id: `tutor:${routedGoal.blueprint.goalId}:${routedGoal.blueprint.dayKey}`,
+              success: true,
+              support: "prompted",
+              domain: "production",
+              observation: `Completed ${xpRequired} XP of goal-specific Tutor practice with successful spoken turns.`,
+            });
+          }
+        } else {
+          // Prefers the live repair focus (clears it → the restore effect hands
+          // the surface back); falls back to embedded repair data after reload.
+          await completeRepairLesson({
             lesson,
-            unit,
+            npub,
             targetLang: targetLangRef.current,
-            supportLang: resolvedSupportLang,
-            starterProgress: {},
-            xpEarned: xpRequired,
-            forceComplete: true,
-          }),
-        );
-        setShowTutorLessonComplete(true);
-        // Prefers the live focus (clears it → the restore effect hands the
-        // surface back); falls back to the lesson's embedded step data when
-        // the focus is already gone.
-        await completeRepairLesson({
-          lesson,
-          npub,
-          targetLang: targetLangRef.current,
-        });
-        if (xpRequired > 0) {
+          });
+        }
+        if (!lesson.isGoal && xpRequired > 0) {
           setXp((v) => v + xpRequired);
           const repairDailyGoalUpdate = applyTutorDailyGoalXpOptimistic(
             npub,
@@ -8946,10 +8964,11 @@ export default function Tutor({
           );
           await syncTutorDailyGoalXpFromFirestore(npub);
         }
-        logEvent(analytics, "tutor_repair_completed", {
+        logEvent(analytics, lesson.isGoal ? "tutor_goal_completed" : "tutor_repair_completed", {
           lessonId: lesson.id,
           xpRequired,
         });
+        releaseTutorDailyGoalCelebration();
         return true;
       } catch (error) {
         console.error("Failed to complete Tutor repair:", error);
@@ -9160,7 +9179,7 @@ export default function Tutor({
     setTutorLessonEarnedXp(nextEarned);
     // Repair sessions are ephemeral — their in-lesson progress is never
     // persisted, so the regular lesson's saved XP stays untouched.
-    if (currentNpub && !lesson.isRepair) {
+    if (currentNpub && !(lesson.isRepair || lesson.isGoal)) {
       void saveTutorLessonEarnedXp(
         currentNpub,
         lesson.id,
@@ -9172,9 +9191,11 @@ export default function Tutor({
     }
 
     const canCompleteLesson =
-      lesson.isFinalQuiz
+      lesson.isRepair || lesson.isGoal
         ? true
-        : forceLegacyCompletion ||
+        : lesson.isFinalQuiz
+          ? true
+          : forceLegacyCompletion ||
           (isTutorStarterAgendaLesson(lesson)
             ? isTutorStarterAgendaComplete(tutorStarterAgendaProgressRef.current)
             : !isOpenAIRegularTutorAgendaIncomplete());
@@ -9400,7 +9421,7 @@ export default function Tutor({
     const currentObjectiveItem =
       getOpenAIRegularTutorAgendaSnapshot()?.currentItem || null;
     // Routed repair: items the Daily Quest wants drilled here, if any.
-    const tutorRepairFocus = useRepairFocusStore.getState().focus;
+    const tutorRepairFocus = currentRepairFocus();
     const repairFocusItems =
       tutorRepairFocus?.surface === "tutor"
         ? (tutorRepairFocus.plan?.items || [])
@@ -9499,6 +9520,18 @@ export default function Tutor({
   }
 
   async function judgeTutorTurnSuccessfulForXp(userMessage = "", opts = {}) {
+    const goal = currentGoalFocus("tutor");
+    if (goal) {
+      try {
+        const verdict = await evaluateGoalAttempt(
+          goal,
+          userMessage,
+          JSON.stringify(opts),
+          { record: false },
+        );
+        return { successful: verdict.success, confidence: 1, reason: verdict.feedback };
+      } catch { return { successful: false, confidence: 0, reason: "Goal check unavailable; retry" }; }
+    }
     if (!hasTutorMeaningfulTranscript(userMessage)) {
       return { successful: false, confidence: 0, reason: "empty transcript" };
     }
@@ -9568,9 +9601,10 @@ export default function Tutor({
       // modal + one Repair-course increment). Self-terminating either way,
       // since the next grader call won't see a focus once it's cleared.
       if (parsed.repairAdvanced === true) {
-        const tutorFocusNow = useRepairFocusStore.getState().focus;
+        if (selectedTutorLessonRef.current?.isRepair) selectedTutorLessonRef.current.repairEvidence = { success: true, support: "prompted", observation: userMessage.slice(0, 600) };
+        const tutorFocusNow = currentRepairFocus();
         if (tutorFocusNow?.surface === "tutor") {
-          if (selectedTutorLessonRef.current?.isRepair) {
+          if ((selectedTutorLessonRef.current?.isRepair || selectedTutorLessonRef.current?.isGoal)) {
             scheduleTutorRepairCompletion();
           } else {
             // Fallback: the focus rode on a regular lesson (no usable repair
@@ -10206,6 +10240,16 @@ export default function Tutor({
         }
         return;
       }
+      const routedGoal = currentGoalFocus("tutor");
+      if (routedGoal && text) {
+        void evaluateGoalAttempt(
+          routedGoal,
+          text,
+          JSON.stringify(messagesRef.current.slice(-8)),
+          { record: false },
+        )
+          .catch(error => console.warn("Goal response check failed:", error));
+      }
       if (assistantSpeakingRef.current) {
         // Late async transcription (OpenAI): the reply already started, so keep
         // the conversation flow untouched but let the attempt earn its XP.
@@ -10828,7 +10872,7 @@ export default function Tutor({
   // the live agenda ref mutates.
   const regularAgendaGateOpen = useMemo(() => {
     const lesson = selectedTutorLesson;
-    if (!lesson || lesson.isRepair || isTutorStarterAgendaLesson(lesson)) {
+    if (!lesson || (lesson.isRepair || lesson.isGoal) || isTutorStarterAgendaLesson(lesson)) {
       return true;
     }
     const items = getTutorLessonFocusAgendaItems(
@@ -10880,7 +10924,7 @@ export default function Tutor({
     if (
       !currentNpub ||
       !lesson ||
-      lesson.isRepair ||
+      (lesson.isRepair || lesson.isGoal) ||
       isTutorAgendaHydrating ||
       isTutorPathLoading ||
       isTutorProgressLoading ||

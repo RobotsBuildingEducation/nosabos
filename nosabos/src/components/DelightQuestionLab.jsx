@@ -50,7 +50,7 @@ import { awardXp } from "../utils/utils";
 import { captureCompanionMemory } from "../utils/companionMemory";
 import { extractCEFRLevel } from "../utils/cefrUtils";
 import { generateNoteContent, buildNoteObject } from "../utils/noteGeneration";
-import { buildAssistantLanguagePolicy } from "../utils/assistantLanguagePolicy";
+import { buildAssistantLanguagePolicy, buildExerciseAssistancePolicy } from "../utils/assistantLanguagePolicy";
 import {
   getDelightQuizOutcome,
   normalizeDelightQuizProgress,
@@ -103,6 +103,7 @@ import {
   isDelightResponseReady,
   isSingleDelightCueWord,
   normalizeDelightQuestion,
+  validateMorphologyForgeQuestion,
   parseDelightJudgeVerdict,
 } from "../utils/delightQuestionVariants";
 import {
@@ -124,7 +125,6 @@ import {
   getWordNeighborhoodsCopy,
 } from "../utils/wordNeighborhoodsI18n";
 import {
-  formatMorphologyForgeCopy,
   getMorphologyForgeCopy,
 } from "../utils/morphologyForgeI18n";
 import {
@@ -3420,7 +3420,6 @@ export default function DelightQuestionLab({
   }, [isFinalQuiz]);
   const [explanationText, setExplanationText] = useState("");
   const [isLoadingExplanation, setIsLoadingExplanation] = useState(false);
-  const [sessionEarnedXp, setSessionEarnedXp] = useState(0);
   const [isCreatingNote, setIsCreatingNote] = useState(false);
   const [noteCreated, setNoteCreated] = useState(false);
   const [streamingQuestion, setStreamingQuestion] = useState(null);
@@ -3432,7 +3431,7 @@ export default function DelightQuestionLab({
 
   const lessonXpGoal = lesson?.xpReward || 0;
   const normalizedLessonEarnedXp = Math.max(0, Number(lessonEarnedXp) || 0);
-  const currentEarnedXp = normalizedLessonEarnedXp + sessionEarnedXp;
+  const currentEarnedXp = normalizedLessonEarnedXp;
   const lessonProgressPct =
     lessonXpGoal > 0
       ? Math.min(100, (currentEarnedXp / lessonXpGoal) * 100)
@@ -3662,6 +3661,7 @@ export default function DelightQuestionLab({
         "You are a helpful, encouraging language study buddy.",
         `The learner is practicing ${targetName}; their support/UI language is ${supportName}.`,
         levelHint,
+        buildExerciseAssistancePolicy(),
         buildAssistantLanguagePolicy({
           supportLanguageName: supportName,
           targetLanguageName: targetName,
@@ -3693,9 +3693,7 @@ export default function DelightQuestionLab({
                     groups: (question.groups || []).map((g) => g.label).join(", "),
                   })
                 : question.variant === "morphology_forge"
-                  ? formatMorphologyForgeCopy(morphologyForgeCopy.helpRequest, {
-                      sentence: question.sentence || "",
-                    })
+                  ? "Show the exact offered pieces to select, in order, and the completed sentence. Explain the solution directly."
                   : question.variant === "three_clue_mystery"
                     ? formatThreeClueMysteryCopy(threeClueMysteryCopy.helpRequest, {
                         clues: (question.clues || []).slice(0, revealedClues || 1).join(" | "),
@@ -3804,6 +3802,10 @@ export default function DelightQuestionLab({
       }
 
       const prompt = `${instruction}\n\n${variantContext}\n\nLearner request:\n${questionContext}`;
+      const solution = question.variant === "morphology_forge"
+        ? `**${question.answerPieces.join(" + ")} → ${question.answerWord}**\n\n${question.sentence.replace("___", question.answerWord)}\n\n`
+        : "";
+      setAssistantSupportText(solution);
 
       if (simplemodel) {
         const resp = await simplemodel.generateContentStream({
@@ -3814,7 +3816,7 @@ export default function DelightQuestionLab({
           const piece = textFromChunk(chunk);
           if (piece) {
             accumulatedText += piece;
-            setAssistantSupportText(accumulatedText);
+            setAssistantSupportText(solution + accumulatedText);
           }
         }
         const finalAgg = await resp.response;
@@ -3823,7 +3825,7 @@ export default function DelightQuestionLab({
             ? finalAgg.text()
             : finalAgg?.text) || accumulatedText;
         if (finalText) {
-          setAssistantSupportText(finalText);
+          setAssistantSupportText(solution + finalText);
         }
       } else {
         const response = await callResponses({
@@ -3831,16 +3833,15 @@ export default function DelightQuestionLab({
           input: prompt,
         });
         setAssistantSupportText(
-          response ||
-            t("vocab_assistant_error") ||
-            "I couldn't load help right now. Please try again.",
+          solution + (response || t("vocab_assistant_error") || "I couldn't load help right now. Please try again."),
         );
       }
     } catch (error) {
       console.error("Failed to generate assistant support:", error);
       setAssistantSupportText(
-        t("vocab_assistant_error") ||
-          "I couldn't load help right now. Please try again.",
+        question.variant === "morphology_forge"
+          ? `**${question.answerPieces.join(" + ")} → ${question.answerWord}**\n\n${question.sentence.replace("___", question.answerWord)}`
+          : t("vocab_assistant_error") || "I couldn't load help right now. Please try again.",
       );
     } finally {
       setIsLoadingAssistantSupport(false);
@@ -3854,7 +3855,6 @@ export default function DelightQuestionLab({
     isAssistantOpen,
     isFinalQuiz,
     listenDifferenceCopy.helpRequest,
-    morphologyForgeCopy.helpRequest,
     naturalOrWeirdCopy.helpRequest,
     playSound,
     question,
@@ -3886,7 +3886,7 @@ export default function DelightQuestionLab({
       variantMeta.id,
       variantMeta.id === "sentence_detective"
         ? SENTENCE_DETECTIVE_CACHE_VERSION
-        : "v1",
+        : variantMeta.id === "morphology_forge" ? "v2" : "v1",
     ].join(":");
     const cached = cacheRef.current.get(cacheKey);
     if (cached && generationNonce === 0) {
@@ -3978,7 +3978,12 @@ export default function DelightQuestionLab({
           recentQuestions: recentQuestionSummariesRef.current,
         }),
       );
-      return requireValidQuestion(generated);
+      const candidate = requireValidQuestion(generated);
+      if (candidate.variant === "morphology_forge" && !(await validateMorphologyForgeQuestion(candidate, {
+        targetLang, supportLang, cefrLevel,
+        judge: (input) => callResponses({ model: DEFAULT_RESPONSES_MODEL, input }),
+      }))) throw new Error("The generated word pieces do not solve the sentence naturally.");
+      return candidate;
     };
 
     const generationTask = questionModel
@@ -4090,7 +4095,7 @@ export default function DelightQuestionLab({
       variantMeta.id,
       variantMeta.id === "sentence_detective"
         ? SENTENCE_DETECTIVE_CACHE_VERSION
-        : "v1",
+        : variantMeta.id === "morphology_forge" ? "v2" : "v1",
     ].join(":");
     cacheRef.current.delete(cacheKey);
     setGenerationNonce((value) => value + 1);
@@ -4287,11 +4292,13 @@ export default function DelightQuestionLab({
           isFinalQuiz,
         })
       : 0;
+    if (!isFinalQuiz && xp > 0) {
+      await awardXp(npub, xp, targetLang, { skillTreeLessonId: lesson?.id }).catch(() => {});
+    }
     setResult(Boolean(ok));
     setRecentXp(isFinalQuiz ? 0 : xp);
     if (ok) {
       setExplanationText("");
-      setSessionEarnedXp((prev) => prev + xp);
     } else {
       const mem = extractDelightMemoryItem(question, submittedResponse);
       const sig = `${question.variant || ""}|${mem.concept}|${mem.userAnswer}`;
@@ -4340,10 +4347,6 @@ export default function DelightQuestionLab({
       } else {
         setQuizHistory((history) => [...history, Boolean(ok)]);
       }
-    } else if (xp > 0) {
-      await awardXp(npub, xp, targetLang, {
-        skillTreeLessonId: lesson?.id,
-      }).catch(() => {});
     }
     setSubmitting(false);
   }, [

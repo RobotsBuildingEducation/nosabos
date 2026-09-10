@@ -43,6 +43,7 @@ import {
   PLATE_TITLE_COPY,
   plateUiCopy,
 } from "../utils/dailyPlateCopy";
+import { activeGoalFor } from "../utils/learningIntelligenceModel";
 
 const START_COPY = {
   en: "Start tasks",
@@ -108,6 +109,7 @@ export default function DailyPlateHome({
   dailyGoalXp = 0,
   languageXp = 0,
   sessionActive = false,
+  isStartingPractice = false,
   onStartPractice,
   onResetPlate,
   questKinds,
@@ -210,6 +212,10 @@ export default function DailyPlateHome({
   const repairConcept =
     repairPlan?.items?.[0]?.concept || reusableMemory[0]?.concept || "";
   const repairCount = repairPlan?.items?.length || reusableMemory.length;
+  const activeGoal = useMemo(
+    () => activeGoalFor(user, targetLang),
+    [user, targetLang],
+  );
   const taskList = useMemo(
     () =>
       courses
@@ -222,7 +228,9 @@ export default function DailyPlateHome({
     [courses, appLanguage],
   );
   const leadKind = !pastFirst
-    ? "welcome"
+    ? activeGoal
+      ? "welcomeGoal"
+      : "welcome"
     : repairConcept
       ? repairCount > 1
         ? "repairMulti"
@@ -234,10 +242,19 @@ export default function DailyPlateHome({
         lang: appLanguage,
         leadKind,
         concept: repairConcept,
+        goal: activeGoal?.text || "",
         taskList,
         cleared: isCleared && pastFirst && Boolean(repairConcept),
       }),
-    [appLanguage, leadKind, repairConcept, taskList, isCleared, pastFirst],
+    [
+      appLanguage,
+      leadKind,
+      repairConcept,
+      activeGoal?.text,
+      taskList,
+      isCleared,
+      pastFirst,
+    ],
   );
   // On returning days, prefer the AI-composed message from the batch blueprint
   // (it's written from the day's whole note feed); fall back to the
@@ -311,11 +328,16 @@ export default function DailyPlateHome({
     }
   }, [appLanguage, now]);
 
-  const ctaLabel = sessionActive
+  const hasStartedTask =
+    sessionActive || courses.some((course) => course.count > 0);
+  const ctaLabel = hasStartedTask
     ? plateUiCopy(appLanguage, CONTINUE_COPY)
     : plateUiCopy(appLanguage, START_COPY);
 
+  const launchLabelRef = useRef("");
+
   const handleStart = () => {
+    launchLabelRef.current = ctaLabel;
     playSound(selectSound);
     onStartPractice?.();
   };
@@ -555,6 +577,8 @@ export default function DailyPlateHome({
             variant="solid"
             leftIcon={<FiPlay />}
             isDisabled={tasksLocked}
+            isLoading={isStartingPractice}
+            loadingText={launchLabelRef.current || ctaLabel}
           >
             {ctaLabel}
           </Button>
@@ -579,7 +603,9 @@ export default function DailyPlateHome({
               ? {
                   text: bubbleText,
                   onDismiss: dismissBubble,
-                  fontSize: leadKind === "welcome" ? "sm" : undefined,
+                  fontSize: ["welcome", "welcomeGoal"].includes(leadKind)
+                    ? "sm"
+                    : undefined,
                 }
               : null
           }

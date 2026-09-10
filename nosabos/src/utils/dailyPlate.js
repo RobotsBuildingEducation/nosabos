@@ -18,6 +18,13 @@ import {
 import { database } from "../firebaseResources/firebaseResources";
 import useUserStore from "../hooks/useUserStore";
 import {
+  activeGoalFor,
+  composeQuestKinds,
+  goalModesFor,
+  goalModeTarget,
+} from "./learningIntelligenceModel";
+import { astraGoalsEnabled } from "./learningIntelligence";
+import {
   DAILY_QUEST_FLASHCARD_TARGET_DEFAULT,
   getDailyQuestFlashcardTarget,
 } from "./dailyQuestTargets";
@@ -29,7 +36,10 @@ import {
   writeAccountScopedJson,
 } from "./dailyQuestState";
 
-export { shouldUseFixedFirstQuest } from "./dailyQuestState";
+export {
+  buildPlateCelebrationKey,
+  shouldUseFixedFirstQuest,
+} from "./dailyQuestState";
 
 export const DAILY_PLATE_KINDS = ["review", "learn", "speak"];
 
@@ -45,6 +55,7 @@ export const DAILY_PLATE_TARGETS = {
   speak: 1, // Tutor lessons completed
   conversation: 4, // fallback only — overridden per-day to 4-7 user turns
   phonics: 3, // Alphabet/phonics cards successfully cleared
+  goal: 1,
   repair: 1, // fallback only — overridden per-day by the repair plan's item count
 };
 
@@ -71,7 +82,7 @@ export const QUEST_CANONICAL_ORDER = [
   // before forward progress. It is never auto-elected; the app prepends it for
   // the day when the companion brain has a repair plan.
   "repair",
-  "speak",
+  "goal",  "speak",
   "learn",
   "review",
   "conversation",
@@ -87,6 +98,7 @@ export const DAILY_PLATE_ACTIVITY_FIELDS = {
   conversation: "conversationDailyActivity",
   phonics: "phonicsDailyActivity",
   repair: "repairDailyActivity",
+  goal: "goalDailyActivity",
 };
 
 // Every per-day activity field touched by the plate, used when resetting a
@@ -98,6 +110,7 @@ export const DAILY_PLATE_ALL_ACTIVITY_FIELDS = [
   "conversationDailyActivity",
   "phonicsDailyActivity",
   "repairDailyActivity",
+  "goalDailyActivity",
 ];
 
 // awardXp() accepts these as its optional `source` argument. "review" is
@@ -140,10 +153,17 @@ export function getDailyPlateSnapshot(
   const dayKey = getDailyPlateDayKey(now);
   const progress = user?.progress || {};
 
-  const activeKinds =
-    Array.isArray(kinds) && kinds.length ? kinds : DAILY_PLATE_COURSE_ORDER;
+  const requestedKinds = Array.isArray(kinds) && kinds.length ? kinds : DAILY_PLATE_COURSE_ORDER;
+  const activeKinds = composeQuestKinds(requestedKinds, [], requestedKinds.includes("repair"), astraGoalsEnabled() && Boolean(activeGoalFor(user, langKey)));
 
   const courses = activeKinds.map((kind) => {
+    const goalDaily = user?.learningIntelligence?.[langKey]?.dailyGoal;
+    const goalModes =
+      kind === "goal" &&
+      goalDaily?.blueprint?.dayKey === dayKey &&
+      goalDaily?.blueprint?.goalId === activeGoalFor(user, langKey)?.id
+        ? goalModesFor(goalDaily.blueprint)
+        : [];
     const target =
       kind === "conversation"
         ? getConversationTurnTarget(dayKey, langKey)
@@ -161,13 +181,21 @@ export function getDailyPlateSnapshot(
                 1,
                 Number(user?.dailyQuestRepair?.[langKey]?.[dayKey]?.target) || 1,
               )
-            : DAILY_PLATE_TARGETS[kind] || 1;
-    const count = readDayCount(
-      progress,
-      DAILY_PLATE_ACTIVITY_FIELDS[kind],
-      langKey,
-      dayKey,
-    );
+            : kind === "goal" && goalModes.length
+              ? goalModes.length
+              : DAILY_PLATE_TARGETS[kind] || 1;
+    const count =
+      kind === "goal" && goalModes.length
+        ? goalModes.filter(
+            (mode) =>
+              Number(goalDaily?.modeProgress?.[mode]) >= goalModeTarget(mode),
+          ).length
+        : readDayCount(
+            progress,
+            DAILY_PLATE_ACTIVITY_FIELDS[kind],
+            langKey,
+            dayKey,
+          );
     return {
       kind,
       count: Math.min(count, 999),
@@ -311,7 +339,7 @@ export function electDailyQuestCourses({
   seed = null,
   weights = null,
 } = {}) {
-  const pool = available.filter(Boolean);
+  const pool = available.filter(kind => kind && kind !== "goal" && kind !== "repair");
   const rng = seed != null ? makeSeededRandom(String(seed)) : Math.random;
   const size = typeof count === "number" ? count : pickQuestCount(rng);
   const clamped = Math.max(1, Math.min(size, pool.length));
