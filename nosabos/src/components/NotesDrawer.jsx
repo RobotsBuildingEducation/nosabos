@@ -26,8 +26,11 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react";
+import { RemoveScroll } from "react-remove-scroll";
 import { RiDeleteBinLine, RiVolumeUpLine, RiStopLine } from "react-icons/ri";
 import useNotesStore from "../hooks/useNotesStore";
+import useSoundSettings from "../hooks/useSoundSettings";
+import { selectSound } from "../constants/sounds";
 import { getPreferredTTSVoice, getTTSPlayer, TTS_LANG_TAG } from "../utils/tts";
 import BottomDrawerDragHandle from "./BottomDrawerDragHandle";
 import useBottomDrawerSwipeDismiss from "../hooks/useBottomDrawerSwipeDismiss";
@@ -40,10 +43,13 @@ import {
 } from "../constants/languages";
 import { nativeAnchoredDrawerMotionProps } from "../utils/modalMotion";
 import CompanionMemoryList from "./CompanionMemoryList";
+import MemoryGoals from "./MemoryGoals";
+import VoiceJourney from "./VoiceJourney";
+import useUserStore from "../hooks/useUserStore";
+import { journeyCopy } from "../utils/voiceJourneyCopy";
 import {
   MEMORY_DRAWER_COPY,
   memoryCopy,
-  repairCopy,
 } from "../utils/companionMemoryCopy";
 
 const APP_SURFACE = "var(--app-surface)";
@@ -143,7 +149,7 @@ const MEMORY_TAB_STYLE = {
     position: "absolute",
     left: 0,
     right: 0,
-    bottom: "-1px",
+    bottom: 0,
     height: "3px",
     borderRadius: "full",
     bgGradient: "linear(to-r, cyan.300, teal.400)",
@@ -163,16 +169,23 @@ export default function NotesDrawer({
   onClose,
   appLanguage = "en",
   targetLang = "es",
+  initialTab = "repairs",
+  npub,
+  journeyResource,
 }) {
   const { notes, removeNote, clearNotesForLanguage } = useNotesStore();
+  const playSound = useSoundSettings((s) => s.playSound);
   const [playingNoteId, setPlayingNoteId] = useState(null);
   const [loadingTts, setLoadingTts] = useState(null);
-  // 0 = Repair (companion memory), 1 = Saved notes. Repair is the landing
-  // view every time the drawer opens.
-  const [tabIndex, setTabIndex] = useState(0);
+  const user = useUserStore(state => state.user);
+  const goalBucket = user?.learningIntelligence?.[targetLang];
+  const hasGoal = Boolean(goalBucket?.activeGoal?.id && goalBucket.activeGoal.text);
+  const tabKeys = hasGoal ? ["repairs", "goals", "notes", "journey"] : ["repairs", "notes", "journey"];
+  const [activeTab, setActiveTab] = useState(initialTab);
+  const tabIndex = Math.max(0, tabKeys.indexOf(activeTab));
   useEffect(() => {
-    if (isOpen) setTabIndex(0);
-  }, [isOpen]);
+    if (isOpen) setActiveTab(initialTab);
+  }, [isOpen, initialTab, targetLang]);
   const audioRef = useRef(null);
   const pcRef = useRef(null);
   const swipeDismiss = useBottomDrawerSwipeDismiss({ isOpen, onClose });
@@ -190,8 +203,6 @@ export default function NotesDrawer({
   // The notes drawer is now the companion's "Memory". Manual saved notes live
   // on as a secondary section below the companion-brain list.
   const drawerTitle = memoryCopy(lang, MEMORY_DRAWER_COPY.title);
-  const savedNotesHeading = memoryCopy(lang, MEMORY_DRAWER_COPY.savedNotesHeading);
-  const repairTabLabel = repairCopy(lang, "courseLabel");
   const clearAllLabel =
     lang === "ja"
       ? "すべて削除"
@@ -516,6 +527,7 @@ export default function NotesDrawer({
         <AccordionButton
           py={3}
           px={4}
+          onClick={() => playSound(selectSound)}
           _hover={{ bg: noteUi.noteBgHover }}
           _expanded={{ bg: noteUi.noteBgHover }}
         >
@@ -608,7 +620,10 @@ export default function NotesDrawer({
                 size="sm"
                 variant="ghost"
                 colorScheme="red"
-                onClick={() => removeNote(note.id)}
+                onClick={() => {
+                  playSound(selectSound);
+                  removeNote(note.id);
+                }}
               />
             </Flex>
           </VStack>
@@ -618,14 +633,18 @@ export default function NotesDrawer({
   };
 
   return (
-    <Drawer isOpen={isOpen} placement="bottom" onClose={onClose}>
+    <Drawer isOpen={isOpen} placement="bottom" onClose={onClose} blockScrollOnMount={false}>
       {/* <DrawerOverlay
         {...swipeDismiss.overlayProps}
         motionProps={nativeOverlayMotionProps}
         bg={noteUi.overlay}
         backdropFilter={isLightTheme ? "blur(4px)" : undefined}
       /> */}
-      <DrawerContent
+      {/* Chakra only locks the first modal. Let Memory own the active scroll
+          boundary even when it opens above the separate Journey modal. */}
+      <RemoveScroll
+        as={DrawerContent}
+        removeScrollBar={false}
         {...swipeDismiss.drawerContentProps}
         motionProps={nativeAnchoredDrawerMotionProps}
         display="flex"
@@ -634,6 +653,7 @@ export default function NotesDrawer({
         color={noteUi.drawerText}
         borderTopRadius="24px"
         h="90vh"
+        maxH="90vh"
         borderTop={
           noteUi.drawerBorder ? `1px solid ${noteUi.drawerBorder}` : undefined
         }
@@ -641,6 +661,7 @@ export default function NotesDrawer({
         sx={{
           "@supports (height: 100dvh)": {
             height: "90dvh",
+            maxHeight: "90dvh",
           },
         }}
       >
@@ -650,7 +671,10 @@ export default function NotesDrawer({
           _hover={{ bg: noteUi.closeHoverBg }}
           top={4}
           right={6}
-          onClick={onClose}
+          onClick={() => {
+            playSound(selectSound);
+            onClose();
+          }}
         />
         <DrawerHeader
           borderBottomWidth="1px"
@@ -662,7 +686,7 @@ export default function NotesDrawer({
               <Text color={noteUi.primaryText} fontWeight="semibold">
                 {drawerTitle}
               </Text>
-              {tabIndex === 1 && filteredNotes.length > 0 && (
+              {activeTab === "notes" && filteredNotes.length > 0 && (
                 <Button
                   size="xs"
                   variant="ghost"
@@ -672,7 +696,10 @@ export default function NotesDrawer({
                       ? { bg: noteUi.closeHoverBg, color: "#92400e" }
                       : undefined
                   }
-                  onClick={() => clearNotesForLanguage(targetLang)}
+                  onClick={() => {
+                    playSound(selectSound);
+                    clearNotesForLanguage(targetLang);
+                  }}
                 >
                   {clearAllLabel}
                 </Button>
@@ -681,24 +708,99 @@ export default function NotesDrawer({
           </Box>
         </DrawerHeader>
 
-        <DrawerBody overflowY="auto" flex="1" py={4}>
-          <Box maxW="720px" mx="auto" w="100%">
-            <Tabs
-              index={tabIndex}
-              onChange={setTabIndex}
-              variant="unstyled"
-              isLazy
-              lazyBehavior="keepMounted"
-            >
-              <TabList mb={4} gap={6} justifyContent="center">
-                <Tab {...MEMORY_TAB_STYLE}>{repairTabLabel}</Tab>
-                <Tab {...MEMORY_TAB_STYLE}>{savedNotesHeading}</Tab>
+        <DrawerBody
+          display="flex"
+          flexDirection="column"
+          flex={1}
+          minH={0}
+          p={0}
+        >
+          <Tabs
+            index={tabIndex}
+            onChange={index => {
+              playSound(selectSound);
+              stopAudio();
+              setActiveTab(tabKeys[index]);
+            }}
+            variant="unstyled"
+            display="flex"
+            flexDirection="column"
+            flex={1}
+            minH={0}
+            isLazy
+            lazyBehavior="keepMounted"
+          >
+            <Box maxW="720px" mx="auto" w="100%" px={{ base: 4, md: 6 }} pt={3} pb={2} flexShrink={0}>
+              <TabList
+                gap={{ base: 4, md: 6 }}
+                justifyContent={{ base: "space-between", md: "center" }}
+                overflowX="auto"
+                overflowY="hidden"
+                className="notes-drawer-tabs"
+              >
+                {tabKeys.map(key => <Tab key={key} {...MEMORY_TAB_STYLE} flexShrink={0} fontSize={{ base: "sm", md: "md" }}>{journeyCopy(lang, key)}</Tab>)}
               </TabList>
-              <TabPanels>
-                <TabPanel px={0} pt={0} pb={0}>
+            </Box>
+
+            <TabPanels flex={1} minH={0} display="flex" flexDirection="column">
+              <TabPanel
+                px={{ base: 4, md: 6 }}
+                pt={2}
+                pb={8}
+                display="flex"
+                flexDirection="column"
+                flex={1}
+                minH={0}
+                overflowY="auto"
+                className="notes-drawer-body"
+                sx={{
+                  WebkitOverflowScrolling: "touch",
+                  overscrollBehavior: "contain",
+                }}
+              >
+                <Box maxW="720px" mx="auto" w="100%">
                   <CompanionMemoryList targetLang={targetLang} lang={lang} />
+                </Box>
+              </TabPanel>
+
+              {hasGoal && (
+                <TabPanel
+                  px={{ base: 4, md: 6 }}
+                  pt={2}
+                  pb={8}
+                  display="flex"
+                  flexDirection="column"
+                  flex={1}
+                  minH={0}
+                  overflowY="auto"
+                  className="notes-drawer-body"
+                  sx={{
+                    WebkitOverflowScrolling: "touch",
+                    overscrollBehavior: "contain",
+                  }}
+                >
+                  <Box maxW="720px" mx="auto" w="100%">
+                    <MemoryGoals bucket={goalBucket} lang={lang} />
+                  </Box>
                 </TabPanel>
-                <TabPanel px={0} pt={0} pb={0}>
+              )}
+
+              <TabPanel
+                px={{ base: 4, md: 6 }}
+                pt={2}
+                pb={8}
+                display="flex"
+                flexDirection="column"
+                flex={1}
+                minH={0}
+                overflowY="auto"
+                className="notes-drawer-body"
+                sx={{
+                  WebkitOverflowScrolling: "touch",
+                  overscrollBehavior: "contain",
+                }}
+              >
+                <Box maxW="720px" mx="auto" w="100%">
                   {filteredNotes.length > 0 ? (
                     <Accordion allowToggle>
                       {CEFR_LEVELS.map((level) => {
@@ -717,6 +819,11 @@ export default function NotesDrawer({
                                 <AccordionButton
                                   py={3}
                                   px={4}
+                                  onClick={() => {
+                                    if (hasNotes) {
+                                      playSound(selectSound);
+                                    }
+                                  }}
                                   bg={
                                     hasNotes
                                       ? noteUi.sectionBg
@@ -804,12 +911,40 @@ export default function NotesDrawer({
                       </Text>
                     </Box>
                   )}
-                </TabPanel>
-              </TabPanels>
-            </Tabs>
-          </Box>
+                </Box>
+              </TabPanel>
+
+              <TabPanel
+                px={{ base: 4, md: 6 }}
+                pt={2}
+                pb={12}
+                display="flex"
+                flexDirection="column"
+                flex={1}
+                minH={0}
+                overflowY="auto"
+                className="notes-drawer-body"
+                sx={{
+                  WebkitOverflowScrolling: "touch",
+                  overscrollBehavior: "contain",
+                }}
+              >
+                <Box maxW="720px" mx="auto" w="100%">
+                  {isOpen && activeTab === "journey" && journeyResource && (
+                    <VoiceJourney
+                      key={`${npub}:${targetLang}`}
+                      npub={npub}
+                      targetLang={targetLang}
+                      lang={lang}
+                      resource={journeyResource}
+                    />
+                  )}
+                </Box>
+              </TabPanel>
+            </TabPanels>
+          </Tabs>
         </DrawerBody>
-      </DrawerContent>
+      </RemoveScroll>
     </Drawer>
   );
 }

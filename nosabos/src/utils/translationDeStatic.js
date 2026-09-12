@@ -863,6 +863,11 @@ export const TRANSLATION_DE_STATIC = {
   teams_feed_allow_label: "Automatische Beiträge",
   teams_feed_allow_enabled: "Aktiviert",
   teams_feed_allow_disabled: "Deaktiviert",
+  allow_posts_info_title: "Dezentrale Identität",
+  allow_posts_info_desc:
+    "Hier nutzen wir eine dezentrale Identität, sodass dein Lernfortschritt in deinem Profil-Feed geteilt wird.",
+  allow_posts_info_view_ditto: "Ditto-Profil ansehen",
+  allow_posts_info_aria: "Mehr über Beiträge und dezentrale Identität erfahren",
   teams_create_heading: "Team erstellen",
   teams_create_name_label: "Teamname",
   teams_create_name_placeholder: "z. B. Wochenend-Lerngruppe",

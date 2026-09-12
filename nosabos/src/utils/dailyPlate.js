@@ -24,6 +24,7 @@ import {
   goalModeTarget,
 } from "./learningIntelligenceModel";
 import { astraGoalsEnabled } from "./learningIntelligence";
+import { prepareJourneyCompletion } from "./voiceJourney";
 import {
   DAILY_QUEST_FLASHCARD_TARGET_DEFAULT,
   getDailyQuestFlashcardTarget,
@@ -719,22 +720,27 @@ export function applyPlateBonusMarker(
  * award the bonus XP. The marker is written before the XP so a race can never
  * double-pay.
  */
-export async function claimDailyPlateBonus(npub, targetLang, now = new Date()) {
+export async function claimDailyPlateBonus(npub, targetLang, now = new Date(), kinds = DAILY_PLATE_COURSE_ORDER, completedDayKey = getDailyPlateDayKey(now)) {
   if (!npub) return false;
   const langKey = normalizePlateLang(targetLang);
-  const dayKey = getDailyPlateDayKey(now);
+  const dayKey = completedDayKey;
   if (!dayKey) return false;
 
   const ref = doc(database, "users", npub);
   let claimed = false;
 
   await runTransaction(database, async (tx) => {
+    claimed = false;
     const snap = await tx.get(ref);
     const data = snap.exists() ? snap.data() : {};
     if (data?.progress?.[PLATE_BONUS_FIELD]?.[langKey]?.[dayKey]) {
       claimed = false;
       return;
     }
+    // Validate against the committed activities. A stale UI snapshot must
+    // never mint a Journey session (or bonus) for an incomplete quest.
+    if (!getDailyPlateSnapshot(data, langKey, new Date(`${dayKey}T12:00:00`), kinds).isCleared) return;
+    const commitJourney = await prepareJourneyCompletion(tx, npub, langKey, dayKey, now.toISOString());
     tx.update(ref, {
       [`progress.${PLATE_BONUS_FIELD}.${langKey}`]: {
         ...pruneDayEntries(
@@ -745,6 +751,7 @@ export async function claimDailyPlateBonus(npub, targetLang, now = new Date()) {
       },
       updatedAt: now.toISOString(),
     });
+    commitJourney();
     claimed = true;
   });
 

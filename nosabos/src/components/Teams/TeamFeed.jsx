@@ -96,7 +96,7 @@ const sanitizeProfiles = (profiles = []) => {
 
 export default function TeamFeed({
   t = {},
-  allowPosts = true,
+  allowPosts = false,
   onAllowPostsChange,
 }) {
   const toast = useToast();

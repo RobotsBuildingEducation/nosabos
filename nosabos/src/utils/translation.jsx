@@ -839,6 +839,11 @@ export const translations = {
     teams_feed_allow_label: "Allow posts",
     teams_feed_allow_enabled: "Automatic community posts enabled.",
     teams_feed_allow_disabled: "Automatic community posts disabled.",
+    allow_posts_info_title: "Decentralized Identity",
+    allow_posts_info_desc:
+      "We use decentralized identity here, so your progress is posted in your profile feed.",
+    allow_posts_info_view_ditto: "View Ditto profile",
+    allow_posts_info_aria: "Learn more about posts and decentralized identity",
     sound_effects_label: "Sound effects",
     sound_effects_enabled: "Sound effects are enabled.",
     sound_effects_disabled: "Sound effects are muted.",
@@ -1766,6 +1771,12 @@ export const translations = {
     teams_feed_allow_enabled: "Las publicaciones automáticas están activadas.",
     teams_feed_allow_disabled:
       "Las publicaciones automáticas están desactivadas.",
+    allow_posts_info_title: "Identidad descentralizada",
+    allow_posts_info_desc:
+      "Aquí usamos identidad descentralizada, por lo que tu progreso se publica en el feed de tu perfil.",
+    allow_posts_info_view_ditto: "Ver perfil en Ditto",
+    allow_posts_info_aria:
+      "Más información sobre publicaciones e identidad descentralizada",
     sound_effects_label: "Efectos de sonido",
     sound_effects_enabled: "Los efectos de sonido están activados.",
     sound_effects_disabled: "Los efectos de sonido están silenciados.",
@@ -2660,6 +2671,12 @@ translations.it = {
   teams_feed_allow_label: "Consenti post automatici",
   teams_feed_allow_enabled: "I post automatici sono attivi.",
   teams_feed_allow_disabled: "I post automatici sono disattivati.",
+  allow_posts_info_title: "Identità decentralizzata",
+  allow_posts_info_desc:
+    "Qui utilizziamo un'identità decentralizzata, quindi i tuoi progressi vengono pubblicati nel feed del tuo profilo.",
+  allow_posts_info_view_ditto: "Vedi profilo su Ditto",
+  allow_posts_info_aria:
+    "Maggiori informazioni sui post e sull'identità decentralizzata",
   sound_effects_label: "Effetti sonori",
   sound_effects_enabled: "Gli effetti sonori sono attivi.",
   sound_effects_disabled: "Gli effetti sonori sono silenziati.",
@@ -3551,6 +3568,12 @@ translations.fr = {
   teams_feed_allow_label: "Autoriser les publications automatiques",
   teams_feed_allow_enabled: "Les publications automatiques sont activees.",
   teams_feed_allow_disabled: "Les publications automatiques sont desactivees.",
+  allow_posts_info_title: "Identité décentralisée",
+  allow_posts_info_desc:
+    "Nous utilisons ici une identité décentralisée : votre progression est donc publiée sur le flux de votre profil.",
+  allow_posts_info_view_ditto: "Voir le profil Ditto",
+  allow_posts_info_aria:
+    "En savoir plus sur les publications et l'identité décentralisée",
   sound_effects_label: "Effets sonores",
   sound_effects_enabled: "Les effets sonores sont actifs.",
   sound_effects_disabled: "Les effets sonores sont coupes.",
@@ -4524,6 +4547,11 @@ translations.ja = {
   teams_feed_allow_label: "投稿を許可",
   teams_feed_allow_enabled: "自動コミュニティ投稿が有効です。",
   teams_feed_allow_disabled: "自動コミュニティ投稿は無効です。",
+  allow_posts_info_title: "分散型アイデンティティ",
+  allow_posts_info_desc:
+    "ここでは分散型アイデンティティを使用しているため、学習の進捗がプロフィールのフィードに投稿されます。",
+  allow_posts_info_view_ditto: "Dittoプロフィールを見る",
+  allow_posts_info_aria: "投稿と分散型アイデンティティについての詳細",
   sound_effects_label: "効果音",
   sound_effects_enabled: "効果音はオンです。",
   sound_effects_disabled: "効果音はミュートです。",

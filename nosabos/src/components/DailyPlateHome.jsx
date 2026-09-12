@@ -123,6 +123,7 @@ export default function DailyPlateHome({
   petType = "ghost",
   companionLevel = 1,
   onCustomizePet,
+  journeyTestControl,
 }) {
   const playSound = useSoundSettings((s) => s.playSound);
   const isLightTheme = useThemeStore((s) => s.themeMode) === "light";
@@ -378,6 +379,7 @@ export default function DailyPlateHome({
       zIndex={1}
     >
       <VStack w="100%" maxW="560px" spacing={3} align="stretch">
+        {journeyTestControl && <HStack justify="flex-end">{journeyTestControl}</HStack>}
         {/* Header */}
         <Box textAlign="center">
           <Text

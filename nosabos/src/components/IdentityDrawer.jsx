@@ -969,14 +969,23 @@ export function IdentityPanel({
         <AlertDialogOverlay motionProps={nativeOverlayMotionProps}>
           <AlertDialogContent
             motionProps={nativeModalMotionProps}
-            bg="gray.800"
-            borderColor="whiteAlpha.200"
+            bg={isLightTheme ? panelTheme.surfaceStrong : "gray.800"}
+            color={panelTheme.textPrimary}
+            borderColor={isLightTheme ? panelTheme.border : "whiteAlpha.200"}
             border="1px solid"
+            sx={{
+              "& .chakra-modal__header": {
+                paddingBottom: "8px !important",
+              },
+              "& .chakra-modal__body, & .chakra-modal__body:first-of-type": {
+                paddingTop: "0 !important",
+              },
+            }}
           >
-            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+            <AlertDialogHeader fontSize="lg" fontWeight="bold" pb={2}>
               {t?.app_sign_out_confirm_title || "Sign out?"}
             </AlertDialogHeader>
-            <AlertDialogBody>
+            <AlertDialogBody pt={0}>
               {t?.app_sign_out_confirm_body ||
                 "Are you sure you want to sign out? Make sure you have your secret key saved before signing out."}
             </AlertDialogBody>

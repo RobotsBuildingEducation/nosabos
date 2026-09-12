@@ -48,6 +48,7 @@ import {
   TabPanel,
   InputGroup,
   InputRightElement,
+  Link,
   Modal,
   ModalOverlay,
   ModalContent,
@@ -84,6 +85,8 @@ import {
   CheckCircleIcon,
   ArrowBackIcon,
   CloseIcon,
+  InfoOutlineIcon,
+  ExternalLinkIcon,
 } from "@chakra-ui/icons";
 import { CiUser, CiEdit } from "react-icons/ci";
 import { MdOutlineSupportAgent, MdShowChart } from "react-icons/md";
@@ -178,6 +181,9 @@ import { LuKey } from "react-icons/lu";
 import AlphabetBootcamp from "./components/AlphabetBootcamp";
 
 import NotesDrawer from "./components/NotesDrawer";
+import JourneyMilestoneGate from "./components/JourneyMilestoneGate";
+import JourneyTestButton from "./components/JourneyTestButton";
+import useVoiceJourney from "./hooks/useVoiceJourney";
 import RealWorldTasksModal, {
   REAL_WORLD_TASKS_REFRESH_MS,
 } from "./components/RealWorldTasksModal";
@@ -1366,6 +1372,12 @@ function TopBar({
     isOpen: settingsOpen,
     onClose: closeSettings,
   });
+
+  const [isPostsInfoOpen, setIsPostsInfoOpen] = useState(false);
+  const resolvedUserNpub = (activeNpub || user?.npub || "").trim();
+  const dittoProfileUrl = resolvedUserNpub
+    ? `https://ditto.pub/${resolvedUserNpub}`
+    : "https://ditto.pub";
 
   // ---- Local draft state (no autosave) ----
   const p = user?.progress || {};
@@ -2753,10 +2765,30 @@ function TopBar({
                         </Box>
 
                         <Box bg="gray.800" p={3} rounded="md">
-                          <HStack justifyContent="space-between">
-                            <Text fontSize="sm">
-                              {t.teams_feed_allow_label || "Allow posts"}
-                            </Text>
+                          <HStack justifyContent="space-between" align="center">
+                            <HStack spacing={1.5} align="center">
+                              <Text fontSize="sm">
+                                {t.teams_feed_allow_label || "Allow posts"}
+                              </Text>
+                              <IconButton
+                                aria-label={
+                                  t.allow_posts_info_aria ||
+                                  "Learn more about posts and decentralized identity"
+                                }
+                                icon={<InfoOutlineIcon boxSize={3.5} />}
+                                size="xs"
+                                variant="ghost"
+                                color="gray.400"
+                                _hover={{
+                                  color: "var(--app-text-primary)",
+                                  bg: "whiteAlpha.200",
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setIsPostsInfoOpen(true);
+                                }}
+                              />
+                            </HStack>
                             <Switch
                               id="settings-allow-posts-switch"
                               isChecked={allowPosts}
@@ -2861,6 +2893,62 @@ function TopBar({
         languageCode={communityLanguageCode}
         appLanguage={appLanguage}
       />
+      <Modal
+        isOpen={isPostsInfoOpen}
+        onClose={() => setIsPostsInfoOpen(false)}
+        isCentered
+        size="sm"
+      >
+        <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(4px)" />
+        <ModalContent
+          mx={4}
+          borderRadius="2xl"
+          boxShadow="2xl"
+          sx={{
+            "& .chakra-modal__header": {
+              paddingTop: "20px !important",
+              paddingBottom: "4px !important",
+            },
+            "& .chakra-modal__body": {
+              paddingTop: "4px !important",
+              paddingBottom: "24px !important",
+            },
+          }}
+        >
+          <ModalHeader fontSize="lg" fontWeight="bold">
+            {t.allow_posts_info_title || "Decentralized Identity"}
+          </ModalHeader>
+          <ModalCloseButton top={4} right={4} />
+          <ModalBody>
+            <Text fontSize="sm" opacity={0.88} lineHeight="tall">
+              {t.allow_posts_info_desc ||
+                "We use decentralized identity here, so your progress is posted in your profile feed."}
+            </Text>
+            {dittoProfileUrl && (
+              <Box mt={4}>
+                <Link
+                  href={dittoProfileUrl}
+                  isExternal
+                  textDecoration="underline"
+                  textUnderlineOffset="3px"
+                  color={themeMode === "light" ? "cyan.700" : "cyan.300"}
+                  _hover={{
+                    color: themeMode === "light" ? "cyan.800" : "cyan.200",
+                  }}
+                  fontSize="sm"
+                  fontWeight="medium"
+                  display="inline-flex"
+                  alignItems="center"
+                  gap={1.5}
+                >
+                  {t.allow_posts_info_view_ditto || "View Ditto profile"}
+                  <ExternalLinkIcon boxSize={3.5} />
+                </Link>
+              </Box>
+            )}
+          </ModalBody>
+        </ModalContent>
+      </Modal>
     </>
   );
 }
@@ -2899,6 +2987,7 @@ export default function App({ onBootReady } = {}) {
   );
   const [teamsOpen, setTeamsOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
+  const [memoryInitialTab, setMemoryInitialTab] = useState("repairs");
   const [realWorldTasksOpen, setRealWorldTasksOpen] = useState(false);
   const [tasksTickNow, setTasksTickNow] = useState(() => Date.now());
   const [pendingTeamInviteCount, setPendingTeamInviteCount] = useState(0);
@@ -3664,7 +3753,7 @@ export default function App({ onBootReady } = {}) {
     isTestUnlockActive || subscriptionAccess.authorized;
   const requiresPatreonMigration =
     !isTestUnlockActive && subscriptionAccess.requiresPatreonMigration;
-  const [allowPosts, setAllowPosts] = useState(true);
+  const [allowPosts, setAllowPosts] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [soundVolume, setSoundVolume] = useState(100);
   const [tutorVolume, setTutorVolume] = useState(DEFAULT_TUTOR_VOLUME);
@@ -3682,8 +3771,8 @@ export default function App({ onBootReady } = {}) {
   const [isIdentitySaving] = useState(false);
 
   useEffect(() => {
-    // Default to true if user.allowPosts is not explicitly set
-    setAllowPosts(user?.allowPosts !== false);
+    // Default to false if user.allowPosts is not explicitly set
+    setAllowPosts(user?.allowPosts === true);
   }, [user?.allowPosts]);
 
   useEffect(() => {
@@ -7246,6 +7335,7 @@ export default function App({ onBootReady } = {}) {
       if (data?.dailyXpRecent && typeof data.dailyXpRecent === "object")
         patch.dailyXpRecent = data.dailyXpRecent;
       if (data?.stats) patch.stats = data.stats;
+      if (data?.learningIntelligence) patch.learningIntelligence = data.learningIntelligence;
       if (data?.updatedAt) patch.updatedAt = data.updatedAt;
       if (data?.appLanguage) patch.appLanguage = data.appLanguage;
 
@@ -9340,6 +9430,7 @@ export default function App({ onBootReady } = {}) {
   // only shown once no other Chakra modal remains open. That guarantees it
   // always renders last in the chain on both surfaces.
   const [plateCelebration, setPlateCelebration] = useState(null);
+  const journeyResource = useVoiceJourney(activeNpub, resolvedTargetLang);
   const pendingPlateCelebrationRef = useRef(null);
   const plateCelebrationFlushTimerRef = useRef(null);
   const plateClearedCelebratedKeyRef = useRef("");
@@ -9867,10 +9958,14 @@ export default function App({ onBootReady } = {}) {
         const claimed = await claimDailyPlateBonus(
           activeNpub,
           plateSnapshot.langKey,
+          new Date(),
+          plateSnapshot.courses.map(course => course.kind),
+          plateSnapshot.dayKey,
         );
         if (!claimed) return;
         const store = useUserStore.getState();
-        store.patchUser?.({
+        const isCurrentAccount = (store.user?.local_npub || store.user?.id || store.user?.identity) === activeNpub;
+        if (isCurrentAccount) store.patchUser?.({
           progress: applyPlateBonusMarker(
             store.user?.progress || {},
             plateSnapshot.langKey,
@@ -9881,7 +9976,11 @@ export default function App({ onBootReady } = {}) {
         // Covers plates cleared outside a guided session too; the once-per-
         // plate guard inside makes this a no-op when the conductor already
         // requested it.
-        requestPlateCelebration({ type: "cleared" });
+        const latestUser = useUserStore.getState().user;
+        if ((latestUser?.local_npub || latestUser?.id || latestUser?.identity) === activeNpub &&
+            (latestUser?.progress?.targetLang || plateSnapshot.langKey) === plateSnapshot.langKey) {
+          requestPlateCelebration({ type: "cleared" });
+        }
       } catch (error) {
         console.error("Failed to claim daily plate bonus:", error);
       } finally {
@@ -10224,9 +10323,27 @@ export default function App({ onBootReady } = {}) {
 
       <NotesDrawer
         isOpen={notesOpen}
-        onClose={() => setNotesOpen(false)}
+        onClose={() => { setNotesOpen(false); setMemoryInitialTab("repairs"); }}
         appLanguage={appLanguage}
         targetLang={resolvedTargetLang}
+        npub={activeNpub}
+        initialTab={memoryInitialTab}
+        journeyResource={journeyResource}
+      />
+
+      <JourneyMilestoneGate
+        key={`${activeNpub}:${resolvedTargetLang}`}
+        npub={activeNpub}
+        targetLang={resolvedTargetLang}
+        lang={appLanguage}
+        journey={journeyResource.data}
+        canPresent={() => !isLoadingApp && !appOnboardingChainOpen && !notesOpen &&
+          !plateBonusClaimingRef.current && !pendingPlateCelebrationRef.current &&
+          !pendingDailyGoalCelebrationRef.current && !pendingLessonCompletionRef.current &&
+          !pendingTutorialBitcoinModalRef.current && !isTutorCompletionSequencePending() &&
+          !Object.values(plateCelebrationBlockersRef.current).some(Boolean) &&
+          !companionUnlockQueueRef.current.length && !hasVisibleChakraModalSurface()}
+        onOpenJourney={() => { setMemoryInitialTab("journey"); setNotesOpen(true); }}
       />
 
       <CompanionRepairModal
@@ -10279,6 +10396,14 @@ export default function App({ onBootReady } = {}) {
           {pathMode === "plate" && !showAlphabetBootcamp && (
             <DailyPlateHome
               user={user}
+              journeyTestControl={<JourneyTestButton
+                key={`${activeNpub}:${resolvedTargetLang}`}
+                npub={activeNpub}
+                targetLang={resolvedTargetLang}
+                lang={appLanguage}
+                resource={journeyResource}
+                onOpenJourney={() => { setMemoryInitialTab("journey"); setNotesOpen(true); }}
+              />}
               targetLang={resolvedTargetLang}
               appLanguage={appLanguage}
               dailyXp={dailyXpToday}
