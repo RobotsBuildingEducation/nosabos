@@ -82,8 +82,8 @@ export async function saveJourneyRecording({ npub, lang, milestone, blob, prompt
   const ref = journeyRef(npub, lang);
   await runTransaction(database, async tx => {
     const journey = (await tx.get(ref)).data() || {};
-    if (!canRecordJourneyMilestone(journey, milestone)) throw new Error("Milestone is still locked");
     if (journey.recordings?.[milestone]) throw new Error("A recording already exists at this milestone");
+    if (!canRecordJourneyMilestone(journey, milestone)) throw new Error("Milestone is still locked");
     const metadata = { createdAt: new Date().toISOString(), capturedSession: journeySessionCount(journey) };
     tx.set(recordingRef(npub, lang, milestone), {
       ...envelope, iv: Bytes.fromUint8Array(envelope.iv), ciphertext: Bytes.fromUint8Array(envelope.ciphertext),

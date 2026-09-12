@@ -145,7 +145,7 @@ export function App() {
         )}
         {focus && <Text data-testid="route">Surface: {focus.surface}</Text>}
         <GoalFocusBanner surface={focus?.surface} />
-        {["phonics", "tutor", "conversation"].includes(focus?.blueprint.mode) && (
+        {["phonics", "tutor"].includes(focus?.blueprint.mode) && (
           <Button onClick={() => evaluateGoalAttempt(focus, "¿Dónde vivías?")}>
             Fixture: successful native attempt
           </Button>

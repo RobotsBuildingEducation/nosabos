@@ -141,7 +141,7 @@ test("acknowledging an older prompt cannot re-open newer prompts", async () => {
 });
 
 test("saving an unlocked recording stores only ciphertext; duplicates and locks fail", async () => {
-  database.clear(); database.set("users/account-a/voiceJourney/es", { completedQuests: 5 });
+  database.clear(); database.set("users/account-a/voiceJourney/es", { completedQuests: 1 });
   globalThis.localStorage = { getItem: () => "account-a" };
   globalThis.FileReader = class {
     async readAsDataURL(blob) { this.result = `data:audio/webm;base64,${Buffer.from(await blob.arrayBuffer()).toString("base64")}`; this.onload(); }
@@ -151,11 +151,15 @@ test("saving an unlocked recording stores only ciphertext; duplicates and locks 
     await service.saveJourneyRecording(options);
     const stored = database.get("users/account-a/voiceJourney/es/recordings/1");
     assert.deepEqual(Object.keys(stored).sort(), ["ciphertext", "iv", "version", "wrappedKey"]);
-    assert.equal(database.get("users/account-a/voiceJourney/es").recordings[1].capturedSession, 5);
+    assert.equal(database.get("users/account-a/voiceJourney/es").recordings[1].capturedSession, 1);
     await assert.rejects(service.saveJourneyRecording(options), /already exists/);
     await assert.rejects(service.saveJourneyRecording({ ...options, milestone: 15 }), /locked/);
     await service.deleteJourneyRecording("account-a", "es", 1);
     assert.equal(database.has("users/account-a/voiceJourney/es/recordings/1"), false);
-    assert.equal(database.get("users/account-a/voiceJourney/es").completedQuests, 5);
+    assert.equal(database.get("users/account-a/voiceJourney/es").completedQuests, 1);
+
+    // If advanced to 5 without saving milestone 1, milestone 1 has expired and fails to record
+    database.set("users/account-a/voiceJourney/es", { completedQuests: 5 });
+    await assert.rejects(service.saveJourneyRecording(options), /locked/);
   } finally { delete globalThis.localStorage; delete globalThis.FileReader; }
 });

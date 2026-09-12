@@ -5,21 +5,19 @@ export const GOAL_MODES = [
   "phonics",
   "flashcards",
   "lesson",
-  "conversation",
 ];
 export const GOAL_MODE_TARGETS = Object.freeze({
   lesson: 20,
   tutor: 25,
   flashcards: 3,
   phonics: 2,
-  conversation: 3,
 });
 export const GOAL_SURFACES = {
   tutor: "tutor",
   phonics: "alphabet",
   flashcards: "flashcards",
   lesson: "lesson",
-  conversation: "conversations",
+  conversation: "tutor",
 };
 export const SUPPORT_LEVELS = [
   "modeled",
@@ -330,7 +328,7 @@ export function normalizeGoalBlueprint(
   const targetLanguage = list(raw?.targetLanguage);
   const isValidSoundOrCard =
     ["phonics", "flashcards"].includes(raw?.mode) && targetLanguage.length > 0;
-  const isDirectMode = ["tutor", "conversation", "lesson"].includes(raw?.mode);
+  const isDirectMode = ["tutor", "lesson"].includes(raw?.mode);
   const preferredMode =
     isDirectMode || isValidSoundOrCard ? raw.mode : "tutor";
   const selectedModes = selectGoalModes({

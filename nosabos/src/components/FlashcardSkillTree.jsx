@@ -52,10 +52,11 @@ import { repairCopy } from "../utils/companionMemoryCopy";
 import useRepairFocusStore, { currentRepairFocus } from "../hooks/useRepairFocusStore";
 import useSoundSettings from "../hooks/useSoundSettings";
 import useModalStore from "../hooks/useModalStore";
+import useUserStore from "../hooks/useUserStore";
 import { selectSound } from "../constants/sounds";
 import { useThemeStore } from "../useThemeStore";
+import { getFlashcardDailyTarget } from "../utils/dailyQuestTargets";
 import {
-  FLASHCARD_DAILY_TARGET,
   FLASHCARD_REVIEW_STATES,
   FLASHCARD_SCHEDULER_STATES,
   formatAbsoluteReviewTime,
@@ -662,6 +663,7 @@ export default function FlashcardSkillTree({
   pauseMs = 2000,
   isActive = true,
   isProgressReady = true,
+  dailyPlateSnapshot = null,
 }) {
   const toast = useToast();
   // Practice modal lives in useModalStore so tapping a card doesn't
@@ -1029,6 +1031,17 @@ export default function FlashcardSkillTree({
     userProgress.flashcardActivity,
   ]);
 
+  const currentUser = useUserStore((s) => s.user);
+
+  const effectiveDailyTarget = useMemo(() => {
+    return getFlashcardDailyTarget({
+      plateSnapshot: dailyPlateSnapshot,
+      user: currentUser,
+      langKey: targetLang,
+      dayKey: getLocalDayKey(new Date()),
+    });
+  }, [dailyPlateSnapshot, currentUser, targetLang]);
+
   const reviewedTodayCount = useMemo(
     () => Number(dailyActivityMap[getLocalDayKey(new Date())]) || 0,
     [dailyActivityMap],
@@ -1036,7 +1049,7 @@ export default function FlashcardSkillTree({
 
   const dailyProgressPct = Math.min(
     100,
-    Math.round((reviewedTodayCount / FLASHCARD_DAILY_TARGET) * 100),
+    Math.round((reviewedTodayCount / effectiveDailyTarget) * 100),
   );
 
   const getNextReviewNote = useCallback(
@@ -1311,7 +1324,7 @@ export default function FlashcardSkillTree({
                 <Text fontSize="sm" color={APP_TEXT_SECONDARY}>
                   {getTranslation("flashcard_cards_done_today", {
                     count: reviewedTodayCount,
-                    target: FLASHCARD_DAILY_TARGET,
+                    target: effectiveDailyTarget,
                   })}
                 </Text>
               </HStack>
@@ -1461,7 +1474,7 @@ export default function FlashcardSkillTree({
         pauseMs={pauseMs}
         languageXp={languageXp}
         dailyReviewed={reviewedTodayCount}
-        dailyTarget={FLASHCARD_DAILY_TARGET}
+        dailyTarget={effectiveDailyTarget}
       />
     </Box>
   );

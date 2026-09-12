@@ -196,7 +196,7 @@ test("every top-level mode routes to a real surface; malformed sound/card plans 
       context,
     );
     assert.equal(blueprint.mode, mode);
-    assert.ok(blueprint.modes.length >= 2 && blueprint.modes.length <= 5);
+    assert.ok(blueprint.modes.length >= 2 && blueprint.modes.length <= GOAL_MODES.length);
     assert.equal(new Set(blueprint.modes).size, blueprint.modes.length);
     assert.ok(GOAL_SURFACES[mode]);
     assert.equal(blueprint.target, 1);
@@ -205,6 +205,7 @@ test("every top-level mode routes to a real surface; malformed sound/card plans 
   for (const raw of [
     null,
     { mode: "unknown" },
+    { mode: "conversation" },
     { mode: "phonics" },
     { mode: "flashcards" },
   ]) {
@@ -214,27 +215,28 @@ test("every top-level mode routes to a real surface; malformed sound/card plans 
   }
 });
 test("Goal bundles are stable per day and carry the requested modality targets", () => {
+  assert.equal(GOAL_MODES.includes("conversation"), false);
   const first = selectGoalModes({
     goalId: goal.id,
     dayKey: context.dayKey,
-    preferredMode: "conversation",
+    preferredMode: "lesson",
   });
   assert.deepEqual(
     selectGoalModes({
       goalId: goal.id,
       dayKey: context.dayKey,
-      preferredMode: "conversation",
+      preferredMode: "lesson",
     }),
     first,
   );
-  assert.equal(first[0], "conversation");
+  assert.equal(first[0], "lesson");
   assert.ok(first.length >= 2 && first.length <= GOAL_MODES.length);
   assert.deepEqual(
     Object.fromEntries(GOAL_MODES.map((mode) => [mode, goalModeTarget(mode)])),
     GOAL_MODE_TARGETS,
   );
   const blueprint = normalizeGoalBlueprint(
-    { mode: "conversation", targetLanguage: ["¿Dónde vivías?"] },
+    { mode: "lesson", targetLanguage: ["¿Dónde vivías?"] },
     context,
   );
   assert.deepEqual(goalModesFor(blueprint), blueprint.modes);

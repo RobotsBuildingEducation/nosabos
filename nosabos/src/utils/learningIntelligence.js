@@ -160,6 +160,8 @@ export async function getOrBuildGoalBlueprint({
       const needsBundleUpgrade =
         !stored.completed &&
         (storedModes.length < 2 ||
+          (stored.blueprint.modes || []).includes("conversation") ||
+          stored.blueprint.mode === "conversation" ||
           storedModes.some(
             (mode) =>
               stored.blueprint.modeTargets?.[mode] !== goalModeTarget(mode),
@@ -215,7 +217,7 @@ export async function getOrBuildGoalBlueprint({
           goalProgress: compactSummary(bucket.goalProgress, "goal"),
           recentGoalEvidence: (bucket.dailyGoal?.evidence || []).slice(0, 8),
           recentRepairEvidence: (user.companionMemory?.[lang]?.notes || []).filter(note => note.targetLang === lang && note.expiresAfterDayKey >= dayKey).slice(0, 3),
-        })}. Choose tutor, phonics, flashcards, lesson, or conversation for the next missing capability. Progress from preparation to performance to transfer; avoid repeating demonstrated comfortable exercises. Pronunciation only when it blocks the goal. CEFR guides support, never caps goal content. Lesson permits vocabulary, grammar, reading, stories, realtime at EVERY level. Repair informs support only, never replaces the goal. Objective, scenario, supports, criteria, rationale in ${supportLang}; targetLanguage in ${lang}. Return JSON {mode,objective,scenario,targetLanguage:[strings],supports:[strings],successCriteria:[observable actions],rationale}. Keep it short.`,
+        })}. Choose tutor, phonics, flashcards, or lesson for the next missing capability. Progress from preparation to performance to transfer; avoid repeating demonstrated comfortable exercises. Pronunciation only when it blocks the goal. CEFR guides support, never caps goal content. Lesson permits vocabulary, grammar, reading, stories, realtime at EVERY level. Repair informs support only, never replaces the goal. Objective, scenario, supports, criteria, rationale in ${supportLang}; targetLanguage in ${lang}. Return JSON {mode,objective,scenario,targetLanguage:[strings],supports:[strings],successCriteria:[observable actions],rationale}. Keep it short.`,
       });
       candidate = normalizeGoalBlueprint(parseJson(raw), context);
     } catch {

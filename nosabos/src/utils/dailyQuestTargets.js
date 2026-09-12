@@ -28,3 +28,49 @@ export function getDailyQuestFlashcardTarget({
     hashString(`review|${userKey}|${langKey}|${dayKey}`) % 3;
   return DAILY_QUEST_FLASHCARD_TARGET_MIN + bucket;
 }
+
+export const FLASHCARD_RANDOM_DAILY_TARGET_MIN = 3;
+export const FLASHCARD_RANDOM_DAILY_TARGET_MAX = 7;
+
+/**
+ * Determine the daily goal for flashcard mode:
+ * 1. If Today's Focus includes flashcards (the "review" quest), use Today's Focus amount.
+ * 2. If Today's Focus does not include flashcards, pick a random number between 3 and 7 (inclusive).
+ * Stable per day+user+language so it does not change mid-day or across refreshes.
+ */
+export function getFlashcardDailyTarget({
+  plateSnapshot,
+  user,
+  userKey = "",
+  langKey = "",
+  dayKey = "",
+} = {}) {
+  const reviewCourse =
+    plateSnapshot?.byKind?.review ||
+    plateSnapshot?.courses?.find((c) => c.kind === "review");
+  if (
+    reviewCourse &&
+    Number.isFinite(reviewCourse.target) &&
+    reviewCourse.target > 0
+  ) {
+    return reviewCourse.target;
+  }
+
+  const resolvedUserKey =
+    userKey ||
+    user?.local_npub ||
+    user?.identity ||
+    user?.id ||
+    plateSnapshot?.userKey ||
+    "";
+  const resolvedLangKey = langKey || plateSnapshot?.langKey || "";
+  const resolvedDayKey = dayKey || plateSnapshot?.dayKey || "";
+
+  const span =
+    FLASHCARD_RANDOM_DAILY_TARGET_MAX - FLASHCARD_RANDOM_DAILY_TARGET_MIN + 1;
+  const roll =
+    hashString(
+      `flashcard_daily_random|${resolvedUserKey}|${resolvedLangKey}|${resolvedDayKey}`,
+    ) % span;
+  return FLASHCARD_RANDOM_DAILY_TARGET_MIN + roll;
+}

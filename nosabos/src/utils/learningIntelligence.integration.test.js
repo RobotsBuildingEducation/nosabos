@@ -153,7 +153,7 @@ test("a goal replacement during generation cannot install the old goal's bluepri
   const pending = blueprint();
   await ready;
   await setGoal("New goal");
-  release('{"mode":"conversation","objective":"Old task"}');
+  release('{"mode":"tutor","objective":"Old task"}');
   assert.equal(await pending, null);
   assert.equal(databaseUser.learningIntelligence.es.dailyGoal, null);
 });

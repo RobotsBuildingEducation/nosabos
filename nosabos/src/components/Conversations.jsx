@@ -1,9 +1,3 @@
-import {
-  currentGoalFocus,
-  evaluateGoalAttempt,
-  recordGoalModeProgress,
-} from "../utils/learningIntelligence";
-import { goalInstructions } from "../utils/learningIntelligenceModel";
 import ActivityActionRow from "./ActivityActionRow";
 import QuestionActionArea from "./QuestionActionArea";
 // components/Conversations.jsx
@@ -1121,7 +1115,6 @@ export default function Conversations({
   onConnectionStatusChange,
   isActive = true,
 }) {
-  const goalSession = useRef(currentGoalFocus("conversations")).current;
   const aliveRef = useRef(false);
   const autoStopTimerRef = useRef(null);
   const playSound = useSoundSettings((s) => s.playSound);
@@ -1215,8 +1208,8 @@ export default function Conversations({
   // Conversation settings state
   const [conversationSettings, setConversationSettings] = useState({
     proficiencyLevel: maxProficiencyLevel || "A1",
-    practicePronunciation: goalSession ? false : user?.progress?.practicePronunciation || false,
-    conversationSubjects: goalSession ? "" : user?.progress?.conversationSubjects || "",
+    practicePronunciation: user?.progress?.practicePronunciation || false,
+    conversationSubjects: user?.progress?.conversationSubjects || "",
   });
   const conversationSettingsRef = useRef(conversationSettings);
   const conversationSubjectsDraftRef = useRef(null);
@@ -1237,10 +1230,9 @@ export default function Conversations({
     onClose: closeSummary,
   } = useDisclosure();
   const handleSettingsOpen = useCallback(() => {
-    if (goalSession) return;
     openSettings();
     void playSound(selectSound);
-  }, [openSettings, playSound, goalSession]);
+  }, [openSettings, playSound]);
   const scrollConversationToTop = useCallback(() => {
     if (typeof window === "undefined") return;
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
@@ -1302,7 +1294,6 @@ export default function Conversations({
   // Handle settings change with Firebase persistence
   const handleSettingsChange = useCallback(
     async (newSettings) => {
-      if (goalSession) return;
       const previousSettings = conversationSettingsRef.current;
       const subjectsChanged =
         previousSettings.conversationSubjects !==
@@ -1347,7 +1338,7 @@ export default function Conversations({
         shouldRegenerateGoalRef.current = true;
       }
     },
-    [currentNpub, goalSession],
+    [currentNpub],
   );
 
   // Regenerate goal when settings drawer closes (if settings changed)
@@ -1372,7 +1363,7 @@ export default function Conversations({
 
   // Goal system - initialize with fallback, then generate AI topic
   const [currentGoal, setCurrentGoal] = useState(() => ({
-    text: goalSession ? { en: goalSession.blueprint.objective, [supportLang]: goalSession.blueprint.objective } : getRandomFallbackTopic(maxProficiencyLevel),
+    text: getRandomFallbackTopic(maxProficiencyLevel),
     completed: false,
   }));
   const currentGoalRef = useRef(currentGoal);
@@ -1443,7 +1434,6 @@ export default function Conversations({
 
   // Generate a conversation topic using AI with streaming
   async function generateConversationTopic() {
-    if (goalSession) return;
     // Prevent multiple simultaneous calls
     if (streamingRef.current || isGeneratingGoal) return;
 
@@ -2006,7 +1996,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
             setPauseMs(data.progress.pauseMs);
           }
           // Load conversation settings
-          if (!goalSession) setConversationSettings((prev) => {
+          setConversationSettings((prev) => {
             const savedSubjects =
               typeof data.progress?.conversationSubjects === "string"
                 ? data.progress.conversationSubjects
@@ -2031,7 +2021,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       } catch {}
     }
     loadXp();
-  }, [currentNpub, isActive, targetLang, maxProficiencyLevel, goalSession]);
+  }, [currentNpub, isActive, targetLang, maxProficiencyLevel]);
 
   // Cleanup on unmount
   useEffect(
@@ -2259,7 +2249,6 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
      Language instructions with proficiency level
   --------------------------- */
   function buildLanguageInstructions() {
-    if (goalSession) return `${goalInstructions(goalSession.blueprint, goalSession.supportLang)} Act as the scenario role, respond realistically, and give the learner room to perform the action.`;
     const tLang = targetLangRef.current;
     const personaPolicy = buildVoicePersonaPolicy(
       voicePersonaRef.current,
@@ -2578,7 +2567,6 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
   // Returns "completed" | "failed" | "skipped" so callers can gate rewards on
   // the verdict ("skipped" = no verdict: nothing gradable or check not run).
   async function evaluateGoalCompletion(userMessage, aiResponse) {
-    if (goalSession) return "skipped";
     const goal = currentGoalRef.current;
     if (goal.completed || goalCheckPendingRef.current) return "skipped";
     if (!userMessage || userMessage.length < 3) return "skipped";
@@ -2752,7 +2740,6 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "...", "goa
 
   // Generate next goal based on conversation context
   async function generateContextualGoal({ previousGoalAbandoned = false } = {}) {
-    if (goalSession) return;
     setIsGeneratingGoal(true);
     setGoalFeedback(""); // Clear previous feedback
     goalFailStreakRef.current = 0;
@@ -3088,41 +3075,6 @@ Respond with ONLY a JSON object: {"target":"phrase in ${targetName}","support":"
      Award XP per turn (1-3 XP)
   --------------------------- */
   async function awardTurnXp(userMessage = "", aiResponse = "") {
-    if (goalSession) {
-      if (!currentGoalFocus("conversations")) return;
-      try {
-        const verdict = await evaluateGoalAttempt(
-          goalSession,
-          userMessage,
-          JSON.stringify({
-            previousTurns: messagesRef.current.slice(-8),
-            aiResponse,
-          }),
-          { record: false },
-        );
-        setGoalFeedback(verdict.feedback || "");
-        setSessionTurns((value) => value + 1);
-        const progress = await recordGoalModeProgress(
-          goalSession,
-          {
-            id: `conversation:${goalSession.blueprint.goalId}:${goalSession.blueprint.dayKey}:${crypto.randomUUID()}`,
-            success: verdict.success,
-            support: verdict.support || "prompted",
-            domain: "conversation",
-            observation:
-              verdict.observation ||
-              `Completed a goal conversation turn: ${userMessage.slice(0, 400)}`,
-          },
-          { amount: 1 },
-        );
-        await awardXp(currentNpub, 5, targetLang, "goalConversation");
-        if (progress?.modeCompleted) {
-          setCurrentGoal((goal) => ({ ...goal, completed: true }));
-          await stop();
-        }
-      } catch (error) { setGoalFeedback(error.message); }
-      return;
-    }
     const npub = currentNpub;
     const hasUserMessage = Boolean(userMessage && userMessage.trim());
     if (hasUserMessage) {

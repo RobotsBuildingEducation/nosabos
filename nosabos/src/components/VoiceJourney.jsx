@@ -4,7 +4,7 @@ import { FiCheck, FiLock, FiMic, FiPlay, FiTrash2 } from "react-icons/fi";
 import useSoundSettings from "../hooks/useSoundSettings";
 import { selectSound } from "../constants/sounds";
 import { journeyCopy } from "../utils/voiceJourneyCopy";
-import { JOURNEY_MILESTONES, journeyBaseline, journeySessionCount } from "../utils/voiceJourneyModel";
+import { JOURNEY_MILESTONES, canRecordJourneyMilestone, isJourneyMilestoneExpired, journeyBaseline, journeySessionCount } from "../utils/voiceJourneyModel";
 import { deleteJourneyRecording, loadJourneyRecording } from "../utils/voiceJourney";
 import JourneyRecordingModal, { JourneyAudio } from "./JourneyRecordingModal";
 
@@ -49,11 +49,23 @@ export default function VoiceJourney({ npub, targetLang, lang, resource }) {
   return <>
     <Box p={{ base: 4, md: 6 }} mb={6} borderRadius="2xl" bg="var(--app-surface)" border="1px solid" borderColor="var(--app-border)" position="relative" overflow="hidden">
       <Box position="absolute" right="-30px" top="-60px" w="180px" h="180px" borderRadius="full" bg="teal.400" opacity={0.08} pointerEvents="none" />
-      <Text fontSize="xs" color="var(--app-text-muted)" mb={2}>{t("subtitle")}</Text>
       <Text fontSize={{ base: "xl", md: "2xl" }} fontWeight="bold" lineHeight="1.2" maxW="390px">{t("title")}</Text>
       <HStack mt={5} mb={2} justify="space-between"><Text fontWeight="semibold" fontSize="sm">{t("sessions", { n: count })}</Text><FiMic /></HStack>
-      <Progress value={count} max={next || Math.max(150, count)} colorScheme="teal" size="xs" borderRadius="full" aria-label={t(next ? "next" : "allUnlocked", { n: next })} />
-      <Text mt={2} fontSize="xs" color="var(--app-text-secondary)">{t(next ? "next" : "allUnlocked", { n: next })}</Text>
+      <Progress
+        value={count}
+        max={next || Math.max(150, count)}
+        colorScheme="teal"
+        h="8px"
+        borderRadius="full"
+        bg="var(--app-surface-muted)"
+        sx={{
+          "&": {
+            backgroundColor: "var(--app-surface-muted) !important",
+          },
+        }}
+        aria-label={t(!next ? "allUnlocked" : "sessions", { n: count })}
+      />
+      {!next && <Text mt={2} fontSize="xs" color="var(--app-text-secondary)">{t("allUnlocked")}</Text>}
       <Text mt={3} fontSize="xs" color="var(--app-text-muted)">{t("rule")}</Text>
       {count === 0 && <Text mt={3} fontSize="sm">{t("empty")}</Text>}
     </Box>
@@ -61,22 +73,24 @@ export default function VoiceJourney({ npub, targetLang, lang, resource }) {
       {JOURNEY_MILESTONES.map((number, index) => {
         const unlocked = count >= number;
         const metadata = journey.recordings?.[number];
+        const expired = isJourneyMilestoneExpired(journey, number);
+        const canRecord = canRecordJourneyMilestone(journey, number);
         const active = selected === number;
         return <Box as="li" key={number} position="relative" pl={{ base: "50px", md: "64px" }} pb={6}>
           {index < JOURNEY_MILESTONES.length - 1 && <Box position="absolute" left={{ base: "17px", md: "21px" }} top="35px" bottom="-1px" borderLeft="2px dashed" borderColor={unlocked ? "teal.500" : "var(--app-border)"} opacity={0.5} />}
-          <Box position="absolute" top={2} left={0} display="grid" placeItems="center" w={{ base: "36px", md: "44px" }} h={{ base: "36px", md: "44px" }} borderRadius="full" bg={unlocked ? "teal.600" : "var(--app-surface)"} color={unlocked ? "white" : "var(--app-text-muted)"} border="1px solid" borderColor={unlocked ? "teal.500" : "var(--app-border)"} boxShadow={unlocked && !metadata ? "0 0 0 5px rgba(45,212,191,0.09)" : "none"}>
-            {metadata ? <FiCheck /> : unlocked ? <FiMic /> : <FiLock />}
+          <Box position="absolute" top={2} left={0} display="grid" placeItems="center" w={{ base: "36px", md: "44px" }} h={{ base: "36px", md: "44px" }} borderRadius="full" bg={metadata || canRecord ? "teal.600" : "var(--app-surface)"} color={metadata || canRecord ? "white" : "var(--app-text-muted)"} border="1px solid" borderColor={metadata || canRecord ? "teal.500" : "var(--app-border)"} boxShadow={canRecord ? "0 0 0 5px rgba(45,212,191,0.09)" : "none"}>
+            {metadata ? <FiCheck /> : canRecord ? <FiMic /> : <FiLock />}
           </Box>
-          <Box border="1px solid" borderColor={unlocked && !metadata ? "teal.500" : "var(--app-border)"} bg="var(--app-surface)" borderRadius="2xl" p={{ base: 3, md: 4 }}>
+          <Box border="1px solid" borderColor={canRecord ? "teal.500" : "var(--app-border)"} bg="var(--app-surface)" borderRadius="2xl" p={{ base: 3, md: 4 }}>
             <HStack align="start" justify="space-between" flexWrap="wrap" rowGap={2}>
               <Box><Text fontWeight="semibold">{t("session", { n: number })}</Text>
-                <Text fontSize="xs" mt={1} color="var(--app-text-muted)">{t(metadata ? "saved" : unlocked ? "ready" : "locked")}</Text>
+                <Text fontSize="xs" mt={1} color="var(--app-text-muted)">{t(metadata ? "saved" : canRecord ? "ready" : expired ? "expired" : "locked")}</Text>
               </Box>
               {metadata ? <Button size="sm" leftIcon={<FiPlay />} variant="outline" isLoading={loadingClip === number} onClick={() => {
                 playSound(selectSound);
                 if (active && clips) { requestRef.current += 1; setSelected(null); setClips(null); }
                 else void listen(number);
-              }}>{t("listen")}</Button> : unlocked ? <Button
+              }}>{t("listen")}</Button> : canRecord ? <Button
                 size="sm"
                 colorScheme="cyan"
                 bg="cyan.500"

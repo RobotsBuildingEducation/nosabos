@@ -1,5 +1,5 @@
 import React from "react";
-import { Badge, Box, HStack, Text, VStack } from "@chakra-ui/react";
+import { Box, Text, VStack } from "@chakra-ui/react";
 import { journeyCopy } from "../utils/voiceJourneyCopy";
 import { getLocalDayKey } from "../utils/flashcardReview";
 
@@ -12,13 +12,9 @@ export default function MemoryGoals({ bucket, lang = "en" }) {
   const today = blueprint?.goalId === goal.id && blueprint?.dayKey === getLocalDayKey(new Date()) ? blueprint : null;
   const sections = ["demonstrated", "openCapabilities", "usefulLanguage"];
   const hasEvidence = sections.some(key => summary[key]?.length);
-  const stageLabel = entry => t(entry.domain === "recall" ? "recognition" : entry.stage === "lightly supported" ? "lightlySupported" : entry.stage || "prompted");
   return <VStack align="stretch" spacing={5}>
     <Box p={5} borderRadius="2xl" bg="var(--app-surface)" border="1px solid" borderColor="var(--app-border)">
-      <HStack justify="space-between" mb={2}>
-        <Text fontSize="xs" color="var(--app-text-muted)">{t("currentGoal")}</Text>
-        <Badge colorScheme={goal.status === "achieved" ? "green" : goal.status === "paused" ? "gray" : "teal"}>{t(goal.status || "active")}</Badge>
-      </HStack>
+      <Text fontSize="xs" color="var(--app-text-muted)" mb={2}>{t("currentGoal")}</Text>
       <Text fontSize="lg" fontWeight="semibold" whiteSpace="pre-wrap">{goal.text}</Text>
     </Box>
     <Text fontSize="sm" color="var(--app-text-secondary)">{t("goalIntro")}</Text>
@@ -28,10 +24,7 @@ export default function MemoryGoals({ bucket, lang = "en" }) {
       <VStack align="stretch" spacing={2}>
         {summary[section].map((entry, index) => <Box key={index} p={3} borderRadius="xl" border="1px solid" borderColor="var(--app-border)">
           <Text fontSize="sm">{typeof entry === "string" ? entry : entry.target}</Text>
-          {typeof entry !== "string" && <>
-            {entry.example && <Text fontSize="sm" color="var(--app-text-secondary)" mt={1}>{entry.example}</Text>}
-            <Badge mt={2} colorScheme="teal" variant="subtle" whiteSpace="normal">{stageLabel(entry)}</Badge>
-          </>}
+          {typeof entry !== "string" && entry.example && <Text fontSize="sm" color="var(--app-text-secondary)" mt={1}>{entry.example}</Text>}
         </Box>)}
       </VStack>
     </Box>)}

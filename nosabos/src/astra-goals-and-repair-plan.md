@@ -38,9 +38,8 @@ The daily goal planner may select:
 - `phonics`
 - `flashcards`
 - `lesson`
-- `conversation`
 
-Conversation is intentionally allowed for goals. Unlike Repair, a goal can be evaluated as a meaningful communicative performance rather than verification of one narrowly defined mistake.
+Conversation mode is excluded from both Goal and Repair tasks. Free-form conversation is too hard and unreliable for targeted goal verification given its original open-ended design; Conversation remains a standalone practice mode for regular daily quests.
 
 The planner should select the mode that best advances the next capability needed for the goal. It should use variety across days when useful, but should not rotate modes merely for novelty.
 
@@ -222,7 +221,6 @@ Inputs should include the exact goal text, durable goal summary, recent goal-tas
 - **Phonics:** custom sound practice only when pronunciation materially blocks the goal.
 - **Flashcards:** goal-specific words or chunks needed for later performance.
 - **Lesson:** mixed, generated preparation across the five lesson modules.
-- **Conversation:** an ephemeral goal scenario with a role, realistic responses, and action-based success criteria. It may read the active goal blueprint but must not overwrite the user's Custom Conversation configuration.
 
 ### Success and progression
 
@@ -289,8 +287,7 @@ Add `goal` alongside Repair as a derived Daily Quest kind:
 ## Acceptance criteria
 
 - An active per-language goal produces one Goal task in every Daily Quest.
-- Goal tasks can use Tutor, Phonics, Flashcards, Lesson, or Conversation.
-- Goal Conversation sessions do not read from or write to Custom Conversation configuration except for shared global audio/persona preferences explicitly intended across the app.
+- Goal tasks can use Tutor, Phonics, Flashcards, or Lesson (Conversations is excluded from goals/repairs and remains standalone for regular daily quests).
 - Goal content may stretch beyond CEFR while support adapts to the learner.
 - Repair lessons expose Vocabulary, Grammar, Reading, Stories, and Realtime at every CEFR level.
 - Tutor, Flashcards, Lesson, and Phonics all provide fresh repair material, with deterministic fallbacks.

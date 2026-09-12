@@ -44,7 +44,6 @@ export async function runAstraBrowserChecks(tab) {
   await button("Close").click();
   for (const [mode, surface] of Object.entries({
     tutor: "tutor",
-    conversation: "conversations",
     flashcards: "flashcards",
     lesson: "lesson",
     phonics: "alphabet",
@@ -52,7 +51,7 @@ export async function runAstraBrowserChecks(tab) {
     await page.getByRole("combobox", { name: "Goal mode" }).selectOption(mode);
     await button("Open Goal task").click();
     await check(`${mode} routing`, surface, page.getByTestId("route"));
-    if (["phonics", "tutor", "conversation"].includes(mode))
+    if (["phonics", "tutor"].includes(mode))
       await button("Fixture: successful native attempt").click();
     else {
       await button("Goal · Ask where your grandmother lived").click();

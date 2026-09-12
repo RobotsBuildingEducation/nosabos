@@ -430,7 +430,7 @@ export default function Onboarding({
                                 height: "100%",
                                 borderRadius: "9999px",
                                 background:
-                                  "linear-gradient(90deg, #22d3ee 0%, #2dd4bf 40%, #5eead4 75%, #67e8f9 100%)",
+                                  "linear-gradient(90deg, #0d9488 0%, #14b8a6 35%, #2dd4bf 70%, #5eead4 100%)",
                                 boxShadow: isActive
                                   ? "0 0 10px rgba(45, 212, 191, 0.45)"
                                   : "none",
@@ -469,7 +469,7 @@ export default function Onboarding({
                                   isActive
                                     ? "#2dd4bf"
                                     : isCompleted
-                                    ? "#06b6d4"
+                                    ? "#0d9488"
                                     : "var(--app-surface-muted)"
                                 }
                                 color={

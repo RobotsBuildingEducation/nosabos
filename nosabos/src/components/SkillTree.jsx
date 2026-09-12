@@ -2576,6 +2576,7 @@ export default function SkillTree({
   level = "A1",
   supportLang = "en",
   userProgress = { totalXp: 0, lessons: {} },
+  dailyPlateSnapshot = null,
   onStartLesson,
   onCompleteFlashcard, // Callback for flashcard completion with XP
   onRandomPracticeFlashcard, // Callback for random practice (awards XP, resets card)
@@ -3187,6 +3188,7 @@ export default function SkillTree({
               >
                 <KeepAliveFlashcardSkillTree key={goalSessionKey}
                   userProgress={userProgress}
+                  dailyPlateSnapshot={dailyPlateSnapshot}
                   onStartFlashcard={handleFlashcardComplete}
                   onRandomPractice={handleRandomPractice}
                   targetLang={targetLang}
@@ -3204,7 +3206,7 @@ export default function SkillTree({
                 display={isModeVisible("conversations") ? "block" : "none"}
                 aria-hidden={!isModeVisible("conversations")}
               >
-                <KeepAliveConversations key={goalSessionKey}
+                <KeepAliveConversations key="conversations"
                   activeNpub={activeNpub}
                   targetLang={targetLang}
                   supportLang={supportLang}
@@ -3245,6 +3247,7 @@ export default function SkillTree({
             {isModeVisible("flashcards") && (
               <KeepAliveFlashcardSkillTree key={goalSessionKey}
                 userProgress={userProgress}
+                dailyPlateSnapshot={dailyPlateSnapshot}
                 onStartFlashcard={handleFlashcardComplete}
                 onRandomPractice={handleRandomPractice}
                 targetLang={targetLang}
@@ -3256,7 +3259,7 @@ export default function SkillTree({
               />
             )}
             {isModeVisible("conversations") && (
-              <KeepAliveConversations key={goalSessionKey}
+              <KeepAliveConversations key="conversations"
                 activeNpub={activeNpub}
                 targetLang={targetLang}
                 supportLang={supportLang}

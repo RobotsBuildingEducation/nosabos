@@ -10448,6 +10448,7 @@ export default function App({ onBootReady } = {}) {
                 level={resolvedLevel}
                 supportLang={resolvedSupportLang}
                 userProgress={userProgress}
+                dailyPlateSnapshot={plateSnapshot}
                 onStartLesson={handleStartLesson}
                 onCompleteFlashcard={handleCompleteFlashcard}
                 onRandomPracticeFlashcard={handleRandomPracticeFlashcard}

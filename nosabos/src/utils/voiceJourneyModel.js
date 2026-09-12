@@ -35,6 +35,21 @@ export function journeyBaseline(journey = {}) {
     .sort((a, b) => (Date.parse(journey.recordings[a].createdAt) || 0) - (Date.parse(journey.recordings[b].createdAt) || 0) || a - b)[0] || null;
 }
 
-export function canRecordJourneyMilestone(journey, milestone) {
-  return JOURNEY_MILESTONES.includes(milestone) && milestone <= journeySessionCount(journey);
+export function isJourneyMilestoneExpired(journey = {}, milestone) {
+  const index = JOURNEY_MILESTONES.indexOf(milestone);
+  if (index === -1) return false;
+  if (journey.recordings?.[milestone]) return false;
+  const count = journeySessionCount(journey);
+  if (count < milestone) return false;
+  const nextMilestone = JOURNEY_MILESTONES[index + 1];
+  return Boolean(nextMilestone && count >= nextMilestone);
+}
+
+export function canRecordJourneyMilestone(journey = {}, milestone) {
+  if (!JOURNEY_MILESTONES.includes(milestone)) return false;
+  if (journey?.recordings?.[milestone]) return false;
+  const count = journeySessionCount(journey);
+  if (milestone > count) return false;
+  if (isJourneyMilestoneExpired(journey, milestone)) return false;
+  return true;
 }

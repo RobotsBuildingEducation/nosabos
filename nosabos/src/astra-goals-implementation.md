@@ -30,11 +30,10 @@ and Back/Next navigation. Goals remain optional and drafts survive navigation.
 
 Daily composition is Repair, one active Goal, then carried/elected normal
 courses. Goal is derived independently of election, including on the first
-quest. The five goal modes route to Tutor, Alphabet/Phonics, Flashcards, the
-five-module lesson, and Conversations. Goal Tutor and Conversation sessions
-use their own objective and grading instructions. Goal Conversation settings
-are isolated from saved custom topics; only shared global voice preferences
-are used.
+quest. The four goal modes route to Tutor, Alphabet/Phonics, Flashcards, and the
+five-module lesson. Conversations is excluded from goals and repairs and serves
+as a standalone regular daily quest mode. Goal Tutor sessions use their own
+objective and grading instructions.
 
 Goal Lesson preparation XP is stored atomically in `dailyGoal.preparationXp`
 and shared across every module. It survives reloads, resets with the daily task,
@@ -47,7 +46,7 @@ records supported lesson practice, without claiming independent mastery.
 Voice attempts receive an
 objective-based check, and a focused written production check is available
 in a dialog opened from the compact Goal action inside Lesson or Flashcards.
-The Goal control never renders above the app header. Tutor, Conversations, and
+The Goal control never renders above the app header. Tutor and
 Phonics use their native attempts without a duplicate written form. Phonics requires graded target-sound success
 and, when present, success on the transfer item. Written answers cannot
 complete a phonics goal. Summaries distinguish supported production and
