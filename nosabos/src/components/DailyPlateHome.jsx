@@ -44,6 +44,12 @@ import {
   plateUiCopy,
 } from "../utils/dailyPlateCopy";
 import { activeGoalFor } from "../utils/learningIntelligenceModel";
+import {
+  generateAndStorePlateHeadline,
+  getPlateTaskSummary,
+  getStoredPlateHeadline,
+} from "../utils/dailyPlateHeadline";
+import { loadLearningPath } from "../data/skillTree/index.js";
 
 const START_COPY = {
   en: "Start tasks",
@@ -152,6 +158,136 @@ export default function DailyPlateHome({
   );
   const { courses, isCleared } = snapshot;
   const nextCourse = getNextPlateCourse(snapshot);
+
+  // Personalized Daily Plate Headline (promises a meaningful moment based on today's tasks)
+  const storedHeadline = useMemo(
+    () =>
+      getStoredPlateHeadline(user, targetLang, snapshot.dayKey, appLanguage),
+    [user, targetLang, snapshot.dayKey, appLanguage],
+  );
+
+  const headlineKey = `${targetLang}:${appLanguage}:${snapshot.dayKey}`;
+  const [headlineData, setHeadlineData] = useState(() => ({
+    key: headlineKey,
+    text: storedHeadline || "",
+    isGenerating: !storedHeadline && !isCleared,
+  }));
+
+  // Synchronously reset state during render if key changed (React pattern for prop change state reset)
+  // This eliminates any 1-frame flash of the previous language or text.
+  if (headlineData.key !== headlineKey) {
+    setHeadlineData({
+      key: headlineKey,
+      text: storedHeadline || "",
+      isGenerating: !storedHeadline && !isCleared,
+    });
+  }
+
+  const userRef = useRef(user);
+  userRef.current = user;
+  const coursesRef = useRef(courses);
+  coursesRef.current = courses;
+
+  useEffect(() => {
+    if (storedHeadline) {
+      setHeadlineData((prev) => {
+        if (
+          prev.key === headlineKey &&
+          prev.text === storedHeadline &&
+          !prev.isGenerating
+        ) {
+          return prev;
+        }
+        return { key: headlineKey, text: storedHeadline, isGenerating: false };
+      });
+      return;
+    }
+
+    if (isCleared) {
+      setHeadlineData((prev) => {
+        if (prev.key === headlineKey && !prev.isGenerating) return prev;
+        return { ...prev, isGenerating: false };
+      });
+      return;
+    }
+
+    let cancelled = false;
+
+    async function fetchHeadline() {
+      let levelUnits = [];
+      try {
+        const currentUser = userRef.current;
+        const userLevel = currentUser?.progress?.level || "Pre-A1";
+        const cefrLevel = [
+          "Pre-A1",
+          "A1",
+          "A2",
+          "B1",
+          "B2",
+          "C1",
+          "C2",
+        ].includes(userLevel)
+          ? userLevel
+          : userLevel === "beginner"
+            ? "Pre-A1"
+            : userLevel === "intermediate"
+              ? "B1"
+              : userLevel === "advanced"
+                ? "C1"
+                : "Pre-A1";
+        levelUnits = await loadLearningPath(targetLang, cefrLevel);
+      } catch {
+        /* fallback to generic course titles if path loading fails */
+      }
+
+      if (cancelled) return;
+
+      const currentUser = userRef.current;
+      const currentCourses = coursesRef.current;
+      const taskSummary = getPlateTaskSummary(
+        currentCourses,
+        currentUser,
+        targetLang,
+        levelUnits,
+      );
+      const npub =
+        currentUser?.id || currentUser?.local_npub || currentUser?.identity || "";
+
+      const text = await generateAndStorePlateHeadline({
+        npub,
+        targetLang,
+        appLanguage,
+        dayKey: snapshot.dayKey,
+        taskSummary,
+        onStream: (streamedText) => {
+          if (cancelled) return;
+          setHeadlineData((prev) => {
+            if (prev.key !== headlineKey) return prev;
+            return {
+              ...prev,
+              text: streamedText,
+            };
+          });
+        },
+      });
+
+      if (cancelled) return;
+      setHeadlineData((prev) => {
+        if (prev.key !== headlineKey) return prev;
+        return {
+          key: headlineKey,
+          text: text || prev.text,
+          isGenerating: false,
+        };
+      });
+    }
+
+    fetchHeadline();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [headlineKey, storedHeadline, isCleared, targetLang, appLanguage, snapshot.dayKey]);
 
   // The bubble's "Continue" dismissal persists per day (keyed by language + day)
   // so a refresh doesn't re-show a bubble the user already continued past. The
@@ -425,13 +561,60 @@ export default function DailyPlateHome({
               {plateUiCopy(appLanguage, PLATE_CLEARED_COPY)}
             </Text>
           </Box>
+        ) : !headlineData.text && headlineData.isGenerating ? (
+          <HStack justify="center" spacing="4px" py={1} opacity={0.7} align="center" minH="21px">
+            <Box
+              w="5px"
+              h="5px"
+              borderRadius="full"
+              bg="var(--app-text-muted)"
+              sx={{
+                animation: "pulseDot 1.4s infinite ease-in-out both",
+                "@keyframes pulseDot": {
+                  "0%, 80%, 100%": { transform: "scale(0.6)", opacity: 0.25 },
+                  "40%": { transform: "scale(1.2)", opacity: 1 },
+                },
+              }}
+            />
+            <Box
+              w="5px"
+              h="5px"
+              borderRadius="full"
+              bg="var(--app-text-muted)"
+              sx={{
+                animation: "pulseDot 1.4s infinite ease-in-out both",
+                animationDelay: "0.2s",
+                "@keyframes pulseDot": {
+                  "0%, 80%, 100%": { transform: "scale(0.6)", opacity: 0.25 },
+                  "40%": { transform: "scale(1.2)", opacity: 1 },
+                },
+              }}
+            />
+            <Box
+              w="5px"
+              h="5px"
+              borderRadius="full"
+              bg="var(--app-text-muted)"
+              sx={{
+                animation: "pulseDot 1.4s infinite ease-in-out both",
+                animationDelay: "0.4s",
+                "@keyframes pulseDot": {
+                  "0%, 80%, 100%": { transform: "scale(0.6)", opacity: 0.25 },
+                  "40%": { transform: "scale(1.2)", opacity: 1 },
+                },
+              }}
+            />
+          </HStack>
         ) : (
           <Text
             fontSize="sm"
             color="var(--app-text-secondary)"
             textAlign="center"
+            fontWeight="medium"
+            px={4}
+            lineHeight="1.4"
           >
-            {plateUiCopy(appLanguage, SUBTITLE_COPY)}
+            {headlineData.text || plateUiCopy(appLanguage, SUBTITLE_COPY)}
           </Text>
         )}
 

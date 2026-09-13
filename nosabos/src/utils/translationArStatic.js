@@ -267,6 +267,8 @@ export const TRANSLATION_AR_STATIC = {
   bitcoin_modal_close: "إغلاق",
   app_install_aria: "تثبيت",
   app_account_aria: "الحساب",
+  app_settings: "الإعدادات",
+  app_settings_aria: "الإعدادات",
   app_help_chat: "المساعد",
   app_notes: "الذاكرة",
   real_world_tasks_title: "تدريب الانغماس",

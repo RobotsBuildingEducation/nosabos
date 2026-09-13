@@ -121,10 +121,25 @@ export function composeQuestKinds(
   carry = [],
   hasRepair = false,
   hasGoal = false,
+  isFirstSession = false,
 ) {
+  const firstSession =
+    typeof isFirstSession === "object"
+      ? Boolean(isFirstSession?.isFirstSession)
+      : Boolean(isFirstSession);
+
   const normal = [...new Set([...carry, ...base])].filter((k) =>
     ["speak", "learn", "review", "conversation", "phonics"].includes(k),
   );
+
+  if (firstSession) {
+    return [
+      ...(hasRepair ? ["repair"] : []),
+      ...normal,
+      ...(hasGoal ? ["goal"] : []),
+    ];
+  }
+
   return [
     ...(hasRepair ? ["repair"] : []),
     ...(hasGoal ? ["goal"] : []),

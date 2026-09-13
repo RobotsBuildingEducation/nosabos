@@ -164,6 +164,7 @@ import History from "./components/History";
 import ActivityMenu, {
   ImmersionPracticeMenuIcon,
 } from "./components/ActivityMenu";
+import { getActivityMenuLabels } from "./utils/activityMenuCopy";
 import QuestionActionArea from "./components/QuestionActionArea";
 import ActivityActionRow from "./components/ActivityActionRow";
 import { isFullNavigationSkillTreeMode } from "./utils/activityControls";
@@ -1610,13 +1611,18 @@ function TopBar({
       if (Object.prototype.hasOwnProperty.call(partial, "helpRequest")) {
         textDrafts.push({ key: "helpRequest", value: partial.helpRequest });
       }
-      debounceRef.current = setTimeout(() => {
-        void persistSettings(partial).finally(() => {
-          textDrafts.forEach(({ key, value }) =>
-            releaseTextDraftSoon(key, value),
-          );
-        });
-      }, delay);
+      return new Promise((resolve, reject) => {
+        debounceRef.current = setTimeout(() => {
+          void persistSettings(partial)
+            .then(resolve)
+            .catch(reject)
+            .finally(() => {
+              textDrafts.forEach(({ key, value }) =>
+                releaseTextDraftSoon(key, value),
+              );
+            });
+        }, delay);
+      });
     },
     [persistSettings, releaseTextDraftSoon],
   );
@@ -2630,6 +2636,7 @@ function TopBar({
                           voicePersona={voicePersona}
                           targetLang={targetLang}
                           supportLang={supportLang}
+                          appLanguage={appLanguage}
                           voiceOptions={getTutorVoiceOptions()}
                           normalizeVoice={normalizeTutorVoice}
                           getVoiceOption={getTutorVoiceOption}
@@ -2650,7 +2657,7 @@ function TopBar({
                           onVoicePersonaChange={(next) => {
                             setVoicePersona(next);
                             rememberTextDraft("voicePersona", next);
-                            debouncedPersist({ tutorVoicePersona: next });
+                            return debouncedPersist({ tutorVoicePersona: next });
                           }}
                           onSelectSound={() => playSound(selectSound)}
                           menuListMotionProps={INSTANT_EXIT_MOTION_PROPS}
@@ -9003,9 +9010,10 @@ export default function App({ onBootReady } = {}) {
   // kinds and "repair" prepended (deduped). The elected base (persisted) never
   // contains either, so this stays purely derived and can't fight the elector.
   const goalToday = astraGoalsEnabled() ? activeGoalFor(user, resolvedTargetLang) : null;
+  const isFirstSession = shouldUseFixedFirstQuest(user, plateDayKey);
   const questKinds = useMemo(() => composeQuestKinds(
-    electedQuestKinds, carryOverKinds, Boolean(repairPlanToday), Boolean(goalToday),
-  ), [repairPlanToday, electedQuestKinds, carryOverKinds, goalToday]);
+    electedQuestKinds, carryOverKinds, Boolean(repairPlanToday), Boolean(goalToday), isFirstSession,
+  ), [repairPlanToday, electedQuestKinds, carryOverKinds, goalToday, isFirstSession]);
 
   // Prepare a Goal blueprint while the learner is still reading Today’s Focus.
   // Starting the task can then route immediately instead of showing an
@@ -12123,34 +12131,19 @@ function BottomActionBar({
 }) {
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
-  const settingsLabel =
-    t?.app_settings_aria || t?.ra_btn_settings || "Settings";
-  const helpChatLabel =
-    helpLabel ||
-    t?.app_help_chat ||
-    uiCopy(appLanguage, {
-      en: "Assistant",
-      es: "Asistente",
-      it: "Assistente",
-      ja: "アシスタント",
-    });
+  const menuLabels = useMemo(
+    () => getActivityMenuLabels(appLanguage, t),
+    [appLanguage, t],
+  );
+  const settingsLabel = menuLabels.settings;
+  const helpChatLabel = helpLabel || menuLabels.assistant;
   const teamsLabel = t?.teams_drawer_title || "Teams";
-  const tasksLabel =
-    t?.real_world_tasks_title ||
-    uiCopy(appLanguage, {
-      en: "Immersion Practice",
-      es: "Práctica de inmersión",
-      it: "Pratica di immersione",
-      ja: "イマージョン練習",
-    });
-  const notesLabel =
-    t?.app_notes ||
-    uiCopy(appLanguage, {
-      en: "Memory",
-      es: "Memoria",
-      it: "Memoria",
-      ja: "メモリー",
-    });
+  const tasksLabel = menuLabels.immersion;
+  const notesLabel = menuLabels.memory;
+  const modeMenuLabel = menuLabels.mode;
+  const backLabel = menuLabels.back;
+  const exitLessonLabel = menuLabels.exitLesson;
+  const closeMenuLabel = menuLabels.closeMenu;
 
   // Path mode configuration
   const ALPHABET_LANGS = [
@@ -12181,9 +12174,15 @@ function BottomActionBar({
         t?.app_mode_path ||
         uiCopy(appLanguage, {
           en: "Lessons",
-          es: "Ruta",
-          it: "Percorso",
-          ja: "学習パス",
+          es: "Lecciones",
+          pt: "Lições",
+          it: "Lezioni",
+          fr: "Leçons",
+          de: "Lektionen",
+          ja: "レッスン",
+          hi: "पाठ",
+          ar: "الدروس",
+          zh: "课程",
         }),
       icon: PiPath,
     },
@@ -12194,8 +12193,14 @@ function BottomActionBar({
         uiCopy(appLanguage, {
           en: "Cards",
           es: "Tarjetas",
+          pt: "Cartões",
           it: "Schede",
+          fr: "Cartes",
+          de: "Karten",
           ja: "カード",
+          hi: "कार्ड्स",
+          ar: "البطاقات",
+          zh: "卡片",
         }),
       icon: PiCardsBold,
     },
@@ -12228,8 +12233,14 @@ function BottomActionBar({
         uiCopy(appLanguage, {
           en: "Conversation",
           es: "Conversación",
+          pt: "Conversação",
           it: "Conversazione",
+          fr: "Conversation",
+          de: "Gespräch",
           ja: "会話",
+          hi: "बातचीत",
+          ar: "المحادثة",
+          zh: "会话",
         }),
       icon: RiChat3Line,
     },
@@ -12240,8 +12251,14 @@ function BottomActionBar({
         uiCopy(appLanguage, {
           en: "Tutor",
           es: "Tutor",
+          pt: "Tutor",
           it: "Tutor",
+          fr: "Tuteur",
+          de: "Tutor",
           ja: "チューター",
+          hi: "ट्यूटर",
+          ar: "المعلّم",
+          zh: "导师",
         }),
       icon: RiBook2Line,
     },
@@ -12250,14 +12267,6 @@ function BottomActionBar({
   const currentMode =
     PATH_MODES.find((m) => m.id === pathMode) || PATH_MODES[0];
   const CurrentModeIcon = currentMode.icon;
-  const modeMenuLabel =
-    t?.app_mode_menu ||
-    uiCopy(appLanguage, {
-      en: "Mode",
-      es: "Modo",
-      it: "Modalità",
-      ja: "モード",
-    });
 
   useEffect(() => {
     onMinimizedChange?.(false);
@@ -12281,28 +12290,14 @@ function BottomActionBar({
       label={currentMode.label || modeMenuLabel}
       modesLabel={currentMode.label || modeMenuLabel}
       modesIcon={<CurrentModeIcon size={20} />}
-      backLabel={
-        t?.back ||
-        uiCopy(appLanguage, {
-          en: "Back",
-          es: "Volver",
-          it: "Indietro",
-          ja: "戻る",
-        })
-      }
+      closeLabel={closeMenuLabel}
+      backLabel={backLabel}
       items={[
         ...(viewMode === "lesson"
           ? [
               {
                 id: "exitLesson",
-                label:
-                  t?.exit_lesson ||
-                  uiCopy(appLanguage, {
-                    en: "Exit lesson",
-                    es: "Salir de la lección",
-                    it: "Esci dalla lezione",
-                    ja: "レッスンを終了",
-                  }),
+                label: exitLessonLabel,
                 icon: <ArrowBackIcon boxSize={5} />,
                 onClick: () => {
                   playSound?.(selectSound);
@@ -12311,6 +12306,12 @@ function BottomActionBar({
               },
             ]
           : []),
+        {
+          id: "settings",
+          label: settingsLabel,
+          icon: <SettingsIcon boxSize={5} />,
+          onClick: () => handleActionClick(onOpenSettings),
+        },
         {
           id: "teams",
           label: tasksLabel,
@@ -12325,10 +12326,11 @@ function BottomActionBar({
           onClick: () => handleActionClick(onOpenTeams),
         },
         {
-          id: "settings",
-          label: settingsLabel,
-          icon: <SettingsIcon boxSize={5} />,
-          onClick: () => handleActionClick(onOpenSettings),
+          id: "help",
+          label: helpChatLabel,
+          icon: <MdOutlineSupportAgent size={20} />,
+          onClick: () => handleActionClick(onOpenHelpChat),
+          disabled: !onOpenHelpChat,
         },
         {
           id: "notes",
@@ -12341,13 +12343,6 @@ function BottomActionBar({
           buttonBg: notesIsDone ? "teal.400" : undefined,
           buttonColor: notesIsDone ? "white" : undefined,
           onClick: () => handleActionClick(onOpenNotes),
-        },
-        {
-          id: "help",
-          label: helpChatLabel,
-          icon: <MdOutlineSupportAgent size={20} />,
-          onClick: () => handleActionClick(onOpenHelpChat),
-          disabled: !onOpenHelpChat,
         },
       ]}
       modes={PATH_MODES}

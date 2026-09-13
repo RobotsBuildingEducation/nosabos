@@ -329,6 +329,7 @@ export const TRANSLATION_HI_STATIC = {
   bitcoin_modal_success: "जमा राशि मिल गई! बैलेंस ताज़ा किया जा रहा है…",
   bitcoin_modal_skip: "अभी छोड़ें",
   bitcoin_modal_close: "बंद करें",
+  app_settings: "सेटिंग्स",
   app_settings_aria: "सेटिंग्स",
   app_install_aria: "इंस्टॉल करें",
   app_account_aria: "खाता",

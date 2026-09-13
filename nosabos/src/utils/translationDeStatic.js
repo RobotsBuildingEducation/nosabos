@@ -231,7 +231,7 @@ export const TRANSLATION_DE_STATIC = {
   app_nsec_placeholder: "nsec-Schlüssel einfügen",
   app_account_title: "Konto",
   app_account_aria: "Konto öffnen",
-  app_settings_aria: "Einstellungen öffnen",
+  app_settings_aria: "Einstellungen",
   app_switch_account: "Konto wechseln",
   app_switch: "Wechseln",
   app_switching: "Wechselt...",

@@ -1,12 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Box,
-  Button,
   FormControl,
   FormLabel,
-  HStack,
   Text,
   Textarea,
+  useToast,
 } from "@chakra-ui/react";
 import useUserStore from "../hooks/useUserStore";
 import {
@@ -15,17 +14,15 @@ import {
 } from "../utils/learningIntelligence";
 import { goalCopy } from "../utils/learningGoalCopy";
 
-const GOAL_ACTION_BUTTON_PROPS = {
-  colorScheme: "teal",
-  boxShadow: "0 4px 0 var(--chakra-colors-teal-800, #234E52)",
-};
-
 export function LearningGoalField({
   lang,
   value,
   onChange,
+  onBlur,
+  onFocus,
   minH = "120px",
   rows = 4,
+  textareaBg = "gray.700",
   ...props
 }) {
   const copy = goalCopy(lang);
@@ -39,92 +36,173 @@ export function LearningGoalField({
         maxLength={600}
         placeholder={copy.example}
         onChange={(e) => onChange(e.target.value)}
-      minH={minH}
-      rows={rows}
-      p={3}
-      fontSize="16px"
-      lineHeight="tall"
-    />
+        onBlur={onBlur}
+        onFocus={onFocus}
+        bg={textareaBg}
+        minH={minH}
+        rows={rows}
+        p={3}
+        fontSize="16px"
+        lineHeight="tall"
+        resize="vertical"
+      />
     </FormControl>
   );
 }
+
 export default function LearningGoalSettings({
   npub,
   targetLang,
   appLanguage,
 }) {
+  const toast = useToast();
+  const copy = goalCopy(appLanguage);
   const goal = useUserStore(
     (s) => s.user?.learningIntelligence?.[targetLang]?.activeGoal,
   );
-  const [value, setValue] = useState(goal?.text || "");
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState("");
-  const copy = goalCopy(appLanguage);
-  useEffect(() => {
-    setValue(goal?.text || "");
-    setMessage("");
-  }, [goal?.text, targetLang, npub]);
-  if (!astraGoalsEnabled()) return null;
-  async function save(status = "active", text = value) {
-    setBusy(true);
-    setMessage("");
-    try {
-      await saveLearningGoal({ npub, targetLang, text, status });
-      setMessage(copy.saved);
-    } catch (error) {
-      setMessage(error.message);
-    } finally {
-      setBusy(false);
+  const goalText = goal?.text || "";
+  const [value, setValue] = useState(goalText);
+  const [showSaved, setShowSaved] = useState(false);
+
+  const debounceRef = useRef(null);
+  const savedTimerRef = useRef(null);
+  const isFocusedRef = useRef(false);
+  const targetLangRef = useRef(targetLang);
+  const npubRef = useRef(npub);
+  const lastSavedRef = useRef(goalText);
+  const latestValueRef = useRef(value);
+  latestValueRef.current = value;
+
+  const triggerSaved = useCallback(() => {
+    setShowSaved(true);
+    if (savedTimerRef.current) {
+      clearTimeout(savedTimerRef.current);
     }
-  }
+    savedTimerRef.current = setTimeout(() => {
+      setShowSaved(false);
+      savedTimerRef.current = null;
+    }, 3000);
+  }, []);
+
+  useEffect(() => {
+    if (targetLangRef.current !== targetLang || npubRef.current !== npub) {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+        debounceRef.current = null;
+      }
+      if (savedTimerRef.current) {
+        clearTimeout(savedTimerRef.current);
+        savedTimerRef.current = null;
+      }
+      setShowSaved(false);
+      targetLangRef.current = targetLang;
+      npubRef.current = npub;
+      setValue(goalText);
+      lastSavedRef.current = goalText;
+    } else if (!isFocusedRef.current) {
+      setValue(goalText);
+      lastSavedRef.current = goalText;
+    }
+  }, [goalText, targetLang, npub]);
+
+  const persistGoal = useCallback(
+    async (textToSave) => {
+      if (!npub) return;
+      const trimmed = (textToSave || "").trim();
+      if (trimmed === (lastSavedRef.current || "").trim()) {
+        return;
+      }
+      try {
+        await saveLearningGoal({
+          npub,
+          targetLang,
+          text: trimmed,
+          status: "active",
+        });
+        lastSavedRef.current = trimmed;
+        triggerSaved();
+      } catch (error) {
+        toast({
+          status: "error",
+          title: "Save failed",
+          description: String(error?.message || error),
+        });
+      }
+    },
+    [npub, targetLang, toast, triggerSaved],
+  );
+
+  const persistGoalRef = useRef(persistGoal);
+  persistGoalRef.current = persistGoal;
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+        debounceRef.current = null;
+      }
+      if (savedTimerRef.current) {
+        clearTimeout(savedTimerRef.current);
+        savedTimerRef.current = null;
+      }
+      const pending = (latestValueRef.current || "").trim();
+      if (pending !== (lastSavedRef.current || "").trim()) {
+        void persistGoalRef.current?.(pending);
+      }
+    };
+  }, []);
+
+  const handleChange = useCallback(
+    (next) => {
+      setValue(next);
+      setShowSaved(false);
+      if (savedTimerRef.current) {
+        clearTimeout(savedTimerRef.current);
+        savedTimerRef.current = null;
+      }
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+      debounceRef.current = setTimeout(() => {
+        debounceRef.current = null;
+        void persistGoal(next);
+      }, 400);
+    },
+    [persistGoal],
+  );
+
+  const handleBlur = useCallback(() => {
+    isFocusedRef.current = false;
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
+    void persistGoal(latestValueRef.current);
+  }, [persistGoal]);
+
+  const handleFocus = useCallback(() => {
+    isFocusedRef.current = true;
+  }, []);
+
+  if (!astraGoalsEnabled()) return null;
+
   return (
-    <Box py={4} width="100%">
-      <LearningGoalField lang={appLanguage} value={value} onChange={setValue} />
-      <HStack mt={3} flexWrap="wrap">
-        <Button
-          size="sm"
-          {...GOAL_ACTION_BUTTON_PROPS}
-          isLoading={busy}
-          onClick={() => save()}
-        >
-          {copy.save}
-        </Button>
-        {goal && (
-          <>
-            <Button
-              size="sm"
-              {...GOAL_ACTION_BUTTON_PROPS}
-              isDisabled={busy}
-              onClick={() =>
-                save(goal.status === "active" ? "paused" : "active", goal.text)
-              }
-            >
-              {goal.status === "active" ? copy.pause : copy.resume}
-            </Button>
-            <Button
-              size="sm"
-              {...GOAL_ACTION_BUTTON_PROPS}
-              isDisabled={busy || goal.status === "achieved"}
-              onClick={() => save("achieved", goal.text)}
-            >
-              {copy.achieve}
-            </Button>
-            <Button
-              size="sm"
-              {...GOAL_ACTION_BUTTON_PROPS}
-              isDisabled={busy}
-              onClick={() => save("active", "")}
-            >
-              {copy.clear}
-            </Button>
-          </>
+    <Box bg="gray.800" p={3} rounded="md" width="100%">
+      <LearningGoalField
+        lang={appLanguage}
+        value={value}
+        onChange={handleChange}
+        onBlur={handleBlur}
+        onFocus={handleFocus}
+        textareaBg="gray.700"
+      />
+      <Box textAlign="right" minH="18px" mt={1}>
+        {showSaved && (
+          <Text fontSize="xs" color="gray.400" role="status">
+            {copy.saved}
+          </Text>
         )}
-      </HStack>
-      {message && (
-        <Text role="status" fontSize="sm" mt={2}>
-          {message}
-        </Text>
-      )}
+      </Box>
     </Box>
   );
 }

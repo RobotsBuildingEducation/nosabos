@@ -18,7 +18,7 @@ export async function runAstraBrowserChecks(tab) {
       exact: true,
     })
     .fill("Talk with my grandmother about her childhood");
-  await button("Save goal").click();
+  await page.waitForTimeout(500);
   await check(
     "one derived Goal",
     "repair → goal → speak",
@@ -78,21 +78,15 @@ export async function runAstraBrowserChecks(tab) {
   await page
     .getByRole("combobox", { name: "Practice language" })
     .selectOption("es");
-  await button("Pause").click();
+  await page
+    .getByRole("textbox", {
+      name: "Your goal (optional)",
+      exact: true,
+    })
+    .fill("");
+  await page.waitForTimeout(500);
   await check(
-    "paused goal omitted",
-    "repair → speak → learn",
-    page.getByTestId("courses"),
-  );
-  await button("Resume").click();
-  await check(
-    "resume restores goal",
-    "repair → goal → speak",
-    page.getByTestId("courses"),
-  );
-  await button("Mark achieved").click();
-  await check(
-    "achieved goal omitted",
+    "cleared goal omitted",
     "repair → speak → learn",
     page.getByTestId("courses"),
   );

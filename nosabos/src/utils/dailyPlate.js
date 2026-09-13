@@ -34,6 +34,7 @@ import { pruneDayEntries } from "./userDataSchema";
 import {
   readAccountScopedJson,
   removeAccountScopedValue,
+  shouldUseFixedFirstQuest,
   writeAccountScopedJson,
 } from "./dailyQuestState";
 
@@ -154,8 +155,15 @@ export function getDailyPlateSnapshot(
   const dayKey = getDailyPlateDayKey(now);
   const progress = user?.progress || {};
 
+  const isFirstSession = shouldUseFixedFirstQuest(user, dayKey);
   const requestedKinds = Array.isArray(kinds) && kinds.length ? kinds : DAILY_PLATE_COURSE_ORDER;
-  const activeKinds = composeQuestKinds(requestedKinds, [], requestedKinds.includes("repair"), astraGoalsEnabled() && Boolean(activeGoalFor(user, langKey)));
+  const activeKinds = composeQuestKinds(
+    requestedKinds,
+    [],
+    requestedKinds.includes("repair"),
+    astraGoalsEnabled() && Boolean(activeGoalFor(user, langKey)),
+    isFirstSession,
+  );
 
   const courses = activeKinds.map((kind) => {
     const goalDaily = user?.learningIntelligence?.[langKey]?.dailyGoal;

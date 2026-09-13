@@ -306,6 +306,7 @@ function ActivityMenuPortal({
   isOpen,
   onClose,
   isLightTheme,
+  closeLabel = "Close menu",
   children,
 }) {
   const { cardRef, backdropRef, isDragging, handlePointerDown } =
@@ -446,7 +447,7 @@ function ActivityMenuPortal({
 
               {/* Top right 'X' exit button */}
               <IconButton
-                aria-label="Close menu"
+                aria-label={closeLabel || "Close menu"}
                 icon={<CloseIcon boxSize="13px" />}
                 position="absolute"
                 right={{ base: 1, sm: 2 }}
@@ -872,6 +873,7 @@ export default function ActivityMenu({
   triggerIcon,
   triggerProps,
   decoration,
+  closeLabel = "Close menu",
   placement = "top-start",
 }) {
   const isLightTheme = useThemeStore((s) => s.themeMode) === "light";
@@ -1043,6 +1045,7 @@ export default function ActivityMenu({
               isOpen={isOpen}
               onClose={onClose}
               isLightTheme={isLightTheme}
+              closeLabel={closeLabel}
             >
               {view === "actions" ? (
               <>

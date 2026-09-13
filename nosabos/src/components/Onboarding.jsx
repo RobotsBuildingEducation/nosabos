@@ -429,11 +429,7 @@ export default function Onboarding({
                               style={{
                                 height: "100%",
                                 borderRadius: "9999px",
-                                background:
-                                  "linear-gradient(90deg, #0d9488 0%, #14b8a6 35%, #2dd4bf 70%, #5eead4 100%)",
-                                boxShadow: isActive
-                                  ? "0 0 10px rgba(45, 212, 191, 0.45)"
-                                  : "none",
+                                background: "var(--chakra-colors-teal-500, #319795)",
                               }}
                               initial={false}
                               animate={{
@@ -466,10 +462,8 @@ export default function Onboarding({
                                 fontSize="xs"
                                 fontWeight="bold"
                                 bg={
-                                  isActive
-                                    ? "#2dd4bf"
-                                    : isCompleted
-                                    ? "#0d9488"
+                                  isActive || isCompleted
+                                    ? "teal.500"
                                     : "var(--app-surface-muted)"
                                 }
                                 color={

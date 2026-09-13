@@ -57,6 +57,68 @@ test("an active per-language goal is derived once, after Repair, including first
     ["learn"],
   );
 });
+
+test("on the user's first session, goal is placed last; on future sessions, repair is first and goal is second", () => {
+  // First session with active goal: goal is last
+  assert.deepEqual(
+    composeQuestKinds(
+      ["speak", "learn", "review"],
+      [],
+      false, // hasRepair
+      true,  // hasGoal
+      true,  // isFirstSession
+    ),
+    ["speak", "learn", "review", "goal"],
+  );
+
+  // First session without active goal
+  assert.deepEqual(
+    composeQuestKinds(
+      ["speak", "learn", "review"],
+      [],
+      false,
+      false,
+      true,
+    ),
+    ["speak", "learn", "review"],
+  );
+
+  // First session with repair and goal (if repair existed): repair first, courses, goal last
+  assert.deepEqual(
+    composeQuestKinds(
+      ["speak", "learn", "review"],
+      [],
+      true,
+      true,
+      true,
+    ),
+    ["repair", "speak", "learn", "review", "goal"],
+  );
+
+  // Future lessons (isFirstSession = false): Repairs come 1st, Goal comes 2nd
+  assert.deepEqual(
+    composeQuestKinds(
+      ["speak", "learn", "review"],
+      [],
+      true,  // hasRepair
+      true,  // hasGoal
+      false, // isFirstSession = false
+    ),
+    ["repair", "goal", "speak", "learn", "review"],
+  );
+
+  // Future lessons with no repair: Goal comes 1st
+  assert.deepEqual(
+    composeQuestKinds(
+      ["speak", "learn", "review"],
+      [],
+      false, // hasRepair
+      true,  // hasGoal
+      false, // isFirstSession = false
+    ),
+    ["goal", "speak", "learn", "review"],
+  );
+});
 test("pause/resume retains identity and evidence; replacing or clearing resets only goal progress", () => {
   const first = changeGoal(
     { repairSummary: { prose: "keep repair" } },

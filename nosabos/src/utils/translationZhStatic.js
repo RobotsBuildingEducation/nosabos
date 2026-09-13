@@ -292,6 +292,7 @@ export const TRANSLATION_ZH_STATIC = {
   settings_posts_disabled: "社区自动帖子已关闭。",
   settings_volume: "音量",
   settings_test_sound: "测试声音",
+  app_settings: "设置",
   app_settings_aria: "设置",
   app_account_aria: "账户",
   app_help_chat: "助手",

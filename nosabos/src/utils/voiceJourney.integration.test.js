@@ -70,7 +70,7 @@ const plate = await loadService("./dailyPlate.js", {
   "./dailyQuestTargets": "const DAILY_QUEST_FLASHCARD_TARGET_DEFAULT = 4; const getDailyQuestFlashcardTarget = () => 4;",
   "./flashcardReview": "const { getLocalDayKey } = globalThis.__journeyTest;",
   "./userDataSchema": "const pruneDayEntries = value => value;",
-  "./dailyQuestState": "const { readAccountScopedJson, removeAccountScopedValue, writeAccountScopedJson } = globalThis.__journeyTest.questState;",
+  "./dailyQuestState": "const { readAccountScopedJson, removeAccountScopedValue, shouldUseFixedFirstQuest, writeAccountScopedJson } = globalThis.__journeyTest.questState;",
 });
 function seed(npub = "account-a", lang = "es", day = "2026-09-10") {
   database.set(`users/${npub}`, {
