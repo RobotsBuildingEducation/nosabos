@@ -34,6 +34,7 @@ import { selectSound } from "../constants/sounds";
 import { getPreferredTTSVoice, getTTSPlayer, TTS_LANG_TAG } from "../utils/tts";
 import BottomDrawerDragHandle from "./BottomDrawerDragHandle";
 import useBottomDrawerSwipeDismiss from "../hooks/useBottomDrawerSwipeDismiss";
+import useEscapeToClose from "../hooks/useEscapeToClose";
 import VoiceOrb from "./VoiceOrb";
 import { useThemeStore } from "../useThemeStore";
 import {
@@ -189,6 +190,8 @@ export default function NotesDrawer({
   const audioRef = useRef(null);
   const pcRef = useRef(null);
   const swipeDismiss = useBottomDrawerSwipeDismiss({ isOpen, onClose });
+  useEscapeToClose(isOpen, onClose);
+  const initialFocusRef = useRef(null);
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
 
@@ -633,7 +636,16 @@ export default function NotesDrawer({
   };
 
   return (
-    <Drawer isOpen={isOpen} placement="bottom" onClose={onClose} blockScrollOnMount={false}>
+    <Drawer
+      isOpen={isOpen}
+      placement="bottom"
+      onClose={onClose}
+      blockScrollOnMount={false}
+      autoFocus={false}
+      trapFocus={false}
+      returnFocusOnClose={false}
+      initialFocusRef={initialFocusRef}
+    >
       {/* <DrawerOverlay
         {...swipeDismiss.overlayProps}
         motionProps={nativeOverlayMotionProps}
@@ -665,10 +677,25 @@ export default function NotesDrawer({
           },
         }}
       >
+        <Box
+          ref={initialFocusRef}
+          tabIndex={-1}
+          position="absolute"
+          top={0}
+          left={0}
+          w={0}
+          h={0}
+          opacity={0}
+          pointerEvents="none"
+          outline="none"
+          _focus={{ outline: "none", boxShadow: "none" }}
+        />
         <BottomDrawerDragHandle isDragging={swipeDismiss.isDragging} />
         <DrawerCloseButton
           color={noteUi.primaryText}
           _hover={{ bg: noteUi.closeHoverBg }}
+          _focus={{ boxShadow: "none !important", outline: "none !important" }}
+          _focusVisible={{ boxShadow: "none !important", outline: "none !important" }}
           top={4}
           right={6}
           onClick={() => {

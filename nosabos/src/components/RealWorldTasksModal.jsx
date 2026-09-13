@@ -29,6 +29,7 @@ import { database, simplemodel } from "../firebaseResources/firebaseResources";
 import { awardXp } from "../utils/utils";
 import BottomDrawerDragHandle from "./BottomDrawerDragHandle";
 import useBottomDrawerSwipeDismiss from "../hooks/useBottomDrawerSwipeDismiss";
+import useEscapeToClose from "../hooks/useEscapeToClose";
 import { useThemeStore } from "../useThemeStore";
 import { WaveBar } from "./WaveBar";
 import VoiceOrb from "./VoiceOrb";
@@ -319,6 +320,8 @@ export default function RealWorldTasksModal({
     isOpen,
     onClose: handleClose,
   });
+  useEscapeToClose(isOpen, handleClose);
+  const initialFocusRef = useRef(null);
   const toast = useToast();
 
   const [isGenerating, setIsGenerating] = useState(false);
@@ -623,7 +626,15 @@ export default function RealWorldTasksModal({
                       : `Claim +${REAL_WORLD_TASKS_REWARD_XP} XP`;
 
   return (
-    <Drawer isOpen={isOpen} placement="bottom" onClose={handleClose}>
+    <Drawer
+      isOpen={isOpen}
+      placement="bottom"
+      onClose={handleClose}
+      autoFocus={false}
+      trapFocus={false}
+      returnFocusOnClose={false}
+      initialFocusRef={initialFocusRef}
+    >
       {/* <DrawerOverlay
         {...swipeDismiss.overlayProps}
         motionProps={nativeOverlayMotionProps}
@@ -647,10 +658,25 @@ export default function RealWorldTasksModal({
           },
         }}
       >
+        <Box
+          ref={initialFocusRef}
+          tabIndex={-1}
+          position="absolute"
+          top={0}
+          left={0}
+          w={0}
+          h={0}
+          opacity={0}
+          pointerEvents="none"
+          outline="none"
+          _focus={{ outline: "none", boxShadow: "none" }}
+        />
         <BottomDrawerDragHandle isDragging={swipeDismiss.isDragging} />
         <DrawerCloseButton
           color={ui.icon}
           _hover={{ color: ui.primaryText, bg: ui.closeHoverBg }}
+          _focus={{ boxShadow: "none !important", outline: "none !important" }}
+          _focusVisible={{ boxShadow: "none !important", outline: "none !important" }}
           top={4}
           right={4}
         />

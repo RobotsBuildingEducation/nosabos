@@ -10398,14 +10398,14 @@ export default function App({ onBootReady } = {}) {
           {pathMode === "plate" && !showAlphabetBootcamp && (
             <DailyPlateHome
               user={user}
-              journeyTestControl={<JourneyTestButton
+              /* journeyTestControl={<JourneyTestButton
                 key={`${activeNpub}:${resolvedTargetLang}`}
                 npub={activeNpub}
                 targetLang={resolvedTargetLang}
                 lang={appLanguage}
                 resource={journeyResource}
                 onOpenJourney={() => { setMemoryInitialTab("journey"); setNotesOpen(true); }}
-              />}
+              />} */
               targetLang={resolvedTargetLang}
               appLanguage={appLanguage}
               dailyXp={dailyXpToday}

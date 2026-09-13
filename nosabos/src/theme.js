@@ -374,6 +374,10 @@ export const theme = extendTheme({
           base: "20px !important",
           md: "28px !important",
         },
+        "&:focus, &:focus-visible, &[data-focus-visible]": {
+          boxShadow: "none !important",
+          outline: "none !important",
+        },
       },
     },
   },
