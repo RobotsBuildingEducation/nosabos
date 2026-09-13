@@ -1,8 +1,8 @@
-import { normalizeOpenAITutorVoice } from "./openaiTutorVoices.js";
+import { REALTIME_PRACTICE_VOICE } from "./realtimePracticeVoice.js";
 import { normalizeVoicePersona } from "./voicePersonaPrompt.js";
 
-export function resolveConversationVoice(progress = {}) {
-  return normalizeOpenAITutorVoice(progress?.tutorVoice || progress?.voice);
+export function resolveConversationVoice() {
+  return REALTIME_PRACTICE_VOICE;
 }
 
 export function resolveConversationPersona(progress = {}, fallback = "") {

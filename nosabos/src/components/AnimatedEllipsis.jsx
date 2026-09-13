@@ -4,14 +4,17 @@ import { Box, HStack } from "@chakra-ui/react";
 export default function AnimatedEllipsis({
   color = "blue.200",
   ariaLabel = "Loading",
+  justify = "center",
+  ...props
 }) {
   return (
     <HStack
       spacing={1.5}
       minH="24px"
-      justify="center"
+      justify={justify}
       role="status"
       aria-label={ariaLabel}
+      {...props}
     >
       {[0, 1, 2].map((dot) => (
         <Box

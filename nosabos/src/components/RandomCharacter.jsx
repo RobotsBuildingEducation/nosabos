@@ -179,7 +179,7 @@ const characterImages = [
   character41,
 ];
 
-const characterImagesMap = {
+export const characterImagesMap = {
   1: character1,
   2: character3,
   3: character4,

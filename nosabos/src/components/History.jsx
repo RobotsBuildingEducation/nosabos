@@ -1,3 +1,7 @@
+import { focusedLessonPrompt } from "../utils/learningIntelligenceModel";
+import ActivityActionRow from "./ActivityActionRow";
+import QuestionActionArea from "./QuestionActionArea";
+import FeedbackRail from "./FeedbackRail";
 // components/History.jsx
 import React, {
   useCallback,
@@ -23,14 +27,13 @@ import {
   Grid,
   GridItem,
   Spinner,
-  Switch,
 } from "@chakra-ui/react";
 import {
   PiSpeakerHighDuotone,
   PiLightningDuotone,
   PiStopDuotone,
-  PiMicrophoneStageDuotone,
 } from "react-icons/pi";
+import { FaMicrophone } from "react-icons/fa";
 import { doc, onSnapshot } from "firebase/firestore";
 import { MdKeyboard, MdMenuBook } from "react-icons/md";
 import { FiArrowRight, FiHelpCircle } from "react-icons/fi";
@@ -61,7 +64,10 @@ import useSoundSettings from "../hooks/useSoundSettings";
 import { submitActionSound, nextButtonSound, deliciousSound, clickSound, selectSound } from "../constants/sounds";
 import RandomCharacter from "./RandomCharacter";
 import VoiceOrb from "./VoiceOrb";
-import XpProgressHeader from "./XpProgressHeader";
+import {
+  HistoryLectureSkeleton,
+  HistoryQuestionSkeleton,
+} from "./HistorySkeletons";
 import { useThemeStore } from "../useThemeStore";
 import {
   SOFT_STOP_BUTTON_BG,
@@ -481,7 +487,7 @@ function buildSeedLecturePrompt({
 }) {
   const TARGET = LANG_NAME(targetLang);
   const SUPPORT = LANG_NAME(supportLang);
-  const diff = difficultyHint(cefrLevel);
+  const diff = lessonContent?.isGoal ? focusedLessonPrompt(lessonContent) : difficultyHint(cefrLevel);
 
   // Tutorial reading is a fixed four-sentence welcome so model variance cannot
   // turn the first reading activity into a normal lecture.
@@ -497,10 +503,7 @@ function buildSeedLecturePrompt({
   const tutorialDirective = isTutorial
     ? tutorialReadingDirective(TARGET)
     : "";
-  const curriculumPromptContext = buildCurriculumPromptContext(
-    lessonContent?.curriculumContext,
-    { mode: "reading" },
-  );
+  const curriculumPromptContext = [buildCurriculumPromptContext(lessonContent?.curriculumContext, { mode: "reading" }), focusedLessonPrompt(lessonContent)].filter(Boolean).join("\n");
 
   return `
 Write ONE short educational lecture about ${topicText}. ${promptText}. Difficulty: ${
@@ -549,7 +552,7 @@ function buildLecturePrompt({
 }) {
   const TARGET = LANG_NAME(targetLang);
   const SUPPORT = LANG_NAME(supportLang);
-  const diff = difficultyHint(cefrLevel);
+  const diff = lessonContent?.isGoal ? focusedLessonPrompt(lessonContent) : difficultyHint(cefrLevel);
   const prev =
     previousTitles && previousTitles.length
       ? previousTitles.map((t) => `- ${t}`).join("\n")
@@ -568,10 +571,7 @@ function buildLecturePrompt({
   const tutorialDirective = isTutorial
     ? tutorialReadingDirective(TARGET)
     : "";
-  const curriculumPromptContext = buildCurriculumPromptContext(
-    lessonContent?.curriculumContext,
-    { mode: "reading" },
-  );
+  const curriculumPromptContext = [buildCurriculumPromptContext(lessonContent?.curriculumContext, { mode: "reading" }), focusedLessonPrompt(lessonContent)].filter(Boolean).join("\n");
 
   return `
 You are creating educational reading material for language learners focused on ${topicText}. ${promptText}${tutorialDirective}
@@ -751,7 +751,7 @@ function buildStreamingPrompt({
 }) {
   const TARGET = LANG_NAME(targetLang);
   const SUPPORT = LANG_NAME(supportLang);
-  const diff = difficultyHint(cefrLevel);
+  const diff = lessonContent?.isGoal ? focusedLessonPrompt(lessonContent) : difficultyHint(cefrLevel);
   const prev =
     previousTitles && previousTitles.length
       ? previousTitles.map((t) => `- ${t}`).join("\n")
@@ -762,10 +762,7 @@ function buildStreamingPrompt({
     lessonContent?.scenario ||
     "general cultural and linguistic concepts";
   const promptText = lessonContent?.prompt || "";
-  const curriculumPromptContext = buildCurriculumPromptContext(
-    lessonContent?.curriculumContext,
-    { mode: "reading" },
-  );
+  const curriculumPromptContext = [buildCurriculumPromptContext(lessonContent?.curriculumContext, { mode: "reading" }), focusedLessonPrompt(lessonContent)].filter(Boolean).join("\n");
 
   const isTutorial = lessonContent?.topic === "tutorial";
   if (isTutorial) {
@@ -875,14 +872,7 @@ export default function History({
   const paperPanelBgRaised = "rgba(247, 240, 229, 0.98)";
   const paperPanelBorder = "rgba(185, 156, 118, 0.34)";
   const paperPanelShadow = "0 16px 34px rgba(97, 74, 47, 0.14)";
-  const paperActionBg = "#26aabd";
-  const paperActionHoverBg = "#1d96a7";
-  const paperActionActiveBg = "#178392";
-  const paperActionDisabledBg = "rgba(38, 170, 189, 0.42)";
-  const paperActionShadow = "0 4px 0 #166976";
-  const paperSecondaryButtonBg = "rgba(255, 250, 241, 0.98)";
   const paperSecondaryButtonHoverBg = "rgba(245, 236, 222, 0.98)";
-  const paperSecondaryButtonActiveBg = "rgba(239, 228, 212, 0.98)";
   const paperSuccessBg =
     "linear-gradient(135deg, rgba(231, 246, 233, 0.96), rgba(249, 243, 233, 0.95))";
   const speechAccentMap = isLightTheme
@@ -903,8 +893,7 @@ export default function History({
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, []);
 
-  const { xp, levelNumber, progressPct, progress, npub, isLoading } =
-    useSharedProgress();
+  const { progress, npub, isLoading } = useSharedProgress();
 
   // Lesson progress (mirrors Vocabulary / GrammarBook pattern)
   const lessonXpGoal = lesson?.xpReward || 0;
@@ -1077,18 +1066,6 @@ export default function History({
     setSpeechTranscript("");
   }
 
-  function switchReviewFormat(format) {
-    if (format === reviewFormat) return;
-    stopListening();
-    setReviewFormat(format);
-    setReviewAnswer("");
-    setReviewSubmitted(false);
-    setReviewCorrect(null);
-    setSpeechTranscript("");
-    setSpeechFeedback(null);
-    setSpeechSubmitted(false);
-    setExplanationText("");
-  }
 
   async function translateLectureLines() {
     if (!viewLecture?.id || !targetSentences.length || isTranslatingLecture)
@@ -1352,6 +1329,9 @@ export default function History({
     const xpAward = getRandomHistoryXp();
     const xpReason = "Immediate random 5–8 XP award.";
 
+    const chosenReviewFormat =
+      hasSpeechRecognition && Math.random() < 0.5 ? "speech" : "question";
+
     const payload = {
       title: cleanTitle,
       target: safeTarget,
@@ -1361,6 +1341,7 @@ export default function History({
       supportLang,
       xpAward,
       xpReason,
+      reviewFormat: chosenReviewFormat,
       createdAtClient: Date.now(),
       awarded: false, // ← XP not yet claimed
     };
@@ -1534,6 +1515,9 @@ export default function History({
       const xpAward = getRandomHistoryXp();
       const xpReason = "Immediate random 5–8 XP award.";
 
+      const chosenReviewFormat =
+        hasSpeechRecognition && Math.random() < 0.5 ? "speech" : "question";
+
       // Save locally (do not award yet)
       const payload = {
         title: finalTitle,
@@ -1544,6 +1528,7 @@ export default function History({
         supportLang,
         xpAward,
         xpReason,
+        reviewFormat: chosenReviewFormat,
         reviewQuestion: bundledReviewQuestion,
         reviewQuestionType: plannedReviewQuestionType,
         createdAtClient: Date.now(),
@@ -1913,7 +1898,7 @@ Return ONLY valid JSON:
 
   // Reset review state when lecture changes
   useEffect(() => {
-    setReviewFormat(null);
+    setReviewFormat(activeLecture?.reviewFormat || null);
     setReviewQuestion(activeLecture?.reviewQuestion || null);
     setExplanationText("");
     setIsLoadingExplanation(false);
@@ -1927,7 +1912,7 @@ Return ONLY valid JSON:
     stopListening();
   }, [activeId]); // eslint-disable-line
 
-  // Default to read-aloud format when a lecture is ready.
+  // Randomize modality (speech or question) when a lecture is ready.
   useEffect(() => {
     if (
       activeLecture?.target &&
@@ -1935,9 +1920,27 @@ Return ONLY valid JSON:
       !isGenerating &&
       reviewFormat === null
     ) {
-      setReviewFormat("speech");
+      const chosen =
+        activeLecture?.reviewFormat ||
+        (hasSpeechRecognition && Math.random() < 0.5 ? "speech" : "question");
+      setReviewFormat(chosen);
+      if (!activeLecture?.reviewFormat && activeLecture?.id) {
+        setLectures((prev) =>
+          prev.map((lec) =>
+            lec.id === activeLecture.id ? { ...lec, reviewFormat: chosen } : lec,
+          ),
+        );
+      }
     }
-  }, [activeLecture?.id, draftLecture, isGenerating]); // eslint-disable-line
+  }, [
+    activeLecture?.id,
+    activeLecture?.reviewFormat,
+    activeLecture?.target,
+    draftLecture,
+    hasSpeechRecognition,
+    isGenerating,
+    reviewFormat,
+  ]); // eslint-disable-line
 
   // Gemini normally bundles the review question with the lecture stream. Use
   // Nano once as a fallback only when that bundled record is missing or invalid.
@@ -1993,36 +1996,15 @@ Return ONLY valid JSON:
   }
 
   return (
-    <Box p={[3, 4, 6]}>
-      <VStack spacing={5} align="stretch" maxW="1100px" mx="auto">
-        {/* Header: Level / XP */}
-        <Box justifyContent={"center"} display="flex">
-          <Box width="50%">
-            <XpProgressHeader
-              levelText={t("reading_badge_level", { level: levelNumber })}
-              xpText={t("reading_badge_xp", { xp })}
-              progressPct={progressPct}
-              mb={2}
-              xpBadgeProps={{ px: 2, py: 1, rounded: "md" }}
-            />
-          </Box>
-        </Box>
-
+    <Box px={{ base: 0, md: 4, lg: 6 }} pt={{ base: 1.5, md: 4, lg: 6 }} pb={{ base: 2, md: 4, lg: 6 }}>
+      <VStack spacing={{ base: 3, md: 5 }} align="stretch" maxW="1100px" mx="auto">
         {/* Controls */}
         <HStack justify="space-between" flexWrap="wrap" gap={3}>
           <HStack gap={2}>
             <MdMenuBook />
             <Text fontWeight="semibold">{t("reading_title")}</Text>
           </HStack>
-          {onSkip && (
-            <Button
-              onClick={handleSkip}
-              // boxShadow={"0px 4px 0px #3f4546"}
-              variant="ghost"
-            >
-              {t("reading_skip")}
-            </Button>
-          )}
+
         </HStack>
 
         {/* Main content area */}
@@ -2044,33 +2026,13 @@ Return ONLY valid JSON:
             width="100%"
           >
             {isLoading ? (
-              <VStack spacing={3} width="100%" justify="center" minH="280px">
-                <VoiceOrb
-                  state={
-                    ["idle", "listening", "speaking"][
-                      Math.floor(Math.random() * 3)
-                    ]
-                  }
-                  size={48}
-                />
-                <Text fontSize="lg" opacity={0.9}>
-                  {t("reading_loading") || "Loading settings..."}
-                </Text>
-              </VStack>
+              <HistoryLectureSkeleton
+                statusText={t("reading_loading") || "Loading settings..."}
+              />
             ) : isGenerating && !draftLecture ? (
-              <VStack spacing={3} width="100%" justify="center" minH="280px">
-                <VoiceOrb
-                  state={
-                    ["idle", "listening", "speaking"][
-                      Math.floor(Math.random() * 3)
-                    ]
-                  }
-                  size={48}
-                />
-                <Text fontSize="lg" opacity={0.9}>
-                  {t("reading_generating") || "Creating lecture..."}
-                </Text>
-              </VStack>
+              <HistoryLectureSkeleton
+                statusText={t("reading_generating") || "Creating lecture..."}
+              />
             ) : viewLecture ? (
               <VStack align="stretch" spacing={4}>
                 <Text
@@ -2093,14 +2055,7 @@ Return ONLY valid JSON:
                     <IconButton
                       icon={
                         isSynthesizingTarget ? (
-                          <VoiceOrb
-                            state={
-                              ["idle", "listening", "speaking"][
-                                Math.floor(Math.random() * 3)
-                              ]
-                            }
-                            size={24}
-                          />
+                          <Spinner size="xs" color="teal.400" />
                         ) : (
                           <PiLightningDuotone size="20px" />
                         )
@@ -2382,39 +2337,7 @@ Return ONLY valid JSON:
                   <Box>
                     <Divider opacity={0.2} mb={3} />
 
-                    {/* Tutorial mode: let user toggle format */}
-                    {reviewFormat && (
-                      <HStack spacing={3} mb={3} justify="center">
-                        <Text
-                          fontSize="sm"
-                          fontWeight={
-                            reviewFormat === "question" ? "bold" : "normal"
-                          }
-                          opacity={reviewFormat === "question" ? 1 : 0.6}
-                        >
-                          {t("history_format_question")}
-                        </Text>
-                        <Switch
-                          size="md"
-                          colorScheme="purple"
-                          isChecked={reviewFormat === "speech"}
-                          onChange={() =>
-                            switchReviewFormat(
-                              reviewFormat === "speech" ? "question" : "speech",
-                            )
-                          }
-                        />
-                        <Text
-                          fontSize="sm"
-                          fontWeight={
-                            reviewFormat === "speech" ? "bold" : "normal"
-                          }
-                          opacity={reviewFormat === "speech" ? 1 : 0.6}
-                        >
-                          {t("history_format_speech")}
-                        </Text>
-                      </HStack>
-                    )}
+
 
                     {/* Speech format */}
                     {reviewFormat === "speech" ? (
@@ -2425,82 +2348,7 @@ Return ONLY valid JSON:
 
                         {!speechSubmitted && (
                           <>
-                            <HStack justify="center" spacing={2}>
-                              {!isListening ? (
-                                <Button
-                                  size="sm"
-                                  colorScheme="purple"
-                                  leftIcon={<PiMicrophoneStageDuotone />}
-                                  onClick={() => {
-                                    playSound(selectSound);
-                                    startListening();
-                                  }}
-                                  isDisabled={!hasSpeechRecognition}
-                                >
-                                  {t("history_speech_start_mic")}
-                                </Button>
-                              ) : (
-                                <>
-                                  <Button
-                                    size="sm"
-                                    bg={SOFT_STOP_BUTTON_BG}
-                                    color="white"
-                                    boxShadow={`0px 4px 0px ${SOFT_STOP_BUTTON_EDGE}`}
-                                    leftIcon={<PiStopDuotone />}
-                                    onClick={() => {
-                                      playSound(selectSound);
-                                      stopListening();
-                                    }}
-                                    _hover={{ bg: SOFT_STOP_BUTTON_HOVER_BG }}
-                                    _active={{
-                                      transform: "translateY(2px)",
-                                      boxShadow: "none",
-                                    }}
-                                  >
-                                    {t("history_speech_stop_mic")}
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant={isLightTheme ? "solid" : "outline"}
-                                    bg={
-                                      isLightTheme
-                                        ? paperSecondaryButtonBg
-                                        : undefined
-                                    }
-                                    color={isLightTheme ? paperText : undefined}
-                                    borderWidth={isLightTheme ? "1px" : undefined}
-                                    borderColor={
-                                      isLightTheme ? paperPanelBorder : undefined
-                                    }
-                                    boxShadow={
-                                      isLightTheme
-                                        ? "0 4px 0 rgba(178, 156, 127, 0.46)"
-                                        : undefined
-                                    }
-                                    onClick={() => {
-                                      playSound(selectSound);
-                                      startOverSpeech();
-                                    }}
-                                    _hover={
-                                      isLightTheme
-                                        ? { bg: paperSecondaryButtonHoverBg }
-                                        : undefined
-                                    }
-                                    _active={
-                                      isLightTheme
-                                        ? {
-                                            bg: paperSecondaryButtonActiveBg,
-                                            transform: "translateY(2px)",
-                                            boxShadow: "0 2px 0 rgba(178, 156, 127, 0.38)",
-                                          }
-                                        : undefined
-                                    }
-                                  >
-                                    {t("history_speech_start_over")}
-                                  </Button>
-                                </>
-                              )}
-                            </HStack>
+
 
                             {isListening && (
                               <VStack spacing={1} align="center">
@@ -2529,61 +2377,7 @@ Return ONLY valid JSON:
                               </Text>
                             )}
 
-                            {speechTranscript && (
-                              <Box display="flex" justifyContent="center">
-                                <Button
-                                  size="md"
-                                  colorScheme={isLightTheme ? undefined : "teal"}
-                                  bg={isLightTheme ? paperActionBg : undefined}
-                                  color={isLightTheme ? "white" : undefined}
-                                  boxShadow={
-                                    isLightTheme ? paperActionShadow : undefined
-                                  }
-                                  onClick={gradeSpeechAttempt}
-                                  isLoading={isGradingSpeech}
-                                  loadingText={t("history_speech_submitting")}
-                                  isDisabled={!speechTranscript.trim()}
-                                  maxW="300px"
-                                  w="full"
-                                  py={6}
-                                  _hover={
-                                    isLightTheme
-                                      ? { bg: paperActionHoverBg }
-                                      : undefined
-                                  }
-                                  _active={
-                                    isLightTheme
-                                      ? {
-                                          bg: paperActionActiveBg,
-                                          transform: "translateY(2px)",
-                                          boxShadow: "0 2px 0 #166976",
-                                        }
-                                      : undefined
-                                  }
-                                  _loading={
-                                    isLightTheme
-                                      ? {
-                                          bg: paperActionBg,
-                                          color: "white",
-                                          _hover: { bg: paperActionBg },
-                                        }
-                                      : undefined
-                                  }
-                                  _disabled={
-                                    isLightTheme
-                                      ? {
-                                          bg: paperActionDisabledBg,
-                                          color: "rgba(255,255,255,0.95)",
-                                          boxShadow: "none",
-                                          opacity: 1,
-                                        }
-                                      : undefined
-                                  }
-                                >
-                                  {t("history_speech_submit")}
-                                </Button>
-                              </Box>
-                            )}
+
                           </>
                         )}
 
@@ -2858,28 +2652,7 @@ Return ONLY valid JSON:
                                   )}
 
                                 {/* Next button - always pass */}
-                                {activeLecture && (
-                                  <Box
-                                    width="100%"
-                                    display="flex"
-                                    justifyContent="center"
-                                  >
-                                    <Button
-                                      rightIcon={<FiArrowRight />}
-                                      colorScheme="cyan"
-                                      variant="solid"
-                                      onClick={finishReadingAndNext}
-                                      isDisabled={isGenerating}
-                                      shadow="md"
-                                      width="full"
-                                      py={6}
-                                      size="lg"
-                                      maxWidth="250px"
-                                    >
-                                      {t("reading_btn_next") || "Next"}
-                                    </Button>
-                                  </Box>
-                                )}
+
 
                                 {lessonProgress && lessonProgress.total > 0 && (
                                   <VStack
@@ -2927,23 +2700,9 @@ Return ONLY valid JSON:
                         )}
                       </VStack>
                     ) : isGeneratingQuestion ? (
-                      <Center w="100%" minH="140px" py={4}>
-                        <HStack spacing={3} align="center">
-                          <Box flexShrink={0} lineHeight="0">
-                            <VoiceOrb
-                              state={
-                                ["idle", "listening", "speaking"][
-                                  Math.floor(Math.random() * 3)
-                                ]
-                              }
-                              size={24}
-                            />
-                          </Box>
-                          <Text fontSize="sm" opacity={0.7} textAlign="center">
-                            {t("history_generating_question")}
-                          </Text>
-                        </HStack>
-                      </Center>
+                      <HistoryQuestionSkeleton
+                        statusText={t("history_generating_question") || "Generating question…"}
+                      />
                     ) : reviewQuestion ? (
                       <VStack align="stretch" spacing={3}>
                         {/* <Text fontWeight="600" fontSize="sm">
@@ -2979,15 +2738,7 @@ Return ONLY valid JSON:
                                   e.key === "Enter" && checkReviewAnswer()
                                 }
                               />
-                              <Button
-                                size="sm"
-                                colorScheme="teal"
-                                onClick={checkReviewAnswer}
-                                isLoading={isCheckingAnswer}
-                                isDisabled={!reviewAnswer.trim()}
-                              >
-                                {t("history_check_answer")}
-                              </Button>
+
                             </HStack>
                             {showReviewKeyboard && showReviewKeyboardButton && (
                               <VirtualKeyboard
@@ -3107,15 +2858,7 @@ Return ONLY valid JSON:
                                 </Box>
                               ))}
                             </VStack>
-                            <Button
-                              size="sm"
-                              colorScheme="teal"
-                              onClick={checkReviewAnswer}
-                              isDisabled={!reviewAnswer}
-                              w="fit-content"
-                            >
-                              {t("history_check_answer")}
-                            </Button>
+
                           </>
                         ) : (
                           <>
@@ -3135,15 +2878,7 @@ Return ONLY valid JSON:
                                   e.key === "Enter" && checkReviewAnswer()
                                 }
                               />
-                              <Button
-                                size="sm"
-                                colorScheme="teal"
-                                onClick={checkReviewAnswer}
-                                isLoading={isCheckingAnswer}
-                                isDisabled={!reviewAnswer.trim()}
-                              >
-                                {t("history_check_answer")}
-                              </Button>
+
                             </HStack>
                             {showReviewKeyboard && showReviewKeyboardButton && (
                               <VirtualKeyboard
@@ -3177,198 +2912,10 @@ Return ONLY valid JSON:
                           </>
                         )}
 
-                        {reviewCorrect !== null && (
-                          <SlideFade in={true} offsetY="10px">
-                            <VStack spacing={3} align="stretch">
-                              <VStack
-                                spacing={3}
-                                align="stretch"
-                                p={4}
-                                borderRadius="xl"
-                                style={questionSquircleStyle}
-                                bg={
-                                  reviewCorrect
-                                    ? "linear-gradient(90deg, rgba(72,187,120,0.16), rgba(56,161,105,0.08))"
-                                    : "linear-gradient(90deg, rgba(245,101,101,0.16), rgba(229,62,62,0.08))"
-                                }
-                                borderWidth="1px"
-                                borderColor={
-                                  reviewCorrect ? "green.400" : "red.300"
-                                }
-                                boxShadow="0 12px 30px rgba(0, 0, 0, 0.3)"
-                              >
-                                <HStack spacing={3} align="center">
-                                  <Flex
-                                    w="44px"
-                                    h="44px"
-                                    rounded="full"
-                                    align="center"
-                                    justify="center"
-                                    bg={reviewCorrect ? "green.500" : "red.500"}
-                                    color="white"
-                                    fontWeight="bold"
-                                    fontSize="lg"
-                                    boxShadow="0 10px 24px rgba(0,0,0,0.22)"
-                                    flexShrink={0}
-                                  >
-                                    {reviewCorrect ? "✓" : "✖"}
-                                  </Flex>
-                                  <Box flex="1">
-                                    <Text fontWeight="semibold">
-                                      {reviewCorrect
-                                        ? t("history_correct")
-                                        : t("history_not_quite")}
-                                    </Text>
-                                  </Box>
-                                </HStack>
 
-                                {!reviewCorrect && (
-                                  <Button
-                                    leftIcon={
-                                      isLoadingExplanation ? (
-                                        <VoiceOrb
-                                          state={
-                                            ["idle", "listening", "speaking"][
-                                              Math.floor(Math.random() * 3)
-                                            ]
-                                          }
-                                          size={24}
-                                        />
-                                      ) : (
-                                        <FiHelpCircle />
-                                      )
-                                    }
-                                    colorScheme="pink"
-                                    onClick={() => {
-                                      playSound(selectSound);
-                                      explainReviewAnswer();
-                                    }}
-                                    isDisabled={
-                                      isLoadingExplanation || !!explanationText
-                                    }
-                                    width="full"
-                                    py={6}
-                                    size="lg"
-                                  >
-                                    {t("history_explain_answer")}
-                                  </Button>
-                                )}
-
-                                {reviewCorrect && activeLecture && (
-                                  <Box
-                                    width="100%"
-                                    display="flex"
-                                    justifyContent={"center"}
-                                  >
-                                    <Button
-                                      rightIcon={<FiArrowRight />}
-                                      colorScheme="cyan"
-                                      variant="solid"
-                                      onClick={finishReadingAndNext}
-                                      isDisabled={isGenerating}
-                                      shadow="md"
-                                      width="full"
-                                      py={6}
-                                      size="lg"
-                                      maxWidth="250px"
-                                    >
-                                      {activeLecture.awarded
-                                        ? t("reading_btn_next") ||
-                                          "Next lecture"
-                                        : t("reading_btn_finish") ||
-                                          "Finished reading"}
-                                    </Button>
-                                  </Box>
-                                )}
-
-                                {reviewCorrect &&
-                                  lessonProgress &&
-                                  lessonProgress.total > 0 && (
-                                    <VStack
-                                      align="center"
-                                      spacing={2}
-                                      mt={2}
-                                      px={1}
-                                      width="full"
-                                    >
-                                      <HStack
-                                        justify="center"
-                                        align="center"
-                                        spacing={3}
-                                        fontSize="xs"
-                                      >
-                                        <Text
-                                          color="whiteAlpha.800"
-                                          fontWeight="semibold"
-                                          textAlign="center"
-                                        >
-                                          {lessonProgress.label}
-                                        </Text>
-                                        <Text
-                                          color="whiteAlpha.800"
-                                          fontWeight="semibold"
-                                          textAlign="center"
-                                        >
-                                          {Math.round(lessonProgress.pct)}%
-                                        </Text>
-                                      </HStack>
-                                      <Box width="60%" mx="auto">
-                                        <WaveBar
-                                          value={lessonProgress.pct}
-                                          height={20}
-                                          start="#4aa8ff"
-                                          end="#75f8ffff"
-                                        />
-                                      </Box>
-                                    </VStack>
-                                  )}
-                              </VStack>
-                              <RandomCharacter />
-                              {!reviewCorrect && explanationText && (
-                                <Box
-                                  p={4}
-                                  borderRadius="lg"
-                                  style={questionSquircleStyle}
-                                  bg="rgba(246, 92, 174, 0.1)"
-                                  borderWidth="1px"
-                                  borderColor="pink.400"
-                                  boxShadow="0 4px 12px rgba(0, 0, 0, 0.2)"
-                                >
-                                  <HStack spacing={2} mb={2}>
-                                    <FiHelpCircle color="var(--chakra-colors-pink-400)" />
-                                    <Text
-                                      fontWeight="semibold"
-                                      color="pink.300"
-                                    >
-                                      {t("history_explanation_heading")}
-                                    </Text>
-                                  </HStack>
-                                  <Text
-                                    fontSize="sm"
-                                    color="whiteAlpha.900"
-                                    lineHeight="1.6"
-                                    {...supportTextProps}
-                                    sx={{ unicodeBidi: "plaintext" }}
-                                  >
-                                    {explanationText}
-                                  </Text>
-                                </Box>
-                              )}
-                            </VStack>
-                          </SlideFade>
-                        )}
                       </VStack>
                     ) : (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          playSound(selectSound);
-                          generateReviewQuestion();
-                        }}
-                      >
-                        {t("history_generate_review")}
-                      </Button>
+                      null
                     )}
                   </Box>
                 ) : null}
@@ -3401,6 +2948,158 @@ Return ONLY valid JSON:
             )}
           </Box>
         </HStack>
+        <QuestionActionArea
+          feedback={reviewFormat === "speech" ? (speechSubmitted ? true : null) : reviewCorrect}
+          actions={
+            <ActivityActionRow
+              tone={
+                isListening
+                  ? "stop"
+                  : (reviewFormat === "speech" ? speechSubmitted : reviewCorrect === true)
+                  ? "success"
+                  : reviewFormat === "speech" && !speechTranscript.trim()
+                  ? "speak"
+                  : "primary"
+              }
+              primary={
+                viewLecture && !draftLecture && !isGenerating ? (
+                  (
+                    reviewFormat === "speech" ? speechSubmitted : reviewCorrect === true
+                  ) ? (
+                    <Button
+                      colorScheme="teal"
+                      onClick={finishReadingAndNext}
+                      isDisabled={!activeLecture || isGenerating}
+                      rightIcon={<FiArrowRight />}
+                    >
+                      {activeLecture?.awarded
+                        ? t("reading_btn_next")
+                        : t("reading_btn_finish")}
+                    </Button>
+                  ) : reviewFormat === "speech" ? (
+                    <Button
+                      colorScheme={isListening ? "pink" : "teal"}
+                      isLoading={isGradingSpeech}
+                      isDisabled={!hasSpeechRecognition || isGradingSpeech}
+                      leftIcon={
+                        !isListening && !speechTranscript.trim() ? (
+                          <FaMicrophone />
+                        ) : undefined
+                      }
+                      onClick={() => {
+                        if (isListening) {
+                          playSound(selectSound);
+                          stopListening();
+                        } else if (speechTranscript.trim()) gradeSpeechAttempt();
+                        else {
+                          playSound(selectSound);
+                          startListening();
+                        }
+                      }}
+                    >
+                      {isListening
+                        ? t("history_speech_stop_mic")
+                        : speechTranscript.trim()
+                        ? t("history_speech_submit")
+                        : t("history_speech_start_mic")}
+                    </Button>
+                  ) : reviewQuestion ? (
+                    <Button
+                      colorScheme="teal"
+                      onClick={checkReviewAnswer}
+                      isLoading={isCheckingAnswer}
+                      isDisabled={!reviewAnswer.trim() || isCheckingAnswer}
+                    >
+                      {t("quiz_submit") || "Submit"}
+                    </Button>
+                  ) : (
+                    <Button
+                      colorScheme="teal"
+                      isLoading={isGeneratingQuestion}
+                      isDisabled={isGeneratingQuestion}
+                      onClick={() => {
+                        playSound(selectSound);
+                        generateReviewQuestion();
+                      }}
+                    >
+                      {isGeneratingQuestion
+                        ? t("history_generating_question")
+                        : t("history_generate_review")}
+                    </Button>
+                  )
+                ) : (
+                  <Button isDisabled isLoading={isLoading || isGenerating}>
+                    {t("reading_loading")}
+                  </Button>
+                )
+              }
+            >
+              {onSkip && (
+                <Button
+                  onClick={handleSkip}
+                  // boxShadow={"0px 4px 0px #3f4546"}
+                  variant="ghost"
+                >
+                  {t("reading_skip")}
+                </Button>
+              )}
+              {viewLecture &&
+                !draftLecture &&
+                !isGenerating &&
+                reviewFormat === "speech" &&
+                !speechSubmitted &&
+                speechTranscript &&
+                !isListening && (
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      playSound(selectSound);
+                      startOverSpeech();
+                    }}
+                  >
+                    {t("history_speech_start_over")}
+                  </Button>
+                )}
+            </ActivityActionRow>
+          }
+        >
+          {reviewFormat === "speech" ? (
+            speechSubmitted &&
+            speechFeedback && (
+              <Box
+                role="status"
+                px={1} py={2}
+
+
+                maxH="28dvh"
+                overflowY="auto"
+              >
+                <Text>{speechFeedback.summary}</Text>
+              </Box>
+            )
+          ) : (
+            <FeedbackRail
+              compact
+              ok={reviewCorrect}
+              showNext={false}
+              t={(key) =>
+                ({
+                  correct: t("history_correct"),
+                  try_again: t("history_not_quite"),
+                  flashcard_explain_answer: t("history_explain_answer"),
+                }[key])
+              }
+              userLanguage={uiLang}
+              onExplainAnswer={() => {
+                playSound(selectSound);
+                explainReviewAnswer();
+              }}
+              explanationText={explanationText}
+              isLoadingExplanation={isLoadingExplanation}
+              lessonProgress={lessonProgress}
+            />
+          )}
+        </QuestionActionArea>
       </VStack>
     </Box>
   );

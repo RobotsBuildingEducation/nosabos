@@ -68,10 +68,15 @@ This document establishes the UI architecture, interaction patterns, and design 
 
 ---
 
-### 3. Inline Assistant Button (`MdOutlineSupportAgent`)
-- **Header Placement**: Located in the top-right corner of the question card header.
-- **Inline Card**: Clicking the assistant button **must NOT** open the global bottom drawer or floating chat. It renders an inline streaming assistance card directly inside the question card using `VoiceOrb` and `ReactMarkdown`.
-- **Styling**: Wrapped with `getQuestionAssistantPanelProps()` with clear markdown styling.
+### 3. Assistant Button (`MdOutlineSupportAgent`) & Bottom Feedback Rail
+- **Header Placement**: Located in the top-right corner of the question card header or top-right tool area.
+- **Bottom Feedback Rail Rendering**: Clicking the assistant button activates the assistant directly inside the bottom **Feedback Rail** (`FeedbackRail`) within the **Activity Action Bar** (`QuestionActionArea`). It does **not** clutter question cards with inline expandable panels or launch the floating drawer.
+- **Blue Theme Accent**: Unlike correct answers (green) or incorrect answers (red), the assistant rail activates a focused blue theme utilizing `--question-assistant-accent` and `--question-assistant-tint` (`[data-question-feedback="assistant"]`).
+- **Dynamic Spring Expansion**: As the assistant response streams in, the activity action bar dynamically measures the content height and spring-animates to fit the content comfortably.
+- **Dismissal & Toggling**:
+  - Learners can dismiss the assistant via the header "✕" button or the bottom "Close" button on the blue `ActivityActionRow`.
+  - Clicking the assistant button on the question card toggles the rail closed; reopening returns immediately to the cached response without refetching.
+  - Submitting an answer or skipping automatically closes the assistant and switches the action bar to the appropriate judging or question state.
 - **Guidance Rule**: Keeps explanations concise (≤ 60 words) in the learner's support language, providing helpful conceptual clues without giving away the exact answer immediately.
 
 ---
@@ -163,7 +168,7 @@ When implementing or refining any of the 9 question variants:
 1. [ ] **AI Grading Judge**: Ensure open-ended or semantic decisions delegate to an LLM Judge prompt (`build<Variant>JudgePrompt`).
 2. [ ] **Localization (`*I18n.js`)**: Create dedicated localized copy dictionary covering all 15+ support languages with `get<Variant>Copy`.
 3. [ ] **Minimalist Header**: Single title without emoji, single instruction line, assistant button on top-right.
-4. [ ] **Inline Assistant Support**: Supports streaming assistance in support language via `handleAskAssistant`.
+4. [ ] **Bottom Feedback Rail Assistant Support**: Supports streaming assistance in support language via `handleAskAssistant`, rendered in the bottom `FeedbackRail` with blue theme and auto-expanding action bar.
 5. [ ] **Responsive Container**: Bounded width (`maxW="720px"`), squircle styling, and responsive padding.
 6. [ ] **External Actions**: Submit and Skip buttons placed outside under the card.
 7. [ ] **FeedbackRail**: Uses `<FeedbackRail>` for correct/incorrect feedback with dynamic XP scaling, progress wavebar, and on-demand explanation.

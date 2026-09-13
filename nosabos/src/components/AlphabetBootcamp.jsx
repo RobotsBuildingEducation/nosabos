@@ -1,3 +1,8 @@
+import useGoalFocusStore from "../hooks/useGoalFocusStore";
+import { currentGoalFocus, recordGoalAttempt } from "../utils/learningIntelligence";
+import { getFocusedPhonicsDeck, savePracticeOutcome } from "../utils/focusedPracticeDecks";
+import ActivityActionRow from "./ActivityActionRow";
+import QuestionActionArea from "./QuestionActionArea";
 import React, {
   useCallback,
   useEffect,
@@ -69,6 +74,7 @@ import {
   withGermanAlphabetSupport,
 } from "../data/alphabetGermanLocalizer";
 import { FiVolume2 } from "react-icons/fi";
+import { FaMicrophone, FaStop } from "react-icons/fa";
 import {
   RiMicLine,
   RiStopCircleLine,
@@ -78,6 +84,7 @@ import {
   RiRefreshLine,
 } from "react-icons/ri";
 import { getPreferredTTSVoice, getTTSPlayer, TTS_LANG_TAG } from "../utils/tts";
+import { watchPhonicsPlaybackCompletion } from "../utils/phonicsPlayback";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
 import { awardXp } from "../utils/utils";
@@ -86,8 +93,7 @@ import {
   captureCompanionMemory,
   completeRepairFocus,
 } from "../utils/companionMemory";
-import useRepairFocusStore from "../hooks/useRepairFocusStore";
-import RepairFocusBanner from "./RepairFocusBanner";
+import useRepairFocusStore, { currentRepairFocus } from "../hooks/useRepairFocusStore";
 import {
   SOFT_STOP_BUTTON_BG,
   SOFT_STOP_BUTTON_HOVER_BG,
@@ -529,7 +535,9 @@ const ALPHABET_UI_TEXT = {
     close: "Close",
     sayThisWord: "Say this word:",
     grading: "Grading...",
+    next: "Next",
     nextWord: "Next word",
+    correct: "Correct!",
     tryAgain: "Try again",
     back: "Back",
     connecting: "Connecting...",
@@ -547,8 +555,8 @@ const ALPHABET_UI_TEXT = {
     generateWordErrorTitle: "Couldn't generate a new word",
     level: "Level",
     progress: "Progress",
-    alphabetHeadline: "{language} Alphabet",
-    alphabetSubhead: "Start by learning {language} letters and sounds.",
+    alphabetHeadline: "{language} Phonics",
+    alphabetSubhead: "Practice {language} letters and sounds.",
     note: "After this, switch to Path mode in the menu to explore lessons.",
     complete: "Congratulations! You've completed the alphabet.",
     deckComplete: "Deck cleared! Generate a new one to keep going.",
@@ -568,7 +576,9 @@ const ALPHABET_UI_TEXT = {
     close: "Cerrar",
     sayThisWord: "Di esta palabra:",
     grading: "Evaluando...",
+    next: "Siguiente",
     nextWord: "Siguiente palabra",
+    correct: "¡Correcto!",
     tryAgain: "Otra vez",
     back: "Volver",
     connecting: "Conectando...",
@@ -586,9 +596,8 @@ const ALPHABET_UI_TEXT = {
     generateWordErrorTitle: "No pudimos generar una palabra",
     level: "Nivel",
     progress: "Progreso",
-    alphabetHeadline: "Alfabeto {language}",
-    alphabetSubhead:
-      "Empieza aprendiendo las letras y sonidos del {language}.",
+    alphabetHeadline: "Fonética del {language}",
+    alphabetSubhead: "Practica las letras y los sonidos del {language}.",
     note:
       "Después de esto, cambia al modo Ruta en el menú para explorar las lecciones.",
     complete: "¡Felicidades! Has completado el alfabeto.",
@@ -607,7 +616,9 @@ const ALPHABET_UI_TEXT = {
     close: "Chiudi",
     sayThisWord: "Pronuncia questa parola:",
     grading: "Valutazione...",
+    next: "Avanti",
     nextWord: "Prossima parola",
+    correct: "Corretto!",
     tryAgain: "Riprova",
     back: "Indietro",
     connecting: "Connessione...",
@@ -625,9 +636,8 @@ const ALPHABET_UI_TEXT = {
     generateWordErrorTitle: "Non abbiamo potuto generare una nuova parola",
     level: "Livello",
     progress: "Progressi",
-    alphabetHeadline: "Alfabeto {language}",
-    alphabetSubhead:
-      "Inizia imparando le lettere e i suoni del {language}.",
+    alphabetHeadline: "Fonetica {language}",
+    alphabetSubhead: "Esercitati con le lettere e i suoni del {language}.",
     note:
       "Dopo questo, passa alla modalità Percorso nel menu per esplorare le lezioni.",
     complete: "Congratulazioni! Hai completato l'alfabeto.",
@@ -646,7 +656,9 @@ const ALPHABET_UI_TEXT = {
     close: "Fermer",
     sayThisWord: "Dis ce mot :",
     grading: "Evaluation...",
+    next: "Suivant",
     nextWord: "Mot suivant",
+    correct: "Correct !",
     tryAgain: "Reessaie",
     back: "Retour",
     connecting: "Connexion...",
@@ -664,9 +676,8 @@ const ALPHABET_UI_TEXT = {
     generateWordErrorTitle: "Impossible de generer un nouveau mot",
     level: "Niveau",
     progress: "Progres",
-    alphabetHeadline: "Alphabet {language}",
-    alphabetSubhead:
-      "Commence par apprendre les lettres et les sons du {language}.",
+    alphabetHeadline: "Phonétique {language}",
+    alphabetSubhead: "Pratique les lettres et les sons du {language}.",
     note:
       "Ensuite, passe au mode Parcours dans le menu pour explorer les lecons.",
     complete: "Felicitations ! Tu as termine l'alphabet.",
@@ -685,7 +696,9 @@ const ALPHABET_UI_TEXT = {
     close: "Schließen",
     sayThisWord: "Sprich dieses Wort:",
     grading: "Wird bewertet...",
+    next: "Weiter",
     nextWord: "Nächstes Wort",
+    correct: "Richtig!",
     tryAgain: "Erneut versuchen",
     back: "Zurück",
     connecting: "Verbindung wird hergestellt...",
@@ -703,9 +716,8 @@ const ALPHABET_UI_TEXT = {
     generateWordErrorTitle: "Kein neues Wort generierbar",
     level: "Level",
     progress: "Fortschritt",
-    alphabetHeadline: "{language}-Alphabet",
-    alphabetSubhead:
-      "Beginne mit den Buchstaben und Lauten von {language}.",
+    alphabetHeadline: "{language}-Phonetik",
+    alphabetSubhead: "Übe die Buchstaben und Laute von {language}.",
     note:
       "Wechsle danach im Menü zum Pfadmodus, um Lektionen zu erkunden.",
     complete: "Glückwunsch! Du hast das Alphabet abgeschlossen.",
@@ -724,7 +736,9 @@ const ALPHABET_UI_TEXT = {
     close: "閉じる",
     sayThisWord: "この単語を言ってください:",
     grading: "採点中...",
+    next: "次へ",
     nextWord: "次の単語",
+    correct: "正解！",
     tryAgain: "もう一度",
     back: "戻る",
     connecting: "接続中...",
@@ -742,8 +756,8 @@ const ALPHABET_UI_TEXT = {
     generateWordErrorTitle: "新しい単語を生成できませんでした",
     level: "レベル",
     progress: "進捗",
-    alphabetHeadline: "{language}の文字",
-    alphabetSubhead: "{language}の文字と音から始めましょう。",
+    alphabetHeadline: "{language}のフォニックス",
+    alphabetSubhead: "{language}の文字と音を練習しましょう。",
     note: "この後は、メニューでパスモードに切り替えてレッスンを探索しましょう。",
     complete: "おめでとうございます！文字練習を完了しました。",
     startSkillTree: "スキルツリーを始める",
@@ -761,7 +775,9 @@ const ALPHABET_UI_TEXT = {
     close: "बंद करें",
     sayThisWord: "यह शब्द बोलें:",
     grading: "मूल्यांकन हो रहा है...",
+    next: "आगे बढ़ें",
     nextWord: "अगला शब्द",
+    correct: "सही!",
     tryAgain: "फिर से कोशिश करें",
     back: "वापस",
     connecting: "कनेक्ट हो रहा है...",
@@ -779,8 +795,8 @@ const ALPHABET_UI_TEXT = {
     generateWordErrorTitle: "नया शब्द तैयार नहीं किया जा सका",
     level: "स्तर",
     progress: "प्रगति",
-    alphabetHeadline: "{language} वर्णमाला",
-    alphabetSubhead: "{language} की ध्वनियां और अक्षर सीखकर शुरुआत करें।",
+    alphabetHeadline: "{language} फ़ोनिक्स",
+    alphabetSubhead: "{language} के अक्षरों और ध्वनियों का अभ्यास करें।",
     note: "इसके बाद मेनू में पाथ मोड पर जाकर पाठों को देखें।",
     complete: "बधाई हो! आपने वर्णमाला पूरी कर ली है।",
     startSkillTree: "स्किल ट्री शुरू करें",
@@ -798,7 +814,9 @@ const ALPHABET_UI_TEXT = {
     close: "اقفل",
     sayThisWord: "قول الكلمة دي:",
     grading: "جارٍ التقييم...",
+    next: "التالي",
     nextWord: "الكلمة اللي بعد كده",
+    correct: "صحيح!",
     tryAgain: "حاول تاني",
     back: "رجوع",
     connecting: "جارٍ الاتصال...",
@@ -816,8 +834,8 @@ const ALPHABET_UI_TEXT = {
     generateWordErrorTitle: "ما قدرناش نطلّع كلمة جديدة",
     level: "المستوى",
     progress: "التقدّم",
-    alphabetHeadline: "أبجدية {language}",
-    alphabetSubhead: "ابدأ بتعلّم حروف وأصوات {language}.",
+    alphabetHeadline: "صوتيات {language}",
+    alphabetSubhead: "تدرّب على حروف وأصوات {language}.",
     note:
       "بعد كده بدّل لوضع المسار من القائمة علشان تستكشف الدروس.",
     complete: "مبروك! خلّصت الأبجدية.",
@@ -836,7 +854,9 @@ const ALPHABET_UI_TEXT = {
     close: "关闭",
     sayThisWord: "说这个词：",
     grading: "正在评分...",
+    next: "下一个",
     nextWord: "下一个词",
+    correct: "正确！",
     tryAgain: "再试一次",
     back: "返回",
     connecting: "正在连接...",
@@ -854,8 +874,8 @@ const ALPHABET_UI_TEXT = {
     generateWordErrorTitle: "无法生成新单词",
     level: "等级",
     progress: "进度",
-    alphabetHeadline: "{language}字母",
-    alphabetSubhead: "从学习{language}的字母和发音开始。",
+    alphabetHeadline: "{language}自然拼读",
+    alphabetSubhead: "练习{language}的字母和发音。",
     note:
       "完成后，在菜单中切换到路径模式继续学习课程。",
     complete: "恭喜！你已完成字母练习。",
@@ -878,7 +898,9 @@ ALPHABET_UI_TEXT.pt = {
   close: "Fechar",
   sayThisWord: "Diga esta palavra:",
   grading: "Avaliando...",
+  next: "Avançar",
   nextWord: "Próxima palavra",
+  correct: "Correto!",
   tryAgain: "Tentar novamente",
   back: "Voltar",
   connecting: "Conectando...",
@@ -897,9 +919,8 @@ ALPHABET_UI_TEXT.pt = {
   generateWordErrorTitle: "Não foi possível gerar uma nova palavra",
   level: "Nível",
   progress: "Progresso",
-  alphabetHeadline: "Alfabeto {language}",
-  alphabetSubhead:
-    "Comece aprendendo as letras e os sons do {language}.",
+  alphabetHeadline: "Fonética do {language}",
+  alphabetSubhead: "Pratique as letras e os sons do {language}.",
   note:
     "Depois disso, mude para o modo Caminho no menu para explorar as lições.",
   complete: "Parabéns! Você concluiu a prática do alfabeto.",
@@ -1108,13 +1129,14 @@ const normalizeMeaning = (meaning) => {
 };
 
 // Build AI grading prompt for alphabet practice
-function buildAlphabetJudgePrompt({ practiceWord, userAnswer, targetLang }) {
+function buildAlphabetJudgePrompt({ practiceWord, userAnswer, targetLang, phoneme = "" }) {
   const langName = LANGUAGE_NAMES[targetLang] || "the target";
 
   return `
 Judge if the user correctly pronounced a ${langName} word.
 
 Target word: ${practiceWord}
+${phoneme ? `Focus sound: ${phoneme}. The target sound must be recognizable in the attempt; do not accept a different sound just because the overall word is close.` : ""}
 User's pronunciation (transcribed): ${userAnswer}
 
 Policy:
@@ -1452,6 +1474,7 @@ const getHighlightedWordParts = (word, marker) => {
 };
 
 function LetterCard({
+  dockActions = false,
   playSound = () => {},
   letter,
   onPlay,
@@ -1471,6 +1494,7 @@ function LetterCard({
 }) {
   const uiLang = normalizeSupportLanguage(appLanguage, DEFAULT_SUPPORT_LANGUAGE);
   const [isPracticeMode, setIsPracticeMode] = useState(false);
+  const useDock = dockActions || isPracticeMode;
   const [isFlipped, setIsFlipped] = useState(false);
   const [isGrading, setIsGrading] = useState(false);
   const [isGeneratingWord, setIsGeneratingWord] = useState(false);
@@ -1549,6 +1573,7 @@ function LetterCard({
   } = useSpeechPractice({
     targetText: practiceWord || "placeholder",
     targetLang: targetLang,
+    transcriptionHint: practiceWord,
     onResult: ({ recognizedText: text, error }) => {
       if (error) {
         toast({
@@ -1576,6 +1601,7 @@ function LetterCard({
         model: DEFAULT_RESPONSES_MODEL,
         input: buildAlphabetJudgePrompt({
           practiceWord,
+          phoneme: letter?.phoneme || "",
           userAnswer: answer,
           targetLang,
         }),
@@ -1596,16 +1622,10 @@ function LetterCard({
       setIsCorrect(isYes);
       setShowResult(true);
 
-      // Daily plate: every graded letter practice counts toward the Phonics
-      // quest course (pass or fail, like flashcard reviews).
-      if (npub) {
-        void recordPlateActivity(npub, "phonics", targetLang);
-      }
-
       // Companion brain: a missed pronunciation is a high-signal phonics slip —
       // bank it for tomorrow's repair quest (it enriches itself via the cheap
       // model). Fire-and-forget so grading UI stays snappy.
-      if (!isYes) {
+      if (!isYes && !letter.isGoal) {
         captureCompanionMemory({
           npub,
           targetLang,
@@ -1620,8 +1640,31 @@ function LetterCard({
           // The letter/sound card id, not a generic label — lets a routed
           // repair deep-seed the deck with this exact card instead of a
           // random one (see the repair-focus deck reorder on mount).
-          sourceContext: letter?.id || "",
+          sourceContext: { card: { id: letter?.id || "", letter: letter?.letter || "", tts: letter?.tts || "", phoneme: letter?.phoneme || "", practiceWord, practiceWordMeaning: practiceWordMeaningData || {} } },
         });
+      }
+
+      const focused = letter.isGoal ? currentGoalFocus("alphabet") : letter.isRepair ? currentRepairFocus() : null;
+      if (letter.isGoal || letter.isRepair) {
+        if (!focused || focused.targetLang !== targetLang || focused.npub !== npub) return;
+        const artifact = await savePracticeOutcome(focused, "phonics", letter, isYes, "modeled");
+        if (isYes) {
+          playSound("correct"); setCorrectCount(c => c + 1);
+          await awardXp(npub, xp, targetLang, letter.isGoal ? "goalPhonics" : "repairPhonics");
+          const required = letter.isGoal
+            ? artifact?.cards?.slice(0, 2) || []
+            : artifact?.cards?.filter(
+                (card) =>
+                  card.practiceRole === "original" ||
+                  card.practiceRole === "transfer",
+              ) || [];
+          if (required.length && required.every(c => artifact.outcomes[c.id]?.success)) {
+            const observation = required.map(c => `${c.practiceRole}: ${artifact.outcomes[c.id].item} pronounced successfully after a model`).join("; ");
+            if (letter.isGoal) await recordGoalAttempt(focused, { success: true, support: "modeled", observation, domain: "pronunciation" });
+            else await completeRepairFocus({ success: true, support: "modeled", observation });
+          }
+        }
+        return;
       }
 
       let nextPracticeWord = practiceWord;
@@ -1632,19 +1675,9 @@ function LetterCard({
         // Auditory cue that the answer was correct.
         playSound("correct");
         setCorrectCount((c) => c + 1);
-        // Routed repair: a correct pronunciation here clears today's repair if
-        // the companion sent the learner to phonics to fix a weak sound.
-        if (useRepairFocusStore.getState().focus?.surface === "alphabet") {
-          void completeRepairFocus();
-        }
         if (npub) {
           await awardXp(npub, xp, targetLang);
           onXpAwarded?.(xp);
-        }
-        // Collect the card on its first clear this mount (works across rounds).
-        if (!collectedThisMountRef.current) {
-          collectedThisMountRef.current = true;
-          onCardCollected?.(letter.id);
         }
       }
 
@@ -1798,7 +1831,6 @@ function LetterCard({
 
       if (requestId !== wordPlaybackRequestRef.current) {
         player.cleanup?.();
-        wordPlayerRef.current = null;
         return;
       }
 
@@ -1815,8 +1847,8 @@ function LetterCard({
         player.cleanup?.();
       };
 
-      detachCompletionWatcher = watchRealtimeAudioCompletion(
-        player.audio,
+      detachCompletionWatcher = watchPhonicsPlaybackCompletion(
+        player,
         finishPlayback,
       );
 
@@ -1834,6 +1866,25 @@ function LetterCard({
     playSound(selectSound);
     setShowResult(false);
     setIsCorrect(false);
+  };
+
+  const handleNext = async () => {
+    playSound(nextButtonSound);
+
+    // If this card is an active deck card being cleared, advance the deck
+    if (onCardCollected) {
+      if (!collectedThisMountRef.current) {
+        collectedThisMountRef.current = true;
+        onCardCollected(letter.id);
+        if (npub && !letter.isGoal && !letter.isRepair) {
+          void recordPlateActivity(npub, "phonics", targetLang);
+        }
+      }
+      return;
+    }
+
+    // Repeat practice from collection: generate the next practice word
+    await handleNextWord();
   };
 
   const handleNextWord = async () => {
@@ -1993,21 +2044,35 @@ function LetterCard({
               {typeLabel}
             </Badge>
             <HStack spacing={2}>
-              <Button
-                size="sm"
-                background="transparent"
-                border="1px solid"
-                borderColor={APP_BORDER_STRONG}
-                boxShadow="0px 2px 0px rgba(148, 163, 184, 0.35)"
-                color={APP_TEXT_PRIMARY}
-                leftIcon={<RiMicLine size={12} />}
-                onClick={handlePracticeClick}
-                isLoading={isGeneratingWord}
-                fontSize="xs"
-                _hover={{ bg: APP_SURFACE_MUTED }}
-              >
-                {uiText(uiLang, "practice")}
-              </Button>
+              <>
+                {!useDock && (
+                  <Button
+                    size="sm"
+                    background="transparent"
+                    border="1px solid"
+                    borderColor={APP_BORDER_STRONG}
+                    boxShadow="0px 2px 0px rgba(148, 163, 184, 0.35)"
+                    color={APP_TEXT_PRIMARY}
+                    leftIcon={
+                      onCardCollected && correctCount > 0 ? undefined : (
+                        <RiMicLine size={12} />
+                      )
+                    }
+                    onClick={
+                      onCardCollected && correctCount > 0
+                        ? handleNext
+                        : handlePracticeClick
+                    }
+                    isLoading={isGeneratingWord}
+                    fontSize="xs"
+                    _hover={{ bg: APP_SURFACE_MUTED }}
+                  >
+                    {onCardCollected && correctCount > 0
+                      ? uiText(uiLang, "next")
+                      : uiText(uiLang, "practice")}
+                  </Button>
+                )}
+              </>
             </HStack>
           </HStack>
 
@@ -2182,24 +2247,32 @@ function LetterCard({
 
               <HStack spacing={2} mt={1}>
                 {isCorrect ? (
-                  <Button
-                    size="xs"
-                    colorScheme="green"
-                    onClick={handleNextWord}
-                    _hover={{ bg: "green.400" }}
-                  >
-                    {uiText(uiLang, "nextWord")}
-                  </Button>
+                  <>
+                    {!useDock && (
+                      <Button
+                        size="xs"
+                        colorScheme="green"
+                        onClick={handleNext}
+                        _hover={{ bg: "green.400" }}
+                      >
+                        {uiText(uiLang, onCardCollected ? "next" : "nextWord")}
+                      </Button>
+                    )}
+                  </>
                 ) : (
-                  <Button
-                    size="xs"
-                    variant="ghost"
-                    color={APP_TEXT_PRIMARY}
-                    onClick={handleTryAgain}
-                    _hover={{ bg: APP_SURFACE_MUTED }}
-                  >
-                    {uiText(uiLang, "tryAgain")}
-                  </Button>
+                  <>
+                    {!useDock && (
+                      <Button
+                        size="xs"
+                        variant="ghost"
+                        color={APP_TEXT_PRIMARY}
+                        onClick={handleTryAgain}
+                        _hover={{ bg: APP_SURFACE_MUTED }}
+                      >
+                        {uiText(uiLang, "tryAgain")}
+                      </Button>
+                    )}
+                  </>
                 )}
                 <Button
                   size="xs"
@@ -2214,40 +2287,128 @@ function LetterCard({
             </VStack>
           ) : (
             <VStack spacing={2} py={2}>
-              <Button
-                size="md"
-                colorScheme={
-                  isRecording ? undefined : isConnecting ? "yellow" : "teal"
-                }
-                bg={isRecording ? SOFT_STOP_BUTTON_BG : undefined}
-                boxShadow={isRecording ? "0px 4px 0px #e03767" : undefined}
-                color={isRecording ? "white" : undefined}
-                leftIcon={
-                  isConnecting ? (
-                    <Spinner size="xs" />
-                  ) : isRecording ? (
-                    <RiStopCircleLine />
-                  ) : (
-                    <RiMicLine />
-                  )
-                }
-                onClick={handleRecord}
-                isDisabled={!supportsSpeech || isConnecting}
-                _hover={{
-                  transform: "scale(1.02)",
-                  ...(isRecording ? { bg: SOFT_STOP_BUTTON_HOVER_BG } : {}),
-                }}
-              >
-                {isConnecting
-                  ? uiText(uiLang, "connecting")
-                  : isRecording
-                    ? uiText(uiLang, "stop")
-                    : uiText(uiLang, "record")}
-              </Button>
+              <>
+                {!useDock && (
+                  <Button
+                    size="md"
+                    colorScheme={
+                      isRecording ? undefined : isConnecting ? "yellow" : "teal"
+                    }
+                    bg={isRecording ? SOFT_STOP_BUTTON_BG : undefined}
+                    boxShadow={isRecording ? "0px 4px 0px #e03767" : undefined}
+                    color={isRecording ? "white" : undefined}
+                    leftIcon={
+                      isConnecting ? (
+                        <Spinner size="xs" />
+                      ) : isRecording ? (
+                        <FaStop />
+                      ) : (
+                        <FaMicrophone />
+                      )
+                    }
+                    onClick={handleRecord}
+                    isDisabled={!supportsSpeech || isConnecting}
+                    _hover={{
+                      transform: "scale(1.02)",
+                      ...(isRecording ? { bg: SOFT_STOP_BUTTON_HOVER_BG } : {}),
+                    }}
+                  >
+                    {isConnecting
+                      ? uiText(uiLang, "connecting")
+                      : isRecording
+                      ? uiText(uiLang, "stop")
+                      : uiText(uiLang, "record")}
+                  </Button>
+                )}
+              </>
             </VStack>
           )}
         </VStack>
       </MotionBox>
+
+      {useDock && (
+        <QuestionActionArea
+          feedback={showResult ? isCorrect : null}
+          actions={
+            <ActivityActionRow
+              tone={
+                isRecording
+                  ? "stop"
+                  : showResult && isCorrect
+                  ? "success"
+                  : isPracticeMode && !showResult
+                  ? "speak"
+                  : "primary"
+              }
+              primary={
+                <Button
+                  key={isRecording ? "stop" : "record"}
+                  colorScheme={isRecording ? "pink" : "teal"}
+                  isLoading={isGeneratingWord || isGrading || isConnecting}
+                  isDisabled={
+                    isGeneratingWord ||
+                    isGrading ||
+                    isConnecting ||
+                    (isPracticeMode && !supportsSpeech)
+                  }
+                  leftIcon={
+                    isPracticeMode && !showResult ? (
+                      isRecording ? <FaStop /> : <FaMicrophone />
+                    ) : undefined
+                  }
+                  onClick={
+                    !isPracticeMode
+                      ? onCardCollected && correctCount > 0
+                        ? handleNext
+                        : handlePracticeClick
+                      : showResult
+                      ? isCorrect
+                        ? handleNext
+                        : handleTryAgain
+                      : handleRecord
+                  }
+                >
+                  {!isPracticeMode
+                    ? onCardCollected && correctCount > 0
+                      ? uiText(uiLang, "next")
+                      : uiText(uiLang, "practice")
+                    : showResult
+                    ? isCorrect
+                      ? uiText(uiLang, onCardCollected ? "next" : "nextWord")
+                      : uiText(uiLang, "tryAgain")
+                    : isRecording
+                    ? uiText(uiLang, "stop")
+                    : uiText(uiLang, "record")}
+                </Button>
+              }
+            >
+              {isPracticeMode ? (
+                <Button variant="ghost" onClick={handleFlipBack}>
+                  {uiText(uiLang, "back")}
+                </Button>
+              ) : onCardCollected && correctCount > 0 ? (
+                <Button variant="ghost" onClick={handlePracticeClick}>
+                  {uiText(uiLang, "practice")}
+                </Button>
+              ) : null}
+            </ActivityActionRow>
+          }
+        >
+          {showResult && (
+            <Box
+              role="status"
+              px={1} py={2}
+            >
+              <Text fontWeight="bold">
+                {isCorrect ? "✓" : "✖"}{" "}
+                {isCorrect
+                  ? uiText(uiLang, "correct")
+                  : uiText(uiLang, "tryAgain")}
+              </Text>
+            </Box>
+          )}
+        </QuestionActionArea>
+      )}
     </Box>
   );
 }
@@ -2294,127 +2455,6 @@ function shuffleArray(arr) {
   return shuffled;
 }
 
-function watchRealtimeAudioCompletion(audio, onDone) {
-  if (!audio) return () => {};
-
-  let hasStarted = false;
-  let isDetached = false;
-  let silenceTimer = null;
-  let levelPollTimer = null;
-  let audioContext = null;
-  let mediaSource = null;
-  let analyser = null;
-  let levelSamples = null;
-  const audioTracks = audio.srcObject?.getAudioTracks?.() || [];
-
-  const clearSilenceTimer = () => {
-    if (!silenceTimer) return;
-    clearTimeout(silenceTimer);
-    silenceTimer = null;
-  };
-  const markStarted = () => {
-    hasStarted = true;
-    clearSilenceTimer();
-  };
-  const scheduleSilenceFinish = () => {
-    if (!hasStarted || silenceTimer) return;
-    silenceTimer = setTimeout(() => {
-      silenceTimer = null;
-      onDone();
-    }, 700);
-  };
-  const finishAfterStart = () => {
-    const currentTime = Number.isFinite(audio.currentTime)
-      ? audio.currentTime
-      : 0;
-    if (hasStarted || currentTime > 0.01) onDone();
-  };
-  const finish = () => {
-    onDone();
-  };
-  const detach = () => {
-    if (isDetached) return;
-    isDetached = true;
-    clearSilenceTimer();
-    if (levelPollTimer) {
-      clearTimeout(levelPollTimer);
-      levelPollTimer = null;
-    }
-    audio.removeEventListener("playing", markStarted);
-    audio.removeEventListener("ended", finish);
-    audio.removeEventListener("error", finish);
-    audioTracks.forEach((track) => {
-      track.removeEventListener("unmute", markStarted);
-      track.removeEventListener("mute", finishAfterStart);
-      track.removeEventListener("ended", finishAfterStart);
-    });
-    try {
-      mediaSource?.disconnect?.();
-    } catch {
-      // The source may already be disconnected when playback is cleaned up.
-    }
-    try {
-      analyser?.disconnect?.();
-    } catch {
-      // The analyser may already be disconnected when playback is cleaned up.
-    }
-    try {
-      audioContext?.close?.();
-    } catch {
-      // Closing is best-effort; the browser will reclaim the context.
-    }
-  };
-
-  const pollAudioLevel = () => {
-    if (isDetached || !analyser || !levelSamples) return;
-
-    analyser.getByteTimeDomainData(levelSamples);
-    let sumSquares = 0;
-    for (let i = 0; i < levelSamples.length; i += 1) {
-      const centered = (levelSamples[i] - 128) / 128;
-      sumSquares += centered * centered;
-    }
-    const rms = Math.sqrt(sumSquares / levelSamples.length);
-
-    if (rms > 0.006) {
-      markStarted();
-    } else {
-      scheduleSilenceFinish();
-    }
-
-    levelPollTimer = setTimeout(pollAudioLevel, 80);
-  };
-
-  audio.addEventListener("playing", markStarted, { once: true });
-  audio.addEventListener("ended", finish, { once: true });
-  audio.addEventListener("error", finish, { once: true });
-
-  audioTracks.forEach((track) => {
-    if (!track.muted && track.readyState === "live") markStarted();
-    track.addEventListener("unmute", markStarted, { once: true });
-    track.addEventListener("mute", finishAfterStart);
-    track.addEventListener("ended", finishAfterStart);
-  });
-
-  try {
-    const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
-    if (AudioContextCtor && audio.srcObject instanceof MediaStream) {
-      audioContext = new AudioContextCtor();
-      mediaSource = audioContext.createMediaStreamSource(audio.srcObject);
-      analyser = audioContext.createAnalyser();
-      analyser.fftSize = 256;
-      levelSamples = new Uint8Array(analyser.fftSize);
-      mediaSource.connect(analyser);
-      void audioContext.resume?.();
-      pollAudioLevel();
-    }
-  } catch {
-    // Fall back to media and track events when Web Audio is unavailable.
-  }
-
-  return detach;
-}
-
 // Routed repair (deep-seed): when the Daily Quest sends a phonics repair here,
 // move the exact weak letter/sound card (matched by the id captured at
 // mistake-time, see captureCompanionMemory's sourceContext above) to the front
@@ -2422,7 +2462,7 @@ function watchRealtimeAudioCompletion(audio, onDone) {
 // random one. No match (e.g. the card was a generated round that's since
 // expired) → deck order is left untouched, a safe no-op.
 function reorderDeckForRepairFocus(cards) {
-  const focus = useRepairFocusStore.getState().focus;
+  const focus = currentRepairFocus();
   if (focus?.surface !== "alphabet") return cards;
   const targetIds = new Set(
     (focus.plan?.items || []).map((it) => it.sourceContext).filter(Boolean),
@@ -2451,6 +2491,9 @@ export default function AlphabetBootcamp({
   const uiLang = normalizeSupportLanguage(appLanguage, DEFAULT_SUPPORT_LANGUAGE);
   const isLightTheme = useThemeStore((s) => s.themeMode) === "light";
   const alphabet = LANGUAGE_ALPHABETS[targetLang] || RUSSIAN_ALPHABET;
+  const repairFocus = useRepairFocusStore(s => s.focus);
+  const goalFocus = useGoalFocusStore(s => s.focus);
+  const focusedPractice = currentGoalFocus("alphabet") || (repairFocus?.surface === "alphabet" && repairFocus.targetLang === targetLang && repairFocus.npub === npub ? repairFocus : null);
   const playerRef = useRef(null);
   const playbackRequestRef = useRef(0);
   const playSound = useSoundSettings((s) => s.playSound);
@@ -2642,11 +2685,11 @@ export default function AlphabetBootcamp({
         return;
       }
 
-      try {
-        stopLetterPlayback();
-        const requestId = playbackRequestRef.current;
-        setLoadingId(data.id);
+      stopLetterPlayback();
+      const requestId = playbackRequestRef.current;
+      setLoadingId(data.id);
 
+      try {
         const player = await getTTSPlayer({
           text,
           langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
@@ -2663,7 +2706,6 @@ export default function AlphabetBootcamp({
 
         if (requestId !== playbackRequestRef.current) {
           player.cleanup?.();
-          playerRef.current = null;
           return;
         }
 
@@ -2681,8 +2723,8 @@ export default function AlphabetBootcamp({
         };
 
         const audio = player.audio;
-        detachCompletionWatcher = watchRealtimeAudioCompletion(
-          audio,
+        detachCompletionWatcher = watchPhonicsPlaybackCompletion(
+          player,
           finishPlayback,
         );
 
@@ -2690,6 +2732,7 @@ export default function AlphabetBootcamp({
         setPlayingId(data.id);
         await audio.play();
       } catch (err) {
+        if (requestId !== playbackRequestRef.current) return;
         console.error("AlphabetBootcamp TTS failed", err);
         stopLetterPlayback();
       }
@@ -2713,7 +2756,7 @@ export default function AlphabetBootcamp({
     }
     let cancelled = false;
     const fallbackTimer = setTimeout(() => {
-      if (cancelled) return;
+      if (cancelled || focusedPractice) return;
       setDeck((currentDeck) =>
         currentDeck.length ? currentDeck : shuffleArray(alphabet),
       );
@@ -2723,6 +2766,16 @@ export default function AlphabetBootcamp({
 
     const loadProgress = async () => {
       try {
+        if (focusedPractice) {
+          const artifact = await getFocusedPhonicsDeck(focusedPractice, alphabet);
+          if (!cancelled) {
+            clearTimeout(fallbackTimer);
+            setDeck(artifact.cards.filter(c => !artifact.outcomes[c.id]?.success));
+            setCollectedLetters(artifact.cards.filter(c => artifact.outcomes[c.id]?.success));
+            setIsInitialized(true);
+          }
+          return;
+        }
         // Load practice words and correctCounts from subcollection
         const snapshot = await getDocs(
           query(
@@ -2806,7 +2859,7 @@ export default function AlphabetBootcamp({
       cancelled = true;
       clearTimeout(fallbackTimer);
     };
-  }, [npub, targetLang, alphabet]);
+  }, [npub, targetLang, alphabet, repairFocus, goalFocus, focusedPractice]);
 
   useEffect(() => {
     return () => {
@@ -2815,25 +2868,14 @@ export default function AlphabetBootcamp({
   }, [stopLetterPlayback]);
 
   return (
-    <VStack align="stretch" spacing={4} w="100%" color={APP_TEXT_PRIMARY} px={6}>
-      {/* Repair focus: shown only when the Daily Quest routed a phonics repair
-          here (returns null otherwise, so it adds no gap on a normal visit). */}
-      <RepairFocusBanner
-        surface="alphabet"
-        appLanguage={appLanguage}
-        maxW="400px"
-        mt={12}
-      />
-      {/* XP Progress Bar */}
-      <Box maxW="400px" mx="auto" w="100%" zIndex={10} mt={12}>
-        <XpProgressHeader
-          levelText={`${uiText(uiLang, "level")} ${xpLevelNumber}`}
-          xpText={`XP ${currentXp}`}
-          progressPct={nextLevelProgressPct}
-          xpBadgeProps={{ colorScheme: "teal", fontSize: "10px" }}
-        />
-      </Box>
-
+    <VStack
+      align="stretch"
+      spacing={4}
+      w="100%"
+      color={APP_TEXT_PRIMARY}
+      px={6}
+      pt={{ base: 5, md: 6 }}
+    >
       <Heading
         size="md"
         color={APP_TEXT_PRIMARY}
@@ -2842,7 +2884,13 @@ export default function AlphabetBootcamp({
       >
         {headline}
       </Heading>
-      <Text color={APP_TEXT_SECONDARY} zIndex={10} textAlign={"center"} mt={"-4"}>
+      <Text
+        color={APP_TEXT_SECONDARY}
+        zIndex={10}
+        textAlign="center"
+        mt="-4"
+        fontSize="sm"
+      >
         {subhead}
       </Text>
       {/* <Alert status="info" borderRadius="lg" bg="blue.900" color="white">
@@ -2893,6 +2941,7 @@ export default function AlphabetBootcamp({
                   <LetterCard
                     playSound={playSound}
                     key={deck[0].id}
+                    dockActions
                     letter={deck[0]}
                     appLanguage={appLanguage}
                     targetLang={targetLang}
@@ -2941,7 +2990,7 @@ export default function AlphabetBootcamp({
               </Box>
             </VStack>
           ) : (
-            <VStack spacing={4}>
+            <VStack spacing={4} w="100%" maxW="400px" mx="auto">
               <Flex
                 align="center"
                 justify="center"
@@ -2951,10 +3000,9 @@ export default function AlphabetBootcamp({
                 border="1px solid"
                 borderColor={isLightTheme ? "green.300" : "green.500"}
                 p={6}
-                maxW="400px"
-                mx="auto"
+                w="100%"
               >
-                <VStack spacing={2}>
+                <VStack spacing={4} w="100%">
                   <RandomCharacter notSoRandomCharacter="30" />
                   <Text
                     color={isLightTheme ? "green.700" : "green.200"}
@@ -2966,20 +3014,41 @@ export default function AlphabetBootcamp({
                       generatedCards.length > 0 ? "deckComplete" : "complete",
                     )}
                   </Text>
+                  {isComplete && (
+                    <Box w="100%" pt={2}>
+                      <XpProgressHeader
+                        levelText={`${uiText(uiLang, "level")} ${xpLevelNumber}`}
+                        xpText={`XP ${currentXp}`}
+                        progressPct={nextLevelProgressPct}
+                        xpBadgeProps={{
+                          colorScheme: "teal",
+                          fontSize: "10px",
+                        }}
+                      />
+                    </Box>
+                  )}
                 </VStack>
               </Flex>
               {isComplete && (
                 <VStack spacing={3}>
-                  <Button
-                    variant="outline"
-                    colorScheme="teal"
-                    size="lg"
-                    leftIcon={<RiRefreshLine />}
-                    onClick={handleNewRound}
-                    isLoading={isGeneratingDeck}
-                  >
-                    {uiText(uiLang, "newRound")}
-                  </Button>
+                  <QuestionActionArea
+                    actions={
+                      <ActivityActionRow
+                        primary={
+                          <Button
+                            variant="outline"
+                            colorScheme="teal"
+                            size="lg"
+                            leftIcon={<RiRefreshLine />}
+                            onClick={handleNewRound}
+                            isLoading={isGeneratingDeck}
+                          >
+                            {uiText(uiLang, "newRound")}
+                          </Button>
+                        }
+                      />
+                    }
+                  />
                 </VStack>
               )}
             </VStack>

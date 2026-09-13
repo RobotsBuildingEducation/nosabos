@@ -21,6 +21,7 @@ export const plateUiCopy = (lang, copy) => {
 };
 
 export const PLATE_COURSE_META = {
+  goal: { icon: RiMagicLine, label: { en: "Goal", es: "Meta", pt: "Meta", fr: "Objectif", it: "Obiettivo", de: "Ziel", ja: "目標", zh: "目标", ru: "Цель", ar: "الهدف", hi: "लक्ष्य" } },
   repair: {
     icon: RiMagicLine,
     label: {
@@ -120,31 +121,31 @@ export const PLATE_COURSE_META = {
 };
 
 export const PLATE_TITLE_COPY = {
-  en: "Daily Quest",
-  es: "Misión diaria",
-  pt: "Missão diária",
-  fr: "Quête du jour",
-  it: "Missione quotidiana",
-  de: "Tägliche Mission",
-  ja: "デイリークエスト",
-  zh: "每日任务",
-  ru: "Ежедневное задание",
-  ar: "المهمة اليومية",
-  hi: "दैनिक क्वेस्ट",
+  en: "Today’s Focus",
+  es: "Enfoque de hoy",
+  pt: "Foco de hoje",
+  fr: "Focus du jour",
+  it: "Focus di oggi",
+  de: "Heutiger Fokus",
+  ja: "今日のフォーカス",
+  zh: "今日重点",
+  ru: "Фокус дня",
+  ar: "تركيز اليوم",
+  hi: "आज का फ़ोकस",
 };
 
 export const PLATE_CLEARED_COPY = {
-  en: "Quests complete!",
-  es: "¡Misiones completadas!",
-  pt: "Missões concluídas!",
-  fr: "Quêtes terminées !",
-  it: "Missioni completate!",
-  de: "Missionen abgeschlossen!",
-  ja: "クエスト完了！",
-  zh: "任务完成！",
-  ru: "Задания выполнены!",
-  ar: "اكتملت المهام!",
-  hi: "क्वेस्ट पूरी हुईं!",
+  en: "Today's Focus complete!",
+  es: "¡Enfoque completado!",
+  pt: "Foco concluído!",
+  fr: "Focus terminé !",
+  it: "Focus completato!",
+  de: "Fokus abgeschlossen!",
+  ja: "フォーカス完了！",
+  zh: "重点完成！",
+  ru: "Фокус дня выполнен!",
+  ar: "اكتمل التركيز!",
+  hi: "फ़ोकस पूरा हुआ!",
 };
 
 export const PLATE_BONUS_TOAST_COPY = {
@@ -173,6 +174,48 @@ export const PLATE_EXERCISE_COMPLETE_COPY = {
   ru: "Задача выполнена!",
   ar: "اكتملت المهمة!",
   hi: "कार्य पूरा हुआ!",
+};
+
+export const PLATE_PRACTICE_DETAILS_COPY = {
+  title: {
+    en: "What you practiced and why",
+    es: "Qué practicaste y por qué",
+    pt: "O que você praticou e por quê",
+    fr: "Ce que tu as pratiqué et pourquoi",
+    it: "Cosa hai praticato e perché",
+    de: "Was du geübt hast und warum",
+    ja: "練習したこととその理由",
+    zh: "练习内容和原因",
+    ru: "Что ты практиковал и зачем",
+    ar: "ما الذي تدربت عليه ولماذا",
+    hi: "आपने क्या अभ्यास किया और क्यों",
+  },
+  what: {
+    en: "What",
+    es: "Qué",
+    pt: "O quê",
+    fr: "Quoi",
+    it: "Cosa",
+    de: "Was",
+    ja: "内容",
+    zh: "内容",
+    ru: "Что",
+    ar: "ماذا",
+    hi: "क्या",
+  },
+  why: {
+    en: "Why",
+    es: "Por qué",
+    pt: "Por quê",
+    fr: "Pourquoi",
+    it: "Perché",
+    de: "Warum",
+    ja: "理由",
+    zh: "原因",
+    ru: "Зачем",
+    ar: "لماذا",
+    hi: "क्यों",
+  },
 };
 
 export const PLATE_CONTINUE_COPY = {

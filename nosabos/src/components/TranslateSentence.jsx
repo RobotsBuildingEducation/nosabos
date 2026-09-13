@@ -1,3 +1,4 @@
+import ActivityActionRow from "./ActivityActionRow";
 // components/TranslateSentence.jsx
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import {
@@ -15,14 +16,15 @@ import { PiSpeakerHighDuotone } from "react-icons/pi";
 import { MdOutlineSupportAgent } from "react-icons/md";
 import ReactMarkdown from "react-markdown";
 import FeedbackRail from "./FeedbackRail";
+import QuestionActionArea from "./QuestionActionArea";
 import useSoundSettings from "../hooks/useSoundSettings";
 import { selectSound, submitActionSound } from "../constants/sounds";
-import VoiceOrb from "./VoiceOrb";
 import { getLanguageDirection } from "../constants/languages";
 import {
   getQuestionAssistantPanelProps,
   getQuestionChipProps,
   getQuestionToolButtonProps,
+  questionDropTargetActiveStyles,
   questionSquircleStyle,
   questionAssistantText,
 } from "./questionUiStyles";
@@ -81,6 +83,8 @@ export default function TranslateSentence({
   onAskAssistant = null,
   assistantSupportText = "",
   isLoadingAssistantSupport = false,
+  isAssistantOpen = false,
+  onCloseAssistant = null,
 
   // State
   lastOk = null,
@@ -253,7 +257,13 @@ export default function TranslateSentence({
   }, [getUserAnswer, onSubmit, playSound]);
 
   const handleSendHelp = useCallback(() => {
-    if (!onAskAssistant || isLoadingAssistantSupport || assistantSupportText) return;
+    if (!onAskAssistant) return;
+    if (isAssistantOpen) {
+      if (onCloseAssistant) {
+        onCloseAssistant();
+        return;
+      }
+    }
     const isFrenchUI = userLanguage === "fr";
     const isPortugueseUI = userLanguage === "pt";
     const isSpanishUI = userLanguage === "es";
@@ -345,7 +355,7 @@ export default function TranslateSentence({
         : "Respond with the correct translation assembled from the word bank options.",
     ].filter(Boolean);
     onAskAssistant(promptLines.join("\n"));
-  }, [hint, onAskAssistant, isLoadingAssistantSupport, assistantSupportText, sourceSentence, userLanguage, wordBank]);
+  }, [hint, onAskAssistant, isLoadingAssistantSupport, isAssistantOpen, onCloseAssistant, sourceSentence, userLanguage, wordBank]);
 
   const translateLabel = t("translate_sentence_heading");
   const skipLabel = t("practice_skip_question");
@@ -406,9 +416,6 @@ export default function TranslateSentence({
     <SortableArea onDragEnd={handleDragEnd}>
       <VStack align="stretch" spacing={4}>
         {/* Header with character and sentence */}
-        <Text fontSize="xl" fontWeight="bold" color={APP_TEXT_PRIMARY}>
-          {translateLabel}
-        </Text>
         <Box
           bg={APP_SURFACE_ELEVATED}
           borderRadius="lg"
@@ -420,6 +427,35 @@ export default function TranslateSentence({
         >
           <VStack align="stretch" spacing={4}>
             {/* Title */}
+            <HStack justify="space-between" align="center">
+              <Text fontSize="xl" fontWeight="bold" color={APP_TEXT_PRIMARY}>
+                {translateLabel}
+              </Text>
+              {onAskAssistant && (
+                <IconButton
+                  aria-label={
+                    userLanguage === "ja"
+                      ? "アシスタントに聞く"
+                      : userLanguage === "zh"
+                      ? "询问助手"
+                      : userLanguage === "ar"
+                        ? "اسأل المساعد"
+                      : userLanguage === "pt"
+                      ? "Pedir ajuda"
+                      : userLanguage === "es"
+                      ? "Pedir ayuda"
+                      : "Ask the assistant"
+                  }
+                  icon={<MdOutlineSupportAgent />}
+                  size="sm"
+                  fontSize="lg"
+                  rounded="xl"
+                  onClick={handleSendHelp}
+                  isDisabled={isLoadingAssistantSupport}
+                  {...getQuestionToolButtonProps({ active: isAssistantOpen })}
+                />
+              )}
+            </HStack>
 
             {/* Character + Speech bubble */}
             <HStack align="start" spacing={4}>
@@ -456,30 +492,6 @@ export default function TranslateSentence({
                 }
               >
                 <HStack align="start" spacing={2}>
-                  {onAskAssistant && (
-                    <IconButton
-                      aria-label={
-                        userLanguage === "ja"
-                          ? "アシスタントに聞く"
-                          : userLanguage === "zh"
-                          ? "询问助手"
-                          : userLanguage === "ar"
-                            ? "اسأل المساعد"
-                          : userLanguage === "pt"
-                          ? "Pedir ajuda"
-                          : userLanguage === "es"
-                          ? "Pedir ayuda"
-                          : "Ask the assistant"
-                      }
-                      icon={isLoadingAssistantSupport ? <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} /> : <MdOutlineSupportAgent />}
-                      size="sm"
-                      fontSize="lg"
-                      rounded="xl"
-                      onClick={handleSendHelp}
-                      isDisabled={isLoadingAssistantSupport || !!assistantSupportText}
-                      {...getQuestionToolButtonProps()}
-                    />
-                  )}
                   <IconButton
                     aria-label={
                       userLanguage === "ja"
@@ -517,50 +529,10 @@ export default function TranslateSentence({
           </VStack>
         </Box>
 
-        {/* Inline assistant support response */}
-        {(assistantSupportText || isLoadingAssistantSupport) && (
-          <Box
-            p={4}
-            borderRadius="lg"
-            {...getQuestionAssistantPanelProps()}
-          >
-            <HStack spacing={2} mb={2}>
-              <MdOutlineSupportAgent color={questionAssistantText.accent} />
-              <Text fontWeight="semibold" color={questionAssistantText.accentStrong}>
-                {assistantLabel}
-              </Text>
-              {isLoadingAssistantSupport && <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />}
-            </HStack>
-            <Box
-              fontSize="md"
-              color={APP_TEXT_PRIMARY}
-              lineHeight="1.6"
-              sx={{
-                "& p": { mb: 2 },
-                "& p:last-child": { mb: 0 },
-                "& strong": {
-                  fontWeight: "bold",
-                  color: questionAssistantText.accentStrong,
-                },
-                "& em": { fontStyle: "italic" },
-                "& ul, & ol": { pl: 4, mb: 2 },
-                "& li": { mb: 1 },
-                "& code": {
-                  bg: APP_SURFACE,
-                  px: 1,
-                  py: 0.5,
-                  borderRadius: "sm",
-                  fontFamily: "mono",
-                },
-              }}
-            >
-              <ReactMarkdown>{assistantSupportText}</ReactMarkdown>
-            </Box>
-          </Box>
-        )}
-
         {/* Answer area - where selected words appear */}
-        <Box
+        <SortableList
+          id="selected-words"
+          items={selectedWords.map((wordIndex) => `selected-${wordIndex}`)}
           bg={APP_SURFACE_ELEVATED}
           borderRadius="lg"
           style={questionSquircleStyle}
@@ -575,72 +547,62 @@ export default function TranslateSentence({
           p={4}
           minH="80px"
           boxShadow={APP_SHADOW}
+          wrap="wrap"
+          gap={2}
+          align="center"
+          justify={answerDir === "rtl" ? "flex-end" : "flex-start"}
+          dir={answerDir}
+          transition="border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease"
+          activeStyles={questionDropTargetActiveStyles}
         >
-          <SortableList
-            id="selected-words"
-            items={selectedWords.map((wordIndex) => `selected-${wordIndex}`)}
-            wrap="wrap"
-            gap={2}
-            minH="48px"
-            align="center"
-            justify={answerDir === "rtl" ? "flex-end" : "flex-start"}
-            dir={answerDir}
-            bg="transparent"
-            activeStyles={{ bg: "rgba(128, 90, 213, 0.08)" }}
-            borderRadius="md"
-            style={questionSquircleStyle}
-            p={2}
-            transition="background 0.2s ease"
-          >
-            {selectedWords.length === 0 && (
-                  <Text
-                    color={APP_TEXT_MUTED}
-                    fontSize="sm"
-                    fontStyle="italic"
-                    w="100%"
-                    textAlign="center"
-                  >
-                    {instructionLabel}
-                  </Text>
-                )}
-            {selectedWords.map((wordIndex, position) => (
-              <SortableItem
-                key={`selected-${wordIndex}`}
-                id={`selected-${wordIndex}`}
-                disabled={lastOk === true}
-              >
-                {({ setNodeRef, attributes, listeners, style, isDragging }) => (
-                  <Box
-                    ref={setNodeRef}
-                    style={style}
-                    {...attributes}
-                    {...listeners}
-                    px={3}
-                    py={2}
-                    rounded="md"
-                    {...getQuestionChipProps({
-                      dragging: isDragging,
-                    })}
-                    fontSize="sm"
-                    dir={answerTextProps.dir}
-                    lang={answerTextProps.lang}
-                    sx={{ unicodeBidi: "plaintext" }}
-                    cursor={lastOk === true ? "default" : "pointer"}
-                    onClick={() => {
-                      if (lastOk !== true) {
-                        playSound(selectSound);
-                        handleSelectedWordClick(position);
-                      }
-                    }}
-                    _hover={lastOk !== true ? getQuestionChipProps()._hover : {}}
-                  >
-                    {wordBank[wordIndex]}
-                  </Box>
-                )}
-              </SortableItem>
-            ))}
-          </SortableList>
-        </Box>
+          {selectedWords.length === 0 && (
+            <Text
+              color={APP_TEXT_MUTED}
+              fontSize="sm"
+              fontStyle="italic"
+              w="100%"
+              textAlign="center"
+            >
+              {instructionLabel}
+            </Text>
+          )}
+          {selectedWords.map((wordIndex, position) => (
+            <SortableItem
+              key={`selected-${wordIndex}`}
+              id={`selected-${wordIndex}`}
+              disabled={lastOk === true}
+            >
+              {({ setNodeRef, attributes, listeners, style, isDragging }) => (
+                <Box
+                  ref={setNodeRef}
+                  style={style}
+                  {...attributes}
+                  {...listeners}
+                  px={3}
+                  py={2}
+                  rounded="md"
+                  {...getQuestionChipProps({
+                    dragging: isDragging,
+                  })}
+                  fontSize="sm"
+                  dir={answerTextProps.dir}
+                  lang={answerTextProps.lang}
+                  sx={{ unicodeBidi: "plaintext" }}
+                  cursor={lastOk === true ? "default" : "pointer"}
+                  onClick={() => {
+                    if (lastOk !== true) {
+                      playSound(selectSound);
+                      handleSelectedWordClick(position);
+                    }
+                  }}
+                  _hover={lastOk !== true ? getQuestionChipProps()._hover : {}}
+                >
+                  {wordBank[wordIndex]}
+                </Box>
+              )}
+            </SortableItem>
+          ))}
+        </SortableList>
 
         {/* Divider line */}
         <Box borderBottomWidth="1px" borderColor={APP_BORDER} />
@@ -652,14 +614,15 @@ export default function TranslateSentence({
           wrap="wrap"
           gap={3}
           justify="center"
-          p={2}
+          p={3}
           minH="60px"
           dir={answerDir}
-          bg="transparent"
-          activeStyles={{ bg: "rgba(128, 90, 213, 0.05)" }}
-          borderRadius="md"
+          borderWidth="1.5px"
+          borderColor="transparent"
+          borderRadius="lg"
           style={questionSquircleStyle}
-          transition="background 0.2s ease"
+          transition="border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease"
+          activeStyles={questionDropTargetActiveStyles}
         >
               {bankOrder.map((wordIndex, position) => (
                 <SortableItem
@@ -700,52 +663,68 @@ export default function TranslateSentence({
             </SortableList>
 
         {/* Action buttons */}
-        <Stack direction="row" spacing={3} align="center" justify="flex-end">
-          {canSkip && (
-            <Button
-              variant="ghost"
-              onClick={onSkip}
-              px={{ base: 6, md: 10 }}
-              py={{ base: 3, md: 4 }}
-              color={APP_TEXT_PRIMARY}
-              _hover={{ bg: APP_SURFACE_MUTED }}
-            >
-              {skipLabel}
-            </Button>
-          )}
-          <Button
-            colorScheme="purple"
-            onClick={handleSubmit}
-            isDisabled={
-              lastOk === true ||
-              isSubmitting ||
-              selectedWords.length === 0 ||
-              loading
-            }
-            px={{ base: 7, md: 12 }}
-            py={{ base: 3, md: 4 }}
-          >
-            {isSubmitting ? submitSpinner : submitLabel}
-          </Button>
-        </Stack>
-
-        {/* Feedback rail */}
-        <FeedbackRail
-          ok={lastOk}
-          xp={recentXp}
-          showNext={showNext}
-          onNext={onNext}
-          nextLabel={nextLabel}
-          t={t}
-          userLanguage={userLanguage}
-          onExplainAnswer={onExplainAnswer}
-          explanationText={explanationText}
-          isLoadingExplanation={isLoadingExplanation}
-          lessonProgress={lessonProgress}
-          onCreateNote={onCreateNote}
-          isCreatingNote={isCreatingNote}
-          noteCreated={noteCreated}
-        />
+        <QuestionActionArea
+          feedback={isAssistantOpen ? "assistant" : lastOk}
+          actions={
+            !isAssistantOpen && (!showNext) && (
+              <ActivityActionRow
+                primary={
+                  <Button
+                    colorScheme="purple"
+                    onClick={handleSubmit}
+                    isDisabled={
+                      lastOk === true ||
+                      isSubmitting ||
+                      selectedWords.length === 0 ||
+                      loading
+                    }
+                    px={{ base: 7, md: 12 }}
+                    py={{ base: 3, md: 4 }}
+                  >
+                    {isSubmitting ? submitSpinner : submitLabel}
+                  </Button>
+                }
+              >
+                {canSkip && (
+                  <Button
+                    variant="ghost"
+                    onClick={onSkip}
+                    px={{ base: 6, md: 10 }}
+                    py={{ base: 3, md: 4 }}
+                    color={APP_TEXT_PRIMARY}
+                    _hover={{ bg: APP_SURFACE_MUTED }}
+                  >
+                    {skipLabel}
+                  </Button>
+                )}
+              </ActivityActionRow>
+            )
+          }
+        >
+          <FeedbackRail
+            compact
+            ok={lastOk}
+            isAssistant={isAssistantOpen}
+            assistantSupportText={assistantSupportText}
+            isLoadingAssistantSupport={isLoadingAssistantSupport}
+            assistantLabel={assistantLabel}
+            onCloseAssistant={onCloseAssistant}
+            closeAssistantLabel={t("app_close") || "Close"}
+            xp={recentXp}
+            showNext={showNext}
+            onNext={onNext}
+            nextLabel={nextLabel}
+            t={t}
+            userLanguage={userLanguage}
+            onExplainAnswer={onExplainAnswer}
+            explanationText={explanationText}
+            isLoadingExplanation={isLoadingExplanation}
+            lessonProgress={lessonProgress}
+            onCreateNote={onCreateNote}
+            isCreatingNote={isCreatingNote}
+            noteCreated={noteCreated}
+          />
+        </QuestionActionArea>
       </VStack>
     </SortableArea>
   );

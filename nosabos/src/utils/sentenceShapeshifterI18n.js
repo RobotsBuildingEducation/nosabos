@@ -23,7 +23,7 @@ export const SENTENCE_SHAPESHIFTER_COPY = Object.freeze({
     helpRequest:
       "Ayúdame a entender cómo transformar «{source}» según la regla «{constraint}» sin darme la respuesta.",
     skip: "Saltar",
-    submit: "Enviar",
+    submit: "Comprobar",
     checking: "Comprobando…",
     tryAgain: "Intentar de nuevo",
     nextQuestion: "Siguiente pregunta",

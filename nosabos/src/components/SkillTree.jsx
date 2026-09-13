@@ -1,3 +1,4 @@
+import useGoalFocusStore from "../hooks/useGoalFocusStore";
 import React, {
   Suspense,
   lazy,
@@ -35,7 +36,11 @@ import {
   AccordionIcon,
 } from "@chakra-ui/react";
 import { CloseIcon } from "@chakra-ui/icons";
-import { LuBlocks, LuSparkles } from "react-icons/lu";
+import {
+  LuBlocks,
+  LuChartColumnIncreasing,
+  LuSparkles,
+} from "react-icons/lu";
 import CEFRLevelNavigator from "./CEFRLevelNavigator";
 import { useThemeStore } from "../useThemeStore";
 import { APP_SQUIRCLE_SHAPE } from "../theme";
@@ -44,7 +49,6 @@ import {
   RiLockLine,
   RiCheckLine,
   RiStarLine,
-  RiStarFill,
   RiTrophyLine,
   RiBookOpenLine,
   RiPencilLine,
@@ -1850,7 +1854,6 @@ function LessonDetailModal({
   const lessonWithReviewContext = reviewContext
     ? { ...lesson, gameReviewContext: reviewContext }
     : lesson;
-  const showTutorialGameSkip = !!lesson?.isTutorial && !!lesson?.isGame;
 
   const handleStartStandardLesson = async () => {
     if (lessonLoading || gameLoading) return;
@@ -1973,9 +1976,9 @@ function LessonDetailModal({
             : onClose
       }
       size={gameLoading && !isDesktop ? "full" : "xl"}
-      isCentered
+      isCentered={!gameLoading || isDesktop}
       closeOnOverlayClick={!isTransitioningToLesson}
-      closeOnEsc={!isTransitioningToLesson}
+      closeOnEsc={!lessonLoading}
       motionPreset="none"
     >
       <ModalOverlay
@@ -1987,16 +1990,46 @@ function LessonDetailModal({
         motionProps={nativeModalMotionProps}
         bg="gray.900"
         color="var(--app-text-primary)"
-        borderRadius={gameLoading ? { base: "0", md: "2xl" } : "2xl"}
-        style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
+        data-fullscreen={gameLoading && !isDesktop ? "true" : undefined}
+        className={
+          gameLoading && !isDesktop
+            ? "chakra-modal__content--fullscreen"
+            : undefined
+        }
+        borderRadius={
+          gameLoading && !isDesktop
+            ? "0 !important"
+            : gameLoading
+              ? { base: "0 !important", md: "2xl" }
+              : "2xl"
+        }
+        style={{
+          cornerShape:
+            gameLoading && !isDesktop ? "initial" : APP_SQUIRCLE_SHAPE,
+        }}
         overflow="hidden"
         boxShadow={
-          isLightTheme
-            ? `0 28px 64px rgba(112, 88, 57, 0.16), 0 0 0 1px ${unit.color}24`
-            : `0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px ${unit.color}40`
+          gameLoading && !isDesktop
+            ? "none !important"
+            : isLightTheme
+              ? `0 28px 64px rgba(112, 88, 57, 0.16), 0 0 0 1px ${unit.color}24`
+              : `0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px ${unit.color}40`
         }
-        border="1px solid"
+        border={gameLoading && !isDesktop ? "none !important" : "1px solid"}
         borderColor={isLightTheme ? "var(--app-border)" : `${unit.color}30`}
+        sx={{
+          ...(gameLoading && !isDesktop
+            ? {
+                borderRadius: "0 !important",
+                cornerShape: "initial !important",
+                border: "none !important",
+                boxShadow: "none !important",
+                "&::before": {
+                  display: "none !important",
+                },
+              }
+            : {}),
+        }}
         {...(gameLoading
           ? {
               w: {
@@ -2006,7 +2039,7 @@ function LessonDetailModal({
                   : undefined,
               },
               h: {
-                base: "100vh",
+                base: "100dvh",
                 md: loadingModalSize?.height
                   ? `${loadingModalSize.height}px`
                   : undefined,
@@ -2018,19 +2051,19 @@ function LessonDetailModal({
                   : undefined,
               },
               maxH: {
-                base: "100vh",
+                base: "100dvh",
                 md: loadingModalSize?.height
                   ? `${loadingModalSize.height}px`
                   : undefined,
               },
               minH: {
-                base: "100vh",
+                base: "100dvh",
                 md: loadingModalSize?.height
                   ? `${loadingModalSize.height}px`
                   : undefined,
               },
               m: { base: 0, md: "auto" },
-              borderRadius: { base: "0", md: "2xl" },
+              borderRadius: { base: "0 !important", md: "2xl" },
             }
           : {})}
       >
@@ -2079,27 +2112,25 @@ function LessonDetailModal({
                 >
                   {loadingMessages[loadingMsgIdx]}
                 </Text>
-                {showTutorialGameSkip ? (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    color={isLightTheme ? "gray.100" : "whiteAlpha.900"}
-                    onClick={handleCancelGameLoading}
-                    flexShrink={0}
-                    _hover={{
-                      bg: isLightTheme
-                        ? "var(--app-glass-bg-soft)"
-                        : "whiteAlpha.200",
-                    }}
-                    _active={{
-                      bg: isLightTheme
-                        ? "var(--app-surface-muted)"
-                        : "whiteAlpha.300",
-                    }}
-                  >
-                    {t("practice_skip_question")}
-                  </Button>
-                ) : null}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  color={isLightTheme ? "gray.100" : "whiteAlpha.900"}
+                  onClick={handleCancelGameLoading}
+                  flexShrink={0}
+                  _hover={{
+                    bg: isLightTheme
+                      ? "var(--app-glass-bg-soft)"
+                      : "whiteAlpha.200",
+                  }}
+                  _active={{
+                    bg: isLightTheme
+                      ? "var(--app-surface-muted)"
+                      : "whiteAlpha.300",
+                  }}
+                >
+                  {t("common_cancel")}
+                </Button>
               </Flex>
             </Box>
             <Box flex="1" overflow="hidden" position="relative">
@@ -2390,8 +2421,8 @@ function LessonDetailModal({
                               : lesson.isGame
                                 ? "rgba(13, 148, 136, 0.10)"
                                 : lesson.isFinalQuiz
-                                  ? "rgba(147, 51, 234, 0.10)"
-                                  : "rgba(217, 119, 6, 0.12)"
+                                ? "rgba(147, 51, 234, 0.10)"
+                                  : "rgba(234, 179, 8, 0.12)"
                             : undefined
                         }
                         bgGradient={
@@ -2413,8 +2444,8 @@ function LessonDetailModal({
                               : lesson.isGame
                                 ? "rgba(13, 148, 136, 0.22)"
                                 : lesson.isFinalQuiz
-                                  ? "rgba(147, 51, 234, 0.22)"
-                                  : "rgba(217, 119, 6, 0.24)"
+                                ? "rgba(147, 51, 234, 0.22)"
+                                  : "rgba(202, 138, 4, 0.24)"
                             : "transparent"
                         }
                         boxShadow={
@@ -2445,8 +2476,8 @@ function LessonDetailModal({
                             size={24}
                           />
                         ) : (
-                          <RiStarFill
-                            color={isLightTheme ? "#b45309" : "white"}
+                          <LuChartColumnIncreasing
+                            color={isLightTheme ? "#d69e2e" : "white"}
                             size={24}
                           />
                         )}
@@ -2545,6 +2576,7 @@ export default function SkillTree({
   level = "A1",
   supportLang = "en",
   userProgress = { totalXp: 0, lessons: {} },
+  dailyPlateSnapshot = null,
   onStartLesson,
   onCompleteFlashcard, // Callback for flashcard completion with XP
   onRandomPracticeFlashcard, // Callback for random practice (awards XP, resets card)
@@ -2590,6 +2622,11 @@ export default function SkillTree({
   const openLessonDetail = useModalStore((s) => s.openLessonDetail);
   const closeLessonDetail = useModalStore((s) => s.closeLessonDetail);
 
+  const goalSessionKey = useGoalFocusStore((s) =>
+    s.focus
+      ? `${s.focus.npub}:${s.focus.blueprint.goalId}:${s.focus.blueprint.dayKey}:${s.focus.surface}:${s.focus.blueprint.mode}`
+      : "curriculum",
+  );
   const isModeVisible = (mode) => isKeepAliveModeVisible(pathMode, mode);
   const [visitedModes, setVisitedModes] = useState(
     () => new Set([normalizeKeepAlivePathMode(pathMode)]),
@@ -3149,8 +3186,9 @@ export default function SkillTree({
                 display={isModeVisible("flashcards") ? "block" : "none"}
                 aria-hidden={!isModeVisible("flashcards")}
               >
-                <KeepAliveFlashcardSkillTree
+                <KeepAliveFlashcardSkillTree key={goalSessionKey}
                   userProgress={userProgress}
+                  dailyPlateSnapshot={dailyPlateSnapshot}
                   onStartFlashcard={handleFlashcardComplete}
                   onRandomPractice={handleRandomPractice}
                   targetLang={targetLang}
@@ -3168,7 +3206,7 @@ export default function SkillTree({
                 display={isModeVisible("conversations") ? "block" : "none"}
                 aria-hidden={!isModeVisible("conversations")}
               >
-                <KeepAliveConversations
+                <KeepAliveConversations key="conversations"
                   activeNpub={activeNpub}
                   targetLang={targetLang}
                   supportLang={supportLang}
@@ -3188,7 +3226,7 @@ export default function SkillTree({
                 display={isModeVisible("tutor") ? "block" : "none"}
                 aria-hidden={!isModeVisible("tutor")}
               >
-                <KeepAliveTutor
+                <KeepAliveTutor key={goalSessionKey}
                   activeNpub={activeNpub}
                   targetLang={targetLang}
                   supportLang={supportLang}
@@ -3207,8 +3245,9 @@ export default function SkillTree({
           <>
             {isModeVisible("path") && pathModeContent}
             {isModeVisible("flashcards") && (
-              <KeepAliveFlashcardSkillTree
+              <KeepAliveFlashcardSkillTree key={goalSessionKey}
                 userProgress={userProgress}
+                dailyPlateSnapshot={dailyPlateSnapshot}
                 onStartFlashcard={handleFlashcardComplete}
                 onRandomPractice={handleRandomPractice}
                 targetLang={targetLang}
@@ -3220,7 +3259,7 @@ export default function SkillTree({
               />
             )}
             {isModeVisible("conversations") && (
-              <KeepAliveConversations
+              <KeepAliveConversations key="conversations"
                 activeNpub={activeNpub}
                 targetLang={targetLang}
                 supportLang={supportLang}
@@ -3234,7 +3273,7 @@ export default function SkillTree({
               />
             )}
             {isModeVisible("tutor") && (
-              <KeepAliveTutor
+              <KeepAliveTutor key={goalSessionKey}
                 activeNpub={activeNpub}
                 targetLang={targetLang}
                 supportLang={supportLang}

@@ -1,3 +1,12 @@
+import useGoalFocusStore from "../hooks/useGoalFocusStore";
+import {
+  currentGoalFocus,
+  evaluateGoalAttempt,
+  recordGoalAttempt,
+} from "../utils/learningIntelligence";
+import { goalInstructions, buildGoalLesson } from "../utils/learningIntelligenceModel";
+import ActivityActionRow from "./ActivityActionRow";
+import QuestionActionArea from "./QuestionActionArea";
 // components/Tutor.jsx
 import React, {
   Suspense,
@@ -37,11 +46,13 @@ import {
   WrapItem,
   useDisclosure,
   useBreakpointValue,
+  useMediaQuery,
 } from "@chakra-ui/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { layoutWithLines, prepareWithSegments } from "@chenglou/pretext";
 import { FaMicrophone, FaStop, FaRegCommentDots } from "react-icons/fa";
 import { MdOutlineTranslate } from "react-icons/md";
+import { LuChartColumnIncreasing } from "react-icons/lu";
 import {
   RiArrowLeftLine,
   RiArrowRightLine,
@@ -49,7 +60,6 @@ import {
   RiCheckLine,
   RiLockLine,
   RiRoadMapLine,
-  RiStarFill,
   RiTrophyLine,
   RiVolumeUpLine,
 } from "react-icons/ri";
@@ -99,7 +109,7 @@ import {
   REPAIR_MAX_ITEMS,
 } from "../utils/companionMemory";
 import { REPAIR_COPY } from "../utils/companionMemoryCopy";
-import useRepairFocusStore from "../hooks/useRepairFocusStore";
+import useRepairFocusStore, { currentRepairFocus } from "../hooks/useRepairFocusStore";
 import {
   completeTutorLesson,
   getLanguageXp,
@@ -237,13 +247,17 @@ function loadTutorGameRouterComponent() {
   return tutorGameRouterComponentPromise;
 }
 
-function TutorGameReviewLoadingExperience({ supportLang = "en" }) {
+function TutorGameReviewLoadingExperience({ supportLang = "en", onCancel = null }) {
   const normalizedSupport = normalizeSupportLanguage(
     supportLang,
     DEFAULT_SUPPORT_LANGUAGE,
   );
   const messages =
     GAME_LOADING_MESSAGES[normalizedSupport] || GAME_LOADING_MESSAGES.en;
+  const cancelLabel =
+    translations[normalizedSupport]?.common_cancel ||
+    translations.en?.common_cancel ||
+    "Cancel";
   const [messageIndex, setMessageIndex] = useState(0);
 
   useEffect(() => {
@@ -273,22 +287,38 @@ function TutorGameReviewLoadingExperience({ supportLang = "en" }) {
         py={{ base: 3, md: 4 }}
         bgGradient="linear(to-b, rgba(10, 13, 27, 0.96), rgba(10, 13, 27, 0.72), transparent)"
       >
-        <Text
-          fontSize={{ base: "sm", md: "md" }}
-          color="blue.100"
-          minH="24px"
-          key={messageIndex}
-          fontFamily="monospace"
-          sx={{
-            animation: "fadeIn 0.4s ease-in-out",
-            "@keyframes fadeIn": {
-              "0%": { opacity: 0, transform: "translateY(-4px)" },
-              "100%": { opacity: 1, transform: "translateY(0)" },
-            },
-          }}
-        >
-          {messages[messageIndex]}
-        </Text>
+        <Flex align="center" justify="space-between" gap={3}>
+          <Text
+            flex="1"
+            fontSize={{ base: "sm", md: "md" }}
+            color="blue.100"
+            minH="24px"
+            key={messageIndex}
+            fontFamily="monospace"
+            sx={{
+              animation: "fadeIn 0.4s ease-in-out",
+              "@keyframes fadeIn": {
+                "0%": { opacity: 0, transform: "translateY(-4px)" },
+                "100%": { opacity: 1, transform: "translateY(0)" },
+              },
+            }}
+          >
+            {messages[messageIndex]}
+          </Text>
+          {onCancel ? (
+            <Button
+              size="sm"
+              variant="ghost"
+              color="whiteAlpha.900"
+              onClick={onCancel}
+              flexShrink={0}
+              _hover={{ bg: "whiteAlpha.200" }}
+              _active={{ bg: "whiteAlpha.300" }}
+            >
+              {cancelLabel}
+            </Button>
+          ) : null}
+        </Flex>
       </Box>
       <Box flex="1" overflow="hidden" position="relative">
         <Suspense
@@ -1139,7 +1169,7 @@ function getStableTutorLessonXpRequired(lesson) {
 }
 
 function getTutorLessonXpRequired(lesson) {
-  if (lesson?.isRepair) {
+  if ((lesson?.isRepair || lesson?.isGoal)) {
     return Math.max(
       0,
       Number(lesson.xpRequired) || TUTOR_REPAIR_LESSON_XP_REQUIRED,
@@ -1159,6 +1189,10 @@ function getTutorLessonXpRequired(lesson) {
 // message log keys off the step-scoped id — so the regular lesson (and its
 // transcript) resume exactly where they were once the repair ends.
 function buildTutorRepairLessonFromFocus(focus) {
+  if (focus.blueprint) return {
+    ...buildGoalLesson(focus.blueprint), xpRequired: 25,
+    content: { goal: { topic: focus.blueprint.objective, focusPoints: [...focus.blueprint.targetLanguage, ...focus.blueprint.successCriteria] } },
+  };
   const items = Array.isArray(focus?.plan?.items) ? focus.plan.items : [];
   const phrases = compactUnique(
     items
@@ -3338,68 +3372,6 @@ function TutorPathLevelHeader({
   );
 }
 
-function TutorLessonProgressRing({
-  percent = 0,
-  label = "",
-  isComplete = false,
-  isLightTheme = false,
-}) {
-  const safePercent = Math.max(0, Math.min(100, Math.round(percent || 0)));
-  const progressColor = isComplete ? "#34D399" : "#5EEAD4";
-  const trackColor = isLightTheme
-    ? "rgba(31,41,55,0.14)"
-    : "rgba(255,255,255,0.18)";
-  const innerBg = isLightTheme ? "rgba(255,255,255,0.92)" : "rgba(5,10,22,0.9)";
-  const iconColor = isLightTheme ? "#166534" : "#D1FAE5";
-
-  return (
-    <Box
-      role="progressbar"
-      aria-label={label || "Lesson progress"}
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-valuenow={safePercent}
-      title={label || `${safePercent}%`}
-      w="26px"
-      h="26px"
-      borderRadius="full"
-      display="grid"
-      placeItems="center"
-      flexShrink={0}
-      bg={`conic-gradient(${progressColor} ${safePercent}%, ${trackColor} 0)`}
-      boxShadow={
-        isComplete
-          ? `0 0 14px ${progressColor}55`
-          : isLightTheme
-            ? "0 1px 4px rgba(15,23,42,0.08)"
-            : "0 0 10px rgba(94,234,212,0.12)"
-      }
-      transition="background 180ms ease, box-shadow 180ms ease"
-    >
-      <Box
-        w="18px"
-        h="18px"
-        borderRadius="full"
-        bg={innerBg}
-        display="grid"
-        placeItems="center"
-      >
-        {isComplete ? (
-          <Box as={RiCheckLine} boxSize="13px" color={iconColor} />
-        ) : (
-          <Box
-            w="5px"
-            h="5px"
-            borderRadius="full"
-            bg={progressColor}
-            opacity={safePercent > 0 ? 0.95 : 0.45}
-          />
-        )}
-      </Box>
-    </Box>
-  );
-}
-
 function TutorPathLessonNode({
   lesson,
   unit,
@@ -3928,7 +3900,6 @@ export default function Tutor({
   onFirstLessonComplete,
   onDailyGoalCelebration,
   onConnectionStatusChange,
-  bottomActionBarMinimized = false,
   isActive = true,
 }) {
   const aliveRef = useRef(false);
@@ -4364,6 +4335,14 @@ export default function Tutor({
   const [completedTutorLessonData, setCompletedTutorLessonData] =
     useState(null);
   const [showTutorLessonComplete, setShowTutorLessonComplete] = useState(false);
+  const [hasRoomyTutorCompletionViewport] = useMediaQuery(
+    "(min-width: 400px) and (min-height: 740px)",
+  );
+  const tutorCompletionCharacterSize =
+    useBreakpointValue({
+      base: hasRoomyTutorCompletionViewport ? 96 : 80,
+      md: 96,
+    }) ?? 80;
   const [completedTutorAgendaData, setCompletedTutorAgendaData] =
     useState(null);
   const [showTutorCompletedAgenda, setShowTutorCompletedAgenda] =
@@ -4373,7 +4352,9 @@ export default function Tutor({
   // mounted still swaps the ephemeral repair session in). The tick forces the
   // path-resume effect to re-apply the regular lesson after a repair ends —
   // none of its other deps change when the focus clears.
-  const tutorRepairFocus = useRepairFocusStore((s) => s.focus);
+  const repairFocus = useRepairFocusStore((s) => s.focus);
+  const goalFocus = useGoalFocusStore((s) => s.focus);
+  const tutorRepairFocus = currentGoalFocus("tutor") || (repairFocus && currentRepairFocus());
   const [tutorRepairRestoreTick, setTutorRepairRestoreTick] = useState(0);
   // Focus cleared (skip) while the live session was still up: restore on stop
   // instead of yanking the lesson out from under the conversation.
@@ -4753,8 +4734,8 @@ export default function Tutor({
     // repair-focus effect below selects the ephemeral repair lesson): don't
     // let path resume clobber it. The hydrating bookkeeping still runs.
     const tutorRepairOwnsSurface =
-      useRepairFocusStore.getState().focus?.surface === "tutor" ||
-      selectedTutorLessonRef.current?.isRepair;
+      Boolean(currentGoalFocus("tutor")) || currentRepairFocus()?.surface === "tutor" ||
+      (selectedTutorLessonRef.current?.isRepair || selectedTutorLessonRef.current?.isGoal);
 
     if (resumeLesson && !tutorRepairOwnsSurface) {
       const resumeKey = `${langKey}:${resumeLesson.lesson.id}`;
@@ -4840,9 +4821,9 @@ export default function Tutor({
   // lesson — untouched, exactly where it was.
   function restoreTutorLessonAfterRepair() {
     pendingTutorRepairRestoreRef.current = false;
-    if (!selectedTutorLessonRef.current?.isRepair) return;
+    if (!(selectedTutorLessonRef.current?.isRepair || selectedTutorLessonRef.current?.isGoal)) return;
     // A new step took over in the meantime — nothing to restore yet.
-    if (useRepairFocusStore.getState().focus?.surface === "tutor") return;
+    if (currentGoalFocus("tutor") || currentRepairFocus()?.surface === "tutor") return;
     tutorResumeAppliedRef.current = "";
     selectedTutorLessonRef.current = null;
     selectedTutorUnitRef.current = null;
@@ -4886,14 +4867,14 @@ export default function Tutor({
       }
       return;
     }
-    if (selectedTutorLessonRef.current?.isRepair) {
+    if ((selectedTutorLessonRef.current?.isRepair || selectedTutorLessonRef.current?.isGoal)) {
       if (aliveRef.current) {
         pendingTutorRepairRestoreRef.current = true;
       } else {
         restoreTutorLessonAfterRepair();
       }
     }
-  }, [tutorRepairFocus]);
+  }, [tutorRepairFocus, goalFocus]);
 
   // Inline coaching feedback for incomplete attempts
   const [inlineFeedback] = useState("");
@@ -5044,6 +5025,15 @@ export default function Tutor({
     }
   }
 
+  function handleCancelTutorGameLoading() {
+    tutorGameLaunchTokenRef.current += 1;
+    setIsStartingPreviewedLesson(false);
+    setTutorGameLaunch(null);
+    setTutorGameLoaderFrame(null);
+    setPreviewedTutorObjectivesExpanded(false);
+    setPreviewedTutorLesson(null);
+  }
+
   function handleTutorGameExit() {
     if (tutorGameCompletionInFlightRef.current) return;
     tutorGameLaunchTokenRef.current += 1;
@@ -5185,7 +5175,7 @@ export default function Tutor({
     const lesson = selectedTutorLessonRef.current;
     if (!currentNpub || !lesson) return;
     // Ephemeral repair sessions never enter tutor-path progress.
-    if (lesson.isRepair) return;
+    if ((lesson.isRepair || lesson.isGoal)) return;
 
     const existingStatus = tutorUserProgress.lessons?.[lesson.id]?.status;
     if (
@@ -5274,7 +5264,7 @@ export default function Tutor({
     if (
       !currentNpub ||
       !selectedTutorLessonRef.current?.id ||
-      selectedTutorLessonRef.current.isRepair ||
+      (selectedTutorLessonRef.current.isRepair || selectedTutorLessonRef.current.isGoal) ||
       tutorLessonCompletionTriggeredRef.current ||
       !normalizedMessages.length
     ) {
@@ -5314,7 +5304,7 @@ export default function Tutor({
     lessonProgress,
     { identity = "" } = {},
   ) {
-    const session = lesson?.isRepair
+    const session = (lesson?.isRepair || lesson?.isGoal)
       ? { visibleMessages: [], resumeContextMessages: [] }
       : getTutorConversationSessionState(lessonProgress, {
           sanitizeText: sanitizeTutorAssistantText,
@@ -5401,6 +5391,7 @@ export default function Tutor({
     currentNpub,
     selectedTutorLesson?.id,
     selectedTutorLesson?.isRepair,
+    selectedTutorLesson?.isGoal,
     targetLang,
     tutorUserProgress.lessons,
   ]);
@@ -5519,13 +5510,6 @@ export default function Tutor({
     status === "connected" && uiState !== "speaking" && uiState !== "thinking"
       ? "listening"
       : uiState;
-  const isVoiceSessionActive =
-    status === "connecting" || status === "connected";
-  const dockButtonBottomMargin = bottomActionBarMinimized
-    ? isVoiceSessionActive
-      ? 10
-      : 20
-    : 24;
   const edgeGlowState = status === "connected" ? liveUiState : "idle";
   const [displayRobotState, setDisplayRobotState] = useState(liveUiState);
   const [previousRobotState, setPreviousRobotState] = useState(null);
@@ -6044,7 +6028,7 @@ export default function Tutor({
   function getOpenAIRegularTutorAgendaSnapshot({ requireOpenAI = false } = {}) {
     if (requireOpenAI && realtimeProviderRef.current !== "openai") return null;
     const lesson = selectedTutorLessonRef.current;
-    if (!lesson || lesson.isRepair || isTutorStarterAgendaLesson(lesson)) {
+    if (!lesson || (lesson.isRepair || lesson.isGoal) || isTutorStarterAgendaLesson(lesson)) {
       return null;
     }
 
@@ -6779,6 +6763,8 @@ export default function Tutor({
      Language instructions with proficiency level
   --------------------------- */
   function buildLanguageInstructions() {
+    const goal = currentGoalFocus("tutor");
+    if (goal) return goalInstructions(goal.blueprint, goal.supportLang);
     const persona = String((voicePersonaRef.current ?? "").slice(0, 240));
     const personaPolicy = buildVoicePersonaPolicy(persona, "tutor");
     const tLang = targetLangRef.current;
@@ -6845,7 +6831,7 @@ export default function Tutor({
     const openAIRegularAgendaLesson =
       realtimeProviderRef.current === "openai" &&
       !!selectedTutorLessonRef.current &&
-      !selectedTutorLessonRef.current.isRepair &&
+      !(selectedTutorLessonRef.current.isRepair || selectedTutorLessonRef.current.isGoal) &&
       !starterAgendaLesson;
 
     const strict = (() => {
@@ -7138,6 +7124,8 @@ export default function Tutor({
   }
 
   function buildOpenAIResponseInstructionsPrefix() {
+    const goal = currentGoalFocus("tutor");
+    if (goal) return goalInstructions(goal.blueprint, goal.supportLang);
     const tLang = targetLangRef.current || targetLang || "es";
     const supportCode = normalizeSupportLanguage(
       supportLangRef.current || resolvedSupportLang,
@@ -7211,7 +7199,7 @@ export default function Tutor({
   // Self-terminating: once judgeTutorTurnSuccessfulForXp clears the focus, the
   // next instruction build naturally omits this block.
   function buildTutorRepairAgendaInstruction({ isKickoff = false } = {}) {
-    const focus = useRepairFocusStore.getState().focus;
+    const focus = currentRepairFocus();
     if (focus?.surface !== "tutor") return "";
     if (isTutorStarterAgendaLesson(selectedTutorLessonRef.current)) return "";
     const items = (focus.plan?.items || []).slice(0, REPAIR_MAX_ITEMS);
@@ -7233,7 +7221,7 @@ export default function Tutor({
     // it IS the whole (short) session, generated fresh around the weak
     // material, so the instruction keeps the tutor on it until the app ends
     // the session.
-    if (selectedTutorLessonRef.current?.isRepair) {
+    if ((selectedTutorLessonRef.current?.isRepair || selectedTutorLessonRef.current?.isGoal)) {
       return [
         `REPAIR SESSION (this entire short session IS the repair — there is no other lesson topic): the companion saved this ${targetLanguageName} material the learner found tricky recently: ${phraseList}.`,
         `Treat this as fresh practice in ${supportLanguageName} framing — never say they got it wrong before or present it as a test. Model a phrase, ask the learner to repeat or produce it, then use it in one tiny realistic exchange.`,
@@ -7248,6 +7236,8 @@ export default function Tutor({
   }
 
   function buildTutorKickoffInstructions() {
+    const goal = currentGoalFocus("tutor");
+    if (goal) return goalInstructions(goal.blueprint, goal.supportLang);
     const tLang = targetLangRef.current || targetLang || "es";
     const lesson = selectedTutorLessonRef.current;
     const unit = selectedTutorUnitRef.current;
@@ -7339,7 +7329,7 @@ export default function Tutor({
     }
 
     if (realtimeProviderRef.current === "openai" && lesson) {
-      if (lesson.isRepair) {
+      if ((lesson.isRepair || lesson.isGoal)) {
         return buildOpenAIRepairTurnInstructions({
           isKickoff: true,
           repairDirective: buildTutorRepairAgendaInstruction({
@@ -7414,6 +7404,8 @@ export default function Tutor({
   }
 
   function buildTutorWelcomeInstructions() {
+    const goal = currentGoalFocus("tutor");
+    if (goal) return goalInstructions(goal.blueprint, goal.supportLang);
     const tLang = targetLangRef.current || targetLang || "es";
     const targetLanguageName =
       getLanguagePromptName(tLang) || "the target language";
@@ -7879,6 +7871,8 @@ export default function Tutor({
       ? TUTOR_TURN_VERDICT.ACCEPTED
       : TUTOR_TURN_VERDICT.REJECTED,
   ) {
+    const goal = currentGoalFocus("tutor");
+    if (goal) return goalInstructions(goal.blueprint, goal.supportLang);
     const lesson = selectedTutorLessonRef.current;
     const unit = selectedTutorUnitRef.current;
     const tutorPurpose = lesson?.tutorPurpose || "instruction";
@@ -7984,7 +7978,7 @@ export default function Tutor({
     }
 
     if (realtimeProviderRef.current === "openai") {
-      if (lesson?.isRepair) {
+      if ((lesson?.isRepair || lesson?.isGoal)) {
         return buildOpenAIRepairTurnInstructions({
           repairDirective: buildTutorRepairAgendaInstruction(),
           turnVerdict,
@@ -8899,13 +8893,13 @@ export default function Tutor({
     // transcript write from racing the delete in completeTutorLesson.
     cancelTutorConversationDraftSave();
 
-    if (lesson.isRepair) {
+    if ((lesson.isRepair || lesson.isGoal)) {
       // Ephemeral repair step: no tutor-path writes (completeTutorLesson,
       // next-lesson advance, stored-lesson pointer) and no "speak" plate
       // count — finishing it banks ONE Repair-course increment via
-      // completeRepairFocus and reinforces the step's note. The completion
-      // modal is shown BEFORE the focus completes so the plate's step
-      // celebration queues behind it instead of racing it.
+      // completeRepairFocus and reinforces the step's note. Goal and Repair
+      // are multi-modality bundles, so their Tutor step intentionally has no
+      // lesson-complete modal; the plate celebrates only the whole bundle.
       tutorLessonCompletionTriggeredRef.current = true;
       dispatchTutorCompletionSequenceStart();
       await stop();
@@ -8927,33 +8921,27 @@ export default function Tutor({
             "tutor_repair_final_turn_local",
           );
         });
-        setCompletedTutorLessonData({
-          title: lesson.title,
-          xpEarned: xpRequired,
-          lessonId: lesson.id,
-          unitTitle: null,
-        });
-        setCompletedTutorAgendaData(
-          buildTutorCompletedAgendaData({
+        if (lesson.isGoal) {
+          const routedGoal = currentGoalFocus("tutor");
+          if (routedGoal) {
+            await recordGoalAttempt(routedGoal, {
+              id: `tutor:${routedGoal.blueprint.goalId}:${routedGoal.blueprint.dayKey}`,
+              success: true,
+              support: "prompted",
+              domain: "production",
+              observation: `Completed ${xpRequired} XP of goal-specific Tutor practice with successful spoken turns.`,
+            });
+          }
+        } else {
+          // Prefers the live repair focus (clears it → the restore effect hands
+          // the surface back); falls back to embedded repair data after reload.
+          await completeRepairLesson({
             lesson,
-            unit,
+            npub,
             targetLang: targetLangRef.current,
-            supportLang: resolvedSupportLang,
-            starterProgress: {},
-            xpEarned: xpRequired,
-            forceComplete: true,
-          }),
-        );
-        setShowTutorLessonComplete(true);
-        // Prefers the live focus (clears it → the restore effect hands the
-        // surface back); falls back to the lesson's embedded step data when
-        // the focus is already gone.
-        await completeRepairLesson({
-          lesson,
-          npub,
-          targetLang: targetLangRef.current,
-        });
-        if (xpRequired > 0) {
+          });
+        }
+        if (!lesson.isGoal && xpRequired > 0) {
           setXp((v) => v + xpRequired);
           const repairDailyGoalUpdate = applyTutorDailyGoalXpOptimistic(
             npub,
@@ -8976,10 +8964,11 @@ export default function Tutor({
           );
           await syncTutorDailyGoalXpFromFirestore(npub);
         }
-        logEvent(analytics, "tutor_repair_completed", {
+        logEvent(analytics, lesson.isGoal ? "tutor_goal_completed" : "tutor_repair_completed", {
           lessonId: lesson.id,
           xpRequired,
         });
+        releaseTutorDailyGoalCelebration();
         return true;
       } catch (error) {
         console.error("Failed to complete Tutor repair:", error);
@@ -9190,7 +9179,7 @@ export default function Tutor({
     setTutorLessonEarnedXp(nextEarned);
     // Repair sessions are ephemeral — their in-lesson progress is never
     // persisted, so the regular lesson's saved XP stays untouched.
-    if (currentNpub && !lesson.isRepair) {
+    if (currentNpub && !(lesson.isRepair || lesson.isGoal)) {
       void saveTutorLessonEarnedXp(
         currentNpub,
         lesson.id,
@@ -9202,9 +9191,11 @@ export default function Tutor({
     }
 
     const canCompleteLesson =
-      lesson.isFinalQuiz
+      lesson.isRepair || lesson.isGoal
         ? true
-        : forceLegacyCompletion ||
+        : lesson.isFinalQuiz
+          ? true
+          : forceLegacyCompletion ||
           (isTutorStarterAgendaLesson(lesson)
             ? isTutorStarterAgendaComplete(tutorStarterAgendaProgressRef.current)
             : !isOpenAIRegularTutorAgendaIncomplete());
@@ -9430,7 +9421,7 @@ export default function Tutor({
     const currentObjectiveItem =
       getOpenAIRegularTutorAgendaSnapshot()?.currentItem || null;
     // Routed repair: items the Daily Quest wants drilled here, if any.
-    const tutorRepairFocus = useRepairFocusStore.getState().focus;
+    const tutorRepairFocus = currentRepairFocus();
     const repairFocusItems =
       tutorRepairFocus?.surface === "tutor"
         ? (tutorRepairFocus.plan?.items || [])
@@ -9529,6 +9520,18 @@ export default function Tutor({
   }
 
   async function judgeTutorTurnSuccessfulForXp(userMessage = "", opts = {}) {
+    const goal = currentGoalFocus("tutor");
+    if (goal) {
+      try {
+        const verdict = await evaluateGoalAttempt(
+          goal,
+          userMessage,
+          JSON.stringify(opts),
+          { record: false },
+        );
+        return { successful: verdict.success, confidence: 1, reason: verdict.feedback };
+      } catch { return { successful: false, confidence: 0, reason: "Goal check unavailable; retry" }; }
+    }
     if (!hasTutorMeaningfulTranscript(userMessage)) {
       return { successful: false, confidence: 0, reason: "empty transcript" };
     }
@@ -9598,9 +9601,10 @@ export default function Tutor({
       // modal + one Repair-course increment). Self-terminating either way,
       // since the next grader call won't see a focus once it's cleared.
       if (parsed.repairAdvanced === true) {
-        const tutorFocusNow = useRepairFocusStore.getState().focus;
+        if (selectedTutorLessonRef.current?.isRepair) selectedTutorLessonRef.current.repairEvidence = { success: true, support: "prompted", observation: userMessage.slice(0, 600) };
+        const tutorFocusNow = currentRepairFocus();
         if (tutorFocusNow?.surface === "tutor") {
-          if (selectedTutorLessonRef.current?.isRepair) {
+          if ((selectedTutorLessonRef.current?.isRepair || selectedTutorLessonRef.current?.isGoal)) {
             scheduleTutorRepairCompletion();
           } else {
             // Fallback: the focus rode on a regular lesson (no usable repair
@@ -10236,6 +10240,16 @@ export default function Tutor({
         }
         return;
       }
+      const routedGoal = currentGoalFocus("tutor");
+      if (routedGoal && text) {
+        void evaluateGoalAttempt(
+          routedGoal,
+          text,
+          JSON.stringify(messagesRef.current.slice(-8)),
+          { record: false },
+        )
+          .catch(error => console.warn("Goal response check failed:", error));
+      }
       if (assistantSpeakingRef.current) {
         // Late async transcription (OpenAI): the reply already started, so keep
         // the conversation flow untouched but let the attempt earn its XP.
@@ -10858,7 +10872,7 @@ export default function Tutor({
   // the live agenda ref mutates.
   const regularAgendaGateOpen = useMemo(() => {
     const lesson = selectedTutorLesson;
-    if (!lesson || lesson.isRepair || isTutorStarterAgendaLesson(lesson)) {
+    if (!lesson || (lesson.isRepair || lesson.isGoal) || isTutorStarterAgendaLesson(lesson)) {
       return true;
     }
     const items = getTutorLessonFocusAgendaItems(
@@ -10887,6 +10901,19 @@ export default function Tutor({
     tutorRegularAgendaTick,
   ]);
 
+  const lessonProgressLabel = tutorCopy(uiLang, {
+    en: "Lesson progress",
+    es: "Progreso de la leccion",
+    pt: "Progresso da licao",
+    it: "Progresso della lezione",
+    fr: "Progression de la lecon",
+    de: "Lektionsfortschritt",
+    ja: "レッスンの進捗",
+    hi: "पाठ प्रगति",
+    ar: "تقدّم الدرس",
+    zh: "课程进度",
+  });
+
   // Repair an interrupted completion on hydration. Regular lessons require
   // full XP plus their agenda; Tutor quizzes intentionally use XP alone.
   // Legacy checkpoints predate the agenda schema, so full XP is their only
@@ -10897,7 +10924,7 @@ export default function Tutor({
     if (
       !currentNpub ||
       !lesson ||
-      lesson.isRepair ||
+      (lesson.isRepair || lesson.isGoal) ||
       isTutorAgendaHydrating ||
       isTutorPathLoading ||
       isTutorProgressLoading ||
@@ -10949,17 +10976,7 @@ export default function Tutor({
       return {
         percent: 0,
         isComplete: false,
-        label: tutorCopy(uiLang, {
-          en: "Lesson progress",
-          es: "Progreso de la leccion",
-          pt: "Progresso da licao",
-          it: "Progresso della lezione",
-          fr: "Progression de la lecon",
-          ja: "レッスンの進捗",
-          hi: "पाठ प्रगति",
-          ar: "تقدّم الدرس",
-          zh: "课程进度",
-        }),
+        label: `${lessonProgressLabel}: 0%`,
       };
     }
 
@@ -10991,20 +11008,7 @@ export default function Tutor({
       percent,
       isComplete:
         percent >= 100 && starterAgendaComplete && regularAgendaGateOpen,
-      label:
-        required > 0
-          ? `${earned}/${required} XP`
-          : tutorCopy(uiLang, {
-              en: "Lesson complete",
-              es: "Leccion completada",
-              pt: "Licao completa",
-              it: "Lezione completata",
-              fr: "Lecon terminee",
-              ja: "レッスン完了",
-              hi: "पाठ पूरा हुआ",
-              ar: "الدرس اكتمل",
-              zh: "课程完成",
-            }),
+      label: `${lessonProgressLabel}: ${percent}%`,
     };
   }, [
     selectedTutorLesson,
@@ -11012,6 +11016,7 @@ export default function Tutor({
     tutorLessonEarnedXp,
     tutorStarterAgendaProgress,
     regularAgendaGateOpen,
+    lessonProgressLabel,
     uiLang,
   ]);
   const previewedLessonAgendaItems = useMemo(() => {
@@ -11106,7 +11111,7 @@ export default function Tutor({
         state={edgeGlowState}
         isLightTheme={isLightTheme}
       />
-      <Box color="gray.100" position="relative" pb="120px">
+      <Box color="gray.100" position="relative" pb={4}>
         {/* Header area: lesson agenda separated from robot. No repair-focus
             banner here: a routed tutor repair runs as its own ephemeral
             lesson, so the lesson header already IS the repair context. */}
@@ -11139,12 +11144,6 @@ export default function Tutor({
                   {uiText("app_mode_path", "Lessons")}
                 </Button>
                 <HStack spacing={2}>
-                  <TutorLessonProgressRing
-                    percent={lessonCompletionRing.percent}
-                    label={lessonCompletionRing.label}
-                    isComplete={lessonCompletionRing.isComplete}
-                    isLightTheme={isLightTheme}
-                  />
                   <IconButton
                     ref={chatLogButtonRef}
                     icon={<FaRegCommentDots size={14} />}
@@ -11190,13 +11189,25 @@ export default function Tutor({
                 </HStack>
               </VStack>
 
-              {/* XP Progress Bar */}
-              <Box w="100%">
+              {/* Current lesson progress */}
+              <Box
+                w="100%"
+                role="progressbar"
+                aria-label={lessonCompletionRing.label}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={lessonCompletionRing.percent}
+              >
                 <XpProgressHeader
-                  levelText={`${uiText("ra_label_level", "Level")} ${xpLevelNumber}`}
-                  xpText={`${uiText("ra_label_xp", "XP")} ${xp}`}
-                  progressPct={progressPct}
-                  xpBadgeProps={{ colorScheme: "teal", fontSize: "10px" }}
+                  levelText={lessonProgressLabel}
+                  xpText={`${lessonCompletionRing.percent}%`}
+                  progressPct={lessonCompletionRing.percent}
+                  levelTextProps={{ fontSize: "xs", fontWeight: "normal" }}
+                  xpBadgeProps={{
+                    colorScheme: "teal",
+                    fontSize: "10px",
+                    fontWeight: "normal",
+                  }}
                 />
               </Box>
             </VStack>
@@ -11315,75 +11326,44 @@ export default function Tutor({
         </Box>
 
         {/* Bottom dock - Connect button only */}
-        <Center
-          position="fixed"
-          bottom="22px"
-          left="0"
-          right="0"
-          zIndex={30}
-          px={4}
-        >
-          <HStack spacing={3} w="100%" maxW="560px" justify="center">
-            <Button
-              onClick={status === "connected" ? stop : start}
-              size="lg"
-              height="64px"
-              px={{ base: 8, md: 12 }}
-              rounded="full"
-              colorScheme={status === "connected" ? undefined : "cyan"}
-              bg={
-                status === "connected"
-                  ? SOFT_STOP_BUTTON_BG
-                  : isLightTheme
-                    ? "linear-gradient(180deg, #40c6d9 0%, #2fb4c7 100%)"
-                    : undefined
+        <QuestionActionArea
+          actions={
+            <ActivityActionRow
+              tone={status === "connected" ? "stop" : "speak"}
+              primary={
+                <Button
+                  key={status === "connected" ? "end" : "start"}
+                  onClick={(e) => {
+                    e.currentTarget?.blur?.();
+                    if (status === "connected") {
+                      stop();
+                    } else {
+                      start();
+                    }
+                  }}
+                  size="lg"
+                  height="48px"
+                  px={4}
+                  rounded="full"
+                  textShadow={isLightTheme ? "none" : "0 0 16px rgba(0,0,0,0.9)"}
+                >
+                  {status === "connected" ? (
+                    <>
+                      <FaStop /> &nbsp; {uiText("ra_btn_end", "End")}
+                    </>
+                  ) : (
+                    <>
+                      <FaMicrophone /> &nbsp;{" "}
+                      {status === "connecting"
+                        ? uiText("ra_btn_starting", "Starting...")
+                        : uiText("ra_btn_start", "Start")}
+                    </>
+                  )}
+                </Button>
               }
-              boxShadow={
-                status === "connected"
-                  ? SOFT_STOP_BUTTON_GLOW
-                  : isLightTheme
-                    ? "0 10px 24px rgba(66, 168, 181, 0.22), 0 4px 0 rgba(41, 126, 136, 0.82)"
-                    : undefined
-              }
-              _hover={
-                status === "connected"
-                  ? { bg: SOFT_STOP_BUTTON_HOVER_BG }
-                  : isLightTheme
-                    ? {
-                        bg: "linear-gradient(180deg, #35bfd3 0%, #27adc0 100%)",
-                      }
-                    : undefined
-              }
-              color={
-                status === "connected"
-                  ? "white"
-                  : isLightTheme
-                    ? "white"
-                    : "white"
-              }
-              border={
-                isLightTheme && status !== "connected"
-                  ? "1px solid rgba(255,255,255,0.55)"
-                  : undefined
-              }
-              textShadow={isLightTheme ? "none" : "0 0 16px rgba(0,0,0,0.9)"}
-              mb={dockButtonBottomMargin}
-            >
-              {status === "connected" ? (
-                <>
-                  <FaStop /> &nbsp; {uiText("ra_btn_end", "End")}
-                </>
-              ) : (
-                <>
-                  <FaMicrophone /> &nbsp;{" "}
-                  {status === "connecting"
-                    ? uiText("ra_btn_starting", "Starting...")
-                    : uiText("ra_btn_start", "Start")}
-                </>
-              )}
-            </Button>
-          </HStack>
-        </Center>
+            ></ActivityActionRow>
+          }
+        />
 
         {err && (
           <Box px={4} pt={2}>
@@ -11638,11 +11618,17 @@ export default function Tutor({
 
       <Modal
         isOpen={!!previewedTutorLesson}
-        onClose={closeTutorLessonPreview}
+        onClose={
+          tutorGameLaunch?.phase === "loading"
+            ? handleCancelTutorGameLoading
+            : closeTutorLessonPreview
+        }
         isCentered
         size="lg"
         scrollBehavior="inside"
-        closeOnEsc={!isStartingPreviewedLesson}
+        closeOnEsc={
+          !isStartingPreviewedLesson || tutorGameLaunch?.phase === "loading"
+        }
         closeOnOverlayClick={!isStartingPreviewedLesson}
         motionPreset="none"
       >
@@ -11697,7 +11683,10 @@ export default function Tutor({
         >
           {tutorGameLaunch?.phase === "loading" ? (
             <Box position="absolute" inset={0} zIndex={20}>
-              <TutorGameReviewLoadingExperience supportLang={uiLang} />
+              <TutorGameReviewLoadingExperience
+                supportLang={uiLang}
+                onCancel={handleCancelTutorGameLoading}
+              />
             </Box>
           ) : null}
           <ModalHeader
@@ -11946,13 +11935,35 @@ export default function Tutor({
                     borderRadius="lg"
                     style={APP_SQUIRCLE_STYLE}
                     bg={
-                      previewedTutorLesson?.unit?.color ||
-                      (isLightTheme ? "teal.500" : "teal.400")
+                      isTutorStarterAgendaLesson(previewedTutorLesson?.lesson)
+                        ? previewedTutorLesson?.unit?.color ||
+                          (isLightTheme ? "teal.500" : "teal.400")
+                        : isLightTheme
+                          ? "rgba(234, 179, 8, 0.14)"
+                          : "yellow.500"
                     }
-                    color="white"
+                    color={
+                      isTutorStarterAgendaLesson(previewedTutorLesson?.lesson)
+                        ? "white"
+                        : isLightTheme
+                          ? "#d69e2e"
+                          : "white"
+                    }
+                    border="1px solid"
+                    borderColor={
+                      isTutorStarterAgendaLesson(previewedTutorLesson?.lesson)
+                        ? "transparent"
+                        : isLightTheme
+                          ? "rgba(202, 138, 4, 0.24)"
+                          : "transparent"
+                    }
                     flexShrink={0}
                   >
-                    <RiStarFill size={18} />
+                    {isTutorStarterAgendaLesson(previewedTutorLesson?.lesson) ? (
+                      <RiTrophyLine size={18} />
+                    ) : (
+                      <LuChartColumnIncreasing size={18} />
+                    )}
                   </Center>
                   <Text
                     fontSize="sm"
@@ -12085,14 +12096,30 @@ export default function Tutor({
           color="white"
           borderRadius="2xl"
           boxShadow="2xl"
-          maxW={{ base: "90%", sm: "md" }}
+          maxW={{ base: "calc(100% - 24px)", sm: "md" }}
+          maxH={{ base: "calc(100dvh - 16px)", sm: "calc(100dvh - 24px)" }}
+          overflow="hidden"
         >
-          <ModalBody py={12} px={8}>
-            <VStack spacing={6} textAlign="center">
+          <ModalBody
+            py={{ base: hasRoomyTutorCompletionViewport ? 6 : 5, md: 12 }}
+            px={{ base: hasRoomyTutorCompletionViewport ? 6 : 5, md: 8 }}
+            pb={{ base: 3, md: 6 }}
+            overflow="hidden"
+          >
+            <VStack
+              spacing={{
+                base: hasRoomyTutorCompletionViewport ? 5 : 4,
+                md: 6,
+              }}
+              textAlign="center"
+            >
               <Box
                 bg="rgba(255,255,255,0.2)"
                 borderRadius="full"
-                p={4}
+                p={{
+                  base: hasRoomyTutorCompletionViewport ? 3 : 2,
+                  md: 4,
+                }}
                 border="2px solid"
                 borderColor="rgba(255,255,255,0.3)"
                 boxShadow="0 20px 40px rgba(0,0,0,0.18)"
@@ -12101,12 +12128,20 @@ export default function Tutor({
                   key={`${completedTutorLessonData?.lessonId || "tutor"}-${
                     showTutorLessonComplete ? "open" : "closed"
                   }`}
-                  width="96px"
+                  width={`${tutorCompletionCharacterSize}px`}
+                  containerHeight={tutorCompletionCharacterSize}
                   notSoRandomCharacter="27"
                 />
               </Box>
-              <VStack spacing={2}>
-                <Text fontSize="3xl" fontWeight="bold">
+              <VStack spacing={{ base: 1, md: 2 }}>
+                <Text
+                  fontSize={{
+                    base: hasRoomyTutorCompletionViewport ? "3xl" : "2xl",
+                    md: "3xl",
+                  }}
+                  fontWeight="bold"
+                  lineHeight="1.15"
+                >
                   {tutorCopy(uiLang, {
                     en: "Lesson Complete!",
                     es: "Leccion completada!",
@@ -12119,20 +12154,32 @@ export default function Tutor({
                     zh: "课程完成！",
                   })}
                 </Text>
-                <Text fontSize="lg" opacity={0.9}>
+                <Text
+                  fontSize={{
+                    base: hasRoomyTutorCompletionViewport ? "lg" : "md",
+                    md: "lg",
+                  }}
+                  opacity={0.9}
+                >
                   {getTutorDisplayText(completedTutorLessonData?.title, uiLang)}
                 </Text>
               </VStack>
               <Box
                 bg="rgba(255,255,255,0.2)"
                 borderRadius="xl"
-                py={6}
-                px={8}
+                py={{
+                  base: hasRoomyTutorCompletionViewport ? 5 : 4,
+                  md: 6,
+                }}
+                px={{
+                  base: hasRoomyTutorCompletionViewport ? 7 : 5,
+                  md: 8,
+                }}
                 width="100%"
                 border="2px solid"
                 borderColor="rgba(255,255,255,0.4)"
               >
-                <VStack spacing={2}>
+                <VStack spacing={{ base: 1, md: 2 }}>
                   <Text
                     fontSize="sm"
                     textTransform="uppercase"
@@ -12151,14 +12198,55 @@ export default function Tutor({
                       zh: "获得 XP",
                     })}
                   </Text>
-                  <Text fontSize="5xl" fontWeight="bold" color="yellow.300">
+                  <Text
+                    fontSize={{
+                      base: hasRoomyTutorCompletionViewport ? "5xl" : "4xl",
+                      md: "5xl",
+                    }}
+                    fontWeight="bold"
+                    color="yellow.300"
+                    lineHeight="1"
+                  >
                     {completedTutorLessonData?.xpEarned || 0}
                   </Text>
+
+                  <Box
+                    w="100%"
+                    pt={{ base: 2, md: 4 }}
+                    mt={{ base: 1, md: 2 }}
+                  >
+                    {(() => {
+                      const totalXp = Math.max(
+                        0,
+                        Number(xp) || 0,
+                        Number(
+                          getLanguageXp(
+                            user?.progress || {},
+                            targetLangRef.current || targetLang,
+                          ),
+                        ) || 0,
+                      );
+                      const levelNumber = Math.floor(totalXp / 100) + 1;
+
+                      return (
+                        <XpProgressHeader
+                          levelText={`${uiText("ra_label_level", "Level")} ${levelNumber}`}
+                          xpText={`${uiText("ra_label_xp", "XP")} ${totalXp}`}
+                          progressPct={totalXp % 100}
+                          levelTextProps={{ color: "white" }}
+                        />
+                      );
+                    })()}
+                  </Box>
                 </VStack>
               </Box>
             </VStack>
           </ModalBody>
-          <ModalFooter>
+          <ModalFooter
+            pt={0}
+            px={{ base: hasRoomyTutorCompletionViewport ? 6 : 5, md: 8 }}
+            pb={{ base: hasRoomyTutorCompletionViewport ? 6 : 5, md: 8 }}
+          >
             <Button
               size="lg"
               width="100%"
@@ -12167,6 +12255,14 @@ export default function Tutor({
               _hover={{ bg: "rgba(255,255,255,0.92)" }}
               onClick={closeTutorLessonCompleteModal}
               fontWeight="bold"
+              fontSize={{
+                base: hasRoomyTutorCompletionViewport ? "lg" : "md",
+                md: "lg",
+              }}
+              py={{
+                base: hasRoomyTutorCompletionViewport ? 7 : 6,
+                md: 6,
+              }}
             >
               {tutorCopy(uiLang, {
                 en: "Continue",

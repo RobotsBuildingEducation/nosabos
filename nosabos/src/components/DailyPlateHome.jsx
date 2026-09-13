@@ -43,6 +43,13 @@ import {
   PLATE_TITLE_COPY,
   plateUiCopy,
 } from "../utils/dailyPlateCopy";
+import { activeGoalFor } from "../utils/learningIntelligenceModel";
+import {
+  generateAndStorePlateHeadline,
+  getPlateTaskSummary,
+  getStoredPlateHeadline,
+} from "../utils/dailyPlateHeadline";
+import { loadLearningPath } from "../data/skillTree/index.js";
 
 const START_COPY = {
   en: "Start tasks",
@@ -106,7 +113,9 @@ export default function DailyPlateHome({
   appLanguage = "en",
   dailyXp = 0,
   dailyGoalXp = 0,
+  languageXp = 0,
   sessionActive = false,
+  isStartingPractice = false,
   onStartPractice,
   onResetPlate,
   questKinds,
@@ -120,6 +129,7 @@ export default function DailyPlateHome({
   petType = "ghost",
   companionLevel = 1,
   onCustomizePet,
+  journeyTestControl,
 }) {
   const playSound = useSoundSettings((s) => s.playSound);
   const isLightTheme = useThemeStore((s) => s.themeMode) === "light";
@@ -148,6 +158,136 @@ export default function DailyPlateHome({
   );
   const { courses, isCleared } = snapshot;
   const nextCourse = getNextPlateCourse(snapshot);
+
+  // Personalized Daily Plate Headline (promises a meaningful moment based on today's tasks)
+  const storedHeadline = useMemo(
+    () =>
+      getStoredPlateHeadline(user, targetLang, snapshot.dayKey, appLanguage),
+    [user, targetLang, snapshot.dayKey, appLanguage],
+  );
+
+  const headlineKey = `${targetLang}:${appLanguage}:${snapshot.dayKey}`;
+  const [headlineData, setHeadlineData] = useState(() => ({
+    key: headlineKey,
+    text: storedHeadline || "",
+    isGenerating: !storedHeadline && !isCleared,
+  }));
+
+  // Synchronously reset state during render if key changed (React pattern for prop change state reset)
+  // This eliminates any 1-frame flash of the previous language or text.
+  if (headlineData.key !== headlineKey) {
+    setHeadlineData({
+      key: headlineKey,
+      text: storedHeadline || "",
+      isGenerating: !storedHeadline && !isCleared,
+    });
+  }
+
+  const userRef = useRef(user);
+  userRef.current = user;
+  const coursesRef = useRef(courses);
+  coursesRef.current = courses;
+
+  useEffect(() => {
+    if (storedHeadline) {
+      setHeadlineData((prev) => {
+        if (
+          prev.key === headlineKey &&
+          prev.text === storedHeadline &&
+          !prev.isGenerating
+        ) {
+          return prev;
+        }
+        return { key: headlineKey, text: storedHeadline, isGenerating: false };
+      });
+      return;
+    }
+
+    if (isCleared) {
+      setHeadlineData((prev) => {
+        if (prev.key === headlineKey && !prev.isGenerating) return prev;
+        return { ...prev, isGenerating: false };
+      });
+      return;
+    }
+
+    let cancelled = false;
+
+    async function fetchHeadline() {
+      let levelUnits = [];
+      try {
+        const currentUser = userRef.current;
+        const userLevel = currentUser?.progress?.level || "Pre-A1";
+        const cefrLevel = [
+          "Pre-A1",
+          "A1",
+          "A2",
+          "B1",
+          "B2",
+          "C1",
+          "C2",
+        ].includes(userLevel)
+          ? userLevel
+          : userLevel === "beginner"
+            ? "Pre-A1"
+            : userLevel === "intermediate"
+              ? "B1"
+              : userLevel === "advanced"
+                ? "C1"
+                : "Pre-A1";
+        levelUnits = await loadLearningPath(targetLang, cefrLevel);
+      } catch {
+        /* fallback to generic course titles if path loading fails */
+      }
+
+      if (cancelled) return;
+
+      const currentUser = userRef.current;
+      const currentCourses = coursesRef.current;
+      const taskSummary = getPlateTaskSummary(
+        currentCourses,
+        currentUser,
+        targetLang,
+        levelUnits,
+      );
+      const npub =
+        currentUser?.id || currentUser?.local_npub || currentUser?.identity || "";
+
+      const text = await generateAndStorePlateHeadline({
+        npub,
+        targetLang,
+        appLanguage,
+        dayKey: snapshot.dayKey,
+        taskSummary,
+        onStream: (streamedText) => {
+          if (cancelled) return;
+          setHeadlineData((prev) => {
+            if (prev.key !== headlineKey) return prev;
+            return {
+              ...prev,
+              text: streamedText,
+            };
+          });
+        },
+      });
+
+      if (cancelled) return;
+      setHeadlineData((prev) => {
+        if (prev.key !== headlineKey) return prev;
+        return {
+          key: headlineKey,
+          text: text || prev.text,
+          isGenerating: false,
+        };
+      });
+    }
+
+    fetchHeadline();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [headlineKey, storedHeadline, isCleared, targetLang, appLanguage, snapshot.dayKey]);
 
   // The bubble's "Continue" dismissal persists per day (keyed by language + day)
   // so a refresh doesn't re-show a bubble the user already continued past. The
@@ -209,6 +349,10 @@ export default function DailyPlateHome({
   const repairConcept =
     repairPlan?.items?.[0]?.concept || reusableMemory[0]?.concept || "";
   const repairCount = repairPlan?.items?.length || reusableMemory.length;
+  const activeGoal = useMemo(
+    () => activeGoalFor(user, targetLang),
+    [user, targetLang],
+  );
   const taskList = useMemo(
     () =>
       courses
@@ -221,7 +365,9 @@ export default function DailyPlateHome({
     [courses, appLanguage],
   );
   const leadKind = !pastFirst
-    ? "welcome"
+    ? activeGoal
+      ? "welcomeGoal"
+      : "welcome"
     : repairConcept
       ? repairCount > 1
         ? "repairMulti"
@@ -233,10 +379,19 @@ export default function DailyPlateHome({
         lang: appLanguage,
         leadKind,
         concept: repairConcept,
+        goal: activeGoal?.text || "",
         taskList,
         cleared: isCleared && pastFirst && Boolean(repairConcept),
       }),
-    [appLanguage, leadKind, repairConcept, taskList, isCleared, pastFirst],
+    [
+      appLanguage,
+      leadKind,
+      repairConcept,
+      activeGoal?.text,
+      taskList,
+      isCleared,
+      pastFirst,
+    ],
   );
   // On returning days, prefer the AI-composed message from the batch blueprint
   // (it's written from the day's whole note feed); fall back to the
@@ -310,11 +465,16 @@ export default function DailyPlateHome({
     }
   }, [appLanguage, now]);
 
-  const ctaLabel = sessionActive
+  const hasStartedTask =
+    sessionActive || courses.some((course) => course.count > 0);
+  const ctaLabel = hasStartedTask
     ? plateUiCopy(appLanguage, CONTINUE_COPY)
     : plateUiCopy(appLanguage, START_COPY);
 
+  const launchLabelRef = useRef("");
+
   const handleStart = () => {
+    launchLabelRef.current = ctaLabel;
     playSound(selectSound);
     onStartPractice?.();
   };
@@ -355,6 +515,7 @@ export default function DailyPlateHome({
       zIndex={1}
     >
       <VStack w="100%" maxW="560px" spacing={3} align="stretch">
+        {journeyTestControl && <HStack justify="flex-end">{journeyTestControl}</HStack>}
         {/* Header */}
         <Box textAlign="center">
           <Text
@@ -400,13 +561,60 @@ export default function DailyPlateHome({
               {plateUiCopy(appLanguage, PLATE_CLEARED_COPY)}
             </Text>
           </Box>
+        ) : !headlineData.text && headlineData.isGenerating ? (
+          <HStack justify="center" spacing="4px" py={1} opacity={0.7} align="center" minH="21px">
+            <Box
+              w="5px"
+              h="5px"
+              borderRadius="full"
+              bg="var(--app-text-muted)"
+              sx={{
+                animation: "pulseDot 1.4s infinite ease-in-out both",
+                "@keyframes pulseDot": {
+                  "0%, 80%, 100%": { transform: "scale(0.6)", opacity: 0.25 },
+                  "40%": { transform: "scale(1.2)", opacity: 1 },
+                },
+              }}
+            />
+            <Box
+              w="5px"
+              h="5px"
+              borderRadius="full"
+              bg="var(--app-text-muted)"
+              sx={{
+                animation: "pulseDot 1.4s infinite ease-in-out both",
+                animationDelay: "0.2s",
+                "@keyframes pulseDot": {
+                  "0%, 80%, 100%": { transform: "scale(0.6)", opacity: 0.25 },
+                  "40%": { transform: "scale(1.2)", opacity: 1 },
+                },
+              }}
+            />
+            <Box
+              w="5px"
+              h="5px"
+              borderRadius="full"
+              bg="var(--app-text-muted)"
+              sx={{
+                animation: "pulseDot 1.4s infinite ease-in-out both",
+                animationDelay: "0.4s",
+                "@keyframes pulseDot": {
+                  "0%, 80%, 100%": { transform: "scale(0.6)", opacity: 0.25 },
+                  "40%": { transform: "scale(1.2)", opacity: 1 },
+                },
+              }}
+            />
+          </HStack>
         ) : (
           <Text
             fontSize="sm"
             color="var(--app-text-secondary)"
             textAlign="center"
+            fontWeight="medium"
+            px={4}
+            lineHeight="1.4"
           >
-            {plateUiCopy(appLanguage, SUBTITLE_COPY)}
+            {headlineData.text || plateUiCopy(appLanguage, SUBTITLE_COPY)}
           </Text>
         )}
 
@@ -554,6 +762,8 @@ export default function DailyPlateHome({
             variant="solid"
             leftIcon={<FiPlay />}
             isDisabled={tasksLocked}
+            isLoading={isStartingPractice}
+            loadingText={launchLabelRef.current || ctaLabel}
           >
             {ctaLabel}
           </Button>
@@ -568,6 +778,7 @@ export default function DailyPlateHome({
           showPreview={false}
           dailyXp={dailyXp}
           dailyGoalXp={dailyGoalXp}
+          totalXp={languageXp}
           petName={petName}
           petType={petType}
           companionLevel={companionLevel}
@@ -577,7 +788,9 @@ export default function DailyPlateHome({
               ? {
                   text: bubbleText,
                   onDismiss: dismissBubble,
-                  fontSize: leadKind === "welcome" ? "sm" : undefined,
+                  fontSize: ["welcome", "welcomeGoal"].includes(leadKind)
+                    ? "sm"
+                    : undefined,
                 }
               : null
           }

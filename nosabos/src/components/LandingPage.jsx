@@ -140,7 +140,7 @@ const translations = {
     feature_memory: "Memory System",
     feature_memory_desc:
       "Remembers your mistakes and progress, then turns them into focused review.",
-    feature_daily_quests: "Daily Quests",
+    feature_daily_quests: "Today’s Focus",
     feature_daily_quests_desc:
       "Get a personalized daily mix of practice, review, and rewards.",
     feature_companion: "Learning Companion",
@@ -284,7 +284,7 @@ const translations = {
     feature_memory: "Sistema de Memoria",
     feature_memory_desc:
       "Recuerda tus errores y avances para convertirlos en repasos enfocados.",
-    feature_daily_quests: "Misiones Diarias",
+    feature_daily_quests: "Enfoque de hoy",
     feature_daily_quests_desc:
       "Recibe cada día una mezcla personalizada de práctica, repaso y recompensas.",
     feature_companion: "Compañero de Aprendizaje",
@@ -430,7 +430,7 @@ const translations = {
     feature_memory: "Sistema di Memoria",
     feature_memory_desc:
       "Ricorda errori e progressi e li trasforma in ripassi mirati.",
-    feature_daily_quests: "Missioni Giornaliere",
+    feature_daily_quests: "Focus di oggi",
     feature_daily_quests_desc:
       "Ricevi ogni giorno pratica, ripasso e ricompense su misura.",
     feature_companion: "Compagno di Apprendimento",
@@ -585,7 +585,7 @@ translations.fr = {
   feature_memory: "Systeme de Memoire",
   feature_memory_desc:
     "Memorise tes erreurs et tes progres pour creer des revisions ciblees.",
-  feature_daily_quests: "Quetes Quotidiennes",
+  feature_daily_quests: "Focus du jour",
   feature_daily_quests_desc:
     "Reçois chaque jour un programme personnalise de pratique, revision et recompenses.",
   feature_companion: "Compagnon d'Apprentissage",
@@ -727,7 +727,7 @@ translations.ja = {
     "あなたのレベルに適応し、学習を支える完全なエンドツーエンドのリアルタイムチューターです。",
   feature_memory: "記憶システム",
   feature_memory_desc: "間違いや進捗を記憶し、必要な復習に変えます。",
-  feature_daily_quests: "デイリークエスト",
+  feature_daily_quests: "今日のフォーカス",
   feature_daily_quests_desc:
     "練習・復習・報酬を組み合わせた毎日のプランを届けます。",
   feature_companion: "学習コンパニオン",

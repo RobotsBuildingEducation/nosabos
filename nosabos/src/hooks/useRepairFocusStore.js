@@ -11,6 +11,8 @@
 // flashcards/lesson steps run as ephemeral lessons instead (surface:
 // "lesson"); conversation is deliberately not a repair surface.
 import { create } from "zustand";
+import useUserStore from "./useUserStore";
+import { getLocalDayKey } from "../utils/flashcardReview";
 
 const useRepairFocusStore = create((set) => ({
   // null when no repair step is in flight, else:
@@ -26,3 +28,10 @@ const useRepairFocusStore = create((set) => ({
 
 export default useRepairFocusStore;
 export { useRepairFocusStore };
+
+export function currentRepairFocus() {
+  const focus = useRepairFocusStore.getState().focus;
+  const user = useUserStore.getState().user;
+  const npub = user?.local_npub || user?.id || user?.identity;
+  return focus && focus.npub === npub && focus.targetLang === String(user?.progress?.targetLang || "es").toLowerCase() && focus.plan?.dayKey === getLocalDayKey(new Date()) ? focus : null;
+}

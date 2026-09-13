@@ -130,6 +130,12 @@ const simplemodel = getGenerativeModel(vertexAI, {
   },
 });
 
+// Keep story configuration separate while preserving Flash-Lite's fast generation.
+export const storyModel = getGenerativeModel(vertexAI, {
+  model: "gemini-3.5-flash-lite",
+  systemInstruction: "You are a fiction and dialogue writer creating immersive experiences for language learners. Your primary job is to make an original, engaging encounter happen through the characters' words. Invent the situation from the supplied lesson and objectives. Characters have intentions, react to each other, and change the situation; they do not merely exchange facts about the topic. Write with specificity, personality, natural rhythm, and a satisfying sense of progression. Choose freely among realistic, playful, adventurous, mysterious, or emotionally resonant situations as the lesson invites. Proficiency guides accessibility, not how interesting the experience may be. Preserve the requested interaction format and ground its exercises in the story you create.",
+});
+
 // Question generation has a deliberately short network deadline. Firebase's
 // default is 180 seconds; using a dedicated model instance lets its internal
 // AbortController cancel timed-out fetches instead of merely ignoring them in

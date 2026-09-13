@@ -1,6 +1,6 @@
 import React, { useRef } from "react";
 import { Box } from "@chakra-ui/react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 
 const clampPct = (n) => Math.max(0, Math.min(100, Number(n) || 0));
 const MotionG = motion.g;
@@ -21,6 +21,8 @@ export const WaveBar = ({
   animateFill = true,
 }) => {
   const id = useRef(`wave-${Math.random().toString(36).slice(2, 9)}`).current;
+  const reduceMotion = useReducedMotion();
+  const shouldAnimate = animateFill && !reduceMotion;
   const widthPct = `${clampPct(value)}%`;
 
   return (
@@ -34,10 +36,10 @@ export const WaveBar = ({
       backdropFilter="saturate(120%) blur(0px)"
     >
       <motion.div
-        initial={{ width: animateFill ? 0 : widthPct }}
+        initial={{ width: shouldAnimate ? 0 : widthPct }}
         animate={{ width: widthPct }}
         transition={
-          animateFill
+          shouldAnimate
             ? { duration: 0.8, delay, ease: [0.22, 1, 0.36, 1] }
             : { duration: 0 }
         }
@@ -65,10 +67,10 @@ export const WaveBar = ({
           />
           <MotionG
             initial={{ x: 0 }}
-            animate={{ x: [-10, 0, -10] }}
+            animate={{ x: reduceMotion ? 0 : [-10, 0, -10] }}
             transition={{
-              duration: 10,
-              repeat: Infinity,
+              duration: reduceMotion ? 0 : 10,
+              repeat: reduceMotion ? 0 : Infinity,
               ease: "easeInOut",
               delay,
             }}

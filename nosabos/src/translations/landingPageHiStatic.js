@@ -24,7 +24,7 @@ export const LANDING_PAGE_HI_STATIC = {
   feature_memory: "मेमोरी सिस्टम",
   feature_memory_desc:
     "आपकी गलतियों और प्रगति को याद रखकर उन्हें केंद्रित समीक्षा में बदलता है।",
-  feature_daily_quests: "दैनिक क्वेस्ट",
+  feature_daily_quests: "आज का फ़ोकस",
   feature_daily_quests_desc:
     "हर दिन अभ्यास, समीक्षा और पुरस्कारों का व्यक्तिगत मिश्रण पाएं।",
   feature_companion: "लर्निंग साथी",

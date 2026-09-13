@@ -24,7 +24,7 @@ export const LANDING_PAGE_PT_STATIC = {
   feature_memory: "Sistema de memória",
   feature_memory_desc:
     "Lembra seus erros e avanços e os transforma em revisões focadas.",
-  feature_daily_quests: "Missões diárias",
+  feature_daily_quests: "Foco de hoje",
   feature_daily_quests_desc:
     "Receba diariamente uma combinação personalizada de prática, revisão e recompensas.",
   feature_companion: "Companheiro de aprendizagem",

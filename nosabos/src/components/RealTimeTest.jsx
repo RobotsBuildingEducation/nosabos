@@ -1,3 +1,6 @@
+import { focusedLessonPrompt } from "../utils/learningIntelligenceModel";
+import ActivityActionRow from "./ActivityActionRow";
+import QuestionActionArea from "./QuestionActionArea";
 // components/RealtimeAgent.jsx
 import React, {
   useCallback,
@@ -7,7 +10,6 @@ import React, {
   useState,
 } from "react";
 import {
-  Badge,
   Box,
   Button,
   Center,
@@ -57,6 +59,7 @@ import { logEvent } from "firebase/analytics";
 
 import useUserStore from "../hooks/useUserStore";
 import VoiceOrb from "./VoiceOrb";
+import AnimatedEllipsis from "./AnimatedEllipsis";
 import { translations } from "../utils/translation";
 import {
   buildMessageTranslationPrompt,
@@ -73,20 +76,19 @@ import {
 } from "./realtimeArchiveStream";
 import { awardXp } from "../utils/utils";
 import { captureCompanionMemory } from "../utils/companionMemory";
-import { getLanguageXp } from "../utils/progressTracking";
 import {
   SOFT_STOP_BUTTON_BG,
   SOFT_STOP_BUTTON_GLOW,
   SOFT_STOP_BUTTON_HOVER_BG,
 } from "../utils/softStopButton";
 import { DEFAULT_TTS_VOICE, getPreferredTTSVoice } from "../utils/tts";
+import { REALTIME_PRACTICE_VOICE } from "../utils/realtimePracticeVoice";
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import { getAdultBeginnerToneRule } from "../utils/adultBeginnerTone";
 import useSoundSettings from "../hooks/useSoundSettings";
 import { submitActionSound, nextButtonSound, deliciousSound } from "../constants/sounds";
 import { useThemeStore } from "../useThemeStore";
 import { APP_MESSAGE_RADIUS, APP_SQUIRCLE_SHAPE } from "../theme";
-import XpProgressHeader from "./XpProgressHeader";
 import {
   DEFAULT_SUPPORT_LANGUAGE,
   DEFAULT_TARGET_LANGUAGE,
@@ -709,10 +711,10 @@ export default function RealTimeTest({
   activeNsec = "",
   onSwitchedAccount,
   onConnectionStatusChange,
-  bottomActionBarMinimized = false,
   lesson = null,
   lessonContent = null,
   supportLang: initialSupportLang = "",
+  targetLang: initialTargetLang = "",
   onSkip = null,
 }) {
   const toast = useToast();
@@ -754,6 +756,18 @@ export default function RealTimeTest({
         : ""),
     DEFAULT_SUPPORT_LANGUAGE,
   );
+  const initialTargetLanguage = normalizePracticeLanguage(
+    initialTargetLang || user?.progress?.targetLang,
+    DEFAULT_TARGET_LANGUAGE,
+  );
+  const languagePropsRef = useRef({
+    supportLang: initialSupportLang,
+    targetLang: initialTargetLang,
+  });
+  languagePropsRef.current = {
+    supportLang: initialSupportLang,
+    targetLang: initialTargetLang,
+  };
 
   // Repair/ephemeral lessons carry an explicit CEFR level; regular path lessons
   // can still derive it from their level-coded id.
@@ -808,8 +822,10 @@ export default function RealTimeTest({
   // Learning prefs (now controlled globally; we still mirror them locally)
   const [level, setLevel] = useState("beginner");
   const [supportLang, setSupportLang] = useState(initialSupportLanguage);
-  const [voice, setVoice] = useState(() => getPreferredTTSVoice());
-  const [targetLang, setTargetLang] = useState("es");
+  const [voice, setVoice] = useState(() =>
+    getPreferredTTSVoice(REALTIME_PRACTICE_VOICE),
+  );
+  const [targetLang, setTargetLang] = useState(initialTargetLanguage);
   const [showTranslations, setShowTranslations] = useState(true);
   const [practicePronunciation, setPracticePronunciation] = useState(
     !!user?.progress?.practicePronunciation,
@@ -893,8 +909,7 @@ export default function RealTimeTest({
     }
   }, [currentGoal]);
 
-  // XP/STREAK
-  const [xp, setXp] = useState(0);
+  // STREAK
   const [streak, setStreak] = useState(0);
 
   // Persisted history (newest-first)
@@ -1006,7 +1021,6 @@ export default function RealTimeTest({
       : level === "intermediate"
         ? "orange"
         : "purple";
-  const progressPct = Math.min(100, xp % 100);
   const appTitle = ui.ra_title.replace(
     "{language}",
     languageNameFor(targetLang),
@@ -1014,19 +1028,6 @@ export default function RealTimeTest({
   // Goal-UI language routing
   const goalUiLang = uiLang;
   const gtr = translations[goalUiLang] || translations.en;
-  const tGoalLabel =
-    translations[goalUiLang]?.ra_goal_label ||
-    (goalUiLang === "fr"
-      ? "Objectif"
-      : goalUiLang === "es"
-        ? "Meta"
-        : goalUiLang === "pt"
-          ? "Meta"
-          : goalUiLang === "it"
-            ? "Obiettivo"
-            : goalUiLang === "hi"
-              ? "लक्ष्य"
-              : "Goal");
   const tGoalCompletedToast =
     gtr?.ra_goal_completed ||
     (goalUiLang === "es"
@@ -1052,8 +1053,6 @@ export default function RealTimeTest({
               ? "छोड़ें"
               : "Skip");
   const tGoalCriteria = gtr?.ra_goal_criteria || "";
-
-  const xpLevelNumber = Math.floor(xp / 100) + 1;
 
   useEffect(() => () => stop(), []);
 
@@ -1134,13 +1133,10 @@ export default function RealTimeTest({
         const snap = await getDoc(ref);
         if (snap.exists()) {
           const data = snap.data() || {};
-          const currentLang = targetLangRef.current || targetLang;
-          const languageXp = getLanguageXp(data?.progress || {}, currentLang);
-          if (Number.isFinite(languageXp)) setXp(languageXp);
           if (Number.isFinite(data?.streak)) setStreak(data.streak);
           const p = data?.progress || {};
           // Prime all local states from saved progress
-          primeRefsFromPrefs(p);
+          primeRefsFromPrefs(applyLanguagePropOverrides(p));
           // helpRequest
           const hr = (p.helpRequest ?? data.helpRequest ?? "").trim();
           if (hr && hr !== helpRequestRef.current) setHelpRequest(hr);
@@ -1167,7 +1163,7 @@ export default function RealTimeTest({
   useEffect(() => {
     const p = user?.progress;
     if (!p) return;
-    primeRefsFromPrefs(p);
+    primeRefsFromPrefs(applyLanguagePropOverrides(p));
     scheduleSessionUpdate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.progress]);
@@ -1217,15 +1213,6 @@ export default function RealTimeTest({
     scheduleProfileSave();
   }, [targetLang, hydrated]);
 
-  // Keep XP in sync with the active practice language
-  useEffect(() => {
-    if (!hydrated) return;
-    const langXp = getLanguageXp(user?.progress || {}, targetLangRef.current);
-    if (Number.isFinite(langXp)) {
-      setXp(langXp);
-    }
-  }, [hydrated, targetLang, user?.progress]);
-
   const DEBOUNCE_MS = 350;
   const respToMsg = useRef(new Map());
   const sessionUpdateTimer = useRef(null);
@@ -1265,6 +1252,29 @@ export default function RealTimeTest({
     supportLangRef.current = v;
     setSupportLang(v);
   }, [initialSupportLang]);
+
+  useEffect(() => {
+    if (!initialTargetLang) return;
+    const v = normalizePracticeLanguage(
+      initialTargetLang,
+      DEFAULT_TARGET_LANGUAGE,
+    );
+    targetLangRef.current = v;
+    setTargetLang(v);
+  }, [initialTargetLang]);
+
+  function applyLanguagePropOverrides(p = {}) {
+    const languageProps = languagePropsRef.current;
+    return {
+      ...p,
+      ...(languageProps.supportLang
+        ? { supportLang: languageProps.supportLang }
+        : {}),
+      ...(languageProps.targetLang
+        ? { targetLang: languageProps.targetLang }
+        : {}),
+    };
+  }
 
   function primeRefsFromPrefs(p = {}) {
     if (p.level) {
@@ -1471,7 +1481,7 @@ export default function RealTimeTest({
     setStatus("connecting");
     setUiState("idle");
     try {
-      const npub = strongNpub(user);
+      const npub = currentNpub;
       if (npub) await ensureUserDoc(npub);
 
       const pc = new RTCPeerConnection();
@@ -1530,19 +1540,20 @@ export default function RealTimeTest({
       dc.onopen = async () => {
         let savedPrefs = null;
         try {
-          const npub = strongNpub(user);
+          const npub = currentNpub;
           if (npub) {
             const snap = await getDoc(doc(database, "users", npub));
             savedPrefs = snap.exists() ? snap.data()?.progress || null : null;
           }
         } catch {}
-        if (savedPrefs) primeRefsFromPrefs(savedPrefs);
+        const sessionPrefs = applyLanguagePropOverrides(savedPrefs || {});
+        primeRefsFromPrefs(sessionPrefs);
 
         const voiceName = getPreferredTTSVoice(voiceRef.current);
         voiceRef.current = voiceName;
         setVoice(voiceName);
-        const instructions = buildLanguageInstructions(savedPrefs || undefined);
-        const tLang = savedPrefs?.targetLang || targetLangRef.current || "es";
+        const instructions = buildLanguageInstructions(sessionPrefs);
+        const tLang = sessionPrefs.targetLang || targetLangRef.current || "es";
         const WHISPER_STT_LANG = {
           ar: "ar",
           zh: "zh",
@@ -1811,13 +1822,10 @@ export default function RealTimeTest({
       lessonData?.cefrLevel ||
       lessonContentData?.cefrLevel ||
       (lessonData?.id ? extractCEFRLevel(lessonData.id) : "A1");
-    const cefrHint = getCEFRPromptHint(cefrLvl);
+    const cefrHint = lessonContentData?.isGoal ? focusedLessonPrompt(lessonContentData) : getCEFRPromptHint(cefrLvl);
     const goalLangCode = uiLang;
     const goalLangName = getLanguagePromptName(goalLangCode) || "English";
-    const curriculumPromptContext = buildCurriculumPromptContext(
-      lessonContentData?.curriculumContext,
-      { mode: "realtime" },
-    );
+    const curriculumPromptContext = [buildCurriculumPromptContext(lessonContentData?.curriculumContext, { mode: "realtime" }), focusedLessonPrompt(lessonContentData)].filter(Boolean).join("\n");
 
     // Check if this is an integrated practice lesson
     const isIntegratedPractice =
@@ -2325,13 +2333,10 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
       lesson?.cefrLevel ||
       lessonContent?.cefrLevel ||
       (lesson?.id ? extractCEFRLevel(lesson.id) : "A1");
-    const cefrHint = getCEFRPromptHint(cefrLvl);
+    const cefrHint = lessonContent?.isGoal ? focusedLessonPrompt(lessonContent) : getCEFRPromptHint(cefrLvl);
     const goalLangCode = uiLang;
     const goalLangName = getLanguagePromptName(goalLangCode) || "English";
-    const curriculumPromptContext = buildCurriculumPromptContext(
-      lessonContent?.curriculumContext,
-      { mode: "realtime" },
-    );
+    const curriculumPromptContext = [buildCurriculumPromptContext(lessonContent?.curriculumContext, { mode: "realtime" }), focusedLessonPrompt(lessonContent)].filter(Boolean).join("\n");
 
     // Get current goal for context
     const currentScenario =
@@ -2404,9 +2409,9 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
           rubric_hi: "",
           rubric_ar: "",
           [localizedTitleKey]: goalText,
-          [localizedRubricKey]: "",
+          [localizedRubricKey]: goalText,
           lessonScenario: goalText,
-          successCriteria: "",
+          successCriteria: goalText,
           roleplayPrompt: `Help the learner to: ${goalText}. Create a realistic scenario and guide them.`,
           goalIndex: (currentGoal?.goalIndex || 0) + 1,
           attempts: 0,
@@ -2592,7 +2597,7 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
   }
 
   async function persistCurrentGoal(next) {
-    const npub = strongNpub(user);
+    const npub = currentNpub;
     if (!npub) return;
     await setDoc(
       doc(database, "users", npub),
@@ -2601,7 +2606,7 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
     );
   }
   async function recordGoalCompletion(prevGoal, confidence = 0) {
-    const npub = strongNpub(user);
+    const npub = currentNpub;
     if (!npub || !prevGoal) return;
     const payload = {
       ...prevGoal,
@@ -2638,7 +2643,7 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
       title: uiText("ra_free_practice_title", "Free practice mode"),
       description: uiText(
         "ra_free_practice_desc",
-        "In free mode, use the Connect button to practice conversation.",
+        "In free mode, use the Start button to practice conversation.",
       ),
       status: "info",
       duration: 2000,
@@ -2766,7 +2771,6 @@ Return ONLY JSON:
           attempts: nextAttempts,
           pron: !!practicePronunciationRef.current,
         });
-        setXp((v) => v + xpGain);
         await awardXp(currentNpub, xpGain, targetLangRef.current, {
           skillTreeLessonId: lesson?.id,
         });
@@ -2776,6 +2780,7 @@ Return ONLY JSON:
       if (met) {
         playSound(deliciousSound);
         await recordGoalCompletion(goal, conf);
+        stop();
         setGoalCompleted(true); // Mark goal as completed, wait for user to click "Next Goal"
       } else {
         // Companion brain: the learner's turn did NOT meet the goal — that's the
@@ -2861,7 +2866,7 @@ Return ONLY JSON:
         "Respond ONLY in English. Do not use Spanish or Eastern Huasteca Nahuatl.";
     }
 
-    const levelHint = getCEFRPromptHint(currentCefrLevel);
+    const levelHint = lessonContentRef.current?.isGoal ? focusedLessonPrompt(lessonContentRef.current) : [getCEFRPromptHint(currentCefrLevel), focusedLessonPrompt(lessonContentRef.current)].filter(Boolean).join("\n");
     const adultBeginnerTone = getAdultBeginnerToneRule(
       currentCefrLevel,
       "conversation",
@@ -3439,7 +3444,10 @@ Return ONLY JSON:
     if (!src) return;
     if (m.role !== "assistant") return;
 
-    const target = normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE);
+    const target = normalizeSupportLanguage(
+      supportLangRef.current,
+      DEFAULT_SUPPORT_LANGUAGE,
+    );
 
     if (getBaseLanguageCode(m.lang || targetLangRef.current) === target) {
       updateMessage(id, (prev) => ({
@@ -3522,7 +3530,7 @@ Return ONLY JSON:
   }
 
   async function upsertAssistantTurn(mid, { text, lang, translation, pairs }) {
-    const npub = strongNpub(user);
+    const npub = currentNpub;
     if (!npub) return;
     if (!(await ensureUserDoc(npub))) return;
 
@@ -3559,7 +3567,7 @@ Return ONLY JSON:
   }
 
   async function persistUserTurn(text, lang = "en") {
-    const npub = strongNpub(user);
+    const npub = currentNpub;
     if (!npub) return;
     const now = Date.now();
     lastUserSaveRef.current = { text, ts: now };
@@ -3567,7 +3575,7 @@ Return ONLY JSON:
 
   async function saveProfile(partial = {}) {
     if (!hydrated) return;
-    const npub = strongNpub(user);
+    const npub = currentNpub;
     if (!npub) return;
 
     const nextProgress = {
@@ -3686,13 +3694,6 @@ Return ONLY JSON:
     isLightTheme,
   );
   const orbUiState = getRealtimeOrbVisualState(uiState);
-  const isVoiceSessionActive =
-    status === "connecting" || status === "connected";
-  const dockButtonBottomMargin = bottomActionBarMinimized
-    ? isVoiceSessionActive
-      ? 10
-      : 20
-    : 24;
 
   const liveStateLabel = uiStateLabel(uiState, uiLang);
   const currentGoalTitleText = goalTitleForUI(currentGoal);
@@ -3728,14 +3729,13 @@ Return ONLY JSON:
   return (
     <>
       <Box
-        minH="100vh"
         // bg="gray.900"
         color="gray.100"
         position="relative"
-        pb="120px"
+        pb={4}
         borderRadius="24px"
         style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
-        mt="-8"
+        mt={{ base: 2, md: 0 }}
       >
         {/* Header */}
         {/* <Text
@@ -3753,6 +3753,7 @@ Return ONLY JSON:
         <Flex
           px={4}
           pt={2}
+          display={{ base: "none", md: "flex" }}
           align="center"
           justify="space-between"
           gap={2}
@@ -3761,7 +3762,7 @@ Return ONLY JSON:
         {/* Only Delete (settings moved to top bar) */}
 
         {/* 🎯 Active goal display */}
-        <Box px={4} mt={3} display="flex" justifyContent="center">
+        <Box px={{ base: 2, md: 4 }} mt={{ base: 1, md: 3 }} display="flex" justifyContent="center">
           <VStack spacing={2} w="100%" maxW="520px" align="center">
             <Box
               sx={{
@@ -3781,65 +3782,64 @@ Return ONLY JSON:
               <VStack align="flex-start" spacing={2} width="100%">
                 <Box w="100%">
                   <HStack justify="space-between" align="center" mb={1}>
-                    <HStack spacing={2} align="center" flex="1">
-                      <IconButton
-                        icon={
-                          isGeneratingGoal ? (
-                            <VoiceOrb
-                              state={getRealtimeOrbVisualState(
-                                ["idle", "listening", "speaking"][
-                                  Math.floor(Math.random() * 3)
-                                ],
+                    {isGeneratingGoal ? (
+                      <Box flex="1">
+                        <AnimatedEllipsis
+                          color={isLightTheme ? "black" : "white"}
+                          ariaLabel={uiText(
+                            "ra_generating_topic",
+                            "Generating new topic...",
+                          )}
+                        />
+                      </Box>
+                    ) : (
+                      <HStack spacing={2} align="center" flex="1">
+                        <IconButton
+                          icon={<FaDice />}
+                          size="sm"
+                          variant="ghost"
+                          color={isLightTheme ? APP_TEXT_SECONDARY : "white"}
+                          aria-label={uiText("ra_new_goal", "New goal")}
+                          onClick={generateGoalVariation}
+                          opacity={0.7}
+                          bg={isLightTheme ? APP_SURFACE : undefined}
+                          _hover={{
+                            opacity: 1,
+                            bg: isLightTheme
+                              ? APP_SURFACE_MUTED
+                              : "whiteAlpha.100",
+                          }}
+                          isDisabled={status === "connected"}
+                          minW="28px"
+                          h="28px"
+                        />
+                        {currentGoalTitleText ? (
+                          <Text
+                            fontSize={{ base: "sm", md: "md" }}
+                            fontWeight="600"
+                            opacity={0.95}
+                            color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
+                            flex="1"
+                          >
+                            {currentGoalTitleText}
+                          </Text>
+                        ) : (
+                          <Box flex="1">
+                            <AnimatedEllipsis
+                              color={isLightTheme ? "black" : "white"}
+                              ariaLabel={uiText(
+                                "ra_generating_topic",
+                                "Generating new topic...",
                               )}
-                              size={16}
                             />
-                          ) : (
-                            <FaDice />
-                          )
-                        }
-                        size="xs"
-                        variant="ghost"
-                        color={isLightTheme ? APP_TEXT_SECONDARY : "white"}
-                        aria-label={uiText("ra_new_goal", "New goal")}
-                        onClick={generateGoalVariation}
-                        opacity={0.7}
-                        bg={isLightTheme ? APP_SURFACE : undefined}
-                        _hover={{
-                          opacity: 1,
-                          bg: isLightTheme
-                            ? APP_SURFACE_MUTED
-                            : "whiteAlpha.100",
-                        }}
-                        isDisabled={status === "connected" || isGeneratingGoal}
-                        minW="24px"
-                        h="24px"
-                      />
-                      <Badge
-                        colorScheme="yellow"
-                        variant="subtle"
-                        fontSize={"10px"}
-                      >
-                        {tGoalLabel}
-                      </Badge>
-                      <Text
-                        fontSize="xs"
-                        opacity={0.9}
-                        color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
-                        flex="1"
-                      >
-                        {isGeneratingGoal
-                          ? streamingGoalText ||
-                            uiText("ra_generating", "Generating...")
-                          : currentGoalTitleText ||
-                            (uiLang === "en"
-                              ? "—"
-                              : uiText("ra_generating", "Generating..."))}
-                      </Text>
-                    </HStack>
+                          </Box>
+                        )}
+                      </HStack>
+                    )}
                     <IconButton
                       ref={chatLogButtonRef}
-                      icon={<FaRegCommentDots size={14} />}
-                      size="xs"
+                      icon={<FaRegCommentDots size={16} />}
+                      size="sm"
                       variant="ghost"
                       colorScheme="cyan"
                       {...chatLogButtonHighlightProps}
@@ -3851,13 +3851,14 @@ Return ONLY JSON:
                   </HStack>
                   {currentGoal && !isGeneratingGoal && currentGoalRubricText ? (
                     <Text
-                      fontSize="xs"
-                      opacity={0.8}
+                      fontSize={{ base: "xs", md: "sm" }}
+                      lineHeight="1.5"
+                      opacity={0.85}
                       color={
                         isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"
                       }
                     >
-                      <strong style={{ opacity: 0.85 }}>{tGoalCriteria}</strong>{" "}
+                      <strong style={{ opacity: 0.9 }}>{tGoalCriteria}</strong>{" "}
                       {currentGoalRubricText}
                     </Text>
                   ) : null}
@@ -3878,8 +3879,8 @@ Return ONLY JSON:
                     >
                       <Box
                         mt="2px"
-                        width="14px"
-                        height="14px"
+                        width="18px"
+                        height="18px"
                         display="inline-flex"
                         alignItems="center"
                         justifyContent="center"
@@ -3920,13 +3921,13 @@ Return ONLY JSON:
                         flexShrink={0}
                       >
                         {goalCompleted ? (
-                          <FaCheck size={7} />
+                          <FaCheck size={9} />
                         ) : (
-                          <FaExclamation size={7} />
+                          <FaExclamation size={9} />
                         )}
                       </Box>
                       <Text
-                        fontSize="xs"
+                        fontSize="sm"
                         opacity={0.95}
                         color={
                           goalCompleted
@@ -3943,17 +3944,6 @@ Return ONLY JSON:
                     </HStack>
                   ) : null}
 
-                  <Box mt={3}>
-                    <XpProgressHeader
-                      levelText={`${uiText(
-                        "ra_label_level",
-                        "Level",
-                      )} ${xpLevelNumber}`}
-                      xpText={`${uiText("ra_label_xp", "XP")} ${xp}`}
-                      progressPct={progressPct}
-                      xpBadgeProps={{ colorScheme: "teal", fontSize: "10px" }}
-                    />
-                  </Box>
                 </Box>
               </VStack>
             </Box>
@@ -4046,262 +4036,95 @@ Return ONLY JSON:
         ) : null}
 
         {/* Bottom dock */}
-        <Center
-          position="fixed"
-          bottom="22px"
-          left="0"
-          right="0"
-          zIndex={30}
-          px={4}
-        >
-          <HStack spacing={3} w="100%" maxW="560px" justify="center">
-            <Button
-              onClick={skipGoal}
-              size="md"
-              height="48px"
-              px={{ base: 6, md: 8 }}
-              rounded="full"
-              colorScheme="orange"
-              variant={isLightTheme ? "outline" : "ghost"}
-              bg={isLightTheme ? APP_SURFACE : undefined}
-              borderColor={isLightTheme ? APP_BORDER_STRONG : undefined}
-              color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
-              boxShadow={isLightTheme ? "none" : undefined}
-              _hover={
-                isLightTheme
-                  ? { bg: APP_SURFACE_MUTED, borderColor: APP_BORDER_STRONG }
-                  : undefined
+        <QuestionActionArea
+          feedback={goalCompleted ? true : null}
+          actions={
+            <ActivityActionRow
+              tone={
+                goalCompleted ? "success" : status === "connected" ? "stop" : "speak"
               }
-              textShadow={isLightTheme ? "none" : "0 0 16px rgba(0,0,0,0.9)"}
-              mb={dockButtonBottomMargin}
-            >
-              {uiText("ra_btn_skip", "Skip")}
-            </Button>
-            <Button
-              onClick={status === "connected" ? stop : start}
-              size="lg"
-              height="64px"
-              px={{ base: 8, md: 12 }}
-              rounded="full"
-              colorScheme={status === "connected" ? undefined : "cyan"}
-              bg={
-                status === "connected"
-                  ? SOFT_STOP_BUTTON_BG
-                  : isLightTheme
-                    ? "linear-gradient(180deg, #40c6d9 0%, #2fb4c7 100%)"
-                    : undefined
-              }
-              boxShadow={
-                status === "connected"
-                  ? SOFT_STOP_BUTTON_GLOW
-                  : isLightTheme
-                    ? "0 10px 24px rgba(66, 168, 181, 0.22), 0 4px 0 rgba(41, 126, 136, 0.82)"
-                    : undefined
-              }
-              _hover={
-                status === "connected"
-                  ? { bg: SOFT_STOP_BUTTON_HOVER_BG }
-                  : isLightTheme
-                    ? {
-                        bg: "linear-gradient(180deg, #35bfd3 0%, #27adc0 100%)",
+              primary={
+                goalCompleted ? (
+                  <Button
+                    w="full"
+                    onClick={handleNextGoal}
+                    size="md"
+                    height="48px"
+                    px={3}
+                    rounded="full"
+                    disabled={!goalCompleted}
+                  >
+                    {uiText("ra_btn_next", "Next")}
+                  </Button>
+                ) : (
+                  <Button
+                    key={status === "connected" ? "end" : "start"}
+                    onClick={(e) => {
+                      e.currentTarget?.blur?.();
+                      if (status === "connected") {
+                        stop();
+                      } else {
+                        start();
                       }
-                    : undefined
+                    }}
+                    size="lg"
+                    height="48px"
+                    px={4}
+                    rounded="full"
+                    textShadow={isLightTheme ? "none" : "0 0 16px rgba(0,0,0,0.9)"}
+                  >
+                    {status === "connected" ? (
+                      <>
+                        <FaStop /> &nbsp; {ui.ra_btn_disconnect}
+                      </>
+                    ) : (
+                      <>
+                        <FaMicrophone /> &nbsp;{" "}
+                        {status === "connecting"
+                          ? ui.ra_btn_starting || uiText("ra_btn_starting", "Starting...")
+                          : ui.ra_btn_start || uiText("ra_btn_start", "Start")}
+                      </>
+                    )}
+                  </Button>
+                )
               }
-              color={
-                status === "connected"
-                  ? "white"
-                  : isLightTheme
-                    ? "white"
-                    : "white"
-              }
-              border={
-                isLightTheme && status !== "connected"
-                  ? "1px solid rgba(255,255,255,0.55)"
-                  : undefined
-              }
-              textShadow={isLightTheme ? "none" : "0 0 16px rgba(0,0,0,0.9)"}
-              mb={dockButtonBottomMargin}
             >
-              {status === "connected" ? (
-                <>
-                  <FaStop /> &nbsp; {ui.ra_btn_disconnect}
-                </>
+              {goalCompleted ? (
+                status === "connected" && (
+                  <IconButton
+                    aria-label={ui.ra_btn_disconnect}
+                    icon={<FaStop />}
+                    onClick={stop}
+                    colorScheme="pink"
+                    flexShrink={0}
+                  />
+                )
               ) : (
-                <>
-                  <FaMicrophone /> &nbsp;{" "}
-                  {status === "connecting"
-                    ? ui.ra_btn_connecting
-                    : ui.ra_btn_connect}
-                </>
+                <Button
+                  onClick={skipGoal}
+                  size="md"
+                  height="48px"
+                  px={3}
+                  rounded="full"
+                  colorScheme="orange"
+                  variant={isLightTheme ? "outline" : "ghost"}
+                  bg={isLightTheme ? APP_SURFACE : undefined}
+                  borderColor={isLightTheme ? APP_BORDER_STRONG : undefined}
+                  color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
+                  boxShadow={isLightTheme ? "none" : undefined}
+                  _hover={
+                    isLightTheme
+                      ? { bg: APP_SURFACE_MUTED, borderColor: APP_BORDER_STRONG }
+                      : undefined
+                  }
+                  textShadow={isLightTheme ? "none" : "0 0 16px rgba(0,0,0,0.9)"}
+                >
+                  {uiText("ra_btn_skip", "Skip")}
+                </Button>
               )}
-            </Button>
-
-            <Box position="relative" mb={dockButtonBottomMargin}>
-              <Button
-                onClick={handleNextGoal}
-                size="md"
-                height="48px"
-                px={{ base: 6, md: 8 }}
-                rounded="full"
-                variant={isLightTheme ? "outline" : "solid"}
-                color={
-                  isLightTheme
-                    ? goalCompleted
-                      ? "#134e4a"
-                      : APP_TEXT_MUTED
-                    : "white"
-                }
-                textShadow={isLightTheme ? "none" : "0 0 16px rgba(0,0,0,0.9)"}
-                bg={
-                  isLightTheme
-                    ? APP_SURFACE
-                    : !goalCompleted
-                      ? "gray.800"
-                      : "cyan.700"
-                }
-                border="1px solid"
-                borderColor={
-                  isLightTheme
-                    ? goalCompleted
-                      ? "rgba(64, 198, 217, 0.95)"
-                      : APP_BORDER
-                    : "cyan"
-                }
-                boxShadow={isLightTheme ? "none" : undefined}
-                _hover={
-                  isLightTheme && goalCompleted
-                    ? {
-                        bg: APP_SURFACE_MUTED,
-                        borderColor: "#40c6d9",
-                      }
-                    : undefined
-                }
-                _disabled={
-                  isLightTheme
-                    ? {
-                        opacity: 1,
-                        bg: APP_SURFACE,
-                        color: APP_TEXT_MUTED,
-                        borderColor: APP_BORDER,
-                      }
-                    : undefined
-                }
-                disabled={!goalCompleted}
-                animation={
-                  goalCompleted
-                    ? `${
-                        isLightTheme ? "pulse-glow-unlock-light" : "pulse-glow-unlock"
-                      } 2.2s infinite ease-in-out`
-                    : undefined
-                }
-                sx={
-                  goalCompleted
-                    ? {
-                        "@keyframes pulse-glow-unlock": {
-                          "0%, 100%": {
-                            boxShadow: "0 0 8px rgba(45, 212, 191, 0.3), 0 0 0 0 rgba(45, 212, 191, 0)",
-                            transform: "scale(1)",
-                          },
-                          "50%": {
-                            boxShadow: "0 0 20px rgba(45, 212, 191, 0.8), 0 0 0 4px rgba(45, 212, 191, 0.4)",
-                            transform: "scale(1.04)",
-                          },
-                        },
-                        "@keyframes pulse-glow-unlock-light": {
-                          "0%, 100%": {
-                            boxShadow: "0 0 8px rgba(64, 198, 217, 0.3), 0 0 0 0 rgba(64, 198, 217, 0)",
-                            transform: "scale(1)",
-                          },
-                          "50%": {
-                            boxShadow: "0 0 22px rgba(64, 198, 217, 0.8), 0 0 0 4px rgba(64, 198, 217, 0.45)",
-                            transform: "scale(1.04)",
-                          },
-                        },
-                      }
-                    : undefined
-                }
-              >
-                {uiText("ra_btn_next", "Next")}
-              </Button>
-              {goalCompleted && (
-                <>
-                  <Box
-                    pointerEvents="none"
-                    position="absolute"
-                    top="-8px"
-                    left="10px"
-                    w="8px"
-                    h="8px"
-                    borderRadius="full"
-                    bg="white"
-                    boxShadow="0 0 8px 2px rgba(255,255,255,0.8), 0 0 14px rgba(255,255,255,0.6)"
-                    animation="btn-sparkle 2.2s ease-in-out infinite"
-                    sx={{
-                      "@keyframes btn-sparkle": {
-                        "0%, 100%": {
-                          opacity: 0,
-                          transform: "scale(0.3) rotate(0deg)",
-                        },
-                        "50%": {
-                          opacity: 0.95,
-                          transform: "scale(1.2) rotate(45deg)",
-                        },
-                      },
-                    }}
-                  />
-                  <Box
-                    pointerEvents="none"
-                    position="absolute"
-                    bottom="-6px"
-                    right="15px"
-                    w="6px"
-                    h="6px"
-                    borderRadius="full"
-                    bg="white"
-                    boxShadow="0 0 6px 2px rgba(255,255,255,0.8), 0 0 12px rgba(255,255,255,0.5)"
-                    animation="btn-sparkle-delayed 2.5s ease-in-out infinite 0.6s"
-                    sx={{
-                      "@keyframes btn-sparkle-delayed": {
-                        "0%, 100%": {
-                          opacity: 0,
-                          transform: "scale(0.2) rotate(0deg)",
-                        },
-                        "50%": {
-                          opacity: 0.9,
-                          transform: "scale(1.1) rotate(-30deg)",
-                        },
-                      },
-                    }}
-                  />
-                  <Box
-                    pointerEvents="none"
-                    position="absolute"
-                    top="4px"
-                    right="-5px"
-                    w="6px"
-                    h="6px"
-                    borderRadius="full"
-                    bg="white"
-                    boxShadow="0 0 6px 2px rgba(255,255,255,0.8), 0 0 12px rgba(255,255,255,0.5)"
-                    animation="btn-sparkle-delayed2 2s ease-in-out infinite 1.2s"
-                    sx={{
-                      "@keyframes btn-sparkle-delayed2": {
-                        "0%, 100%": {
-                          opacity: 0,
-                          transform: "scale(0.2) rotate(0deg)",
-                        },
-                        "50%": {
-                          opacity: 0.95,
-                          transform: "scale(1) rotate(15deg)",
-                        },
-                      },
-                    }}
-                  />
-                </>
-              )}
-            </Box>
-          </HStack>
-        </Center>
+            </ActivityActionRow>
+          }
+        />
 
         <Modal
           isOpen={showChatLog}

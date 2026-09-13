@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" />
+  <title>TTS playback verification</title>
+  <style>
+    body { font: 16px system-ui; max-width: 800px; margin: 40px auto; padding: 16px; }
+    button { padding: 12px 20px; margin-right: 8px; }
+    pre { white-space: pre-wrap; }
+  </style>
+  <h1>TTS playback verification</h1>
+  <p>Uses the configured Realtime endpoint and the app's real player, recorder, and IndexedDB cache. Run once, replay, then reload and replay again. Only the first run should create a connection. Listen for “mariposa” at the end.</p>
+  <blockquote id="text">Esta es una prueba de lectura completa. Primero escuchamos el principio de la frase. Después seguimos con la segunda parte, sin cortar la grabación antes de tiempo. Para confirmar que llegamos hasta el final, la última palabra es mariposa.</blockquote>
+  <button id="play">Play narration</button>
+  <button id="stop" disabled>Stop</button>
+  <pre id="result" aria-live="polite">Ready</pre>
+  <script type="module">
+    import { getTTSPlayer, createWarmTTSAudio, stopTTSPlayback, isCached } from "/src/utils/tts.js";
+    const result = document.querySelector("#result");
+    const play = document.querySelector("#play");
+    const stop = document.querySelector("#stop");
+    const text = document.querySelector("#text").textContent;
+    let player;
+    let connections = 0;
+    let startedAt = 0;
+    let cancelled = false;
+    const log = (message) => {
+      result.textContent += `\n${((performance.now() - startedAt) / 1000).toFixed(2)}s ${message}`;
+    };
+    const NativePeer = window.RTCPeerConnection;
+    window.RTCPeerConnection = class extends NativePeer {
+      constructor(...args) { super(...args); connections++; }
+      createDataChannel(...args) {
+        const channel = super.createDataChannel(...args);
+        channel.addEventListener("message", ({ data }) => {
+          const msg = JSON.parse(data);
+          if (["response.done", "response.output_audio.done", "output_audio_buffer.started", "output_audio_buffer.stopped", "error"].includes(msg.type)) {
+            log(`${msg.type}${msg.response?.status ? ` (${msg.response.status})` : ""}${msg.error?.message ? `: ${msg.error.message}` : ""}`);
+          }
+          if (msg.type === "response.output_audio_transcript.done") log(`Transcript: ${msg.transcript}`);
+        });
+        return channel;
+      }
+    };
+    stop.onclick = () => { cancelled = true; stopTTSPlayback(player?.audio); };
+    play.onclick = async () => {
+      startedAt = performance.now();
+      result.textContent = "Starting";
+      cancelled = false;
+      play.disabled = true;
+      let playbackError = false;
+      try {
+        const warmAudio = await createWarmTTSAudio();
+        player = await getTTSPlayer({ text, langTag: "es-MX", voice: "alloy", warmAudio });
+        log(player.audioUrl ? "Source: local replay" : "Source: live Realtime");
+        log(`Connections this page: ${connections}`);
+        player.audio.addEventListener("error", () => { playbackError = true; log("Playback error"); });
+        await player.ready;
+        stop.disabled = false;
+        await player.audio.play();
+        log("Playback started");
+        await player.finalize;
+        log(cancelled ? "Cancelled" : playbackError ? "Failed" : "Playback finished");
+        if (!playbackError && !cancelled) {
+          // The second request must be a local blob, without another session.
+          if (!(await isCached(text, "es-MX", { voice: "alloy" }))) {
+            throw new Error("Completed recording was not cached");
+          }
+          const replay = await getTTSPlayer({ text, langTag: "es-MX", voice: "alloy" });
+          if (!replay.audioUrl) {
+            replay.cleanup();
+            throw new Error("Completed recording was not cached");
+          }
+          replay.cleanup();
+          const bytes = await (await fetch(replay.audioUrl)).arrayBuffer();
+          const context = new AudioContext();
+          try {
+            const decoded = await context.decodeAudioData(bytes);
+            log(`Saved recording: ${decoded.duration.toFixed(2)} seconds, ${bytes.byteLength} bytes`);
+            log(`Connections after cache check: ${connections}`);
+          } finally { await context.close(); }
+        }
+      } catch (error) {
+        log(`Error: ${error.message}`);
+        player?.cleanup();
+      } finally {
+        play.disabled = false;
+        stop.disabled = true;
+      }
+    };
+  </script>
+</html>

@@ -1,3 +1,16 @@
+import GoalLessonCompletion from "./components/GoalLessonCompletion";
+import { getGoalPreparationXp, isGoalLessonReady } from "./utils/lessonProgress";
+import { resetFocusedPracticeArtifacts } from "./utils/focusedPracticeDecks";
+import LearningGoalSettings from "./components/LearningGoalSettings";
+import useGoalFocusStore from "./hooks/useGoalFocusStore";
+import {
+  activeGoalFor,
+  composeQuestKinds,
+  buildGoalLesson,
+  changeGoal,
+  nextGoalMode,
+} from "./utils/learningIntelligenceModel";
+import { astraGoalsEnabled, getOrBuildGoalBlueprint, GOAL_SURFACES, resetGoalTask, currentGoalFocus } from "./utils/learningIntelligence";
 // src/App.jsx
 import React, {
   Suspense,
@@ -8,7 +21,9 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { flushSync } from "react-dom";
+import { createPortal, flushSync } from "react-dom";
+import { motion } from "framer-motion";
+import CompactActionBar from "./components/CompactActionBar";
 import {
   Box,
   Drawer,
@@ -28,7 +43,6 @@ import {
   Textarea,
   useToast,
   VStack,
-  Wrap,
   Tab,
   TabList,
   Tabs,
@@ -36,6 +50,7 @@ import {
   TabPanel,
   InputGroup,
   InputRightElement,
+  Link,
   Modal,
   ModalOverlay,
   ModalContent,
@@ -55,9 +70,15 @@ import {
   MenuOptionGroup,
   Portal,
   Badge,
+  Accordion,
+  AccordionButton,
+  AccordionIcon,
+  AccordionItem,
+  AccordionPanel,
   Tooltip,
   useDisclosure,
   useBreakpointValue,
+  useMediaQuery,
 } from "@chakra-ui/react";
 import {
   SettingsIcon,
@@ -66,6 +87,8 @@ import {
   CheckCircleIcon,
   ArrowBackIcon,
   CloseIcon,
+  InfoOutlineIcon,
+  ExternalLinkIcon,
 } from "@chakra-ui/icons";
 import { CiUser, CiEdit } from "react-icons/ci";
 import { MdOutlineSupportAgent, MdShowChart } from "react-icons/md";
@@ -95,6 +118,7 @@ import {
   PiUsersBold,
   PiUsersThreeBold,
   PiSealQuestionDuotone,
+  PiDotsNineBold,
 } from "react-icons/pi";
 import { FiClock, FiCompass, FiPause, FiPlay, FiTarget } from "react-icons/fi";
 import { FaCalendarAlt, FaCalendarCheck } from "react-icons/fa";
@@ -137,6 +161,14 @@ import { isMasterUnlockActive } from "./utils/masterUnlock";
 import Vocabulary from "./components/Vocabulary";
 import StoryMode from "./components/Stories";
 import History from "./components/History";
+import ActivityMenu, {
+  ImmersionPracticeMenuIcon,
+} from "./components/ActivityMenu";
+import { getActivityMenuLabels } from "./utils/activityMenuCopy";
+import QuestionActionArea from "./components/QuestionActionArea";
+import ActivityActionRow from "./components/ActivityActionRow";
+import { isFullNavigationSkillTreeMode } from "./utils/activityControls";
+import useQuestionActionStore from "./hooks/useQuestionActionStore";
 import HelpChatFab from "./components/HelpChatFab";
 import DailyGoalModal from "./components/DailyGoalModal";
 import DailyGoalPetPanel from "./components/DailyGoalPetPanel.jsx";
@@ -152,6 +184,9 @@ import { LuKey } from "react-icons/lu";
 import AlphabetBootcamp from "./components/AlphabetBootcamp";
 
 import NotesDrawer from "./components/NotesDrawer";
+import JourneyMilestoneGate from "./components/JourneyMilestoneGate";
+import JourneyTestButton from "./components/JourneyTestButton";
+import useVoiceJourney from "./hooks/useVoiceJourney";
 import RealWorldTasksModal, {
   REAL_WORLD_TASKS_REFRESH_MS,
 } from "./components/RealWorldTasksModal";
@@ -167,6 +202,7 @@ import {
   PLATE_CONTINUE_COPY,
   PLATE_COURSE_META,
   PLATE_EXERCISE_COMPLETE_COPY,
+  PLATE_PRACTICE_DETAILS_COPY,
   PLATE_NEXT_COPY,
   PLATE_VIEW_NOTES_COPY,
   PLATE_TITLE_COPY,
@@ -176,6 +212,7 @@ import {
   DAILY_PLATE_BONUS_XP,
   DAILY_PLATE_COURSE_ORDER,
   applyPlateBonusMarker,
+  buildPlateCelebrationKey,
   claimDailyPlateBonus,
   clearPlateSession,
   electDailyQuestCourses,
@@ -242,6 +279,7 @@ import ProficiencyTestModal from "./components/ProficiencyTestModal";
 import GettingStartedModal from "./components/GettingStartedModal";
 import BitcoinSupportModal from "./components/BitcoinSupportModal";
 import RandomCharacter from "./components/RandomCharacter";
+import XpProgressHeader from "./components/XpProgressHeader";
 import {
   loadLearningPath,
   loadMultiLevelLearningPath,
@@ -334,6 +372,7 @@ import {
   normalizePracticeLanguage,
   normalizeSupportLanguage,
 } from "./constants/languages";
+
 import { syncDocumentLanguage } from "./utils/documentLanguage";
 import { getGermanCopy } from "./utils/germanCopy";
 import {
@@ -358,6 +397,45 @@ import {
   isOpenAITutorProvider,
   normalizeTutorVoice,
 } from "./utils/tutorRealtime";
+
+function PracticeCompletionDetails({ details, appLanguage }) {
+  if (!details?.what && !details?.why) return null;
+  return (
+    <Accordion allowToggle width="100%">
+      <AccordionItem
+        border="1px solid rgba(255, 255, 255, 0.35)"
+        borderRadius="xl"
+        overflow="hidden"
+        bg="rgba(255, 255, 255, 0.14)"
+      >
+        <AccordionButton py={3} px={4} _hover={{ bg: "rgba(255,255,255,0.1)" }}>
+          <Box flex="1" textAlign="left" fontWeight="bold">
+            {plateUiCopy(appLanguage, PLATE_PRACTICE_DETAILS_COPY.title)}
+          </Box>
+          <AccordionIcon />
+        </AccordionButton>
+        <AccordionPanel pb={4} px={4} textAlign="left">
+          {details.what ? (
+            <Box mb={details.why ? 3 : 0}>
+              <Text fontSize="xs" fontWeight="bold" opacity={0.78} textTransform="uppercase">
+                {plateUiCopy(appLanguage, PLATE_PRACTICE_DETAILS_COPY.what)}
+              </Text>
+              <Text mt={1}>{details.what}</Text>
+            </Box>
+          ) : null}
+          {details.why ? (
+            <Box>
+              <Text fontSize="xs" fontWeight="bold" opacity={0.78} textTransform="uppercase">
+                {plateUiCopy(appLanguage, PLATE_PRACTICE_DETAILS_COPY.why)}
+              </Text>
+              <Text mt={1}>{details.why}</Text>
+            </Box>
+          ) : null}
+        </AccordionPanel>
+      </AccordionItem>
+    </Accordion>
+  );
+}
 
 // The game client is resolved ahead of the view flip instead of going through
 // React.lazy: handleStartLesson awaits this and stores the component in state
@@ -615,20 +693,33 @@ function TutorialGameLoadingFallback({ supportLang = "en", onSkip }) {
   }, [messages]);
 
   return (
-    <Box display="flex" flexDirection="column" h="100%" overflow="hidden">
+    <>
       <Box
-        position="absolute"
-        top={0}
-        left={0}
-        right={0}
-        zIndex={2}
-        px={{ base: 3, md: 4 }}
-        py={{ base: 3, md: 4 }}
-        bgGradient="linear(to-b, rgba(10, 13, 27, 0.96), rgba(10, 13, 27, 0.72), transparent)"
+        position="relative"
+        w="100%"
+        h={{
+          base: "min(62vh, calc(100dvh - 220px))",
+          md: "min(70vh, calc(100dvh - 170px))",
+        }}
+        minH={{ base: "300px", md: "320px" }}
+        maxH="720px"
+        borderRadius="xl"
+        overflow="hidden"
+        mt={{ base: 2, md: 0 }}
+        display="flex"
+        flexDirection="column"
       >
-        <HStack align="center" justify="space-between" spacing={3}>
+        <Box
+          position="absolute"
+          top={0}
+          left={0}
+          right={0}
+          zIndex={2}
+          px={{ base: 3, md: 4 }}
+          py={{ base: 3, md: 4 }}
+          bgGradient="linear(to-b, rgba(10, 13, 27, 0.96), rgba(10, 13, 27, 0.72), transparent)"
+        >
           <Text
-            flex="1"
             fontSize={{ base: "sm", md: "md" }}
             color="blue.100"
             minH="24px"
@@ -644,30 +735,25 @@ function TutorialGameLoadingFallback({ supportLang = "en", onSkip }) {
           >
             {messages[messageIndex]}
           </Text>
-          <Button
-            size="sm"
-            variant="solid"
-            bg="rgba(9, 16, 34, 0.7)"
-            color="white"
-            border="1px solid"
-            borderColor="rgba(170, 201, 255, 0.26)"
-            boxShadow="0 10px 18px rgba(0, 0, 0, 0.24)"
-            backdropFilter="blur(10px)"
-            onClick={onSkip}
-            flexShrink={0}
-            _hover={{ bg: "rgba(14, 24, 46, 0.82)" }}
-            _active={{ bg: "rgba(6, 12, 28, 0.92)" }}
-          >
-            {skipLabel}
-          </Button>
-        </HStack>
+        </Box>
+        <Box flex="1" overflow="hidden" position="relative">
+          <Suspense fallback={<GameLoadingFallback minH="100dvh" />}>
+            <LoadingMiniGame supportLang={supportLang} />
+          </Suspense>
+        </Box>
       </Box>
-      <Box flex="1" overflow="hidden" position="relative">
-        <Suspense fallback={<GameLoadingFallback minH="100dvh" />}>
-          <LoadingMiniGame supportLang={supportLang} />
-        </Suspense>
-      </Box>
-    </Box>
+      {onSkip && (
+        <QuestionActionArea
+          actions={
+            <ActivityActionRow>
+              <Button variant="ghost" onClick={onSkip}>
+                {skipLabel}
+              </Button>
+            </ActivityActionRow>
+          }
+        />
+      )}
+    </>
   );
 }
 
@@ -1290,6 +1376,12 @@ function TopBar({
     onClose: closeSettings,
   });
 
+  const [isPostsInfoOpen, setIsPostsInfoOpen] = useState(false);
+  const resolvedUserNpub = (activeNpub || user?.npub || "").trim();
+  const dittoProfileUrl = resolvedUserNpub
+    ? `https://ditto.pub/${resolvedUserNpub}`
+    : "https://ditto.pub";
+
   // ---- Local draft state (no autosave) ----
   const p = user?.progress || {};
   const [level, setLevel] = useState(migrateToCEFRLevel(p.level) || "Pre-A1");
@@ -1312,12 +1404,6 @@ function TopBar({
     normalizePracticeLanguage(p.targetLang, DEFAULT_TARGET_LANGUAGE),
   );
   const [communityLanguageCode, setCommunityLanguageCode] = useState(null);
-  const normalizedTargetLang = String(targetLang || "").toLowerCase();
-  const hasProficiencyDecisionForTargetLang =
-    Object.prototype.hasOwnProperty.call(
-      user?.proficiencyPlacements || {},
-      normalizedTargetLang,
-    );
   const [showTranslations, setShowTranslations] = useState(
     typeof p.showTranslations === "boolean" ? p.showTranslations : true,
   );
@@ -1525,13 +1611,18 @@ function TopBar({
       if (Object.prototype.hasOwnProperty.call(partial, "helpRequest")) {
         textDrafts.push({ key: "helpRequest", value: partial.helpRequest });
       }
-      debounceRef.current = setTimeout(() => {
-        void persistSettings(partial).finally(() => {
-          textDrafts.forEach(({ key, value }) =>
-            releaseTextDraftSoon(key, value),
-          );
-        });
-      }, delay);
+      return new Promise((resolve, reject) => {
+        debounceRef.current = setTimeout(() => {
+          void persistSettings(partial)
+            .then(resolve)
+            .catch(reject)
+            .finally(() => {
+              textDrafts.forEach(({ key, value }) =>
+                releaseTextDraftSoon(key, value),
+              );
+            });
+        }, delay);
+      });
     },
     [persistSettings, releaseTextDraftSoon],
   );
@@ -1912,7 +2003,7 @@ function TopBar({
                   fontSize={{ base: "xs", md: "xs" }}
                   fontWeight="bold"
                   color={dailyGoalHudTextColor}
-                  lineHeight="1"
+                  lineHeight="1.2"
                   whiteSpace="nowrap"
                   maxW={{ base: "92px", sm: "140px", md: "none" }}
                   overflow="hidden"
@@ -1924,7 +2015,7 @@ function TopBar({
                   fontSize={{ base: "xs", md: "xs" }}
                   fontWeight="bold"
                   color={dailyGoalHudTextColor}
-                  lineHeight="1"
+                  lineHeight="1.2"
                   fontVariantNumeric="tabular-nums"
                   whiteSpace="nowrap"
                 >
@@ -2261,8 +2352,18 @@ function TopBar({
                   >
                     <Box maxW="600px" mx="auto" w="100%">
                       <VStack align="stretch" spacing={3} pb={14}>
-                        <Wrap spacing={4}>
-                          <VStack align="flex-start" spacing={1}>
+                        <Flex
+                          direction={{ base: "column", md: "row" }}
+                          align={{ base: "center", md: "flex-start" }}
+                          gap={4}
+                          width="100%"
+                        >
+                          <VStack
+                            align="flex-start"
+                            spacing={1}
+                            width={{ base: "100%", md: "auto" }}
+                            maxWidth={{ base: "320px", md: "none" }}
+                          >
                             <Text
                               fontSize="xs"
                               fontWeight="semibold"
@@ -2285,6 +2386,7 @@ function TopBar({
                                 bg="gray.800"
                                 _hover={{ bg: "gray.750" }}
                                 _active={{ bg: "gray.750" }}
+                                width={{ base: "100%", md: "auto" }}
                                 padding={5}
                                 onClick={() => playSound(selectSound)}
                               >
@@ -2386,7 +2488,12 @@ function TopBar({
                             </Menu>
                           </VStack>
 
-                          <VStack align="flex-start" spacing={1}>
+                          <VStack
+                            align="flex-start"
+                            spacing={1}
+                            width={{ base: "100%", md: "auto" }}
+                            maxWidth={{ base: "320px", md: "none" }}
+                          >
                             <Text
                               fontSize="xs"
                               fontWeight="semibold"
@@ -2409,6 +2516,7 @@ function TopBar({
                                 bg="gray.800"
                                 _hover={{ bg: "gray.750" }}
                                 _active={{ bg: "gray.750" }}
+                                width={{ base: "100%", md: "auto" }}
                                 px={4}
                                 title={
                                   translations[appLanguage]
@@ -2480,43 +2588,47 @@ function TopBar({
                               </MenuList>
                             </Menu>
                           </VStack>
-                        </Wrap>
+                        </Flex>
 
-                        {!hasProficiencyDecisionForTargetLang && (
-                          <Button
-                            leftIcon={<LuBadgeCheck />}
-                            size="sm"
-                            variant="outline"
-                            borderColor={
-                              themeMode === "light" ? "cyan.700" : "cyan.600"
-                            }
-                            color={
-                              themeMode === "light" ? "cyan.800" : "cyan.200"
-                            }
-                            padding={6}
-                            _hover={{
-                              bg:
-                                themeMode === "light" ? "cyan.50" : "cyan.900",
-                            }}
-                            onClick={() => {
-                              closeSettings();
-                              navigate("/proficiency");
-                            }}
-                            mt={4}
-                          >
-                            {uiCopy(appLanguage, {
-                              en: "Start proficiency test",
-                              es: "Iniciar prueba de nivel",
-                              pt: "Iniciar teste de nível",
-                              it: "Inizia test di livello",
-                              fr: "Commencer le test de niveau",
-                              ja: "レベルテストを始める",
-                              hi: "प्रवीणता परीक्षण शुरू करें",
-                              ar: "ابدأ اختبار المستوى",
-                              zh: "开始水平测试",
-                            })}
-                          </Button>
-                        )}
+                        <Button
+                          leftIcon={<LuBadgeCheck />}
+                          size="sm"
+                          variant="outline"
+                          borderColor={
+                            themeMode === "light" ? "cyan.700" : "cyan.600"
+                          }
+                          color={
+                            themeMode === "light" ? "cyan.800" : "cyan.200"
+                          }
+                          padding={6}
+                          _hover={{
+                            bg:
+                              themeMode === "light" ? "cyan.50" : "cyan.900",
+                          }}
+                          onClick={() => {
+                            closeSettings();
+                            navigate("/proficiency");
+                          }}
+                          mt={4}
+                        >
+                          {uiCopy(appLanguage, {
+                            en: "Take proficiency proficiency test",
+                            es: "Realizar prueba de nivel",
+                            pt: "Fazer teste de nível",
+                            it: "Fai il test di livello",
+                            fr: "Passer le test de niveau",
+                            ja: "レベルテストを受ける",
+                            hi: "प्रवीणता परीक्षण दें",
+                            ar: "إجراء اختبار المستوى",
+                            zh: "参加水平测试",
+                          })}
+                        </Button>
+
+                        <LearningGoalSettings
+                          npub={activeNpub}
+                          targetLang={targetLang}
+                          appLanguage={appLanguage}
+                        />
 
                         <VoicePreferenceField
                           t={t}
@@ -2524,6 +2636,7 @@ function TopBar({
                           voicePersona={voicePersona}
                           targetLang={targetLang}
                           supportLang={supportLang}
+                          appLanguage={appLanguage}
                           voiceOptions={getTutorVoiceOptions()}
                           normalizeVoice={normalizeTutorVoice}
                           getVoiceOption={getTutorVoiceOption}
@@ -2544,7 +2657,7 @@ function TopBar({
                           onVoicePersonaChange={(next) => {
                             setVoicePersona(next);
                             rememberTextDraft("voicePersona", next);
-                            debouncedPersist({ tutorVoicePersona: next });
+                            return debouncedPersist({ tutorVoicePersona: next });
                           }}
                           onSelectSound={() => playSound(selectSound)}
                           menuListMotionProps={INSTANT_EXIT_MOTION_PROPS}
@@ -2661,10 +2774,30 @@ function TopBar({
                         </Box>
 
                         <Box bg="gray.800" p={3} rounded="md">
-                          <HStack justifyContent="space-between">
-                            <Text fontSize="sm">
-                              {t.teams_feed_allow_label || "Allow posts"}
-                            </Text>
+                          <HStack justifyContent="space-between" align="center">
+                            <HStack spacing={1.5} align="center">
+                              <Text fontSize="sm">
+                                {t.teams_feed_allow_label || "Allow posts"}
+                              </Text>
+                              <IconButton
+                                aria-label={
+                                  t.allow_posts_info_aria ||
+                                  "Learn more about posts and decentralized identity"
+                                }
+                                icon={<InfoOutlineIcon boxSize={3.5} />}
+                                size="xs"
+                                variant="ghost"
+                                color="gray.400"
+                                _hover={{
+                                  color: "var(--app-text-primary)",
+                                  bg: "whiteAlpha.200",
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setIsPostsInfoOpen(true);
+                                }}
+                              />
+                            </HStack>
                             <Switch
                               id="settings-allow-posts-switch"
                               isChecked={allowPosts}
@@ -2769,6 +2902,62 @@ function TopBar({
         languageCode={communityLanguageCode}
         appLanguage={appLanguage}
       />
+      <Modal
+        isOpen={isPostsInfoOpen}
+        onClose={() => setIsPostsInfoOpen(false)}
+        isCentered
+        size="sm"
+      >
+        <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(4px)" />
+        <ModalContent
+          mx={4}
+          borderRadius="2xl"
+          boxShadow="2xl"
+          sx={{
+            "& .chakra-modal__header": {
+              paddingTop: "20px !important",
+              paddingBottom: "4px !important",
+            },
+            "& .chakra-modal__body": {
+              paddingTop: "4px !important",
+              paddingBottom: "24px !important",
+            },
+          }}
+        >
+          <ModalHeader fontSize="lg" fontWeight="bold">
+            {t.allow_posts_info_title || "Decentralized Identity"}
+          </ModalHeader>
+          <ModalCloseButton top={4} right={4} />
+          <ModalBody>
+            <Text fontSize="sm" opacity={0.88} lineHeight="tall">
+              {t.allow_posts_info_desc ||
+                "We use decentralized identity here, so your progress is posted in your profile feed."}
+            </Text>
+            {dittoProfileUrl && (
+              <Box mt={4}>
+                <Link
+                  href={dittoProfileUrl}
+                  isExternal
+                  textDecoration="underline"
+                  textUnderlineOffset="3px"
+                  color={themeMode === "light" ? "cyan.700" : "cyan.300"}
+                  _hover={{
+                    color: themeMode === "light" ? "cyan.800" : "cyan.200",
+                  }}
+                  fontSize="sm"
+                  fontWeight="medium"
+                  display="inline-flex"
+                  alignItems="center"
+                  gap={1.5}
+                >
+                  {t.allow_posts_info_view_ditto || "View Ditto profile"}
+                  <ExternalLinkIcon boxSize={3.5} />
+                </Link>
+              </Box>
+            )}
+          </ModalBody>
+        </ModalContent>
+      </Modal>
     </>
   );
 }
@@ -2807,6 +2996,7 @@ export default function App({ onBootReady } = {}) {
   );
   const [teamsOpen, setTeamsOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
+  const [memoryInitialTab, setMemoryInitialTab] = useState("repairs");
   const [realWorldTasksOpen, setRealWorldTasksOpen] = useState(false);
   const [tasksTickNow, setTasksTickNow] = useState(() => Date.now());
   const [pendingTeamInviteCount, setPendingTeamInviteCount] = useState(0);
@@ -3572,7 +3762,7 @@ export default function App({ onBootReady } = {}) {
     isTestUnlockActive || subscriptionAccess.authorized;
   const requiresPatreonMigration =
     !isTestUnlockActive && subscriptionAccess.requiresPatreonMigration;
-  const [allowPosts, setAllowPosts] = useState(true);
+  const [allowPosts, setAllowPosts] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [soundVolume, setSoundVolume] = useState(100);
   const [tutorVolume, setTutorVolume] = useState(DEFAULT_TUTOR_VOLUME);
@@ -3590,8 +3780,8 @@ export default function App({ onBootReady } = {}) {
   const [isIdentitySaving] = useState(false);
 
   useEffect(() => {
-    // Default to true if user.allowPosts is not explicitly set
-    setAllowPosts(user?.allowPosts !== false);
+    // Default to false if user.allowPosts is not explicitly set
+    setAllowPosts(user?.allowPosts === true);
   }, [user?.allowPosts]);
 
   useEffect(() => {
@@ -3865,6 +4055,14 @@ export default function App({ onBootReady } = {}) {
   // Lesson completion celebration modal
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [completedLessonData, setCompletedLessonData] = useState(null);
+  const [hasRoomyPhoneViewport] = useMediaQuery(
+    "(min-width: 400px) and (min-height: 740px)",
+  );
+  const completionCharacterSize =
+    useBreakpointValue({
+      base: hasRoomyPhoneViewport ? 96 : 80,
+      md: 96,
+    }) ?? 80;
   const [showTutorialBitcoinModal, setShowTutorialBitcoinModal] =
     useState(false);
   const [pendingTutorialBitcoinModal, setPendingTutorialBitcoinModal] =
@@ -5439,10 +5637,15 @@ export default function App({ onBootReady } = {}) {
         draft: null,
       };
 
+      const learningIntelligence = { ...user?.learningIntelligence };
+      if (astraGoalsEnabled()) for (const [lang, goalText] of Object.entries(payload.learningGoals || {})) {
+        if (typeof goalText === "string" && goalText.trim()) learningIntelligence[lang] = changeGoal(learningIntelligence[lang], { text: goalText, id: globalThis.crypto.randomUUID(), now });
+      }
       await setDoc(
         doc(database, "users", id),
         {
           local_npub: id,
+          learningIntelligence,
           updatedAt: now,
           appLanguage: uiLangForPersist,
           onboarding: completedOnboarding,
@@ -5465,6 +5668,7 @@ export default function App({ onBootReady } = {}) {
       // gate immediately instead of depending on another full DB hydration.
       setUser?.({
         ...(user || {}),
+        learningIntelligence,
         id: user?.id || id,
         local_npub: id,
         updatedAt: now,
@@ -5523,7 +5727,7 @@ export default function App({ onBootReady } = {}) {
     if (!lesson) return false;
     // Ephemeral repair lessons aren't part of the learning path: no game-review
     // enrichment (their id isn't in any unit) and no lesson-progress writes.
-    const enrichedLesson = lesson.isRepair
+    const enrichedLesson = (lesson.isRepair || lesson.isGoal)
       ? lesson
       : await enrichLessonForGameReview(lesson);
 
@@ -5594,7 +5798,7 @@ export default function App({ onBootReady } = {}) {
       const langKey = (lessonLang || "es").toLowerCase();
       let freshProgressSource = user?.progress || {};
 
-      if (npub && !enrichedLesson.isRepair) {
+      if (npub && !enrichedLesson.isRepair && !enrichedLesson.isGoal) {
         // Pass current user progress so startLesson can preserve COMPLETED/IN_PROGRESS status
         const startedLessonProgress = await startLesson(
           npub,
@@ -5733,6 +5937,7 @@ export default function App({ onBootReady } = {}) {
     async (card) => {
       const npub = resolveNpub();
       if (!npub || !card) return;
+      if (card.isGoal || card.isRepair) return; // Ephemeral practice never writes normal SRS or Review progress.
 
       try {
         const xpAmount = card.xpReward || 5;
@@ -5954,9 +6159,19 @@ export default function App({ onBootReady } = {}) {
     }
   }, [resolvedTargetLang]);
 
+  const handleGoalLessonComplete = useCallback(() => {
+    // Stay on the answered question while the plate conductor opens the
+    // task-complete modal. Its Continue button owns the transition to the
+    // next course (Tutor in the usual goal -> speak sequence) and clears the
+    // ephemeral goal focus as part of that navigation.
+    lessonCompletionSequenceActiveRef.current = false;
+  }, []);
+
   const triggerLessonCompletion = useCallback(
     async (reason = "manual", completion = null) => {
-      if (!activeLesson || lessonCompletionTriggeredRef.current) return;
+      // Goal lessons finish through GoalLessonCompletion, which commits the
+      // daily task once while the answered question stays mounted.
+      if (!activeLesson || activeLesson.isGoal || lessonCompletionTriggeredRef.current) return;
 
       console.log("[Lesson Completion] Triggered", { reason, activeLesson });
       lessonCompletionTriggeredRef.current = true;
@@ -6051,7 +6266,7 @@ export default function App({ onBootReady } = {}) {
         });
 
         deferDailyGoalCelebrationRef.current = true;
-        await awardXp(npub, earnedXp, lessonLang, "lesson");
+        const xpAward = await awardXp(npub, earnedXp, lessonLang, "lesson");
 
         if (!activeLesson.isGame && !activeLesson.isTutorial) {
           void warmUpcomingGameReview(
@@ -6065,6 +6280,16 @@ export default function App({ onBootReady } = {}) {
           title: activeLesson.title,
           xpEarned: earnedXp,
           lessonId: activeLesson.id,
+          targetLang: lessonLang,
+          totalXp: Number.isFinite(Number(xpAward?.languageXp))
+            ? Math.max(0, Number(xpAward.languageXp))
+            : Math.max(
+                0,
+                getLanguageXp(
+                  useUserStore.getState()?.user?.progress || {},
+                  lessonLang,
+                ),
+              ),
         };
         setCompletedLessonData(lessonData);
         pendingLessonCompletionRef.current = lessonData;
@@ -6121,6 +6346,10 @@ export default function App({ onBootReady } = {}) {
       );
       return;
     }
+
+    // Read the latest store: a click may race the render that replaces the
+    // engine with the completion screen. Never enqueue another question then.
+    if (isGoalLessonReady(useUserStore.getState().user?.learningIntelligence?.[resolvedTargetLang], activeLesson)) return;
 
     const availableModes = activeLesson.modes;
 
@@ -6196,6 +6425,7 @@ export default function App({ onBootReady } = {}) {
     isTutorialMode,
     tutorialCompletedModules,
     triggerLessonCompletion,
+    resolvedTargetLang,
   ]);
 
   // Handle closing the completion modal and returning to skill tree
@@ -7114,6 +7344,7 @@ export default function App({ onBootReady } = {}) {
       if (data?.dailyXpRecent && typeof data.dailyXpRecent === "object")
         patch.dailyXpRecent = data.dailyXpRecent;
       if (data?.stats) patch.stats = data.stats;
+      if (data?.learningIntelligence) patch.learningIntelligence = data.learningIntelligence;
       if (data?.updatedAt) patch.updatedAt = data.updatedAt;
       if (data?.appLanguage) patch.appLanguage = data.appLanguage;
 
@@ -7273,11 +7504,11 @@ export default function App({ onBootReady } = {}) {
               activeNpub={activeNpub}
               activeNsec={activeNsec}
               level={user?.progress?.level}
-              supportLang={user?.progress?.supportLang}
-              targetLang={user?.progress?.targetLang}
+              supportLang={resolvedSupportLang}
+              targetLang={resolvedTargetLang}
               showTranslations={user?.progress?.showTranslations}
               pauseMs={user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS}
-              helpRequest={user?.progress?.helpRequest}
+              helpRequest={activeLesson?.isGoal || activeLesson?.isRepair ? "" : user?.progress?.helpRequest}
               practicePronunciation={user?.progress?.practicePronunciation}
               bottomActionBarMinimized={isBottomActionBarMinimized}
               onSwitchedAccount={handleSwitchedAccount}
@@ -7292,6 +7523,8 @@ export default function App({ onBootReady } = {}) {
               userLanguage={appLanguage}
               activeNpub={activeNpub}
               activeNsec={activeNsec}
+              targetLang={resolvedTargetLang}
+              supportLang={resolvedSupportLang}
               pauseMs={user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS}
             />
           </>
@@ -7445,7 +7678,10 @@ export default function App({ onBootReady } = {}) {
   const activeSkillTreeLessonProgress = activeLesson?.id
     ? userProgress.lessons?.[activeLesson.id]
     : null;
-  const activeLessonEarnedXp = getLessonEarnedXp(activeSkillTreeLessonProgress);
+  const goalLessonReady = isGoalLessonReady(user?.learningIntelligence?.[resolvedTargetLang], activeLesson);
+  const activeLessonEarnedXp = activeLesson?.isGoal
+    ? getGoalPreparationXp(user?.learningIntelligence?.[resolvedTargetLang], activeLesson.goalBlueprint)
+    : getLessonEarnedXp(activeSkillTreeLessonProgress);
 
   // Completion is driven by the active lesson's own counter. Shared language
   // XP from Tutor, flashcards, conversations, or other surfaces cannot satisfy
@@ -7454,7 +7690,7 @@ export default function App({ onBootReady } = {}) {
     if (
       viewMode !== "lesson" ||
       !activeLesson ||
-      activeLesson.isRepair ||
+      activeLesson.isRepair || activeLesson.isGoal ||
       activeSkillTreeLessonProgress?.status !== "in_progress" ||
       lessonCompletionTriggeredRef.current
     ) {
@@ -8773,14 +9009,55 @@ export default function App({ onBootReady } = {}) {
   // The plate's display kinds = elected base, with carried-over unfinished
   // kinds and "repair" prepended (deduped). The elected base (persisted) never
   // contains either, so this stays purely derived and can't fight the elector.
-  const questKinds = useMemo(() => {
-    const base = electedQuestKinds.filter((k) => k !== "repair");
-    const withRepair = repairPlanToday ? ["repair", ...base] : base;
-    if (!carryOverKinds.length) return withRepair;
-    const carry = carryOverKinds.filter((k) => !withRepair.includes(k));
-    return [...carry, ...withRepair];
-  }, [repairPlanToday, electedQuestKinds, carryOverKinds]);
+  const goalToday = astraGoalsEnabled() ? activeGoalFor(user, resolvedTargetLang) : null;
+  const isFirstSession = shouldUseFixedFirstQuest(user, plateDayKey);
+  const questKinds = useMemo(() => composeQuestKinds(
+    electedQuestKinds, carryOverKinds, Boolean(repairPlanToday), Boolean(goalToday), isFirstSession,
+  ), [repairPlanToday, electedQuestKinds, carryOverKinds, goalToday, isFirstSession]);
 
+  // Prepare a Goal blueprint while the learner is still reading Today’s Focus.
+  // Starting the task can then route immediately instead of showing an
+  // unexplained pause while the plan is generated and persisted.
+  const goalBlueprintPreloadRef = useRef("");
+  useEffect(() => {
+    if (
+      isLoadingApp ||
+      !activeNpub ||
+      !goalToday ||
+      !questKinds.includes("goal")
+    )
+      return;
+    const onceKey = `${activeNpub}:${resolvedTargetLang}:${plateDayKey}:${goalToday.id}`;
+    if (goalBlueprintPreloadRef.current === onceKey) return;
+    goalBlueprintPreloadRef.current = onceKey;
+    void getOrBuildGoalBlueprint({
+      npub: activeNpub,
+      targetLang: resolvedTargetLang,
+      supportLang: appLanguage,
+      cefrLevel: repairLessonCefrLevel,
+      dayKey: plateDayKey,
+    }).catch(() => {
+      if (goalBlueprintPreloadRef.current === onceKey) {
+        goalBlueprintPreloadRef.current = "";
+      }
+    });
+  }, [
+    activeNpub,
+    appLanguage,
+    goalToday,
+    isLoadingApp,
+    plateDayKey,
+    questKinds,
+    repairLessonCefrLevel,
+    resolvedTargetLang,
+  ]);
+
+  // Guard the current in-memory focus against account, language, or day changes.
+  useEffect(() => {
+    if (!isLoadingApp && !currentGoalFocus()) useGoalFocusStore.getState().clearFocus();
+    const repair = useRepairFocusStore.getState().focus;
+    if (!isLoadingApp && repair && (repair.npub !== activeNpub || repair.targetLang !== resolvedTargetLang || repair.plan?.dayKey !== plateDayKey)) useRepairFocusStore.getState().clearFocus();
+  }, [activeNpub, resolvedTargetLang, plateDayKey, isLoadingApp, goalToday?.id, goalToday?.status]);
   const plateSnapshot = useMemo(
     () =>
       getDailyPlateSnapshot(user, resolvedTargetLang, undefined, questKinds),
@@ -8892,7 +9169,7 @@ export default function App({ onBootReady } = {}) {
     const currentUser = useUserStore.getState?.()?.user || user;
     if (!shouldRunDailyBatch(currentUser, plateLangKey, tomorrowKey)) return;
     const sourceNotes = getTodaysCapturedNotes(currentUser, plateLangKey);
-    if (!sourceNotes.length) return;
+    if (!sourceNotes.length && !goalToday) return;
     const onceKey = `${plateLangKey}:${tomorrowKey}`;
     if (blueprintCompletionRef.current === onceKey) return;
     blueprintCompletionRef.current = onceKey;
@@ -8915,6 +9192,7 @@ export default function App({ onBootReady } = {}) {
     plateSnapshot.isCleared,
     appLanguage,
     repairLessonCefrLevel,
+    goalToday,
   ]);
 
   // Companion batch — fallback. On open, if today has no blueprint yet (the
@@ -8930,7 +9208,7 @@ export default function App({ onBootReady } = {}) {
     if (!isPastFirstQuest(currentUser, plateDayKey)) return;
     if (!shouldRunDailyBatch(currentUser, plateLangKey, plateDayKey)) return;
     const sourceNotes = getReusableMemory(currentUser, plateLangKey);
-    if (!sourceNotes.length) return;
+    if (!sourceNotes.length && !goalToday) return;
     const onceKey = `${plateLangKey}:${plateDayKey}`;
     if (blueprintFallbackRef.current === onceKey) return;
     blueprintFallbackRef.current = onceKey;
@@ -8973,6 +9251,7 @@ export default function App({ onBootReady } = {}) {
     plateDayKey,
     appLanguage,
     repairLessonCefrLevel,
+    goalToday,
   ]);
 
   // Repair surface (a short ephemeral flashcard pass) opens over the plate —
@@ -8981,6 +9260,12 @@ export default function App({ onBootReady } = {}) {
   const [repairModalOpen, setRepairModalOpen] = useState(false);
 
   const [plateSessionActive, setPlateSessionActive] = useState(false);
+  const storedPlateSessionActive = isPlateSessionFor(
+    readPlateSession(activeNpub),
+    plateSnapshot.langKey,
+    plateSnapshot.dayKey,
+  );
+  const [isLaunchingPlateCourse, setIsLaunchingPlateCourse] = useState(false);
 
   const endPlateSession = useCallback(() => {
     clearPlateSession(activeNpub);
@@ -9003,6 +9288,10 @@ export default function App({ onBootReady } = {}) {
   // unlike the bottom-bar mode switcher).
   const goToSkillTreeMode = useCallback(
     (mode) => {
+      const goalFocus = useGoalFocusStore.getState().focus;
+      if (goalFocus && goalFocus.surface !== mode) useGoalFocusStore.getState().clearFocus();
+      const repairFocus = useRepairFocusStore.getState().focus;
+      if (repairFocus && repairFocus.surface !== mode) useRepairFocusStore.getState().clearFocus();
       if (viewMode !== "skillTree") {
         handleReturnToSkillTree();
       }
@@ -9018,7 +9307,27 @@ export default function App({ onBootReady } = {}) {
   // themselves (press connect in the Tutor, tap a lesson, start a card), so
   // the quest never auto-starts a session or picks the activity for them.
   const navigateToPlateCourse = useCallback(
-    (kind) => {
+    async (kind) => {
+      useGoalFocusStore.getState().clearFocus();
+      useRepairFocusStore.getState().clearFocus();
+      if (kind === "goal") {
+        try {
+          const blueprint = await getOrBuildGoalBlueprint({ npub: activeNpub, targetLang: resolvedTargetLang, supportLang: appLanguage, cefrLevel: repairLessonCefrLevel, dayKey: plateDayKey });
+          if (!blueprint) return;
+          // Async generation may finish after the learner switches language.
+          const latest = useUserStore.getState().user;
+          if (latest?.progress?.targetLang !== resolvedTargetLang || activeGoalFor(latest, resolvedTargetLang)?.id !== blueprint.goalId) return;
+          const bucket = latest?.learningIntelligence?.[resolvedTargetLang];
+          const mode = nextGoalMode(bucket, blueprint);
+          if (!mode) return;
+          const routedBlueprint = { ...blueprint, mode };
+          const surface = GOAL_SURFACES[mode];
+          useGoalFocusStore.getState().setFocus({ npub: activeNpub, targetLang: resolvedTargetLang, supportLang: appLanguage, surface, blueprint: routedBlueprint });
+          if (surface === "lesson") await handleStartLessonRef.current?.(buildGoalLesson(routedBlueprint));
+          else goToSkillTreeMode(surface);
+        } catch (error) { toast({ title: error.message, status: "error", duration: 6000 }); }
+        return;
+      }
       if (kind === "repair") {
         // Repair is a SEQUENCE of short steps — one per curated weak spot,
         // each in its own practice mode (that's why the course counts 0/N).
@@ -9094,6 +9403,7 @@ export default function App({ onBootReady } = {}) {
     },
     [
       goToSkillTreeMode,
+      toast,
       repairPlanToday,
       plateSnapshot,
       resolvedTargetLang,
@@ -9104,16 +9414,22 @@ export default function App({ onBootReady } = {}) {
     ],
   );
 
-  const handleStartDailyPractice = () => {
+  const handleStartDailyPractice = async () => {
+    if (isLaunchingPlateCourse) return;
     const next = getNextPlateCourse(plateSnapshot);
     if (!next) {
       // Plate already cleared — keep practicing with the tutor
       goToSkillTreeMode("tutor");
       return;
     }
-    startPlateSession(activeNpub, plateSnapshot.langKey, plateSnapshot.dayKey);
-    setPlateSessionActive(true);
-    navigateToPlateCourse(next);
+    setIsLaunchingPlateCourse(true);
+    try {
+      startPlateSession(activeNpub, plateSnapshot.langKey, plateSnapshot.dayKey);
+      setPlateSessionActive(true);
+      await navigateToPlateCourse(next);
+    } finally {
+      setIsLaunchingPlateCourse(false);
+    }
   };
 
   // Celebration modals for the guided session: "Exercise Complete" with a
@@ -9124,9 +9440,11 @@ export default function App({ onBootReady } = {}) {
   // only shown once no other Chakra modal remains open. That guarantees it
   // always renders last in the chain on both surfaces.
   const [plateCelebration, setPlateCelebration] = useState(null);
+  const journeyResource = useVoiceJourney(activeNpub, resolvedTargetLang);
   const pendingPlateCelebrationRef = useRef(null);
   const plateCelebrationFlushTimerRef = useRef(null);
   const plateClearedCelebratedKeyRef = useRef("");
+  const plateCourseCelebratedKeysRef = useRef(new Set());
   const plateCelebrationBlockersRef = useRef({});
   plateCelebrationBlockersRef.current = {
     celebrateOpen,
@@ -9339,6 +9657,18 @@ export default function App({ onBootReady } = {}) {
         if (plateClearedCelebratedKeyRef.current === onceKey) return;
         plateClearedCelebratedKeyRef.current = onceKey;
       }
+      if (celebration?.type === "course" && celebration.completed) {
+        const courseKey = buildPlateCelebrationKey(
+          plateSnapshot.langKey,
+          plateSnapshot.dayKey,
+          celebration.completed,
+          celebration.progress,
+        );
+        if (courseKey) {
+          if (plateCourseCelebratedKeysRef.current.has(courseKey)) return;
+          plateCourseCelebratedKeysRef.current.add(courseKey);
+        }
+      }
       pendingPlateCelebrationRef.current = celebration;
       flushPlateCelebrationWhenQuiet();
     },
@@ -9348,6 +9678,86 @@ export default function App({ onBootReady } = {}) {
       plateSnapshot.dayKey,
     ],
   );
+
+  const getGoalCompletionDetails = useCallback(() => {
+    const currentUser = useUserStore.getState()?.user || user;
+    const blueprint =
+      currentUser?.learningIntelligence?.[resolvedTargetLang]?.dailyGoal
+        ?.blueprint;
+    if (!blueprint) return null;
+    return {
+      what: blueprint.objective || blueprint.goalText || "",
+      why: blueprint.rationale || blueprint.scenario || "",
+    };
+  }, [resolvedTargetLang, user]);
+
+  const getRepairCompletionDetails = useCallback(
+    (completedCount) => {
+      const repairItems = Array.isArray(repairPlanToday?.items)
+        ? repairPlanToday.items
+        : [];
+      const wholeRepairCompleted =
+        repairItems.length > 0 &&
+        Number(completedCount) >= repairItems.length;
+      if (wholeRepairCompleted) {
+        return {
+          what: repairItems
+            .map((item) => item.originalConcept || item.concept || "")
+            .filter(Boolean)
+            .join(" · "),
+          why:
+            repairPlanToday?.summary ||
+            repairItems
+              .map((item) => item.summary || item.expectedAnswer || "")
+              .filter(Boolean)
+              .join(" "),
+        };
+      }
+      const step = getNextRepairStep(
+        repairPlanToday,
+        Math.max(0, Number(completedCount) - 1),
+      );
+      const item = step?.item || step?.plan?.items?.[0];
+      if (!item) return null;
+      return {
+        what: item.originalConcept || item.concept || "",
+        why:
+          item.summary ||
+          repairPlanToday?.summary ||
+          item.expectedAnswer ||
+          "",
+      };
+    },
+    [repairPlanToday],
+  );
+
+  // Goal modalities advance silently inside the 2–5 part bundle. Only the
+  // final modality flips the Goal course and reaches the celebration
+  // conductor below, so the learner sees one task-complete modal per Goal.
+  useEffect(() => {
+    const handleGoalModeCompleted = (event) => {
+      const detail = event?.detail || {};
+      if (
+        detail.goalCompleted ||
+        detail.targetLang !== resolvedTargetLang ||
+        detail.dayKey !== plateSnapshot.dayKey
+      )
+        return;
+      window.setTimeout(() => {
+        void navigateToPlateCourse("goal");
+      }, 0);
+    };
+    window.addEventListener("astra:goalModeCompleted", handleGoalModeCompleted);
+    return () =>
+      window.removeEventListener(
+        "astra:goalModeCompleted",
+        handleGoalModeCompleted,
+      );
+  }, [
+    navigateToPlateCourse,
+    plateSnapshot.dayKey,
+    resolvedTargetLang,
+  ]);
 
   // Dismissing a celebration: a course modal moves into the next course; the
   // cleared modal (when finishing a guided session) returns home — but only
@@ -9362,7 +9772,7 @@ export default function App({ onBootReady } = {}) {
     // there's no next course to move to, Continue must still leave the spent
     // lesson rather than strand the learner on it.
     const finishedRepairLesson =
-      viewMode === "lesson" && Boolean(activeLesson?.isRepair);
+      viewMode === "lesson" && Boolean(activeLesson?.isRepair || activeLesson?.isGoal);
     if (celebration?.type === "course" && celebration.next) {
       navigateToPlateCourse(celebration.next);
     } else if (
@@ -9421,7 +9831,19 @@ export default function App({ onBootReady } = {}) {
     platePrevSnapshotRef.current = plateSnapshot;
     if (!prev) return;
     // Only celebrate genuine in-session completions, not hydration transitions.
-    if (!plateConductorArmedRef.current) return;
+    if (!plateConductorArmedRef.current) {
+      plateSnapshot.courses.forEach((c) => {
+        if (c.done) {
+          const key = buildPlateCelebrationKey(
+            plateSnapshot.langKey,
+            plateSnapshot.dayKey,
+            c.kind,
+          );
+          if (key) plateCourseCelebratedKeysRef.current.add(key);
+        }
+      });
+      return;
+    }
     if (
       prev.dayKey !== plateSnapshot.dayKey ||
       prev.langKey !== plateSnapshot.langKey
@@ -9434,11 +9856,8 @@ export default function App({ onBootReady } = {}) {
         (kind) => plateSnapshot.byKind[kind]?.done && !prev.byKind[kind]?.done,
       );
     if (!justDone) {
-      // Repair advances one step (one increment) at a time, so intermediate
-      // steps never flip the course done — celebrate each banked step like a
-      // course completion. In a guided session the Continue button re-routes
-      // into "repair", which serves the NEXT step in its own mode; outside a
-      // session it's a plain acknowledgement (Continue leaves the spent step).
+      // Repair advances one step at a time. Intermediate steps switch directly
+      // to the next modality; only the completed Repair bundle is celebrated.
       const prevRepair = prev.byKind?.repair;
       const nowRepair = plateSnapshot.byKind?.repair;
       const repairStepped =
@@ -9447,27 +9866,28 @@ export default function App({ onBootReady } = {}) {
         !nowRepair.done &&
         nowRepair.count > prevRepair.count;
       if (!repairStepped) return;
-      requestPlateCelebration({
-        type: "course",
-        completed: "repair",
-        next: plateSessionActive ? getNextPlateCourse(plateSnapshot) : null,
-        expectsModal: false,
-        // Step progress ("1/3") so the celebration reads as one step of the
-        // multi-mode repair sequence, not the whole task.
-        progress: {
-          count: Math.min(nowRepair.count, nowRepair.target),
-          target: nowRepair.target,
-        },
-      });
+      window.setTimeout(() => {
+        void navigateToPlateCourse("repair");
+      }, 0);
       return;
     }
 
+    const courseKey = buildPlateCelebrationKey(
+      plateSnapshot.langKey,
+      plateSnapshot.dayKey,
+      justDone,
+    );
+    if (courseKey && plateCourseCelebratedKeysRef.current.has(courseKey)) return;
+
     const next = getNextPlateCourse(plateSnapshot);
-    // Only surfaces that render their own completion modal need the
-    // celebration to wait behind them: lessons and Tutor lessons. Repair
-    // deliberately shows NO lesson-completion modal (triggerLessonCompletion
-    // early-returns for isRepair), so its "task complete" celebration is the
-    // one and only modal — show it promptly over the finished repair view.
+    const details =
+      justDone === "goal"
+        ? getGoalCompletionDetails()
+        : justDone === "repair"
+          ? getRepairCompletionDetails(plateSnapshot.byKind?.repair?.count)
+          : null;
+    // Only ordinary lesson/Tutor courses render their own completion modal.
+    // Goal and Repair modalities are silent until their entire bundle is done.
     const expectsModal = justDone === "learn" || justDone === "speak";
 
     // Live voice surfaces are keep-alive across mode switches, so finishing
@@ -9495,6 +9915,7 @@ export default function App({ onBootReady } = {}) {
           completed: justDone,
           next: null,
           expectsModal,
+          details,
         });
       }
       return;
@@ -9508,6 +9929,7 @@ export default function App({ onBootReady } = {}) {
         type: "cleared",
         navigateHome: true,
         expectsModal,
+        details,
       });
       return;
     }
@@ -9519,12 +9941,16 @@ export default function App({ onBootReady } = {}) {
       completed: justDone,
       next,
       expectsModal,
+      details,
     });
   }, [
     plateSnapshot,
     plateSessionActive,
     endPlateSession,
+    getGoalCompletionDetails,
+    getRepairCompletionDetails,
     goToSkillTreeMode,
+    navigateToPlateCourse,
     playSound,
     requestPlateCelebration,
   ]);
@@ -9542,10 +9968,14 @@ export default function App({ onBootReady } = {}) {
         const claimed = await claimDailyPlateBonus(
           activeNpub,
           plateSnapshot.langKey,
+          new Date(),
+          plateSnapshot.courses.map(course => course.kind),
+          plateSnapshot.dayKey,
         );
         if (!claimed) return;
         const store = useUserStore.getState();
-        store.patchUser?.({
+        const isCurrentAccount = (store.user?.local_npub || store.user?.id || store.user?.identity) === activeNpub;
+        if (isCurrentAccount) store.patchUser?.({
           progress: applyPlateBonusMarker(
             store.user?.progress || {},
             plateSnapshot.langKey,
@@ -9556,7 +9986,11 @@ export default function App({ onBootReady } = {}) {
         // Covers plates cleared outside a guided session too; the once-per-
         // plate guard inside makes this a no-op when the conductor already
         // requested it.
-        requestPlateCelebration({ type: "cleared" });
+        const latestUser = useUserStore.getState().user;
+        if ((latestUser?.local_npub || latestUser?.id || latestUser?.identity) === activeNpub &&
+            (latestUser?.progress?.targetLang || plateSnapshot.langKey) === plateSnapshot.langKey) {
+          requestPlateCelebration({ type: "cleared" });
+        }
       } catch (error) {
         console.error("Failed to claim daily plate bonus:", error);
       } finally {
@@ -9578,12 +10012,15 @@ export default function App({ onBootReady } = {}) {
       plateCelebrationFlushTimerRef.current = null;
     }
     plateClearedCelebratedKeyRef.current = "";
+    plateCourseCelebratedKeysRef.current.clear();
     platePrevSnapshotRef.current = null;
     pendingPlateCelebrationRef.current = null;
     setPlateCelebration(null);
     endPlateSession();
     await Promise.all([
       resetTodayPlate(activeNpub, resolvedTargetLang),
+      resetGoalTask(activeNpub, resolvedTargetLang),
+      resetFocusedPracticeArtifacts(activeNpub, resolvedTargetLang),
       resetTodayRepairArtifacts({
         npub: activeNpub,
         targetLang: resolvedTargetLang,
@@ -9601,6 +10038,8 @@ export default function App({ onBootReady } = {}) {
         window.scrollTo({ top: 0, behavior: "auto" });
       }
 
+      useGoalFocusStore.getState().clearFocus();
+      useRepairFocusStore.getState().clearFocus();
       // Manually picking a mode opts out of the guided daily session.
       endPlateSession();
       setPathMode(newMode);
@@ -9894,9 +10333,27 @@ export default function App({ onBootReady } = {}) {
 
       <NotesDrawer
         isOpen={notesOpen}
-        onClose={() => setNotesOpen(false)}
+        onClose={() => { setNotesOpen(false); setMemoryInitialTab("repairs"); }}
         appLanguage={appLanguage}
         targetLang={resolvedTargetLang}
+        npub={activeNpub}
+        initialTab={memoryInitialTab}
+        journeyResource={journeyResource}
+      />
+
+      <JourneyMilestoneGate
+        key={`${activeNpub}:${resolvedTargetLang}`}
+        npub={activeNpub}
+        targetLang={resolvedTargetLang}
+        lang={appLanguage}
+        journey={journeyResource.data}
+        canPresent={() => !isLoadingApp && !appOnboardingChainOpen && !notesOpen &&
+          !plateBonusClaimingRef.current && !pendingPlateCelebrationRef.current &&
+          !pendingDailyGoalCelebrationRef.current && !pendingLessonCompletionRef.current &&
+          !pendingTutorialBitcoinModalRef.current && !isTutorCompletionSequencePending() &&
+          !Object.values(plateCelebrationBlockersRef.current).some(Boolean) &&
+          !companionUnlockQueueRef.current.length && !hasVisibleChakraModalSurface()}
+        onOpenJourney={() => { setMemoryInitialTab("journey"); setNotesOpen(true); }}
       />
 
       <CompanionRepairModal
@@ -9949,11 +10406,21 @@ export default function App({ onBootReady } = {}) {
           {pathMode === "plate" && !showAlphabetBootcamp && (
             <DailyPlateHome
               user={user}
+              /* journeyTestControl={<JourneyTestButton
+                key={`${activeNpub}:${resolvedTargetLang}`}
+                npub={activeNpub}
+                targetLang={resolvedTargetLang}
+                lang={appLanguage}
+                resource={journeyResource}
+                onOpenJourney={() => { setMemoryInitialTab("journey"); setNotesOpen(true); }}
+              />} */
               targetLang={resolvedTargetLang}
               appLanguage={appLanguage}
               dailyXp={dailyXpToday}
               dailyGoalXp={dailyGoalTarget}
-              sessionActive={plateSessionActive}
+              languageXp={companionXp}
+              sessionActive={plateSessionActive || storedPlateSessionActive}
+              isStartingPractice={isLaunchingPlateCourse}
               onStartPractice={handleStartDailyPractice}
               onResetPlate={handleResetQuestPlate}
               questKinds={questKinds}
@@ -9991,6 +10458,7 @@ export default function App({ onBootReady } = {}) {
                 level={resolvedLevel}
                 supportLang={resolvedSupportLang}
                 userProgress={userProgress}
+                dailyPlateSnapshot={plateSnapshot}
                 onStartLesson={handleStartLesson}
                 onCompleteFlashcard={handleCompleteFlashcard}
                 onRandomPracticeFlashcard={handleRandomPracticeFlashcard}
@@ -10079,7 +10547,12 @@ export default function App({ onBootReady } = {}) {
       )}
 
       {viewMode === "lesson" && !isGameFullScreen && (
-        <Box px={[2, 3, 4]} pt={[2, 3]} pb={{ base: 32, md: 24 }} w="100%">
+        <Box
+          px={[2, 3, 4]}
+          pt={{ base: 2, md: 3 }}
+          pb={{ base: 32, md: 24 }}
+          w="100%"
+        >
           {/* Tutorial Stepper - shows progress through tutorial modules */}
           {isTutorialMode && activeLesson?.isTutorial && (
             <TutorialStepper
@@ -10103,12 +10576,12 @@ export default function App({ onBootReady } = {}) {
             colorScheme="teal"
             isLazy
           >
-            <TabPanels mt={[2, 3]}>
+            <TabPanels mt={{ base: 2, md: 3 }}>
               {activeTabs.map((tabKey) => {
                 switch (tabKey) {
                   case "realtime":
                     return (
-                      <TabPanel key="realtime" px={0}>
+                      <TabPanel key="realtime" px={0} py={{ base: 0, md: 2 }}>
                         <RealTimeTest
                           key={`realtime-${lessonModuleNonce}`}
                           auth={auth}
@@ -10116,7 +10589,7 @@ export default function App({ onBootReady } = {}) {
                           activeNsec={activeNsec}
                           level={user?.progress?.level}
                           supportLang={resolvedSupportLang}
-                          targetLang={user?.progress?.targetLang}
+                          targetLang={resolvedTargetLang}
                           showTranslations={user?.progress?.showTranslations}
                           pauseMs={
                             user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS
@@ -10135,28 +10608,27 @@ export default function App({ onBootReady } = {}) {
                     );
                   case "stories":
                     return (
-                      <TabPanel
-                        key="stories"
-                        px={0}
-                        pt={isTutorialMode ? 0 : 4}
-                      >
+                      <TabPanel key="stories" px={0} py={{ base: 0, md: 2 }}>
                         <StoryMode
                           key={`stories-${lessonModuleNonce}`}
                           userLanguage={appLanguage}
                           activeNpub={activeNpub}
                           activeNsec={activeNsec}
+                          targetLang={resolvedTargetLang}
+                          supportLang={resolvedSupportLang}
                           pauseMs={
                             user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS
                           }
                           lesson={activeLesson}
                           lessonContent={activeLessonContent?.stories}
                           onSkip={switchToRandomLessonMode}
+                          lessonEarnedXp={activeLessonEarnedXp}
                         />
                       </TabPanel>
                     );
                   case "reading":
                     return (
-                      <TabPanel key="reading" px={0}>
+                      <TabPanel key="reading" px={0} py={{ base: 0, md: 2 }}>
                         <History
                           key={`reading-${lessonModuleNonce}`}
                           userLanguage={appLanguage}
@@ -10169,7 +10641,7 @@ export default function App({ onBootReady } = {}) {
                     );
                   case "grammar":
                     return (
-                      <TabPanel key="grammar" px={0}>
+                      <TabPanel key="grammar" px={0} py={{ base: 0, md: 2 }}>
                         <GrammarBook
                           key={`grammar-${lessonModuleNonce}`}
                           userLanguage={appLanguage}
@@ -10196,7 +10668,7 @@ export default function App({ onBootReady } = {}) {
                     );
                   case "vocabulary":
                     return (
-                      <TabPanel key="vocabulary" px={0}>
+                      <TabPanel key="vocabulary" px={0} py={{ base: 0, md: 2 }}>
                         <Vocabulary
                           key={`vocabulary-${lessonModuleNonce}`}
                           userLanguage={appLanguage}
@@ -10223,27 +10695,14 @@ export default function App({ onBootReady } = {}) {
                     );
                   case "game":
                     return (
-                      <TabPanel key="game" px={0}>
+                      <TabPanel key="game" px={0} py={{ base: 0, md: 2 }}>
                         {activeLesson?.isTutorial &&
                         !preGeneratedGameScenario &&
                         !tutorialGamePreparationFailed ? (
-                          <Box
-                            w="100%"
-                            h={{
-                              base: "min(62vh, calc(100dvh - 220px))",
-                              md: "min(70vh, calc(100dvh - 170px))",
-                            }}
-                            minH={{ base: "300px", md: "320px" }}
-                            maxH="720px"
-                            borderRadius="xl"
-                            overflow="hidden"
-                            mt={-2}
-                          >
-                            <TutorialGameLoadingFallback
-                              supportLang={resolvedSupportLang}
-                              onSkip={switchToRandomLessonMode}
-                            />
-                          </Box>
+                          <TutorialGameLoadingFallback
+                            supportLang={resolvedSupportLang}
+                            onSkip={switchToRandomLessonMode}
+                          />
                         ) : GameRouterComponent ? (
                           <GameRouterComponent
                             lessonContext={activeLesson}
@@ -10268,7 +10727,7 @@ export default function App({ onBootReady } = {}) {
                     );
                   case "random":
                     return (
-                      <TabPanel key="random" px={0}>
+                      <TabPanel key="random" px={0} py={{ base: 0, md: 2 }}>
                         {renderRandomPanel()}
                       </TabPanel>
                     );
@@ -10278,6 +10737,18 @@ export default function App({ onBootReady } = {}) {
               })}
             </TabPanels>
           </Tabs>
+          {goalLessonReady && (
+            <GoalLessonCompletion
+              key={activeLesson.id}
+              lesson={activeLesson}
+              npub={activeNpub}
+              targetLang={resolvedTargetLang}
+              appLanguage={appLanguage}
+              onComplete={handleGoalLessonComplete}
+              preserveLesson
+            />
+          )}
+          {!goalLessonReady && <QuestionActionArea fallback />}
         </Box>
       )}
 
@@ -10680,14 +11151,23 @@ export default function App({ onBootReady } = {}) {
           color="white"
           borderRadius="2xl"
           boxShadow="2xl"
-          maxW={{ base: "90%", sm: "md" }}
+          maxW={{ base: "calc(100% - 24px)", sm: "md" }}
+          maxH={{ base: "calc(100dvh - 16px)", sm: "calc(100dvh - 24px)" }}
+          overflow="hidden"
         >
-          <ModalBody py={12} px={8}>
-            <VStack spacing={6} textAlign="center">
+          <ModalBody
+            py={{ base: hasRoomyPhoneViewport ? 6 : 5, md: 12 }}
+            px={{ base: hasRoomyPhoneViewport ? 6 : 5, md: 8 }}
+            overflow="hidden"
+          >
+            <VStack
+              spacing={{ base: hasRoomyPhoneViewport ? 5 : 4, md: 6 }}
+              textAlign="center"
+            >
               <Box
                 bg="rgba(255, 255, 255, 0.2)"
                 borderRadius="full"
-                p={4}
+                p={{ base: hasRoomyPhoneViewport ? 3 : 2, md: 4 }}
                 border="2px solid"
                 borderColor="rgba(255, 255, 255, 0.3)"
                 boxShadow="0 20px 40px rgba(0, 0, 0, 0.18)"
@@ -10696,14 +11176,22 @@ export default function App({ onBootReady } = {}) {
                   key={`${completedLessonData?.lessonId || "lesson"}-${
                     showCompletionModal ? "open" : "closed"
                   }`}
-                  width="96px"
+                  width={`${completionCharacterSize}px`}
+                  containerHeight={completionCharacterSize}
                   notSoRandomCharacter={"27"}
                 />
               </Box>
 
               {/* Title */}
-              <VStack spacing={2}>
-                <Text fontSize="3xl" fontWeight="bold">
+              <VStack spacing={{ base: 1, md: 2 }}>
+                <Text
+                  fontSize={{
+                    base: hasRoomyPhoneViewport ? "3xl" : "2xl",
+                    md: "3xl",
+                  }}
+                  fontWeight="bold"
+                  lineHeight="1.15"
+                >
                   {uiCopy(appLanguage, {
                     en: "Lesson Complete!",
                     es: "¡Lección Completada!",
@@ -10716,7 +11204,13 @@ export default function App({ onBootReady } = {}) {
                     zh: "课程完成！",
                   })}
                 </Text>
-                <Text fontSize="lg" opacity={0.9}>
+                <Text
+                  fontSize={{
+                    base: hasRoomyPhoneViewport ? "lg" : "md",
+                    md: "lg",
+                  }}
+                  opacity={0.9}
+                >
                   {completedLessonData?.title?.[appLanguage] ||
                     completedLessonData?.title?.en}
                 </Text>
@@ -10726,13 +11220,13 @@ export default function App({ onBootReady } = {}) {
               <Box
                 bg="rgba(255, 255, 255, 0.2)"
                 borderRadius="xl"
-                py={6}
-                px={8}
+                py={{ base: hasRoomyPhoneViewport ? 5 : 4, md: 6 }}
+                px={{ base: hasRoomyPhoneViewport ? 7 : 5, md: 8 }}
                 width="100%"
                 border="2px solid"
                 borderColor="rgba(255, 255, 255, 0.4)"
               >
-                <VStack spacing={2}>
+                <VStack spacing={{ base: 1, md: 2 }}>
                   <Text
                     fontSize="sm"
                     textTransform="uppercase"
@@ -10751,7 +11245,15 @@ export default function App({ onBootReady } = {}) {
                       zh: "获得的 XP",
                     })}
                   </Text>
-                  <Text fontSize="5xl" fontWeight="bold" color="yellow.300">
+                  <Text
+                    fontSize={{
+                      base: hasRoomyPhoneViewport ? "5xl" : "4xl",
+                      md: "5xl",
+                    }}
+                    fontWeight="bold"
+                    color="yellow.300"
+                    lineHeight="1"
+                  >
                     +{completedLessonData?.xpEarned || 0}
                   </Text>
                   <Text fontSize="sm" opacity={0.8}>
@@ -10767,6 +11269,46 @@ export default function App({ onBootReady } = {}) {
                       zh: "经验值",
                     })}
                   </Text>
+
+                  <Box w="100%" pt={{ base: 2, md: 4 }} mt={{ base: 1, md: 2 }}>
+                    {(() => {
+                      const totalXp = Math.max(
+                        0,
+                        Number(completedLessonData?.totalXp) || 0,
+                        Number(userProgress?.totalXp) || 0,
+                        Number(
+                          getLanguageXp(
+                            useUserStore.getState()?.user?.progress || {},
+                            completedLessonData?.targetLang ||
+                              resolvedTargetLang,
+                          ),
+                        ) || 0,
+                      );
+                      const levelNumber = Math.floor(totalXp / 100) + 1;
+                      const levelProgress = totalXp % 100;
+
+                      return (
+                        <XpProgressHeader
+                          levelText={`${uiCopy(appLanguage, {
+                            en: "Level",
+                            es: "Nivel",
+                            pt: "Nível",
+                            it: "Livello",
+                            fr: "Niveau",
+                            de: "Level",
+                            ja: "レベル",
+                            hi: "स्तर",
+                            ar: "المستوى",
+                            zh: "等级",
+                            ru: "Уровень",
+                          })} ${levelNumber}`}
+                          xpText={`XP ${totalXp}`}
+                          progressPct={levelProgress}
+                          levelTextProps={{ color: "white" }}
+                        />
+                      );
+                    })()}
+                  </Box>
                 </VStack>
               </Box>
 
@@ -10780,8 +11322,11 @@ export default function App({ onBootReady } = {}) {
                 _active={{ bg: "rgba(255, 255, 255, 0.82)" }}
                 onClick={handleCloseCompletionModal}
                 fontWeight="bold"
-                fontSize="lg"
-                py={6}
+                fontSize={{
+                  base: hasRoomyPhoneViewport ? "lg" : "md",
+                  md: "lg",
+                }}
+                py={{ base: hasRoomyPhoneViewport ? 7 : 6, md: 6 }}
               >
                 {uiCopy(appLanguage, {
                   en: "Continue",
@@ -10853,6 +11398,10 @@ export default function App({ onBootReady } = {}) {
                     {plateUiCopy(appLanguage, PLATE_BONUS_TOAST_COPY)}
                   </Text>
                 </VStack>
+                <PracticeCompletionDetails
+                  details={plateCelebration.details}
+                  appLanguage={appLanguage}
+                />
                 <Box
                   bg="rgba(255, 255, 255, 0.2)"
                   borderRadius="xl"
@@ -10954,6 +11503,10 @@ export default function App({ onBootReady } = {}) {
                     ✓
                   </Text>
                 </VStack>
+                <PracticeCompletionDetails
+                  details={plateCelebration.details}
+                  appLanguage={appLanguage}
+                />
                 {plateCelebration.next ? (
                   <Box
                     bg="rgba(255, 255, 255, 0.18)"
@@ -11546,6 +12099,8 @@ function NoteCaptureCrystalShards() {
   );
 }
 
+const MotionBox = motion.create(Box);
+
 function BottomActionBar({
   t,
   onOpenSettings,
@@ -11574,29 +12129,21 @@ function BottomActionBar({
   onScrollToLatest,
   currentTab,
 }) {
-  const bottomActionButtonStyle = { cornerShape: "superellipse(1.6)" };
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
-  const settingsLabel =
-    t?.app_settings_aria || t?.ra_btn_settings || "Settings";
-  const toggleLabel =
-    translationLabel || t?.ra_translations_toggle || "Translations";
-  const helpChatLabel =
-    helpLabel ||
-    t?.app_help_chat ||
-    uiCopy(appLanguage, { en: "Help", es: "Ayuda", it: "Aiuto", ja: "ヘルプ" });
+  const menuLabels = useMemo(
+    () => getActivityMenuLabels(appLanguage, t),
+    [appLanguage, t],
+  );
+  const settingsLabel = menuLabels.settings;
+  const helpChatLabel = helpLabel || menuLabels.assistant;
   const teamsLabel = t?.teams_drawer_title || "Teams";
-  const tasksLabel =
-    t?.real_world_tasks_title ||
-    uiCopy(appLanguage, {
-      en: "Immersion practice",
-      es: "Práctica de inmersión",
-      it: "Pratica di immersione",
-      ja: "イマージョン練習",
-    });
-  const notesLabel =
-    t?.app_notes ||
-    uiCopy(appLanguage, { en: "Notes", es: "Notas", it: "Note", ja: "ノート" });
+  const tasksLabel = menuLabels.immersion;
+  const notesLabel = menuLabels.memory;
+  const modeMenuLabel = menuLabels.mode;
+  const backLabel = menuLabels.back;
+  const exitLessonLabel = menuLabels.exitLesson;
+  const closeMenuLabel = menuLabels.closeMenu;
 
   // Path mode configuration
   const ALPHABET_LANGS = [
@@ -11627,9 +12174,15 @@ function BottomActionBar({
         t?.app_mode_path ||
         uiCopy(appLanguage, {
           en: "Lessons",
-          es: "Ruta",
-          it: "Percorso",
-          ja: "学習パス",
+          es: "Lecciones",
+          pt: "Lições",
+          it: "Lezioni",
+          fr: "Leçons",
+          de: "Lektionen",
+          ja: "レッスン",
+          hi: "पाठ",
+          ar: "الدروس",
+          zh: "课程",
         }),
       icon: PiPath,
     },
@@ -11640,8 +12193,14 @@ function BottomActionBar({
         uiCopy(appLanguage, {
           en: "Cards",
           es: "Tarjetas",
+          pt: "Cartões",
           it: "Schede",
+          fr: "Cartes",
+          de: "Karten",
           ja: "カード",
+          hi: "कार्ड्स",
+          ar: "البطاقات",
+          zh: "卡片",
         }),
       icon: PiCardsBold,
     },
@@ -11674,8 +12233,14 @@ function BottomActionBar({
         uiCopy(appLanguage, {
           en: "Conversation",
           es: "Conversación",
+          pt: "Conversação",
           it: "Conversazione",
+          fr: "Conversation",
+          de: "Gespräch",
           ja: "会話",
+          hi: "बातचीत",
+          ar: "المحادثة",
+          zh: "会话",
         }),
       icon: RiChat3Line,
     },
@@ -11686,8 +12251,14 @@ function BottomActionBar({
         uiCopy(appLanguage, {
           en: "Tutor",
           es: "Tutor",
+          pt: "Tutor",
           it: "Tutor",
+          fr: "Tuteur",
+          de: "Tutor",
           ja: "チューター",
+          hi: "ट्यूटर",
+          ar: "المعلّم",
+          zh: "导师",
         }),
       icon: RiBook2Line,
     },
@@ -11696,58 +12267,10 @@ function BottomActionBar({
   const currentMode =
     PATH_MODES.find((m) => m.id === pathMode) || PATH_MODES[0];
   const CurrentModeIcon = currentMode.icon;
-  const modeMenuLabel =
-    t?.app_mode_menu ||
-    uiCopy(appLanguage, {
-      en: "Mode",
-      es: "Modo",
-      it: "Modalità",
-      ja: "モード",
-    });
-
-  // The notes button's resting "raised key" look is this hard bottom ledge.
-  // Loading keeps the old quiet pulse; a captured memory gathers a tumbling
-  // swarm of crystal fragments into the bookmark instead of using a glow.
-  const notesLedgeShadow = isLightTheme
-    ? "0 4px 0 rgba(180, 164, 144, 0.9)"
-    : "0 4px 0 #313a4b";
-  const notesAnimation = notesIsLoading
-    ? "notesPulse 1.5s ease-in-out infinite"
-    : notesIsDone
-      ? "notesCrystalCatch 2760ms linear both"
-      : undefined;
-  // Collapse/minimize removed: the bottom action bar stays full everywhere —
-  // no auto-minimize in lessons or voice modes, no collapse button, no minimized
-  // pill. Forcing this false neutralizes all of it (effectiveIsMinimized can
-  // never become true, the collapse control is gated off, and children receive
-  // bottomActionBarMinimized=false via onMinimizedChange, i.e. the full layout).
-  const shouldShowMinimizeControls = false;
-  // Auto-minimize when entering a lesson, switching modules, or starting voice.
-  const [isMinimized, setIsMinimized] = useState(shouldShowMinimizeControls);
-  const prevShouldShowMinimizeControls = useRef(shouldShowMinimizeControls);
-  const prevTab = useRef(currentTab);
-  const effectiveIsMinimized = isMinimized && shouldShowMinimizeControls;
 
   useEffect(() => {
-    if (shouldShowMinimizeControls && !prevShouldShowMinimizeControls.current) {
-      setIsMinimized(true);
-    } else if (!shouldShowMinimizeControls) {
-      setIsMinimized(false);
-    }
-    prevShouldShowMinimizeControls.current = shouldShowMinimizeControls;
-  }, [shouldShowMinimizeControls]);
-
-  useEffect(() => {
-    onMinimizedChange?.(effectiveIsMinimized);
-  }, [effectiveIsMinimized, onMinimizedChange]);
-
-  // Re-minimize when switching modules within a lesson
-  useEffect(() => {
-    if (viewMode === "lesson" && currentTab !== prevTab.current) {
-      setIsMinimized(true);
-    }
-    prevTab.current = currentTab;
-  }, [currentTab, viewMode]);
+    onMinimizedChange?.(false);
+  }, [onMinimizedChange]);
 
   const handleActionClick = (action) => {
     if (!action) return;
@@ -11755,555 +12278,140 @@ function BottomActionBar({
     action();
   };
 
-  // Minimized bar highlight when a note is saved
-  const minimizedHighlight = notesIsDone
-    ? "0 0 0 2px rgba(56,178,172,0.5), 0 0 16px rgba(56,178,172,0.7)"
-    : notesIsLoading
-      ? "0 0 0 2px rgba(34,211,238,0.5), 0 0 16px rgba(34,211,238,0.7)"
-      : undefined;
-  const minimizedBorderColor = notesIsDone
-    ? "teal.400"
-    : notesIsLoading
-      ? "cyan.400"
-      : "var(--app-border)";
-  const minimizedAnimation = notesIsLoading
-    ? "notesPulse 1.5s ease-in-out infinite"
-    : notesIsDone
-      ? "notesDone 1.5s ease-out"
-      : undefined;
+  const isRTL = appLanguage === "ar";
 
-  // Render minimized pill when this surface supports collapsing.
-  if (effectiveIsMinimized) {
-    return (
-      <Box
-        position="fixed"
-        bottom={0}
-        left={0}
-        right={0}
-        zIndex={80}
-        width="100%"
-        maxW="480px"
-        margin="0 auto"
-        mb={3}
-        paddingLeft={2}
-        paddingRight={2}
-        display="flex"
-        justifyContent="center"
-      >
-        <Box
-          as="button"
-          touchAction="manipulation"
-          onClick={() => {
-            playSound?.(selectSound);
-            setIsMinimized(false);
-          }}
-          borderRadius="24px"
-          bg="var(--app-glass-bg)"
-          backdropFilter="blur(8px)"
-          aria-label={modeMenuLabel}
-          w="48px"
-          h="40px"
-          px={0}
-          py={2}
-          cursor="pointer"
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-          borderWidth={notesIsDone || notesIsLoading ? "2px" : "1px"}
-          borderColor={minimizedBorderColor}
-          boxShadow={
-            minimizedHighlight ||
-            (isLightTheme
-              ? "0 4px 10px rgba(117, 94, 66, 0.1)"
-              : "0 2px 8px rgba(0,0,0,0.3)")
+  const questionMenuSlot = useQuestionActionStore((state) => state.menuSlot);
+  const showFullNavigation = isFullNavigationSkillTreeMode(viewMode, pathMode);
+  const activityMenu = Boolean(questionMenuSlot) && !showFullNavigation;
+
+  const renderActivityMenu = (placement = "top-start") => (
+    <ActivityMenu
+      placement={placement}
+      label={currentMode.label || modeMenuLabel}
+      modesLabel={currentMode.label || modeMenuLabel}
+      modesIcon={<CurrentModeIcon size={20} />}
+      closeLabel={closeMenuLabel}
+      backLabel={backLabel}
+      items={[
+        ...(viewMode === "lesson"
+          ? [
+              {
+                id: "exitLesson",
+                label: exitLessonLabel,
+                icon: <ArrowBackIcon boxSize={5} />,
+                onClick: () => {
+                  playSound?.(selectSound);
+                  onNavigateToSkillTree?.();
+                },
+              },
+            ]
+          : []),
+        {
+          id: "settings",
+          label: settingsLabel,
+          icon: <SettingsIcon boxSize={5} />,
+          onClick: () => handleActionClick(onOpenSettings),
+        },
+        {
+          id: "teams",
+          label: tasksLabel,
+          icon: (
+            <ImmersionPracticeMenuIcon
+              progress={realWorldTasksTimerProgress}
+              hasNotification={realWorldTasksHasNotification}
+              attention={realWorldTasksAttention}
+              isLightTheme={isLightTheme}
+            />
+          ),
+          onClick: () => handleActionClick(onOpenTeams),
+        },
+        {
+          id: "help",
+          label: helpChatLabel,
+          icon: <MdOutlineSupportAgent size={20} />,
+          onClick: () => handleActionClick(onOpenHelpChat),
+          disabled: !onOpenHelpChat,
+        },
+        {
+          id: "notes",
+          label: notesLabel,
+          icon: notesIsDone ? (
+            <RiBookmarkFill size={20} />
+          ) : (
+            <RiBookmarkLine size={20} />
+          ),
+          buttonBg: notesIsDone ? "teal.400" : undefined,
+          buttonColor: notesIsDone ? "white" : undefined,
+          onClick: () => handleActionClick(onOpenNotes),
+        },
+      ]}
+      modes={PATH_MODES}
+      selectedMode={pathMode}
+      onSelectMode={(modeId) => {
+        playSound?.("modeSwitch");
+        if (viewMode !== "skillTree") {
+          onNavigateToSkillTree?.();
+          if (modeId !== pathMode) {
+            onPathModeChange?.(modeId);
           }
-          transition="all 0.3s ease"
-          animation={minimizedAnimation}
-          _hover={{ bg: "var(--app-glass-hover)" }}
-          sx={{
-            "@keyframes notesPulse": {
-              "0%": {
-                boxShadow:
-                  "0 0 0 2px rgba(34,211,238,0.35), 0 0 8px rgba(34,211,238,0.4)",
-              },
-              "50%": {
-                boxShadow:
-                  "0 0 0 3px rgba(34,211,238,0.5), 0 0 20px rgba(34,211,238,0.7)",
-              },
-              "100%": {
-                boxShadow:
-                  "0 0 0 2px rgba(34,211,238,0.35), 0 0 8px rgba(34,211,238,0.4)",
-              },
-            },
-            "@keyframes notesDone": {
-              "0%": {
-                boxShadow:
-                  "0 0 0 3px rgba(56,178,172,0.6), 0 0 20px rgba(56,178,172,0.8)",
-              },
-              "100%": {
-                boxShadow: isLightTheme
-                  ? "0 4px 10px rgba(117, 94, 66, 0.1)"
-                  : "0 2px 8px rgba(0,0,0,0.3)",
-                borderColor: "var(--app-border)",
-              },
-            },
-          }}
-        >
-          <ChevronUpIcon boxSize={4} color="gray.300" />
-        </Box>
-      </Box>
-    );
+        } else if (modeId === pathMode && modeId === "path") {
+          onScrollToLatest?.();
+        } else {
+          onPathModeChange?.(modeId);
+        }
+      }}
+      onOpen={() => playSound?.(selectSound)}
+      decoration={notesIsDone ? <NoteCaptureCrystalShards /> : null}
+      triggerIcon={
+        notesIsDone ? (
+          <RiBookmarkFill
+            size={20}
+            color="var(--chakra-colors-yellow-400, #D69E2E)"
+          />
+        ) : (
+          <PiDotsNineBold
+            size={22}
+            color={isLightTheme ? "#1f1912" : "var(--app-text-primary)"}
+          />
+        )
+      }
+      triggerProps={{
+        "aria-label": currentMode.label || modeMenuLabel,
+        color: notesIsDone
+          ? "var(--chakra-colors-yellow-400, #D69E2E)"
+          : isLightTheme
+            ? "#1f1912"
+            : "var(--app-text-primary)",
+        animation: notesIsDone
+          ? "activityMenuMemoryCatch 2760ms linear both"
+          : undefined,
+        sx: {
+          "@keyframes activityMenuMemoryCatch": {
+            "0%": { transform: "translateY(0) scale(1)" },
+            "36%": { transform: "translateY(-0.5px) scale(1.015)" },
+            "66%": { transform: "translateY(1px) scale(0.965)" },
+            "84%": { transform: "translateY(-2px) scale(1.075)" },
+            "100%": { transform: "translateY(0) scale(1)" },
+          },
+          "@media (prefers-reduced-motion: reduce)": {
+            animation: "none",
+          },
+        },
+      }}
+    />
+  );
+
+  if (activityMenu) {
+    return createPortal(renderActivityMenu("top-start"), questionMenuSlot);
+  }
+
+  if (!showFullNavigation) {
+    return null;
   }
 
   return (
-    <Box
-      position="fixed"
-      bottom={0}
-      left={0}
-      right={0}
-      zIndex={80}
-      width="100%"
-      maxW="480px"
-      margin="0 auto"
-      mb={3}
-      paddingLeft={2}
-      paddingRight={2}
-    >
-      <Box
-        borderRadius={APP_ACTION_BAR_RADIUS}
-        overflow="visible"
-        style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
-      >
-        <GlassContainer
-          borderRadius={APP_ACTION_BAR_RADIUS}
-          blur={0.5}
-          contrast={1.1}
-          brightness={1.05}
-          saturation={1.1}
-          zIndex={80}
-          displacementScale={0.2}
-          className="bottombar-glass"
-          elasticity={0.9}
-          shadowIntensity={isLightTheme ? 0.12 : 0.25}
-          allowLightModeGlass
-          fallbackBlur={isLightTheme ? "10px" : "2px"}
-          fallbackBg={
-            isLightTheme
-              ? "rgba(255, 252, 247, 0.58)"
-              : "var(--app-glass-bg-soft)"
-          }
-        >
-          <Box
-            py={2}
-            px={{ base: 3, md: 6 }}
-            width="100%"
-            paddingBottom={5}
-            paddingTop={3}
-            borderRadius={APP_ACTION_BAR_RADIUS}
-            style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
-          >
-            {/* Minimize caret above buttons */}
-            {shouldShowMinimizeControls && (
-              <Flex justify="center" mb={1}>
-                <Box
-                  as="button"
-                  touchAction="manipulation"
-                  onClick={() => {
-                    playSound?.(selectSound);
-                    setIsMinimized(true);
-                  }}
-                  bg="transparent"
-                  border="none"
-                  cursor="pointer"
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="center"
-                  px={4}
-                  py={0}
-                  _hover={{ opacity: 0.7 }}
-                  transition="opacity 0.2s"
-                >
-                  <ChevronDownIcon boxSize={5} color="gray.400" />
-                </Box>
-              </Flex>
-            )}
-            <Flex
-              as="nav"
-              maxW="560px"
-              mx="auto"
-              w="100%"
-              align="center"
-              justify={{ base: "space-between", md: "space-between" }}
-              flexWrap={{ base: "wrap", md: "wrap" }}
-              overflow="visible"
-              borderRadius={APP_ACTION_BAR_RADIUS}
-              style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
-            >
-              <Box position="relative" flexShrink={0}>
-                {realWorldTasksTimerProgress > 0 && (
-                  <Box
-                    as="svg"
-                    position="absolute"
-                    top="calc(50% + 2px)"
-                    left="50%"
-                    transform="translate(-50%, -50%)"
-                    width="44px"
-                    height="48px"
-                    viewBox="0 0 44 48"
-                    pointerEvents="none"
-                    aria-hidden="true"
-                    zIndex={1}
-                    overflow="visible"
-                  >
-                    <defs>
-                      <linearGradient
-                        id="immersionProgressGradient"
-                        x1="0%"
-                        y1="0%"
-                        x2="100%"
-                        y2="100%"
-                        gradientTransform="rotate(135 0.5 0.5)"
-                      >
-                        <stop offset="0%" stopColor="#14b8a6" />
-                        <stop offset="100%" stopColor="#06b6d4" />
-                      </linearGradient>
-                    </defs>
-                    <rect
-                      x="1.75"
-                      y="1.75"
-                      width="40.5"
-                      height="44.5"
-                      rx="17"
-                      ry="18"
-                      fill="none"
-                      stroke={
-                        isLightTheme
-                          ? "rgba(120, 94, 61, 0.18)"
-                          : "rgba(255,255,255,0.08)"
-                      }
-                      strokeWidth="3.5"
-                    />
-                    <rect
-                      x="1.75"
-                      y="1.75"
-                      width="40.5"
-                      height="44.5"
-                      rx="17"
-                      ry="18"
-                      fill="none"
-                      stroke="url(#immersionProgressGradient)"
-                      strokeWidth="3.5"
-                      strokeLinecap="round"
-                      pathLength="100"
-                      strokeDasharray="100"
-                      strokeDashoffset={100 - realWorldTasksTimerProgress}
-                      style={{
-                        transition: "stroke-dashoffset 0.8s ease",
-                      }}
-                    />
-                  </Box>
-                )}
-                <IconButton
-                  data-tutorial-id="teams"
-                  touchAction="manipulation"
-                  icon={<FiCompass size={16} />}
-                  onClick={() => handleActionClick(onOpenTeams)}
-                  aria-label={tasksLabel}
-                  size="sm"
-                  borderRadius="18px"
-                  style={bottomActionButtonStyle}
-                  borderWidth={realWorldTasksAttention ? "2px" : "0px"}
-                  borderColor={
-                    realWorldTasksAttention ? "teal.400" : "gray.700"
-                  }
-                  boxShadow={
-                    isLightTheme
-                      ? "0 4px 0 rgba(180, 164, 144, 0.9)"
-                      : "0 4px 0 #313a4b"
-                  }
-                  animation={
-                    realWorldTasksAttention
-                      ? "tasksAttentionPing 1.5s ease-out"
-                      : undefined
-                  }
-                  colorScheme="gray"
-                  bg="gray.800"
-                  color="gray.100"
-                  sx={{
-                    "@keyframes tasksAttentionPing": {
-                      "0%": {
-                        boxShadow:
-                          "0 0 0 3px rgba(20,184,166,0.6), 0 0 20px rgba(6,182,212,0.75)",
-                      },
-                      "100%": {
-                        boxShadow: isLightTheme
-                          ? "0 4px 0 rgba(180, 164, 144, 0.9)"
-                          : "0 4px 0 #313a4b",
-                        borderColor: "gray.700",
-                      },
-                    },
-                  }}
-                />
-                {realWorldTasksHasNotification && (
-                  <Box
-                    position="absolute"
-                    top="-4px"
-                    right="-4px"
-                    minW="16px"
-                    h="16px"
-                    px="4px"
-                    borderRadius="full"
-                    bgGradient="linear(135deg, #14b8a6 0%, #06b6d4 100%)"
-                    color="white"
-                    fontSize="10px"
-                    fontWeight="bold"
-                    lineHeight="16px"
-                    textAlign="center"
-                    boxShadow="0 0 0 2px var(--app-glass-bg-soft, rgba(0,0,0,0.6))"
-                    pointerEvents="none"
-                    aria-hidden="true"
-                  >
-                    !
-                  </Box>
-                )}
-              </Box>
-
-              <IconButton
-                data-tutorial-id="settings"
-                touchAction="manipulation"
-                icon={<SettingsIcon boxSize="14px" />}
-                color="gray.100"
-                onClick={() => handleActionClick(onOpenSettings)}
-                aria-label={settingsLabel}
-                size="sm"
-                borderRadius="18px"
-                style={bottomActionButtonStyle}
-                flexShrink={0}
-                colorScheme="gray"
-                bg="gray.800"
-                boxShadow={
-                  isLightTheme
-                    ? "0 4px 0 rgba(180, 164, 144, 0.9)"
-                    : "0 4px 0 #313a4b"
-                }
-              />
-
-              <Box position="relative" flexShrink={0} overflow="visible">
-                {notesIsDone && <NoteCaptureCrystalShards />}
-                <IconButton
-                  data-tutorial-id="notes"
-                  touchAction="manipulation"
-                  icon={
-                    notesIsDone ? (
-                      <RiBookmarkFill size={16} />
-                    ) : (
-                      <RiBookmarkLine size={16} />
-                    )
-                  }
-                  aria-label={notesLabel}
-                  onClick={() => handleActionClick(onOpenNotes)}
-                  isLoading={notesIsLoading}
-                  colorScheme="gray"
-                  bg={notesIsDone ? "teal.400" : "gray.800"}
-                  boxShadow={notesLedgeShadow}
-                  color={notesIsDone ? "white" : "gray.100"}
-                  size="sm"
-                  borderRadius="18px"
-                  style={bottomActionButtonStyle}
-                  position="relative"
-                  zIndex={50}
-                  transition="color 0.2s ease"
-                  animation={notesAnimation}
-                  sx={{
-                    "@keyframes notesPulse": {
-                      "0%": {
-                        boxShadow: `${notesLedgeShadow}, 0 0 0 2px rgba(34,211,238,0.35), 0 0 8px rgba(34,211,238,0.4)`,
-                      },
-                      "50%": {
-                        boxShadow: `${notesLedgeShadow}, 0 0 0 3px rgba(34,211,238,0.5), 0 0 20px rgba(34,211,238,0.7)`,
-                      },
-                      "100%": {
-                        boxShadow: `${notesLedgeShadow}, 0 0 0 2px rgba(34,211,238,0.35), 0 0 8px rgba(34,211,238,0.4)`,
-                      },
-                    },
-                    "@keyframes notesCrystalCatch": {
-                      "0%": {
-                        transform: "translateY(0) scale(1)",
-                        backgroundColor: "#38b2ac",
-                        animationTimingFunction:
-                          "cubic-bezier(0.45, 0, 0.55, 1)",
-                      },
-                      "36%": {
-                        transform: "translateY(-0.5px) scale(1.015)",
-                        backgroundColor: "#2dd4bf",
-                        animationTimingFunction:
-                          "cubic-bezier(0.45, 0, 0.55, 1)",
-                      },
-                      "66%": {
-                        transform: "translateY(1px) scale(0.965)",
-                        backgroundColor: "#14b8a6",
-                        animationTimingFunction:
-                          "cubic-bezier(0.16, 1, 0.3, 1)",
-                      },
-                      "84%": {
-                        transform: "translateY(-2px) scale(1.075)",
-                        backgroundColor: "#22d3ee",
-                        animationTimingFunction:
-                          "cubic-bezier(0.34, 1.18, 0.64, 1)",
-                      },
-                      "100%": {
-                        transform: "translateY(0) scale(1)",
-                        backgroundColor: "#38b2ac",
-                      },
-                    },
-                    "@media (prefers-reduced-motion: reduce)": {
-                      animation: "none",
-                    },
-                  }}
-                />
-              </Box>
-
-              <IconButton
-                data-tutorial-id="help"
-                touchAction="manipulation"
-                icon={<MdOutlineSupportAgent size={16} />}
-                onClick={() => handleActionClick(onOpenHelpChat)}
-                aria-label={helpChatLabel}
-                isDisabled={!onOpenHelpChat}
-                size="sm"
-                borderRadius="18px"
-                style={bottomActionButtonStyle}
-                bg="white"
-                color="blue"
-                boxShadow="0 4px 0 blue"
-                _hover={{
-                  bg: "rgba(255, 255, 255, 0.92)",
-                  color: "blue.500",
-                  boxShadow: "0 4px 0 rgba(255, 255, 255, 0.36)",
-                }}
-                _active={{
-                  bg: "rgba(255, 255, 255, 0.78)",
-                  color: "blue.600",
-                  boxShadow: "none",
-                  transform: "translateY(4px)",
-                }}
-                zIndex={50}
-                flexShrink={0}
-              />
-
-              {/* Path Mode Menu */}
-              <Menu placement="top-end" isLazy lazyBehavior="keepMounted">
-                <MenuButton
-                  data-tutorial-id="mode"
-                  touchAction="manipulation"
-                  as={IconButton}
-                  icon={<CurrentModeIcon size={16} />}
-                  aria-label={modeMenuLabel}
-                  size="sm"
-                  borderRadius="18px"
-                  style={bottomActionButtonStyle}
-                  flexShrink={0}
-                  onClick={() => playSound?.("modeSwitch")}
-                  bg={isLightTheme ? "#38b2ac" : undefined}
-                  colorScheme={isLightTheme ? undefined : "teal"}
-                  boxShadow={isLightTheme ? "0 4px 0 #237f7a" : undefined}
-                  color="white"
-                  _hover={
-                    isLightTheme
-                      ? {
-                          bg: "#44c7bf",
-                          boxShadow: "0 4px 0 #237f7a",
-                        }
-                      : undefined
-                  }
-                  _active={
-                    isLightTheme
-                      ? {
-                          bg: "#319795",
-                          boxShadow: "none",
-                          transform: "translateY(4px)",
-                        }
-                      : undefined
-                  }
-                />
-                <Portal>
-                  <MenuList
-                    bg={
-                      isLightTheme ? "var(--app-surface-elevated)" : "gray.800"
-                    }
-                    color={isLightTheme ? "var(--app-text-primary)" : "white"}
-                    borderColor="var(--app-border)"
-                    boxShadow="var(--app-shadow-soft)"
-                    minW="180px"
-                    zIndex="popover"
-                    mb={4}
-                  >
-                    {PATH_MODES.map((mode) => {
-                      const ModeIcon = mode.icon;
-                      const isSelected = pathMode === mode.id;
-                      return (
-                        <MenuItem
-                          key={mode.id}
-                          onClick={() => {
-                            playSound?.("modeSwitch");
-                            // If clicking the already-selected mode, navigate back to skill tree (if in a lesson) or scroll
-                            if (isSelected) {
-                              if (viewMode !== "skillTree") {
-                                onNavigateToSkillTree?.();
-                              } else if (mode.id === "path") {
-                                onScrollToLatest?.();
-                              }
-                            } else {
-                              onPathModeChange?.(mode.id);
-                            }
-                          }}
-                          bg={
-                            isLightTheme
-                              ? isSelected
-                                ? "var(--app-surface-muted)"
-                                : "transparent"
-                              : isSelected
-                                ? "whiteAlpha.100"
-                                : "transparent"
-                          }
-                          _hover={{
-                            bg: isLightTheme
-                              ? "var(--app-surface-muted)"
-                              : "whiteAlpha.200",
-                            color: isLightTheme
-                              ? "var(--app-text-primary)"
-                              : "white",
-                          }}
-                          _active={{
-                            bg: isLightTheme
-                              ? "var(--app-glass-bg-soft)"
-                              : "whiteAlpha.200",
-                            color: isLightTheme
-                              ? "var(--app-text-primary)"
-                              : "white",
-                          }}
-                          color={
-                            isLightTheme
-                              ? isSelected
-                                ? "var(--app-text-primary)"
-                                : "var(--app-text-secondary)"
-                              : "white"
-                          }
-                          icon={<ModeIcon size={18} />}
-                          fontWeight={isSelected ? "bold" : "normal"}
-                          p={6}
-                        >
-                          {mode.label}
-                        </MenuItem>
-                      );
-                    })}
-                  </MenuList>
-                </Portal>
-              </Menu>
-            </Flex>
-          </Box>
-        </GlassContainer>
-      </Box>
-    </Box>
+    <CompactActionBar dir={isRTL ? "rtl" : "ltr"}>
+      {renderActivityMenu("top")}
+    </CompactActionBar>
   );
 }

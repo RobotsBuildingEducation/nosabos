@@ -6,6 +6,7 @@ import {
 } from "../../constants/languages";
 import { callResponses } from "../../utils/llm";
 import { getAdultBeginnerToneRule } from "../../utils/adultBeginnerTone";
+import { splitDialogueSubtext } from "../../utils/dialogueFormatting";
 import {
   REVIEW_WORLD_ID,
   applyObjectCollisions,
@@ -458,11 +459,12 @@ function sanitizeDialogueLine(line, npcName) {
     .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
     .trim();
 
-  const noPrefix = escapedName
+  let text = escapedName
     ? raw.replace(new RegExp(`^${escapedName}\\s*:\\s*`, "i"), "")
     : raw;
 
-  return noPrefix.replace(/^"|"$/g, "").trim();
+  const { spokenText } = splitDialogueSubtext(text);
+  return (spokenText || text).replace(/^"|"$/g, "").trim();
 }
 
 // ─── Gather-quest item definitions per map theme ──────────────────────────

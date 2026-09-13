@@ -33,6 +33,7 @@ import {
   normalizePracticeLanguage,
   normalizeSupportLanguage,
 } from "../constants/languages";
+import { goalCopy } from "../utils/learningGoalCopy";
 
 const VOICE_PREVIEW_TEXT = {
   ar: "أهلا، سنتدرب معا.",
@@ -240,6 +241,8 @@ export default function VoicePreferenceField({
   voicePersona,
   targetLang,
   supportLang,
+  appLanguage,
+  isPersonaSaved,
   onVoiceChange,
   onVoicePersonaChange,
   onSelectSound,
@@ -256,6 +259,8 @@ export default function VoicePreferenceField({
 }) {
   const toast = useToast();
   const [isTestingVoice, setIsTestingVoice] = useState(false);
+  const [showPersonaSaved, setShowPersonaSaved] = useState(false);
+  const personaSavedTimerRef = useRef(null);
   const previewPlayerRef = useRef(null);
   const previewRequestIdRef = useRef(0);
   const previewTimeoutRef = useRef(null);
@@ -264,6 +269,23 @@ export default function VoicePreferenceField({
   const voiceMenuScrollTimeoutRef = useRef(null);
   const personaDraftRef = useRef(voicePersona || "");
   const mountedRef = useRef(true);
+
+  const personaLang = normalizeSupportLanguage(
+    appLanguage || supportLang,
+    DEFAULT_SUPPORT_LANGUAGE,
+  );
+  const savedPersonaLabel = goalCopy(personaLang).saved || "Saved";
+
+  const triggerPersonaSaved = useCallback(() => {
+    setShowPersonaSaved(true);
+    if (personaSavedTimerRef.current) {
+      clearTimeout(personaSavedTimerRef.current);
+    }
+    personaSavedTimerRef.current = setTimeout(() => {
+      setShowPersonaSaved(false);
+      personaSavedTimerRef.current = null;
+    }, 3000);
+  }, []);
 
   const selectedVoice = useMemo(() => getVoiceOption(voice), [getVoiceOption, voice]);
   const previewLanguage = useMemo(
@@ -373,6 +395,10 @@ export default function VoicePreferenceField({
     }
     return () => {
       mountedRef.current = false;
+      if (personaSavedTimerRef.current) {
+        clearTimeout(personaSavedTimerRef.current);
+        personaSavedTimerRef.current = null;
+      }
       clearVoiceMenuScrollTimeout();
       stopPreview();
     };
@@ -511,9 +537,21 @@ export default function VoicePreferenceField({
     (event) => {
       const next = event.target.value.slice(0, 240);
       personaDraftRef.current = next;
-      onVoicePersonaChange?.(next);
+      setShowPersonaSaved(false);
+      if (personaSavedTimerRef.current) {
+        clearTimeout(personaSavedTimerRef.current);
+        personaSavedTimerRef.current = null;
+      }
+      const result = onVoicePersonaChange?.(next);
+      if (result && typeof result.then === "function") {
+        void result.then(() => {
+          if (mountedRef.current && personaDraftRef.current === next) {
+            triggerPersonaSaved();
+          }
+        });
+      }
     },
-    [onVoicePersonaChange],
+    [onVoicePersonaChange, triggerPersonaSaved],
   );
 
   return (
@@ -667,6 +705,13 @@ export default function VoicePreferenceField({
             rows={3}
             resize="vertical"
           />
+          <Box textAlign="right" minH="18px" mt={1}>
+            {(isPersonaSaved || showPersonaSaved) && (
+              <Text fontSize="xs" color="gray.400" role="status">
+                {savedPersonaLabel}
+              </Text>
+            )}
+          </Box>
         </Box>
       </VStack>
     </Box>

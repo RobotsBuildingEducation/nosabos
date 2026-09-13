@@ -1,3 +1,4 @@
+import ActivityActionRow from "./ActivityActionRow";
 // components/LessonFlashcard.jsx
 // Inline flashcard question UI for Vocabulary/Grammar modules.
 // AI-generates a card from the lesson context. Collected cards form a
@@ -7,6 +8,7 @@ import {
   Box,
   VStack,
   HStack,
+  Stack,
   Text,
   Input,
   Button,
@@ -15,6 +17,8 @@ import {
   useToast,
   Spinner,
 } from "@chakra-ui/react";
+import QuestionActionArea from "./QuestionActionArea";
+import FeedbackRail from "./FeedbackRail";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   RiCheckLine,
@@ -50,7 +54,7 @@ import {
 } from "../utils/softStopButton";
 import { submitActionSound, deliciousSound, clickSound } from "../constants/sounds";
 import RandomCharacter from "./RandomCharacter";
-import VoiceOrb from "./VoiceOrb";
+import AnimatedEllipsis from "./AnimatedEllipsis";
 import { useThemeStore } from "../useThemeStore";
 import {
   getLanguageDirection,
@@ -159,7 +163,7 @@ const FLASHCARD_UI = {
     tap_to_flip: "Toca para voltear",
     answer_label: "Respuesta",
     type_placeholder: "Escribe tu traducción...",
-    submit: "Enviar",
+    submit: "Comprobar",
     record: "Grabar respuesta",
     stop_recording: "Detener",
     grading: "Verificando...",
@@ -599,6 +603,7 @@ export default function LessonFlashcard({
   onNext, // () => void — proceed to next question
   onSkip, // () => void
   // deck
+  lessonProgress = null,
   deckSize = 0, // how many cards collected so far
   onOpenDeck, // () => void — open the review deck overlay
   // UI lang
@@ -697,11 +702,11 @@ export default function LessonFlashcard({
       }
       setIsCorrect(isYes);
       setXpAwarded(xp);
+      if (isYes) await onCorrect?.(xp);
       setShowResult(true);
       playSound(isYes ? deliciousSound : clickSound);
 
       if (isYes) {
-        onCorrect?.(xp);
         // Auto-collect to deck
         if (!collected) {
           setCollected(true);
@@ -1001,15 +1006,10 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
             position="relative"
             zIndex={1}
           >
-            <VoiceOrb
-              state={
-                ["idle", "listening", "speaking"][Math.floor(Math.random() * 3)]
-              }
-              size={32}
+            <AnimatedEllipsis
+              color={isLightTheme ? "black" : "white"}
+              ariaLabel={t("generating") || "Generating..."}
             />
-            <Text color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"} fontSize="sm">
-              {t("generating")}
-            </Text>
           </VStack>
         </Box>
         {deckDisplay}
@@ -1225,20 +1225,10 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                     minH="140px"
                     justify="center"
                   >
-                    <VoiceOrb
-                      state={
-                        ["idle", "listening", "speaking"][
-                          Math.floor(Math.random() * 3)
-                        ]
-                      }
-                      size={32}
+                    <AnimatedEllipsis
+                      color={isLightTheme ? "black" : "white"}
+                      ariaLabel={t("grading") || "Grading..."}
                     />
-                    <Text
-                      color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.700"}
-                      fontSize="sm"
-                    >
-                      {t("grading")}
-                    </Text>
                   </VStack>
                 ) : (
                   <VStack spacing={2} w="100%">
@@ -1303,40 +1293,30 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                       </Box>
                     )}
 
-                    {/* Text Input and Submit Group */}
-                    <VStack spacing={3} w="100%" mt={6}>
-                      <Input
-                        value={textAnswer}
-                        onChange={(e) => setTextAnswer(e.target.value)}
-                        onKeyPress={handleKeyPress}
-                        placeholder={t("type_placeholder")}
-                        size="sm"
-                        fontSize="14px"
-                        dir={answerTextProps.dir}
-                        lang={answerTextProps.lang}
-                        textAlign={answerTextProps.textAlign}
-                        bg={APP_SURFACE}
-                        border="1px solid"
-                        borderColor={APP_BORDER}
-                        color={APP_TEXT_PRIMARY}
-                        _placeholder={{ color: APP_TEXT_MUTED }}
-                        _focus={{
-                          borderColor: "blue.300",
-                          boxShadow: "0 0 0 1px #3B82F6",
-                        }}
-                        sx={answerTextProps.sx}
-                      />
-
-                      {/* Virtual keyboard */}
-                      {hasVirtualKeyboard && showKeyboard && (
-                        <VirtualKeyboard
-                          lang={targetLang}
-                          onKeyPress={handleKeyboardInput}
-                          onClose={() => setShowKeyboard(false)}
-                        />
-                      )}
-
+                    {/* Text Input */}
+                    <VStack spacing={3} w="100%" mt={4}>
                       <HStack spacing={2} w="100%">
+                        <Input
+                          value={textAnswer}
+                          onChange={(e) => setTextAnswer(e.target.value)}
+                          onKeyPress={handleKeyPress}
+                          placeholder={t("type_placeholder")}
+                          size="md"
+                          fontSize="14px"
+                          dir={answerTextProps.dir}
+                          lang={answerTextProps.lang}
+                          textAlign={answerTextProps.textAlign}
+                          bg={APP_SURFACE}
+                          border="1px solid"
+                          borderColor={APP_BORDER}
+                          color={APP_TEXT_PRIMARY}
+                          _placeholder={{ color: APP_TEXT_MUTED }}
+                          _focus={{
+                            borderColor: "blue.300",
+                            boxShadow: "0 0 0 1px #3B82F6",
+                          }}
+                          sx={answerTextProps.sx}
+                        />
                         {hasVirtualKeyboard && (
                           <IconButton
                             aria-label={
@@ -1356,199 +1336,101 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                             flexShrink={0}
                           />
                         )}
-                        <Button
-                          flex={1}
-                          size="md"
-                          colorScheme="blue"
-                          color="white"
-                          onClick={handleTextSubmit}
-                          isDisabled={!textAnswer.trim()}
-                          leftIcon={<RiKeyboardLine size={14} />}
-                          _hover={{ bg: "blue.600" }}
-                          _active={{ bg: "blue.700" }}
-                        >
-                          {t("submit")}
-                        </Button>
                       </HStack>
-                    </VStack>
 
-                    {/* Skip button */}
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      color={APP_TEXT_MUTED}
-                      onClick={handleAdvance}
-                      _hover={{ bg: APP_SURFACE_MUTED }}
-                      mt={8}
-                      w="100%"
-                      py={5}
-                    >
-                      {t("skip")}
-                    </Button>
+                      {/* Virtual keyboard */}
+                      {hasVirtualKeyboard && showKeyboard && (
+                        <VirtualKeyboard
+                          lang={targetLang}
+                          onKeyPress={handleKeyboardInput}
+                          onClose={() => setShowKeyboard(false)}
+                        />
+                      )}
+                    </VStack>
                   </VStack>
                 )}
               </VStack>
             )}
-
-            {/* Result */}
-            {showResult && (
-              <AnimatePresence>
-                <MotionBox
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <VStack
-                    spacing={2}
-                    p={3}
-                    borderRadius="xl"
-                    borderWidth="2px"
-                    {...getQuestionFeedbackPanelProps({ ok: isCorrect })}
-                  >
-                    <HStack spacing={2} w="100%">
-                      {isCorrect ? (
-                        <RiCheckLine
-                          size={24}
-                          color={questionFeedbackAccent.ok}
-                        />
-                      ) : (
-                        <RiCloseLine
-                          size={24}
-                          color={questionFeedbackAccent.error}
-                        />
-                      )}
-                      <Text
-                        fontSize="lg"
-                        fontWeight="bold"
-                        color={questionToneText.primary}
-                        flex="1"
-                      >
-                        {isCorrect ? t("correct") : t("incorrect")}
-                      </Text>
-                    </HStack>
-
-                    {isCorrect ? (
-                      <>
-                        <HStack spacing={2} color={questionToneText.secondary}>
-                          <RiStarLine size={16} />
-                          <Text fontSize="md" fontWeight="bold">
-                            +{xpAwarded} XP
-                          </Text>
-                        </HStack>
-
-                        {/* Next */}
-                        <Button
-                          size="sm"
-                          colorScheme="blue"
-                          variant="solid"
-                          onClick={handleNextQuestion}
-                        >
-                          {t("next")}
-                        </Button>
-                      </>
-                    ) : (
-                      <VStack w="100%" spacing={2} mt={1}>
-                        <Button
-                          size="sm"
-                          colorScheme="blue"
-                          onClick={handleTryAgain}
-                        >
-                          {t("try_again")}
-                        </Button>
-
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          bg={APP_SURFACE_ELEVATED}
-                          color={APP_TEXT_PRIMARY}
-                          borderColor={APP_BORDER_STRONG}
-                          _hover={{ bg: APP_SURFACE_MUTED }}
-                          onClick={handleExplainAnswer}
-                          isDisabled={
-                            isLoadingExplanation ||
-                            !!explanationText ||
-                            isGrading
-                          }
-                          leftIcon={
-                            isLoadingExplanation ? (
-                              <VoiceOrb
-                                state={
-                                  ["idle", "listening", "speaking"][
-                                    Math.floor(Math.random() * 3)
-                                  ]
-                                }
-                                size={16}
-                              />
-                            ) : (
-                              <FiHelpCircle size={14} />
-                            )
-                          }
-                        >
-                          {t("explain")}
-                        </Button>
-                      </VStack>
-                    )}
-
-                    {!isCorrect && explanationText && (
-                      <Box
-                        w="100%"
-                        p={3}
-                        borderRadius="md"
-                        style={questionSquircleStyle}
-                        bg={APP_SURFACE_ELEVATED}
-                        border="1px solid"
-                        borderColor={APP_BORDER}
-                        boxShadow={APP_SHADOW}
-                      >
-                        <Text
-                          fontSize="sm"
-                          fontWeight="semibold"
-                          color={questionToneText.primary}
-                          mb={2}
-                          display="flex"
-                          alignItems="center"
-                          gap={2}
-                        >
-                          <RiEyeLine />
-                          {t("explanation_heading")}
-                        </Text>
-                        <Box
-                          color={questionToneText.primary}
-                          fontSize="sm"
-                          lineHeight="1.6"
-                          sx={{
-                            "& p": { mb: 2, unicodeBidi: "plaintext" },
-                            "& p:last-child": { mb: 0 },
-                            "& strong": {
-                              fontWeight: "bold",
-                              color: "var(--question-tool-accent)",
-                            },
-                            "& em": { fontStyle: "italic" },
-                            "& ul, & ol": { pl: 4, mb: 2 },
-                            "& li": { mb: 1, unicodeBidi: "plaintext" },
-                            "& code": {
-                              bg: "rgba(0,0,0,0.3)",
-                              px: 1,
-                              py: 0.5,
-                              borderRadius: "sm",
-                              fontFamily: "mono",
-                            },
-                          }}
-                        >
-                          <ReactMarkdown>{explanationText}</ReactMarkdown>
-                        </Box>
-                      </Box>
-                    )}
-                  </VStack>
-                  <Box mt="-2" paddingBottom={6}>
-                    <RandomCharacter />
-                  </Box>
-                </MotionBox>
-              </AnimatePresence>
-            )}
           </VStack>
         </Box>
       </Box>
+
+      {/* Persistent Question Action Area */}
+      <QuestionActionArea
+        feedback={showResult ? isCorrect : null}
+        actions={
+          !showResult ? (
+            <ActivityActionRow
+              primary={
+                <Button
+                  colorScheme="blue"
+                  onClick={handleTextSubmit}
+                  isDisabled={!textAnswer.trim() || isGrading}
+                  isLoading={isGrading}
+                  loadingText={t("grading")}
+                  leftIcon={<RiKeyboardLine size={16} />}
+                  px={{ base: 6, md: 8 }}
+                >
+                  {t("submit")}
+                </Button>
+              }
+            >
+              {onSkip && (
+                <Button
+                  variant="ghost"
+                  onClick={handleAdvance}
+                  color={APP_TEXT_PRIMARY}
+                  _hover={{ bg: APP_SURFACE_MUTED }}
+                  px={{ base: 4, md: 6 }}
+                >
+                  {t("skip")}
+                </Button>
+              )}
+            </ActivityActionRow>
+          ) : !isCorrect ? (
+            <ActivityActionRow
+              primary={
+                <Button
+                  colorScheme="blue"
+                  onClick={handleTryAgain}
+                  px={{ base: 6, md: 8 }}
+                >
+                  {t("try_again")}
+                </Button>
+              }
+            >
+              {onSkip && (
+                <Button
+                  variant="ghost"
+                  onClick={handleAdvance}
+                  color={APP_TEXT_PRIMARY}
+                  _hover={{ bg: APP_SURFACE_MUTED }}
+                  px={{ base: 4, md: 6 }}
+                >
+                  {t("skip")}
+                </Button>
+              )}
+            </ActivityActionRow>
+          ) : null
+        }
+      >
+        {showResult && (
+          <FeedbackRail
+            compact
+            lessonProgress={lessonProgress}
+            ok={isCorrect}
+            xp={xpAwarded}
+            showNext={isCorrect}
+            onNext={handleNextQuestion}
+            nextLabel={t("next")}
+            t={(k) => (k === "flashcard_explain_answer" ? t("explain") : t(k)) || k}
+            userLanguage={userLanguage}
+            onExplainAnswer={!isCorrect ? handleExplainAnswer : undefined}
+            explanationText={explanationText}
+            isLoadingExplanation={isLoadingExplanation}
+          />
+        )}
+      </QuestionActionArea>
     </VStack>
   );
 }

@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  buildPlateCelebrationKey,
   readAccountScopedJson,
   removeAccountScopedValue,
   shouldUseFixedFirstQuest,
@@ -106,5 +107,28 @@ test("an unused account with the old flag-only cache bug is repaired as a first 
       "2026-07-24",
     ),
     false,
+  );
+});
+
+test("buildPlateCelebrationKey generates consistent deduplication keys", () => {
+  assert.equal(
+    buildPlateCelebrationKey("es", "2026-09-09", "review"),
+    "es:2026-09-09:review",
+  );
+  assert.equal(
+    buildPlateCelebrationKey("es", "2026-09-09", "repair", { count: 2, target: 3 }),
+    "es:2026-09-09:repair:2",
+  );
+  assert.equal(
+    buildPlateCelebrationKey("", "2026-09-09", "review"),
+    "",
+  );
+  assert.equal(
+    buildPlateCelebrationKey("es", "", "review"),
+    "",
+  );
+  assert.equal(
+    buildPlateCelebrationKey("es", "2026-09-09", ""),
+    "",
   );
 });

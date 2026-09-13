@@ -31,7 +31,7 @@ export const WORD_NEIGHBORHOODS_COPY = Object.freeze({
     helpRequest:
       "Ayúdame a entender cómo se relacionan estas palabras con cada grupo sin darme la clasificación exacta: {groups}",
     skip: "Saltar",
-    submit: "Enviar",
+    submit: "Comprobar",
     checking: "Comprobando…",
     tryAgain: "Intentar de nuevo",
     nextQuestion: "Siguiente pregunta",

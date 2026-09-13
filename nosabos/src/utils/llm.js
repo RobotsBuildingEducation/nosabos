@@ -45,6 +45,7 @@ export async function callResponses({
   responseSchema = null,
   responseSchemaName = "structured_response",
   skipGemini = false,
+  onChunk = null,
 }) {
   if (simplemodel && !skipGemini) {
     try {
@@ -59,7 +60,9 @@ export async function callResponses({
 
       let aggregated = "";
       for await (const chunk of resp.stream) {
-        aggregated += textFromChunk(chunk);
+        const piece = textFromChunk(chunk);
+        aggregated += piece;
+        onChunk?.(aggregated, piece);
       }
 
       const finalResp = await resp.response;
