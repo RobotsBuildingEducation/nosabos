@@ -397,9 +397,6 @@ export default function RepeatWhatYouHear({
   return (
     <SortableArea onDragEnd={handleDragEnd}>
       <VStack align="stretch" spacing={4}>
-        <Text fontSize="xl" fontWeight="bold" color={APP_TEXT_PRIMARY}>
-          {headingLabel}
-        </Text>
         <Box
           bg={APP_SURFACE_ELEVATED}
           borderRadius="lg"
@@ -410,7 +407,38 @@ export default function RepeatWhatYouHear({
           boxShadow={APP_SHADOW}
         >
           <VStack align="stretch" spacing={5}>
-            {/* Audio speaker and assistant controls centered above the answer box */}
+            {/* Title row with assistant button */}
+            <HStack justify="space-between" align="center">
+              <Text fontSize="xl" fontWeight="bold" color={APP_TEXT_PRIMARY}>
+                {headingLabel}
+              </Text>
+              {onAskAssistant && (
+                <IconButton
+                  aria-label={
+                    userLanguage === "ja"
+                      ? "アシスタントに聞く"
+                      : userLanguage === "zh"
+                        ? "询问助手"
+                        : userLanguage === "ar"
+                          ? "اسأل المساعد"
+                        : userLanguage === "pt"
+                      ? "Pedir ajuda"
+                      : userLanguage === "es"
+                        ? "Pedir ajuda"
+                        : "Ask the assistant"
+                  }
+                  icon={<MdOutlineSupportAgent />}
+                  size="sm"
+                  fontSize="lg"
+                  rounded="xl"
+                  onClick={handleSendHelp}
+                  isDisabled={isLoadingAssistantSupport}
+                  {...getQuestionToolButtonProps({ active: isAssistantOpen })}
+                />
+              )}
+            </HStack>
+
+            {/* Audio speaker control centered above the answer box */}
             <HStack justify="center" spacing={4} py={2}>
               <IconButton
                 aria-label={
@@ -437,30 +465,6 @@ export default function RepeatWhatYouHear({
                   active: isSynthesizing,
                 })}
               />
-              {onAskAssistant && (
-                <IconButton
-                  aria-label={
-                    userLanguage === "ja"
-                      ? "アシスタントに聞く"
-                      : userLanguage === "zh"
-                        ? "询问助手"
-                        : userLanguage === "ar"
-                          ? "اسأل المساعد"
-                        : userLanguage === "pt"
-                      ? "Pedir ajuda"
-                      : userLanguage === "es"
-                      ? "Pedir ayuda"
-                      : "Ask the assistant"
-                  }
-                  icon={<MdOutlineSupportAgent />}
-                  size="md"
-                  fontSize="xl"
-                  rounded="xl"
-                  onClick={handleSendHelp}
-                  isDisabled={isLoadingAssistantSupport}
-                  {...getQuestionToolButtonProps({ active: isAssistantOpen })}
-                />
-              )}
             </HStack>
 
             <SortableList

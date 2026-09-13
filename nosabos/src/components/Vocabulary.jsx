@@ -4771,7 +4771,6 @@ Return JSON ONLY:
         rounded="xl"
         onClick={() => copyAll(q, h, tr)}
         isDisabled={isLoadingAssistantSupport}
-        mr={1}
         {...getQuestionToolButtonProps({ active: isAssistantOpen })}
       />
     );
@@ -5391,9 +5390,6 @@ Return JSON ONLY:
         {/* ---- FILL UI ---- */}
         {mode === "fill" && (qFill || loadingQFill) ? (
           <VStack align="stretch" spacing={4}>
-            <Text fontSize="xl" fontWeight="bold" color={APP_TEXT_PRIMARY}>
-              {t("vocab_btn_fill")}
-            </Text>
             <Box
               bg={APP_SURFACE_ELEVATED}
               borderRadius="lg"
@@ -5405,12 +5401,17 @@ Return JSON ONLY:
               boxShadow={APP_SHADOW}
             >
               <VStack align="stretch" spacing={3}>
-                <HStack align="start" spacing={2}>
+                <HStack justify="space-between" align="center">
+                  <Text fontSize="xl" fontWeight="bold" color={APP_TEXT_PRIMARY}>
+                    {t("vocab_btn_fill")}
+                  </Text>
                   <CopyAllBtn
                     q={qFill}
                     h={hFill}
                     tr={showTRFill ? trFill : ""}
                   />
+                </HStack>
+                <HStack align="start" spacing={2}>
                   <IconButton
                     aria-label={questionListenLabel}
                     icon={renderSpeakerIcon(isQuestionSynthesizing)}
@@ -5536,14 +5537,6 @@ Return JSON ONLY:
         {/* ---- MC UI ---- */}
         {mode === "mc" && (qMC || loadingQMC) ? (
           <>
-            <Text
-              fontSize="xl"
-              fontWeight="bold"
-              color={APP_TEXT_PRIMARY}
-              mb={2}
-            >
-              {t("vocab_mc_instruction")}
-            </Text>
             {mcLayout === "drag" ? (
               <SortableArea onDragEnd={handleMcDragEnd}>
                 <VStack align="stretch" spacing={3}>
@@ -5558,8 +5551,17 @@ Return JSON ONLY:
                     boxShadow={APP_SHADOW}
                   >
                     <VStack align="stretch" spacing={3}>
-                      <HStack align="start" spacing={2}>
+                      <HStack justify="space-between" align="center">
+                        <Text
+                          fontSize="xl"
+                          fontWeight="bold"
+                          color={APP_TEXT_PRIMARY}
+                        >
+                          {t("vocab_mc_instruction")}
+                        </Text>
                         <CopyAllBtn q={qMC} h={hMC} tr={showTRMC ? trMC : ""} />
+                      </HStack>
+                      <HStack align="start" spacing={2}>
                         <IconButton
                           aria-label={questionListenLabel}
                           icon={renderSpeakerIcon(isQuestionSynthesizing)}
@@ -5657,8 +5659,17 @@ Return JSON ONLY:
                   boxShadow={APP_SHADOW}
                 >
                   <VStack align="stretch" spacing={3}>
-                    <HStack align="start" spacing={2}>
+                    <HStack justify="space-between" align="center">
+                      <Text
+                        fontSize="xl"
+                        fontWeight="bold"
+                        color={APP_TEXT_PRIMARY}
+                      >
+                        {t("vocab_mc_instruction")}
+                      </Text>
                       <CopyAllBtn q={qMC} h={hMC} tr={showTRMC ? trMC : ""} />
+                    </HStack>
+                    <HStack align="start" spacing={2}>
                       <IconButton
                         aria-label={questionListenLabel}
                         icon={renderSpeakerIcon(isQuestionSynthesizing)}
@@ -5805,14 +5816,6 @@ Return JSON ONLY:
         {/* ---- MA UI ---- */}
         {mode === "ma" && (qMA || loadingQMA) ? (
           <>
-            <Text
-              fontSize="xl"
-              fontWeight="bold"
-              color={APP_TEXT_PRIMARY}
-              mb={2}
-            >
-              {t("vocab_ma_instruction")}
-            </Text>
             {maLayout === "drag" ? (
               <SortableArea onDragEnd={handleMaDragEnd}>
                 <VStack align="stretch" spacing={3}>
@@ -5827,8 +5830,17 @@ Return JSON ONLY:
                     boxShadow={APP_SHADOW}
                   >
                     <VStack align="stretch" spacing={3}>
-                      <HStack align="start" spacing={2}>
+                      <HStack justify="space-between" align="center">
+                        <Text
+                          fontSize="xl"
+                          fontWeight="bold"
+                          color={APP_TEXT_PRIMARY}
+                        >
+                          {t("vocab_ma_instruction")}
+                        </Text>
                         <CopyAllBtn q={qMA} h={hMA} tr={showTRMA ? trMA : ""} />
+                      </HStack>
+                      <HStack align="start" spacing={2}>
                         <IconButton
                           aria-label={questionListenLabel}
                           icon={renderSpeakerIcon(isQuestionSynthesizing)}
@@ -5926,8 +5938,17 @@ Return JSON ONLY:
                   boxShadow={APP_SHADOW}
                 >
                   <VStack align="stretch" spacing={3}>
-                    <HStack align="start" spacing={2}>
+                    <HStack justify="space-between" align="center">
+                      <Text
+                        fontSize="xl"
+                        fontWeight="bold"
+                        color={APP_TEXT_PRIMARY}
+                      >
+                        {t("vocab_ma_instruction")}
+                      </Text>
                       <CopyAllBtn q={qMA} h={hMA} tr={showTRMA ? trMA : ""} />
+                    </HStack>
+                    <HStack align="start" spacing={2}>
                       <IconButton
                         aria-label={questionListenLabel}
                         icon={renderSpeakerIcon(isQuestionSynthesizing)}
@@ -6087,73 +6108,91 @@ Return JSON ONLY:
         {/* ---- SPEAK UI ---- */}
         {mode === "speak" && (sTarget || loadingQSpeak) ? (
           <>
-            <HStack justify="space-between" align="center" mb={2}>
-              <Text
-                fontSize="xl"
-                fontWeight="bold"
-                color={APP_TEXT_PRIMARY}
-                mb={0}
-              >
-                {t("vocab_say_it_aloud")}
-              </Text>
-              {!isFinalQuiz && (sVariant === "translate" || sVariant === "complete") ? (
-                <IconButton
-                  aria-label={t("vocab_ask_assistant")}
-                  icon={<MdOutlineSupportAgent />}
-                  size="sm"
-                  fontSize="lg"
-                  rounded="xl"
-                  onClick={sendSpeakHelp}
-                  isDisabled={isLoadingAssistantSupport}
-                  {...getQuestionToolButtonProps({ active: isAssistantOpen })}
-                />
-              ) : null}
-            </HStack>
             {loadingQSpeak ? (
-              <Box textAlign="center" py={12}>
-                <VoiceOrb />
-                <Text mt={4} fontSize="sm" opacity={0.7}>
-                  {t("history_generating_question")}
-                </Text>
-              </Box>
-            ) : (
-              <>
-                <Box
-                  border={`1px solid ${APP_BORDER}`}
-                  rounded="xl"
-                  style={questionSquircleStyle}
-                  p={6}
-                  textAlign="center"
-                  bg={APP_SURFACE_ELEVATED}
-                  color={APP_TEXT_PRIMARY}
-                  position="relative"
-                  boxShadow={APP_SHADOW}
-                >
-                  <IconButton
-                    aria-label={speakListenLabel}
-                    icon={renderSpeakerIcon(isSpeakSynthesizing)}
-                    size="sm"
-                    position="absolute"
-                    top="3"
-                    right="3"
-                    onPointerDown={primeTTSGesture}
-                    onTouchStart={primeTTSGesture}
-                    onClick={handleToggleSpeakPlayback}
-                    isDisabled={!sTarget}
-                    {...getQuestionToolButtonProps({
-                      active: isSpeakSynthesizing,
-                    })}
-                  />
-
+              <Box
+                border={`1px solid ${APP_BORDER}`}
+                rounded="xl"
+                style={questionSquircleStyle}
+                p={6}
+                bg={APP_SURFACE_ELEVATED}
+                color={APP_TEXT_PRIMARY}
+                boxShadow={APP_SHADOW}
+              >
+                <HStack justify="space-between" align="center" mb={4}>
                   <Text
-                    fontSize="3xl"
-                    fontWeight="700"
-                    {...targetTextCenterProps}
+                    fontSize="xl"
+                    fontWeight="bold"
+                    color={APP_TEXT_PRIMARY}
+                    mb={0}
                   >
-                    {sTarget || sStimulus || "…"}
+                    {t("vocab_say_it_aloud")}
+                  </Text>
+                </HStack>
+                <Box textAlign="center" py={8}>
+                  <VoiceOrb />
+                  <Text mt={4} fontSize="sm" opacity={0.7}>
+                    {t("history_generating_question")}
                   </Text>
                 </Box>
-              </>
+              </Box>
+            ) : (
+              <Box
+                border={`1px solid ${APP_BORDER}`}
+                rounded="xl"
+                style={questionSquircleStyle}
+                p={6}
+                bg={APP_SURFACE_ELEVATED}
+                color={APP_TEXT_PRIMARY}
+                boxShadow={APP_SHADOW}
+              >
+                <HStack justify="space-between" align="center" mb={4}>
+                  <Text
+                    fontSize="xl"
+                    fontWeight="bold"
+                    color={APP_TEXT_PRIMARY}
+                    mb={0}
+                  >
+                    {t("vocab_say_it_aloud")}
+                  </Text>
+                  <HStack spacing={2}>
+                    <IconButton
+                      aria-label={speakListenLabel}
+                      icon={renderSpeakerIcon(isSpeakSynthesizing)}
+                      size="sm"
+                      fontSize="lg"
+                      onPointerDown={primeTTSGesture}
+                      onTouchStart={primeTTSGesture}
+                      onClick={handleToggleSpeakPlayback}
+                      isDisabled={!sTarget}
+                      {...getQuestionToolButtonProps({
+                        active: isSpeakSynthesizing,
+                      })}
+                    />
+                    {!isFinalQuiz && (sVariant === "translate" || sVariant === "complete") ? (
+                      <IconButton
+                        aria-label={t("vocab_ask_assistant")}
+                        icon={<MdOutlineSupportAgent />}
+                        size="sm"
+                        fontSize="lg"
+                        rounded="xl"
+                        onClick={sendSpeakHelp}
+                        isDisabled={isLoadingAssistantSupport}
+                        {...getQuestionToolButtonProps({ active: isAssistantOpen })}
+                      />
+                    ) : null}
+                  </HStack>
+                </HStack>
+
+                <Text
+                  textAlign="center"
+                  fontSize="3xl"
+                  fontWeight="700"
+                  py={2}
+                  {...targetTextCenterProps}
+                >
+                  {sTarget || sStimulus || "…"}
+                </Text>
+              </Box>
             )}
 
             <QuestionActionArea

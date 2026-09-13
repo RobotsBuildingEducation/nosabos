@@ -26,6 +26,14 @@ on a test learner account with the live speech/model services, verifying fresh
 content, transcription, TTS, and supportive difficulty. Native voice sessions
 were not exercised by this fixture.
 
+Open `/action-bar.html` for the production compact and activity footers in
+separate portals under React Strict Mode. **Run transition checks** records
+rendered dimensions on every animation frame and verifies expansion,
+contraction, feedback height, loading replacements, and mid-spring reversal.
+It also checks that only one surface is visible, the bar stays centered, and
+controls retain their width. Run at desktop and phone widths; add `?theme=dark`
+for dark glass. Frame measurements are available below the results.
+
 Open `/?onboarding` for the real two-step onboarding UI with a local save
 callback. `runOnboardingBrowserChecks` verifies step order, progress, draft
 preservation, and the completion payload. Use `&lang=es&theme=dark` for a

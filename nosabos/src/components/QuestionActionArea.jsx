@@ -2,25 +2,19 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Box, VStack } from "@chakra-ui/react";
 import useQuestionActionStore from "../hooks/useQuestionActionStore";
+import useActionBarDimensions from "../hooks/useActionBarDimensions";
 import { APP_ACTION_BAR_RADIUS, APP_SQUIRCLE_SHAPE } from "../theme";
 import GlassContainer from "./GlassContainer";
 import { useThemeStore } from "../useThemeStore";
 import {
   AnimatePresence,
-  animate,
   motion,
-  motionValue,
   useAnimationControls,
   useIsPresent,
   useReducedMotion,
 } from "framer-motion";
 
 const MotionBox = motion.create(Box);
-
-// Activity owners are replaced by question generation, module changes, and the
-// loading fallback. The visible surface must keep its current height across
-// those component lifetimes; only the owner may animate this shared value.
-const surfaceHeight = motionValue(66);
 
 function ActionAreaContent({ children, actions, feedback, reduceMotion }) {
   const isPresent = useIsPresent();
@@ -150,13 +144,12 @@ export default function QuestionActionArea({
         ? viewport.offsetTop + viewport.height
         : window.innerHeight;
       const keyboardInset = Math.max(0, window.innerHeight - viewportBottom);
-      const navBounds = navigation?.getBoundingClientRect();
-      const navInset =
-        navBounds?.height && !panel.contains(navigation)
-          ? Math.max(0, window.innerHeight - navBounds.top) + 8
-          : 0;
-      const bottom = Math.max(keyboardInset, navInset);
+      const bottom = keyboardInset;
       const panelBounds = panel.getBoundingClientRect();
+      const panelStyle = getComputedStyle(panel);
+      // Measure the full destination independently of the animating surface.
+      const width = panel.clientWidth -
+        parseFloat(panelStyle.paddingLeft) - parseFloat(panelStyle.paddingRight);
       const height = panelBounds.height;
       const contentHeight = (contentRef.current?.offsetHeight || 64) + 2;
       const occupiedHeight = Math.max(0, window.innerHeight - panelBounds.top);
@@ -176,6 +169,7 @@ export default function QuestionActionArea({
         visible,
         bottom,
         height,
+        width,
         contentHeight,
         // Include the occupied area below the panel only when content exceeds
         // the available screen space above the panel. If all content comfortably
@@ -248,14 +242,6 @@ export default function QuestionActionArea({
       mutations.disconnect();
       visibilityChanges.disconnect();
       setActive(id, false);
-      // Allow the next activity/fallback to register in the same commit before
-      // resetting a surface that has genuinely left the activity experience.
-      requestAnimationFrame(() => {
-        if (!useQuestionActionStore.getState().ownerId) {
-          surfaceHeight.stop();
-          surfaceHeight.set(66);
-        }
-      });
       window.removeEventListener("resize", schedule);
       window.removeEventListener("scroll", schedule, true);
       viewport?.removeEventListener("resize", schedule);
@@ -281,21 +267,12 @@ export default function QuestionActionArea({
   // on ownership creates a cycle: an unregistered activity can never own them.
   const shown = Boolean(layout?.visible && isOwner && !suppress);
   const targetHeight = layout?.contentHeight || 66;
-  useLayoutEffect(() => {
-    if (!isOwner || !layout?.visible) return;
-    surfaceHeight.stop();
-    if (suppress || reduceMotion) {
-      surfaceHeight.set(suppress ? 66 : targetHeight);
-      return;
-    }
-    animate(surfaceHeight, targetHeight,
-      targetHeight < surfaceHeight.get()
-        ? { duration: 0.4, ease: [0.32, 0, 0.2, 1] }
-        : { type: "spring", stiffness: 430, damping: 36, mass: 0.8 },
-    );
-    // Do not stop on unmount: the next owner inherits the current height and
-    // retargets it, even if generation briefly shows the loading fallback.
-  }, [isOwner, layout?.visible, targetHeight, suppress, reduceMotion]);
+  const dimensions = useActionBarDimensions({
+    active: shown,
+    width: layout?.width,
+    height: targetHeight,
+    reduceMotion,
+  });
 
   return (
     <>
@@ -322,8 +299,8 @@ export default function QuestionActionArea({
           maxW="480px"
           margin="0 auto"
           mb={
-            layout?.bottom
-              ? `${layout.bottom}px`
+            layout?.bottom && layout.bottom > 40
+              ? `calc(${layout.bottom}px + max(12px, env(safe-area-inset-bottom)))`
               : "max(12px, env(safe-area-inset-bottom))"
           }
           paddingLeft={2}
@@ -335,102 +312,118 @@ export default function QuestionActionArea({
           dir={layout?.dir}
         >
           <MotionBox
-            animate={responseMotion}
+            data-action-bar-surface="activity"
             initial={false}
-            borderRadius={APP_ACTION_BAR_RADIUS}
-            overflow="visible"
-            style={{
-              cornerShape: APP_SQUIRCLE_SHAPE,
-              transformOrigin: "50% 100%",
-            }}
-            w="100%"
+            style={{ width: dimensions.width }}
+            mx="auto"
           >
             <MotionBox
+              animate={responseMotion}
               initial={false}
-              style={{ height: isOwner ? surfaceHeight : 66 }}
-              position="relative"
-              sx={{
-                "& > .bottombar-glass": {
-                  position: "relative",
-                  height: "100%",
-                  width: "100%",
-                },
+              borderRadius={APP_ACTION_BAR_RADIUS}
+              overflow="visible"
+              style={{
+                cornerShape: APP_SQUIRCLE_SHAPE,
+                transformOrigin: "50% 100%",
               }}
+              w="100%"
             >
-              <GlassContainer
+              <MotionBox
+                initial={false}
+                style={{ height: isOwner ? dimensions.height : 66 }}
+                position="relative"
                 borderRadius={APP_ACTION_BAR_RADIUS}
-                blur={0.5}
-                contrast={1.1}
-                brightness={1.05}
-                saturation={1.1}
-                zIndex={80}
-                displacementScale={0.2}
-                className="bottombar-glass"
-                elasticity={0.9}
-                shadowIntensity={isLightTheme ? 0.12 : 0.25}
-                allowLightModeGlass
-                fallbackBlur={isLightTheme ? "10px" : "2px"}
-                fallbackBg={
-                  isLightTheme
-                    ? "rgba(255, 252, 247, 0.58)"
-                    : "var(--app-glass-bg-soft)"
-                }
+                overflow="visible"
+                sx={{
+                  "& > .bottombar-glass": {
+                    position: "relative",
+                    height: "100%",
+                    width: "100%",
+                    borderRadius: APP_ACTION_BAR_RADIUS,
+                  },
+                }}
               >
-                <Box
-                  position="absolute"
-                  inset={0}
-                  overflow="hidden"
+                <GlassContainer
                   borderRadius={APP_ACTION_BAR_RADIUS}
-                  style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
+                  blur={0.5}
+                  contrast={1.1}
+                  brightness={1.05}
+                  saturation={1.1}
+                  zIndex={80}
+                  displacementScale={0.2}
+                  className="bottombar-glass"
+                  elasticity={0.9}
+                  shadowIntensity={isLightTheme ? 0.12 : 0.25}
+                  allowLightModeGlass
+                  fallbackBlur={isLightTheme ? "10px" : "2px"}
+                  fallbackBg={
+                    isLightTheme
+                      ? "rgba(255, 252, 247, 0.58)"
+                      : "var(--app-glass-bg-soft)"
+                  }
                 >
                   <Box
-                    ref={contentRef}
                     position="absolute"
-                    bottom={0}
-                    left={0}
-                    width="100%"
-                    px={{ base: 3, md: 6 }}
-                    pt={2}
-                    pb={4}
+                    inset={0}
+                    overflow="hidden"
                     borderRadius={APP_ACTION_BAR_RADIUS}
                     style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
-                    color="var(--app-text-primary)"
                   >
-                    {/* The outgoing feedback leaves the measurement flow so
-                        the surface contracts while the new controls stay visible. */}
-                    <AnimatePresence initial={false} mode="sync">
-                      <ActionAreaContent
-                        key={
-                          feedback == null
-                            ? "question"
-                            : feedback === "assistant"
-                              ? "assistant"
-                              : "feedback"
-                        }
-                        feedback={feedback}
-                        reduceMotion={reduceMotion || !shown}
-                        actions={actions}
-                      >
-                        {children}
-                      </ActionAreaContent>
-                    </AnimatePresence>
+                    <MotionBox
+                      ref={contentRef}
+                      initial={false}
+                      animate={{ opacity: shown ? 1 : 0 }}
+                      transition={{ duration: reduceMotion ? 0 : 0.18, delay: reduceMotion ? 0 : 0.06 }}
+                      position="absolute"
+                      bottom={0}
+                      left="50%"
+                      width={layout?.width ?? "calc(min(100vw, 480px) - 16px)"}
+                      px={{ base: 3, md: 6 }}
+                      pt={2}
+                      pb={4}
+                      borderRadius={APP_ACTION_BAR_RADIUS}
+                      style={{ cornerShape: APP_SQUIRCLE_SHAPE, x: "-50%" }}
+                      color="var(--app-text-primary)"
+                    >
+                      {/* The outgoing feedback leaves the measurement flow so
+                          the surface contracts while the new controls stay visible. */}
+                      <AnimatePresence initial={false} mode="sync">
+                        <ActionAreaContent
+                          key={
+                            feedback == null
+                              ? "question"
+                              : feedback === "assistant"
+                                ? "assistant"
+                                : "feedback"
+                          }
+                          feedback={feedback}
+                          reduceMotion={reduceMotion || !shown}
+                          actions={actions}
+                        >
+                          {children}
+                        </ActionAreaContent>
+                      </AnimatePresence>
+                    </MotionBox>
                   </Box>
-                </Box>
-              </GlassContainer>
-              {/* Keep the menu trigger visually inside the action bar but out
-                  of the glass renderer's clipping boundary. Capture shards
-                  need to travel beyond the 44px trigger to complete. */}
-              <Box
-                ref={menuSlotRef}
-                data-question-menu-slot=""
-                position="absolute"
-                insetInlineStart={{ base: 3, md: 6 }}
-                bottom="14px"
-                w="44px"
-                h="44px"
-                zIndex={81}
-                overflow="visible"
-              />
+                </GlassContainer>
+                {/* Keep the menu trigger visually inside the action bar but out
+                    of the glass renderer's clipping boundary. Capture shards
+                    need to travel beyond the 44px trigger to complete. */}
+                <Box
+                  ref={menuSlotRef}
+                  data-question-menu-slot=""
+                  position="absolute"
+                  insetInlineStart={{
+                    base: "min(12px, calc((100% - 44px) / 2))",
+                    md: "min(24px, calc((100% - 44px) / 2))",
+                  }}
+                  bottom="11px"
+                  w="44px"
+                  h="44px"
+                  zIndex={81}
+                  overflow="visible"
+                />
+              </MotionBox>
             </MotionBox>
           </MotionBox>
         </Box>,

@@ -488,6 +488,20 @@ button[role="tab"]:focus-visible,
     inset 0 1px 0 rgba(255, 255, 255, 0.72) !important;
 }
 
+/* Keep bottom action bar unblurred and elevated when activity menu is open */
+[data-activity-menu-open="true"] [data-bottom-navigation],
+[data-activity-menu-open="true"] [data-question-action-area] {
+  z-index: 1450 !important;
+}
+
+/* Prevent the background application from scrolling while activity menu is open */
+html[data-activity-menu-open="true"],
+body[data-activity-menu-open="true"] {
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+  touch-action: none !important;
+}
+
 /* Feedback belongs to the entire activity surface, including its action row. */
 [data-question-action-area][data-question-feedback="correct"] {
   --activity-feedback-accent: var(--question-success-accent);

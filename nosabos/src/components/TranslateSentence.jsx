@@ -416,9 +416,6 @@ export default function TranslateSentence({
     <SortableArea onDragEnd={handleDragEnd}>
       <VStack align="stretch" spacing={4}>
         {/* Header with character and sentence */}
-        <Text fontSize="xl" fontWeight="bold" color={APP_TEXT_PRIMARY}>
-          {translateLabel}
-        </Text>
         <Box
           bg={APP_SURFACE_ELEVATED}
           borderRadius="lg"
@@ -430,6 +427,35 @@ export default function TranslateSentence({
         >
           <VStack align="stretch" spacing={4}>
             {/* Title */}
+            <HStack justify="space-between" align="center">
+              <Text fontSize="xl" fontWeight="bold" color={APP_TEXT_PRIMARY}>
+                {translateLabel}
+              </Text>
+              {onAskAssistant && (
+                <IconButton
+                  aria-label={
+                    userLanguage === "ja"
+                      ? "アシスタントに聞く"
+                      : userLanguage === "zh"
+                      ? "询问助手"
+                      : userLanguage === "ar"
+                        ? "اسأل المساعد"
+                      : userLanguage === "pt"
+                      ? "Pedir ajuda"
+                      : userLanguage === "es"
+                      ? "Pedir ayuda"
+                      : "Ask the assistant"
+                  }
+                  icon={<MdOutlineSupportAgent />}
+                  size="sm"
+                  fontSize="lg"
+                  rounded="xl"
+                  onClick={handleSendHelp}
+                  isDisabled={isLoadingAssistantSupport}
+                  {...getQuestionToolButtonProps({ active: isAssistantOpen })}
+                />
+              )}
+            </HStack>
 
             {/* Character + Speech bubble */}
             <HStack align="start" spacing={4}>
@@ -466,30 +492,6 @@ export default function TranslateSentence({
                 }
               >
                 <HStack align="start" spacing={2}>
-                  {onAskAssistant && (
-                    <IconButton
-                      aria-label={
-                        userLanguage === "ja"
-                          ? "アシスタントに聞く"
-                          : userLanguage === "zh"
-                          ? "询问助手"
-                          : userLanguage === "ar"
-                            ? "اسأل المساعد"
-                          : userLanguage === "pt"
-                          ? "Pedir ajuda"
-                          : userLanguage === "es"
-                          ? "Pedir ayuda"
-                          : "Ask the assistant"
-                      }
-                      icon={<MdOutlineSupportAgent />}
-                      size="sm"
-                      fontSize="lg"
-                      rounded="xl"
-                      onClick={handleSendHelp}
-                      isDisabled={isLoadingAssistantSupport}
-                      {...getQuestionToolButtonProps({ active: isAssistantOpen })}
-                    />
-                  )}
                   <IconButton
                     aria-label={
                       userLanguage === "ja"

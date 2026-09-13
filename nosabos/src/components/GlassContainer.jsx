@@ -62,10 +62,15 @@ export default function GlassContainer({
     [fallbackBlur, fallbackBg, shouldUseGlassEffects],
   );
 
+  const numericBorderRadius =
+    typeof borderRadius === "number"
+      ? borderRadius
+      : parseInt(borderRadius, 10) || 0;
+
   if (supportsLiquidGlass && shouldUseGlassEffects) {
     return (
       <LiquidGlass
-        borderRadius={borderRadius}
+        borderRadius={numericBorderRadius}
         blur={blur}
         contrast={contrast}
         brightness={brightness}

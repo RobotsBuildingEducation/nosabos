@@ -317,7 +317,7 @@ export const translations = {
     app_account_aria: "Account",
     app_help_chat: "Assistant",
     app_notes: "Memory",
-    real_world_tasks_title: "Immersion practice",
+    real_world_tasks_title: "Immersion Practice",
     app_mode_menu: "Menu",
     app_mode_alphabet: "Alphabet",
     app_mode_phonics: "Phonics",

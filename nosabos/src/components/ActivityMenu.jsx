@@ -1,4 +1,10 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   Box,
   HStack,
@@ -10,10 +16,470 @@ import {
   Portal,
   Text,
 } from "@chakra-ui/react";
-import { ArrowBackIcon, ChevronRightIcon } from "@chakra-ui/icons";
+import {
+  ArrowBackIcon,
+  ChevronRightIcon,
+  CloseIcon,
+} from "@chakra-ui/icons";
 import { PiDotsNineBold } from "react-icons/pi";
 import { FiCompass } from "react-icons/fi";
 import { useThemeStore } from "../useThemeStore";
+
+const useSafeLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
+const ActivityMenuBackdrop = React.forwardRef(function ActivityMenuBackdrop(
+  { isOpen, onClose, isLightTheme },
+  ref,
+) {
+  useSafeLayoutEffect(() => {
+    if (typeof document === "undefined") return;
+    if (isOpen) {
+      document.body.setAttribute("data-activity-menu-open", "true");
+      document.documentElement.setAttribute("data-activity-menu-open", "true");
+    } else {
+      document.body.removeAttribute("data-activity-menu-open");
+      document.documentElement.removeAttribute("data-activity-menu-open");
+    }
+    return () => {
+      if (typeof document !== "undefined") {
+        document.body.removeAttribute("data-activity-menu-open");
+        document.documentElement.removeAttribute("data-activity-menu-open");
+      }
+    };
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  return (
+    <Box
+      ref={ref}
+      data-activity-menu-backdrop=""
+      position="fixed"
+      top={0}
+      left={0}
+      right={0}
+      bottom={0}
+      w="100vw"
+      h="100dvh"
+      zIndex={1400}
+      backdropFilter="blur(8px)"
+      sx={{
+        WebkitBackdropFilter: "blur(8px)",
+      }}
+      bg={
+        isLightTheme
+          ? "rgba(247, 241, 231, 0.45)"
+          : "rgba(2, 6, 23, 0.55)"
+      }
+      touchAction="none"
+      pointerEvents="auto"
+      onClick={onClose}
+      aria-hidden="true"
+      animation="app-modal-overlay-in 200ms ease-out"
+    />
+  );
+});
+
+function useMenuSwipeDismiss({ onClose, isOpen }) {
+  const cardRef = useRef(null);
+  const backdropRef = useRef(null);
+  const gestureRef = useRef(null);
+  const activePointerIdRef = useRef(null);
+  const isClosingRef = useRef(false);
+  const offsetYRef = useRef(0);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const syncPresentation = useCallback((offsetY, transition = "none") => {
+    if (isClosingRef.current && transition === "none") return;
+
+    const card = cardRef.current;
+    if (card) {
+      card.style.transform =
+        offsetY > 0 ? `translate3d(0, ${offsetY}px, 0)` : "";
+      card.style.transition = transition;
+      card.style.willChange = "transform";
+      card.style.backfaceVisibility = "hidden";
+      if (offsetY > 0) {
+        card.style.opacity = String(Math.max(0.15, 1 - offsetY / 320));
+      } else {
+        card.style.opacity = "";
+      }
+    }
+
+    const backdrop = backdropRef.current;
+    if (backdrop) {
+      if (offsetY > 0) {
+        backdrop.style.opacity = String(Math.max(0.1, 1 - offsetY / 240));
+        backdrop.style.transition =
+          transition === "none" ? "none" : "opacity 0.2s ease";
+      } else {
+        backdrop.style.opacity = "";
+        backdrop.style.transition =
+          transition === "none" ? "opacity 0.2s ease" : transition;
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      gestureRef.current = null;
+      activePointerIdRef.current = null;
+      isClosingRef.current = false;
+      offsetYRef.current = 0;
+      setIsDragging(false);
+      const card = cardRef.current;
+      if (card) {
+        card.style.transform = "";
+        card.style.transition = "";
+        card.style.opacity = "";
+      }
+      const backdrop = backdropRef.current;
+      if (backdrop) {
+        backdrop.style.opacity = "";
+        backdrop.style.transition = "";
+      }
+    } else {
+      gestureRef.current = null;
+      activePointerIdRef.current = null;
+      setIsDragging(false);
+    }
+  }, [isOpen]);
+
+  const handlePointerDown = useCallback(
+    (e) => {
+      if (isClosingRef.current) return;
+      if (e.isPrimary === false) return;
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+
+      // Ignore clicks on close 'X' button
+      if (e.target.closest("button[aria-label='Close menu']")) {
+        return;
+      }
+
+      const isDragHandle = Boolean(e.target.closest("[data-drag-handle]"));
+      const isInteractive = Boolean(
+        e.target.closest(
+          "button, [role='menuitem'], a[href], input, select, textarea",
+        ),
+      );
+
+      activePointerIdRef.current = e.pointerId;
+      const card = cardRef.current;
+      gestureRef.current = {
+        startX: e.clientX,
+        startY: e.clientY,
+        currentY: e.clientY,
+        startTime: performance.now(),
+        currentTime: performance.now(),
+        velocityY: 0,
+        hasActivated: false,
+        isDragHandle,
+        isInteractive,
+        scrollTop: card?.scrollTop || 0,
+      };
+
+      syncPresentation(0, "none");
+    },
+    [syncPresentation],
+  );
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handlePointerMove = (e) => {
+      if (e.pointerId !== activePointerIdRef.current) return;
+      const gesture = gestureRef.current;
+      if (!gesture || isClosingRef.current) return;
+
+      const deltaX = e.clientX - gesture.startX;
+      const deltaY = e.clientY - gesture.startY;
+      const now = performance.now();
+
+      if (!gesture.hasActivated) {
+        const isDownward = deltaY > 6 && Math.abs(deltaY) > Math.abs(deltaX);
+        const canActivate = gesture.isDragHandle
+          ? isDownward
+          : isDownward && gesture.scrollTop <= 0;
+
+        if (!canActivate) {
+          if (Math.abs(deltaX) > 12 || deltaY < -10) {
+            gestureRef.current = null;
+            activePointerIdRef.current = null;
+          }
+          return;
+        }
+
+        gesture.hasActivated = true;
+        setIsDragging(true);
+      }
+
+      if (e.cancelable) {
+        e.preventDefault();
+      }
+
+      const elapsed = Math.max(now - gesture.currentTime, 1);
+      gesture.velocityY = (e.clientY - gesture.currentY) / elapsed;
+      gesture.currentY = e.clientY;
+      gesture.currentTime = now;
+
+      if (deltaY > 0) {
+        const dampedY = deltaY <= 150 ? deltaY : 150 + (deltaY - 150) * 0.55;
+        offsetYRef.current = dampedY;
+        syncPresentation(dampedY, "none");
+      } else {
+        offsetYRef.current = 0;
+        syncPresentation(0, "none");
+      }
+    };
+
+    const handlePointerUp = (e) => {
+      if (e.pointerId !== activePointerIdRef.current) return;
+      const gesture = gestureRef.current;
+      gestureRef.current = null;
+      activePointerIdRef.current = null;
+      setIsDragging(false);
+
+      if (!gesture || !gesture.hasActivated) {
+        return;
+      }
+
+      const currentOffset = offsetYRef.current;
+      const elapsed = Math.max(performance.now() - gesture.startTime, 1);
+      const overallVelocity = currentOffset / elapsed;
+      const shouldClose =
+        currentOffset > 30 ||
+        overallVelocity > 0.25 ||
+        gesture.velocityY > 0.3;
+
+      if (shouldClose) {
+        isClosingRef.current = true;
+        onClose?.();
+      } else {
+        syncPresentation(
+          0,
+          "transform 180ms ease-out, opacity 180ms ease-out",
+        );
+        offsetYRef.current = 0;
+      }
+    };
+
+    const handlePointerCancel = (e) => {
+      if (e.pointerId !== activePointerIdRef.current) return;
+      gestureRef.current = null;
+      activePointerIdRef.current = null;
+      setIsDragging(false);
+      syncPresentation(0, "transform 220ms cubic-bezier(0.22, 1, 0.36, 1)");
+      offsetYRef.current = 0;
+    };
+
+    const handleTouchMove = (e) => {
+      if (gestureRef.current?.hasActivated && e.cancelable) {
+        e.preventDefault();
+      }
+    };
+
+    window.addEventListener("pointermove", handlePointerMove, {
+      passive: false,
+    });
+    window.addEventListener("pointerup", handlePointerUp);
+    window.addEventListener("pointercancel", handlePointerCancel);
+    window.addEventListener("touchmove", handleTouchMove, { passive: false });
+
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+      window.removeEventListener("pointercancel", handlePointerCancel);
+      window.removeEventListener("touchmove", handleTouchMove);
+    };
+  }, [isOpen, onClose, syncPresentation]);
+
+  return {
+    cardRef,
+    backdropRef,
+    isDragging,
+    handlePointerDown,
+  };
+}
+
+function ActivityMenuPortal({
+  isOpen,
+  onClose,
+  isLightTheme,
+  children,
+}) {
+  const { cardRef, backdropRef, isDragging, handlePointerDown } =
+    useMenuSwipeDismiss({
+      isOpen,
+      onClose,
+    });
+
+  return (
+    <Portal>
+      <ActivityMenuBackdrop
+        ref={backdropRef}
+        isOpen={isOpen}
+        onClose={onClose}
+        isLightTheme={isLightTheme}
+      />
+      <MenuList
+        bg="transparent"
+        border="none"
+        boxShadow="none"
+        p={0}
+        m={0}
+        minW={0}
+        w="100%"
+        maxW="100%"
+        boxSizing="border-box"
+        overflow="visible"
+        zIndex={1500}
+        outline="none"
+        _focus={{ outline: "none", boxShadow: "none" }}
+        sx={{
+          "& .chakra-menu__menuitem": {
+            whiteSpace: "normal !important",
+          },
+          "& [data-menu-icon-wrapper]": {
+            width: { base: "38px !important", sm: "40px !important" },
+            height: { base: "38px !important", sm: "40px !important" },
+            minWidth: { base: "38px !important", sm: "40px !important" },
+            maxWidth: { base: "38px !important", sm: "40px !important" },
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+            overflow: "visible",
+            position: "relative",
+          },
+          "& [data-menu-icon-btn]": {
+            width: { base: "30px !important", sm: "32px !important" },
+            height: { base: "30px !important", sm: "32px !important" },
+            minWidth: { base: "30px !important", sm: "32px !important" },
+            maxWidth: { base: "30px !important", sm: "32px !important" },
+            minHeight: { base: "30px !important", sm: "32px !important" },
+            maxHeight: { base: "30px !important", sm: "32px !important" },
+            borderRadius: { base: "10px !important", sm: "11px !important" },
+            display: "inline-flex !important",
+            alignItems: "center !important",
+            justifyContent: "center !important",
+            boxSizing: "border-box",
+            flexShrink: 0,
+          },
+          "& [data-menu-icon-btn] > svg": {
+            width: { base: "16px !important", sm: "17px !important" },
+            height: { base: "16px !important", sm: "17px !important" },
+            fontSize: { base: "16px !important", sm: "17px !important" },
+          },
+        }}
+      >
+        <Box
+          ref={cardRef}
+          onPointerDown={handlePointerDown}
+          bg="var(--app-surface-elevated)"
+          color="var(--app-text-primary)"
+          borderWidth={{ base: "2px", sm: "2.5px" }}
+          borderStyle="solid"
+          borderColor={
+            isLightTheme
+              ? "rgba(180, 164, 144, 0.65)"
+              : "var(--app-border-strong)"
+          }
+          boxShadow="var(--app-shadow-soft)"
+          w="100%"
+          maxW="100%"
+          minW={0}
+          boxSizing="border-box"
+          maxH={{
+            base: "min(580px, calc(100dvh - 96px))",
+            md: "min(540px, calc(100dvh - 120px))",
+          }}
+          overflowY="auto"
+          pt={{ base: 2, sm: 2.5 }}
+          px={{ base: 2.5, sm: 3 }}
+          pb={{ base: 2.5, sm: 3 }}
+          borderRadius={{ base: "24px", sm: "28px" }}
+          display="grid"
+          gridTemplateColumns="repeat(2, minmax(0, 1fr))"
+          gap={{ base: 2, sm: 2.5 }}
+          style={{
+            touchAction: "pan-y",
+          }}
+        >
+          {/* Top drag bar & close button header */}
+          <Box
+            data-drag-handle=""
+            gridColumn="1 / -1"
+            position="relative"
+            w="full"
+            pt={{ base: 1.5, sm: 2 }}
+            pb={{ base: 3.5, sm: 4 }}
+            userSelect="none"
+            touchAction="none"
+            cursor={isDragging ? "grabbing" : "grab"}
+          >
+            <Box
+              position="relative"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+              minH="32px"
+              w="full"
+            >
+              {/* Centered pill drag handle */}
+              <Box
+                w="48px"
+                h="5px"
+                borderRadius="full"
+                bg={
+                  isLightTheme
+                    ? "rgba(180, 164, 144, 0.55)"
+                    : "rgba(255, 255, 255, 0.24)"
+                }
+                boxShadow={
+                  isLightTheme
+                    ? "0 1px 0 rgba(255, 255, 255, 0.6)"
+                    : "0 1px 0 rgba(0, 0, 0, 0.4)"
+                }
+                pointerEvents="none"
+              />
+
+              {/* Top right 'X' exit button */}
+              <IconButton
+                aria-label="Close menu"
+                icon={<CloseIcon boxSize="13px" />}
+                position="absolute"
+                right={{ base: 1, sm: 2 }}
+                top="50%"
+                transform="translateY(-50%)"
+                size="sm"
+                w="32px"
+                h="32px"
+                minW="32px"
+                variant="ghost"
+                borderRadius="full"
+                color="var(--app-text-muted)"
+                _hover={{
+                  color: "var(--app-text-primary)",
+                  bg: isLightTheme ? "rgba(0, 0, 0, 0.06)" : "whiteAlpha.200",
+                }}
+                _active={{
+                  bg: isLightTheme ? "rgba(0, 0, 0, 0.1)" : "whiteAlpha.300",
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onClose();
+                }}
+              />
+            </Box>
+          </Box>
+
+          {children}
+        </Box>
+      </MenuList>
+    </Portal>
+  );
+}
 
 const matchActionBarModifier = {
   name: "matchActionBar",
@@ -22,47 +488,86 @@ const matchActionBarModifier = {
   requires: ["popperOffsets"],
   fn({ state }) {
     const reference = state.elements.reference;
-    let bar = null;
-    if (reference) {
-      bar =
-        reference.closest?.(".bottombar-glass") ||
-        reference.closest?.("[data-question-action-area]")?.querySelector(".bottombar-glass") ||
-        reference.closest?.("[data-question-action-area]") ||
-        reference.closest?.("[data-bottom-navigation]")?.querySelector(".bottombar-glass") ||
-        reference.closest?.("[data-bottom-navigation]");
-    }
-    if (!bar && typeof document !== "undefined") {
-      bar =
-        document.querySelector("[data-question-action-area]:not([aria-hidden='true']) .bottombar-glass") ||
-        document.querySelector("[data-question-action-area]:not([aria-hidden='true'])") ||
-        document.querySelector("[data-bottom-navigation] .bottombar-glass") ||
-        document.querySelector("[data-bottom-navigation]") ||
-        document.querySelector(".bottombar-glass");
+    // Find enclosing navigation container or action area
+    const navContainer =
+      reference?.closest?.("[data-bottom-navigation]") ||
+      reference?.closest?.("[data-question-action-area]") ||
+      (typeof document !== "undefined"
+        ? document.querySelector("[data-bottom-navigation]") ||
+          document.querySelector("[data-question-action-area]:not([aria-hidden='true'])") ||
+          document.querySelector(".bottombar-glass")?.closest?.("[data-bottom-navigation], [data-question-action-area]")
+        : null);
+
+    // Find the bottom bar element or reference button for vertical anchoring
+    const bar =
+      reference?.closest?.(".bottombar-glass") ||
+      reference?.closest?.("[data-action-bar-surface]") ||
+      navContainer?.querySelector?.(".bottombar-glass") ||
+      navContainer?.querySelector?.("[data-action-bar-surface]") ||
+      reference;
+
+    const viewportW = typeof window !== "undefined" ? window.innerWidth : 360;
+    const viewportH = typeof window !== "undefined" ? window.innerHeight : 600;
+
+    let containerLeft = 0;
+    let containerWidth = viewportW;
+
+    if (navContainer) {
+      const navRect = navContainer.getBoundingClientRect();
+      if (navRect.width > 0) {
+        containerLeft = navRect.left;
+        containerWidth = navRect.width;
+      }
+    } else {
+      const rootEl = typeof document !== "undefined" ? document.getElementById("root") : null;
+      if (rootEl) {
+        const rootRect = rootEl.getBoundingClientRect();
+        if (rootRect.width > 0 && rootRect.width < viewportW) {
+          containerLeft = rootRect.left;
+          containerWidth = rootRect.width;
+        }
+      }
     }
 
-    let barLeft = 8;
-    let barWidth = typeof window !== "undefined" ? window.innerWidth - 16 : 360;
-    let barTop = typeof window !== "undefined" ? window.innerHeight - 80 : 600;
+    // Allocate 12px margin on each side (24px total)
+    const barWidth = Math.min(containerWidth - 24, viewportW - 24, 420);
+    const isCenterAligned = state.placement === "top";
+    let barLeft;
+    if (isCenterAligned) {
+      barLeft = containerLeft + (containerWidth - barWidth) / 2;
+    } else {
+      const refRect = reference?.getBoundingClientRect?.();
+      const leftAnchor = refRect?.left ?? (containerLeft + 12);
+      barLeft = Math.max(containerLeft + 12, Math.min(leftAnchor, containerLeft + containerWidth - barWidth - 12));
+    }
+    barLeft = Math.max(12, Math.min(barLeft, viewportW - barWidth - 12));
 
+    let barTop = viewportH - 80;
     if (bar) {
       const rect = bar.getBoundingClientRect();
-      barLeft = rect.left;
-      barWidth = rect.width;
-      barTop = rect.top;
-    } else if (typeof window !== "undefined") {
-      const screenW = window.innerWidth;
-      barWidth = Math.min(screenW - 16, 464);
-      barLeft = Math.max(8, (screenW - barWidth) / 2);
+      if (rect.top > 0) {
+        barTop = rect.top;
+      }
     }
+
+    // Force layout style on popper before reading height
+    const popperEl = state.elements?.popper;
+    if (popperEl) {
+      popperEl.style.width = `${barWidth}px`;
+      popperEl.style.maxWidth = `${barWidth}px`;
+      popperEl.style.boxSizing = "border-box";
+    }
+
+    const popperH =
+      popperEl?.offsetHeight ||
+      popperEl?.scrollHeight ||
+      state.rects?.popper?.height ||
+      0;
 
     if (state.modifiersData.popperOffsets) {
       state.modifiersData.popperOffsets.x = barLeft;
-      const popperH =
-        state.rects?.popper?.height ||
-        state.elements?.popper?.offsetHeight ||
-        0;
-      if (popperH) {
-        state.modifiersData.popperOffsets.y = Math.max(10, barTop - popperH - 10);
+      if (popperH > 0) {
+        state.modifiersData.popperOffsets.y = Math.max(10, barTop - popperH - 12);
       }
     }
 
@@ -70,31 +575,45 @@ const matchActionBarModifier = {
       ...state.styles.popper,
       width: `${barWidth}px`,
       maxWidth: `${barWidth}px`,
+      transformOrigin: isCenterAligned ? "bottom center" : "bottom left",
     };
   },
-  effect: ({ state }) => () => {
+  effect({ state }) {
     const reference = state.elements.reference;
-    let bar = null;
-    if (reference) {
-      bar =
-        reference.closest?.(".bottombar-glass") ||
-        reference.closest?.("[data-question-action-area]")?.querySelector(".bottombar-glass") ||
-        reference.closest?.("[data-question-action-area]") ||
-        reference.closest?.("[data-bottom-navigation]")?.querySelector(".bottombar-glass") ||
-        reference.closest?.("[data-bottom-navigation]");
+    const navContainer =
+      reference?.closest?.("[data-bottom-navigation]") ||
+      reference?.closest?.("[data-question-action-area]") ||
+      (typeof document !== "undefined"
+        ? document.querySelector("[data-bottom-navigation]") ||
+          document.querySelector("[data-question-action-area]:not([aria-hidden='true'])")
+        : null);
+
+    const viewportW = typeof window !== "undefined" ? window.innerWidth : 360;
+    let containerWidth = viewportW;
+    if (navContainer) {
+      const navRect = navContainer.getBoundingClientRect();
+      if (navRect.width > 0) {
+        containerWidth = navRect.width;
+      }
+    } else {
+      const rootEl = typeof document !== "undefined" ? document.getElementById("root") : null;
+      if (rootEl) {
+        const rootRect = rootEl.getBoundingClientRect();
+        if (rootRect.width > 0 && rootRect.width < viewportW) {
+          containerWidth = rootRect.width;
+        }
+      }
     }
-    if (!bar && typeof document !== "undefined") {
-      bar =
-        document.querySelector("[data-question-action-area]:not([aria-hidden='true']) .bottombar-glass") ||
-        document.querySelector("[data-question-action-area]:not([aria-hidden='true'])") ||
-        document.querySelector("[data-bottom-navigation] .bottombar-glass") ||
-        document.querySelector("[data-bottom-navigation]") ||
-        document.querySelector(".bottombar-glass");
-    }
-    if (bar && state.elements?.popper) {
-      const rect = bar.getBoundingClientRect();
-      state.elements.popper.style.width = `${rect.width}px`;
-      state.elements.popper.style.maxWidth = `${rect.width}px`;
+    const barWidth = Math.min(containerWidth - 24, viewportW - 24, 420);
+    const isCenterAligned = state.placement === "top";
+
+    if (state.elements?.popper) {
+      state.elements.popper.style.width = `${barWidth}px`;
+      state.elements.popper.style.maxWidth = `${barWidth}px`;
+      state.elements.popper.style.boxSizing = "border-box";
+      state.elements.popper.style.transformOrigin = isCenterAligned
+        ? "bottom center"
+        : "bottom left";
     }
   },
 };
@@ -119,10 +638,10 @@ export function ImmersionPracticeMenuIcon({
       display="inline-flex"
       alignItems="center"
       justifyContent="center"
-      w={{ base: "44px", md: "38px" }}
-      h={{ base: "44px", md: "38px" }}
-      minW={{ base: "44px", md: "38px" }}
-      maxW={{ base: "44px", md: "38px" }}
+      w={{ base: "36px", sm: "40px", md: "42px" }}
+      h={{ base: "36px", sm: "40px", md: "42px" }}
+      minW={{ base: "36px", sm: "40px", md: "42px" }}
+      maxW={{ base: "36px", sm: "40px", md: "42px" }}
       flexShrink={0}
       overflow="visible"
       {...rest}
@@ -136,8 +655,8 @@ export function ImmersionPracticeMenuIcon({
           top="calc(50% + 1px)"
           left="50%"
           transform="translate(-50%, -50%)"
-          width={{ base: "44px", md: "38px" }}
-          height={{ base: "44px", md: "38px" }}
+          width={{ base: "36px", sm: "40px", md: "42px" }}
+          height={{ base: "36px", sm: "40px", md: "42px" }}
           viewBox="0 0 44 44"
           pointerEvents="none"
           aria-hidden="true"
@@ -200,13 +719,13 @@ export function ImmersionPracticeMenuIcon({
         display="inline-flex"
         alignItems="center"
         justifyContent="center"
-        w={{ base: "32px", md: "28px" }}
-        h={{ base: "32px", md: "28px" }}
-        minW={{ base: "32px", md: "28px" }}
-        maxW={{ base: "32px", md: "28px" }}
-        minH={{ base: "32px", md: "28px" }}
-        maxH={{ base: "32px", md: "28px" }}
-        borderRadius={{ base: "11px", md: "9px" }}
+        w={{ base: "28px", sm: "30px", md: "32px" }}
+        h={{ base: "28px", sm: "30px", md: "32px" }}
+        minW={{ base: "28px", sm: "30px", md: "32px" }}
+        maxW={{ base: "28px", sm: "30px", md: "32px" }}
+        minH={{ base: "28px", sm: "30px", md: "32px" }}
+        maxH={{ base: "28px", sm: "30px", md: "32px" }}
+        borderRadius={{ base: "9px", sm: "10px", md: "11px" }}
         style={{ cornerShape: "superellipse(1.6)" }}
         bg={
           isLightTheme
@@ -289,10 +808,10 @@ function renderItemIcon(icon, isLightTheme, options = {}) {
       display="inline-flex"
       alignItems="center"
       justifyContent="center"
-      w={{ base: "44px", md: "38px" }}
-      h={{ base: "44px", md: "38px" }}
-      minW={{ base: "44px", md: "38px" }}
-      maxW={{ base: "44px", md: "38px" }}
+      w={{ base: "36px", sm: "40px", md: "42px" }}
+      h={{ base: "36px", sm: "40px", md: "42px" }}
+      minW={{ base: "36px", sm: "40px", md: "42px" }}
+      maxW={{ base: "36px", sm: "40px", md: "42px" }}
       flexShrink={0}
       overflow="visible"
     >
@@ -303,13 +822,13 @@ function renderItemIcon(icon, isLightTheme, options = {}) {
         alignItems="center"
         justifyContent="center"
         pointerEvents="none"
-        w={{ base: "32px", md: "28px" }}
-        h={{ base: "32px", md: "28px" }}
-        minW={{ base: "32px", md: "28px" }}
-        maxW={{ base: "32px", md: "28px" }}
-        minH={{ base: "32px", md: "28px" }}
-        maxH={{ base: "32px", md: "28px" }}
-        borderRadius={{ base: "11px", md: "9px" }}
+        w={{ base: "28px", sm: "30px", md: "32px" }}
+        h={{ base: "28px", sm: "30px", md: "32px" }}
+        minW={{ base: "28px", sm: "30px", md: "32px" }}
+        maxW={{ base: "28px", sm: "30px", md: "32px" }}
+        minH={{ base: "28px", sm: "30px", md: "32px" }}
+        maxH={{ base: "28px", sm: "30px", md: "32px" }}
+        borderRadius={{ base: "9px", sm: "10px", md: "11px" }}
         style={{ cornerShape: "superellipse(1.6)" }}
         bg={
           options.buttonBg ||
@@ -353,199 +872,333 @@ export default function ActivityMenu({
   triggerIcon,
   triggerProps,
   decoration,
+  placement = "top-start",
 }) {
   const isLightTheme = useThemeStore((s) => s.themeMode) === "light";
   const [view, setView] = useState("actions");
+  const firstModeRef = useRef(null);
   const backRef = useRef(null);
   const modesRef = useRef(null);
   const previousView = useRef(view);
   useEffect(() => {
     if (previousView.current !== view) {
-      (view === "modes" ? backRef : modesRef).current?.focus();
+      if (view === "modes") {
+        (firstModeRef.current || backRef.current)?.focus();
+      } else {
+        modesRef.current?.focus();
+      }
+      requestAnimationFrame(() => {
+        window.dispatchEvent(new Event("resize"));
+      });
     }
     previousView.current = view;
   }, [view]);
 
-  const menuItemProps = {
-    bg: "transparent",
-    _hover: { bg: "var(--app-surface-muted)" },
-    _focus: { bg: "var(--app-surface-muted)" },
+  const bentoTileProps = {
+    bg: isLightTheme
+      ? "rgba(235, 226, 214, 0.5)"
+      : "rgba(255, 255, 255, 0.04)",
+    border: "1px solid",
+    borderColor: isLightTheme
+      ? "rgba(180, 164, 144, 0.4)"
+      : "var(--app-border)",
+    boxShadow: isLightTheme
+      ? "0 1px 2px rgba(0, 0, 0, 0.04)"
+      : "0 1px 3px rgba(0, 0, 0, 0.2)",
+    _hover: {
+      bg: isLightTheme
+        ? "rgba(235, 226, 214, 0.95)"
+        : "var(--app-surface-muted)",
+      borderColor: isLightTheme
+        ? "rgba(180, 164, 144, 0.7)"
+        : "var(--app-border-strong)",
+      textDecoration: "none",
+    },
+    _focus: {
+      bg: isLightTheme
+        ? "rgba(235, 226, 214, 0.95)"
+        : "var(--app-surface-muted)",
+      borderColor: isLightTheme
+        ? "rgba(180, 164, 144, 0.7)"
+        : "var(--app-border-strong)",
+    },
     _focusVisible: {
       outline: "2px solid var(--question-tool-accent-strong, #63b3ed)",
       outlineOffset: "-2px",
     },
-    borderRadius: "lg",
-    px: { base: 4, md: 3.5 },
-    py: { base: 2.5, md: 2 },
-    minH: { base: "52px", md: "46px" },
+    borderRadius: { base: "18px", sm: "22px" },
+    p: { base: 3.5, sm: 4 },
+    minH: { base: "102px", sm: "108px", md: "112px" },
+    h: "100%",
     w: "full",
+    minW: 0,
+    whiteSpace: "normal",
+    textAlign: "start",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "flex-start",
+    justifyContent: "flex-end",
+    transition:
+      "background 0.15s ease, border-color 0.15s ease, transform 0.12s ease",
+    _active: {
+      transform: "scale(0.97)",
+    },
+  };
+
+  const fullWidthBarProps = {
+    bg: isLightTheme
+      ? "rgba(235, 226, 214, 0.5)"
+      : "rgba(255, 255, 255, 0.04)",
+    border: "1px solid",
+    borderColor: isLightTheme
+      ? "rgba(180, 164, 144, 0.4)"
+      : "var(--app-border)",
+    boxShadow: isLightTheme
+      ? "0 1px 2px rgba(0, 0, 0, 0.04)"
+      : "0 1px 3px rgba(0, 0, 0, 0.2)",
+    _hover: {
+      bg: isLightTheme
+        ? "rgba(235, 226, 214, 0.95)"
+        : "var(--app-surface-muted)",
+      borderColor: isLightTheme
+        ? "rgba(180, 164, 144, 0.7)"
+        : "var(--app-border-strong)",
+      textDecoration: "none",
+    },
+    _focus: {
+      bg: isLightTheme
+        ? "rgba(235, 226, 214, 0.95)"
+        : "var(--app-surface-muted)",
+      borderColor: isLightTheme
+        ? "rgba(180, 164, 144, 0.7)"
+        : "var(--app-border-strong)",
+    },
+    _focusVisible: {
+      outline: "2px solid var(--question-tool-accent-strong, #63b3ed)",
+      outlineOffset: "-2px",
+    },
+    borderRadius: { base: "18px", sm: "20px" },
+    px: { base: 3.5, sm: 4 },
+    py: { base: 3, sm: 3.5 },
+    minH: { base: "54px", sm: "58px" },
+    w: "full",
+    minW: 0,
+    whiteSpace: "normal",
+    textAlign: "start",
+    display: "flex",
+    alignItems: "center",
+    gridColumn: "1 / -1",
+    transition:
+      "background 0.15s ease, border-color 0.15s ease, transform 0.12s ease",
+    _active: {
+      transform: "scale(0.98)",
+    },
   };
 
   return (
     <Box position="relative" w="44px" h="44px">
       {decoration}
       <Menu
-        placement="top-start"
+        autoSelect={false}
+        placement={placement}
         strategy="fixed"
-        isLazy
         gutter={10}
         modifiers={menuModifiers}
-        onOpen={onOpen}
+        onOpen={() => {
+          onOpen?.();
+          requestAnimationFrame(() => {
+            window.dispatchEvent(new Event("resize"));
+          });
+        }}
         onClose={() => setView("actions")}
       >
-        <MenuButton
-          as={IconButton}
-          icon={triggerIcon || <PiDotsNineBold size={22} color="var(--app-text-primary)" />}
-          aria-label={label}
-          {...triggerProps}
-          variant="unstyled"
-          display="inline-flex"
-          alignItems="center"
-          justifyContent="center"
-          w="44px"
-          h="44px"
-          minW="44px"
-          p={0}
-          border={0}
-          borderRadius="xl"
-          bg={triggerProps?.bg || "transparent !important"}
-          boxShadow={triggerProps?.boxShadow || "none !important"}
-          color={triggerProps?.color || "var(--app-text-primary)"}
-          _hover={{ opacity: 0.7 }}
-          _active={{ transform: "none" }}
-          _focusVisible={{
-            outline: "2px solid var(--question-tool-accent-strong)",
-            outlineOffset: "1px",
-          }}
-        />
-        <Portal>
-          <MenuList
-            bg="var(--app-surface-elevated)"
-            color="var(--app-text-primary)"
-            borderColor="var(--app-border)"
-            boxShadow="var(--app-shadow-soft)"
-            w="100%"
-            maxW="100%"
-            minW={0}
-            maxH={{
-              base: "min(560px, calc(100dvh - 96px))",
-              md: "min(480px, calc(100dvh - 120px))",
-            }}
-            overflowY="auto"
-            zIndex="popover"
-            p={{ base: 2.5, md: 2 }}
-            borderRadius="28px"
-            display="flex"
-            flexDirection="column"
-            gap={{ base: 1.5, md: 1 }}
-            sx={{
-              "& .chakra-menu__icon, & [data-menu-icon-wrapper]": {
-                width: { base: "44px !important", md: "38px !important" },
-                height: { base: "44px !important", md: "38px !important" },
-                minWidth: { base: "44px !important", md: "38px !important" },
-                maxWidth: { base: "44px !important", md: "38px !important" },
-                marginInlineEnd: { base: 3, md: 2.5 },
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-                overflow: "visible",
-                position: "relative",
-              },
-              "& [data-menu-icon-btn]": {
-                width: { base: "32px !important", md: "28px !important" },
-                height: { base: "32px !important", md: "28px !important" },
-                minWidth: { base: "32px !important", md: "28px !important" },
-                maxWidth: { base: "32px !important", md: "28px !important" },
-                minHeight: { base: "32px !important", md: "28px !important" },
-                maxHeight: { base: "32px !important", md: "28px !important" },
-                borderRadius: { base: "11px !important", md: "9px !important" },
-                display: "inline-flex !important",
-                alignItems: "center !important",
-                justifyContent: "center !important",
-                boxSizing: "border-box",
-                flexShrink: 0,
-              },
-              "& [data-menu-icon-btn] > svg": {
-                width: { base: "16px !important", md: "14px !important" },
-                height: { base: "16px !important", md: "14px !important" },
-                fontSize: { base: "16px !important", md: "14px !important" },
-              },
-            }}
-          >
-            {view === "actions" ? (
+        {({ isOpen, onClose }) => (
+          <>
+            <MenuButton
+              as={IconButton}
+              icon={triggerIcon || <PiDotsNineBold size={22} color="var(--app-text-primary)" />}
+              aria-label={label}
+              {...triggerProps}
+              variant="unstyled"
+              display="inline-flex"
+              alignItems="center"
+              justifyContent="center"
+              w="44px"
+              h="44px"
+              minW="44px"
+              p={0}
+              border={0}
+              borderRadius="xl"
+              bg={triggerProps?.bg || "transparent !important"}
+              boxShadow={triggerProps?.boxShadow || "none !important"}
+              color={triggerProps?.color || "var(--app-text-primary)"}
+              _hover={{ opacity: 0.7 }}
+              _active={{ transform: "none" }}
+              _focusVisible={{
+                outline: "2px solid var(--question-tool-accent-strong)",
+                outlineOffset: "1px",
+              }}
+            />
+            <ActivityMenuPortal
+              isOpen={isOpen}
+              onClose={onClose}
+              isLightTheme={isLightTheme}
+            >
+              {view === "actions" ? (
               <>
-                {items.map((item) => (
-                  <MenuItem
-                    key={item.id}
-                    icon={renderItemIcon(item.icon, isLightTheme, item)}
-                    onClick={item.onClick}
-                    isDisabled={item.disabled}
-                    {...menuItemProps}
-                  >
-                    <Text fontWeight="semibold" fontSize={{ base: "md", md: "sm" }}>
-                      {item.label}
-                    </Text>
-                  </MenuItem>
-                ))}
+                {items.map((item) =>
+                  item.id === "exitLesson" ? (
+                    <MenuItem
+                      key={item.id}
+                      onClick={item.onClick}
+                      isDisabled={item.disabled}
+                      {...fullWidthBarProps}
+                    >
+                      <HStack spacing={2.5} minW={0} w="full">
+                        {renderItemIcon(item.icon, isLightTheme, item)}
+                        <Text
+                          fontWeight="semibold"
+                          fontSize={{ base: "13px", sm: "14px" }}
+                          lineHeight="1.2"
+                        >
+                          {item.label}
+                        </Text>
+                      </HStack>
+                    </MenuItem>
+                  ) : (
+                    <MenuItem
+                      key={item.id}
+                      onClick={item.onClick}
+                      isDisabled={item.disabled}
+                      {...bentoTileProps}
+                    >
+                      <Box mb={{ base: 1, sm: 1.5 }} flexShrink={0}>
+                        {renderItemIcon(item.icon, isLightTheme, item)}
+                      </Box>
+                      <Text
+                        fontWeight="semibold"
+                        fontSize={{ base: "13px", sm: "14px" }}
+                        lineHeight="1.25"
+                        noOfLines={2}
+                        wordBreak="break-word"
+                        textAlign="start"
+                        w="full"
+                      >
+                        {item.label}
+                      </Text>
+                    </MenuItem>
+                  )
+                )}
                 <MenuItem
                   ref={modesRef}
                   closeOnSelect={false}
                   onClick={() => setView("modes")}
-                  {...menuItemProps}
-                  icon={renderItemIcon(modesIcon, isLightTheme)}
+                  {...fullWidthBarProps}
                 >
-                  <HStack justify="space-between" w="full">
-                    <Text fontWeight="semibold" fontSize={{ base: "md", md: "sm" }}>{modesLabel}</Text>
-                    <ChevronRightIcon boxSize={{ base: 6, md: 5 }} />
+                  <HStack justify="space-between" w="full" minW={0} spacing={2.5}>
+                    <HStack spacing={2.5} minW={0} flex={1}>
+                      {renderItemIcon(modesIcon, isLightTheme)}
+                      <Text
+                        fontWeight="semibold"
+                        fontSize={{ base: "13px", sm: "14px" }}
+                        lineHeight="1.2"
+                        noOfLines={1}
+                        textAlign="start"
+                      >
+                        {modesLabel}
+                      </Text>
+                    </HStack>
+                    <ChevronRightIcon boxSize={{ base: 5, md: 5 }} flexShrink={0} />
                   </HStack>
                 </MenuItem>
               </>
             ) : (
               <>
-                <MenuItem
-                  ref={backRef}
-                  closeOnSelect={false}
-                  onClick={() => setView("actions")}
-                  icon={renderItemIcon(<ArrowBackIcon boxSize={{ base: 4, md: 3.5 }} />, isLightTheme)}
-                  {...menuItemProps}
-                >
-                  <Text fontWeight="semibold" fontSize={{ base: "md", md: "sm" }}>{backLabel}</Text>
-                </MenuItem>
-                {modes.map((mode) => {
+                {modes.map((mode, index) => {
                   const ModeIcon = mode.icon;
                   const selected = mode.id === selectedMode;
                   return (
                     <MenuItem
                       key={mode.id}
-                      icon={renderItemIcon(<ModeIcon size={16} />, isLightTheme, {
-                        buttonBg: selected
-                          ? isLightTheme
-                            ? "teal.50"
-                            : "teal.900"
-                          : undefined,
-                        buttonBorderColor: selected ? "teal.400" : undefined,
-                      })}
+                      ref={index === 0 ? firstModeRef : undefined}
                       aria-current={selected ? "page" : undefined}
                       onClick={() => onSelectMode(mode.id)}
-                      {...menuItemProps}
-                      bg={selected ? "var(--app-surface-muted)" : "transparent"}
-                      fontWeight={selected ? "bold" : "normal"}
+                      {...bentoTileProps}
+                      gridColumn={
+                        modes.length % 2 === 1 && index === modes.length - 1
+                          ? "1 / -1"
+                          : undefined
+                      }
+                      borderWidth={selected ? "2.5px" : "1px"}
+                      borderColor={
+                        selected
+                          ? isLightTheme
+                            ? "teal.500"
+                            : "teal.400"
+                          : bentoTileProps.borderColor
+                      }
+                      _hover={{
+                        ...bentoTileProps._hover,
+                        borderWidth: selected ? "2.5px" : "1px",
+                        borderColor: selected
+                          ? isLightTheme
+                            ? "teal.500"
+                            : "teal.400"
+                          : bentoTileProps._hover.borderColor,
+                      }}
+                      _focus={{
+                        ...bentoTileProps._focus,
+                        borderWidth: selected ? "2.5px" : "1px",
+                        borderColor: selected
+                          ? isLightTheme
+                            ? "teal.500"
+                            : "teal.400"
+                          : bentoTileProps._focus.borderColor,
+                      }}
                     >
+                      <Box mb={{ base: 1, sm: 1.5 }} flexShrink={0}>
+                        {renderItemIcon(<ModeIcon size={16} />, isLightTheme)}
+                      </Box>
                       <Text
-                        fontSize={{ base: "md", md: "sm" }}
-                        fontWeight={selected ? "bold" : "normal"}
+                        fontSize={{ base: "13px", sm: "14px" }}
+                        fontWeight={selected ? "bold" : "600"}
+                        lineHeight="1.25"
+                        noOfLines={2}
+                        wordBreak="break-word"
+                        textAlign="start"
+                        w="full"
                       >
                         {mode.label}
                       </Text>
                     </MenuItem>
                   );
                 })}
+                <MenuItem
+                  ref={backRef}
+                  closeOnSelect={false}
+                  onClick={() => setView("actions")}
+                  {...fullWidthBarProps}
+                >
+                  <HStack spacing={2.5} minW={0} w="full">
+                    {renderItemIcon(
+                      <ArrowBackIcon boxSize={{ base: 3.5, md: 3.5 }} />,
+                      isLightTheme,
+                    )}
+                    <Text
+                      fontWeight="semibold"
+                      fontSize={{ base: "13px", sm: "14px" }}
+                      lineHeight="1.2"
+                    >
+                      {backLabel}
+                    </Text>
+                  </HStack>
+                </MenuItem>
               </>
             )}
-          </MenuList>
-        </Portal>
-      </Menu>
+            </ActivityMenuPortal>
+      </>
+    )}
+  </Menu>
     </Box>
   );
 }

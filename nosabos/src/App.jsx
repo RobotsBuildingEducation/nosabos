@@ -22,6 +22,8 @@ import React, {
   useState,
 } from "react";
 import { createPortal, flushSync } from "react-dom";
+import { motion } from "framer-motion";
+import CompactActionBar from "./components/CompactActionBar";
 import {
   Box,
   Drawer,
@@ -12089,6 +12091,8 @@ function NoteCaptureCrystalShards() {
   );
 }
 
+const MotionBox = motion.create(Box);
+
 function BottomActionBar({
   t,
   onOpenSettings,
@@ -12117,29 +12121,36 @@ function BottomActionBar({
   onScrollToLatest,
   currentTab,
 }) {
-  const bottomActionButtonStyle = { cornerShape: "superellipse(1.6)" };
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
   const settingsLabel =
     t?.app_settings_aria || t?.ra_btn_settings || "Settings";
-  const toggleLabel =
-    translationLabel || t?.ra_translations_toggle || "Translations";
   const helpChatLabel =
     helpLabel ||
     t?.app_help_chat ||
-    uiCopy(appLanguage, { en: "Help", es: "Ayuda", it: "Aiuto", ja: "ヘルプ" });
+    uiCopy(appLanguage, {
+      en: "Assistant",
+      es: "Asistente",
+      it: "Assistente",
+      ja: "アシスタント",
+    });
   const teamsLabel = t?.teams_drawer_title || "Teams";
   const tasksLabel =
     t?.real_world_tasks_title ||
     uiCopy(appLanguage, {
-      en: "Immersion practice",
+      en: "Immersion Practice",
       es: "Práctica de inmersión",
       it: "Pratica di immersione",
       ja: "イマージョン練習",
     });
   const notesLabel =
     t?.app_notes ||
-    uiCopy(appLanguage, { en: "Notes", es: "Notas", it: "Note", ja: "ノート" });
+    uiCopy(appLanguage, {
+      en: "Memory",
+      es: "Memoria",
+      it: "Memoria",
+      ja: "メモリー",
+    });
 
   // Path mode configuration
   const ALPHABET_LANGS = [
@@ -12248,49 +12259,9 @@ function BottomActionBar({
       ja: "モード",
     });
 
-  // The notes button's resting "raised key" look is this hard bottom ledge.
-  // Loading keeps the old quiet pulse; a captured memory gathers a tumbling
-  // swarm of crystal fragments into the bookmark instead of using a glow.
-  const notesLedgeShadow = isLightTheme
-    ? "0 4px 0 rgba(180, 164, 144, 0.9)"
-    : "0 4px 0 #313a4b";
-  const notesAnimation = notesIsLoading
-    ? "notesPulse 1.5s ease-in-out infinite"
-    : notesIsDone
-      ? "notesCrystalCatch 2760ms linear both"
-      : undefined;
-  // Collapse/minimize removed: the bottom action bar stays full everywhere —
-  // no auto-minimize in lessons or voice modes, no collapse button, no minimized
-  // pill. Forcing this false neutralizes all of it (effectiveIsMinimized can
-  // never become true, the collapse control is gated off, and children receive
-  // bottomActionBarMinimized=false via onMinimizedChange, i.e. the full layout).
-  const shouldShowMinimizeControls = false;
-  // Auto-minimize when entering a lesson, switching modules, or starting voice.
-  const [isMinimized, setIsMinimized] = useState(shouldShowMinimizeControls);
-  const prevShouldShowMinimizeControls = useRef(shouldShowMinimizeControls);
-  const prevTab = useRef(currentTab);
-  const effectiveIsMinimized = isMinimized && shouldShowMinimizeControls;
-
   useEffect(() => {
-    if (shouldShowMinimizeControls && !prevShouldShowMinimizeControls.current) {
-      setIsMinimized(true);
-    } else if (!shouldShowMinimizeControls) {
-      setIsMinimized(false);
-    }
-    prevShouldShowMinimizeControls.current = shouldShowMinimizeControls;
-  }, [shouldShowMinimizeControls]);
-
-  useEffect(() => {
-    onMinimizedChange?.(effectiveIsMinimized);
-  }, [effectiveIsMinimized, onMinimizedChange]);
-
-  // Re-minimize when switching modules within a lesson
-  useEffect(() => {
-    if (viewMode === "lesson" && currentTab !== prevTab.current) {
-      setIsMinimized(true);
-    }
-    prevTab.current = currentTab;
-  }, [currentTab, viewMode]);
+    onMinimizedChange?.(false);
+  }, [onMinimizedChange]);
 
   const handleActionClick = (action) => {
     if (!action) return;
@@ -12298,239 +12269,145 @@ function BottomActionBar({
     action();
   };
 
-  // Minimized bar highlight when a note is saved
-  const minimizedHighlight = notesIsDone
-    ? "0 0 0 2px rgba(56,178,172,0.5), 0 0 16px rgba(56,178,172,0.7)"
-    : notesIsLoading
-      ? "0 0 0 2px rgba(34,211,238,0.5), 0 0 16px rgba(34,211,238,0.7)"
-      : undefined;
-  const minimizedBorderColor = notesIsDone
-    ? "teal.400"
-    : notesIsLoading
-      ? "cyan.400"
-      : "var(--app-border)";
-  const minimizedAnimation = notesIsLoading
-    ? "notesPulse 1.5s ease-in-out infinite"
-    : notesIsDone
-      ? "notesDone 1.5s ease-out"
-      : undefined;
-
-  // Render minimized pill when this surface supports collapsing.
-  if (effectiveIsMinimized) {
-    return (
-      <Box
-        position="fixed"
-        bottom={0}
-        left={0}
-        right={0}
-        zIndex={80}
-        width="100%"
-        maxW="480px"
-        margin="0 auto"
-        mb={3}
-        paddingLeft={2}
-        paddingRight={2}
-        display="flex"
-        justifyContent="center"
-      >
-        <Box
-          as="button"
-          touchAction="manipulation"
-          onClick={() => {
-            playSound?.(selectSound);
-            setIsMinimized(false);
-          }}
-          borderRadius="24px"
-          bg="var(--app-glass-bg)"
-          backdropFilter="blur(8px)"
-          aria-label={modeMenuLabel}
-          w="48px"
-          h="40px"
-          px={0}
-          py={2}
-          cursor="pointer"
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-          borderWidth={notesIsDone || notesIsLoading ? "2px" : "1px"}
-          borderColor={minimizedBorderColor}
-          boxShadow={
-            minimizedHighlight ||
-            (isLightTheme
-              ? "0 4px 10px rgba(117, 94, 66, 0.1)"
-              : "0 2px 8px rgba(0,0,0,0.3)")
-          }
-          transition="all 0.3s ease"
-          animation={minimizedAnimation}
-          _hover={{ bg: "var(--app-glass-hover)" }}
-          sx={{
-            "@keyframes notesPulse": {
-              "0%": {
-                boxShadow:
-                  "0 0 0 2px rgba(34,211,238,0.35), 0 0 8px rgba(34,211,238,0.4)",
-              },
-              "50%": {
-                boxShadow:
-                  "0 0 0 3px rgba(34,211,238,0.5), 0 0 20px rgba(34,211,238,0.7)",
-              },
-              "100%": {
-                boxShadow:
-                  "0 0 0 2px rgba(34,211,238,0.35), 0 0 8px rgba(34,211,238,0.4)",
-              },
-            },
-            "@keyframes notesDone": {
-              "0%": {
-                boxShadow:
-                  "0 0 0 3px rgba(56,178,172,0.6), 0 0 20px rgba(56,178,172,0.8)",
-              },
-              "100%": {
-                boxShadow: isLightTheme
-                  ? "0 4px 10px rgba(117, 94, 66, 0.1)"
-                  : "0 2px 8px rgba(0,0,0,0.3)",
-                borderColor: "var(--app-border)",
-              },
-            },
-          }}
-        >
-          <ChevronUpIcon boxSize={4} color="gray.300" />
-        </Box>
-      </Box>
-    );
-  }
+  const isRTL = appLanguage === "ar";
 
   const questionMenuSlot = useQuestionActionStore((state) => state.menuSlot);
   const showFullNavigation = isFullNavigationSkillTreeMode(viewMode, pathMode);
   const activityMenu = Boolean(questionMenuSlot) && !showFullNavigation;
 
-  if (activityMenu) {
-    return createPortal(
-      <ActivityMenu
-        label={currentMode.label || modeMenuLabel}
-        modesLabel={currentMode.label || modeMenuLabel}
-        modesIcon={<CurrentModeIcon size={20} />}
-        backLabel={
-          t?.back ||
-          uiCopy(appLanguage, {
-            en: "Back",
-            es: "Volver",
-            it: "Indietro",
-            ja: "戻る",
-          })
-        }
-        items={[
-          ...(viewMode === "lesson"
-            ? [
-                {
-                  id: "exitLesson",
-                  label:
-                    t?.exit_lesson ||
-                    uiCopy(appLanguage, {
-                      en: "Exit lesson",
-                      es: "Salir de la lección",
-                      it: "Esci dalla lezione",
-                      ja: "レッスンを終了",
-                    }),
-                  icon: <ArrowBackIcon boxSize={5} />,
-                  onClick: () => {
-                    playSound?.(selectSound);
-                    onNavigateToSkillTree?.();
-                  },
+  const renderActivityMenu = (placement = "top-start") => (
+    <ActivityMenu
+      placement={placement}
+      label={currentMode.label || modeMenuLabel}
+      modesLabel={currentMode.label || modeMenuLabel}
+      modesIcon={<CurrentModeIcon size={20} />}
+      backLabel={
+        t?.back ||
+        uiCopy(appLanguage, {
+          en: "Back",
+          es: "Volver",
+          it: "Indietro",
+          ja: "戻る",
+        })
+      }
+      items={[
+        ...(viewMode === "lesson"
+          ? [
+              {
+                id: "exitLesson",
+                label:
+                  t?.exit_lesson ||
+                  uiCopy(appLanguage, {
+                    en: "Exit lesson",
+                    es: "Salir de la lección",
+                    it: "Esci dalla lezione",
+                    ja: "レッスンを終了",
+                  }),
+                icon: <ArrowBackIcon boxSize={5} />,
+                onClick: () => {
+                  playSound?.(selectSound);
+                  onNavigateToSkillTree?.();
                 },
-              ]
-            : []),
-          {
-            id: "teams",
-            label: tasksLabel,
-            icon: (
-              <ImmersionPracticeMenuIcon
-                progress={realWorldTasksTimerProgress}
-                hasNotification={realWorldTasksHasNotification}
-                attention={realWorldTasksAttention}
-                isLightTheme={isLightTheme}
-              />
-            ),
-            onClick: () => handleActionClick(onOpenTeams),
-          },
-          {
-            id: "settings",
-            label: settingsLabel,
-            icon: <SettingsIcon boxSize={5} />,
-            onClick: () => handleActionClick(onOpenSettings),
-          },
-          {
-            id: "notes",
-            label: notesLabel,
-            icon: notesIsDone ? (
-              <RiBookmarkFill size={20} />
-            ) : (
-              <RiBookmarkLine size={20} />
-            ),
-            buttonBg: notesIsDone ? "teal.400" : undefined,
-            buttonColor: notesIsDone ? "white" : undefined,
-            onClick: () => handleActionClick(onOpenNotes),
-          },
-          {
-            id: "help",
-            label: helpChatLabel,
-            icon: <MdOutlineSupportAgent size={20} />,
-            onClick: () => handleActionClick(onOpenHelpChat),
-            disabled: !onOpenHelpChat,
-          },
-        ]}
-        modes={PATH_MODES}
-        selectedMode={pathMode}
-        onSelectMode={(modeId) => {
-          playSound?.("modeSwitch");
-          if (viewMode !== "skillTree") {
-            onNavigateToSkillTree?.();
-            if (modeId !== pathMode) {
-              onPathModeChange?.(modeId);
-            }
-          } else {
+              },
+            ]
+          : []),
+        {
+          id: "teams",
+          label: tasksLabel,
+          icon: (
+            <ImmersionPracticeMenuIcon
+              progress={realWorldTasksTimerProgress}
+              hasNotification={realWorldTasksHasNotification}
+              attention={realWorldTasksAttention}
+              isLightTheme={isLightTheme}
+            />
+          ),
+          onClick: () => handleActionClick(onOpenTeams),
+        },
+        {
+          id: "settings",
+          label: settingsLabel,
+          icon: <SettingsIcon boxSize={5} />,
+          onClick: () => handleActionClick(onOpenSettings),
+        },
+        {
+          id: "notes",
+          label: notesLabel,
+          icon: notesIsDone ? (
+            <RiBookmarkFill size={20} />
+          ) : (
+            <RiBookmarkLine size={20} />
+          ),
+          buttonBg: notesIsDone ? "teal.400" : undefined,
+          buttonColor: notesIsDone ? "white" : undefined,
+          onClick: () => handleActionClick(onOpenNotes),
+        },
+        {
+          id: "help",
+          label: helpChatLabel,
+          icon: <MdOutlineSupportAgent size={20} />,
+          onClick: () => handleActionClick(onOpenHelpChat),
+          disabled: !onOpenHelpChat,
+        },
+      ]}
+      modes={PATH_MODES}
+      selectedMode={pathMode}
+      onSelectMode={(modeId) => {
+        playSound?.("modeSwitch");
+        if (viewMode !== "skillTree") {
+          onNavigateToSkillTree?.();
+          if (modeId !== pathMode) {
             onPathModeChange?.(modeId);
           }
-        }}
-        onOpen={() => playSound?.(selectSound)}
-        decoration={notesIsDone ? <NoteCaptureCrystalShards /> : null}
-        triggerIcon={
-          notesIsDone ? (
-            <RiBookmarkFill
-              size={20}
-              color="var(--chakra-colors-yellow-400, #D69E2E)"
-            />
-          ) : (
-            <PiDotsNineBold
-              size={22}
-              color={isLightTheme ? "#1f1912" : "var(--app-text-primary)"}
-            />
-          )
+        } else if (modeId === pathMode && modeId === "path") {
+          onScrollToLatest?.();
+        } else {
+          onPathModeChange?.(modeId);
         }
-        triggerProps={{
-          "aria-label": currentMode.label || modeMenuLabel,
-          color: notesIsDone
-            ? "var(--chakra-colors-yellow-400, #D69E2E)"
-            : isLightTheme
-              ? "#1f1912"
-              : "var(--app-text-primary)",
-          animation: notesIsDone
-            ? "activityMenuMemoryCatch 2760ms linear both"
-            : undefined,
-          sx: {
-            "@keyframes activityMenuMemoryCatch": {
-              "0%": { transform: "translateY(0) scale(1)" },
-              "36%": { transform: "translateY(-0.5px) scale(1.015)" },
-              "66%": { transform: "translateY(1px) scale(0.965)" },
-              "84%": { transform: "translateY(-2px) scale(1.075)" },
-              "100%": { transform: "translateY(0) scale(1)" },
-            },
-            "@media (prefers-reduced-motion: reduce)": {
-              animation: "none",
-            },
+      }}
+      onOpen={() => playSound?.(selectSound)}
+      decoration={notesIsDone ? <NoteCaptureCrystalShards /> : null}
+      triggerIcon={
+        notesIsDone ? (
+          <RiBookmarkFill
+            size={20}
+            color="var(--chakra-colors-yellow-400, #D69E2E)"
+          />
+        ) : (
+          <PiDotsNineBold
+            size={22}
+            color={isLightTheme ? "#1f1912" : "var(--app-text-primary)"}
+          />
+        )
+      }
+      triggerProps={{
+        "aria-label": currentMode.label || modeMenuLabel,
+        color: notesIsDone
+          ? "var(--chakra-colors-yellow-400, #D69E2E)"
+          : isLightTheme
+            ? "#1f1912"
+            : "var(--app-text-primary)",
+        animation: notesIsDone
+          ? "activityMenuMemoryCatch 2760ms linear both"
+          : undefined,
+        sx: {
+          "@keyframes activityMenuMemoryCatch": {
+            "0%": { transform: "translateY(0) scale(1)" },
+            "36%": { transform: "translateY(-0.5px) scale(1.015)" },
+            "66%": { transform: "translateY(1px) scale(0.965)" },
+            "84%": { transform: "translateY(-2px) scale(1.075)" },
+            "100%": { transform: "translateY(0) scale(1)" },
           },
-        }}
-      />,
-      questionMenuSlot,
-    );
+          "@media (prefers-reduced-motion: reduce)": {
+            animation: "none",
+          },
+        },
+      }}
+    />
+  );
+
+  if (activityMenu) {
+    return createPortal(renderActivityMenu("top-start"), questionMenuSlot);
   }
 
   if (!showFullNavigation) {
@@ -12538,456 +12415,8 @@ function BottomActionBar({
   }
 
   return (
-    <Box
-      data-bottom-navigation=""
-      position="fixed"
-      bottom={0}
-      left={0}
-      right={0}
-      zIndex={80}
-      width="100%"
-      maxW="480px"
-      margin="0 auto"
-      mb={3}
-      paddingLeft={2}
-      paddingRight={2}
-    >
-      <Box
-        borderRadius={APP_ACTION_BAR_RADIUS}
-        overflow="visible"
-        style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
-      >
-        <GlassContainer
-          borderRadius={APP_ACTION_BAR_RADIUS}
-          blur={0.5}
-          contrast={1.1}
-          brightness={1.05}
-          saturation={1.1}
-          zIndex={80}
-          displacementScale={0.2}
-          className="bottombar-glass"
-          elasticity={0.9}
-          shadowIntensity={isLightTheme ? 0.12 : 0.25}
-          allowLightModeGlass
-          fallbackBlur={isLightTheme ? "10px" : "2px"}
-          fallbackBg={
-            isLightTheme
-              ? "rgba(255, 252, 247, 0.58)"
-              : "var(--app-glass-bg-soft)"
-          }
-        >
-          <Box
-            py={2}
-            px={{ base: 3, md: 6 }}
-            width="100%"
-            paddingBottom={5}
-            paddingTop={3}
-            borderRadius={APP_ACTION_BAR_RADIUS}
-            style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
-          >
-            {/* Minimize caret above buttons */}
-            {shouldShowMinimizeControls && (
-              <Flex justify="center" mb={1}>
-                <Box
-                  as="button"
-                  touchAction="manipulation"
-                  onClick={() => {
-                    playSound?.(selectSound);
-                    setIsMinimized(true);
-                  }}
-                  bg="transparent"
-                  border="none"
-                  cursor="pointer"
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="center"
-                  px={4}
-                  py={0}
-                  _hover={{ opacity: 0.7 }}
-                  transition="opacity 0.2s"
-                >
-                  <ChevronDownIcon boxSize={5} color="gray.400" />
-                </Box>
-              </Flex>
-            )}
-            <Flex
-              as="nav"
-              maxW="560px"
-              mx="auto"
-              w="100%"
-              align="center"
-              justify={{ base: "space-between", md: "space-between" }}
-              flexWrap={{ base: "wrap", md: "wrap" }}
-              overflow="visible"
-              borderRadius={APP_ACTION_BAR_RADIUS}
-              style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
-            >
-              <Box position="relative" flexShrink={0}>
-                {realWorldTasksTimerProgress > 0 &&
-                  !realWorldTasksHasNotification && (
-                    <Box
-                      as="svg"
-                      position="absolute"
-                      top="calc(50% + 2px)"
-                      left="50%"
-                      transform="translate(-50%, -50%)"
-                      width="44px"
-                      height="48px"
-                      viewBox="0 0 44 48"
-                      pointerEvents="none"
-                      aria-hidden="true"
-                      zIndex={1}
-                      overflow="visible"
-                    >
-                      <defs>
-                        <linearGradient
-                          id="immersionProgressGradient"
-                          x1="0%"
-                          y1="0%"
-                          x2="100%"
-                          y2="100%"
-                          gradientTransform="rotate(135 0.5 0.5)"
-                        >
-                          <stop offset="0%" stopColor="#14b8a6" />
-                          <stop offset="100%" stopColor="#06b6d4" />
-                        </linearGradient>
-                      </defs>
-                      <rect
-                        x="1.75"
-                        y="1.75"
-                        width="40.5"
-                        height="44.5"
-                        rx="17"
-                        ry="18"
-                        fill="none"
-                        stroke={
-                          isLightTheme
-                            ? "rgba(120, 94, 61, 0.18)"
-                            : "rgba(255,255,255,0.08)"
-                        }
-                        strokeWidth="3.5"
-                      />
-                      <rect
-                        x="1.75"
-                        y="1.75"
-                        width="40.5"
-                        height="44.5"
-                        rx="17"
-                        ry="18"
-                        fill="none"
-                        stroke="url(#immersionProgressGradient)"
-                        strokeWidth="3.5"
-                        strokeLinecap="round"
-                        pathLength="100"
-                        strokeDasharray="100"
-                        strokeDashoffset={100 - realWorldTasksTimerProgress}
-                        style={{
-                          transition: "stroke-dashoffset 0.8s ease",
-                        }}
-                      />
-                    </Box>
-                  )}
-                <IconButton
-                  data-tutorial-id="teams"
-                  touchAction="manipulation"
-                  icon={<FiCompass size={16} />}
-                  onClick={() => handleActionClick(onOpenTeams)}
-                  aria-label={tasksLabel}
-                  size="sm"
-                  borderRadius="18px"
-                  style={bottomActionButtonStyle}
-                  borderWidth={realWorldTasksAttention ? "2px" : "0px"}
-                  borderColor={
-                    realWorldTasksAttention ? "teal.400" : "gray.700"
-                  }
-                  boxShadow={
-                    isLightTheme
-                      ? "0 4px 0 rgba(180, 164, 144, 0.9)"
-                      : "0 4px 0 #313a4b"
-                  }
-                  animation={
-                    realWorldTasksAttention
-                      ? "tasksAttentionPing 1.5s ease-out"
-                      : undefined
-                  }
-                  colorScheme="gray"
-                  bg="gray.800"
-                  color="gray.100"
-                  sx={{
-                    "@keyframes tasksAttentionPing": {
-                      "0%": {
-                        boxShadow:
-                          "0 0 0 3px rgba(20,184,166,0.6), 0 0 20px rgba(6,182,212,0.75)",
-                      },
-                      "100%": {
-                        boxShadow: isLightTheme
-                          ? "0 4px 0 rgba(180, 164, 144, 0.9)"
-                          : "0 4px 0 #313a4b",
-                        borderColor: "gray.700",
-                      },
-                    },
-                  }}
-                />
-                {realWorldTasksHasNotification && (
-                  <Box
-                    position="absolute"
-                    top="-4px"
-                    right="-4px"
-                    minW="16px"
-                    h="16px"
-                    px="4px"
-                    borderRadius="full"
-                    bgGradient="linear(135deg, #14b8a6 0%, #06b6d4 100%)"
-                    color="white"
-                    fontSize="10px"
-                    fontWeight="bold"
-                    lineHeight="16px"
-                    textAlign="center"
-                    boxShadow="0 0 0 2px var(--app-glass-bg-soft, rgba(0,0,0,0.6))"
-                    pointerEvents="none"
-                    aria-hidden="true"
-                  >
-                    !
-                  </Box>
-                )}
-              </Box>
-
-              <IconButton
-                data-tutorial-id="settings"
-                touchAction="manipulation"
-                icon={<SettingsIcon boxSize="14px" />}
-                color="gray.100"
-                onClick={() => handleActionClick(onOpenSettings)}
-                aria-label={settingsLabel}
-                size="sm"
-                borderRadius="18px"
-                style={bottomActionButtonStyle}
-                flexShrink={0}
-                colorScheme="gray"
-                bg="gray.800"
-                boxShadow={
-                  isLightTheme
-                    ? "0 4px 0 rgba(180, 164, 144, 0.9)"
-                    : "0 4px 0 #313a4b"
-                }
-              />
-
-              <Box position="relative" flexShrink={0} overflow="visible">
-                {notesIsDone && <NoteCaptureCrystalShards />}
-                <IconButton
-                  data-tutorial-id="notes"
-                  touchAction="manipulation"
-                  icon={
-                    notesIsDone ? (
-                      <RiBookmarkFill size={16} />
-                    ) : (
-                      <RiBookmarkLine size={16} />
-                    )
-                  }
-                  aria-label={notesLabel}
-                  onClick={() => handleActionClick(onOpenNotes)}
-                  isLoading={notesIsLoading}
-                  colorScheme="gray"
-                  bg={notesIsDone ? "teal.400" : "gray.800"}
-                  boxShadow={notesLedgeShadow}
-                  color={notesIsDone ? "white" : "gray.100"}
-                  size="sm"
-                  borderRadius="18px"
-                  style={bottomActionButtonStyle}
-                  position="relative"
-                  zIndex={50}
-                  transition="color 0.2s ease"
-                  animation={notesAnimation}
-                  sx={{
-                    "@keyframes notesPulse": {
-                      "0%": {
-                        boxShadow: `${notesLedgeShadow}, 0 0 0 2px rgba(34,211,238,0.35), 0 0 8px rgba(34,211,238,0.4)`,
-                      },
-                      "50%": {
-                        boxShadow: `${notesLedgeShadow}, 0 0 0 3px rgba(34,211,238,0.5), 0 0 20px rgba(34,211,238,0.7)`,
-                      },
-                      "100%": {
-                        boxShadow: `${notesLedgeShadow}, 0 0 0 2px rgba(34,211,238,0.35), 0 0 8px rgba(34,211,238,0.4)`,
-                      },
-                    },
-                    "@keyframes notesCrystalCatch": {
-                      "0%": {
-                        transform: "translateY(0) scale(1)",
-                        backgroundColor: "#38b2ac",
-                        animationTimingFunction:
-                          "cubic-bezier(0.45, 0, 0.55, 1)",
-                      },
-                      "36%": {
-                        transform: "translateY(-0.5px) scale(1.015)",
-                        backgroundColor: "#2dd4bf",
-                        animationTimingFunction:
-                          "cubic-bezier(0.45, 0, 0.55, 1)",
-                      },
-                      "66%": {
-                        transform: "translateY(1px) scale(0.965)",
-                        backgroundColor: "#14b8a6",
-                        animationTimingFunction:
-                          "cubic-bezier(0.16, 1, 0.3, 1)",
-                      },
-                      "84%": {
-                        transform: "translateY(-2px) scale(1.075)",
-                        backgroundColor: "#22d3ee",
-                        animationTimingFunction:
-                          "cubic-bezier(0.34, 1.18, 0.64, 1)",
-                      },
-                      "100%": {
-                        transform: "translateY(0) scale(1)",
-                        backgroundColor: "#38b2ac",
-                      },
-                    },
-                    "@media (prefers-reduced-motion: reduce)": {
-                      animation: "none",
-                    },
-                  }}
-                />
-              </Box>
-
-              <IconButton
-                data-tutorial-id="help"
-                touchAction="manipulation"
-                icon={<MdOutlineSupportAgent size={16} />}
-                onClick={() => handleActionClick(onOpenHelpChat)}
-                aria-label={helpChatLabel}
-                isDisabled={!onOpenHelpChat}
-                size="sm"
-                borderRadius="18px"
-                style={bottomActionButtonStyle}
-                bg="white"
-                color="blue"
-                boxShadow="0 4px 0 blue"
-                _hover={{
-                  bg: "rgba(255, 255, 255, 0.92)",
-                  color: "blue.500",
-                  boxShadow: "0 4px 0 rgba(255, 255, 255, 0.36)",
-                }}
-                _active={{
-                  bg: "rgba(255, 255, 255, 0.78)",
-                  color: "blue.600",
-                  boxShadow: "none",
-                  transform: "translateY(4px)",
-                }}
-                zIndex={50}
-                flexShrink={0}
-              />
-
-              {/* Path Mode Menu */}
-              <Menu placement="top-end" isLazy lazyBehavior="keepMounted">
-                <MenuButton
-                  data-tutorial-id="mode"
-                  touchAction="manipulation"
-                  as={IconButton}
-                  icon={<CurrentModeIcon size={16} />}
-                  aria-label={modeMenuLabel}
-                  size="sm"
-                  borderRadius="18px"
-                  style={bottomActionButtonStyle}
-                  flexShrink={0}
-                  onClick={() => playSound?.("modeSwitch")}
-                  bg={isLightTheme ? "#38b2ac" : undefined}
-                  colorScheme={isLightTheme ? undefined : "teal"}
-                  boxShadow={isLightTheme ? "0 4px 0 #237f7a" : undefined}
-                  color="white"
-                  _hover={
-                    isLightTheme
-                      ? {
-                          bg: "#44c7bf",
-                          boxShadow: "0 4px 0 #237f7a",
-                        }
-                      : undefined
-                  }
-                  _active={
-                    isLightTheme
-                      ? {
-                          bg: "#319795",
-                          boxShadow: "none",
-                          transform: "translateY(4px)",
-                        }
-                      : undefined
-                  }
-                />
-                <Portal>
-                  <MenuList
-                    bg={
-                      isLightTheme ? "var(--app-surface-elevated)" : "gray.800"
-                    }
-                    color={isLightTheme ? "var(--app-text-primary)" : "white"}
-                    borderColor="var(--app-border)"
-                    boxShadow="var(--app-shadow-soft)"
-                    minW="180px"
-                    zIndex="popover"
-                    mb={4}
-                  >
-                    {PATH_MODES.map((mode) => {
-                      const ModeIcon = mode.icon;
-                      const isSelected = pathMode === mode.id;
-                      return (
-                        <MenuItem
-                          key={mode.id}
-                          onClick={() => {
-                            playSound?.("modeSwitch");
-                            // If clicking the already-selected mode, navigate back to skill tree (if in a lesson) or scroll
-                            if (isSelected) {
-                              if (viewMode !== "skillTree") {
-                                onNavigateToSkillTree?.();
-                              } else if (mode.id === "path") {
-                                onScrollToLatest?.();
-                              }
-                            } else {
-                              onPathModeChange?.(mode.id);
-                            }
-                          }}
-                          bg={
-                            isLightTheme
-                              ? isSelected
-                                ? "var(--app-surface-muted)"
-                                : "transparent"
-                              : isSelected
-                                ? "whiteAlpha.100"
-                                : "transparent"
-                          }
-                          _hover={{
-                            bg: isLightTheme
-                              ? "var(--app-surface-muted)"
-                              : "whiteAlpha.200",
-                            color: isLightTheme
-                              ? "var(--app-text-primary)"
-                              : "white",
-                          }}
-                          _active={{
-                            bg: isLightTheme
-                              ? "var(--app-glass-bg-soft)"
-                              : "whiteAlpha.200",
-                            color: isLightTheme
-                              ? "var(--app-text-primary)"
-                              : "white",
-                          }}
-                          color={
-                            isLightTheme
-                              ? isSelected
-                                ? "var(--app-text-primary)"
-                                : "var(--app-text-secondary)"
-                              : "white"
-                          }
-                          icon={<ModeIcon size={18} />}
-                          fontWeight={isSelected ? "bold" : "normal"}
-                          p={6}
-                        >
-                          {mode.label}
-                        </MenuItem>
-                      );
-                    })}
-                  </MenuList>
-                </Portal>
-              </Menu>
-            </Flex>
-          </Box>
-        </GlassContainer>
-      </Box>
-    </Box>
+    <CompactActionBar dir={isRTL ? "rtl" : "ltr"}>
+      {renderActivityMenu("top")}
+    </CompactActionBar>
   );
 }
