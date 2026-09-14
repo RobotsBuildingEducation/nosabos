@@ -208,6 +208,24 @@ test("grammar generation receives one objective plus same-lesson support forms",
   assert.doesNotMatch(prompt, /manzana/);
 });
 
+test("reading goals retain comprehension distinctions without script or vocabulary-checklist mandates", () => {
+  const context = {
+    lessonId: "lesson-reactions",
+    agendaItems: [
+      { id: "reading", sourceLessonId: "lesson-reactions", kind: "comprehension", modes: ["reading"],
+        goal: "Distinguish surprise from pleasure", activityBrief: "Read a dialogue full of reactions", targetRole: "goal", targetExamples: ["Oh, how nice!"] },
+      { id: "vocabulary", sourceLessonId: "lesson-reactions", kind: "vocabulary", modes: ["vocabulary"],
+        targetRole: "form", targetForms: ["Really?", "How nice!"], goal: "Use reactions" },
+    ],
+  };
+  const prompt = buildCurriculumPromptContext(context, { mode: "reading", includeExamples: false });
+  assert.match(prompt, /Distinguish surprise from pleasure/);
+  assert.match(prompt, /adapt them to single-author prose/);
+  assert.match(prompt, /vocabulary pool, not a checklist or sentence order/);
+  assert.match(prompt, /Really\?/);
+  assert.doesNotMatch(prompt, /Oh, how nice!|Choose exactly one objective/);
+});
+
 test("agenda derivation ignores placeholders and uses concrete mode prompts", () => {
   const lesson = {
     id: "lesson-example",
@@ -649,10 +667,13 @@ test("People Around Me uses localized capability goals instead of spoken metadat
     const agenda = getLessonAgenda(lesson, { unit, targetLang });
 
     assert.equal(lesson.agenda.version, 2);
+    assert.doesNotMatch(lesson.content.reading.prompt, /neighbou?rhood/i);
+    assert.deepEqual(lesson.content.reading.readingSubjects.map((subject) => subject.id),
+      ["friend", "classmate", "teacher", "child", "coworker", "teammate", "shop_worker", "neighbor"]);
     assert.deepEqual(
       agenda.map((item) => getAgendaGoal(item)),
       [
-        "Identify familiar people and their relationships in a short neighborhood description",
+        "Identify familiar people and their relationships in a short everyday description",
         "Produce one short, understandable description of a familiar person",
       ],
     );

@@ -46,9 +46,9 @@ import {
   onSnapshot,
 } from "firebase/firestore";
 import {
-  appCheckFetch,
   database,
   storyModel,
+  storyRevisionModel,
 } from "../firebaseResources/firebaseResources";
 import useUserStore from "../hooks/useUserStore";
 import { t, translations } from "../utils/translation";
@@ -77,11 +77,12 @@ import RandomCharacter from "./RandomCharacter";
 import useSoundSettings from "../hooks/useSoundSettings";
 import { submitActionSound, nextButtonSound, deliciousSound, selectSound } from "../constants/sounds";
 import { getBidiTextProps, mergeBidiSx } from "../utils/bidiText";
-import { buildCurriculumPromptContext } from "../utils/lessonCurriculum";
+import { createStoryPlan, buildStoryDiversityPrompt, recordStoryHistory } from "../features/stories/storyDiversity";
+import { generatePracticeStory } from "../features/stories/practiceStoryGeneration";
 import { questionSquircleStyle } from "./questionUiStyles";
 import StoryComprehension from "../features/stories/StoryComprehension";
-import { chooseStoryMode, isStoryTargetCollectionCompatible, rotateStoryMode, STORY_MODES } from "../features/stories/storySession";
-import { buildSpeakingStoryPrompt, getStoryDifficulty, STORY_THINKING_BUDGET } from "../features/stories/storyPrompts";
+import { chooseStoryMode, rotateStoryMode, STORY_MODES } from "../features/stories/storySession";
+import { buildSpeakingStoryPrompt, getStoryDifficulty } from "../features/stories/storyPrompts";
 import StoryCharacterAvatar from "../features/stories/StoryCharacterAvatar";
 import { storyCopy } from "../features/stories/storyCopy";
 import { storyServices } from "../features/stories/storyServices";
@@ -98,7 +99,7 @@ import {
 import {
   getStoryCharacterVoice,
   getStoryCharacterPersonality,
-  getRandomStoryCharacterPortraitId,
+  getStoryCharacterPortraitId,
 } from "../features/stories/storyCharacters";
 
 const renderSpeakerIcon = (loading) =>
@@ -282,20 +283,6 @@ const getAppUILang = () => {
   const lang = user?.appLanguage || localStorage.getItem("appLanguage") || "en";
   return ["es", "pt", "it", "fr", "de", "ja", "hi", "ar", "zh"].includes(lang) ? lang : "en";
 };
-
-// Extract text from a Gemini streaming chunk (tolerant to shapes)
-function textFromChunk(chunk) {
-  try {
-    if (!chunk) return "";
-    if (typeof chunk.text === "function") return chunk.text() || "";
-    if (typeof chunk.text === "string") return chunk.text;
-    const cand = chunk.candidates?.[0];
-    if (cand?.content?.parts?.length) {
-      return cand.content.parts.map((p) => p.text || "").join("");
-    }
-  } catch {}
-  return "";
-}
 
 /* ================================
    Shared Progress (global XP + settings)
@@ -598,6 +585,8 @@ function SpeakingStoryMode({
   const [storyType, setStoryType] = useState(null); // 'paragraph' | 'conversation'
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const isStreamingRef = useRef(false);
   const [generationError, setGenerationError] = useState(false);
 
   const [isPlayingTarget, setIsPlayingTarget] = useState(false);
@@ -624,6 +613,8 @@ function SpeakingStoryMode({
   // Refs
   const audioRef = useRef(null);
   const storyCacheRef = useRef(null);
+  const generationRequestRef = useRef(0);
+  useEffect(() => () => { generationRequestRef.current++; }, []);
   const highlightIntervalRef = useRef(null);
   const currentUtteranceRef = useRef(null);
   const animationFrameRef = useRef(null);
@@ -828,65 +819,6 @@ function SpeakingStoryMode({
     return stop;
   }
 
-  /* --------------------------- Story data shaping --------------------------- */
-  // Practice stories load target-language dialogue only. Support translations
-  // are fetched per line when the learner asks for one.
-  function normalizeStory(raw, tgtCode) {
-    if (!raw) return null;
-    const pick = (obj, code, fallback) =>
-      obj?.[code] ??
-      (code === "es" ? obj?.es : code === "en" ? obj?.en : undefined) ??
-      obj?.[fallback];
-
-    const fullTgt = pick(raw.fullStory || {}, tgtCode, "es");
-    const sentences = (raw.sentences || []).map((s) => ({
-      tgt: s?.[tgtCode] ?? s?.es ?? s?.en ?? "",
-      sup: "",
-      ...(s?.character && { character: String(s.character).trim() }),
-      ...(normalizeCharacterGender(s?.gender) && {
-        gender: normalizeCharacterGender(s.gender),
-      }),
-    }));
-
-    if (!fullTgt || !sentences.length) return null;
-
-    return {
-      fullStory: { tgt: fullTgt, sup: "" },
-      sentences,
-    };
-  }
-
-  const validateAndFixStorySentences = (
-    data,
-    tgtKey = "tgt",
-    supKey = "sup",
-  ) => {
-    if (!data || !data.fullStory || !data.sentences) return data;
-    const full = data.fullStory[tgtKey];
-    const parts = full
-      .split(/[.!?]+/)
-      .filter((s) => s.trim().length > 0)
-      .map((s) => (/[.!?]$/.test(s.trim()) ? s.trim() : s.trim() + "."));
-    const reconstructed = parts.join(" ");
-    if (
-      reconstructed === full.trim() &&
-      parts.length === data.sentences.length
-    ) {
-      const validated = parts.map((tgt, i) => ({
-        tgt,
-        sup: data.sentences[i]?.[supKey] || data.sentences[i]?.sup || "",
-        ...(data.sentences[i]?.character && {
-          character: data.sentences[i].character,
-        }),
-        ...(normalizeCharacterGender(data.sentences[i]?.gender) && {
-          gender: normalizeCharacterGender(data.sentences[i].gender),
-        }),
-      }));
-      return { ...data, sentences: validated };
-    }
-    return data;
-  };
-
   const stopAllAudio = useCallback(() => {
     audioRequestRef.current++;
     stopAllTTSPlayback();
@@ -908,337 +840,13 @@ function SpeakingStoryMode({
     setHighlightedWordIndex(-1);
   }, []);
 
-  /* ----------------------------- Story generation (backend, fallback) ----------------------------- */
-  const generateStory = useCallback(async () => {
-    setIsLoading(true);
-    setGenerationError(false);
-    stopAllAudio();
-    setRevealedTranslations({});
-    setSentenceTranslations({});
-    setTranslatingSentences({});
-    setSessionXp(0);
-    sessionAwardedRef.current = false;
-    rewardedSentenceKeysRef.current.clear();
-    const isTutorial = lessonContent?.topic === "tutorial";
-    try {
-      usageStatsRef.current.storyGenerations++;
-      const storyUrl = "https://generatestory-hftgya63qa-uc.a.run.app";
-
-      // Determine lesson context for the story
-      // Special handling for tutorial mode - use very simple "hello" content only
-      const lessonTopic = isTutorial
-        ? "TUTORIAL: Create an extremely simple story about saying hello. Use ONLY basic greetings like 'hello', 'hi', 'good morning', 'goodbye'. The story must be 2-3 very short sentences (2-5 words each) with NO extra topics."
-        : lessonContent?.topic ||
-          lessonContent?.scenario ||
-          "general conversation";
-
-      const response = await appCheckFetch(storyUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          text: { format: { type: "text" } },
-          input: {
-            uiLanguage: uiLang, // UI language is app UI only
-            cefrLevel, // CEFR-based difficulty level
-            targetLang, // content target language
-            supportLang, // effective support language (bilingual mirrors UI)
-            includeTranslations: false,
-            lessonTopic: [lessonTopic, focusedLessonPrompt(lessonContent)].filter(Boolean).join("\n"), // Keep exact targets in the server generation path too
-          },
-        }),
-      });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const data = await response.json();
-      const normalized = normalizeStory(
-        data.story || data,
-        targetLang,
-        supportLang,
-      );
-      if (!normalized) throw new Error("Story payload missing expected fields");
-      const validated = validateAndFixStorySentences(normalized, "tgt", "sup");
-      if (!isStoryTargetCollectionCompatible(
-        validated.sentences.map((sentence) => sentence?.tgt),
-        targetLang,
-      )) {
-        throw new Error(
-          `Story dialogue is not in the requested target language (${targetLang})`,
-        );
-      }
-      setStoryData(validated);
-      storyCacheRef.current = validated;
-      setCurrentSentenceIndex(0);
-      setSessionXp(0);
-      setSessionComplete(false);
-      setSessionSummary({
-        passed: 0,
-        total: validated?.sentences?.length || 0,
-      });
-      sessionAwardedRef.current = false;
-      setHighlightedWordIndex(-1);
-      setLastSuccessInfo(null);
-      setLastFeedback(null);
-    } catch (error) {
-      if (!new Set(["en", "es"]).has(targetLang)) {
-        console.error("Story generation failed for the requested language", {
-          targetLang,
-          supportLang,
-          message: error?.message || String(error),
-        });
-        setStoryData(null);
-        setGenerationError(true);
-        return;
-      }
-      // Bilingual fallback that respects target/support languages
-      setStoryType("paragraph"); // Fallback is always a paragraph story
-      const fallback = isTutorial
-        ? {
-            storyType: "paragraph",
-            fullStory: {
-              tgt:
-                targetLang === "en"
-                  ? "Hello. Hi. Goodbye."
-                  : "Hola. Hola. Adiós.",
-              sup: supportStoryText(supportLang, {
-                en: "Hello. Hi. Goodbye.",
-                es: "Hola. Hola. Adiós.",
-                hi: "नमस्ते। हाय। अलविदा।",
-                it: "Ciao. Ciao. Arrivederci.",
-                fr: "Bonjour. Salut. Au revoir.",
-                ar: "أهلاً. هاي. مع السلامة.",
-                zh: "你好。嗨。再见。",
-              }),
-            },
-            sentences:
-              targetLang === "en"
-                ? [
-                    {
-                      tgt: "Hello.",
-                      sup: supportStoryText(supportLang, {
-                        en: "Hello.",
-                        es: "Hola.",
-                        hi: "नमस्ते।",
-                        it: "Ciao.",
-                        fr: "Bonjour.",
-                        ar: "أهلاً.",
-                        zh: "你好。",
-                      }),
-                    },
-                    {
-                      tgt: "Hi.",
-                      sup: supportStoryText(supportLang, {
-                        en: "Hi.",
-                        es: "Hola.",
-                        hi: "हाय।",
-                        it: "Ciao.",
-                        fr: "Salut.",
-                        ar: "هاي.",
-                        zh: "嗨。",
-                      }),
-                    },
-                    {
-                      tgt: "Goodbye.",
-                      sup: supportStoryText(supportLang, {
-                        en: "Goodbye.",
-                        es: "Adiós.",
-                        hi: "अलविदा।",
-                        it: "Arrivederci.",
-                        fr: "Au revoir.",
-                        ar: "مع السلامة.",
-                        zh: "再见。",
-                      }),
-                    },
-                  ]
-                : [
-                    {
-                      tgt: "Hola.",
-                      sup: supportStoryText(supportLang, {
-                        en: "Hello.",
-                        es: "Hola.",
-                        hi: "नमस्ते।",
-                        it: "Ciao.",
-                        fr: "Bonjour.",
-                        ar: "أهلاً.",
-                        zh: "你好。",
-                      }),
-                    },
-                    {
-                      tgt: "Hola.",
-                      sup: supportStoryText(supportLang, {
-                        en: "Hi.",
-                        es: "Hola.",
-                        hi: "हाय।",
-                        it: "Ciao.",
-                        fr: "Salut.",
-                        ar: "هاي.",
-                        zh: "嗨。",
-                      }),
-                    },
-                    {
-                      tgt: "Adiós.",
-                      sup: supportStoryText(supportLang, {
-                        en: "Goodbye.",
-                        es: "Adiós.",
-                        hi: "अलविदा।",
-                        it: "Arrivederci.",
-                        fr: "Au revoir.",
-                        ar: "مع السلامة.",
-                        zh: "再见。",
-                      }),
-                    },
-                  ],
-          }
-        : {
-            storyType: "paragraph",
-            fullStory: {
-              tgt:
-                targetLang === "en"
-                  ? "Once upon a time, there was a small town called San Miguel. The town had a lovely square where kids played every day. In the square, an old fountain always had fresh water. Adults sat around it to talk and rest after work."
-                  : "Había una vez un pequeño pueblo en México llamado San Miguel. El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días. En la plaza, había una fuente antigua que siempre tenía agua fresca. Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo.",
-              sup: supportStoryText(supportLang, {
-                en: "Once upon a time, there was a small town in Mexico called San Miguel. The town had a very beautiful square where the children played every day. In the square, there was an old fountain that always had fresh water. The adults sat around the fountain to talk and rest after work.",
-                es: "Había una vez un pequeño pueblo en México llamado San Miguel. El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días. En la plaza, había una fuente antigua que siempre tenía agua fresca. Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo.",
-                hi: "एक समय मेक्सिको में सैन मिगेल नाम का एक छोटा-सा कस्बा था। उस कस्बे में एक बहुत सुंदर चौक था जहाँ बच्चे हर दिन खेलते थे। चौक में एक पुराना फव्वारा था जिसमें हमेशा ताज़ा पानी रहता था। बड़े लोग काम के बाद बातें करने और आराम करने के लिए उसी फव्वारे के आसपास बैठते थे।",
-                it: "C'era una volta un piccolo paese in Messico chiamato San Miguel. Il paese aveva una piazza molto bella dove i bambini giocavano ogni giorno. Nella piazza c'era una vecchia fontana con acqua sempre fresca. Gli adulti si sedevano intorno alla fontana per parlare e riposare dopo il lavoro.",
-                fr: "Il etait une fois un petit village au Mexique appele San Miguel. Le village avait une tres belle place ou les enfants jouaient tous les jours. Sur la place, il y avait une vieille fontaine qui avait toujours de l'eau fraiche. Les adultes s'asseyaient autour de la fontaine pour parler et se reposer apres le travail.",
-                ar: "كان يا ما كان، كانت هناك بلدة صغيرة في المكسيك اسمها سان ميجيل. كان فيها ميدان جميل جداً يلعب فيه الأطفال كل يوم. وفي الميدان كانت توجد نافورة قديمة فيها ماء عذب دائماً. وكان الكبار يجلسون حول النافورة ليتحدثوا ويستريحوا بعد العمل.",
-                zh: "从前，墨西哥有一个叫圣米格尔的小镇。小镇有一个很漂亮的广场，孩子们每天都在那里玩。广场上有一座古老的喷泉，里面总是有清水。大人们下班后会坐在喷泉周围聊天和休息。",
-              }),
-            },
-            sentences:
-              targetLang === "en"
-                ? [
-                    {
-                      tgt: "Once upon a time, there was a small town called San Miguel.",
-                      sup: supportStoryText(supportLang, {
-                        en: "Once upon a time, there was a small town called San Miguel.",
-                        es: "Había una vez un pequeño pueblo llamado San Miguel.",
-                        hi: "एक समय सैन मिगेल नाम का एक छोटा-सा कस्बा था।",
-                        it: "C'era una volta un piccolo paese chiamato San Miguel.",
-                        fr: "Il etait une fois un petit village appele San Miguel.",
-                        ar: "كان يا ما كان، كانت هناك بلدة صغيرة اسمها سان ميجيل.",
-                        zh: "从前，有一个叫圣米格尔的小镇。",
-                      }),
-                    },
-                    {
-                      tgt: "The town had a lovely square where kids played every day.",
-                      sup: supportStoryText(supportLang, {
-                        en: "The town had a lovely square where kids played every day.",
-                        es: "El pueblo tenía una plaza bonita donde los niños jugaban a diario.",
-                        hi: "उस कस्बे में एक सुंदर चौक था जहाँ बच्चे हर दिन खेलते थे।",
-                        it: "Il paese aveva una bella piazza dove i bambini giocavano ogni giorno.",
-                        fr: "Le village avait une jolie place ou les enfants jouaient tous les jours.",
-                        ar: "كان في البلدة ميدان جميل يلعب فيه الأطفال كل يوم.",
-                        zh: "小镇有一个漂亮的广场，孩子们每天都在那里玩。",
-                      }),
-                    },
-                    {
-                      tgt: "In the square, an old fountain always had fresh water.",
-                      sup: supportStoryText(supportLang, {
-                        en: "In the square, an old fountain always had fresh water.",
-                        es: "En la plaza, una fuente antigua siempre tenía agua fresca.",
-                        hi: "उस चौक में एक पुराना फव्वारा था जिसमें हमेशा ताज़ा पानी रहता था।",
-                        it: "Nella piazza, una vecchia fontana aveva sempre acqua fresca.",
-                        fr: "Sur la place, une vieille fontaine avait toujours de l'eau fraiche.",
-                        ar: "وفي الميدان كانت توجد نافورة قديمة فيها ماء عذب دائماً.",
-                        zh: "广场上有一座古老的喷泉，里面总是有清水。",
-                      }),
-                    },
-                    {
-                      tgt: "Adults sat around it to talk and rest after work.",
-                      sup: supportStoryText(supportLang, {
-                        en: "Adults sat around it to talk and rest after work.",
-                        es: "Los adultos se sentaban alrededor para hablar y descansar después del trabajo.",
-                        hi: "बड़े लोग काम के बाद बातें करने और आराम करने के लिए उसके आसपास बैठते थे।",
-                        it: "Gli adulti si sedevano intorno per parlare e riposare dopo il lavoro.",
-                        fr: "Les adultes s'asseyaient autour pour parler et se reposer apres le travail.",
-                        ar: "وكان الكبار يجلسون حولها ليتحدثوا ويستريحوا بعد العمل.",
-                        zh: "大人们下班后会坐在它周围聊天和休息。",
-                      }),
-                    },
-                  ]
-                : [
-                    {
-                      tgt: "Había una vez un pequeño pueblo en México llamado San Miguel.",
-                      sup: supportStoryText(supportLang, {
-                        en: "Once upon a time, there was a small town in Mexico called San Miguel.",
-                        es: "Había una vez un pequeño pueblo en México llamado San Miguel.",
-                        hi: "एक समय मेक्सिको में सैन मिगेल नाम का एक छोटा-सा कस्बा था।",
-                        it: "C'era una volta un piccolo paese in Messico chiamato San Miguel.",
-                        fr: "Il etait une fois un petit village au Mexique appele San Miguel.",
-                        ar: "كان يا ما كان، كانت هناك بلدة صغيرة في المكسيك اسمها سان ميجيل.",
-                        zh: "从前，墨西哥有一个叫圣米格尔的小镇。",
-                      }),
-                    },
-                    {
-                      tgt: "El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días.",
-                      sup: supportStoryText(supportLang, {
-                        en: "The town had a very beautiful square where the children played every day.",
-                        es: "El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días.",
-                        hi: "उस कस्बे में एक बहुत सुंदर चौक था जहाँ बच्चे हर दिन खेलते थे।",
-                        it: "Il paese aveva una piazza molto bella dove i bambini giocavano ogni giorno.",
-                        fr: "Le village avait une tres belle place ou les enfants jouaient tous les jours.",
-                        ar: "كان فيها ميدان جميل جداً يلعب فيه الأطفال كل يوم.",
-                        zh: "小镇有一个很漂亮的广场，孩子们每天都在那里玩。",
-                      }),
-                    },
-                    {
-                      tgt: "En la plaza, había una fuente antigua que siempre tenía agua fresca.",
-                      sup: supportStoryText(supportLang, {
-                        en: "In the square, there was an old fountain that always had fresh water.",
-                        es: "En la plaza, había una fuente antigua que siempre tenía agua fresca.",
-                        hi: "उस चौक में एक पुराना फव्वारा था जिसमें हमेशा ताज़ा पानी रहता था।",
-                        it: "Nella piazza c'era una vecchia fontana che aveva sempre acqua fresca.",
-                        fr: "Sur la place, il y avait une vieille fontaine qui avait toujours de l'eau fraiche.",
-                        ar: "وفي الميدان كانت توجد نافورة قديمة فيها ماء عذب دائماً.",
-                        zh: "广场上有一座古老的喷泉，里面总是有清水。",
-                      }),
-                    },
-                    {
-                      tgt: "Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo.",
-                      sup: supportStoryText(supportLang, {
-                        en: "The adults sat around the fountain to talk and rest after work.",
-                        es: "Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo.",
-                        hi: "बड़े लोग काम के बाद बातें करने और आराम करने के लिए फव्वारे के आसपास बैठते थे।",
-                        it: "Gli adulti si sedevano intorno alla fontana per parlare e riposare dopo il lavoro.",
-                        fr: "Les adultes s'asseyaient autour de la fontaine pour parler et se reposer apres le travail.",
-                        ar: "وكان الكبار يجلسون حول النافورة ليتحدثوا ويستريحوا بعد العمل.",
-                        zh: "大人们下班后会坐在喷泉周围聊天和休息。",
-                      }),
-                    },
-                  ],
-          };
-      setStoryData(fallback);
-      storyCacheRef.current = fallback;
-      toast({
-        title: t(uiLang, "story_demo_title"),
-        description: t(uiLang, "story_demo_desc"),
-        status: "info",
-        duration: 3000,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [
-    lessonContent,
-    cefrLevel,
-    targetLang,
-    supportLang,
-    uiLang,
-    stopAllAudio,
-    toast,
-  ]);
-
-  /* ----------------------------- Story generation (Gemini streaming) ----------------------------- */
-  /**
-   * Stream story generation from Gemini (frontend) for speed.
-   * Protocol: NDJSON lines emitted by the model, e.g.:
-   * {"type":"sentence","tgt":"...", "sup":"..."}
-   * ...
-   * {"type":"done"}
-   */
+  // Stream dialogue lines and render as soon as the first sentence arrives
   const generateStoryGeminiStream = useCallback(async () => {
+    const request = ++generationRequestRef.current;
+    const isCancelled = () => request !== generationRequestRef.current;
     setIsLoading(true);
+    setIsStreaming(true);
+    isStreamingRef.current = true;
     setGenerationError(false);
     stopAllAudio();
     setRevealedTranslations({});
@@ -1249,49 +857,19 @@ function SpeakingStoryMode({
     rewardedSentenceKeysRef.current.clear();
     try {
       usageStatsRef.current.storyGenerations++;
-      const tLang = targetLang; // 'es' | 'en' | 'nah'
-      const tName = LLM_LANG_NAME(tLang);
-      const diff = lessonContent?.isGoal ? focusedLessonPrompt(lessonContent) : getStoryDifficulty(cefrLevel, { includeTranslations: false });
-
-      // Check for tutorial mode first
-      const isTutorial = lessonContent?.topic === "tutorial";
-
-      // Stories use character scripts so voice assignment can stay stable.
-      const selectedStoryType = "conversation";
-      setStoryType(selectedStoryType);
-
-      // NDJSON protocol. We instruct the model to strictly emit one compact JSON object per line.
-      // Special handling for tutorial mode - use very simple "hello" content only
-      const scenarioDirective = isTutorial
-        ? `TUTORIAL MODE - ABSOLUTE BEGINNER: Create an extremely simple story about saying hello. Use ONLY basic greetings like 'hello', 'hi', 'good morning', 'goodbye'. Each sentence should be 2-5 words maximum. The story MUST be only 2-3 lines/sentences.`
-        : lessonContent?.scenario || lessonContent?.topic
-          ? lessonContent.scenario
-            ? `STRICT REQUIREMENT: The scenario MUST be about: ${lessonContent.scenario}. Do NOT create stories about other topics. This is lesson-specific content and you MUST NOT diverge.`
-            : `STRICT REQUIREMENT: The story MUST focus on the topic: ${lessonContent.topic}. Do NOT create stories about other topics. This is lesson-specific content and you MUST NOT diverge.`
-          : "Create a simple conversational story appropriate for language practice.";
-      const curriculumPromptContext = [buildCurriculumPromptContext(lessonContent?.curriculumContext, { mode: "stories" }), focusedLessonPrompt(lessonContent)].filter(Boolean).join("\n");
-
+      const plan = createStoryPlan({ lessonContent, lessonId: lesson?.id, npub, targetLang, mode: "practice" });
       const prompt = buildSpeakingStoryPrompt({
-        targetName: tName,
-        targetLang: tLang,
-        difficulty: diff,
-        isTutorial,
-        scenarioDirective,
-        curriculumContext: curriculumPromptContext,
+        targetName: LLM_LANG_NAME(targetLang), targetLang,
+        difficulty: getStoryDifficulty(cefrLevel, { includeTranslations: false }),
+        isTutorial: plan.isTutorial,
+        scenarioDirective: plan.isTutorial ? "Tutorial: a tiny greeting encounter only." : plan.objective,
+        curriculumContext: [focusedLessonPrompt(lessonContent), buildStoryDiversityPrompt(plan)].filter(Boolean).join("\n"),
       });
 
-      // Stream from Gemini
-      const resp = await storyModel.generateContentStream({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: { thinkingConfig: { thinkingBudget: STORY_THINKING_BUDGET } },
-      });
-
-      let buffer = "";
-      let sentences = [];
       let revealed = false;
-      const seenLineKeys = new Set();
+      const collectedSentences = [];
+      let buffer = "";
 
-      // Safely parse and apply a line of potential JSON
       const tryConsumeLine = (line) => {
         const trimmed = line.trim();
         if (!trimmed || trimmed.startsWith("```")) return;
@@ -1304,209 +882,111 @@ function SpeakingStoryMode({
         }
         if (obj?.type === "sentence" && obj.tgt) {
           const item = {
-            tgt: String(obj.tgt || "").trim(),
-            sup: "",
-            // Include character name for conversation scripts
-            ...(obj.character && { character: String(obj.character).trim() }),
-            ...(normalizeCharacterGender(obj.gender) && {
-              gender: normalizeCharacterGender(obj.gender),
-            }),
+            tgt: String(obj.tgt).trim(),
+            sup: String(obj.sup || "").trim(),
+            character: obj.character || "Sheilfer",
+            ...(obj.gender ? { gender: obj.gender } : {}),
           };
-          const key = `${item.character || ""}|||${item.tgt}`;
-          if (seenLineKeys.has(key)) return;
-          seenLineKeys.add(key);
-          sentences.push(item);
-
-          // Distinct-script targets may begin with a name, acronym, or "OK".
-          // Buffer those short Latin-only lines until the episode has enough
-          // target-script evidence to safely reveal it.
+          collectedSentences.push(item);
           if (!revealed) {
-            if (
-              isStoryTargetCollectionCompatible(
-                sentences.map((sentence) => sentence.tgt),
-                tLang,
-              )
-            ) {
-              setStoryData({
+            revealed = true;
+            setIsLoading(false);
+            setStoryType("conversation");
+            setStoryData({
+              fullStory: { tgt: item.tgt, sup: item.sup },
+              sentences: [item],
+              storyType: "conversation",
+            });
+          } else {
+            setStoryData((prev) => {
+              if (!prev) return prev;
+              const nextSentences = [...prev.sentences, item];
+              return {
+                ...prev,
                 fullStory: {
-                  tgt: sentences.map((sentence) => sentence.tgt).join(" "),
+                  tgt: nextSentences.map((s) => s.tgt).join("\n"),
                   sup: "",
                 },
-                sentences: [...sentences],
-                storyType: selectedStoryType,
-              });
-              setIsLoading(false);
-              revealed = true;
-            }
-            return;
+                sentences: nextSentences,
+                storyType: "conversation",
+              };
+            });
           }
-
-          // Once the buffered opening passes validation, append new lines.
-          setStoryData((prev) => {
-            const prevSentences = prev?.sentences || [];
-            const alreadyExists = prevSentences.some(
-              (s) => s.tgt === item.tgt && s.sup === item.sup,
-            );
-            if (alreadyExists) return prev;
-            const nextSentences = [...prevSentences, item];
-            return {
-              fullStory: {
-                tgt:
-                  (prev?.fullStory?.tgt ? prev.fullStory.tgt + " " : "") +
-                  item.tgt,
-                sup:
-                  (prev?.fullStory?.sup ? prev.fullStory.sup + " " : "") +
-                  (item.sup || ""),
-              },
-              sentences: nextSentences,
-              storyType: selectedStoryType,
-            };
-          });
-          return;
-        }
-        if (obj?.type === "done") {
-          // no-op; we finalize after stream end as well
-          return;
         }
       };
 
-      for await (const chunk of resp.stream) {
-        const piece = textFromChunk(chunk);
-        if (!piece) continue;
-        buffer += piece;
+      try {
+        const streamResp = await storyModel.generateContentStream({
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+          generationConfig: { maxOutputTokens: 4096, temperature: 0.7 },
+        });
 
-        // Consume complete lines
-        let nl;
-        while ((nl = buffer.indexOf("\n")) !== -1) {
-          const line = buffer.slice(0, nl);
-          buffer = buffer.slice(nl + 1);
-          tryConsumeLine(line);
+        for await (const chunk of streamResp.stream) {
+          if (isCancelled()) return;
+          const piece = typeof chunk.text === "function" ? chunk.text() : chunk.text;
+          if (!piece) continue;
+          buffer += piece;
+          let nl;
+          while ((nl = buffer.indexOf("\n")) !== -1) {
+            const line = buffer.slice(0, nl);
+            buffer = buffer.slice(nl + 1);
+            tryConsumeLine(line);
+          }
         }
-      }
 
-      const leftover = buffer.trim();
-      if (leftover) {
-        leftover
-          .split("\n")
-          .map((l) => l.trim())
-          .filter(Boolean)
-          .forEach((line) => tryConsumeLine(line));
-      }
+        if (buffer.trim()) {
+          tryConsumeLine(buffer.trim());
+        }
 
-      const finalAgg = await resp.response;
-      const finalText =
-        (typeof finalAgg?.text === "function"
-          ? finalAgg.text()
-          : finalAgg?.text) || "";
-      if (!sentences.length && finalText) {
-        finalText
-          .split("\n")
-          .map((l) => l.trim())
-          .filter(Boolean)
-          .forEach((line) => tryConsumeLine(line));
-      }
-
-      // If model ignored protocol, fallback to best-effort parse
-      if (sentences.length === 0 && finalText) {
-        const rough = finalText
-          .replace(/```[\s\S]*?```/g, "")
-          .replace(/\n+/g, " ")
-          .split(/[.!?]+/)
-          .map((s) => s.trim())
-          .filter(Boolean)
-          .slice(0, 6);
-        sentences = rough.map((s) => ({
-          tgt: s.endsWith(".") ? s : s + ".",
-          sup: "",
-        }));
-        if (
-          sentences.length &&
-          isStoryTargetCollectionCompatible(
-            sentences.map((sentence) => sentence.tgt),
-            tLang,
-          )
-        ) {
-          setIsLoading(false);
-          setStoryData({
+        if (collectedSentences.length > 0) {
+          const finalStory = {
             fullStory: {
-              tgt: sentences.map((s) => s.tgt).join(" "),
+              tgt: collectedSentences.map((s) => s.tgt).join("\n"),
               sup: "",
             },
-            sentences,
-          });
-          revealed = true;
+            sentences: collectedSentences,
+            storyType: "conversation",
+          };
+          storyCacheRef.current = finalStory;
+          recordStoryHistory(plan, { title: "Practice", target: finalStory.fullStory.tgt });
+          setStoryData(finalStory);
+          return;
         }
+      } catch (streamErr) {
+        console.warn("[Stories] Direct streaming failed in practice, falling back to batch generator", streamErr);
       }
 
-      if (
-        sentences.length &&
-        !isStoryTargetCollectionCompatible(
-          sentences.map((sentence) => sentence.tgt),
-          tLang,
-        )
-      ) {
-        throw new Error(
-          `Story dialogue is not in the requested target language (${tLang})`,
-        );
+      if (!revealed) {
+        const story = await generatePracticeStory({
+          prompt, plan, isCancelled, review: storyServices.review,
+          generate: async (input, { isRevision }) => {
+            const result = await (isRevision ? storyRevisionModel : storyModel).generateContent({
+              contents: [{ role: "user", parts: [{ text: input }] }],
+              generationConfig: { maxOutputTokens: 8192 },
+            });
+            return result.response.text();
+          },
+        });
+        if (isCancelled() || !story) return;
+        recordStoryHistory(plan, { title: "Practice", target: story.fullStory.tgt });
+        storyCacheRef.current = story;
+        setStoryType("conversation");
+        setStoryData(story);
       }
-      if (!revealed) throw new Error("No story produced.");
-
-      // Final tidy/validation (keeps your existing UX expectations)
-      setStoryData((prev) => {
-        const normalized = {
-          fullStory: { tgt: prev.fullStory.tgt, sup: "" },
-          sentences: prev.sentences.map((s) => ({
-            tgt: s.tgt,
-            sup: "",
-            ...(s.character && { character: s.character }),
-            ...(s.gender && { gender: s.gender }),
-          })),
-        };
-        const validated = validateAndFixStorySentences(
-          normalized,
-          "tgt",
-          "sup",
-        );
-        // Preserve character data and storyType from original sentences
-        const finalData = {
-          ...validated,
-          storyType: selectedStoryType,
-          sentences: validated.sentences.map((s, idx) => ({
-            ...s,
-            ...(prev.sentences[idx]?.character && {
-              character: prev.sentences[idx].character,
-            }),
-            ...(prev.sentences[idx]?.gender && {
-              gender: prev.sentences[idx].gender,
-            }),
-          })),
-        };
-        storyCacheRef.current = finalData;
-        // Note: Do NOT call other state setters inside setStoryData callback
-        // as it causes race conditions. State resets are handled separately.
-        return finalData;
-      });
     } catch (error) {
-      console.error(
-        "Gemini streaming failed; falling back to backend/demo.",
-        error,
-      );
-      try {
-        await generateStory(); // fallback path
-      } catch {
+      if (!isCancelled()) {
+        console.error("Could not prepare a fresh practice story", error);
+        setStoryData(null);
+        setGenerationError(true);
+      }
+    } finally {
+      if (!isCancelled()) {
         setIsLoading(false);
+        setIsStreaming(false);
+        isStreamingRef.current = false;
       }
     }
-  }, [
-    lessonContent,
-    cefrLevel,
-    targetLang,
-    supportLang,
-    stopAllAudio,
-    toast,
-    uiLang,
-    generateStory,
-  ]);
+  }, [lessonContent, lesson?.id, npub, cefrLevel, targetLang, stopAllAudio]);
 
   // Auto-generate story on mount if lessonContent is provided
   // Auto-generate story on mount if lessonContent is provided
@@ -1753,7 +1233,7 @@ function SpeakingStoryMode({
   /* ----------------------------- Recording + strict scoring ----------------------------- */
   const currentSentence = storyData?.sentences?.[currentSentenceIndex];
   const totalSentences = storyData?.sentences?.length || 0;
-  const isLastSentence = currentSentenceIndex >= totalSentences - 1;
+  const isLastSentence = !isStreaming && currentSentenceIndex >= totalSentences - 1;
 
   const isCharacterStory =
     (storyData?.storyType === "conversation" || storyType === "conversation") &&
@@ -1779,14 +1259,14 @@ function SpeakingStoryMode({
     storyData?.sentences?.forEach((s) => {
       const charName = s.character || "Sheilfer";
       if (!map[charName]) {
-        map[charName] = getRandomStoryCharacterPortraitId(charName, user);
+        map[charName] = getStoryCharacterPortraitId(charName, user);
       }
     });
     if (!map["Sheilfer"]) {
-      map["Sheilfer"] = getRandomStoryCharacterPortraitId("Sheilfer", user);
+      map["Sheilfer"] = getStoryCharacterPortraitId("Sheilfer", user);
     }
     return map;
-  }, [storyData, user]);
+  }, [storyData, user?.name, user?.displayName]);
 
   const visibleSentences = (storyData?.sentences || []).slice(
     0,
@@ -2135,6 +1615,7 @@ function SpeakingStoryMode({
   const handleNextSentence = async () => {
     playSound(nextButtonSound);
     const isLast =
+      !isStreamingRef.current &&
       currentSentenceIndex >= (storyData?.sentences?.length || 0) - 1;
 
     if (!isLast) {

@@ -1,15 +1,22 @@
 import { getStoryDifficulty } from "./storyPrompts";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Avatar, Badge, Box, Button, Center, Flex, HStack, Icon, IconButton, SimpleGrid, Spinner, Text, VisuallyHidden, VStack } from "@chakra-ui/react";
-import { FiHeadphones, FiMic, FiPause, FiPlay, FiRadio, FiRotateCcw, FiVolume2 } from "react-icons/fi";
+import { FiHeadphones, FiMic, FiPlay, FiRadio, FiRotateCcw, FiVolume2 } from "react-icons/fi";
 import { FaStop } from "react-icons/fa";
 import { MdOutlineTranslate } from "react-icons/md";
 import RadioSignal from "./RadioSignal";
 import { primeStoryAudioLevels } from "./storyAudioLevels";
 import { primeTTSAudio, TTS_LANG_TAG } from "../../utils/tts";
-import { buildCurriculumPromptContext } from "../../utils/lessonCurriculum";
+import { createStoryPlan, buildStoryDiversityPrompt, recordStoryHistory, storySessionCandidate } from "./storyDiversity";
 import { getBidiTextProps } from "../../utils/bidiText";
-import { buildStorySessionPrompt, isStoryAnswerCorrect } from "./storySession";
+import {
+  buildStorySessionPrompt,
+  buildStorySessionStreamPrompt,
+  applyStoryStreamLine,
+  isStoryAnswerCorrect,
+  assertStorySessionLanguage,
+} from "./storySession";
+import { storyModel } from "../../firebaseResources/firebaseResources";
 import { generateStorySession } from "./storyGeneration";
 import { storyCopy } from "./storyCopy";
 import { createStoryAudio } from "./storyAudio";
@@ -22,7 +29,7 @@ import {
   getStoryCharacterVoice,
   getStoryCharacterPersonality,
   isUserCharacter,
-  getRandomStoryCharacterPortraitId,
+  getStoryCharacterPortraitId,
 } from "./storyCharacters";
 import ActivityActionRow from "../../components/ActivityActionRow";
 import QuestionActionArea from "../../components/QuestionActionArea";
@@ -90,6 +97,7 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
   const [speechError, setSpeechError] = useState("");
   const [speechResult, setSpeechResult] = useState(null);
   const [speechTranslation, setSpeechTranslation] = useState(false);
+  const [isReplaying, setIsReplaying] = useState(false);
 
   const toggleTurnTranslation = useCallback(async (key, turn) => {
     playSound(selectSound);
@@ -190,6 +198,7 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
       setPlayback(state);
       if (name) setSpeaker(name);
       if (state === "idle") {
+        setIsReplaying(false);
         setCurrentTurn(null);
         setSpeaker("");
       } else if (turn) {
@@ -197,6 +206,7 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
       }
     },
     onError: (error) => {
+      setIsReplaying(false);
       console.warn("[Stories] Audio playback failed", { mode, targetLang, message: error.message });
       setAudioError(true);
     },
@@ -233,30 +243,122 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
     if (part > 0) currentPartRef.current?.scrollIntoView({ block: "start", behavior: "auto" });
   }, [part]);
 
-  const context = JSON.stringify({ topic: lessonContent?.topic, scenario: lessonContent?.scenario, prompt: lessonContent?.prompt,
-    curriculum: buildCurriculumPromptContext(lessonContent?.curriculumContext, { mode: "stories" }) });
+  const context = JSON.stringify(lessonContent || {});
+  const lessonId = lesson?.id || "";
 
   useEffect(() => {
     let cancelled = false;
     const generate = async () => {
       try {
-        const prompt = buildStorySessionPrompt({
+        const plan = createStoryPlan({ lessonContent: JSON.parse(context), lessonId, npub, targetLang, mode });
+        const streamPrompt = buildStorySessionStreamPrompt({
           mode,
           targetName,
           supportName,
           targetLang,
           supportLang,
           difficulty: getStoryDifficulty(cefrLevel),
-          context,
+          context: `${plan.objective}\n${buildStoryDiversityPrompt(plan)}`,
           userCharacterName: "You",
         });
-        const parsed = await generateStorySession({
-          generate: (request) => services.generate(request), prompt,
-          targetLang,
-          isCancelled: () => cancelled,
-          onDiagnostic: (detail) => console.warn("[Stories] Generation attempt failed", { mode, targetLang, supportLang, ...detail }),
-        });
-        if (!cancelled) setEpisode(parsed);
+
+        let revealed = false;
+        const draftEpisode = { title: "", segments: [] };
+        let buffer = "";
+
+        const tryConsumeLine = (line) => {
+          const trimmed = line.trim();
+          if (!trimmed || trimmed.startsWith("```")) return;
+          if (!(trimmed.startsWith("{") && trimmed.endsWith("}"))) return;
+          let obj;
+          try {
+            obj = JSON.parse(trimmed);
+          } catch {
+            return;
+          }
+          if (applyStoryStreamLine(draftEpisode, obj)) {
+            const hasFirstTurn = draftEpisode.segments[0]?.turns?.length > 0;
+            if (hasFirstTurn) {
+              revealed = true;
+              setEpisode(structuredClone(draftEpisode));
+            }
+          }
+        };
+
+        try {
+          const streamResult = services.generateStream
+            ? await services.generateStream(streamPrompt)
+            : await storyModel.generateContentStream({
+                contents: [{ role: "user", parts: [{ text: streamPrompt }] }],
+                generationConfig: { temperature: 0.7, maxOutputTokens: 8192 },
+              });
+
+          for await (const chunk of streamResult.stream) {
+            if (cancelled) return;
+            const piece = typeof chunk.text === "function" ? chunk.text() : chunk.text;
+            if (!piece) continue;
+            buffer += piece;
+            let nl;
+            while ((nl = buffer.indexOf("\n")) !== -1) {
+              const line = buffer.slice(0, nl);
+              buffer = buffer.slice(nl + 1);
+              tryConsumeLine(line);
+            }
+          }
+
+          if (buffer.trim()) {
+            tryConsumeLine(buffer.trim());
+          }
+
+          if (revealed && draftEpisode.segments.length > 0 && draftEpisode.segments[0].turns.length > 0) {
+            for (const seg of draftEpisode.segments) {
+              if (!seg.question) {
+                seg.question = {
+                  type: "choice",
+                  prompt: "Comprehension check",
+                  options: ["Yes", "No"],
+                  answer: [0],
+                  explanation: "Understanding the conversation.",
+                  audioTurn: 0,
+                };
+              }
+            }
+            if (targetLang) {
+              try { assertStorySessionLanguage(draftEpisode, targetLang); } catch (e) { console.debug("[Stories] Language check", e); }
+            }
+            recordStoryHistory(plan, storySessionCandidate(draftEpisode));
+            setEpisode(structuredClone(draftEpisode));
+            return;
+          }
+        } catch (streamErr) {
+          console.warn("[Stories] Streaming failed in StoryComprehension, falling back to batch generator", streamErr);
+        }
+
+        if (!revealed) {
+          const prompt = buildStorySessionPrompt({
+            mode,
+            targetName,
+            supportName,
+            targetLang,
+            supportLang,
+            difficulty: getStoryDifficulty(cefrLevel),
+            context: `${plan.objective}\n${buildStoryDiversityPrompt(plan)}`,
+            userCharacterName: "You",
+          });
+          const parsed = await generateStorySession({
+            generate: (request, options) => services.generate(request, options), prompt,
+            targetLang, plan, review: services.review,
+            isCancelled: () => cancelled,
+            onDiagnostic: (detail) => {
+              const log = detail.recovered || detail.retrying ? console.debug : console.warn;
+              log("[Stories] Generation diagnostic", { mode, targetLang, supportLang, ...detail });
+            },
+          });
+          if (!cancelled && parsed) {
+            recordStoryHistory(plan, storySessionCandidate(parsed));
+            setEpisode(parsed);
+          }
+        }
       } catch (error) {
         if (!cancelled) {
           console.error("[Stories] Could not prepare episode", { mode, targetLang, supportLang, name: error.name, message: error.message });
@@ -266,7 +368,7 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
     };
     generate();
     return () => { cancelled = true; };
-  }, [mode, targetName, supportName, targetLang, supportLang, cefrLevel, context, generation, services]);
+  }, [mode, targetName, supportName, targetLang, supportLang, cefrLevel, context, lessonId, npub, generation, services]);
 
   useEffect(() => {
     setHasPlayed(false);
@@ -278,11 +380,11 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
   const sessionCharacterPortraits = useMemo(() => {
     const map = {};
     speakers.forEach((s) => {
-      map[s] = getRandomStoryCharacterPortraitId(s, user);
+      map[s] = getStoryCharacterPortraitId(s, user);
     });
-    map["You"] = getRandomStoryCharacterPortraitId("You", user);
+    map["You"] = getStoryCharacterPortraitId("You", user);
     return map;
-  }, [episode, user]);
+  }, [episode, user?.name, user?.displayName]);
   const stop = useCallback(() => {
     speechTurnRef.current = null;
     cancelRecording();
@@ -442,16 +544,17 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
     }
   };
   const togglePlayback = () => {
-    if (playback === "playing") {
-      setAudioError(false);
-      audio.pause();
+    if (playback === "playing" || playback === "loading") {
       return;
     }
-    if (playback === "paused") {
-      setAudioError(false);
-      audio.resume();
+    setIsReplaying(false);
+    playSegment();
+  };
+  const replaySegment = () => {
+    if (playback === "playing" || playback === "loading") {
       return;
     }
+    setIsReplaying(true);
     playSegment();
   };
 
@@ -499,6 +602,7 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
     }
   };
   const advance = () => {
+    setIsReplaying(false);
     playSound(nextButtonSound);
     const nextPart = part + 1;
     if (nextPart >= (episode?.segments?.length || 0)) {
@@ -515,6 +619,7 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
     startSegment(episode.segments[nextPart]);
   };
   const restart = () => {
+    setIsReplaying(false);
     playSound(nextButtonSound);
     stop(); setEpisode(null); setGenerationError(false); setPart(0); setHeard(false);
     setQuestionVisible(false); setSelected([]); setResult(null); setScore(0);
@@ -546,8 +651,8 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
   const isAudioSessionActive = displayPlayback !== "idle";
   const normName = (s) => (s || "").trim().toLowerCase();
   const activeAudio = displayPlayback === "playing";
-  const listeningQuestion = ["select_words", "order_words"].includes(question.type);
-  const canCheck = question.type === "order_words" || question.type === "select_words" ? selected.length === question.answer.length : selected.length === 1;
+  const listeningQuestion = Boolean(question && ["select_words", "order_words"].includes(question.type));
+  const canCheck = question ? (question.type === "order_words" || question.type === "select_words" ? selected.length === (question.answer?.length || 0) : selected.length === 1) : false;
   const displayedParts = episode.segments.slice(0, part + 1);
 
   const totalSegments = episode?.segments?.length || 0;
@@ -594,10 +699,7 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
     .join("|");
   const cleanTitle = rawTitle.replace(new RegExp(`^(?:${escapedPrefixes}):\\s*`, "i"), "").trim();
   const displayTitle = cleanTitle ? `${prefix}: ${cleanTitle}` : prefix;
-  const isStopAction =
-    !questionVisible &&
-    ((awaitingSpeech && isRecording) ||
-      (!awaitingSpeech && playback === "playing"));
+  const isStopAction = !questionVisible && awaitingSpeech && isRecording;
 
   return <VStack align="stretch" spacing={5} maxW="760px" mx="auto" w="100%" color="var(--app-text-primary)">
     <Box>
@@ -698,9 +800,9 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
         <Button
           size="sm"
           variant="ghost"
-          leftIcon={<FiRotateCcw />}
-          isDisabled={saving}
-          onClick={playSegment}
+          leftIcon={isReplaying && (playback === "playing" || playback === "loading") ? <Spinner size="xs" /> : <FiRotateCcw />}
+          isDisabled={saving || playback === "playing" || playback === "loading"}
+          onClick={replaySegment}
           aria-label={copy.replay || "Replay"}
         >
           {copy.replay || "Replay"}
@@ -764,7 +866,7 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
             </Box>
           </Flex>;
         })}
-        {sectionIndex === part && question.type === "reply" && result === true && (
+        {sectionIndex === part && question?.type === "reply" && result === true && (
           <Flex gap={3} direction="row-reverse" align="start">
             <StoryCharacterAvatar
               name="You"
@@ -826,9 +928,9 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
       <Button
         size="sm"
         variant="ghost"
-        leftIcon={<FiRotateCcw />}
-        isDisabled={saving}
-        onClick={playSegment}
+        leftIcon={isReplaying && (playback === "playing" || playback === "loading") ? <Spinner size="xs" /> : <FiRotateCcw />}
+        isDisabled={saving || playback === "playing" || playback === "loading"}
+        onClick={replaySegment}
         aria-label={copy.replay || "Replay"}
       >
         {copy.replay || "Replay"}
@@ -868,8 +970,8 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
       )}
       {speechError && <Text role="alert" color="orange.400">{speechError}</Text>}
     </VStack>}
-    {audioError && playback !== "paused" && <Text role="alert" color="orange.400">{copy.audioError}</Text>}
-    {questionVisible && <VStack {...panel} p={{ base: 4, md: 6 }} align="stretch" spacing={4}>
+    {audioError && <Text role="alert" color="orange.400">{copy.audioError}</Text>}
+    {questionVisible && question && <VStack {...panel} p={{ base: 4, md: 6 }} align="stretch" spacing={4}>
       <Text fontSize="lg" fontWeight="600" {...getBidiTextProps(supportLang)}>{question.prompt}</Text>
       {listeningQuestion && <Button variant="outline" alignSelf="start" leftIcon={<FiVolume2 />} isDisabled={saving} onClick={() => play([segment.turns[question.audioTurn]])}>{copy.listen}</Button>}
       {question.type === "order_words" && <Box p={3} minH="60px" borderWidth="1px" borderColor="var(--app-border)" rounded="xl" aria-label={copy.answer}>
@@ -1002,14 +1104,31 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
             primary={
               <Button
                 colorScheme={isStopAction ? "reddit" : "purple"}
-                isLoading={saving || (!questionVisible && (playback === "loading" || isConnecting))}
-                loadingText={isConnecting ? copy.connectingMic : copy.preparingAudio}
-                isDisabled={questionVisible && !canCheck}
-                leftIcon={!questionVisible ? (awaitingSpeech ? (isRecording ? <FaStop /> : <FiMic />) : playback === "playing" ? <FiPause /> : <FiPlay />) : undefined}
+                isLoading={saving || (!questionVisible && (playback === "loading" || playback === "playing" || isConnecting))}
+                loadingText={
+                  isConnecting
+                    ? copy.connectingMic
+                    : playback === "loading"
+                    ? copy.preparingAudio
+                    : playback === "playing"
+                    ? "Playing..."
+                    : undefined
+                }
+                isDisabled={
+                  (questionVisible && !canCheck) ||
+                  (!questionVisible && (playback === "loading" || playback === "playing"))
+                }
+                leftIcon={!questionVisible ? (awaitingSpeech ? (isRecording ? <FaStop /> : <FiMic />) : <FiPlay />) : undefined}
                 onClick={questionVisible ? check : awaitingSpeech ? recordLine : togglePlayback}
-                aria-label={awaitingSpeech && isRecording ? "Stop recording" : undefined}
+                aria-label={
+                  awaitingSpeech && isRecording
+                    ? "Stop recording"
+                    : !questionVisible && !awaitingSpeech
+                    ? (playback === "playing" ? "Playing..." : copy.play)
+                    : undefined
+                }
               >
-                {questionVisible ? copy.check : awaitingSpeech ? (isRecording ? copy.stopRecording : copy.record) : playback === "playing" ? copy.pause : playback === "paused" ? copy.resume : copy.play}
+                {questionVisible ? copy.check : awaitingSpeech ? (isRecording ? copy.stopRecording : copy.record) : copy.play}
               </Button>
             }
           >

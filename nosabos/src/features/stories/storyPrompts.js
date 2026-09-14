@@ -1,7 +1,5 @@
 import { normalizeCEFRLevel } from "../../utils/cefrUtils.js";
 
-export const STORY_THINKING_BUDGET = 0;
-
 export function getStoryDifficulty(cefrLevel, { includeTranslations = true } = {}) {
   const level = normalizeCEFRLevel(cefrLevel, "Pre-A1");
   const comprehensionGuidance = includeTranslations

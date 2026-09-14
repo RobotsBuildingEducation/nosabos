@@ -7,6 +7,11 @@ const FIRESTORE_PORT = 8080;
 const FUNCTIONS_PORT = 5001;
 const STARTUP_TIMEOUT_MS = 45_000;
 
+const REQUIRED_PORTS = [
+  { name: "Firestore Emulator", port: FIRESTORE_PORT },
+  { name: "Functions Emulator", port: FUNCTIONS_PORT },
+];
+
 const javaHomes = [
   process.env.JAVA_HOME,
   "/opt/homebrew/opt/openjdk@21",
@@ -58,6 +63,43 @@ function waitForPort(port, timeoutMs) {
   });
 }
 
+function isPortInUse(port) {
+  return new Promise((resolve) => {
+    const socket = net.createConnection({ host: "127.0.0.1", port });
+
+    socket.once("connect", () => {
+      socket.destroy();
+      resolve(true);
+    });
+    socket.once("error", () => {
+      socket.destroy();
+      resolve(false);
+    });
+  });
+}
+
+const occupiedPorts = (
+  await Promise.all(
+    REQUIRED_PORTS.map(async ({ name, port }) => ({
+      name,
+      port,
+      inUse: await isPortInUse(port),
+    })),
+  )
+).filter(({ inUse }) => inUse);
+
+if (occupiedPorts.length > 0) {
+  const conflicts = occupiedPorts
+    .map(({ name, port }) => `${name} port ${port}`)
+    .join(", ");
+  console.error(
+    `Cannot start local development because ${conflicts} ${
+      occupiedPorts.length === 1 ? "is" : "are"
+    } already in use. Stop the other local server and try again.`,
+  );
+  process.exit(1);
+}
+
 const javaHome = resolveJavaHome();
 if (javaHome === null) {
   console.error(
@@ -82,6 +124,10 @@ const firebase = spawn(
 
 let vite = null;
 let shuttingDown = false;
+let resolveFirebaseExit;
+const firebaseExit = new Promise((resolve) => {
+  resolveFirebaseExit = resolve;
+});
 
 function stopChildren(signal = "SIGTERM") {
   if (shuttingDown) return;
@@ -95,24 +141,33 @@ for (const signal of ["SIGINT", "SIGTERM"]) {
 }
 
 firebase.once("error", (error) => {
-  console.error("Unable to start Firebase emulators:", error.message);
-  stopChildren();
-  process.exitCode = 1;
+  resolveFirebaseExit({
+    code: 1,
+    message: `Unable to start Firebase emulators: ${error.message}`,
+  });
 });
 
 firebase.once("exit", (code) => {
   if (!shuttingDown) {
-    console.error(`Firebase emulators stopped unexpectedly (exit ${code}).`);
-    stopChildren();
-    process.exitCode = code || 1;
+    resolveFirebaseExit({
+      code: code ?? 1,
+      message: `Firebase emulators stopped unexpectedly (exit ${code ?? 1}).`,
+    });
   }
 });
 
 try {
-  await Promise.all([
-    waitForPort(FIRESTORE_PORT, STARTUP_TIMEOUT_MS),
-    waitForPort(FUNCTIONS_PORT, STARTUP_TIMEOUT_MS),
+  const startup = await Promise.race([
+    Promise.all([
+      waitForPort(FIRESTORE_PORT, STARTUP_TIMEOUT_MS),
+      waitForPort(FUNCTIONS_PORT, STARTUP_TIMEOUT_MS),
+    ]).then(() => ({ ready: true })),
+    firebaseExit.then((failure) => ({ ready: false, ...failure })),
   ]);
+
+  if (!startup.ready) {
+    throw new Error(startup.message);
+  }
 } catch (error) {
   console.error(error.message);
   stopChildren();

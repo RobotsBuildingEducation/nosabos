@@ -87,10 +87,9 @@ window.runStoryChecks = async () => {
     await new Promise((resolve) => setTimeout(resolve, 80));
     assert(getComputedStyle(signal).animationName !== "none" && getComputedStyle(signal).transform !== before, "Radio bars must animate during playback");
   }
-  await click("Pause");
-  assert(getComputedStyle(signal).animationName === "none", "Radio bars stop when paused");
-  assert(!text().includes("Audio couldn’t play."), "Pausing audio does not show a playback error");
-  await click("Resume");
+  assert(!button("Pause"), "No pause button is offered during playback");
+  assert(button("Playing...")?.disabled || button("Play")?.disabled || button("Play")?.getAttribute("aria-busy") === "true", "Play must be disabled with a spinner during playback");
+  assert(!button("Replay")?.querySelector(".chakra-spinner"), "Replay must not spin when play is pressed");
   await waitFor(() => text().includes("Who are the flowers for?"));
   assert(getComputedStyle(signal).animationName === "none", "Radio bars stop after playback");
   assert(!button("Play"), "Submit replaces Play when questions appear");

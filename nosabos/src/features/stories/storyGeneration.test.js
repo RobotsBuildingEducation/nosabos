@@ -16,11 +16,27 @@ const valid = {
   ],
 };
 
+test("a malformed optional rewrite preserves the original episode and all its valid checkpoints", async () => {
+  const prompts = []; const diagnostics = []; let reviews = 0;
+  const malformed = structuredClone(valid);
+  malformed.segments[0].question.prompt = "";
+  const result = await generateStorySession({ prompt: "Family call", targetLang: "es",
+    plan: { targetLang: "es", recentEntries: [], objective: "Family", mode: "radio" },
+    generate: async (prompt) => { prompts.push(prompt); return JSON.stringify(prompts.length === 2 ? malformed : valid); },
+    review: async () => ++reviews === 1 ? ["Repeated family visit"] : [],
+    onDiagnostic: (detail) => diagnostics.push(detail),
+  });
+  assert.equal(prompts.length, 2);
+  assert.match(prompts[1], /FRESH VERSION/);
+  assert.deepEqual(result, valid);
+  assert.equal(diagnostics[0].recovered, true);
+});
+
 test("requests constrained JSON with nested turn/checkpoint fields and integer answers", () => {
   const request = buildStoryGenerationRequest("A radio show");
   assert.equal(request.generationConfig.responseMimeType, "application/json");
   assert.deepEqual(request.contents[0].parts, [{ text: "A radio show" }]);
-  assert.equal(request.generationConfig.thinkingConfig.thinkingBudget, 0);
+  assert.equal(request.generationConfig.thinkingConfig, undefined);
   const schema = request.generationConfig.responseSchema;
   assert.deepEqual(schema.required, ["title", "segments"]);
   const segment = schema.properties.segments.items;
@@ -56,6 +72,15 @@ test("semantic validation stays strict and retries stop after two bad candidates
   assert.deepEqual(diagnostics.map((detail) => detail.attempt), [1, 2]);
 });
 
+test("an entire previously shown Story cannot become a fallback even when its quiz is valid", async () => {
+  let calls = 0;
+  await assert.rejects(generateStorySession({ prompt: "Family", targetLang: "es",
+    plan: { targetLang: "es", recentEntries: [{ targetText: valid.segments.flatMap((segment) => segment.turns.map((turn) => turn.target)).join("\n") }] },
+    generate: async () => { calls++; return JSON.stringify(valid); }, review: async () => [],
+  }), /entire dialogue repeats/);
+  assert.equal(calls, 2);
+});
+
 test("service failures are diagnosed separately from invalid stories", async () => {
   const diagnostics = [];
   await assert.rejects(generateStorySession({ prompt: "Radio", generate: async () => { throw new Error("Network unavailable"); }, onDiagnostic: (detail) => diagnostics.push(detail) }), /Network unavailable/);
@@ -65,7 +90,7 @@ test("service failures are diagnosed separately from invalid stories", async () 
 test("cancelled generation does not log errors or launch a repair request", async () => {
   let calls = 0;
   assert.equal(await generateStorySession({ prompt: "Radio", generate: async () => { calls++; return "invalid"; }, isCancelled: () => true, onDiagnostic: () => assert.fail("Cancelled work must be ignored") }), null);
-  assert.equal(calls, 1);
+  assert.equal(calls, 0);
 });
 
 test("wrong-script dialogue is retried using the requested target language", async () => {

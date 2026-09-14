@@ -2,6 +2,7 @@
 // Keep the transformation pipeline byte-for-byte aligned with the aggregate
 // curriculum while allowing the app to import one raw CEFR level at a time.
 import { withItalianSkillTreeText } from "./skillTree/italianLocalizer.js";
+import { withActivityCurriculum } from "./readingCurriculum.js";
 import { withFrenchSkillTreeText } from "./skillTree/frenchLocalizer.js";
 import {
   translateSkillTreeTextToHindi,
@@ -1354,7 +1355,7 @@ function applyCEFRScaffolding(path) {
         ),
       );
       const agendaLessons = enhancedLessons.map((lesson) =>
-        withCanonicalLessonAgenda(lesson, { unit }),
+        withActivityCurriculum(withCanonicalLessonAgenda(lesson, { unit }), { unit }),
       );
       const agendaUnit = { ...unit, cefrLevel: level, lessons: agendaLessons };
       const balancedLessons = agendaLessons.map((lesson) => {
@@ -1459,7 +1460,7 @@ function applyCEFRScaffolding(path) {
             CEFR_LEVEL_PROFILES[level]?.discourseSkills || []
           ).join(", ")}.`,
         ],
-        lessons: scheduledLessons,
+        lessons: scheduledLessons.map((lesson) => withActivityCurriculum(lesson, { unit })),
       };
     });
   });

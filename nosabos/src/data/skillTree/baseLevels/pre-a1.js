@@ -189,13 +189,13 @@ export default [
           ar: "تعرّف على الأشخاص المألوفين في وصف قصير",
           zh: "识别简短描述中的熟人"
         },
-        goal: "Identify familiar people and their relationships in a short neighborhood description",
-        targetConcept: "Identify familiar people and their relationships in a short neighborhood description",
+        goal: "Identify familiar people and their relationships in a short everyday description",
+        targetConcept: "Identify familiar people and their relationships in a short everyday description",
         preserveCanonicalGoal: true,
         targetRole: "goal",
         targetForms: [],
         targetExamples: ["Esta es mi amiga Ana.", "Ella es mi vecina."],
-        activityBrief: "Present a two-sentence Pre-A1 description in the target language, then ask one simple meaning question",
+        activityBrief: "Present a short Pre-A1 text about familiar people in everyday life, then ask one simple question about a person or relationship. Vary the relationship and setting across readings; do not default to a neighbor",
         evidence: {
           type: "identify",
           criteria: "The learner correctly identifies at least one person or relationship from the description"
@@ -232,7 +232,40 @@ export default [
     content: {
       reading: {
         topic: "people in daily life",
-        prompt: "Read a short description of people in a neighborhood"
+        prompt: "Read about familiar people in everyday life. Identify who a person is, how the writer knows them, and one concrete detail. Vary the relationship and setting across readings.",
+        readingSubjects: [{
+          id: "friend",
+          name: "A friend",
+          guidance: "Show a friendship through a shared interest, possession, or plan. The central relationship is friendship, not living next door."
+        }, {
+          id: "classmate",
+          name: "A classmate",
+          guidance: "Identify someone who learns alongside the writer, using a simple classroom or study detail."
+        }, {
+          id: "teacher",
+          name: "A teacher",
+          guidance: "Help the reader identify a familiar teacher and one concrete thing they teach or do."
+        }, {
+          id: "child",
+          name: "A child or children",
+          guidance: "Describe a child or small group of children through an everyday activity and a recognizable detail."
+        }, {
+          id: "coworker",
+          name: "A coworker",
+          guidance: "Identify a person the writer works with using simple words and one shared task."
+        }, {
+          id: "teammate",
+          name: "A teammate",
+          guidance: "Describe someone in a familiar sport or hobby group and how they take part."
+        }, {
+          id: "shop_worker",
+          name: "A familiar shop worker",
+          guidance: "Identify someone the writer regularly sees at a shop through their role and a helpful everyday detail."
+        }, {
+          id: "neighbor",
+          name: "A neighbor",
+          guidance: "Describe a person who lives nearby. This is one relationship among many, not the default for the lesson."
+        }]
       },
       realtime: {
         scenario: "Describing people",

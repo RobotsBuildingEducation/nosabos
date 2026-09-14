@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { Box, Image, Center } from "@chakra-ui/react";
+import { Box, Center } from "@chakra-ui/react";
 import { characterImagesMap } from "../../components/RandomCharacter";
 import {
-  getRandomStoryCharacterPortraitId,
+  getStoryCharacterPortraitId,
   getUserPetType,
   isUserCharacter,
 } from "./storyCharacters";
@@ -137,10 +137,8 @@ export default function StoryCharacterAvatar({
 }) {
   const isUser = isUserCharacter(name, user);
   const petType = isUser ? getUserPetType(user) : null;
-  const [randomPortraitId] = useState(() =>
-    getRandomStoryCharacterPortraitId(name, user)
-  );
-  const portraitId = explicitPortraitId || randomPortraitId;
+  const portraitId =
+    explicitPortraitId || getStoryCharacterPortraitId(name, user);
   const portraitImg = characterImagesMap[portraitId] || characterImagesMap["35"];
 
   return (
@@ -178,26 +176,33 @@ export default function StoryCharacterAvatar({
         {isUser ? (
           <PetAvatarImage petType={petType} isSpeaking={isSpeaking} />
         ) : (
-          <Image
-            src={portraitImg}
-            alt={name || "Character"}
-            w="100%"
-            h="100%"
-            objectFit="cover"
-            imageRendering="pixelated"
-            fallback={
-              <Center
-                w="100%"
-                h="100%"
-                bg="teal.700"
-                color="white"
-                fontWeight="bold"
-                fontSize="sm"
-              >
-                {(name || "?")[0]?.toUpperCase()}
-              </Center>
-            }
-          />
+          <>
+            <Box
+              as="img"
+              src={portraitImg}
+              alt={name || "Character"}
+              w="100%"
+              h="100%"
+              objectFit="cover"
+              imageRendering="pixelated"
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+                const fb = e.currentTarget.nextElementSibling;
+                if (fb) fb.style.display = "flex";
+              }}
+            />
+            <Center
+              display="none"
+              w="100%"
+              h="100%"
+              bg="teal.700"
+              color="white"
+              fontWeight="bold"
+              fontSize="sm"
+            >
+              {(name || "?")[0]?.toUpperCase()}
+            </Center>
+          </>
         )}
       </Box>
       {showIndicator && indicatorIcon && (

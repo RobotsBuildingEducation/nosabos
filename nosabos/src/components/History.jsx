@@ -49,6 +49,7 @@ import {
   appCheckFetch,
   database,
   simplemodel,
+  readingModel,
   gradingModel,
 } from "../firebaseResources/firebaseResources"; // ✅ Gemini streaming
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
@@ -84,6 +85,15 @@ import {
   normalizeSupportLanguage,
 } from "../constants/languages";
 import { buildCurriculumPromptContext } from "../utils/lessonCurriculum";
+import {
+  recordReadingHistory,
+  getRecentReadingHistory,
+  getReadingComparisonHistory,
+  stripMetaNarratorPreamble,
+  stripSpeakerPrefix,
+  getReadingLevelSpecs,
+} from "../utils/readingHistoryStore";
+import { READING_WRITER_INSTRUCTION } from "../utils/readingGeneration";
 import { questionSquircleStyle } from "./questionUiStyles";
 import { getRandomHistoryXp } from "../utils/historyXp";
 
@@ -376,13 +386,15 @@ function stripLineLabel(text, langCode) {
 
 function sanitizeLectureBlock(text, langCode) {
   if (!text) return "";
-  return text
+  const cleaned = text
     .split(/\n+/)
     .map((line) => stripLineLabel(line, langCode))
+    .map((line) => stripSpeakerPrefix(line))
     .filter(Boolean)
     .join(" ")
     .replace(/\s+/g, " ")
     .trim();
+  return stripMetaNarratorPreamble(cleaned);
 }
 
 const normalizeForCompare = (text) =>
@@ -488,55 +500,47 @@ function buildSeedLecturePrompt({
   const TARGET = LANG_NAME(targetLang);
   const SUPPORT = LANG_NAME(supportLang);
   const diff = lessonContent?.isGoal ? focusedLessonPrompt(lessonContent) : difficultyHint(cefrLevel);
+  const specs = getReadingLevelSpecs(cefrLevel);
 
-  // Tutorial reading is a fixed four-sentence welcome so model variance cannot
-  // turn the first reading activity into a normal lecture.
   const isTutorial = lessonContent?.topic === "tutorial";
   const topicText = isTutorial
     ? "a first welcome for a language learner"
     : lessonContent?.topic ||
       lessonContent?.scenario ||
-      "general cultural and linguistic concepts";
-  const promptText = isTutorial
-    ? lessonContent?.prompt || ""
-    : lessonContent?.prompt || "";
+      "daily life and communication";
+  const promptText = lessonContent?.prompt || "";
   const tutorialDirective = isTutorial
     ? tutorialReadingDirective(TARGET)
     : "";
-  const curriculumPromptContext = [buildCurriculumPromptContext(lessonContent?.curriculumContext, { mode: "reading" }), focusedLessonPrompt(lessonContent)].filter(Boolean).join("\n");
+  const curriculumPromptContext = [
+    buildCurriculumPromptContext(lessonContent?.curriculumContext, {
+      mode: "reading",
+      includeExamples: false,
+    }),
+    focusedLessonPrompt(lessonContent),
+  ]
+    .filter(Boolean)
+    .join("\n");
 
   return `
-Write ONE short educational lecture about ${topicText}. ${promptText}. Difficulty: ${
-    isTutorial ? "absolute beginner, very easy" : diff
-  }.${tutorialDirective}
+Write an engaging, realistic reading comprehension passage in ${TARGET} for a ${cefrLevel} learner.
+Topic: ${topicText}. ${promptText}.${tutorialDirective}
 ${curriculumPromptContext}
 
-CRITICAL LANGUAGE REQUIREMENTS - YOU MUST FOLLOW THESE EXACTLY:
-1. Most importantly, the lecture generated is suitable for a ${isTutorial ? "pre-A1 absolute beginner" : cefrLevel + " level reader"}.
-2. The target language for learning is: ${TARGET} (language code: ${targetLang})
-3. Write the title and lecture body in ${TARGET} ONLY
-4. Write all takeaways in ${SUPPORT} ONLY
-5. Do NOT write in any other language regardless of what the topic mentions
-6. Even if the topic references other cultures or languages, you MUST write in ${TARGET} for the title/body
-
-IMPORTANT: Ignore any language references in the topic description. Your output language is determined by the target language (${TARGET}) for title/body and ${SUPPORT} for takeaways.
-
 Content requirements:
-${isTutorial ? "- Exactly the four sentences specified above" : "- Length: ≈180–260 words"}
-${isTutorial ? "- Preserve their meaning and order" : "- Make it relevant and practical for language learners"}
-${isTutorial ? "- No additional content" : "- Include cultural context and common vocabulary related to " + topicText}
-${isTutorial ? "- Keep it welcoming and pre-A1" : "- Use examples and situations that learners might encounter"}
-${isTutorial ? "" : "- Keep it engaging, clear, and accessible"}
+${isTutorial ? "- Exactly the four sentences specified above" : `- Length: ${specs.wordCount} (${specs.sentenceCount}). Sentence length: ${specs.sentenceLength}. Minimum 100 words, increasing up to 300 words based on proficiency level.`}
+${isTutorial ? "- Preserve their meaning and order" : `- Level: ${diff}. Write natural connected reading prose (not a dialogue script or speaker labels).`}
+- Ground the text in everyday situations and authentic vocabulary related to ${topicText}.
 
 Include:
 - A concise title (<= 60 chars) in ${TARGET}
-- Lecture body in ${TARGET}
+- Reading passage body in ${TARGET}
 - 3 concise bullet takeaways in ${SUPPORT}
 
 Return JSON ONLY:
 {
   "title": "<short title in ${TARGET}>",
-  "target": "<lecture body in ${TARGET}>",
+  "target": "<passage body in ${TARGET}>",
   "takeaways": ["<3 bullets in ${SUPPORT}>"]
 }
 `.trim();
@@ -553,59 +557,54 @@ function buildLecturePrompt({
   const TARGET = LANG_NAME(targetLang);
   const SUPPORT = LANG_NAME(supportLang);
   const diff = lessonContent?.isGoal ? focusedLessonPrompt(lessonContent) : difficultyHint(cefrLevel);
+  const specs = getReadingLevelSpecs(cefrLevel);
   const prev =
     previousTitles && previousTitles.length
       ? previousTitles.map((t) => `- ${t}`).join("\n")
       : "(none yet)";
 
-  // Keep any regenerated tutorial reading on the same fixed beginner welcome.
   const isTutorial = lessonContent?.topic === "tutorial";
   const topicText = isTutorial
     ? "a first welcome for a language learner"
     : lessonContent?.topic ||
       lessonContent?.scenario ||
-      "general cultural and linguistic concepts";
-  const promptText = isTutorial
-    ? lessonContent?.prompt || ""
-    : lessonContent?.prompt || "";
+      "daily life and communication";
+  const promptText = lessonContent?.prompt || "";
   const tutorialDirective = isTutorial
     ? tutorialReadingDirective(TARGET)
     : "";
-  const curriculumPromptContext = [buildCurriculumPromptContext(lessonContent?.curriculumContext, { mode: "reading" }), focusedLessonPrompt(lessonContent)].filter(Boolean).join("\n");
+  const curriculumPromptContext = [
+    buildCurriculumPromptContext(lessonContent?.curriculumContext, {
+      mode: "reading",
+      includeExamples: false,
+    }),
+    focusedLessonPrompt(lessonContent),
+  ]
+    .filter(Boolean)
+    .join("\n");
 
   return `
-You are creating educational reading material for language learners focused on ${topicText}. ${promptText}${tutorialDirective}
+Write a fresh, engaging reading comprehension passage in ${TARGET} for a ${cefrLevel} learner.
+Topic: ${topicText}. ${promptText}.${tutorialDirective}
 ${curriculumPromptContext}
-Choose the **next related sub-topic** based on the list of previous lecture titles.
-Avoid repetition but maintain thematic coherence with ${topicText}.
 
 previous_titles:
 ${prev}
 
-CRITICAL LANGUAGE REQUIREMENTS - YOU MUST FOLLOW THESE EXACTLY:
-1. The target language for learning is: ${TARGET} (language code: ${targetLang})
-2. Write the title and lecture body in ${TARGET} ONLY
-3. Write all takeaways in ${SUPPORT} ONLY
-4. Do NOT write in any other language regardless of what the topic mentions
-5. Even if the topic references other cultures or languages, you MUST write in ${TARGET} for title/body
-
-IMPORTANT: Ignore any language references in the topic description. Your output language is determined by the target language (${TARGET}) for title/body and ${SUPPORT} for takeaways.
-
 Content requirements:
-${isTutorial ? "- Exactly the four sentences specified above" : "- Length: ≈180–260 words, suitable for a " + cefrLevel + " learner"}
-${isTutorial ? "- Preserve their meaning and order" : "- Difficulty: " + diff}
-${isTutorial ? "- No additional content" : "- Include cultural context and practical vocabulary for language learners"}
-${isTutorial ? "- Keep it welcoming and pre-A1" : "- Use examples and situations that learners might encounter"}
+${isTutorial ? "- Exactly the four sentences specified above" : `- Length: ${specs.wordCount} (${specs.sentenceCount}). Sentence length: ${specs.sentenceLength}. Minimum 100 words, increasing up to 300 words based on proficiency level.`}
+${isTutorial ? "- Preserve their meaning and order" : `- Level: ${diff}. Write natural connected reading prose (not a dialogue script or speaker labels).`}
+- Choose a fresh everyday situation related to ${topicText}.
 
 Include:
-- A concise title (<= 60 chars) related to ${topicText} in ${TARGET}
-- Lecture body in ${TARGET}
+- A concise title (<= 60 chars) in ${TARGET}
+- Reading passage body in ${TARGET}
 - 3 concise bullet takeaways in ${SUPPORT}
 
 Return JSON ONLY:
 {
   "title": "<short title in ${TARGET}>",
-  "target": "<lecture body in ${TARGET}>",
+  "target": "<passage body in ${TARGET}>",
   "takeaways": ["<3 bullets in ${SUPPORT}>"]
 }
 `.trim();
@@ -752,29 +751,21 @@ function buildStreamingPrompt({
   const TARGET = LANG_NAME(targetLang);
   const SUPPORT = LANG_NAME(supportLang);
   const diff = lessonContent?.isGoal ? focusedLessonPrompt(lessonContent) : difficultyHint(cefrLevel);
+  const specs = getReadingLevelSpecs(cefrLevel);
   const prev =
     previousTitles && previousTitles.length
       ? previousTitles.map((t) => `- ${t}`).join("\n")
       : "(none yet)";
-
-  const topicText =
-    lessonContent?.topic ||
-    lessonContent?.scenario ||
-    "general cultural and linguistic concepts";
-  const promptText = lessonContent?.prompt || "";
-  const curriculumPromptContext = [buildCurriculumPromptContext(lessonContent?.curriculumContext, { mode: "reading" }), focusedLessonPrompt(lessonContent)].filter(Boolean).join("\n");
 
   const isTutorial = lessonContent?.topic === "tutorial";
   if (isTutorial) {
     return [
       `You are creating the first reading activity for an absolute-beginner ${TARGET} learner.`,
       tutorialReadingDirective(TARGET),
-      promptText,
       "",
       "CRITICAL LANGUAGE REQUIREMENTS:",
       `- Write the title and four target sentences in ${TARGET} ONLY.`,
       `- Write takeaways in ${SUPPORT} ONLY.`,
-      "- Use no other language.",
       "",
       "OUTPUT PROTOCOL — NDJSON (one compact JSON object per line):",
       `1) {"type":"title","text":"<a simple welcome title in ${TARGET}>"}`,
@@ -782,48 +773,55 @@ function buildStreamingPrompt({
       `3) Emit exactly three {"type":"takeaway","text":"<a very short beginner takeaway in ${SUPPORT}>"} lines.`,
       ...streamingReviewQuestionProtocol(reviewQuestionType, supportLang),
       '4) Finally emit {"type":"done"}',
-      "",
-      "The review question must test one explicit meaning from the four-sentence welcome.",
-      "No support lines, markdown, commentary, or additional target sentences.",
     ].join("\n");
   }
 
-  const baseTopic = isFirst
-    ? `Topic: ${topicText}. ${promptText}\nFocus on practical cultural context and vocabulary for language learners.`
-    : `Continue the educational series about ${topicText}. Choose the next related sub-topic based on previous_titles. Avoid repetition but maintain thematic coherence.\nprevious_titles:\n${prev}`;
+  const topicText =
+    lessonContent?.topic ||
+    lessonContent?.scenario ||
+    "daily life and communication";
+  const promptText = lessonContent?.prompt || "";
+  const curriculumPromptContext = [
+    buildCurriculumPromptContext(lessonContent?.curriculumContext, {
+      mode: "reading",
+      includeExamples: false,
+    }),
+    focusedLessonPrompt(lessonContent),
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const freshContext = !isFirst && previousTitles.length
+    ? `previous_titles:\n${prev}\nWrite about a fresh everyday situation related to ${topicText}.`
+    : `Write an authentic everyday reading passage about ${topicText}.`;
 
   return [
-    `You are writing an educational reading lecture for language learners about ${topicText}.`,
-    baseTopic,
+    `You are writing an engaging, level-appropriate reading comprehension text in ${TARGET} for a ${cefrLevel} language learner.`,
+    `Topic: ${topicText}. ${promptText}`,
     curriculumPromptContext,
+    freshContext,
     "",
-    "CRITICAL LANGUAGE REQUIREMENTS - YOU MUST FOLLOW THESE EXACTLY:",
-    `1. The target language for learning is: ${TARGET} (language code: ${targetLang})`,
-    `2. Write the title and lecture body in ${TARGET} ONLY`,
-    `3. Write ALL takeaways in ${SUPPORT} ONLY`,
-    `4. Do NOT write in any other language regardless of what the topic mentions`,
-    `5. Even if the topic references other cultures or languages, you MUST write in ${TARGET} for title/body`,
+    "GUIDELINES:",
+    `- Write natural, cohesive reading prose (minimum 100 words, increasing up to 300 words based on proficiency level) for the learner to practice reading.`,
+    `- Length: ${specs.wordCount} (${specs.sentenceCount}). Sentence length: ${specs.sentenceLength}.`,
+    `- Difficulty: ${diff}. Use authentic, natural vocabulary appropriate for ${cefrLevel}.`,
+    `- Continuous single-author prose: write natural reading text (no dialogue scripts, interviews, or speaker labels like 'A:', 'B:').`,
     "",
-    `IMPORTANT: Ignore any language references in the topic description. Use ${TARGET} for title/target and ${SUPPORT} only for takeaways.`,
-    "",
-    `Style: ~180–260 words, ${diff}.`,
+    "LANGUAGE REQUIREMENTS:",
+    `- Title and reading passage sentences MUST be in ${TARGET} ONLY.`,
+    `- Takeaways and comprehension question MUST be in ${SUPPORT} ONLY.`,
     "",
     "OUTPUT PROTOCOL — NDJSON (one compact JSON object per line):",
-    `1) {"type":"title","text":"<title in ${TARGET} (<=60 chars)>"} (emit once, early)`,
-    `2) Emit the lecture body sentence-by-sentence in ${TARGET}: {"type":"target","text":"<one sentence>"} (4–10 lines total)`,
-    `3) Then emit the full translation sentence-by-sentence in ${SUPPORT}: {"type":"support","text":"<one sentence>"} (mirrors the body)`,
-    `4) Emit exactly three takeaways (bullets) in ${SUPPORT}: {"type":"takeaway","text":"<concise takeaway>"} (3 lines)`,
+    `1) {"type":"title","text":"<concise title in ${TARGET} (<=60 chars)>"} (emit once, first)`,
+    `2) Emit the reading passage sentence-by-sentence in ${TARGET}: {"type":"target","text":"<one sentence>"}`,
+    `3) Emit exactly three takeaways (bullets) in ${SUPPORT}: {"type":"takeaway","text":"<concise takeaway>"} (3 lines)`,
     ...streamingReviewQuestionProtocol(reviewQuestionType, supportLang),
-    '5) Finally emit {"type":"done"}',
+    '4) Finally emit {"type":"done"}',
     "",
-    "STRICT RULES:",
-    `- Use ${TARGET} ONLY for \"title\" and \"target\" lines.`,
-    `- Use ${SUPPORT} ONLY for \"support\" and \"takeaway\" lines.`,
-    "- Do not include any other languages, labels, or commentary.",
-    "- Do not output code fences or commentary.",
-    "- Each line must be a single valid JSON object matching one of the types above.",
-    "- Keep sentences 8–22 words; simple, clear, engaging.",
-  ].join("\n");
+    "STRICT PROTOCOL RULES:",
+    "- Output ONLY valid JSON objects, one per line (NDJSON). No markdown fences, no commentary.",
+    "- Start immediately with the title line.",
+  ].filter(Boolean).join("\n");
 }
 
 /* ---------------------------
@@ -1169,6 +1167,7 @@ export default function History({
   }
 
   // streaming draft lecture (local only while generating)
+  const [generationError, setGenerationError] = useState(false);
   const [draftLecture, setDraftLecture] = useState(null); // {title,target,support,takeaways[]}
 
   // refs for auto-scroll (mobile + desktop lists)
@@ -1239,10 +1238,15 @@ export default function History({
      Backend (non-stream) fallback
   --------------------------- */
   async function generateNextLectureBackend() {
-    const previousTitles = lectures
-      .map((l) => l.title || "")
-      .filter(Boolean)
-      .slice(-30);
+    const lessonId = lessonContent?.curriculumContext?.lessonId || lesson?.id || lessonContent?.id || "";
+    const persistedHistory = getRecentReadingHistory(targetLang, lessonId, 15);
+    const persistedTitles = persistedHistory.map((h) => h.title).filter(Boolean);
+    const previousTitles = Array.from(
+      new Set([
+        ...lectures.map((l) => l.title || "").filter(Boolean),
+        ...persistedTitles,
+      ])
+    ).slice(-30);
 
     const isFirst = previousTitles.length === 0;
     const prompt = isFirst
@@ -1260,57 +1264,13 @@ export default function History({
           lessonContent,
         });
 
-    let parsed =
-      safeParseJSON(await callResponses({ model: MODEL, input: prompt })) ||
-      null;
-
-    if (
-      !parsed ||
-      typeof parsed.title !== "string" ||
-      typeof parsed.target !== "string"
-    ) {
-      // Simple fallback content
-      parsed = {
-        title:
-          targetLang === "en"
-            ? "A Turning Point in Early Mesoamerica"
-            : "Un punto de inflexión temprano",
-        target:
-          targetLang === "en"
-            ? "An important phase unfolded as communities consolidated agriculture, ritual life, and trade networks..."
-            : "Una fase importante se desarrolló cuando las comunidades consolidaron la agricultura, la vida ritual y las redes de intercambio...",
-        support:
-          uiCopy(supportLang, {
-            en: "An important phase unfolded as communities consolidated agriculture...",
-            es: "Una fase importante se desarrolló cuando las comunidades consolidaron la agricultura...",
-            it: "Una fase importante si sviluppo quando le comunita consolidarono l'agricoltura...",
-            fr: "Une phase importante s'est developpee lorsque les communautes ont consolide l'agriculture...",
-            ja: "人々が農業を安定させていく中で、重要な段階が始まりました...",
-          }),
-        takeaways: [
-          uiCopy(supportLang, {
-            en: "Stronger villages and exchanges.",
-            es: "Intercambios y aldeas más fuertes.",
-            it: "Villaggi e scambi piu forti.",
-            fr: "Villages et echanges plus solides.",
-            ja: "村と交流がより強くなった。",
-          }),
-          uiCopy(supportLang, {
-            en: "New identities and beliefs.",
-            es: "Nuevas identidades y creencias.",
-            it: "Nuove identita e credenze.",
-            fr: "Nouvelles identites et croyances.",
-            ja: "新しいアイデンティティと信念。",
-          }),
-          uiCopy(supportLang, {
-            en: "Technology spread regionally.",
-            es: "La tecnología se difundió en la región.",
-            it: "La tecnologia si diffuse nella regione.",
-            fr: "La technologie s'est diffusee dans la region.",
-            ja: "技術が地域に広がった。",
-          }),
-        ],
-      };
+    const raw = await callResponses({
+      model: MODEL,
+      input: `${READING_WRITER_INSTRUCTION}\n${prompt}`,
+    });
+    const parsed = safeParseJSON(raw);
+    if (!parsed || !parsed.target) {
+      throw new Error("Backend reading generation failed to produce content");
     }
 
     const cleanTitle = stripLineLabel(String(parsed.title || ""), targetLang);
@@ -1358,27 +1318,40 @@ export default function History({
       : `${Date.now()}-${Math.random()}`;
     setLectures((prev) => [...prev, { id: newId, ...payload }]);
     setActiveId(newId);
+    recordReadingHistory({
+      targetLang,
+      lessonId,
+      topic: lessonContent?.topic || lessonContent?.scenario || "",
+      title: cleanTitle,
+      targetText: safeTarget,
+    });
   }
 
   /* ---------------------------
      Gemini streaming generator
   --------------------------- */
   async function generateNextLectureGeminiStream() {
-    // 🔒 Hard guard against double-invoke (click races / multiple triggers)
     if (!npub || generatingRef.current || isGenerating) return;
     generatingRef.current = true;
     setIsGenerating(true);
+    setGenerationError(false);
     setDraftLecture(null);
 
-    const previousTitles = lectures
-      .map((l) => l.title || "")
-      .filter(Boolean)
-      .slice(-30);
-
-    const isFirst = previousTitles.length === 0;
+    const lessonId =
+      lessonContent?.curriculumContext?.lessonId ||
+      lesson?.id ||
+      lessonContent?.id ||
+      "";
+    const persistedHistory = getReadingComparisonHistory(targetLang, lessonId);
+    const previousTitles = Array.from(
+      new Set([
+        ...lectures.map((item) => item.title).filter(Boolean),
+        ...persistedHistory.map((item) => item.title).filter(Boolean),
+      ]),
+    ).slice(-30);
     const plannedReviewQuestionType = randomReviewQuestionType();
     const streamPrompt = buildStreamingPrompt({
-      isFirst,
+      isFirst: previousTitles.length === 0,
       previousTitles,
       targetLang,
       supportLang,
@@ -1393,16 +1366,14 @@ export default function History({
     let bundledReviewQuestion = null;
     let revealed = false;
 
-    // track seen lines to prevent duplicates (e.g., when a provider re-emits the whole output)
-    const seenLineKeys = new Set();
-
     const revealDraft = () => {
-      if (!revealed) revealed = true;
       const draftTitle =
         title ||
-        t("reading_generating_title") ||
-        t("reading_generating") ||
-        "Generating…";
+        (targetLang === "en" ? "Generating..." : "Generando...");
+      if (!revealed && (title || targetParts.length > 0)) {
+        revealed = true;
+        setIsGenerating(false);
+      }
       setDraftLecture({
         title: draftTitle,
         target: sanitizeLectureBlock(targetParts.join(" "), targetLang),
@@ -1412,28 +1383,20 @@ export default function History({
     };
 
     const tryConsumeLine = (line) => {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith("```")) return;
-      if (!(trimmed.startsWith("{") && trimmed.endsWith("}"))) return;
-
-      let obj;
+      if (!line || !line.trim()) return;
+      let parsed;
       try {
-        obj = JSON.parse(trimmed);
+        parsed = JSON.parse(line.trim());
       } catch {
         return;
       }
+      if (!parsed || typeof parsed !== "object") return;
+      const { type, text } = parsed;
 
-      const type = obj?.type;
       if (type === "review_question") {
-        const normalizedQuestion = normalizeReviewQuestion(
-          obj,
-          plannedReviewQuestionType,
-        );
-        if (normalizedQuestion) bundledReviewQuestion = normalizedQuestion;
+        bundledReviewQuestion = parsed;
         return;
       }
-
-      const text = typeof obj?.text === "string" ? obj.text.trim() : "";
       if (!type || !text) return;
 
       const cleaned =
@@ -1443,18 +1406,15 @@ export default function History({
       const normalized = cleaned.replace(/\s+/g, " ").trim();
       if (!normalized) return;
 
-      const key = `${type}|${normalized}`;
-      if (seenLineKeys.has(key)) return; // <-- drop dupes
-      seenLineKeys.add(key);
-
-      if (type === "title" && !title) {
+      if (type === "title") {
         title = normalized;
         revealDraft();
         return;
       }
       if (type === "target") {
-        if (targetParts[targetParts.length - 1] !== normalized) {
-          targetParts.push(normalized);
+        const cleanSentence = stripSpeakerPrefix(normalized);
+        if (targetParts[targetParts.length - 1] !== cleanSentence) {
+          targetParts.push(cleanSentence);
           revealDraft();
         }
         return;
@@ -1466,12 +1426,12 @@ export default function History({
         }
         return;
       }
-      // {"type":"done"} handled implicitly after stream ends
     };
 
     try {
-      const resp = await simplemodel.generateContentStream({
+      const resp = await readingModel.generateContentStream({
         contents: [{ role: "user", parts: [{ text: streamPrompt }] }],
+        generationConfig: { temperature: 0.7 },
       });
 
       let buffer = "";
@@ -1487,60 +1447,55 @@ export default function History({
         }
       }
 
-      // ✅ Only parse a leftover partial line, NOT the provider's final aggregate (which repeats everything)
       const leftover = buffer.trim();
       if (leftover) tryConsumeLine(leftover);
 
-      // If nothing parsed, fallback to backend
+      // If nothing was parsed from stream, fallback to backend
       if (!title && targetParts.length === 0) {
         await generateNextLectureBackend();
         setDraftLecture(null);
         setIsGenerating(false);
-        generatingRef.current = false; // 🔓 release on fallback early-return
+        generatingRef.current = false;
         return;
       }
 
-      // Build final lecture strings
-      const draftTarget = sanitizeLectureBlock(
+      const finalTitle = stripLineLabel(
+        title || (targetLang === "en" ? "Reading Passage" : "Lectura"),
+        targetLang,
+      );
+      const safeTarget = sanitizeLectureBlock(
         targetParts.join(" "),
         targetLang,
       );
-      const finalTakeaways = takeaways.slice(0, 3);
-      const safeTarget = draftTarget;
-      const safeSupport = "";
-      const finalTitle =
-        title ||
-        (targetLang === "en" ? "Untitled lecture" : "Lección sin título");
+      const finalTakeaways = takeaways
+        .map((item) => stripLineLabel(item, supportLang))
+        .filter(Boolean)
+        .slice(0, 3);
 
-      const xpAward = getRandomHistoryXp();
-      const xpReason = "Immediate random 5–8 XP award.";
-
-      const chosenReviewFormat =
-        hasSpeechRecognition && Math.random() < 0.5 ? "speech" : "question";
-
-      // Save locally (do not award yet)
       const payload = {
         title: finalTitle,
         target: safeTarget,
-        support: safeSupport,
+        support: "",
         takeaways: finalTakeaways,
         targetLang,
         supportLang,
-        xpAward,
-        xpReason,
-        reviewFormat: chosenReviewFormat,
-        reviewQuestion: bundledReviewQuestion,
+        xpAward: getRandomHistoryXp(),
+        xpReason: "Immediate random 5–8 XP award.",
+        reviewFormat:
+          hasSpeechRecognition && Math.random() < 0.5 ? "speech" : "question",
+        reviewQuestion: normalizeReviewQuestion(
+          bundledReviewQuestion,
+          plannedReviewQuestionType,
+        ),
         reviewQuestionType: plannedReviewQuestionType,
         createdAtClient: Date.now(),
-        awarded: false, // ← wait until user finishes reading
+        awarded: false,
       };
 
-      // 🔒 Idempotency guard: avoid immediate duplicates
       if (isDuplicateOfLast(payload.title, payload.target)) {
         const last = lectures[lectures.length - 1];
         if (last) setActiveId(last.id);
-        setDraftLecture(null);
-        return; // finally{} will release the lock
+        return;
       }
 
       const newId = crypto.randomUUID
@@ -1548,18 +1503,25 @@ export default function History({
         : `${Date.now()}-${Math.random()}`;
       setLectures((prev) => [...prev, { id: newId, ...payload }]);
       setActiveId(newId);
-      setDraftLecture(null);
-    } catch (e) {
-      console.error("Gemini streaming error; using backend fallback.", e);
+      recordReadingHistory({
+        targetLang,
+        lessonId,
+        topic: lessonContent?.topic || lessonContent?.scenario || "",
+        title: finalTitle,
+        targetText: safeTarget,
+      });
+    } catch (error) {
+      console.error("Reading stream error, trying backend fallback:", error);
       try {
         await generateNextLectureBackend();
-      } catch (e2) {
-        console.error("Backend fallback failed:", e2);
+      } catch (fallbackError) {
+        console.error("Reading backend failed:", fallbackError);
+        setGenerationError(true);
       }
-      setDraftLecture(null);
     } finally {
+      setDraftLecture(null);
       setIsGenerating(false);
-      generatingRef.current = false; // 🔓 always release
+      generatingRef.current = false;
     }
   }
 
@@ -2033,6 +1995,20 @@ Return ONLY valid JSON:
               <HistoryLectureSkeleton
                 statusText={t("reading_generating") || "Creating lecture..."}
               />
+            ) : generationError ? (
+              <VStack align="start" spacing={3} role="alert">
+                <Text>{uiCopy(supportLang, {
+                  en: "We couldn't create a fresh reading. Please try again.",
+                  es: "No pudimos crear una lectura nueva. Inténtalo de nuevo.",
+                  it: "Non siamo riusciti a creare una nuova lettura. Riprova.",
+                  fr: "Nous n'avons pas pu créer une nouvelle lecture. Réessayez.",
+                  de: "Es konnte kein neuer Lesetext erstellt werden. Bitte versuche es erneut.",
+                  ja: "新しい読解文を作成できませんでした。もう一度お試しください。",
+                })}</Text>
+                <Button onClick={generateNextLectureGeminiStream}>{uiCopy(supportLang, {
+                  en: "Try again", es: "Intentar de nuevo", it: "Riprova", fr: "Réessayer", de: "Erneut versuchen", ja: "再試行",
+                })}</Button>
+              </VStack>
             ) : viewLecture ? (
               <VStack align="stretch" spacing={4}>
                 <Text
@@ -2376,327 +2352,7 @@ Return ONLY valid JSON:
                                 {speechTranscript}
                               </Text>
                             )}
-
-
                           </>
-                        )}
-
-                        {/* Speech feedback */}
-                        {speechSubmitted && speechFeedback && (
-                          <SlideFade in={true} offsetY="10px">
-                            <VStack spacing={3} align="stretch">
-                              <VStack
-                                spacing={3}
-                                align="stretch"
-                                p={4}
-                                borderRadius="xl"
-                                style={questionSquircleStyle}
-                                bg={
-                                  isLightTheme
-                                    ? paperSuccessBg
-                                    : "linear-gradient(90deg, rgba(72,187,120,0.16), rgba(56,161,105,0.08))"
-                                }
-                                borderWidth="1px"
-                                borderColor={
-                                  isLightTheme ? "rgba(77, 153, 106, 0.74)" : "green.400"
-                                }
-                                boxShadow={
-                                  isLightTheme
-                                    ? paperPanelShadow
-                                    : "0 12px 30px rgba(0, 0, 0, 0.3)"
-                                }
-                              >
-                                <HStack spacing={3} align="center">
-                                  <Flex
-                                    w="44px"
-                                    h="44px"
-                                    rounded="full"
-                                    align="center"
-                                    justify="center"
-                                    bg={isLightTheme ? "#37a06f" : "green.500"}
-                                    color="white"
-                                    fontWeight="bold"
-                                    fontSize="lg"
-                                    boxShadow={
-                                      isLightTheme
-                                        ? "0 10px 20px rgba(55, 118, 84, 0.18)"
-                                        : "0 10px 24px rgba(0,0,0,0.22)"
-                                    }
-                                    flexShrink={0}
-                                  >
-                                    {"✓"}
-                                  </Flex>
-                                  <Box flex="1">
-                                    <Text
-                                      fontWeight="semibold"
-                                      color={isLightTheme ? paperHeading : undefined}
-                                    >
-                                      {t("history_speech_complete")}
-                                    </Text>
-                                  </Box>
-                                </HStack>
-
-                                {speechFeedback.summary && (
-                                  <Text
-                                    fontSize="sm"
-                                    color={isLightTheme ? paperText : undefined}
-                                    opacity={isLightTheme ? 1 : 0.9}
-                                    lineHeight="1.6"
-                                  >
-                                    {speechFeedback.summary}
-                                  </Text>
-                                )}
-
-                                {/* Total score */}
-                                {speechFeedback.scores &&
-                                  Object.keys(speechFeedback.scores).length >
-                                    0 &&
-                                  (() => {
-                                    let totalScore = 0;
-                                    let count = 0;
-                                    SPEECH_CRITERIA.forEach((c) => {
-                                      const d = speechFeedback.scores[c.key];
-                                      const s =
-                                        typeof d?.score === "number"
-                                          ? Math.max(1, Math.min(10, d.score))
-                                          : typeof d === "number"
-                                            ? Math.max(1, Math.min(10, d))
-                                            : null;
-                                      if (s !== null) {
-                                        totalScore += s;
-                                        count++;
-                                      }
-                                    });
-                                    if (count === 0) return null;
-                                    const avg = totalScore / count;
-                                    const totalAccent =
-                                      speechAccentMap[speechScoreColor(avg)] ||
-                                      "#A0AEC0";
-                                    return (
-                                      <Box
-                                        bg={
-                                          isLightTheme
-                                            ? paperPanelBgSoft
-                                            : "rgba(0,0,0,0.25)"
-                                        }
-                                        px={4}
-                                        py={3}
-                                        rounded="xl"
-                                        style={questionSquircleStyle}
-                                        borderWidth="1px"
-                                        borderColor={totalAccent}
-                                        textAlign="center"
-                                        boxShadow={
-                                          isLightTheme
-                                            ? "inset 0 1px 0 rgba(255,255,255,0.28)"
-                                            : undefined
-                                        }
-                                      >
-                                        <Text
-                                          fontWeight="semibold"
-                                          fontSize="xs"
-                                          color={isLightTheme ? paperMuted : undefined}
-                                          opacity={isLightTheme ? 1 : 0.7}
-                                          textTransform="uppercase"
-                                          letterSpacing="0.05em"
-                                          mb={1}
-                                        >
-                                          {t("history_speech_total_score")}
-                                        </Text>
-                                        <Text
-                                          fontSize="3xl"
-                                          fontWeight="bold"
-                                          color={totalAccent}
-                                          lineHeight="1"
-                                        >
-                                          {totalScore}
-                                          <Text
-                                            as="span"
-                                            fontSize="md"
-                                            color={isLightTheme ? paperMuted : undefined}
-                                            opacity={isLightTheme ? 1 : 0.5}
-                                            fontWeight="normal"
-                                          >
-                                            /{count * 10}
-                                          </Text>
-                                        </Text>
-                                      </Box>
-                                    );
-                                  })()}
-
-                                {/* Score breakdown grid */}
-                                {speechFeedback.scores &&
-                                  Object.keys(speechFeedback.scores).length >
-                                    0 && (
-                                    <Box>
-                                      <Text
-                                        fontWeight="semibold"
-                                        fontSize="xs"
-                                        mb={2}
-                                        color={isLightTheme ? paperMuted : undefined}
-                                        opacity={isLightTheme ? 1 : 0.7}
-                                        textTransform="uppercase"
-                                        letterSpacing="0.05em"
-                                      >
-                                        {t("history_speech_breakdown")}
-                                      </Text>
-                                      <Grid
-                                        templateColumns="repeat(2, 1fr)"
-                                        gap={2}
-                                      >
-                                        {SPEECH_CRITERIA.map((criterion) => {
-                                          const data =
-                                            speechFeedback.scores[
-                                              criterion.key
-                                            ];
-                                          const score =
-                                            typeof data?.score === "number"
-                                              ? Math.max(
-                                                  1,
-                                                  Math.min(10, data.score),
-                                                )
-                                              : typeof data === "number"
-                                                ? Math.max(
-                                                    1,
-                                                    Math.min(10, data),
-                                                  )
-                                                : null;
-                                          if (score === null) return null;
-                                          const note =
-                                            typeof data?.note === "string"
-                                              ? data.note
-                                              : "";
-                                          const color = speechScoreColor(score);
-                                          const accent =
-                                            speechAccentMap[color] || "#A0AEC0";
-                                          return (
-                                            <GridItem key={criterion.key}>
-                                              <Box
-                                                bg={
-                                                  isLightTheme
-                                                    ? paperPanelBgRaised
-                                                    : "rgba(0,0,0,0.2)"
-                                                }
-                                                px={3}
-                                                py={2.5}
-                                                rounded="lg"
-                                                style={questionSquircleStyle}
-                                                borderLeft="3px solid"
-                                                borderColor={accent}
-                                                borderWidth={isLightTheme ? "1px" : undefined}
-                                                borderTopColor={
-                                                  isLightTheme ? paperPanelBorder : undefined
-                                                }
-                                                borderRightColor={
-                                                  isLightTheme ? paperPanelBorder : undefined
-                                                }
-                                                borderBottomColor={
-                                                  isLightTheme ? paperPanelBorder : undefined
-                                                }
-                                                boxShadow={
-                                                  isLightTheme
-                                                    ? "0 6px 18px rgba(97, 74, 47, 0.08)"
-                                                    : undefined
-                                                }
-                                                h="100%"
-                                              >
-                                                <HStack
-                                                  justify="space-between"
-                                                  align="center"
-                                                  mb={1}
-                                                >
-                                                  <Text
-                                                    fontSize="xs"
-                                                    fontWeight="semibold"
-                                                    color={
-                                                      isLightTheme
-                                                        ? paperHeading
-                                                        : undefined
-                                                    }
-                                                    opacity={isLightTheme ? 1 : 0.85}
-                                                  >
-                                                    {
-                                                      criterion[supportLang] || criterion.en
-                                                    }
-                                                  </Text>
-                                                  <Text
-                                                    fontSize="lg"
-                                                    fontWeight="bold"
-                                                    color={accent}
-                                                    lineHeight="1"
-                                                  >
-                                                    {score}
-                                                  </Text>
-                                                </HStack>
-                                                {note && (
-                                                  <Text
-                                                    fontSize="2xs"
-                                                    color={
-                                                      isLightTheme
-                                                        ? paperMuted
-                                                        : undefined
-                                                    }
-                                                    opacity={isLightTheme ? 1 : 0.55}
-                                                    lineHeight="1.4"
-                                                    noOfLines={3}
-                                                  >
-                                                    {note}
-                                                  </Text>
-                                                )}
-                                              </Box>
-                                            </GridItem>
-                                          );
-                                        })}
-                                      </Grid>
-                                    </Box>
-                                  )}
-
-                                {/* Next button - always pass */}
-
-
-                                {lessonProgress && lessonProgress.total > 0 && (
-                                  <VStack
-                                    align="center"
-                                    spacing={2}
-                                    mt={2}
-                                    px={1}
-                                    width="full"
-                                  >
-                                    <HStack
-                                      justify="center"
-                                      align="center"
-                                      spacing={3}
-                                      fontSize="xs"
-                                    >
-                                      <Text
-                                        color={isLightTheme ? paperMuted : "whiteAlpha.800"}
-                                        fontWeight="semibold"
-                                        textAlign="center"
-                                      >
-                                        {lessonProgress.label}
-                                      </Text>
-                                      <Text
-                                        color={isLightTheme ? paperMuted : "whiteAlpha.800"}
-                                        fontWeight="semibold"
-                                        textAlign="center"
-                                      >
-                                        {Math.round(lessonProgress.pct)}%
-                                      </Text>
-                                    </HStack>
-                                    <Box width="60%" mx="auto">
-                                      <WaveBar
-                                        value={lessonProgress.pct}
-                                        height={20}
-                                        start="#4aa8ff"
-                                        end="#75f8ffff"
-                                      />
-                                    </Box>
-                                  </VStack>
-                                )}
-                              </VStack>
-                              <RandomCharacter />
-                            </VStack>
-                          </SlideFade>
                         )}
                       </VStack>
                     ) : isGeneratingQuestion ? (
@@ -3068,13 +2724,297 @@ Return ONLY valid JSON:
             speechFeedback && (
               <Box
                 role="status"
-                px={1} py={2}
-
-
-                maxH="28dvh"
+                aria-live="polite"
+                px={1}
+                py={2}
+                maxH={{ base: "45dvh", md: "52dvh" }}
                 overflowY="auto"
+                overscrollBehavior="contain"
+                sx={{
+                  "&::-webkit-scrollbar": {
+                    display: "none",
+                  },
+                  msOverflowStyle: "none",
+                  scrollbarWidth: "none",
+                }}
               >
-                <Text>{speechFeedback.summary}</Text>
+                <VStack align="stretch" spacing={3}>
+                  <HStack align="center" spacing={2.5} width="full">
+                    <Flex
+                      align="center"
+                      justify="center"
+                      borderRadius="full"
+                      bg={
+                        isLightTheme
+                          ? "rgba(67, 160, 71, 0.16)"
+                          : "rgba(67, 160, 71, 0.25)"
+                      }
+                      color={
+                        isLightTheme
+                          ? paperHeading
+                          : "green.400"
+                      }
+                      w="26px"
+                      h="26px"
+                      fontWeight="bold"
+                      fontSize="md"
+                      boxShadow={
+                        isLightTheme
+                          ? "0 10px 20px rgba(55, 118, 84, 0.18)"
+                          : "0 10px 24px rgba(0,0,0,0.22)"
+                      }
+                      flexShrink={0}
+                    >
+                      ✓
+                    </Flex>
+                    <Box flex="1" minW={0}>
+                      <Text
+                        fontWeight="bold"
+                        fontSize="md"
+                        color={isLightTheme ? paperHeading : undefined}
+                      >
+                        {t("history_speech_complete")}
+                      </Text>
+                    </Box>
+                    <RandomCharacter width="32px" containerHeight={36} />
+                  </HStack>
+
+                  {speechFeedback.summary && (
+                    <Text
+                      fontSize="sm"
+                      color={isLightTheme ? paperText : undefined}
+                      opacity={isLightTheme ? 1 : 0.9}
+                      lineHeight="1.6"
+                    >
+                      {speechFeedback.summary}
+                    </Text>
+                  )}
+
+                  {/* Lesson progress */}
+                  {lessonProgress && lessonProgress.total > 0 && (
+                    <VStack
+                      align="center"
+                      spacing={2}
+                      mt={1}
+                      px={1}
+                      width="full"
+                    >
+                      <HStack
+                        justify="center"
+                        align="center"
+                        spacing={3}
+                        fontSize="xs"
+                      >
+                        <Text
+                          color={isLightTheme ? paperMuted : "whiteAlpha.800"}
+                          fontWeight="semibold"
+                          textAlign="center"
+                        >
+                          {lessonProgress.label}
+                        </Text>
+                        <Text
+                          color={isLightTheme ? paperMuted : "whiteAlpha.800"}
+                          fontWeight="semibold"
+                          textAlign="center"
+                        >
+                          {Math.round(lessonProgress.pct)}%
+                        </Text>
+                      </HStack>
+                      <Box width="60%" mx="auto">
+                        <WaveBar
+                          value={lessonProgress.pct}
+                          height={16}
+                          start="#4aa8ff"
+                          end="#75f8ffff"
+                        />
+                      </Box>
+                    </VStack>
+                  )}
+
+                  {/* Total score */}
+                  {speechFeedback.scores &&
+                    Object.keys(speechFeedback.scores).length > 0 &&
+                    (() => {
+                      let totalScore = 0;
+                      let count = 0;
+                      SPEECH_CRITERIA.forEach((c) => {
+                        const d = speechFeedback.scores[c.key];
+                        const s =
+                          typeof d?.score === "number"
+                            ? Math.max(1, Math.min(10, d.score))
+                            : typeof d === "number"
+                              ? Math.max(1, Math.min(10, d))
+                              : null;
+                        if (s !== null) {
+                          totalScore += s;
+                          count++;
+                        }
+                      });
+                      if (count === 0) return null;
+                      const avg = totalScore / count;
+                      const totalAccent =
+                        speechAccentMap[speechScoreColor(avg)] || "#A0AEC0";
+                      return (
+                        <Box
+                          bg={
+                            isLightTheme
+                              ? paperPanelBgSoft
+                              : "rgba(0,0,0,0.25)"
+                          }
+                          px={4}
+                          py={2.5}
+                          rounded="xl"
+                          style={questionSquircleStyle}
+                          borderWidth="1px"
+                          borderColor={totalAccent}
+                          textAlign="center"
+                          boxShadow={
+                            isLightTheme
+                              ? "inset 0 1px 0 rgba(255,255,255,0.28)"
+                              : undefined
+                          }
+                        >
+                          <Text
+                            fontWeight="semibold"
+                            fontSize="xs"
+                            color={isLightTheme ? paperMuted : undefined}
+                            opacity={isLightTheme ? 1 : 0.7}
+                            textTransform="uppercase"
+                            letterSpacing="0.05em"
+                            mb={0.5}
+                          >
+                            {t("history_speech_total_score")}
+                          </Text>
+                          <Text
+                            fontSize="2xl"
+                            fontWeight="bold"
+                            color={totalAccent}
+                            lineHeight="1"
+                          >
+                            {totalScore}
+                            <Text
+                              as="span"
+                              fontSize="sm"
+                              color={isLightTheme ? paperMuted : undefined}
+                              opacity={isLightTheme ? 1 : 0.5}
+                              fontWeight="normal"
+                            >
+                              /{count * 10}
+                            </Text>
+                          </Text>
+                        </Box>
+                      );
+                    })()}
+
+                  {/* Score breakdown grid */}
+                  {speechFeedback.scores &&
+                    Object.keys(speechFeedback.scores).length > 0 && (
+                      <Box>
+                        <Text
+                          fontWeight="semibold"
+                          fontSize="xs"
+                          mb={2}
+                          color={isLightTheme ? paperMuted : undefined}
+                          opacity={isLightTheme ? 1 : 0.7}
+                          textTransform="uppercase"
+                          letterSpacing="0.05em"
+                        >
+                          {t("history_speech_breakdown")}
+                        </Text>
+                        <Grid
+                          templateColumns={{ base: "1fr", sm: "repeat(2, 1fr)" }}
+                          gap={2}
+                        >
+                          {SPEECH_CRITERIA.map((criterion) => {
+                            const data = speechFeedback.scores[criterion.key];
+                            const score =
+                              typeof data?.score === "number"
+                                ? Math.max(1, Math.min(10, data.score))
+                                : typeof data === "number"
+                                  ? Math.max(1, Math.min(10, data))
+                                  : null;
+                            if (score === null) return null;
+                            const note =
+                              typeof data?.note === "string" ? data.note : "";
+                            const color = speechScoreColor(score);
+                            const accent =
+                              speechAccentMap[color] || "#A0AEC0";
+                            return (
+                              <GridItem key={criterion.key}>
+                                <Box
+                                  bg={
+                                    isLightTheme
+                                      ? paperPanelBgRaised
+                                      : "rgba(0,0,0,0.2)"
+                                  }
+                                  px={3}
+                                  py={2.5}
+                                  rounded="lg"
+                                  style={questionSquircleStyle}
+                                  borderLeft="3px solid"
+                                  borderColor={accent}
+                                  borderWidth={isLightTheme ? "1px" : undefined}
+                                  borderTopColor={
+                                    isLightTheme ? paperPanelBorder : undefined
+                                  }
+                                  borderRightColor={
+                                    isLightTheme ? paperPanelBorder : undefined
+                                  }
+                                  borderBottomColor={
+                                    isLightTheme ? paperPanelBorder : undefined
+                                  }
+                                  boxShadow={
+                                    isLightTheme
+                                      ? "0 6px 18px rgba(97, 74, 47, 0.08)"
+                                      : undefined
+                                  }
+                                  h="100%"
+                                >
+                                  <HStack
+                                    justify="space-between"
+                                    align="center"
+                                    mb={1}
+                                  >
+                                    <Text
+                                      fontSize="xs"
+                                      fontWeight="semibold"
+                                      color={
+                                        isLightTheme ? paperHeading : undefined
+                                      }
+                                      opacity={isLightTheme ? 1 : 0.85}
+                                    >
+                                      {criterion[supportLang] || criterion.en}
+                                    </Text>
+                                    <Text
+                                      fontSize="lg"
+                                      fontWeight="bold"
+                                      color={accent}
+                                      lineHeight="1"
+                                    >
+                                      {score}
+                                    </Text>
+                                  </HStack>
+                                  {note && (
+                                    <Text
+                                      fontSize="2xs"
+                                      color={
+                                        isLightTheme ? paperMuted : undefined
+                                      }
+                                      opacity={isLightTheme ? 1 : 0.55}
+                                      lineHeight="1.4"
+                                      noOfLines={3}
+                                    >
+                                      {note}
+                                    </Text>
+                                  )}
+                                </Box>
+                              </GridItem>
+                            );
+                          })}
+                        </Grid>
+                      </Box>
+                    )}
+                </VStack>
               </Box>
             )
           ) : (

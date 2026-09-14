@@ -1,16 +1,24 @@
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
-import { storyModel, database } from "../../firebaseResources/firebaseResources";
+import { storyModel, storyRevisionModel, database } from "../../firebaseResources/firebaseResources";
 import { getTTSPlayer } from "../../utils/tts";
 import { awardXp } from "../../utils/utils";
 import { buildStoryGenerationRequest } from "./storyGeneration";
+import { reviewGeneratedActivity } from "../../utils/activityReviewService";
 
 export const storyServices = {
-  async generate(prompt) {
-    const response = await storyModel.generateContent(buildStoryGenerationRequest(prompt));
+  review: reviewGeneratedActivity,
+  async generate(prompt, { isRevision = false } = {}) {
+    const response = await (isRevision ? storyRevisionModel : storyModel).generateContent(buildStoryGenerationRequest(prompt));
     if (response.response.candidates?.[0]?.finishReason === "MAX_TOKENS") {
       throw new Error("Story response was truncated before the episode was complete");
     }
     return response.response.text();
+  },
+  async generateStream(prompt) {
+    return storyModel.generateContentStream({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.7, maxOutputTokens: 8192 },
+    });
   },
   async translate(text, targetLang, supportLang) {
     const prompt = `Translate this ${targetLang || "target"} text into clear, natural, learner-friendly ${supportLang || "support language"}. Return ONLY the direct translation text without quotes or explanation:

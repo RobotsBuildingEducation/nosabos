@@ -18,15 +18,31 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react";
-import { FiCheck, FiDownload, FiMic, FiPause, FiPlay, FiSquare } from "react-icons/fi";
+import {
+  FiCheck,
+  FiDownload,
+  FiMic,
+  FiPause,
+  FiPlay,
+  FiSquare,
+} from "react-icons/fi";
 import { MdReplay } from "react-icons/md";
 import { RiSeedlingLine } from "react-icons/ri";
 import useSoundSettings from "../hooks/useSoundSettings";
 import { selectSound, submitActionSound } from "../constants/sounds";
-import { nativeModalMotionProps, nativeOverlayMotionProps } from "../utils/modalMotion";
+import {
+  nativeModalMotionProps,
+  nativeOverlayMotionProps,
+} from "../utils/modalMotion";
 import { journeyCopy } from "../utils/voiceJourneyCopy";
-import { JOURNEY_MILESTONES, journeySessionCount } from "../utils/voiceJourneyModel";
-import { loadJourneyRecording, saveJourneyRecording } from "../utils/voiceJourney";
+import {
+  JOURNEY_MILESTONES,
+  journeySessionCount,
+} from "../utils/voiceJourneyModel";
+import {
+  loadJourneyRecording,
+  saveJourneyRecording,
+} from "../utils/voiceJourney";
 import { createJourneyRecorder } from "../utils/journeyRecorder";
 
 function formatAudioTime(seconds) {
@@ -80,7 +96,11 @@ export function JourneyAudio({ blob, label, lang }) {
   const handleTimeUpdate = () => {
     if (!isSeeking && audioRef.current) {
       setCurrentTime(audioRef.current.currentTime);
-      if (Number.isFinite(audioRef.current.duration) && audioRef.current.duration > 0 && duration === 0) {
+      if (
+        Number.isFinite(audioRef.current.duration) &&
+        audioRef.current.duration > 0 &&
+        duration === 0
+      ) {
         setDuration(audioRef.current.duration);
       }
     }
@@ -90,7 +110,7 @@ export function JourneyAudio({ blob, label, lang }) {
     const audio = audioRef.current;
     if (!audio) return;
     if (audio.paused) {
-      document.querySelectorAll("audio").forEach(other => {
+      document.querySelectorAll("audio").forEach((other) => {
         if (other !== audio) other.pause();
       });
       audio.play().catch(() => setError(true));
@@ -99,24 +119,33 @@ export function JourneyAudio({ blob, label, lang }) {
     }
   };
 
-  const handleSliderChange = val => {
+  const handleSliderChange = (val) => {
     setCurrentTime(val);
     if (!isSeeking) setIsSeeking(true);
   };
 
-  const handleSliderChangeEnd = val => {
+  const handleSliderChangeEnd = (val) => {
     setIsSeeking(false);
     if (audioRef.current) {
       audioRef.current.currentTime = val;
     }
   };
 
-  const extension = blob?.type?.includes("mp4") ? "m4a" : blob?.type?.includes("ogg") ? "ogg" : "webm";
+  const extension = blob?.type?.includes("mp4")
+    ? "m4a"
+    : blob?.type?.includes("ogg")
+      ? "ogg"
+      : "webm";
 
   return (
     <Box minW={0} w="100%">
       {label && (
-        <Text fontSize="xs" mb={2} color="var(--app-text-secondary)" fontWeight="medium">
+        <Text
+          fontSize="xs"
+          mb={2}
+          color="var(--app-text-secondary)"
+          fontWeight="medium"
+        >
           {label}
         </Text>
       )}
@@ -151,12 +180,21 @@ export function JourneyAudio({ blob, label, lang }) {
         w="100%"
       >
         <IconButton
-          icon={isPlaying ? <FiPause size={16} /> : <FiPlay size={16} style={{ marginLeft: "2px" }} />}
+          icon={
+            isPlaying ? (
+              <FiPause size={16} />
+            ) : (
+              <FiPlay size={16} style={{ marginLeft: "2px" }} />
+            )
+          }
           size="sm"
           isRound
           variant="ghost"
           color="var(--app-text-primary)"
-          _hover={{ bg: "var(--app-surface)", color: "var(--app-text-primary)" }}
+          _hover={{
+            bg: "var(--app-surface)",
+            color: "var(--app-text-primary)",
+          }}
           _focus={{ boxShadow: "none", outline: "none" }}
           _focusVisible={{ boxShadow: "none", outline: "none" }}
           _active={{ bg: "var(--app-surface-muted)", boxShadow: "none" }}
@@ -221,7 +259,10 @@ export function JourneyAudio({ blob, label, lang }) {
             size="sm"
             isRound
             color="var(--app-text-secondary)"
-            _hover={{ color: "var(--app-text-primary)", bg: "var(--app-surface)" }}
+            _hover={{
+              color: "var(--app-text-primary)",
+              bg: "var(--app-surface)",
+            }}
             aria-label={journeyCopy(lang, "download")}
             title={journeyCopy(lang, "download")}
           />
@@ -249,13 +290,20 @@ export default function JourneyRecordingModal({
   const playSound = useSoundSettings((s) => s.playSound);
   const t = (key, values) => journeyCopy(lang, key, values);
   const sessionCount = journeySessionCount(journey);
-  const [activeMilestone, setActiveMilestone] = useState(() => milestone || JOURNEY_MILESTONES[0]);
-  const [localRecordings, setLocalRecordings] = useState(() => ({ ...(journey?.recordings || {}) }));
+  const [activeMilestone, setActiveMilestone] = useState(
+    () => milestone || JOURNEY_MILESTONES[0],
+  );
+  const [localRecordings, setLocalRecordings] = useState(() => ({
+    ...(journey?.recordings || {}),
+  }));
   const [loadedAudios, setLoadedAudios] = useState({});
   const [loadingAudio, setLoadingAudio] = useState(false);
   const [audioLoadError, setAudioLoadError] = useState("");
 
-  const [recorderState, setRecorderState] = useState({ status: "idle", seconds: 0 });
+  const [recorderState, setRecorderState] = useState({
+    status: "idle",
+    seconds: 0,
+  });
   const [activeRecording, setActiveRecording] = useState(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
@@ -263,11 +311,13 @@ export default function JourneyRecordingModal({
   const recorderRef = useRef(null);
   const aliveRef = useRef(true);
 
-  const busy = saving || ["starting", "recording", "stopping"].includes(recorderState.status);
+  const busy =
+    saving ||
+    ["starting", "recording", "stopping"].includes(recorderState.status);
 
   useEffect(() => {
     if (journey?.recordings) {
-      setLocalRecordings(prev => ({ ...prev, ...journey.recordings }));
+      setLocalRecordings((prev) => ({ ...prev, ...journey.recordings }));
     }
   }, [journey?.recordings]);
 
@@ -292,21 +342,24 @@ export default function JourneyRecordingModal({
   // Fetch audio when an already-recorded milestone is active
   useEffect(() => {
     if (!npub || !targetLang || !activeMilestone) return;
-    if (!localRecordings[activeMilestone] || loadedAudios[activeMilestone]) return;
+    if (!localRecordings[activeMilestone] || loadedAudios[activeMilestone])
+      return;
 
     let alive = true;
     setLoadingAudio(true);
     setAudioLoadError("");
 
     loadJourneyRecording(npub, targetLang, activeMilestone)
-      .then(result => {
+      .then((result) => {
         if (alive) {
-          setLoadedAudios(prev => ({ ...prev, [activeMilestone]: result }));
+          setLoadedAudios((prev) => ({ ...prev, [activeMilestone]: result }));
         }
       })
-      .catch(err => {
+      .catch((err) => {
         if (alive) {
-          setAudioLoadError(err.message === "JOURNEY_SIGNER_UNSUPPORTED" ? "signer" : "error");
+          setAudioLoadError(
+            err.message === "JOURNEY_SIGNER_UNSUPPORTED" ? "signer" : "error",
+          );
         }
       })
       .finally(() => {
@@ -318,7 +371,7 @@ export default function JourneyRecordingModal({
     };
   }, [npub, targetLang, activeMilestone, localRecordings, loadedAudios]);
 
-  const selectMilestone = num => {
+  const selectMilestone = (num) => {
     if (num > sessionCount || busy) return;
     playSound(selectSound);
     if (recorderState.status === "recording") {
@@ -348,11 +401,14 @@ export default function JourneyRecordingModal({
 
       const nowIso = new Date().toISOString();
       if (aliveRef.current) {
-        setLocalRecordings(prev => ({
+        setLocalRecordings((prev) => ({
           ...prev,
-          [activeMilestone]: { createdAt: nowIso, capturedSession: sessionCount },
+          [activeMilestone]: {
+            createdAt: nowIso,
+            capturedSession: sessionCount,
+          },
         }));
-        setLoadedAudios(prev => ({
+        setLoadedAudios((prev) => ({
           ...prev,
           [activeMilestone]: { blob: activeRecording.blob },
         }));
@@ -361,7 +417,9 @@ export default function JourneyRecordingModal({
       }
     } catch (err) {
       if (aliveRef.current) {
-        setSaveError(err.message === "JOURNEY_SIGNER_UNSUPPORTED" ? "signer" : "error");
+        setSaveError(
+          err.message === "JOURNEY_SIGNER_UNSUPPORTED" ? "signer" : "error",
+        );
       }
     } finally {
       if (aliveRef.current) setSaving(false);
@@ -381,7 +439,10 @@ export default function JourneyRecordingModal({
       closeOnEsc={!busy}
       returnFocusOnClose={false}
     >
-      <ModalOverlay motionProps={nativeOverlayMotionProps} bg="var(--app-overlay)" />
+      <ModalOverlay
+        motionProps={nativeOverlayMotionProps}
+        bg="var(--app-overlay)"
+      />
       <ModalContent
         motionProps={nativeModalMotionProps}
         bg="var(--app-surface-elevated)"
@@ -416,7 +477,12 @@ export default function JourneyRecordingModal({
             >
               <HStack spacing={2} align="center" mb={2}>
                 <Box as={RiSeedlingLine} size="20" color="teal.400" />
-                <Text fontSize="xs" fontWeight="semibold" color="var(--app-text-muted)" letterSpacing="wide">
+                <Text
+                  fontSize="xs"
+                  fontWeight="semibold"
+                  color="var(--app-text-muted)"
+                  letterSpacing="wide"
+                >
                   {t("session", { n: activeMilestone })} · {t("journey")}
                 </Text>
               </HStack>
@@ -429,8 +495,13 @@ export default function JourneyRecordingModal({
             </Box>
 
             {/* Clickable milestone numbers */}
-            <HStack flexWrap="wrap" spacing={2} rowGap={2} aria-label={t("journey")}>
-              {JOURNEY_MILESTONES.map(number => {
+            <HStack
+              flexWrap="wrap"
+              spacing={2}
+              rowGap={2}
+              aria-label={t("journey")}
+            >
+              {JOURNEY_MILESTONES.map((number) => {
                 const isUnlocked = number <= sessionCount;
                 const isSelected = number === activeMilestone;
                 const isSaved = Boolean(localRecordings[number]);
@@ -462,7 +533,10 @@ export default function JourneyRecordingModal({
                     boxShadow="none"
                     _hover={
                       isSelected
-                        ? { borderColor: "teal.400", bg: "rgba(20, 184, 166, 0.14)" }
+                        ? {
+                            borderColor: "teal.400",
+                            bg: "rgba(20, 184, 166, 0.14)",
+                          }
                         : isUnlocked
                           ? {
                               borderColor: "var(--app-border-strong)",
@@ -473,7 +547,10 @@ export default function JourneyRecordingModal({
                     }
                     _active={
                       isSelected
-                        ? { borderColor: "teal.600", bg: "rgba(20, 184, 166, 0.2)" }
+                        ? {
+                            borderColor: "teal.600",
+                            bg: "rgba(20, 184, 166, 0.2)",
+                          }
                         : isUnlocked
                           ? { bg: "var(--app-surface-muted)" }
                           : undefined
@@ -512,7 +589,7 @@ export default function JourneyRecordingModal({
                       variant="outline"
                       onClick={() => {
                         playSound(selectSound);
-                        setLoadedAudios(prev => {
+                        setLoadedAudios((prev) => {
                           const copy = { ...prev };
                           delete copy[activeMilestone];
                           return copy;
@@ -534,12 +611,22 @@ export default function JourneyRecordingModal({
                   >
                     <HStack spacing={2} color="teal.400">
                       <FiCheck />
-                      <Text fontWeight="semibold" fontSize="sm" color="var(--app-text-primary)">
+                      <Text
+                        fontWeight="semibold"
+                        fontSize="sm"
+                        color="var(--app-text-primary)"
+                      >
                         {t("saved")}
                       </Text>
                       {localRecordings[activeMilestone]?.createdAt && (
-                        <Text fontSize="xs" color="var(--app-text-muted)" ml="auto">
-                          {new Date(localRecordings[activeMilestone].createdAt).toLocaleDateString(lang, {
+                        <Text
+                          fontSize="xs"
+                          color="var(--app-text-muted)"
+                          ml="auto"
+                        >
+                          {new Date(
+                            localRecordings[activeMilestone].createdAt,
+                          ).toLocaleDateString(lang, {
                             year: "numeric",
                             month: "short",
                             day: "numeric",
@@ -564,7 +651,12 @@ export default function JourneyRecordingModal({
                 )}
 
                 {recorderState.status === "recording" && (
-                  <Text role="status" textAlign="center" color="red.400" fontWeight="semibold">
+                  <Text
+                    role="status"
+                    textAlign="center"
+                    color="red.400"
+                    fontWeight="semibold"
+                  >
                     {t("recording", { n: recorderState.seconds })}
                   </Text>
                 )}
@@ -579,7 +671,11 @@ export default function JourneyRecordingModal({
                     border="1px solid"
                     borderColor="var(--app-border)"
                   >
-                    <JourneyAudio blob={activeRecording.blob} label={t("preview")} lang={lang} />
+                    <JourneyAudio
+                      blob={activeRecording.blob}
+                      label={t("preview")}
+                      lang={lang}
+                    />
                     <HStack spacing={3}>
                       <Button
                         flex={1}
@@ -604,7 +700,8 @@ export default function JourneyRecordingModal({
                         _hover={{ bg: "teal.600" }}
                         _active={{
                           transform: "translateY(2px)",
-                          boxShadow: "0 2px 0 var(--chakra-colors-teal-800, #234E52)",
+                          boxShadow:
+                            "0 2px 0 var(--chakra-colors-teal-800, #234E52)",
                         }}
                         isLoading={saving}
                         loadingText={t("saving")}
@@ -619,8 +716,14 @@ export default function JourneyRecordingModal({
                     <Button
                       size="lg"
                       w="100%"
-                      colorScheme={recorderState.status === "recording" ? "red" : "cyan"}
-                      bg={recorderState.status === "recording" ? "red.500" : "cyan.500"}
+                      colorScheme={
+                        recorderState.status === "recording" ? "red" : "cyan"
+                      }
+                      bg={
+                        recorderState.status === "recording"
+                          ? "red.500"
+                          : "cyan.500"
+                      }
                       color="white"
                       boxShadow={
                         recorderState.status === "recording"
@@ -628,7 +731,10 @@ export default function JourneyRecordingModal({
                           : "0 4px 0 var(--chakra-colors-cyan-800, #086F83)"
                       }
                       _hover={{
-                        bg: recorderState.status === "recording" ? "red.600" : "cyan.600",
+                        bg:
+                          recorderState.status === "recording"
+                            ? "red.600"
+                            : "cyan.600",
                       }}
                       _active={{
                         transform: "translateY(2px)",
@@ -637,8 +743,16 @@ export default function JourneyRecordingModal({
                             ? "0 2px 0 var(--chakra-colors-red-800, #822727)"
                             : "0 2px 0 var(--chakra-colors-cyan-800, #086F83)",
                       }}
-                      leftIcon={recorderState.status === "recording" ? <FiSquare /> : <FiMic />}
-                      isLoading={["starting", "stopping"].includes(recorderState.status)}
+                      leftIcon={
+                        recorderState.status === "recording" ? (
+                          <FiSquare />
+                        ) : (
+                          <FiMic />
+                        )
+                      }
+                      isLoading={["starting", "stopping"].includes(
+                        recorderState.status,
+                      )}
                       loadingText={t("starting")}
                       onClick={() => {
                         playSound(selectSound);
@@ -650,7 +764,11 @@ export default function JourneyRecordingModal({
                         }
                       }}
                     >
-                      {t(recorderState.status === "recording" ? "stop" : "record")}
+                      {t(
+                        recorderState.status === "recording"
+                          ? "stop"
+                          : "record",
+                      )}
                     </Button>
                   </VStack>
                 )}
@@ -668,8 +786,14 @@ export default function JourneyRecordingModal({
                 }}
                 isDisabled={busy}
                 borderColor="transparent !important"
-                _hover={{ bg: "var(--app-surface-muted)", borderColor: "transparent !important" }}
-                _focus={{ boxShadow: "none", borderColor: "transparent !important" }}
+                _hover={{
+                  bg: "var(--app-surface-muted)",
+                  borderColor: "transparent !important",
+                }}
+                _focus={{
+                  boxShadow: "none",
+                  borderColor: "transparent !important",
+                }}
               >
                 {t(hasRecording ? "done" : "later")}
               </Button>

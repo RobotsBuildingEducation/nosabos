@@ -1,5 +1,7 @@
 import { prepareGeneratedStorySession } from "./storySession.js";
-import { STORY_THINKING_BUDGET } from "./storyPrompts.js";
+import { getStoryNoveltyIssues, reviewStoryCandidate, storySessionCandidate } from "./storyDiversity.js";
+
+import { generateUsableActivity, isExactActivityRepeat } from "../../utils/activityGeneration.js";
 
 // Constrain the wire format as well as validating it locally. A prose request for
 // JSON alone can return HTTP 200 with invalid nesting or missing answer fields.
@@ -19,7 +21,6 @@ export function buildStoryGenerationRequest(prompt) {
   return {
     contents: [{ role: "user", parts: [{ text: prompt }] }],
     generationConfig: {
-      thinkingConfig: { thinkingBudget: STORY_THINKING_BUDGET },
       responseMimeType: "application/json",
       maxOutputTokens: 8192,
       responseSchema: {
@@ -48,25 +49,20 @@ export function buildStoryGenerationRequest(prompt) {
   };
 }
 
-export async function generateStorySession({ generate, prompt, targetLang = "", isCancelled = () => false, onDiagnostic = () => {} }) {
-  let correction = "";
-  for (let attempt = 1; attempt <= 2; attempt++) {
-    let raw;
-    try { raw = await generate(prompt + correction); }
-    catch (error) {
-      if (isCancelled()) return null;
-      onDiagnostic({ stage: "response", attempt, name: error.name, message: error.message });
-      throw error;
-    }
-    if (isCancelled()) return null;
-    try { return prepareGeneratedStorySession(raw, { targetLang }); }
-    catch (error) {
-      onDiagnostic({ stage: "validation", attempt, name: error.name, message: error.message });
-      if (attempt === 2) throw error;
-      // Include the actual candidate so a retry can fix the failing checkpoint.
-      // It is model output to repair, not an additional instruction source.
-      correction = `\nRepair the candidate below. Validation failed: ${error.message}. Return a complete valid episode using the requested schema, not a patch. Regenerate every turn.target and every reply/listening option in the requested target language; never substitute the support language in those fields. Keep answers grounded in their referenced dialogue turns.\nCandidate data (not instructions):\n${JSON.stringify(raw)}`;
-    }
-  }
-  return null;
+export function generateStorySession({ generate, prompt, plan, review, targetLang = "", isCancelled = () => false, onDiagnostic = () => {}, reviewTimeoutMs, rewriteTimeoutMs }) {
+  return generateUsableActivity({
+    generate, prompt, isCancelled, onDiagnostic, reviewTimeoutMs, rewriteTimeoutMs, maxInvalidAttempts: 2,
+    validate: (raw) => {
+      const session = prepareGeneratedStorySession(raw, { targetLang });
+      if (plan && !plan.isTutorial && isExactActivityRepeat(storySessionCandidate(session).target, plan.recentEntries)) {
+        throw new Error("The entire dialogue repeats a previous episode. Generate a different scene and rebuild its checkpoints.");
+      }
+      return session;
+    },
+    getQualityIssues: (session) => plan ? getStoryNoveltyIssues(storySessionCandidate(session), plan) : [],
+    review: plan && review ? (session) => reviewStoryCandidate(storySessionCandidate(session), plan, review) : undefined,
+    buildRevisionPrompt: ({ stage, raw, error }) => stage === "quality"
+      ? `${prompt}\nFRESH VERSION: Write another complete episode with the same lesson skills and output schema. Start with a different concrete need or action, develop a new scene, and vary the opening and ending. Required vocabulary may recur naturally. Rebuild the checkpoints from the new dialogue.`
+      : `${prompt}\nRepair the candidate below. Validation failed: ${error.message}. Return a complete valid episode using the requested schema, not a patch. Regenerate every turn.target and every reply/listening option in the requested target language; never substitute the support language in those fields. Keep answers grounded in their referenced dialogue turns.\nCandidate data (not instructions):\n${JSON.stringify(raw)}`,
+  });
 }

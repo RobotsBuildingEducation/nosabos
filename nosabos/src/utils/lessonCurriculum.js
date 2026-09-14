@@ -1333,7 +1333,7 @@ export function getLessonQuizSettings(
 
 export function buildCurriculumPromptContext(
   curriculumContext,
-  { mode = "", limit = 24 } = {},
+  { mode = "", limit = 24, includeExamples = true } = {},
 ) {
   const agendaItems = Array.isArray(curriculumContext?.agendaItems)
     ? curriculumContext.agendaItems
@@ -1366,7 +1366,7 @@ export function buildCurriculumPromptContext(
       ? { activityBrief: cleanText(item.activityBrief) }
       : {}),
     evidence: cleanText(item.evidence?.criteria),
-    ...(Array.isArray(item.targetExamples) && item.targetExamples.length
+    ...(includeExamples && Array.isArray(item.targetExamples) && item.targetExamples.length
       ? { examples: item.targetExamples.slice(0, 3) }
       : {}),
   }));
@@ -1374,7 +1374,7 @@ export function buildCurriculumPromptContext(
     relevantItems.map((item) => item?.sourceLessonId).filter(Boolean),
   );
   const supportingTargetForms =
-    mode === "grammar" && !shouldCombineAcrossModes
+    (mode === "grammar" || mode === "reading") && !shouldCombineAcrossModes
       ? Array.from(
           new Set(
             agendaItems
@@ -1394,9 +1394,11 @@ export function buildCurriculumPromptContext(
   return [
     "CURRICULUM OBJECTIVES (authoritative):",
     JSON.stringify(objectives),
-    "Choose exactly one objective above as the primary tested distinction for this exercise. Do not blend it with or substitute an adjacent objective.",
+    mode === "reading"
+      ? "Ground this passage in the reading objectives above, including any explicitly required distinctions. Build a coherent text that makes those meanings understandable. The comprehension question should test one of those meanings using evidence in the passage. Legacy requests for dialogue or speaker turns describe the skill to practice; adapt them to single-author prose."
+      : "Choose exactly one objective above as the primary tested distinction for this exercise. Do not blend it with or substitute an adjacent objective.",
     supportingTargetForms.length
-      ? `APPROVED SUPPORTING TARGET-LANGUAGE FORMS (context only): ${JSON.stringify(supportingTargetForms)}. Use these as familiar content while testing the chosen grammar objective; they are not separate grammar objectives.`
+      ? `APPROVED SUPPORTING TARGET-LANGUAGE FORMS (context only): ${JSON.stringify(supportingTargetForms)}. ${mode === "reading" ? "This is a vocabulary pool, not a checklist or sentence order. Select the forms that naturally serve this reading; do not pack all forms into every passage." : "Use these as familiar content while creating the activity; they are not separate objectives."}`
       : "",
     curriculumContext?.reviewStrategy
       ? `REVIEW STRATEGY (format only): ${JSON.stringify(curriculumContext.reviewStrategy)}`

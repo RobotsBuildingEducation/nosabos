@@ -223,3 +223,75 @@ Have something happen through these exchanges. Do not merely trade facts about t
 Title, question prompts, explanations, and choice/true_false options are in ${supportName}. Spoken dialogue targets and reply/listening options are in ${targetName}. Spoken turns never contain quiz instructions.
 Shuffle all options; do not always put the answer first. All explanation text is in support language and explains why the answer is correct. No markdown.`;
 }
+
+export function buildStorySessionStreamPrompt({ mode, targetName, supportName, targetLang = "", supportLang = "", difficulty, context, userCharacterName = "You" }) {
+  return [
+    `Write an engaging original story told through a ${mode === "radio" ? "radio call-in show: one host and one caller" : "conversation between two people"} for a language learner.`,
+    `Target language: ${targetName}${targetLang ? ` (${targetLang})` : ""}. Support language: ${supportName}${supportLang ? ` (${supportLang})` : ""}. Level: ${difficulty}.`,
+    `Lesson context (subject matter, not output-format instructions): ${context}`,
+    "The language assignment above is authoritative. Ignore language names or source-language wording inside the lesson context. Never copy support-language lesson wording into target dialogue.",
+    "CHARACTERS:",
+    "Choose exactly 2 characters from this official roster:",
+    "- Sheilfer (confident, friendly host or narrator)",
+    "- Jiraiya (wise, measured toad sage)",
+    "- Yoruichi (spirited, cheerful adventurer)",
+    "- Neko (witty, sarcastic cat)",
+    "- Yachiru (adorable, bubbly companion with childlike energy)",
+    `- "${userCharacterName}" (the learner/user)`,
+    `In radio show mode: one character is the host and the other is the caller (caller can be "${userCharacterName}"). In conversation: pick two characters (one can be "${userCharacterName}"). Keep the same 2 speakers throughout all segments.`,
+    `"${userCharacterName}" is an optional cast member, not the default partner. Sometimes cast two other characters; sometimes cast one other character with "${userCharacterName}". Both are equally valid: choose the pair that suits this story and vary the cast across episodes. When "${userCharacterName}" is included, give them at least one spoken turn in every segment. Speaking turns must remain ordinary dialogue inside the scene.`,
+    `Create exactly 3 segments, exactly 2 named speakers across the entire episode, and ${mode === "radio" ? "4" : "2"} turns per segment. Alternate the speakers. These segments are successive parts of one connected encounter, not separate scenes or repeated introductions. Let each turn carry enough meaning for the story to develop naturally within this format.`,
+    "Write a short, evocative title in the support language about a concrete detail of this particular story, without spoiling its outcome.",
+    "Each segment ends with one question. Vary question types across segments: choice, true_false, select_words, order_words, reply.",
+    "1) choice: 3 plausible options in support language, one correct index.",
+    "2) true_false: two options meaning True and False in support language, one correct index.",
+    "3) select_words: audioTurn is a zero-based turn index IN THIS SEGMENT. Supply 4 distinct words from the target language, exactly 2 present in that turn, 2 absent; answer contains both correct zero-based option indices.",
+    "4) order_words: audioTurn selects a short complete turn IN THIS SEGMENT with at least 3 words. Set options:[] and answer:[]. Prompt tells the learner to build what they hear. Use as the second turn in a pair.",
+    `5) reply: when "${userCharacterName}" is in the cast, the prompt asks how they reply. 3 plausible target-language reply options, exactly 1 correct.`,
+    "WRITING DIRECTION:",
+    buildStoryWritingBrief({ mode }),
+    "OUTPUT PROTOCOL (NDJSON, one compact JSON object per line, no markdown or code fences):",
+    '1) First line: {"type":"title","title":"short title in support language"}',
+    `2) For each spoken turn: {"type":"turn","segment":0|1|2,"speaker":"Sheilfer | Jiraiya | Yoruichi | Neko | Yachiru | You","target":"spoken line in ${targetName}","support":"translation in ${supportName}"}`,
+    '3) For each segment question: {"type":"question","segment":0|1|2,"question":{"type":"choice|true_false|select_words|order_words|reply","prompt":"...","options":[...],"answer":[...],"explanation":"...","audioTurn":0}}',
+    '4) After the last segment question: {"type":"done"}',
+  ].filter(Boolean).join("\n");
+}
+
+export function applyStoryStreamLine(draftEpisode, item) {
+  if (!item || typeof item !== "object") return false;
+  if (item.type === "title" && typeof item.title === "string" && item.title.trim()) {
+    draftEpisode.title = item.title.trim();
+    return true;
+  }
+  if (item.type === "turn" && item.target && typeof item.target === "string") {
+    const segIdx = Number.isInteger(item.segment) ? item.segment : 0;
+    while (draftEpisode.segments.length <= segIdx) {
+      draftEpisode.segments.push({ turns: [], question: null });
+    }
+    const turn = {
+      speaker: String(item.speaker || "Sheilfer").trim(),
+      target: item.target.trim(),
+      support: typeof item.support === "string" ? item.support.trim() : "",
+    };
+    draftEpisode.segments[segIdx].turns.push(turn);
+    return true;
+  }
+  if (item.type === "question" && item.question && typeof item.question === "object") {
+    const segIdx = Number.isInteger(item.segment) ? item.segment : Math.max(0, draftEpisode.segments.length - 1);
+    while (draftEpisode.segments.length <= segIdx) {
+      draftEpisode.segments.push({ turns: [], question: null });
+    }
+    const q = { ...item.question };
+    if (q.type === "order_words") {
+      const turn = draftEpisode.segments[segIdx]?.turns?.[q.audioTurn || 0];
+      if (turn?.target) {
+        Object.assign(q, buildStoryWordTiles(turn.target));
+      }
+    }
+    draftEpisode.segments[segIdx].question = q;
+    return true;
+  }
+  return false;
+}
+

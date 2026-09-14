@@ -1,6 +1,7 @@
 # Activity Menu: Surface Design & Drag-to-Dismiss Architecture
 
 This document provides a comprehensive technical overview of the Activity Menu surface in **Nosabos**, detailing:
+
 1. **Visual & Surface Styling Architecture** (Liquid glass, Bento box grid, selective app background blur, unblurred action bar, header geometry, focus management).
 2. **Drag-to-Dismiss Gesture System** (Pointer gesture tracking, non-passive scroll lock, threshold detection, hardware-accelerated DOM transforms, zero-bounce dismissal).
 
@@ -69,6 +70,7 @@ The floating card utilizes a responsive 2-column Bento grid with frosted glass a
 ```
 
 #### Key Styling Tokens:
+
 - **Card Material**:
   - Background: `rgba(247, 243, 237, 0.94)` (light mode) / `rgba(26, 26, 26, 0.94)` (dark mode).
   - Backdrop Filter: `blur(24px) saturate(180%)`.
@@ -85,6 +87,7 @@ The floating card utilizes a responsive 2-column Bento grid with frosted glass a
 ### 1.3 Drag Handle & Header Spacing
 
 To eliminate visual crowding between the header controls and the menu buttons below:
+
 - **Inner Header Row (`minH="32px"`)**: Houses both the pill drag indicator and the close button in a single flex container.
   - **Pill Drag Handle**: Centered pill (`48px × 5px`, `borderRadius="full"`) matching native drawer handles.
   - **Close 'X' Button**: Circular touch target (`32px × 32px`) with a `13px` close icon, absolute-positioned to the top-right corner and vertically centered.
@@ -123,6 +126,7 @@ The application features two distinct bottom bar layouts with distinct physical 
    - **Behavior**: The card is horizontally centered over the container, and the transform origin is dynamically set to `bottom center`. The menu expands from and dismisses/closes directly to the center compact pill.
 
 In `matchActionBarModifier`, the positioning and CSS transform origin adapt automatically based on `state.placement`:
+
 ```javascript
 const isCenterAligned = state.placement === "top";
 state.styles.popper = {
@@ -222,6 +226,7 @@ backdrop.style.opacity = String(Math.max(0.1, 1 - offsetY / 240));
 In earlier iterations, releasing the card past the dismiss threshold triggered a secondary delayed CSS slide-off animation via `setTimeout`. This created an unnatural "bounce and wait" effect before the menu unmounted.
 
 **The Fix**:
+
 - When the threshold (`offsetY > 90px` or downward velocity `velocityY > 0.45 px/ms`) is reached, `isClosingRef.current` is flagged.
 - The card's current offset is retained (preventing snapping back to zero).
 - `onClose()` is invoked immediately, transitioning cleanly into Chakra's native exit lifecycle without any rubber-band or bounce artifacts.
@@ -230,11 +235,11 @@ In earlier iterations, releasing the card past the dismiss threshold triggered a
 
 ## 3. Key Files & Reference Table
 
-| File | Purpose |
-| :--- | :--- |
-| [`src/components/ActivityMenu.jsx`](file:///Users/sheilferzepeda/Desktop/nosabos-x/nosabos/nosabos/src/components/ActivityMenu.jsx) | Main menu component, `useMenuSwipeDismiss` hook, header layout, bento grid, and `autoSelect={false}` config. |
-| [`src/index.css`](file:///Users/sheilferzepeda/Desktop/nosabos-x/nosabos/nosabos/src/index.css) | Body scroll locks (`overflow: hidden`), app-container background blur filter (`blur(12px)`), and z-index elevations (`1390`, `1450`, `1500`). |
-| [`src/App.jsx`](file:///Users/sheilferzepeda/Desktop/nosabos-x/nosabos/nosabos/src/App.jsx) | Integration site providing menu actions (Exit lesson, Practice tasks, Settings, Notes, Help Chat). |
+| File                                                                                                                                | Purpose                                                                                                                                       |
+| :---------------------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`src/components/ActivityMenu.jsx`](file:///Users/sheilferzepeda/Desktop/nosabos-x/nosabos/nosabos/src/components/ActivityMenu.jsx) | Main menu component, `useMenuSwipeDismiss` hook, header layout, bento grid, and `autoSelect={false}` config.                                  |
+| [`src/index.css`](file:///Users/sheilferzepeda/Desktop/nosabos-x/nosabos/nosabos/src/index.css)                                     | Body scroll locks (`overflow: hidden`), app-container background blur filter (`blur(12px)`), and z-index elevations (`1390`, `1450`, `1500`). |
+| [`src/App.jsx`](file:///Users/sheilferzepeda/Desktop/nosabos-x/nosabos/nosabos/src/App.jsx)                                         | Integration site providing menu actions (Exit lesson, Practice tasks, Settings, Notes, Help Chat).                                            |
 
 ---
 
