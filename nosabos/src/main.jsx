@@ -21,6 +21,11 @@ import { theme } from "./theme";
 import LandingPage from "./components/LandingPage.jsx";
 import VoiceOrb from "./components/VoiceOrb.jsx";
 import AppLoadBoundary from "./components/AppLoadBoundary.jsx";
+import AppUpdateModal from "./components/AppUpdateModal.jsx";
+import { initAppUpdateCoordinator } from "./pwa/appUpdateCoordinator";
+
+// Initialize the update coordinator singleton before route mounting
+initAppUpdateCoordinator();
 
 const App = lazy(() => import("./App.jsx"));
 const LinksPage = lazy(() => import("./components/LinksPage.jsx"));
@@ -198,6 +203,7 @@ function ProficiencyContainer() {
 createRoot(document.getElementById("root")).render(
   <ChakraProvider theme={theme}>
     <div className="app-shell">
+      <AppUpdateModal />
       <Router>
         <Suspense fallback={<RouteFallback />}>
           <Routes>

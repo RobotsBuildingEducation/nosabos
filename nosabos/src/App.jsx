@@ -288,6 +288,8 @@ import {
 import TutorialStepper from "./components/TutorialStepper";
 import AnimatedBackground from "./components/AnimatedBackground";
 import useAppUpdate from "./hooks/useAppUpdate";
+import AppUpdateTopBar from "./components/AppUpdateTopBar";
+import { useUpdateBlocker } from "./pwa/updateSafety";
 import GlassContainer from "./components/GlassContainer";
 import ThemeModeField from "./components/ThemeModeField";
 import useBottomDrawerSwipeDismiss from "./hooks/useBottomDrawerSwipeDismiss";
@@ -1339,6 +1341,9 @@ function TopBar({
   const playSliderTick = useSoundSettings((s) => s.playSliderTick);
   const toast = useToast();
   const navigate = useNavigate();
+  const { isUpdateReady, isModalOpen, uiState, applyUpdate, dismissUpdate } =
+    useAppUpdate();
+  const showUpdateBar = Boolean(isUpdateReady && !isModalOpen);
   const t = translations[appLanguage] || translations.en;
   const isRtlApp = getLanguageDirection(appLanguage) === "rtl";
   const themeMode = useThemeStore((s) => s.themeMode);
@@ -1953,137 +1958,146 @@ function TopBar({
           saturation={1.1}
           zIndex={100}
         >
-          <HStack
-            w="100%"
-            px={{ base: 2, md: 3 }}
-            pt="calc(env(safe-area-inset-top, 0px) + 0.5rem)"
-            pb={2}
-            color="gray.100"
-            wrap="wrap"
-            spacing={{ base: 2, md: 3 }}
-          >
-            {/* LEFT: Daily Goal button + Daily XP status */}
+          {showUpdateBar ? (
+            <AppUpdateTopBar
+              language={appLanguage}
+              isApplying={uiState === "applying"}
+              onLater={dismissUpdate}
+              onUpdate={applyUpdate}
+            />
+          ) : (
             <HStack
-              spacing={{ base: 1, md: 1.5 }}
-              minW={0}
-              flex="1 1 auto"
-              align="center"
+              w="100%"
+              px={{ base: 2, md: 3 }}
+              pt="calc(env(safe-area-inset-top, 0px) + 0.5rem)"
+              pb={2}
+              color="gray.100"
+              wrap="wrap"
+              spacing={{ base: 2, md: 3 }}
             >
-              <IconButton
-                {...topBarControlProps}
-                variant="outline"
-                colorScheme="teal"
-                icon={dailyDone ? <FaCalendarCheck /> : <FaCalendarAlt />}
-                aria-label={uiCopy(appLanguage, {
-                  en: "Open daily goal",
-                  es: "Abrir meta diaria",
-                  it: "Apri obiettivo giornaliero",
-                  ja: "デイリー目標を開く",
-                  zh: "打开每日目标",
-                })}
-                borderColor="teal.600"
-                _active={{ transform: "none" }}
-                {...getTopBarPressProps("daily-goal", onOpenDailyGoalModal)}
-              />
+              {/* LEFT: Daily Goal button + Daily XP status */}
               <HStack
-                spacing={{ base: 0.5, md: 0.5 }}
-                h="34px"
+                spacing={{ base: 1, md: 1.5 }}
                 minW={0}
-                px={0}
+                flex="1 1 auto"
                 align="center"
-                color={dailyGoalHudColor}
-                title={`${dailyGoalLabel}: ${dailyRawPct}%`}
               >
-                <Box
-                  as={MdShowChart}
-                  boxSize={{ base: 4, md: 4.5 }}
-                  flexShrink={0}
+                <IconButton
+                  {...topBarControlProps}
+                  variant="outline"
+                  colorScheme="teal"
+                  icon={dailyDone ? <FaCalendarCheck /> : <FaCalendarAlt />}
+                  aria-label={uiCopy(appLanguage, {
+                    en: "Open daily goal",
+                    es: "Abrir meta diaria",
+                    it: "Apri obiettivo giornaliero",
+                    ja: "デイリー目標を開く",
+                    zh: "打开每日目标",
+                  })}
+                  borderColor="teal.600"
+                  _active={{ transform: "none" }}
+                  {...getTopBarPressProps("daily-goal", onOpenDailyGoalModal)}
                 />
-                <Text
-                  fontSize={{ base: "xs", md: "xs" }}
-                  fontWeight="bold"
-                  color={dailyGoalHudTextColor}
-                  lineHeight="1.2"
-                  whiteSpace="nowrap"
-                  maxW={{ base: "92px", sm: "140px", md: "none" }}
-                  overflow="hidden"
-                  textOverflow="ellipsis"
+                <HStack
+                  spacing={{ base: 0.5, md: 0.5 }}
+                  h="34px"
+                  minW={0}
+                  px={0}
+                  align="center"
+                  color={dailyGoalHudColor}
+                  title={`${dailyGoalLabel}: ${dailyRawPct}%`}
                 >
-                  {dailyGoalLabel}:
-                </Text>
-                <Text
-                  fontSize={{ base: "xs", md: "xs" }}
-                  fontWeight="bold"
-                  color={dailyGoalHudTextColor}
-                  lineHeight="1.2"
-                  fontVariantNumeric="tabular-nums"
-                  whiteSpace="nowrap"
-                >
-                  {dailyRawPct}%
-                </Text>
+                  <Box
+                    as={MdShowChart}
+                    boxSize={{ base: 4, md: 4.5 }}
+                    flexShrink={0}
+                  />
+                  <Text
+                    fontSize={{ base: "xs", md: "xs" }}
+                    fontWeight="bold"
+                    color={dailyGoalHudTextColor}
+                    lineHeight="1.2"
+                    whiteSpace="nowrap"
+                    maxW={{ base: "92px", sm: "140px", md: "none" }}
+                    overflow="hidden"
+                    textOverflow="ellipsis"
+                  >
+                    {dailyGoalLabel}:
+                  </Text>
+                  <Text
+                    fontSize={{ base: "xs", md: "xs" }}
+                    fontWeight="bold"
+                    color={dailyGoalHudTextColor}
+                    lineHeight="1.2"
+                    fontVariantNumeric="tabular-nums"
+                    whiteSpace="nowrap"
+                  >
+                    {dailyRawPct}%
+                  </Text>
+                </HStack>
               </HStack>
-            </HStack>
 
-            <Spacer display={{ base: "none", md: "block" }} />
+              <Spacer display={{ base: "none", md: "block" }} />
 
-            {/* RIGHT: controls */}
-            <HStack spacing={3} flexShrink={0} ml="auto" align="center">
-              <Box position="relative" flexShrink={0}>
+              {/* RIGHT: controls */}
+              <HStack spacing={3} flexShrink={0} ml="auto" align="center">
+                <Box position="relative" flexShrink={0}>
+                  {hasTimer && (
+                    <SessionTimerBadge
+                      durationSeconds={timerDurationSeconds}
+                      isRunning={isTimerRunning}
+                    />
+                  )}
+                  <IconButton
+                    {...topBarControlProps}
+                    colorScheme="teal"
+                    variant={isTimerRunning ? "solid" : "outline"}
+                    icon={<FiClock />}
+                    boxShadow={isTimerRunning ? "none" : undefined}
+                    aria-label={uiCopy(appLanguage, {
+                      en: "Open timer",
+                      es: "Abrir temporizador",
+                      it: "Apri timer",
+                      ja: "タイマーを開く",
+                      zh: "打开计时器",
+                    })}
+                    _hover={isTimerRunning ? { boxShadow: "none" } : undefined}
+                    _active={{ boxShadow: "none", transform: "none" }}
+                    {...getTopBarPressProps("session-timer", onOpenTimerModal)}
+                  />
+                </Box>
                 {hasTimer && (
-                  <SessionTimerBadge
-                    durationSeconds={timerDurationSeconds}
-                    isRunning={isTimerRunning}
+                  <IconButton
+                    {...topBarControlProps}
+                    colorScheme="teal"
+                    variant={timerPaused ? "outline" : "ghost"}
+                    icon={timerPaused ? <FiPlay /> : <FiPause />}
+                    aria-label={
+                      timerPaused
+                        ? uiCopy(appLanguage, {
+                            en: "Resume timer",
+                            es: "Reanudar temporizador",
+                            it: "Riprendi timer",
+                            ja: "タイマーを再開",
+                            zh: "继续计时器",
+                          })
+                        : uiCopy(appLanguage, {
+                            en: "Pause timer",
+                            es: "Pausar temporizador",
+                            it: "Metti in pausa il timer",
+                            ja: "タイマーを一時停止",
+                            zh: "暂停计时器",
+                          })
+                    }
+                    {...getTopBarPressProps(
+                      "session-timer-toggle",
+                      onTogglePauseTimer,
+                    )}
                   />
                 )}
-                <IconButton
-                  {...topBarControlProps}
-                  colorScheme="teal"
-                  variant={isTimerRunning ? "solid" : "outline"}
-                  icon={<FiClock />}
-                  boxShadow={isTimerRunning ? "none" : undefined}
-                  aria-label={uiCopy(appLanguage, {
-                    en: "Open timer",
-                    es: "Abrir temporizador",
-                    it: "Apri timer",
-                    ja: "タイマーを開く",
-                    zh: "打开计时器",
-                  })}
-                  _hover={isTimerRunning ? { boxShadow: "none" } : undefined}
-                  _active={{ boxShadow: "none", transform: "none" }}
-                  {...getTopBarPressProps("session-timer", onOpenTimerModal)}
-                />
-              </Box>
-              {hasTimer && (
-                <IconButton
-                  {...topBarControlProps}
-                  colorScheme="teal"
-                  variant={timerPaused ? "outline" : "ghost"}
-                  icon={timerPaused ? <FiPlay /> : <FiPause />}
-                  aria-label={
-                    timerPaused
-                      ? uiCopy(appLanguage, {
-                          en: "Resume timer",
-                          es: "Reanudar temporizador",
-                          it: "Riprendi timer",
-                          ja: "タイマーを再開",
-                          zh: "继续计时器",
-                        })
-                      : uiCopy(appLanguage, {
-                          en: "Pause timer",
-                          es: "Pausar temporizador",
-                          it: "Metti in pausa il timer",
-                          ja: "タイマーを一時停止",
-                          zh: "暂停计时器",
-                        })
-                  }
-                  {...getTopBarPressProps(
-                    "session-timer-toggle",
-                    onTogglePauseTimer,
-                  )}
-                />
-              )}
+              </HStack>
             </HStack>
-          </HStack>
+          )}
         </GlassContainer>
       </Box>
 
@@ -2985,6 +2999,11 @@ export default function App({ onBootReady } = {}) {
   const helpChatDisclosure = useDisclosure();
   const helpChatRef = useRef(null);
   useAppUpdate();
+  useUpdateBlocker(
+    "active-onboarding-subscription",
+    isOnboardingRoute || isSubscriptionRoute,
+    "Onboarding or subscription in progress",
+  );
   const handleSendToHelpChat = useCallback(
     (text) => {
       const payload = (text || "").trim();

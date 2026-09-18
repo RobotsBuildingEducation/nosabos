@@ -1,15 +1,48 @@
+import crypto from "node:crypto";
 import process from "node:process";
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import { visualizer } from "rollup-plugin-visualizer";
 
+function pwaVersionMetadataPlugin({ buildId, builtAt }) {
+  return {
+    name: "pwa-version-metadata",
+    generateBundle() {
+      this.emitFile({
+        type: "asset",
+        fileName: "version.json",
+        source: JSON.stringify(
+          {
+            buildId,
+            builtAt,
+          },
+          null,
+          2,
+        ),
+      });
+    },
+  };
+}
+
 // https://vite.dev/config/
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ mode, command }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const projectId = env.VITE_FIREBASE_PROJECT_ID;
 
+  const buildId =
+    env.VITE_BUILD_ID ||
+    process.env.VITE_BUILD_ID ||
+    (command === "build"
+      ? `${Date.now()}-${crypto.randomUUID().slice(0, 8)}`
+      : "development");
+  const builtAt = new Date().toISOString();
+
   return {
+    define: {
+      __APP_BUILD_ID__: JSON.stringify(buildId),
+      __APP_BUILT_AT__: JSON.stringify(builtAt),
+    },
     server: {
       allowedHosts: [".trycloudflare.com"],
       proxy: {
@@ -23,13 +56,14 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [
     react(),
+    pwaVersionMetadataPlugin({ buildId, builtAt }),
     VitePWA({
       workbox: {
         maximumFileSizeToCacheInBytes: 10000000,
-        // OAuth and API navigations must always reach Firebase Hosting/
-        // Functions. Serving index.html here strands users on the callback URL
-        // before the authorization code can be exchanged.
-        navigateFallbackDenylist: [/^\/api(?:\/|$)/],
+        // OAuth, API navigations, and version metadata must always reach
+        // Firebase Hosting / network directly rather than the index.html fallback.
+        navigateFallbackDenylist: [/^\/api(?:\/|$)/, /^\/version\.json$/],
+        globIgnores: ["**/version.json"],
       },
       manifest: {
         name: "Piyali",
@@ -60,7 +94,7 @@ export default defineConfig(({ mode }) => {
           },
         ],
       },
-      registerType: "autoUpdate",
+      registerType: "prompt",
       devOptions: {
         enabled: false,
       },
