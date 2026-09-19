@@ -260,7 +260,10 @@ import {
   runDailyBatch,
   shouldRunDailyBatch,
 } from "./utils/companionMemory";
-import { migrateUserToSchemaV2, USER_SCHEMA_VERSION } from "./utils/userDataSchema";
+import {
+  migrateUserToSchemaV2,
+  USER_SCHEMA_VERSION,
+} from "./utils/userDataSchema";
 import CompanionRepairModal from "./components/CompanionRepairModal";
 import {
   startLesson,
@@ -1362,9 +1365,7 @@ function TopBar({
   const navigate = useNavigate();
   const { isUpdateReady, uiState, errorMessage, applyUpdate, dismissUpdate } =
     useAppUpdate();
-  const showUpdateBar = Boolean(
-    isUpdateReady && uiState !== "deferred",
-  );
+  const showUpdateBar = Boolean(isUpdateReady && uiState !== "deferred");
   const t = translations[appLanguage] || translations.en;
   const isRtlApp = getLanguageDirection(appLanguage) === "rtl";
   const themeMode = useThemeStore((s) => s.themeMode);
@@ -4576,11 +4577,17 @@ export default function App({ onBootReady } = {}) {
           userDoc = await Promise.race([
             loadUserObjectFromDB(database, id),
             new Promise((_, reject) =>
-              setTimeout(() => reject(new Error("Timeout loading user doc")), 3500),
+              setTimeout(
+                () => reject(new Error("Timeout loading user doc")),
+                3500,
+              ),
             ),
           ]);
         } catch (loadErr) {
-          console.warn("[CONNECT_DID] loadUserObjectFromDB error/timeout:", loadErr);
+          console.warn(
+            "[CONNECT_DID] loadUserObjectFromDB error/timeout:",
+            loadErr,
+          );
         }
         foundExistingUserDoc = Boolean(userDoc);
         if (!userDoc) {
@@ -4676,7 +4683,10 @@ export default function App({ onBootReady } = {}) {
           },
           { merge: true },
         ).catch((writeErr) =>
-          console.warn("[CONNECT_DID] setDoc returning account error:", writeErr),
+          console.warn(
+            "[CONNECT_DID] setDoc returning account error:",
+            writeErr,
+          ),
         );
       }
 
@@ -9549,15 +9559,13 @@ export default function App({ onBootReady } = {}) {
           if (!mode) return;
           const routedBlueprint = { ...blueprint, mode };
           const surface = GOAL_SURFACES[mode];
-          useGoalFocusStore
-            .getState()
-            .setFocus({
-              npub: activeNpub,
-              targetLang: resolvedTargetLang,
-              supportLang: appLanguage,
-              surface,
-              blueprint: routedBlueprint,
-            });
+          useGoalFocusStore.getState().setFocus({
+            npub: activeNpub,
+            targetLang: resolvedTargetLang,
+            supportLang: appLanguage,
+            surface,
+            blueprint: routedBlueprint,
+          });
           if (surface === "lesson")
             await handleStartLessonRef.current?.(
               buildGoalLesson(routedBlueprint),
