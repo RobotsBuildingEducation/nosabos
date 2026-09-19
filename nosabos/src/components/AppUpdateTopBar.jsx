@@ -1,6 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { Button, HStack, Icon } from "@chakra-ui/react";
 import { IoSparkles } from "react-icons/io5";
+import useSoundSettings from "../hooks/useSoundSettings";
+import { selectSound } from "../constants/sounds";
 
 const UPDATE_BAR_COPY = {
   en: {
@@ -62,6 +64,35 @@ export default function AppUpdateTopBar({
   language = "en",
 }) {
   const copy = UPDATE_BAR_COPY[language] || UPDATE_BAR_COPY.en;
+  const [isPressed, setIsPressed] = useState(false);
+  const playSound = useSoundSettings((s) => s.playSound);
+
+  const effectiveLoading = isApplying || isPressed;
+
+  const handleUpdate = async () => {
+    if (effectiveLoading) return;
+    setIsPressed(true);
+    try {
+      playSound(selectSound);
+    } catch {
+      // Audio safe fallback
+    }
+    try {
+      await onUpdate?.();
+    } finally {
+      setIsPressed(false);
+    }
+  };
+
+  const handleLater = () => {
+    if (effectiveLoading) return;
+    try {
+      playSound(selectSound);
+    } catch {
+      // Audio safe fallback
+    }
+    onLater?.();
+  };
 
   return (
     <HStack
@@ -86,19 +117,21 @@ export default function AppUpdateTopBar({
           size="xs"
           variant="ghost"
           color="var(--app-text-secondary, rgba(255, 255, 255, 0.75))"
-          onClick={onLater}
-          isDisabled={isApplying}
+          onClick={handleLater}
+          isDisabled={effectiveLoading}
           borderRadius="full"
           px={2.5}
           h="30px"
+          _active={{ transform: "scale(0.94)" }}
+          transition="transform 0.1s ease-out, opacity 0.15s ease"
         >
           {copy.later}
         </Button>
         <Button
           size="xs"
           colorScheme="teal"
-          onClick={onUpdate}
-          isLoading={isApplying}
+          onClick={handleUpdate}
+          isLoading={effectiveLoading}
           loadingText={copy.updating}
           borderRadius="full"
           px={3}
@@ -106,7 +139,8 @@ export default function AppUpdateTopBar({
           fontWeight="bold"
           boxShadow="none"
           _hover={{ boxShadow: "none" }}
-          _active={{ boxShadow: "none" }}
+          _active={{ transform: "scale(0.94)", boxShadow: "none" }}
+          transition="transform 0.1s ease-out, background-color 0.15s ease"
         >
           {copy.updateApp}
         </Button>
