@@ -85,12 +85,23 @@ test("guided Patreon checkout copy is localized for every supported language", (
 });
 
 test("guided Patreon checkout advertises the current annual offer", () => {
+  assert.equal(
+    SUBSCRIPTION_PATREON_FLOW_COPY.en.annualValue.startsWith("Or"),
+    true,
+  );
   supportedLanguages.forEach((language) => {
     const copy = SUBSCRIPTION_PATREON_FLOW_COPY[language];
     assert.match(copy.membershipPrice, /\$8/);
     assert.match(copy.annualRecommended, /50/);
     assert.match(copy.annualValue, /\$4/);
     assert.match(copy.annualValue, /\$48/);
+  });
+});
+
+test("guided Patreon checkout advertises refund friendly copy", () => {
+  assert.equal(SUBSCRIPTION_PATREON_FLOW_COPY.en.refundFriendly, "Refund friendly");
+  supportedLanguages.forEach((language) => {
+    assert.ok(SUBSCRIPTION_PATREON_FLOW_COPY[language].refundFriendly?.trim());
   });
 });
 

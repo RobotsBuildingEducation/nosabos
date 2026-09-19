@@ -484,6 +484,7 @@ export default function SubscriptionGate({
       price: clarifyUsd(flowCopy.membershipPrice),
       recommended: flowCopy.annualRecommended,
       detail: clarifyUsd(flowCopy.annualValue),
+      refundFriendly: flowCopy.refundFriendly,
       accent: "purple.300",
       hoverAccent: "purple.400",
       activeAccent: "purple.500",
@@ -809,6 +810,11 @@ export default function SubscriptionGate({
                 {option.detail && (
                   <Text color={secondaryText} fontSize="sm" mt={1}>
                     {option.detail}
+                  </Text>
+                )}
+                {option.refundFriendly && (
+                  <Text color={secondaryText} fontSize="sm" mt={1}>
+                    {option.refundFriendly}
                   </Text>
                 )}
                 {option.billing && (
