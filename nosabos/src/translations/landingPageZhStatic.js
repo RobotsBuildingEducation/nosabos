@@ -22,7 +22,9 @@ export const LANDING_PAGE_ZH_STATIC = {
   feature_tutor_desc:
     "完整的端到端实时导师，会根据你的水平调整并帮助你学习。",
   feature_memory: "记忆系统",
-  feature_memory_desc: "记住你的错误和进度，并转化为有针对性的复习。",
+  feature_memory_desc: "记住你的错误、目标和进度，并转化为有针对性的复习。",
+  feature_journey: "成长之路",
+  feature_journey_desc: "在关键里程碑保存语音笔记，倾听自己口语能力的蜕变与进步。",
   feature_daily_quests: "今日重点",
   feature_daily_quests_desc:
     "每天获得个性化的练习、复习和奖励组合。",

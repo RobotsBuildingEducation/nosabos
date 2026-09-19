@@ -23,7 +23,10 @@ export const LANDING_PAGE_DE_STATIC = {
     "Ein vollständiger Echtzeit-Tutor von Anfang bis Ende, der sich deinem Niveau anpasst und dir beim Lernen hilft.",
   feature_memory: "Erinnerungssystem",
   feature_memory_desc:
-    "Merkt sich Fehler und Fortschritte und macht daraus gezielte Wiederholungen.",
+    "Merkt sich Fehler, Ziele und Fortschritte und macht daraus gezielte Wiederholungen.",
+  feature_journey: "Lernreise",
+  feature_journey_desc:
+    "Speichere Sprachnotizen bei Meilensteinen, um deine Fortschritte im Laufe der Zeit zu hören.",
   feature_daily_quests: "Heutiger Fokus",
   feature_daily_quests_desc:
     "Erhalte täglich einen persönlichen Mix aus Übung, Wiederholung und Belohnungen.",
