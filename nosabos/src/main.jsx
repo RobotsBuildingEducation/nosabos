@@ -16,12 +16,11 @@ import "@fontsource/dm-sans/400.css";
 import "@fontsource/dm-sans/700.css";
 import "./useThemeStore";
 import { ChakraProvider } from "@chakra-ui/react";
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes, Outlet } from "react-router-dom";
 import { theme } from "./theme";
 import LandingPage from "./components/LandingPage.jsx";
 import VoiceOrb from "./components/VoiceOrb.jsx";
 import AppLoadBoundary from "./components/AppLoadBoundary.jsx";
-import AppUpdateModal from "./components/AppUpdateModal.jsx";
 import { initAppUpdateCoordinator } from "./pwa/appUpdateCoordinator";
 
 // Initialize the update coordinator singleton before route mounting
@@ -99,10 +98,6 @@ function AppContainer() {
   const bootSettleTimerRef = useRef(null);
   const bootHideTimerRef = useRef(null);
 
-  const handleAuthenticated = useCallback(() => {
-    setIsAuthenticated(true);
-  }, []);
-
   const clearBootHideTimers = useCallback(() => {
     if (bootHideFrameRef.current) {
       cancelAnimationFrame(bootHideFrameRef.current);
@@ -121,6 +116,13 @@ function AppContainer() {
       bootHideTimerRef.current = null;
     }
   }, []);
+
+  const handleAuthenticated = useCallback(() => {
+    clearBootHideTimers();
+    setBootOverlayMounted(true);
+    setBootOverlayVisible(true);
+    setIsAuthenticated(true);
+  }, [clearBootHideTimers]);
 
   const handleAppBootReady = useCallback(() => {
     clearBootHideTimers();
@@ -154,6 +156,20 @@ function AppContainer() {
     setBootOverlayVisible(true);
   }, [clearBootHideTimers, isAuthenticated]);
 
+  // Failsafe: ensure boot overlay never traps the user indefinitely
+  useEffect(() => {
+    if (!bootOverlayVisible) return;
+    const failsafeTimer = setTimeout(() => {
+      console.warn("[BOOT] Boot overlay failsafe triggered after timeout");
+      setBootOverlayVisible(false);
+      const unmountTimer = setTimeout(() => {
+        setBootOverlayMounted(false);
+      }, 520);
+      return () => clearTimeout(unmountTimer);
+    }, 7000);
+    return () => clearTimeout(failsafeTimer);
+  }, [bootOverlayVisible]);
+
   useEffect(() => clearBootHideTimers, [clearBootHideTimers]);
 
   if (!isAuthenticated) {
@@ -166,6 +182,7 @@ function AppContainer() {
         <App onBootReady={handleAppBootReady} />
       </Suspense>
       {bootOverlayMounted && <BootOverlay visible={bootOverlayVisible} />}
+      <Outlet />
     </AppLoadBoundary>
   );
 }
@@ -203,13 +220,15 @@ function ProficiencyContainer() {
 createRoot(document.getElementById("root")).render(
   <ChakraProvider theme={theme}>
     <div className="app-shell">
-      <AppUpdateModal />
       <Router>
         <Suspense fallback={<RouteFallback />}>
           <Routes>
-            <Route path="/" element={<AppContainer />} />
-            <Route path="/onboarding/*" element={<AppContainer />} />
-            <Route path="/subscribe" element={<AppContainer />} />
+            <Route element={<AppContainer />}>
+              <Route path="/" element={null} />
+              <Route path="/onboarding" element={null} />
+              <Route path="/onboarding/*" element={null} />
+              <Route path="/subscribe" element={null} />
+            </Route>
             <Route
               path="/patreon-return"
               element={

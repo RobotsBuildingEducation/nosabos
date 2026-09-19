@@ -1,5 +1,8 @@
 import GoalLessonCompletion from "./components/GoalLessonCompletion";
-import { getGoalPreparationXp, isGoalLessonReady } from "./utils/lessonProgress";
+import {
+  getGoalPreparationXp,
+  isGoalLessonReady,
+} from "./utils/lessonProgress";
 import { resetFocusedPracticeArtifacts } from "./utils/focusedPracticeDecks";
 import LearningGoalSettings from "./components/LearningGoalSettings";
 import useGoalFocusStore from "./hooks/useGoalFocusStore";
@@ -10,7 +13,13 @@ import {
   changeGoal,
   nextGoalMode,
 } from "./utils/learningIntelligenceModel";
-import { astraGoalsEnabled, getOrBuildGoalBlueprint, GOAL_SURFACES, resetGoalTask, currentGoalFocus } from "./utils/learningIntelligence";
+import {
+  astraGoalsEnabled,
+  getOrBuildGoalBlueprint,
+  GOAL_SURFACES,
+  resetGoalTask,
+  currentGoalFocus,
+} from "./utils/learningIntelligence";
 // src/App.jsx
 import React, {
   Suspense,
@@ -251,7 +260,7 @@ import {
   runDailyBatch,
   shouldRunDailyBatch,
 } from "./utils/companionMemory";
-import { migrateUserToSchemaV2 } from "./utils/userDataSchema";
+import { migrateUserToSchemaV2, USER_SCHEMA_VERSION } from "./utils/userDataSchema";
 import CompanionRepairModal from "./components/CompanionRepairModal";
 import {
   startLesson,
@@ -419,7 +428,12 @@ function PracticeCompletionDetails({ details, appLanguage }) {
         <AccordionPanel pb={4} px={4} textAlign="left">
           {details.what ? (
             <Box mb={details.why ? 3 : 0}>
-              <Text fontSize="xs" fontWeight="bold" opacity={0.78} textTransform="uppercase">
+              <Text
+                fontSize="xs"
+                fontWeight="bold"
+                opacity={0.78}
+                textTransform="uppercase"
+              >
                 {plateUiCopy(appLanguage, PLATE_PRACTICE_DETAILS_COPY.what)}
               </Text>
               <Text mt={1}>{details.what}</Text>
@@ -427,7 +441,12 @@ function PracticeCompletionDetails({ details, appLanguage }) {
           ) : null}
           {details.why ? (
             <Box>
-              <Text fontSize="xs" fontWeight="bold" opacity={0.78} textTransform="uppercase">
+              <Text
+                fontSize="xs"
+                fontWeight="bold"
+                opacity={0.78}
+                textTransform="uppercase"
+              >
                 {plateUiCopy(appLanguage, PLATE_PRACTICE_DETAILS_COPY.why)}
               </Text>
               <Text mt={1}>{details.why}</Text>
@@ -1341,9 +1360,11 @@ function TopBar({
   const playSliderTick = useSoundSettings((s) => s.playSliderTick);
   const toast = useToast();
   const navigate = useNavigate();
-  const { isUpdateReady, isModalOpen, uiState, applyUpdate, dismissUpdate } =
+  const { isUpdateReady, uiState, errorMessage, applyUpdate, dismissUpdate } =
     useAppUpdate();
-  const showUpdateBar = Boolean(isUpdateReady && !isModalOpen);
+  const showUpdateBar = Boolean(
+    isUpdateReady && uiState !== "deferred",
+  );
   const t = translations[appLanguage] || translations.en;
   const isRtlApp = getLanguageDirection(appLanguage) === "rtl";
   const themeMode = useThemeStore((s) => s.themeMode);
@@ -1963,7 +1984,18 @@ function TopBar({
               language={appLanguage}
               isApplying={uiState === "applying"}
               onLater={dismissUpdate}
-              onUpdate={applyUpdate}
+              onUpdate={async () => {
+                const ok = await applyUpdate();
+                if (!ok && errorMessage) {
+                  toast({
+                    title: "Update notice",
+                    description: errorMessage,
+                    status: "info",
+                    duration: 4000,
+                    isClosable: true,
+                  });
+                }
+              }}
             />
           ) : (
             <HStack
@@ -2616,8 +2648,7 @@ function TopBar({
                           }
                           padding={6}
                           _hover={{
-                            bg:
-                              themeMode === "light" ? "cyan.50" : "cyan.900",
+                            bg: themeMode === "light" ? "cyan.50" : "cyan.900",
                           }}
                           onClick={() => {
                             closeSettings();
@@ -2671,7 +2702,9 @@ function TopBar({
                           onVoicePersonaChange={(next) => {
                             setVoicePersona(next);
                             rememberTextDraft("voicePersona", next);
-                            return debouncedPersist({ tutorVoicePersona: next });
+                            return debouncedPersist({
+                              tutorVoicePersona: next,
+                            });
                           }}
                           onSelectSound={() => playSound(selectSound)}
                           menuListMotionProps={INSTANT_EXIT_MOTION_PROPS}
@@ -2679,10 +2712,10 @@ function TopBar({
                             t.onboarding_section_voice_persona ||
                             "Tutor Voice & Personality"
                           }
-                          description={
-                            t.onboarding_voice_desc ||
-                            "Choose the voice and style for your tutor."
-                          }
+                          // description={
+                          //   t.onboarding_voice_desc ||
+                          //   "Choose the voice and style for your tutor."
+                          // }
                           personaPlaceholder={
                             (t.ra_persona_placeholder &&
                               t.ra_persona_placeholder.replace(
@@ -4495,38 +4528,26 @@ export default function App({ onBootReady } = {}) {
       let userDoc = null;
       let foundExistingUserDoc = false;
 
-      if (id) {
+      const isNewRegistration = (() => {
+        try {
+          const mark = sessionStorage.getItem("new_registration_npub");
+          if (mark && mark === id) {
+            sessionStorage.removeItem("new_registration_npub");
+            return true;
+          }
+        } catch {}
+        return false;
+      })();
+
+      if (isNewRegistration) {
         console.log(
-          "[CONNECT_DID] Found existing npub, loading user from DB...",
+          "[CONNECT_DID] Brand new registration detected; fast-tracking user doc...",
+          id,
         );
-        userDoc = await loadUserObjectFromDB(database, id);
-        foundExistingUserDoc = Boolean(userDoc);
-        if (!userDoc) {
-          const base = {
-            local_npub: id,
-            createdAt: new Date().toISOString(),
-            onboarding: { completed: false, currentStep: 1 },
-            appLanguage: normalizeSupportLanguage(
-              localStorage.getItem("appLanguage"),
-              DEFAULT_SUPPORT_LANGUAGE,
-            ),
-            helpRequest: "",
-            practicePronunciation: false,
-            identity: null,
-            displayName: storedDisplayName || "",
-            dailyGoalPetType: DEFAULT_PET_TYPE,
-          };
-          await setDoc(doc(database, "users", id), base, { merge: true });
-          userDoc = await loadUserObjectFromDB(database, id);
-        }
-      } else {
-        console.log("[CONNECT_DID] No npub found, generating new keys...");
-        const did = await generateNostrKeys();
-        id = did?.npub || (localStorage.getItem("local_npub") || "").trim();
-        console.log("[CONNECT_DID] New npub after generation:", id);
         const base = {
           local_npub: id,
           createdAt: new Date().toISOString(),
+          schemaVersion: USER_SCHEMA_VERSION,
           onboarding: { completed: false, currentStep: 1 },
           appLanguage: normalizeSupportLanguage(
             localStorage.getItem("appLanguage"),
@@ -4537,9 +4558,96 @@ export default function App({ onBootReady } = {}) {
           identity: null,
           displayName: storedDisplayName || "",
           dailyGoalPetType: DEFAULT_PET_TYPE,
+          progress: {},
         };
-        await setDoc(doc(database, "users", id), base, { merge: true });
-        userDoc = await loadUserObjectFromDB(database, id);
+        userDoc = {
+          id,
+          ...base,
+        };
+        setDoc(doc(database, "users", id), base, { merge: true }).catch(
+          (writeErr) =>
+            console.warn("[CONNECT_DID] new user setDoc error:", writeErr),
+        );
+      } else if (id) {
+        console.log(
+          "[CONNECT_DID] Found existing npub, loading user from DB...",
+        );
+        try {
+          userDoc = await Promise.race([
+            loadUserObjectFromDB(database, id),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error("Timeout loading user doc")), 3500),
+            ),
+          ]);
+        } catch (loadErr) {
+          console.warn("[CONNECT_DID] loadUserObjectFromDB error/timeout:", loadErr);
+        }
+        foundExistingUserDoc = Boolean(userDoc);
+        if (!userDoc) {
+          const localCompletion = getLocalOnboardingCompletion(id);
+          const wasCompleted = Boolean(localCompletion?.completed);
+          const base = {
+            local_npub: id,
+            createdAt: new Date().toISOString(),
+            schemaVersion: USER_SCHEMA_VERSION,
+            onboarding: wasCompleted
+              ? {
+                  completed: true,
+                  completedAt:
+                    localCompletion?.completedAt || new Date().toISOString(),
+                }
+              : { completed: false, currentStep: 1 },
+            appLanguage: normalizeSupportLanguage(
+              localStorage.getItem("appLanguage"),
+              DEFAULT_SUPPORT_LANGUAGE,
+            ),
+            helpRequest: "",
+            practicePronunciation: false,
+            identity: null,
+            displayName: storedDisplayName || "",
+            dailyGoalPetType: DEFAULT_PET_TYPE,
+            progress: {},
+          };
+          userDoc = {
+            id,
+            ...base,
+          };
+          setDoc(doc(database, "users", id), base, { merge: true }).catch(
+            (writeErr) =>
+              console.warn("[CONNECT_DID] setDoc background error:", writeErr),
+          );
+        }
+      } else {
+        console.log("[CONNECT_DID] No npub found, generating new keys...");
+        const did = await generateNostrKeys();
+        id = did?.npub || (localStorage.getItem("local_npub") || "").trim();
+        console.log("[CONNECT_DID] New npub after generation:", id);
+        const base = {
+          local_npub: id,
+          createdAt: new Date().toISOString(),
+          schemaVersion: USER_SCHEMA_VERSION,
+          onboarding: { completed: false, currentStep: 1 },
+          appLanguage: normalizeSupportLanguage(
+            localStorage.getItem("appLanguage"),
+            DEFAULT_SUPPORT_LANGUAGE,
+          ),
+          helpRequest: "",
+          practicePronunciation: false,
+          identity: null,
+          displayName: storedDisplayName || "",
+          dailyGoalPetType: DEFAULT_PET_TYPE,
+          progress: {},
+        };
+        if (id) {
+          userDoc = {
+            id,
+            ...base,
+          };
+          setDoc(doc(database, "users", id), base, { merge: true }).catch(
+            (writeErr) =>
+              console.warn("[CONNECT_DID] new user setDoc error:", writeErr),
+          );
+        }
       }
 
       // Explicit returning-account actions should load the existing app user
@@ -4557,7 +4665,9 @@ export default function App({ onBootReady } = {}) {
           completedAt,
         };
 
-        await setDoc(
+        userDoc = { ...userDoc, onboarding };
+        rememberLocalOnboardingCompletion(id, completedAt);
+        setDoc(
           doc(database, "users", id),
           {
             local_npub: id,
@@ -4565,19 +4675,22 @@ export default function App({ onBootReady } = {}) {
             onboarding,
           },
           { merge: true },
+        ).catch((writeErr) =>
+          console.warn("[CONNECT_DID] setDoc returning account error:", writeErr),
         );
-        userDoc = { ...userDoc, onboarding };
-        rememberLocalOnboardingCompletion(id, completedAt);
       }
 
       if (secretKeySignInNpub) clearSecretKeySignIn();
       if (accountSwitchNpub) clearAccountSwitch();
 
       if (id && storedDisplayName && !userDoc?.displayName) {
-        await setDoc(
+        userDoc = { ...userDoc, displayName: storedDisplayName };
+        setDoc(
           doc(database, "users", id),
           { displayName: storedDisplayName },
           { merge: true },
+        ).catch((writeErr) =>
+          console.warn("[CONNECT_DID] setDoc displayName error:", writeErr),
         );
       }
 
@@ -4631,6 +4744,25 @@ export default function App({ onBootReady } = {}) {
       }
     } catch (e) {
       console.error("connectDID error:", e);
+      const fallbackId = (localStorage.getItem("local_npub") || "").trim();
+      if (fallbackId && !useUserStore.getState()?.user) {
+        const storedDisplayName = (
+          localStorage.getItem("displayName") || ""
+        ).trim();
+        const fallbackUser = {
+          id: fallbackId,
+          local_npub: fallbackId,
+          createdAt: new Date().toISOString(),
+          onboarding: { completed: false, currentStep: 1 },
+          appLanguage: normalizeSupportLanguage(
+            localStorage.getItem("appLanguage"),
+            DEFAULT_SUPPORT_LANGUAGE,
+          ),
+          displayName: storedDisplayName || "",
+          dailyGoalPetType: DEFAULT_PET_TYPE,
+        };
+        setUser?.(fallbackUser);
+      }
     } finally {
       setIsLoadingApp(false);
     }
@@ -5657,9 +5789,16 @@ export default function App({ onBootReady } = {}) {
       };
 
       const learningIntelligence = { ...user?.learningIntelligence };
-      if (astraGoalsEnabled()) for (const [lang, goalText] of Object.entries(payload.learningGoals || {})) {
-        if (typeof goalText === "string" && goalText.trim()) learningIntelligence[lang] = changeGoal(learningIntelligence[lang], { text: goalText, id: globalThis.crypto.randomUUID(), now });
-      }
+      if (astraGoalsEnabled())
+        for (const [lang, goalText] of Object.entries(
+          payload.learningGoals || {},
+        )) {
+          if (typeof goalText === "string" && goalText.trim())
+            learningIntelligence[lang] = changeGoal(
+              learningIntelligence[lang],
+              { text: goalText, id: globalThis.crypto.randomUUID(), now },
+            );
+        }
       await setDoc(
         doc(database, "users", id),
         {
@@ -5746,9 +5885,10 @@ export default function App({ onBootReady } = {}) {
     if (!lesson) return false;
     // Ephemeral repair lessons aren't part of the learning path: no game-review
     // enrichment (their id isn't in any unit) and no lesson-progress writes.
-    const enrichedLesson = (lesson.isRepair || lesson.isGoal)
-      ? lesson
-      : await enrichLessonForGameReview(lesson);
+    const enrichedLesson =
+      lesson.isRepair || lesson.isGoal
+        ? lesson
+        : await enrichLessonForGameReview(lesson);
 
     // Store pre-generated scenario for game lessons. Start the multi-module
     // tutorial's Greeting Plaza preparation before awaiting the client chunk,
@@ -6190,7 +6330,12 @@ export default function App({ onBootReady } = {}) {
     async (reason = "manual", completion = null) => {
       // Goal lessons finish through GoalLessonCompletion, which commits the
       // daily task once while the answered question stays mounted.
-      if (!activeLesson || activeLesson.isGoal || lessonCompletionTriggeredRef.current) return;
+      if (
+        !activeLesson ||
+        activeLesson.isGoal ||
+        lessonCompletionTriggeredRef.current
+      )
+        return;
 
       console.log("[Lesson Completion] Triggered", { reason, activeLesson });
       lessonCompletionTriggeredRef.current = true;
@@ -6368,7 +6513,15 @@ export default function App({ onBootReady } = {}) {
 
     // Read the latest store: a click may race the render that replaces the
     // engine with the completion screen. Never enqueue another question then.
-    if (isGoalLessonReady(useUserStore.getState().user?.learningIntelligence?.[resolvedTargetLang], activeLesson)) return;
+    if (
+      isGoalLessonReady(
+        useUserStore.getState().user?.learningIntelligence?.[
+          resolvedTargetLang
+        ],
+        activeLesson,
+      )
+    )
+      return;
 
     const availableModes = activeLesson.modes;
 
@@ -7363,7 +7516,8 @@ export default function App({ onBootReady } = {}) {
       if (data?.dailyXpRecent && typeof data.dailyXpRecent === "object")
         patch.dailyXpRecent = data.dailyXpRecent;
       if (data?.stats) patch.stats = data.stats;
-      if (data?.learningIntelligence) patch.learningIntelligence = data.learningIntelligence;
+      if (data?.learningIntelligence)
+        patch.learningIntelligence = data.learningIntelligence;
       if (data?.updatedAt) patch.updatedAt = data.updatedAt;
       if (data?.appLanguage) patch.appLanguage = data.appLanguage;
 
@@ -7527,7 +7681,11 @@ export default function App({ onBootReady } = {}) {
               targetLang={resolvedTargetLang}
               showTranslations={user?.progress?.showTranslations}
               pauseMs={user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS}
-              helpRequest={activeLesson?.isGoal || activeLesson?.isRepair ? "" : user?.progress?.helpRequest}
+              helpRequest={
+                activeLesson?.isGoal || activeLesson?.isRepair
+                  ? ""
+                  : user?.progress?.helpRequest
+              }
               practicePronunciation={user?.progress?.practicePronunciation}
               bottomActionBarMinimized={isBottomActionBarMinimized}
               onSwitchedAccount={handleSwitchedAccount}
@@ -7697,9 +7855,15 @@ export default function App({ onBootReady } = {}) {
   const activeSkillTreeLessonProgress = activeLesson?.id
     ? userProgress.lessons?.[activeLesson.id]
     : null;
-  const goalLessonReady = isGoalLessonReady(user?.learningIntelligence?.[resolvedTargetLang], activeLesson);
+  const goalLessonReady = isGoalLessonReady(
+    user?.learningIntelligence?.[resolvedTargetLang],
+    activeLesson,
+  );
   const activeLessonEarnedXp = activeLesson?.isGoal
-    ? getGoalPreparationXp(user?.learningIntelligence?.[resolvedTargetLang], activeLesson.goalBlueprint)
+    ? getGoalPreparationXp(
+        user?.learningIntelligence?.[resolvedTargetLang],
+        activeLesson.goalBlueprint,
+      )
     : getLessonEarnedXp(activeSkillTreeLessonProgress);
 
   // Completion is driven by the active lesson's own counter. Shared language
@@ -7709,7 +7873,8 @@ export default function App({ onBootReady } = {}) {
     if (
       viewMode !== "lesson" ||
       !activeLesson ||
-      activeLesson.isRepair || activeLesson.isGoal ||
+      activeLesson.isRepair ||
+      activeLesson.isGoal ||
       activeSkillTreeLessonProgress?.status !== "in_progress" ||
       lessonCompletionTriggeredRef.current
     ) {
@@ -9028,11 +9193,27 @@ export default function App({ onBootReady } = {}) {
   // The plate's display kinds = elected base, with carried-over unfinished
   // kinds and "repair" prepended (deduped). The elected base (persisted) never
   // contains either, so this stays purely derived and can't fight the elector.
-  const goalToday = astraGoalsEnabled() ? activeGoalFor(user, resolvedTargetLang) : null;
+  const goalToday = astraGoalsEnabled()
+    ? activeGoalFor(user, resolvedTargetLang)
+    : null;
   const isFirstSession = shouldUseFixedFirstQuest(user, plateDayKey);
-  const questKinds = useMemo(() => composeQuestKinds(
-    electedQuestKinds, carryOverKinds, Boolean(repairPlanToday), Boolean(goalToday), isFirstSession,
-  ), [repairPlanToday, electedQuestKinds, carryOverKinds, goalToday, isFirstSession]);
+  const questKinds = useMemo(
+    () =>
+      composeQuestKinds(
+        electedQuestKinds,
+        carryOverKinds,
+        Boolean(repairPlanToday),
+        Boolean(goalToday),
+        isFirstSession,
+      ),
+    [
+      repairPlanToday,
+      electedQuestKinds,
+      carryOverKinds,
+      goalToday,
+      isFirstSession,
+    ],
+  );
 
   // Prepare a Goal blueprint while the learner is still reading Today’s Focus.
   // Starting the task can then route immediately instead of showing an
@@ -9073,10 +9254,25 @@ export default function App({ onBootReady } = {}) {
 
   // Guard the current in-memory focus against account, language, or day changes.
   useEffect(() => {
-    if (!isLoadingApp && !currentGoalFocus()) useGoalFocusStore.getState().clearFocus();
+    if (!isLoadingApp && !currentGoalFocus())
+      useGoalFocusStore.getState().clearFocus();
     const repair = useRepairFocusStore.getState().focus;
-    if (!isLoadingApp && repair && (repair.npub !== activeNpub || repair.targetLang !== resolvedTargetLang || repair.plan?.dayKey !== plateDayKey)) useRepairFocusStore.getState().clearFocus();
-  }, [activeNpub, resolvedTargetLang, plateDayKey, isLoadingApp, goalToday?.id, goalToday?.status]);
+    if (
+      !isLoadingApp &&
+      repair &&
+      (repair.npub !== activeNpub ||
+        repair.targetLang !== resolvedTargetLang ||
+        repair.plan?.dayKey !== plateDayKey)
+    )
+      useRepairFocusStore.getState().clearFocus();
+  }, [
+    activeNpub,
+    resolvedTargetLang,
+    plateDayKey,
+    isLoadingApp,
+    goalToday?.id,
+    goalToday?.status,
+  ]);
   const plateSnapshot = useMemo(
     () =>
       getDailyPlateSnapshot(user, resolvedTargetLang, undefined, questKinds),
@@ -9308,9 +9504,11 @@ export default function App({ onBootReady } = {}) {
   const goToSkillTreeMode = useCallback(
     (mode) => {
       const goalFocus = useGoalFocusStore.getState().focus;
-      if (goalFocus && goalFocus.surface !== mode) useGoalFocusStore.getState().clearFocus();
+      if (goalFocus && goalFocus.surface !== mode)
+        useGoalFocusStore.getState().clearFocus();
       const repairFocus = useRepairFocusStore.getState().focus;
-      if (repairFocus && repairFocus.surface !== mode) useRepairFocusStore.getState().clearFocus();
+      if (repairFocus && repairFocus.surface !== mode)
+        useRepairFocusStore.getState().clearFocus();
       if (viewMode !== "skillTree") {
         handleReturnToSkillTree();
       }
@@ -9331,20 +9529,43 @@ export default function App({ onBootReady } = {}) {
       useRepairFocusStore.getState().clearFocus();
       if (kind === "goal") {
         try {
-          const blueprint = await getOrBuildGoalBlueprint({ npub: activeNpub, targetLang: resolvedTargetLang, supportLang: appLanguage, cefrLevel: repairLessonCefrLevel, dayKey: plateDayKey });
+          const blueprint = await getOrBuildGoalBlueprint({
+            npub: activeNpub,
+            targetLang: resolvedTargetLang,
+            supportLang: appLanguage,
+            cefrLevel: repairLessonCefrLevel,
+            dayKey: plateDayKey,
+          });
           if (!blueprint) return;
           // Async generation may finish after the learner switches language.
           const latest = useUserStore.getState().user;
-          if (latest?.progress?.targetLang !== resolvedTargetLang || activeGoalFor(latest, resolvedTargetLang)?.id !== blueprint.goalId) return;
+          if (
+            latest?.progress?.targetLang !== resolvedTargetLang ||
+            activeGoalFor(latest, resolvedTargetLang)?.id !== blueprint.goalId
+          )
+            return;
           const bucket = latest?.learningIntelligence?.[resolvedTargetLang];
           const mode = nextGoalMode(bucket, blueprint);
           if (!mode) return;
           const routedBlueprint = { ...blueprint, mode };
           const surface = GOAL_SURFACES[mode];
-          useGoalFocusStore.getState().setFocus({ npub: activeNpub, targetLang: resolvedTargetLang, supportLang: appLanguage, surface, blueprint: routedBlueprint });
-          if (surface === "lesson") await handleStartLessonRef.current?.(buildGoalLesson(routedBlueprint));
+          useGoalFocusStore
+            .getState()
+            .setFocus({
+              npub: activeNpub,
+              targetLang: resolvedTargetLang,
+              supportLang: appLanguage,
+              surface,
+              blueprint: routedBlueprint,
+            });
+          if (surface === "lesson")
+            await handleStartLessonRef.current?.(
+              buildGoalLesson(routedBlueprint),
+            );
           else goToSkillTreeMode(surface);
-        } catch (error) { toast({ title: error.message, status: "error", duration: 6000 }); }
+        } catch (error) {
+          toast({ title: error.message, status: "error", duration: 6000 });
+        }
         return;
       }
       if (kind === "repair") {
@@ -9443,7 +9664,11 @@ export default function App({ onBootReady } = {}) {
     }
     setIsLaunchingPlateCourse(true);
     try {
-      startPlateSession(activeNpub, plateSnapshot.langKey, plateSnapshot.dayKey);
+      startPlateSession(
+        activeNpub,
+        plateSnapshot.langKey,
+        plateSnapshot.dayKey,
+      );
       setPlateSessionActive(true);
       await navigateToPlateCourse(next);
     } finally {
@@ -9716,8 +9941,7 @@ export default function App({ onBootReady } = {}) {
         ? repairPlanToday.items
         : [];
       const wholeRepairCompleted =
-        repairItems.length > 0 &&
-        Number(completedCount) >= repairItems.length;
+        repairItems.length > 0 && Number(completedCount) >= repairItems.length;
       if (wholeRepairCompleted) {
         return {
           what: repairItems
@@ -9741,10 +9965,7 @@ export default function App({ onBootReady } = {}) {
       return {
         what: item.originalConcept || item.concept || "",
         why:
-          item.summary ||
-          repairPlanToday?.summary ||
-          item.expectedAnswer ||
-          "",
+          item.summary || repairPlanToday?.summary || item.expectedAnswer || "",
       };
     },
     [repairPlanToday],
@@ -9772,11 +9993,7 @@ export default function App({ onBootReady } = {}) {
         "astra:goalModeCompleted",
         handleGoalModeCompleted,
       );
-  }, [
-    navigateToPlateCourse,
-    plateSnapshot.dayKey,
-    resolvedTargetLang,
-  ]);
+  }, [navigateToPlateCourse, plateSnapshot.dayKey, resolvedTargetLang]);
 
   // Dismissing a celebration: a course modal moves into the next course; the
   // cleared modal (when finishing a guided session) returns home — but only
@@ -9791,7 +10008,8 @@ export default function App({ onBootReady } = {}) {
     // there's no next course to move to, Continue must still leave the spent
     // lesson rather than strand the learner on it.
     const finishedRepairLesson =
-      viewMode === "lesson" && Boolean(activeLesson?.isRepair || activeLesson?.isGoal);
+      viewMode === "lesson" &&
+      Boolean(activeLesson?.isRepair || activeLesson?.isGoal);
     if (celebration?.type === "course" && celebration.next) {
       navigateToPlateCourse(celebration.next);
     } else if (
@@ -9896,7 +10114,8 @@ export default function App({ onBootReady } = {}) {
       plateSnapshot.dayKey,
       justDone,
     );
-    if (courseKey && plateCourseCelebratedKeysRef.current.has(courseKey)) return;
+    if (courseKey && plateCourseCelebratedKeysRef.current.has(courseKey))
+      return;
 
     const next = getNextPlateCourse(plateSnapshot);
     const details =
@@ -9988,26 +10207,33 @@ export default function App({ onBootReady } = {}) {
           activeNpub,
           plateSnapshot.langKey,
           new Date(),
-          plateSnapshot.courses.map(course => course.kind),
+          plateSnapshot.courses.map((course) => course.kind),
           plateSnapshot.dayKey,
         );
         if (!claimed) return;
         const store = useUserStore.getState();
-        const isCurrentAccount = (store.user?.local_npub || store.user?.id || store.user?.identity) === activeNpub;
-        if (isCurrentAccount) store.patchUser?.({
-          progress: applyPlateBonusMarker(
-            store.user?.progress || {},
-            plateSnapshot.langKey,
-            plateSnapshot.dayKey,
-          ),
-        });
+        const isCurrentAccount =
+          (store.user?.local_npub || store.user?.id || store.user?.identity) ===
+          activeNpub;
+        if (isCurrentAccount)
+          store.patchUser?.({
+            progress: applyPlateBonusMarker(
+              store.user?.progress || {},
+              plateSnapshot.langKey,
+              plateSnapshot.dayKey,
+            ),
+          });
         await awardXp(activeNpub, DAILY_PLATE_BONUS_XP, plateSnapshot.langKey);
         // Covers plates cleared outside a guided session too; the once-per-
         // plate guard inside makes this a no-op when the conductor already
         // requested it.
         const latestUser = useUserStore.getState().user;
-        if ((latestUser?.local_npub || latestUser?.id || latestUser?.identity) === activeNpub &&
-            (latestUser?.progress?.targetLang || plateSnapshot.langKey) === plateSnapshot.langKey) {
+        if (
+          (latestUser?.local_npub || latestUser?.id || latestUser?.identity) ===
+            activeNpub &&
+          (latestUser?.progress?.targetLang || plateSnapshot.langKey) ===
+            plateSnapshot.langKey
+        ) {
           requestPlateCelebration({ type: "cleared" });
         }
       } catch (error) {
@@ -10080,10 +10306,12 @@ export default function App({ onBootReady } = {}) {
     !showAlphabetBootcamp &&
     skillTreeInitialUnits.key !== skillTreeInitialUnitsKey;
 
-  const isResolvingSubscription = shouldHoldForInitialPatreonStatus({
-    isResolved: patreonStatusResolved,
-    isChecking: isCheckingPatreon,
-  });
+  const isResolvingSubscription =
+    !needsOnboarding &&
+    shouldHoldForInitialPatreonStatus({
+      isResolved: patreonStatusResolved,
+      isChecking: isCheckingPatreon,
+    });
   const isBootLoading =
     isLoadingApp ||
     !user ||
@@ -10107,8 +10335,26 @@ export default function App({ onBootReady } = {}) {
     onBootReady?.();
   }, [isBootLoading, onBootReady]);
 
+  useEffect(() => {
+    if (
+      !isBootLoading &&
+      needsOnboarding &&
+      !isOnboardingRoute &&
+      !isSubscriptionRoute &&
+      location.pathname !== "/patreon-return"
+    ) {
+      navigate("/onboarding", { replace: true });
+    }
+  }, [
+    isBootLoading,
+    needsOnboarding,
+    isOnboardingRoute,
+    isSubscriptionRoute,
+    location.pathname,
+    navigate,
+  ]);
+
   if (isBootLoading) {
-    if (onBootReady) return null;
     return <LoadingOrbFallback minH="100vh" bg="gray.900" />;
   }
 
@@ -10129,10 +10375,6 @@ export default function App({ onBootReady } = {}) {
     !isSubscriptionRoute &&
     location.pathname !== "/patreon-return"
   ) {
-    if (!isOnboardingRoute) {
-      return <Navigate to="/onboarding" replace />;
-    }
-
     return (
       <Box minH="100vh" bg="gray.900" color="gray.100">
         <Onboarding
@@ -10352,7 +10594,10 @@ export default function App({ onBootReady } = {}) {
 
       <NotesDrawer
         isOpen={notesOpen}
-        onClose={() => { setNotesOpen(false); setMemoryInitialTab("repairs"); }}
+        onClose={() => {
+          setNotesOpen(false);
+          setMemoryInitialTab("repairs");
+        }}
         appLanguage={appLanguage}
         targetLang={resolvedTargetLang}
         npub={activeNpub}
@@ -10366,13 +10611,24 @@ export default function App({ onBootReady } = {}) {
         targetLang={resolvedTargetLang}
         lang={appLanguage}
         journey={journeyResource.data}
-        canPresent={() => !isLoadingApp && !appOnboardingChainOpen && !notesOpen &&
-          !plateBonusClaimingRef.current && !pendingPlateCelebrationRef.current &&
-          !pendingDailyGoalCelebrationRef.current && !pendingLessonCompletionRef.current &&
-          !pendingTutorialBitcoinModalRef.current && !isTutorCompletionSequencePending() &&
+        canPresent={() =>
+          !isLoadingApp &&
+          !appOnboardingChainOpen &&
+          !notesOpen &&
+          !plateBonusClaimingRef.current &&
+          !pendingPlateCelebrationRef.current &&
+          !pendingDailyGoalCelebrationRef.current &&
+          !pendingLessonCompletionRef.current &&
+          !pendingTutorialBitcoinModalRef.current &&
+          !isTutorCompletionSequencePending() &&
           !Object.values(plateCelebrationBlockersRef.current).some(Boolean) &&
-          !companionUnlockQueueRef.current.length && !hasVisibleChakraModalSurface()}
-        onOpenJourney={() => { setMemoryInitialTab("journey"); setNotesOpen(true); }}
+          !companionUnlockQueueRef.current.length &&
+          !hasVisibleChakraModalSurface()
+        }
+        onOpenJourney={() => {
+          setMemoryInitialTab("journey");
+          setNotesOpen(true);
+        }}
       />
 
       <CompanionRepairModal

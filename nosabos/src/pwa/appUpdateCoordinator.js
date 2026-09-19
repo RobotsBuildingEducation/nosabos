@@ -26,6 +26,7 @@ import {
 
 const COALESCE_INTERVAL_MS = 30 * 1000; // 30 seconds
 const PERIODIC_CHECK_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes while visible
+const DEFERRAL_DURATION_MS = 30 * 60 * 1000; // 30 minutes deferral when user presses Later
 const METADATA_FETCH_TIMEOUT_MS = 10 * 1000; // 10 seconds
 const ACTIVATION_TIMEOUT_MS = 10 * 1000; // 10 seconds
 const MAX_AUTO_RELOAD_ATTEMPTS = 2;
@@ -34,6 +35,7 @@ export const STORAGE_KEYS = {
   RELOAD_TARGET: "nosabos_update_reload_target",
   ATTEMPT_COUNT: "nosabos_update_reload_attempts",
   DEFERRED_BUILD: "nosabos_update_deferred_build",
+  DEFERRED_AT: "nosabos_update_deferred_at",
 };
 
 // Check if running in browser
@@ -141,9 +143,9 @@ export class AppUpdateCoordinator {
     // Listen to safety changes
     subscribeSafety(({ safe }) => {
       this.setState({ isProtected: !safe });
-      // If we became safe and an update is ready and not deferred, open the modal
-      if (safe && this.state.isUpdateReady && this.state.uiState === "ready" && !this.isDeferred()) {
-        this.setState({ isModalOpen: true });
+      // If we became safe and an update is ready and not deferred, ready the banner
+      if (safe && this.state.isUpdateReady && !this.isDeferred() && this.state.uiState !== "ready") {
+        this.setState({ uiState: "ready" });
       }
     });
 
@@ -211,7 +213,7 @@ export class AppUpdateCoordinator {
             this.storage.removeItem(STORAGE_KEYS.RELOAD_TARGET);
             this.setState({
               uiState: "error",
-              isModalOpen: true,
+              isModalOpen: false,
               errorMessage:
                 "We couldn't finish the update. Try again when your connection is ready.",
             });
@@ -295,12 +297,25 @@ export class AppUpdateCoordinator {
       return;
     }
 
-    // Otherwise, transition to ready UI
+    // Ready UI: purely top navigation banner, no modal
     this.setState({
       uiState: "ready",
-      // Only pop modal if not protected; if protected, user will see floating indicator
-      isModalOpen: isSafe,
+      isModalOpen: false,
     });
+  }
+
+  clearDeferral() {
+    if (this.storage) {
+      try {
+        this.storage.removeItem(STORAGE_KEYS.DEFERRED_BUILD);
+        this.storage.removeItem(STORAGE_KEYS.DEFERRED_AT);
+      } catch (e) {
+        console.warn("[PWA Update] Could not clear deferral:", e);
+      }
+    }
+    if (this.state.uiState === "deferred") {
+      this.setState({ uiState: "ready" });
+    }
   }
 
   isDeferred() {
@@ -308,7 +323,19 @@ export class AppUpdateCoordinator {
     try {
       const deferredBuild = this.storage.getItem(STORAGE_KEYS.DEFERRED_BUILD);
       const target = this.state.targetBuildId || this.state.advertisedBuildId;
-      return Boolean(deferredBuild && target && deferredBuild === target);
+      if (!deferredBuild || !target || deferredBuild !== target) {
+        return false;
+      }
+      const deferredAtStr = this.storage.getItem(STORAGE_KEYS.DEFERRED_AT);
+      if (!deferredAtStr) return false;
+      const deferredAt = parseInt(deferredAtStr, 10);
+      const now = Date.now();
+      if (now - deferredAt >= DEFERRAL_DURATION_MS) {
+        // 30 minutes expired: clear deferral and restore ready
+        this.clearDeferral();
+        return false;
+      }
+      return true;
     } catch {
       return false;
     }
@@ -318,6 +345,10 @@ export class AppUpdateCoordinator {
     if (!this.document) return;
     if (this.document.visibilityState === "visible") {
       this.startPeriodicCheck();
+      // Option B: Gentle reminder on return — clear deferral so top banner reappears
+      if (this.state.uiState === "deferred") {
+        this.clearDeferral();
+      }
       // Reconcile waiting worker if one installed while page was in background
       if (this.registration?.waiting && !this.state.isUpdateReady) {
         this.handleWorkerWaiting({ sw: this.registration.waiting });
@@ -329,6 +360,10 @@ export class AppUpdateCoordinator {
   }
 
   handlePageShow() {
+    // Option B: Gentle reminder on return — clear deferral so top banner reappears
+    if (this.state.uiState === "deferred") {
+      this.clearDeferral();
+    }
     if (this.registration?.waiting && !this.state.isUpdateReady) {
       this.handleWorkerWaiting({ sw: this.registration.waiting });
     }
@@ -349,9 +384,16 @@ export class AppUpdateCoordinator {
     this.stopPeriodicCheck();
     this.periodicTimer = setInterval(() => {
       if (this.document?.visibilityState === "visible") {
+        // If 30-minute deferral has expired while staying in app, clear deferral
+        if (this.state.uiState === "deferred" && !this.isDeferred()) {
+          this.clearDeferral();
+        }
         this.checkForUpdate({ reason: "periodic" }).catch(() => {});
       }
     }, PERIODIC_CHECK_INTERVAL_MS);
+    if (this.periodicTimer?.unref) {
+      this.periodicTimer.unref();
+    }
   }
 
   stopPeriodicCheck() {
@@ -443,17 +485,23 @@ export class AppUpdateCoordinator {
               }
             } else {
               // Received HTML fallback or unexpected type
-              console.warn("[PWA Update] /version.json did not return application/json");
-              this.setState({ discoveryStatus: "check_failed" });
+              if (this.runningBuildId !== "development") {
+                console.warn("[PWA Update] /version.json did not return application/json");
+              }
+              this.setState({ discoveryStatus: this.runningBuildId === "development" ? "idle" : "check_failed" });
             }
           } else {
-            console.warn(`[PWA Update] /version.json returned status ${response.status}`);
-            this.setState({ discoveryStatus: "check_failed" });
+            if (this.runningBuildId !== "development") {
+              console.warn(`[PWA Update] /version.json returned status ${response.status}`);
+            }
+            this.setState({ discoveryStatus: this.runningBuildId === "development" ? "idle" : "check_failed" });
           }
         } catch (fetchErr) {
           clearTimeout(timeoutId);
-          console.warn("[PWA Update] Fetching /version.json failed:", fetchErr);
-          this.setState({ discoveryStatus: "check_failed" });
+          if (this.runningBuildId !== "development") {
+            console.warn("[PWA Update] Fetching /version.json failed:", fetchErr);
+          }
+          this.setState({ discoveryStatus: this.runningBuildId === "development" ? "idle" : "check_failed" });
         }
       }
 
@@ -565,9 +613,11 @@ export class AppUpdateCoordinator {
    */
   dismissUpdate() {
     const target = this.state.targetBuildId || this.state.advertisedBuildId;
-    if (target && this.storage) {
+    const now = Date.now();
+    if (this.storage) {
       try {
-        this.storage.setItem(STORAGE_KEYS.DEFERRED_BUILD, target);
+        this.storage.setItem(STORAGE_KEYS.DEFERRED_BUILD, target || "current");
+        this.storage.setItem(STORAGE_KEYS.DEFERRED_AT, String(now));
       } catch (e) {
         console.warn("[PWA Update] Could not record deferred build:", e);
       }
@@ -593,21 +643,11 @@ export class AppUpdateCoordinator {
   }
 
   openModal() {
-    if (!isUpdateSafe()) {
-      this.setState({
-        errorMessage: "Please finish or save your current activity before updating.",
-        isModalOpen: true,
-      });
-      return;
-    }
-    this.setState({
-      isModalOpen: true,
-      errorMessage: null,
-    });
+    // Modal removed in favor of top navigation banner
   }
 
   closeModal() {
-    this.setState({ isModalOpen: false });
+    this.dismissUpdate();
   }
 
   destroy() {
@@ -616,7 +656,7 @@ export class AppUpdateCoordinator {
       clearTimeout(this.activationTimer);
       this.activationTimer = null;
     }
-    if (this.document) {
+    if (this.document?.removeEventListener) {
       this.document.removeEventListener("visibilitychange", this.handleVisibilityChange);
     }
     if (typeof window !== "undefined") {

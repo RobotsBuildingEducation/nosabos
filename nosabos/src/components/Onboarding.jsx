@@ -46,7 +46,6 @@ import {
   nativeOverlayMotionProps,
 } from "../utils/modalMotion";
 import { normalizeTutorVoice } from "../utils/tutorRealtime";
-import { motion } from "framer-motion";
 
 const BASE_PATH = "/onboarding";
 const DEFAULT_VOICE_PAUSE_MS = 1200;
@@ -173,20 +172,10 @@ export default function Onboarding({
     themeMode,
   } = defaults;
   const [targetLang, setTargetLang] = useState(defaults.targetLang);
-  const [step, setStep] = useState(0);
   const goalsEnabled = astraGoalsEnabled();
   const stepCopy = goalOnboardingCopy(supportLang);
-  const stepLabels = goalsEnabled
-    ? [stepCopy.language, stepCopy.goals]
-    : [stepCopy.language];
   const stepHeadingRef = useRef(null);
   const stepBodyRef = useRef(null);
-  function goToStep(nextStep) {
-    playOnboardingSound(selectSound);
-    setStep(nextStep);
-    stepBodyRef.current?.scrollTo({ top: 0 });
-    requestAnimationFrame(() => stepHeadingRef.current?.focus());
-  }
   const [learningGoals, setLearningGoals] = useState(
     initialDraft.learningGoals || {},
   );
@@ -329,15 +318,16 @@ export default function Onboarding({
           borderTopRadius="24px"
           display="flex"
           flexDirection="column"
-          h={{ base: "100vh", md: "min(760px, calc(100vh - 32px))" }}
-          maxH={{ base: "100vh", md: "760px" }}
+          h={{ base: "100vh", md: "min(860px, calc(100vh - 32px))" }}
+          maxH={{ base: "100vh", md: "860px" }}
           overflow="hidden"
           sx={{
             "@supports (height: 100dvh)": {
               maxHeight: "100dvh",
               height: "100dvh",
               "@media screen and (min-width: 48em)": {
-                height: "min(760px, calc(100dvh - 32px))",
+                height: "min(860px, calc(100dvh - 32px))",
+                maxHeight: "min(860px, calc(100dvh - 32px))",
               },
             },
           }}
@@ -378,134 +368,12 @@ export default function Onboarding({
                 </Text>
               </VStack>
 
-              {stepLabels.length > 1 && (
-                <HStack
-                  as="ol"
-                  listStyleType="none"
-                  w="100%"
-                  spacing={3}
-                  mb={5}
-                  aria-label={ui.onboarding_title || "Onboarding steps"}
-                >
-                  {stepLabels.map((label, index) => {
-                    const isActive = step === index;
-                    const isCompleted = index < step;
-                    return (
-                      <Box
-                        as="li"
-                        key={label}
-                        flex="1"
-                        aria-current={isActive ? "step" : undefined}
-                      >
-                        <Box
-                          as="button"
-                          type="button"
-                          w="100%"
-                          textAlign="left"
-                          onClick={() => goToStep(index)}
-                          p={1}
-                          bg="transparent"
-                          border="none"
-                          boxShadow="none"
-                          cursor="pointer"
-                          outline="none"
-                          _hover={{
-                            opacity: 0.85,
-                          }}
-                          _active={{
-                            transform: "scale(0.99)",
-                          }}
-                          transition="opacity 0.2s ease"
-                        >
-                          <Box
-                            position="relative"
-                            h="7px"
-                            borderRadius="full"
-                            bg="var(--app-surface-muted)"
-                            overflow="hidden"
-                            mb={2.5}
-                          >
-                            <motion.div
-                              style={{
-                                height: "100%",
-                                borderRadius: "9999px",
-                                background: "var(--chakra-colors-teal-500, #319795)",
-                              }}
-                              initial={false}
-                              animate={{
-                                width: index <= step ? "100%" : "0%",
-                                opacity: index <= step ? 1 : 0.3,
-                              }}
-                              transition={{
-                                duration: 0.38,
-                                ease: [0.22, 1, 0.36, 1],
-                              }}
-                            />
-                          </Box>
-
-                          <HStack spacing={2} align="center">
-                            <motion.div
-                              animate={{
-                                scale: isActive ? [0.85, 1.12, 1] : 1,
-                              }}
-                              transition={{
-                                duration: 0.3,
-                                ease: "easeOut",
-                              }}
-                            >
-                              <Box
-                                boxSize="20px"
-                                borderRadius="full"
-                                display="flex"
-                                alignItems="center"
-                                justifyContent="center"
-                                fontSize="xs"
-                                fontWeight="bold"
-                                bg={
-                                  isActive || isCompleted
-                                    ? "teal.500"
-                                    : "var(--app-surface-muted)"
-                                }
-                                color={
-                                  isActive || isCompleted
-                                    ? "white"
-                                    : "var(--app-text-muted)"
-                                }
-                                boxShadow="none"
-                                transition="all 0.2s ease"
-                              >
-                                {isCompleted ? "✓" : index + 1}
-                              </Box>
-                            </motion.div>
-                            <Text
-                              fontSize="sm"
-                              fontWeight={isActive ? "bold" : "medium"}
-                              color={
-                                isActive
-                                  ? "var(--app-text-primary)"
-                                  : isCompleted
-                                  ? "var(--app-text-secondary)"
-                                  : "var(--app-text-muted)"
-                              }
-                              transition="color 0.2s ease"
-                            >
-                              {label}
-                            </Text>
-                          </HStack>
-                        </Box>
-                      </Box>
-                    );
-                  })}
-                </HStack>
-              )}
-
               <Box
                 display="flex"
                 flexDirection="column"
                 mb={{ base: 4, md: 5 }}
               >
-                {step === 0 ? (
-                  <VStack align="stretch" spacing={4} w="100%">
+                <VStack align="stretch" spacing={4} w="100%">
                     {/* Support Language */}
                     <Box
                       bg="gray.800"
@@ -686,49 +554,55 @@ export default function Onboarding({
                         </MenuList>
                       </Menu>
                     </Box>
+
+                    {/* Learning Goal */}
+                    {goalsEnabled && (
+                      <Box
+                        bg="gray.800"
+                        p={3}
+                        rounded="md"
+                        display="flex"
+                        flexDirection="column"
+                      >
+                        <LearningGoalField
+                          lang={supportLang}
+                          value={learningGoals[targetLang] || ""}
+                          onChange={(value) =>
+                            setLearningGoals((previous) => ({
+                              ...previous,
+                              [targetLang]: value,
+                            }))
+                          }
+                          description={stepCopy.description}
+                          minH="100px"
+                          rows={3}
+                          textareaBg="gray.700"
+                        />
+                        <Text
+                          mt={2}
+                          fontSize="xs"
+                          lineHeight="tall"
+                          color="var(--app-text-secondary)"
+                          opacity={0.88}
+                        >
+                          {stepCopy.hint
+                            .split("{settingsIcon}")
+                            .map((part, index) => (
+                              <React.Fragment key={index}>
+                                {index > 0 && (
+                                  <SettingsIcon
+                                    aria-hidden="true"
+                                    boxSize="0.95em"
+                                    verticalAlign="-0.1em"
+                                  />
+                                )}
+                                {part}
+                              </React.Fragment>
+                            ))}
+                        </Text>
+                      </Box>
+                    )}
                   </VStack>
-                ) : (
-                  <Box
-                    bg="var(--app-surface-muted)"
-                    p={{ base: 4, md: 5 }}
-                    borderRadius="xl"
-                  >
-                    <LearningGoalField
-                      lang={supportLang}
-                      value={learningGoals[targetLang] || ""}
-                      onChange={(value) =>
-                        setLearningGoals((previous) => ({
-                          ...previous,
-                          [targetLang]: value,
-                        }))
-                      }
-                      minH="140px"
-                      rows={4}
-                    />
-                    <Text
-                      mt={3}
-                      fontSize="xs"
-                      lineHeight="tall"
-                      color="var(--app-text-secondary)"
-                      opacity={0.88}
-                    >
-                      {stepCopy.hint
-                        .split("{settingsIcon}")
-                        .map((part, index) => (
-                          <React.Fragment key={index}>
-                            {index > 0 && (
-                              <SettingsIcon
-                                aria-hidden="true"
-                                boxSize="0.95em"
-                                verticalAlign="-0.1em"
-                              />
-                            )}
-                            {part}
-                          </React.Fragment>
-                        ))}
-                    </Text>
-                  </Box>
-                )}
               </Box>
             </Box>
           </DrawerBody>
@@ -743,31 +617,15 @@ export default function Onboarding({
             alignItems="center"
           >
             <HStack maxW="600px" mx="auto" w="100%" spacing={3}>
-              {step > 0 && (
-                <Button
-                  size="lg"
-                  variant="outline"
-                  isDisabled={isSaving}
-                  onClick={() => goToStep(step - 1)}
-                >
-                  {ui.onboarding_back || ui.onboarding_go_back || "Back"}
-                </Button>
-              )}
               <Button
                 size="lg"
                 colorScheme="teal"
-                onClick={
-                  step < stepLabels.length - 1
-                    ? () => goToStep(step + 1)
-                    : handleStart
-                }
+                onClick={handleStart}
                 isLoading={isSaving}
                 loadingText={ui.common_saving}
                 flex="1"
               >
-                {step < stepLabels.length - 1
-                  ? ui.onboarding_next || ui.onboarding_cta_next || "Next"
-                  : ui.onboarding_cta_start}
+                {ui.onboarding_cta_start}
               </Button>
             </HStack>
           </Box>

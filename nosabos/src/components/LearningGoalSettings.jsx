@@ -20,6 +20,7 @@ export function LearningGoalField({
   onChange,
   onBlur,
   onFocus,
+  description,
   minH = "120px",
   rows = 4,
   textareaBg = "gray.700",
@@ -28,9 +29,14 @@ export function LearningGoalField({
   const copy = goalCopy(lang);
   return (
     <FormControl {...props}>
-      <FormLabel fontSize="sm" fontWeight="semibold" mb={2}>
+      <FormLabel fontSize="sm" fontWeight="semibold" mb={description ? 1 : 2}>
         {copy.label}
       </FormLabel>
+      {description && (
+        <Text fontSize="xs" opacity={0.7} mb="12px">
+          {description}
+        </Text>
+      )}
       <Textarea
         value={value}
         maxLength={600}

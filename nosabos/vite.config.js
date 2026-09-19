@@ -6,20 +6,33 @@ import { VitePWA } from "vite-plugin-pwa";
 import { visualizer } from "rollup-plugin-visualizer";
 
 function pwaVersionMetadataPlugin({ buildId, builtAt }) {
+  const versionPayload = JSON.stringify(
+    {
+      buildId,
+      builtAt,
+    },
+    null,
+    2,
+  );
+
   return {
     name: "pwa-version-metadata",
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        const url = req.url ? req.url.split("?")[0] : "";
+        if (url === "/version.json") {
+          res.setHeader("Content-Type", "application/json");
+          res.end(versionPayload);
+          return;
+        }
+        next();
+      });
+    },
     generateBundle() {
       this.emitFile({
         type: "asset",
         fileName: "version.json",
-        source: JSON.stringify(
-          {
-            buildId,
-            builtAt,
-          },
-          null,
-          2,
-        ),
+        source: versionPayload,
       });
     },
   };

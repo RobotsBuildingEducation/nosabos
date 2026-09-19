@@ -1991,8 +1991,12 @@ const LandingPage = ({ onAuthenticated }) => {
     playSound(submitActionSound);
     setIsCreating(true);
     try {
-      await generateNostrKeys(displayName.trim());
+      const did = await generateNostrKeys(displayName.trim());
       localStorage.setItem("displayName", displayName.trim());
+      try {
+        const npub = did?.npub || localStorage.getItem("local_npub") || "";
+        if (npub) sessionStorage.setItem("new_registration_npub", npub);
+      } catch {}
       onAuthenticated?.();
     } catch (e) {
       console.error(e);
@@ -2006,8 +2010,12 @@ const LandingPage = ({ onAuthenticated }) => {
     playSound(submitActionSound);
     setIsCreating(true);
     try {
-      await generateNostrKeys("");
+      const did = await generateNostrKeys("");
       localStorage.setItem("displayName", "");
+      try {
+        const npub = did?.npub || localStorage.getItem("local_npub") || "";
+        if (npub) sessionStorage.setItem("new_registration_npub", npub);
+      } catch {}
       onAuthenticated?.();
     } catch (e) {
       console.error(e);

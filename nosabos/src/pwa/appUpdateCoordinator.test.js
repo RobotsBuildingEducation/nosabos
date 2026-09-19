@@ -50,7 +50,7 @@ test("coordinator guards against infinite reload loops on build mismatch", () =>
   assert.equal(storage.getItem(STORAGE_KEYS.RELOAD_TARGET), null);
   const state = coordinator.getState();
   assert.equal(state.uiState, "error");
-  assert.equal(state.isModalOpen, true);
+  assert.equal(state.isModalOpen, false);
   assert.ok(state.errorMessage.includes("couldn't finish the update"));
 });
 
@@ -144,32 +144,53 @@ test("checkForUpdate coalesces calls within 30 seconds", async () => {
   assert.equal(fetchCount, 2, "force: true bypasses throttle");
 });
 
-test("dismissUpdate defers update and suppresses modal reopening for that build", () => {
+test("dismissUpdate defers update and supports Option B return reminder and 30m expiration", () => {
   const storage = createMockStorage();
+  const mockDocument = { visibilityState: "visible" };
   const coordinator = new AppUpdateCoordinator({
     runningBuildId: "build-v1",
     storage,
+    document: mockDocument,
   });
 
   coordinator.setState({
     advertisedBuildId: "build-v2",
     targetBuildId: "build-v2",
-    isModalOpen: true,
+    isUpdateReady: true,
     uiState: "ready",
   });
 
   coordinator.dismissUpdate();
 
   assert.equal(storage.getItem(STORAGE_KEYS.DEFERRED_BUILD), "build-v2");
+  assert.ok(storage.getItem(STORAGE_KEYS.DEFERRED_AT));
   const state = coordinator.getState();
   assert.equal(state.uiState, "deferred");
-  assert.equal(state.isModalOpen, false);
   assert.equal(coordinator.isDeferred(), true);
 
-  // When worker reports waiting again, it stays deferred
+  // When worker reports waiting while still deferred, it stays deferred
   coordinator.handleWorkerWaiting({});
   assert.equal(coordinator.getState().uiState, "deferred");
-  assert.equal(coordinator.getState().isModalOpen, false);
+
+  // Option B: when user leaves and returns (visibilitychange), deferral clears and ready state is restored
+  coordinator.handleVisibilityChange();
+  assert.equal(coordinator.getState().uiState, "ready");
+  assert.equal(coordinator.isDeferred(), false);
+
+  // Re-defer to test 30m expiration
+  coordinator.dismissUpdate();
+  assert.equal(coordinator.isDeferred(), true);
+
+  // Simulate 31 minutes later
+  const originalDateNow = Date.now;
+  try {
+    Date.now = () => originalDateNow() + 31 * 60 * 1000;
+    assert.equal(coordinator.isDeferred(), false);
+    assert.equal(coordinator.getState().uiState, "ready");
+  } finally {
+    Date.now = originalDateNow;
+    coordinator.destroy();
+  }
 });
 
 test("applyUpdate enforces safety checks", async () => {
