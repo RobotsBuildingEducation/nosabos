@@ -140,6 +140,9 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
     localStorage.setItem("local_nsec", encodedNsec);
     localStorage.setItem("local_npub", publicKey);
     localStorage.setItem("uniqueId", publicKey);
+    try {
+      sessionStorage.setItem("new_registration_npub", publicKey);
+    } catch {}
 
     return { npub: publicKey, nsec: encodedNsec };
   };

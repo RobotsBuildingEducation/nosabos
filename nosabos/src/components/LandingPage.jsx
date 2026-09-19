@@ -18,6 +18,7 @@ import {
   FaBrain,
   FaCalendarCheck,
   FaPaw,
+  FaRoute,
 } from "react-icons/fa";
 import { LuBookAudio, LuSun } from "react-icons/lu";
 import { RiMoonClearFill } from "react-icons/ri";
@@ -139,7 +140,10 @@ const translations = {
       "A complete end-to-end real-time tutor that adapts to your level and helps you learn.",
     feature_memory: "Memory System",
     feature_memory_desc:
-      "Remembers your mistakes and progress, then turns them into focused review.",
+      "Remembers your mistakes, goals, and progress, then turns them into focused review.",
+    feature_journey: "Journey",
+    feature_journey_desc:
+      "Store voice notes across your learning milestones to listen to your progress over time.",
     feature_daily_quests: "Today’s Focus",
     feature_daily_quests_desc:
       "Get a personalized daily mix of practice, review, and rewards.",
@@ -283,7 +287,10 @@ const translations = {
       "Un tutor completo en tiempo real, de principio a fin, que se adapta a tu nivel y te ayuda a aprender.",
     feature_memory: "Sistema de Memoria",
     feature_memory_desc:
-      "Recuerda tus errores y avances para convertirlos en repasos enfocados.",
+      "Recuerda tus errores, metas y avances para convertirlos en repasos enfocados.",
+    feature_journey: "Camino",
+    feature_journey_desc:
+      "Guarda notas de voz en tus hitos de aprendizaje para escuchar tu progreso con el tiempo.",
     feature_daily_quests: "Enfoque de hoy",
     feature_daily_quests_desc:
       "Recibe cada día una mezcla personalizada de práctica, repaso y recompensas.",
@@ -429,7 +436,10 @@ const translations = {
       "Un tutor completo in tempo reale, dall'inizio alla fine, che si adatta al tuo livello e ti aiuta a imparare.",
     feature_memory: "Sistema di Memoria",
     feature_memory_desc:
-      "Ricorda errori e progressi e li trasforma in ripassi mirati.",
+      "Ricorda errori, obiettivi e progressi e li trasforma in ripassi mirati.",
+    feature_journey: "Percorso",
+    feature_journey_desc:
+      "Salva note vocali lungo i tuoi traguardi per ascoltare i tuoi progressi nel tempo.",
     feature_daily_quests: "Focus di oggi",
     feature_daily_quests_desc:
       "Ricevi ogni giorno pratica, ripasso e ricompense su misura.",
@@ -584,7 +594,10 @@ translations.fr = {
     "Un tuteur complet en temps reel, de bout en bout, qui s'adapte a ton niveau et t'aide a apprendre.",
   feature_memory: "Systeme de Memoire",
   feature_memory_desc:
-    "Memorise tes erreurs et tes progres pour creer des revisions ciblees.",
+    "Memorise tes erreurs, tes objectifs et tes progres pour creer des revisions ciblees.",
+  feature_journey: "Parcours",
+  feature_journey_desc:
+    "Enregistre des notes vocales a chaque etape pour ecouter tes progres au fil du temps.",
   feature_daily_quests: "Focus du jour",
   feature_daily_quests_desc:
     "Reçois chaque jour un programme personnalise de pratique, revision et recompenses.",
@@ -726,7 +739,9 @@ translations.ja = {
   feature_tutor_desc:
     "あなたのレベルに適応し、学習を支える完全なエンドツーエンドのリアルタイムチューターです。",
   feature_memory: "記憶システム",
-  feature_memory_desc: "間違いや進捗を記憶し、必要な復習に変えます。",
+  feature_memory_desc: "間違いや目標、進捗を記憶し、必要な復習に変えます。",
+  feature_journey: "歩み",
+  feature_journey_desc: "マイルストーンごとに音声メモを保存し、自分の声の成長と進捗を聞き比べることができます。",
   feature_daily_quests: "今日のフォーカス",
   feature_daily_quests_desc:
     "練習・復習・報酬を組み合わせた毎日のプランを届けます。",
@@ -1991,8 +2006,12 @@ const LandingPage = ({ onAuthenticated }) => {
     playSound(submitActionSound);
     setIsCreating(true);
     try {
-      await generateNostrKeys(displayName.trim());
+      const did = await generateNostrKeys(displayName.trim());
       localStorage.setItem("displayName", displayName.trim());
+      try {
+        const npub = did?.npub || localStorage.getItem("local_npub") || "";
+        if (npub) sessionStorage.setItem("new_registration_npub", npub);
+      } catch {}
       onAuthenticated?.();
     } catch (e) {
       console.error(e);
@@ -2006,8 +2025,12 @@ const LandingPage = ({ onAuthenticated }) => {
     playSound(submitActionSound);
     setIsCreating(true);
     try {
-      await generateNostrKeys("");
+      const did = await generateNostrKeys("");
       localStorage.setItem("displayName", "");
+      try {
+        const npub = did?.npub || localStorage.getItem("local_npub") || "";
+        if (npub) sessionStorage.setItem("new_registration_npub", npub);
+      } catch {}
       onAuthenticated?.();
     } catch (e) {
       console.error(e);
@@ -2049,6 +2072,11 @@ const LandingPage = ({ onAuthenticated }) => {
       icon: <FaBrain />,
       title: copy.feature_memory,
       desc: copy.feature_memory_desc,
+    },
+    {
+      icon: <FaRoute />,
+      title: copy.feature_journey,
+      desc: copy.feature_journey_desc,
     },
     {
       icon: <FaCalendarCheck />,

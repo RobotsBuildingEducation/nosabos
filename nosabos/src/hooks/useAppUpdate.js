@@ -1,43 +1,59 @@
-import { useEffect } from "react";
-import { registerSW } from "virtual:pwa-register";
+/**
+ * src/hooks/useAppUpdate.js
+ *
+ * React hook subscribing to the singleton appUpdateCoordinator.
+ * Exposes update lifecycle state and user actions.
+ */
 
-const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000;
+import { useEffect, useState, useCallback } from "react";
+import { appUpdateCoordinator } from "../pwa/appUpdateCoordinator";
 
 export default function useAppUpdate() {
+  const [state, setState] = useState(() => appUpdateCoordinator.getState());
+
   useEffect(() => {
-    let updateTimer;
-    let activeRegistration;
-
-    const checkForUpdate = () => {
-      activeRegistration?.update().catch((error) => {
-        console.warn("Failed to check for an app update:", error);
-      });
-    };
-
-    registerSW({
-      // Do not wait for the window load event. Returning users can otherwise
-      // spend the whole session in an old app shell before the update check.
-      immediate: true,
-      onRegisteredSW(_swUrl, registration) {
-        if (!registration) return;
-        // Keep the active registration outside this callback so focus/online
-        // events can also refresh long-lived installed PWA sessions.
-        activeRegistration = registration;
-        checkForUpdate();
-        updateTimer = window.setInterval(
-          checkForUpdate,
-          UPDATE_CHECK_INTERVAL_MS,
-        );
-      },
+    return appUpdateCoordinator.subscribe((nextState) => {
+      setState(nextState);
     });
-
-    window.addEventListener("focus", checkForUpdate);
-    window.addEventListener("online", checkForUpdate);
-
-    return () => {
-      if (updateTimer) window.clearInterval(updateTimer);
-      window.removeEventListener("focus", checkForUpdate);
-      window.removeEventListener("online", checkForUpdate);
-    };
   }, []);
+
+  const checkForUpdate = useCallback(
+    (options) => appUpdateCoordinator.checkForUpdate(options),
+    [],
+  );
+
+  const applyUpdate = useCallback(
+    (options) => appUpdateCoordinator.applyUpdate(options),
+    [],
+  );
+
+  const dismissUpdate = useCallback(
+    () => appUpdateCoordinator.dismissUpdate(),
+    [],
+  );
+
+  const retryUpdate = useCallback(
+    () => appUpdateCoordinator.retryUpdate(),
+    [],
+  );
+
+  const openModal = useCallback(
+    () => appUpdateCoordinator.openModal(),
+    [],
+  );
+
+  const closeModal = useCallback(
+    () => appUpdateCoordinator.closeModal(),
+    [],
+  );
+
+  return {
+    ...state,
+    checkForUpdate,
+    applyUpdate,
+    dismissUpdate,
+    retryUpdate,
+    openModal,
+    closeModal,
+  };
 }
