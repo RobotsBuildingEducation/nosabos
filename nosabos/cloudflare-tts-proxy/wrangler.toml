@@ -5,6 +5,13 @@ account_id = "cfe53a18a4894aa8e5c2fe91af905d8a"
 workers_dev = true
 preview_urls = false
 
+routes = [
+  { pattern = "piyali.app/api/tts-proxy*", zone_name = "piyali.app" },
+  { pattern = "www.piyali.app/api/tts-proxy*", zone_name = "piyali.app" },
+  { pattern = "nosabos.app/api/tts-proxy*", zone_name = "nosabos.app" },
+  { pattern = "www.nosabos.app/api/tts-proxy*", zone_name = "nosabos.app" }
+]
+
 [observability]
 enabled = true
 

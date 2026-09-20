@@ -470,3 +470,25 @@ test("assets endpoint serves media from R2 and edge caches with immutable header
   assert.equal(secondGet.headers.get("X-TTS-Cache"), "HIT-EDGE");
 });
 
+test("handles /api/tts-proxy subpath prefix identically to root endpoints", async () => {
+  const worker = createWorker();
+
+  // 1. Health check with prefix
+  const healthRes = await worker.fetch(new Request("https://piyali.app/api/tts-proxy/health"), env);
+  assert.equal(healthRes.status, 200);
+  const healthJson = await healthRes.json();
+  assert.equal(healthJson.status, "healthy");
+
+  // 2. Trailing slash / bare prefix maps to root
+  const rootGet = await worker.fetch(new Request("https://piyali.app/api/tts-proxy"), env);
+  assert.equal(rootGet.status, 200);
+
+  // 3. Audio endpoint with prefix
+  const audioRes = await worker.fetch(new Request("https://piyali.app/api/tts-proxy/audio/test-key"), env);
+  assert.equal(audioRes.status, 404); // cleanly handled by audio handler
+
+  // 4. Unknown endpoint with prefix returns 404
+  const notFound = await worker.fetch(new Request("https://piyali.app/api/tts-proxy/unknown-path"), env);
+  assert.equal(notFound.status, 404);
+});
+

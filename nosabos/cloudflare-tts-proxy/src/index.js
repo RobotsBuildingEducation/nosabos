@@ -179,7 +179,10 @@ export function createWorker({
         request.method === "HEAD" ? null : JSON.stringify(value),
         { status, headers: { ...responseHeaders(), "Content-Type": "application/json", ...extraHeaders } },
       );
-      const pathname = url.pathname.replace(/\/+$/, "") || "/";
+      let pathname = url.pathname.replace(/\/+$/, "") || "/";
+      if (pathname === "/api/tts-proxy" || pathname.startsWith("/api/tts-proxy/")) {
+        pathname = pathname.slice("/api/tts-proxy".length) || "/";
+      }
       if (origin && !originAllowed) return json(403, { error: "Origin is not allowed." });
       if (
         !["/", "/health", "/proxyResponses"].includes(pathname) &&

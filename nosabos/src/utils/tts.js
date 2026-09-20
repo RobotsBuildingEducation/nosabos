@@ -4,12 +4,26 @@ import { createRealtimeTTSConnectionPool } from "./realtimeTTSConnection.js";
 
 const REALTIME_MODEL =
   (import.meta.env?.VITE_REALTIME_MODEL || "gpt-realtime-2.1-mini") + "";
-const REALTIME_URL =
-  import.meta.env?.VITE_REALTIME_URL || ""
-    ? `${import.meta.env?.VITE_REALTIME_URL}?model=${encodeURIComponent(
-        REALTIME_MODEL,
-      )}`
-    : "";
+const PROXIED_HOSTNAMES = new Set([
+  "piyali.app",
+  "www.piyali.app",
+  "nosabos.app",
+  "www.nosabos.app",
+]);
+
+function getProxyBaseUrl() {
+  if (typeof window !== "undefined" && window.location?.hostname) {
+    const host = window.location.hostname.toLowerCase();
+    if (PROXIED_HOSTNAMES.has(host)) {
+      return `${window.location.origin}/api/tts-proxy`;
+    }
+  }
+  return import.meta.env?.VITE_REALTIME_URL || "";
+}
+
+const REALTIME_URL = getProxyBaseUrl()
+  ? `${getProxyBaseUrl()}?model=${encodeURIComponent(REALTIME_MODEL)}`
+  : "";
 const realtimeConnections = createRealtimeTTSConnectionPool({
   url: REALTIME_URL,
   model: REALTIME_MODEL,
@@ -440,10 +454,18 @@ async function deleteFromIndexedDB(key) {
 }
 
 function getWorkerAudioUrl(realtimeUrl, key) {
-  if (!realtimeUrl) return "";
+  if (!key) return "";
+  const target = realtimeUrl || getProxyBaseUrl();
+  if (!target) return "";
   try {
-    const origin = new URL(realtimeUrl).origin;
-    return `${origin}/audio/${encodeURIComponent(key)}`;
+    const base = new URL(
+      target,
+      typeof window !== "undefined" && window.location?.origin
+        ? window.location.origin
+        : "https://piyali.app",
+    );
+    const basePath = base.pathname.replace(/\/+$/, "");
+    return `${base.origin}${basePath}/audio/${encodeURIComponent(key)}`;
   } catch {
     return "";
   }

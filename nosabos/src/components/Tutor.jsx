@@ -228,6 +228,7 @@ import {
   resolveTutorPathLevel,
   TUTOR_LESSON_LAUNCH_MODE,
 } from "../utils/tutorLessonLaunch";
+import { getResponsesUrl } from "../utils/proxyEndpoints";
 
 const MotionBox = motion.create(Box);
 
@@ -353,7 +354,7 @@ function buildTutorTurnDetection(pauseMs) {
   };
 }
 
-const RESPONSES_URL = `${import.meta.env.VITE_RESPONSES_URL}/proxyResponses`;
+const RESPONSES_URL = getResponsesUrl();
 const TRANSLATE_MODEL =
   import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-5.6-luna";
 const AUTO_DISCONNECT_MS = 15000;

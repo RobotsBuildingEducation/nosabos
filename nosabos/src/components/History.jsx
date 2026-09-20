@@ -61,6 +61,7 @@ import {
   stopAllTTSPlayback,
   TTS_LANG_TAG,
 } from "../utils/tts";
+import { getResponsesUrl } from "../utils/proxyEndpoints";
 import useSoundSettings from "../hooks/useSoundSettings";
 import { submitActionSound, nextButtonSound, deliciousSound, clickSound, selectSound } from "../constants/sounds";
 import RandomCharacter from "./RandomCharacter";
@@ -161,7 +162,7 @@ function getLanguageTextProps(lang, { align = "start" } = {}) {
 /* ---------------------------
    LLM plumbing (fallback generation, translation, and grading)
 --------------------------- */
-const RESPONSES_URL = `${import.meta.env.VITE_RESPONSES_URL}/proxyResponses`;
+const RESPONSES_URL = getResponsesUrl();
 const MODEL = import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-5.6-luna";
 
 async function callResponses({ model = MODEL, input }) {

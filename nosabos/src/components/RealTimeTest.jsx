@@ -102,17 +102,13 @@ import {
   nativeOverlayMotionProps,
 } from "../utils/modalMotion";
 import { buildCurriculumPromptContext } from "../utils/lessonCurriculum";
+import { getRealtimeUrl, getResponsesUrl } from "../utils/proxyEndpoints";
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-2.1-mini") + "";
 
-const REALTIME_URL = import.meta.env.VITE_REALTIME_URL
-  ? `${import.meta.env.VITE_REALTIME_URL}?model=${encodeURIComponent(
-      REALTIME_MODEL,
-    )}`
-  : "";
-
-const RESPONSES_URL = `${import.meta.env.VITE_RESPONSES_URL}/proxyResponses`;
+const REALTIME_URL = getRealtimeUrl(REALTIME_MODEL);
+const RESPONSES_URL = getResponsesUrl();
 const TRANSLATE_MODEL =
   import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-5.6-luna";
 const AUTO_DISCONNECT_MS = 15000;
