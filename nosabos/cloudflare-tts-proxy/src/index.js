@@ -184,7 +184,9 @@ export function createWorker({
       if (
         !["/", "/health", "/proxyResponses"].includes(pathname) &&
         !pathname.startsWith("/audio/") &&
-        pathname !== "/audio"
+        pathname !== "/audio" &&
+        !pathname.startsWith("/assets/") &&
+        pathname !== "/assets"
       ) {
         return json(404, { error: "Not found." });
       }
@@ -302,6 +304,73 @@ export function createWorker({
         }
 
         return json(405, { error: "Method not allowed." }, { Allow: "GET, HEAD, PUT, OPTIONS" });
+      }
+
+      // Static media / asset edge cache endpoints (served from R2 with edge cache)
+      if (pathname === "/assets" || pathname.startsWith("/assets/")) {
+        if (pathname === "/assets" || pathname === "/assets/") {
+          return json(400, { error: "Missing asset path." });
+        }
+        const assetPath = pathname.slice("/assets/".length);
+        if (!assetPath || assetPath.includes("..") || /[^a-zA-Z0-9_\-./]/.test(assetPath)) {
+          return json(400, { error: "Invalid asset path." });
+        }
+
+        if (["GET", "HEAD"].includes(request.method)) {
+          const cache = getCache();
+          const cacheKeyRequest = new Request(url.origin + url.pathname, { method: "GET" });
+          if (cache) {
+            const cached = await cache.match(cacheKeyRequest);
+            if (cached) {
+              const respHeaders = new Headers(cached.headers);
+              respHeaders.set("X-TTS-Cache", "HIT-EDGE");
+              if (origin && originAllowed) {
+                respHeaders.set("Access-Control-Allow-Origin", origin);
+              }
+              return new Response(request.method === "HEAD" ? null : cached.body, {
+                status: 200,
+                headers: respHeaders,
+              });
+            }
+          }
+
+          if (env.AUDIO_CACHE) {
+            const r2Key = `assets/${assetPath}`;
+            const object = await env.AUDIO_CACHE.get(r2Key);
+            if (object) {
+              const ext = assetPath.split(".").pop().toLowerCase();
+              const mimeMap = {
+                webp: "image/webp",
+                png: "image/png",
+                jpg: "image/jpeg",
+                jpeg: "image/jpeg",
+                svg: "image/svg+xml",
+                mp3: "audio/mpeg",
+                wav: "audio/wav",
+              };
+              const contentType = object.httpMetadata?.contentType || mimeMap[ext] || "application/octet-stream";
+              const assetHeaders = new Headers({
+                ...headers,
+                "Content-Type": contentType,
+                "Cache-Control": "public, max-age=31536000, immutable",
+                "ETag": object.httpEtag || `"${assetPath}"`,
+                "X-TTS-Cache": "HIT-R2",
+              });
+              const r2Response = new Response(request.method === "HEAD" ? null : object.body, {
+                status: 200,
+                headers: assetHeaders,
+              });
+              if (cache && request.method === "GET") {
+                await cache.put(cacheKeyRequest, r2Response.clone());
+              }
+              return r2Response;
+            }
+          }
+
+          return json(404, { error: "Asset not found." });
+        }
+
+        return json(405, { error: "Method not allowed." }, { Allow: "GET, HEAD, OPTIONS" });
       }
 
       const configured = Boolean(env.OPENAI_API_KEY && env.SESSION_RATE_LIMITER &&

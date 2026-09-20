@@ -411,3 +411,62 @@ test("audio cache falls back to R2 and caches it at the edge", async () => {
   assert.equal(secondGet.status, 200);
   assert.equal(secondGet.headers.get("X-TTS-Cache"), "HIT-EDGE");
 });
+
+test("assets endpoint serves media from R2 and edge caches with immutable headers", async () => {
+  class MockCache {
+    constructor() { this.store = new Map(); }
+    async match(req) {
+      const key = typeof req === "string" ? req : req.url;
+      const res = this.store.get(key);
+      return res ? res.clone() : undefined;
+    }
+    async put(req, res) {
+      const key = typeof req === "string" ? req : req.url;
+      this.store.set(key, res.clone());
+    }
+  }
+  const cache = new MockCache();
+  const r2Store = new Map();
+  const r2Bucket = {
+    async get(key) {
+      const entry = r2Store.get(key);
+      if (!entry) return null;
+      return { body: entry.body, httpMetadata: { contentType: entry.contentType }, httpEtag: '"asset-etag"' };
+    },
+    async put(key, body, options) {
+      r2Store.set(key, { body, contentType: options?.httpMetadata?.contentType });
+    },
+  };
+
+  const worker = createWorker({
+    verifyToken: async () => {},
+    getCache: () => cache,
+  });
+  const envWithR2 = { ...env, AUDIO_CACHE: r2Bucket };
+
+  // 1. Invalid paths
+  assert.equal((await worker.fetch(new Request("https://worker.test/assets"), envWithR2)).status, 400);
+  assert.equal((await worker.fetch(new Request("https://worker.test/assets/invalid$path!"), envWithR2)).status, 400);
+
+  // 2. 404 for missing asset
+  const missing = await worker.fetch(new Request("https://worker.test/assets/characters/missing.webp"), envWithR2);
+  assert.equal(missing.status, 404);
+
+  // 3. Seed asset in R2
+  const imageBytes = new Uint8Array([82, 73, 70, 70]); // WEBP header bytes
+  await r2Bucket.put("assets/characters/1.webp", imageBytes, { httpMetadata: { contentType: "image/webp" } });
+
+  // 4. First GET: serves from R2, sets immutable header and HIT-R2
+  const firstGet = await worker.fetch(new Request("https://worker.test/assets/characters/1.webp"), envWithR2);
+  assert.equal(firstGet.status, 200);
+  assert.equal(firstGet.headers.get("Content-Type"), "image/webp");
+  assert.equal(firstGet.headers.get("Cache-Control"), "public, max-age=31536000, immutable");
+  assert.equal(firstGet.headers.get("X-TTS-Cache"), "HIT-R2");
+  assert.deepEqual(new Uint8Array(await firstGet.arrayBuffer()), imageBytes);
+
+  // 5. Second GET: served from edge cache HIT-EDGE
+  const secondGet = await worker.fetch(new Request("https://worker.test/assets/characters/1.webp"), envWithR2);
+  assert.equal(secondGet.status, 200);
+  assert.equal(secondGet.headers.get("X-TTS-Cache"), "HIT-EDGE");
+});
+

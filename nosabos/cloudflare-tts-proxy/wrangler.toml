@@ -21,6 +21,10 @@ name = "SESSION_RATE_LIMITER"
 namespace_id = "1909202601"
 simple = { limit = 120, period = 60 }
 
+[[r2_buckets]]
+binding = "AUDIO_CACHE"
+bucket_name = "nosabos-media"
+
 # A separately named test deployment. Deploying this does not switch the app.
 # Vars and bindings do not inherit into named environments.
 [env.staging]
@@ -43,3 +47,7 @@ FIREBASE_APP_ID = "1:323662475274:web:570aa2eb1beaf87810aff3"
 name = "SESSION_RATE_LIMITER"
 namespace_id = "1909202602"
 simple = { limit = 120, period = 60 }
+
+[[env.staging.r2_buckets]]
+binding = "AUDIO_CACHE"
+bucket_name = "nosabos-media"
