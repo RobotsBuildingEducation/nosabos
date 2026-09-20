@@ -1,4 +1,6 @@
 import { appCheckFetch } from "../firebaseResources/firebaseResources";
+import { prepareTTSCacheAudio } from "./ttsCacheAudio.js";
+import { createRealtimeTTSConnectionPool } from "./realtimeTTSConnection.js";
 
 const REALTIME_MODEL =
   (import.meta.env?.VITE_REALTIME_MODEL || "gpt-realtime-2.1-mini") + "";
@@ -8,7 +10,24 @@ const REALTIME_URL =
         REALTIME_MODEL,
       )}`
     : "";
-const REALTIME_WARMUP_TTL_MS = 4 * 60 * 1000;
+const realtimeConnections = createRealtimeTTSConnectionPool({
+  url: REALTIME_URL,
+  model: REALTIME_MODEL,
+  exchange: appCheckFetch,
+  createPeer: () => new RTCPeerConnection(),
+  createStream: () => new MediaStream(),
+  setTimer: (fn, delay) => setTimeout(fn, delay),
+  clearTimer: (timer) => clearTimeout(timer),
+  now: () => Date.now(),
+});
+let connectionWarmupEnabled = true;
+
+// The latency harness disables speculative work before measuring fresh sessions.
+// This affects only this page, and never changes the configured app endpoint.
+export function setTTSConnectionWarmupEnabled(enabled) {
+  connectionWarmupEnabled = Boolean(enabled);
+  if (!connectionWarmupEnabled) realtimeConnections.clear();
+}
 
 export const TTS_LANG_TAG = {
   ar: "ar-EG",
@@ -38,6 +57,7 @@ export const LOW_LATENCY_TTS_FORMAT = "wav";
 // Only recordings made after successful generation AND WebRTC playout drain
 // are reusable. Older versions may contain truncated audio; never promote them.
 const REALTIME_CACHE_FORMAT = "realtime-v6";
+const CACHE_AUDIO_PREPARATION_VERSION = 1;
 const REALTIME_CACHE_MIME_TYPES = [
   "audio/webm;codecs=opus",
   "audio/webm",
@@ -203,31 +223,13 @@ function preconnectRealtimeOrigin() {
 }
 
 export function warmRealtimeTTS({ force = false } = {}) {
+  if (!connectionWarmupEnabled) return Promise.resolve(false);
   preconnectRealtimeOrigin();
-
-  if (!REALTIME_URL || typeof fetch === "undefined") {
+  if (!REALTIME_URL || typeof RTCPeerConnection === "undefined" || typeof MediaStream === "undefined" ||
+      (typeof document !== "undefined" && document.hidden)) {
     return Promise.resolve(false);
   }
-
-  const now = Date.now();
-  if (!force && now - lastRealtimeWarmupAt < REALTIME_WARMUP_TTL_MS) {
-    return realtimeWarmupPromise || Promise.resolve(true);
-  }
-
-  lastRealtimeWarmupAt = now;
-  realtimeWarmupPromise = appCheckFetch(REALTIME_URL, {
-    method: "OPTIONS",
-    mode: "cors",
-    cache: "no-store",
-    credentials: "omit",
-  })
-    .then(() => true)
-    .catch(() => false)
-    .finally(() => {
-      realtimeWarmupPromise = null;
-    });
-
-  return realtimeWarmupPromise;
+  return realtimeConnections.warm({ force });
 }
 
 export async function createWarmTTSAudio() {
@@ -282,8 +284,6 @@ async function consumeSharedWarmAudio() {
 // In-memory cache for current session (instant access)
 const memoryCache = new Map();
 let realtimePreconnectStarted = false;
-let realtimeWarmupPromise = null;
-let lastRealtimeWarmupAt = 0;
 let sharedWarmAudioPromise = null;
 
 // IndexedDB configuration
@@ -365,7 +365,7 @@ async function getFromIndexedDB(key) {
       const store = transaction.objectStore(STORE_NAME);
       const request = store.get(key);
 
-      request.onsuccess = () => {
+      request.onsuccess = async () => {
         const result = request.result;
         if (!result) {
           resolve(null);
@@ -380,6 +380,19 @@ async function getFromIndexedDB(key) {
           return;
         }
 
+        // v6 contains complete recordings, but older entries include connection
+        // silence. Repair those once without opening a new OpenAI session.
+        if (result.audioPreparationVersion !== CACHE_AUDIO_PREPARATION_VERSION) {
+          const prepared = await prepareTTSCacheAudio(result.blob);
+          if (prepared.prepared) {
+            await saveToIndexedDB(key, prepared.blob, {
+              timestamp: result.timestamp,
+              audioPreparationVersion: CACHE_AUDIO_PREPARATION_VERSION,
+            });
+          }
+          resolve(prepared.blob);
+          return;
+        }
         resolve(result.blob);
       };
 
@@ -395,7 +408,7 @@ async function getFromIndexedDB(key) {
 /**
  * Save audio blob to IndexedDB
  */
-async function saveToIndexedDB(key, blob) {
+async function saveToIndexedDB(key, blob, metadata = {}) {
   try {
     const db = await openDB();
     if (!db) return;
@@ -406,7 +419,7 @@ async function saveToIndexedDB(key, blob) {
       transaction.oncomplete = resolve;
       transaction.onerror = () => reject(transaction.error);
       transaction.onabort = () => reject(transaction.error);
-      store.put({ key, blob, timestamp: Date.now() });
+      store.put({ key, blob, timestamp: Date.now(), ...metadata });
     });
   } catch (error) {
     console.warn("TTS IndexedDB save failed:", error);
@@ -540,6 +553,9 @@ export async function getTTSPlayer({
   langTag,
   warmAudio,
   disableCache = false,
+  usePreparedConnection = true,
+  onDiagnostic,
+  benchmarkEndpoint,
 } = {}) {
   return getRealtimePlayer({
     text,
@@ -548,6 +564,9 @@ export async function getTTSPlayer({
     langTag,
     warmAudio,
     disableCache,
+    usePreparedConnection,
+    onDiagnostic,
+    benchmarkEndpoint,
   });
 }
 
@@ -558,8 +577,27 @@ async function getRealtimePlayer({
   langTag,
   warmAudio,
   disableCache,
+  usePreparedConnection,
+  onDiagnostic,
+  benchmarkEndpoint,
 }) {
-  if (!REALTIME_URL) throw new Error("Realtime URL not configured");
+  let realtimeUrl = REALTIME_URL;
+  if (benchmarkEndpoint) {
+    if (!import.meta.env.DEV) throw new Error("Endpoint overrides are development-only");
+    const endpoint = new URL(benchmarkEndpoint);
+    const configured = REALTIME_URL ? new URL(REALTIME_URL) : null;
+    const allowed = endpoint.origin === configured?.origin ||
+      endpoint.origin === "https://us-central1-nosabo-30dcb.cloudfunctions.net" ||
+      endpoint.hostname === "nosabos-tts-proxy-staging.robotsbuildingeducation.workers.dev";
+    if (!allowed || endpoint.username || endpoint.password) throw new Error("Unsupported benchmark endpoint");
+    endpoint.searchParams.set("model", REALTIME_MODEL);
+    realtimeUrl = endpoint.href;
+  }
+  if (!realtimeUrl) throw new Error("Realtime URL not configured");
+  const mark = (phase, details = {}) => {
+    try { onDiagnostic?.({ phase, ...details }); } catch { /* Observers cannot break playback. */ }
+  };
+  mark("player-start", { model: REALTIME_MODEL, endpoint: realtimeUrl, cacheEnabled: !disableCache });
 
   const sanitizedVoice = getPreferredTTSVoice(voice);
   const targetLangTag = langTag || TTS_LANG_TAG.es;
@@ -575,14 +613,17 @@ async function getRealtimePlayer({
     const cachedBlob =
       memoryCache.get(cacheKey) || (await getFromIndexedDB(cacheKey));
     if (cachedBlob) {
+      mark("cache-hit");
       memoryCache.set(cacheKey, cachedBlob);
       return createAudioFromBlob(cachedBlob, warmAudio);
     }
   }
 
-  void warmRealtimeTTS();
-
-  const remoteStream = new MediaStream();
+  mark("cache-miss");
+  const warmedConnection = usePreparedConnection && connectionWarmupEnabled && realtimeUrl === REALTIME_URL
+    ? await realtimeConnections.take() : null;
+  mark("connection-selected", { prepared: Boolean(warmedConnection) });
+  const remoteStream = warmedConnection?.stream || new MediaStream();
   // Reuse a pre-warmed Audio element if provided (already unlocked by user
   // gesture on mobile) so that play() works outside a gesture context.
   const audio = warmAudio || (await consumeSharedWarmAudio()) || new Audio();
@@ -614,8 +655,8 @@ async function getRealtimePlayer({
   audio.muted = false;
   audio.volume = 1;
 
-  const pc = new RTCPeerConnection();
-  pc.addTransceiver("audio", { direction: "recvonly" });
+  const pc = warmedConnection?.pc || new RTCPeerConnection();
+  if (!warmedConnection) pc.addTransceiver("audio", { direction: "recvonly" });
 
   let responseSucceeded = false;
   let playbackError = null;
@@ -731,7 +772,6 @@ async function getRealtimePlayer({
   const clearFinalizeTimers = () => {
     clearTimeout(playbackDrainTimer);
     clearTimeout(hardFallbackTimer);
-    clearTimeout(sessionReadyFallbackTimer);
   };
   const finishFinalize = () => {
     if (finalizeResolved) return;
@@ -799,6 +839,7 @@ async function getRealtimePlayer({
         if (!remoteStream.getTracks().includes(track)) remoteStream.addTrack(track);
       });
       startRealtimeCacheRecording();
+      mark("remote-track", { stream: remoteStream });
       resolve();
     };
     pc.oniceconnectionstatechange = () => {
@@ -806,37 +847,39 @@ async function getRealtimePlayer({
         failPlayback(new Error("RTC connection failed"));
       }
     };
+    if (remoteStream.getAudioTracks().length) {
+      startRealtimeCacheRecording();
+      mark("remote-track", { stream: remoteStream });
+      resolve();
+    }
   });
   // Setup can fail before the caller receives the player and awaits ready.
   void ready.catch(() => {});
 
-  const dc = pc.createDataChannel("oai-events");
+  const dc = warmedConnection?.dc || pc.createDataChannel("oai-events");
 
   // Track when we're intentionally ending to prevent spurious error events
   let intentionalEnd = false;
   let cleanupFn = null;
 
-  // Request the narration response only AFTER the session (with its narration
-  // instructions) is confirmed applied via session.updated, so the model never
-  // produces a cold first turn under default conversational behavior (which
-  // leaked an "Understood..." preamble). A timer falls back in case the event
-  // is missed, so this can never hang.
+  // Response-scoped voice/instructions apply atomically with inference. This
+  // removes the prepared session.update/ack round trip without racing defaults.
   let narrationRequested = false;
-  let sessionReadyFallbackTimer = null;
   const requestNarration = () => {
     if (narrationRequested || finalizeResolved) return;
     narrationRequested = true;
-    if (sessionReadyFallbackTimer) {
-      clearTimeout(sessionReadyFallbackTimer);
-      sessionReadyFallbackTimer = null;
-    }
     try {
       dc.send(
         JSON.stringify({
           type: "response.create",
-          response: { output_modalities: ["audio"] },
+          response: {
+            output_modalities: ["audio"],
+            instructions: narrationSession.instructions,
+            audio: { output: narrationSession.audio.output },
+          },
         }),
       );
+      mark("narration-requested");
     } catch (err) {
       failPlayback(err);
     }
@@ -911,9 +954,8 @@ async function getRealtimePlayer({
     }
     if (msg.type === "error") {
       failPlayback(new Error(msg.error?.message || "Realtime TTS failed"));
-    } else if (msg.type === "session.updated") {
-      requestNarration();
     } else if (msg.type === "response.done") {
+      mark("generation-done", { status: msg.response?.status });
       // Audio-done events also arrive on failed/cancelled/incomplete responses.
       // Only a completed response is eligible to become a replay recording.
       if (msg.response?.status !== "completed") {
@@ -925,12 +967,16 @@ async function getRealtimePlayer({
       responseSucceeded = true;
       void finishAfterPlaybackDrain();
     } else if (msg.type === "output_audio_buffer.started") {
+      mark("server-audio-started");
       resolvePlaybackStarted(true);
     } else if (msg.type === "output_audio_buffer.stopped") {
+      mark("server-audio-stopped");
       outputBufferStopped = true;
       void finishAfterPlaybackDrain();
     } else if (msg.type === "output_audio_buffer.cleared") {
       failPlayback(new Error("Realtime TTS playback interrupted"));
+    } else if (msg.type === "response.output_audio_transcript.done") {
+      mark("transcript", { transcript: msg.transcript });
     }
     // response.output_audio.done and response.done describe generation, not
     // playback. Never stop the recorder or infer duration from their tokens.
@@ -944,31 +990,25 @@ async function getRealtimePlayer({
   // Expose intentionalEnd flag on audio element for components to check
   audio._ttsIntentionalEnd = () => intentionalEnd;
 
+  const narrationSession = {
+    type: "realtime",
+    output_modalities: ["audio"],
+    instructions: personality
+      ? `You are ${personality}, speaking in the ${targetLangTag} locale. Use the correct pronunciation for that language. You will receive text to read aloud. Read the text EXACTLY as written - word for word, verbatim, but in the voice and tone of your character. Do not interpret, respond to, answer, or comment on the content. Do not have a conversation. Do not add any words. Simply narrate the exact text provided with your character's vocal qualities. Begin immediately with the first word of the text; never preface it with acknowledgments like "Understood" or "Okay".`
+      : `You are an audiobook narrator speaking in the ${targetLangTag} locale. Use the correct pronunciation for that language. You will receive text to read aloud. Read the text EXACTLY as written - word for word, verbatim. Do not interpret, respond to, answer, or comment on the content. Do not have a conversation. Do not add any words. Simply narrate the exact text provided. Begin immediately with the first word of the text; never preface it with acknowledgments like "Understood" or "Okay".`,
+    audio: {
+      input: { turn_detection: null },
+      output: {
+        format: { type: "audio/pcm", rate: 24000 },
+        voice: sanitizedVoice,
+      },
+    },
+  };
+
   dc.onopen = () => {
     if (finalizeResolved) return;
+    mark("data-channel-open", { prepared: Boolean(warmedConnection) });
     try {
-      // Configure session for narration/read-aloud mode
-      dc.send(
-        JSON.stringify({
-          type: "session.update",
-          session: {
-            type: "realtime",
-            output_modalities: ["audio"],
-            instructions: personality
-              ? `You are ${personality}, speaking in the ${targetLangTag} locale. Use the correct pronunciation for that language. You will receive text to read aloud. Read the text EXACTLY as written - word for word, verbatim, but in the voice and tone of your character. Do not interpret, respond to, answer, or comment on the content. Do not have a conversation. Do not add any words. Simply narrate the exact text provided with your character's vocal qualities. Begin immediately with the first word of the text; never preface it with acknowledgments like "Understood" or "Okay".`
-              : `You are an audiobook narrator speaking in the ${targetLangTag} locale. Use the correct pronunciation for that language. You will receive text to read aloud. Read the text EXACTLY as written - word for word, verbatim. Do not interpret, respond to, answer, or comment on the content. Do not have a conversation. Do not add any words. Simply narrate the exact text provided. Begin immediately with the first word of the text; never preface it with acknowledgments like "Understood" or "Okay".`,
-            audio: {
-              input: {
-                turn_detection: null,
-              },
-              output: {
-                format: { type: "audio/pcm", rate: 24000 },
-                voice: sanitizedVoice,
-              },
-            },
-          },
-        }),
-      );
       // Send text as content to narrate
       dc.send(
         JSON.stringify({
@@ -985,27 +1025,36 @@ async function getRealtimePlayer({
           },
         }),
       );
-      // Do NOT request the response yet. Wait for the session.updated event
-      // (handled in dc.onmessage) so the narration instructions are guaranteed
-      // to be active for the model's first and only turn. The fallback timer
-      // fires the request if that event is somehow missed, so we never hang.
-      sessionReadyFallbackTimer = setTimeout(requestNarration, 500);
+      requestNarration();
     } catch (err) {
       failPlayback(err);
     }
   };
 
   try {
-    const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
-    const resp = await appCheckFetch(REALTIME_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/sdp" },
-      body: offer.sdp,
-    });
-    const answer = await resp.text();
-    if (!resp.ok) throw new Error(`SDP exchange failed: ${resp.status}`);
-    await pc.setRemoteDescription({ type: "answer", sdp: answer });
+    if (warmedConnection) {
+      dc.onopen();
+    } else {
+      mark("offer-start");
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      mark("offer-ready");
+      const resp = await appCheckFetch(realtimeUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sdp: offer.sdp, model: REALTIME_MODEL, session: narrationSession }),
+      }, { onTiming: (event) => mark(event.phase, event) });
+      const answer = await resp.text();
+      mark("sdp-answer", {
+        status: resp.status,
+        serverTiming: resp.headers?.get("Server-Timing"),
+        runtime: resp.headers?.get("X-TTS-Runtime"),
+        appCheck: resp.headers?.get("X-TTS-AppCheck"),
+        colo: resp.headers?.get("X-TTS-Colo"),
+      });
+      if (!resp.ok) throw new Error(`SDP exchange failed: ${resp.status}`);
+      await pc.setRemoteDescription({ type: "answer", sdp: answer });
+    }
   } catch (error) {
     failPlayback(error);
     await finalize;
@@ -1020,6 +1069,9 @@ async function getRealtimePlayer({
   };
   if (!finalizeResolved) registerActiveTTSPlayer(audio, cleanupFn);
   audio._ttsCleanup = cleanupFn;
+  // Prepare the next unused connection while this narration plays. Each player
+  // still owns and closes its own connection, so voices/history never leak.
+  if (usePreparedConnection && typeof window !== "undefined") void warmRealtimeTTS();
 
   return {
     audio,
@@ -1138,14 +1190,15 @@ if (typeof window !== "undefined") {
     cleanupExpiredCache();
   }, 5000);
 
-  preconnectRealtimeOrigin();
   const warmRealtimeWhenIdle = () => {
     void warmRealtimeTTS();
   };
+  let idleCallback = null;
+  let idleTimer = null;
   if (typeof window.requestIdleCallback === "function") {
-    window.requestIdleCallback(warmRealtimeWhenIdle, { timeout: 2500 });
+    idleCallback = window.requestIdleCallback(warmRealtimeWhenIdle, { timeout: 1000 });
   } else {
-    setTimeout(warmRealtimeWhenIdle, 1500);
+    idleTimer = setTimeout(warmRealtimeWhenIdle, 250);
   }
 
   const primeFromGesture = () => {
@@ -1154,14 +1207,30 @@ if (typeof window !== "undefined") {
   };
   window.addEventListener("pointerdown", primeFromGesture, {
     capture: true,
-    once: true,
     passive: true,
   });
   window.addEventListener("touchstart", primeFromGesture, {
     capture: true,
-    once: true,
     passive: true,
   });
+  const releasePreparedConnection = () => realtimeConnections.clear();
+  const handleVisibility = () => {
+    if (document.hidden) releasePreparedConnection();
+    else void warmRealtimeTTS();
+  };
+  window.addEventListener("pagehide", releasePreparedConnection);
+  document.addEventListener("visibilitychange", handleVisibility);
+  if (import.meta.hot) {
+    import.meta.hot.dispose(() => {
+      releasePreparedConnection();
+      clearTimeout(idleTimer);
+      if (idleCallback !== null) window.cancelIdleCallback?.(idleCallback);
+      window.removeEventListener("pointerdown", primeFromGesture, true);
+      window.removeEventListener("touchstart", primeFromGesture, true);
+      window.removeEventListener("pagehide", releasePreparedConnection);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    });
+  }
 }
 
 const blobUrlCache = new WeakMap();
@@ -1177,8 +1246,11 @@ function getOrCreateBlobUrl(blob) {
 }
 
 async function addToCache(cacheKey, blob) {
-  memoryCache.set(cacheKey, blob);
-  await saveToIndexedDB(cacheKey, blob);
+  const prepared = await prepareTTSCacheAudio(blob);
+  memoryCache.set(cacheKey, prepared.blob);
+  await saveToIndexedDB(cacheKey, prepared.blob, {
+    audioPreparationVersion: prepared.prepared ? CACHE_AUDIO_PREPARATION_VERSION : 0,
+  });
 }
 
 function createAudioFromBlob(blob, warmAudio = null) {

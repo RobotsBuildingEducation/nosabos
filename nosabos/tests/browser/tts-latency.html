@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" />
+  <title>TTS latency comparison</title>
+  <style>
+    body { font: 16px system-ui; max-width: 1100px; margin: 32px auto; padding: 16px; }
+    label { display: block; margin: 12px 0; }
+    input, textarea { box-sizing: border-box; width: 100%; padding: 8px; }
+    button, select { padding: 10px; margin: 4px 8px 4px 0; }
+    table { border-collapse: collapse; width: 100%; font-size: 14px; margin: 20px 0; }
+    td, th { padding: 8px; border-bottom: 1px solid #ccc; text-align: left; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; background: #f4f4f4; padding: 16px; }
+    .notice { padding: 12px; background: #fff3cd; }
+  </style>
+  <h1>TTS latency comparison</h1>
+  <p class="notice">Local workerd measurements do not measure Cloudflare's edge. Use a deployed staging Worker for that comparison. This page changes no app settings and deploys nothing. Each run requests a paid OpenAI narration.</p>
+  <p>Both endpoints use the app's current player, identical text/model/voice, a new WebRTC connection, and no cache reads, recording, or re-encoding. Background connection preparation is disabled on this page. “New connection” does not mean the server or its HTTP connections are cold.</p>
+  <label>A — Cloudflare / configured endpoint <input id="endpoint-a" /></label>
+  <label>B — Firebase comparison endpoint <input id="endpoint-b" value="https://us-central1-nosabo-30dcb.cloudfunctions.net/exchangeRealtimeSDP" /></label>
+  <label>Text (kept identical throughout a batch)<textarea id="text" rows="2">Esta es una prueba de velocidad. La última palabra es mariposa.</textarea></label>
+  <label>Voice <select id="voice"><option>alloy</option><option>cedar</option><option>shimmer</option></select></label>
+  <p id="configuration"></p>
+  <button id="run-a">Run A</button><button id="run-b">Run B</button>
+  <button id="run-both">Run 4 balanced A/B trials</button>
+  <button id="stop" disabled>Stop</button><button id="export">Export measurements</button>
+  <p>Keep this tab visible. Run several batches on the same device/network. Compare median and p95; keep the first attempt and all errors. Do not compare a prepared connection against a new connection. Authentication differences are reported, not silently disabled.</p>
+  <p>First audio = first decoded stream samples above −60 dBFS, sampled about every 20 ms. This is an approximation before speaker/output-device latency. “Server start” is a separate OpenAI event, not proof that sound has reached the speakers. HTTP includes browser CORS preflight, transit, server work, and response download.</p>
+  <table><thead><tr><th>Trial</th><th>Result</th><th>App Check token</th><th>SDP HTTP</th><th>WebRTC setup</th><th>Generation → samples</th><th>First audio</th></tr></thead><tbody id="rows"></tbody></table>
+  <pre id="summary">No measurements yet.</pre>
+  <pre id="log" aria-live="polite">Ready</pre>
+  <script type="module" src="./tts-latency.js"></script>
+</html>

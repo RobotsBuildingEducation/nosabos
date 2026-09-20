@@ -3,17 +3,20 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import vm from "node:vm";
 import { createStoryAudio } from "../features/stories/storyAudio.js";
+import { prepareTTSCacheAudio } from "./ttsCacheAudio.js";
+import { createRealtimeTTSConnectionPool } from "./realtimeTTSConnection.js";
 
 // Execute the real player with controllable browser/media APIs. Only Firebase
 // and Vite's environment binding are replaced; completion/cache code is intact.
 const source = readFileSync(new URL("./tts.js", import.meta.url), "utf8")
-  .replace(/^import .*;\n/, "")
-  .replaceAll("import.meta.env", '({ VITE_REALTIME_URL: "https://tts.test/rtc" })')
+  .replace(/^import .*;\n/gm, "")
+  .replaceAll("import.meta.env", '({ DEV: true, VITE_REALTIME_URL: "https://tts.test/rtc" })')
+  .replaceAll("import.meta.hot", "undefined")
   .replaceAll("export ", "");
 const options = { text: "Lee esta frase completa hasta la última palabra.", voice: "alloy", langTag: "es-MX" };
 const flush = async () => { for (let i = 0; i < 30; i++) await Promise.resolve(); };
 
-function harness({ stored = new Map(), setupFails = false, noTracks = false, stats = new Map(), recorderFails = false, storageFails = false } = {}) {
+function harness({ stored = new Map(), setupFails = false, noTracks = false, stats = new Map(), recorderFails = false, storageFails = false, prepareCache = prepareTTSCacheAudio } = {}) {
   let now = 10000;
   let nextTimer = 0;
   const timers = new Map();
@@ -21,6 +24,7 @@ function harness({ stored = new Map(), setupFails = false, noTracks = false, sta
   const recorders = [];
   const urls = new Map();
   let posts = 0;
+  const requests = [];
   class Audio extends EventTarget {
     currentTime = 0;
     paused = true;
@@ -72,9 +76,10 @@ function harness({ stored = new Map(), setupFails = false, noTracks = false, sta
     connectionState = "connected";
     track = new Track();
     channel = {
+      readyState: "connecting",
       sent: [],
       send: (message) => this.channel.sent.push(JSON.parse(message)),
-      close: () => this.channel.onclose?.(),
+      close: () => { this.channel.readyState = "closed"; this.channel.onclose?.(); },
     };
     constructor() { peers.push(this); }
     addTransceiver() {}
@@ -83,6 +88,7 @@ function harness({ stored = new Map(), setupFails = false, noTracks = false, sta
     async setLocalDescription() {}
     async setRemoteDescription() {
       if (!noTracks) this.ontrack({ streams: [], track: this.track });
+      this.channel.readyState = "open";
       this.channel.onopen();
     }
     async getStats() { return stats; }
@@ -121,19 +127,21 @@ function harness({ stored = new Map(), setupFails = false, noTracks = false, sta
   };
   const context = vm.createContext({
     Audio, MediaStream, MediaRecorder, RTCPeerConnection, indexedDB, Blob, Event,
+    prepareTTSCacheAudio: prepareCache,
+    createRealtimeTTSConnectionPool,
     Date: class extends Date { static now() { return now; } },
-    URL: { createObjectURL(blob) { const url = `blob:test-${urls.size}`; urls.set(url, blob); return url; } },
+    URL: class extends URL { static createObjectURL(blob) { const url = `blob:test-${urls.size}`; urls.set(url, blob); return url; } },
     console: { warn() {} },
     setTimeout(fn, delay) { const id = ++nextTimer; timers.set(id, { fn, at: now + delay }); return id; },
     clearTimeout(id) { timers.delete(id); },
     appCheckFetch: async (_url, request) => {
-      if (request.method === "POST") posts++;
+      if (request.method === "POST") { posts++; requests.push({ ...request, url: _url }); }
       return { ok: !setupFails, status: 502, text: async () => "answer" };
     },
   });
-  vm.runInContext(`${source}\nglobalThis.api = { getTTSPlayer, isCached, stopAllTTSPlayback };`, context);
+  vm.runInContext(`${source}\nglobalThis.api = { getTTSPlayer, isCached, stopAllTTSPlayback, warmRealtimeTTS, setTTSConnectionWarmupEnabled, clearPreparedConnection: () => realtimeConnections.clear() };`, context);
   return {
-    api: context.api, peers, recorders, stored, urls, timers,
+    api: context.api, peers, recorders, stored, urls, timers, requests,
     get posts() { return posts; },
     send(message) { peers.at(-1).channel.onmessage({ data: JSON.stringify(message) }); },
     async advance(ms) {
@@ -162,6 +170,218 @@ async function start(h, opts = options) {
   h.send({ type: "session.updated" });
   return player;
 }
+
+test("narration is configured at call creation and starts without waiting for session.updated", async () => {
+  const h = harness();
+  const player = await h.api.getTTSPlayer({ ...options, personality: "a wise toad" });
+  const request = h.requests[0];
+  assert.equal(request.headers["Content-Type"], "application/json");
+  const { sdp, session, model } = JSON.parse(request.body);
+  assert.equal(sdp, "offer");
+  assert.equal(model, "gpt-realtime-2.1-mini");
+  assert.equal(session.audio.output.voice, "alloy");
+  assert.equal(session.audio.input.turn_detection, null);
+  assert.match(session.instructions, /a wise toad/);
+  assert.match(session.instructions, /es-MX/);
+  assert.match(session.instructions, /EXACTLY as written/);
+  assert.deepEqual(h.peers[0].channel.sent.map((event) => event.type), ["conversation.item.create", "response.create"]);
+  h.send({ type: "session.updated" });
+  assert.equal(h.peers[0].channel.sent.filter((event) => event.type === "response.create").length, 1);
+  player.cleanup();
+  await player.finalize;
+});
+
+test("preparation opens receive-only transport without generating audio, and first play consumes it", async () => {
+  const h = harness();
+  assert.equal(await h.api.warmRealtimeTTS(), true);
+  assert.equal(await h.api.warmRealtimeTTS(), true);
+  assert.equal(h.posts, 1, "Repeated warmups share one prepared connection");
+  assert.equal(h.recorders.length, 0, "Idle silence is not recorded");
+  assert.equal(h.peers[0].channel.sent.length, 0, "No text or response is sent while warming");
+  assert.equal(JSON.parse(h.requests[0].body).session.audio.input.turn_detection, null);
+  const player = await h.api.getTTSPlayer({ ...options, voice: "cedar", personality: "a friendly narrator" });
+  await player.ready;
+  assert.equal(h.posts, 1, "Pressing Play does not perform another handshake");
+  const messages = h.peers[0].channel.sent;
+  assert.equal(messages[0].type, "conversation.item.create");
+  assert.equal(messages[1].type, "response.create");
+  assert.equal(messages[1].response.audio.output.voice, "cedar");
+  assert.match(messages[1].response.instructions, /friendly narrator/);
+  assert.match(messages[1].response.instructions, /es-MX/);
+  assert.equal(messages.some((event) => event.type === "session.update"), false);
+  h.send({ type: "session.updated" });
+  assert.equal(messages.filter((event) => event.type === "response.create").length, 1);
+  h.recorders[0].finalChunk = "complete narration ".repeat(100);
+  h.send(generated); h.send(drained); await h.advance(1000);
+  await player.finalize;
+  assert.equal(h.peers[0].track.stopped, true);
+  assert.equal(h.timers.size, 0);
+});
+
+test("concurrent players cannot claim the same prepared connection or share voices", async () => {
+  const h = harness();
+  await h.api.warmRealtimeTTS();
+  const players = await Promise.all([
+    h.api.getTTSPlayer({ ...options, voice: "cedar" }),
+    h.api.getTTSPlayer({ ...options, voice: "coral", text: "A different line" }),
+  ]);
+  assert.equal(h.peers.length, 2);
+  assert.equal(h.posts, 2);
+  assert.equal(h.peers[0].channel.sent[1].response.audio.output.voice, "cedar");
+  assert.equal(JSON.parse(h.requests[1].body).session.audio.output.voice, "coral");
+  players.forEach((player) => player.cleanup());
+  await Promise.all(players.map((player) => player.finalize));
+  assert.equal(h.peers.every((peer) => peer.track.stopped), true);
+  assert.equal(h.timers.size, 0);
+});
+
+test("cached playback leaves the prepared connection available for a different uncached phrase", async () => {
+  const h = harness();
+  const generatedPlayer = await start(h);
+  h.recorders[0].finalChunk = "complete narration ".repeat(100);
+  h.send(generated); h.send(drained); await h.advance(1000); await generatedPlayer.finalize;
+  await h.api.warmRealtimeTTS();
+  const replay = await h.api.getTTSPlayer(options);
+  assert.ok(replay.audioUrl);
+  replay.cleanup();
+  const next = await h.api.getTTSPlayer({ ...options, text: "Another uncached phrase" });
+  assert.equal(h.posts, 2);
+  assert.equal(h.peers.length, 2);
+  assert.equal(h.peers[1].channel.sent[1].type, "response.create");
+  next.cleanup(); await next.finalize;
+});
+
+test("an unused prepared connection expires and disconnects without producing speech", async () => {
+  const h = harness();
+  await h.api.warmRealtimeTTS();
+  await h.advance(4 * 60 * 1000);
+  assert.equal(h.peers[0].connectionState, "closed");
+  assert.equal(h.peers[0].track.stopped, true);
+  assert.equal(h.peers[0].channel.sent.length, 0);
+  assert.equal(h.timers.size, 0);
+  const player = await h.api.getTTSPlayer(options);
+  assert.equal(h.posts, 2);
+  player.cleanup(); await player.finalize;
+});
+
+test("a failed warmup is released and does not cause a retry storm", async () => {
+  const h = harness({ setupFails: true });
+  assert.equal(await h.api.warmRealtimeTTS(), false);
+  assert.equal(await h.api.warmRealtimeTTS(), false);
+  assert.equal(h.posts, 1);
+  assert.equal(h.peers[0].connectionState, "closed");
+  assert.equal(h.timers.size, 0);
+});
+
+test("visibility/page cleanup closes unused transport and aborts a pending preparation", async () => {
+  const ready = harness();
+  await ready.api.warmRealtimeTTS();
+  ready.api.clearPreparedConnection();
+  assert.equal(ready.peers[0].track.stopped, true);
+  assert.equal(ready.peers[0].connectionState, "closed");
+  assert.equal(ready.timers.size, 0);
+  const pending = harness({ noTracks: true });
+  const preparation = pending.api.warmRealtimeTTS();
+  await flush();
+  pending.api.clearPreparedConnection();
+  assert.equal(await preparation, false);
+  assert.equal(pending.requests[0].signal.aborted, true);
+  assert.equal(pending.peers[0].connectionState, "closed");
+  assert.equal(pending.timers.size, 0);
+});
+
+test("preparation times out when media never arrives and an in-flight connection can be claimed only once", async () => {
+  const pending = harness({ noTracks: true });
+  const preparation = pending.api.warmRealtimeTTS();
+  await pending.advance(15000);
+  assert.equal(await preparation, false);
+  assert.equal(pending.requests[0].signal.aborted, true);
+  assert.equal(pending.timers.size, 0);
+  const h = harness();
+  const warming = h.api.warmRealtimeTTS();
+  const player = await h.api.getTTSPlayer(options);
+  assert.equal(await warming, true);
+  assert.equal(h.posts, 1);
+  assert.equal(h.peers[0].channel.sent[1].type, "response.create");
+  player.cleanup(); await player.finalize;
+  assert.equal(h.timers.size, 0);
+});
+
+test("prepared narration sends its settings atomically without requiring an acknowledgement", async () => {
+  const h = harness();
+  await h.api.warmRealtimeTTS();
+  const player = await h.api.getTTSPlayer({ ...options, voice: "shimmer", personality: "a bubbly companion" });
+  await h.advance(5000);
+  const responses = h.peers[0].channel.sent.filter((event) => event.type === "response.create");
+  assert.equal(responses.length, 1);
+  assert.equal(responses[0].response.audio.output.voice, "shimmer");
+  assert.match(responses[0].response.instructions, /bubbly companion/);
+  assert.equal(h.stored.size, 0);
+  player.cleanup(); await player.finalize;
+  assert.equal(h.timers.size, 0);
+});
+
+test("benchmark bypasses prepared transport, all cache work, and does not change the app endpoint", async () => {
+  let cacheWork = 0;
+  const h = harness({ prepareCache: async (blob) => { cacheWork++; return { blob, prepared: true }; } });
+  await h.api.warmRealtimeTTS();
+  h.api.setTTSConnectionWarmupEnabled(false);
+  assert.equal(h.peers[0].connectionState, "closed");
+  assert.equal(await h.api.warmRealtimeTTS({ force: true }), false);
+  const events = [];
+  const player = await h.api.getTTSPlayer({
+    ...options, disableCache: true, usePreparedConnection: false,
+    benchmarkEndpoint: "https://us-central1-nosabo-30dcb.cloudfunctions.net/exchangeRealtimeSDP",
+    onDiagnostic: (event) => events.push(event),
+  });
+  assert.match(h.requests[1].url, /cloudfunctions.net/);
+  assert.equal(events.find((event) => event.phase === "connection-selected").prepared, false);
+  h.send(generated); h.send(drained); await h.advance(1000); await player.finalize;
+  assert.equal(h.posts, 2);
+  assert.equal(h.recorders.length, 0);
+  assert.equal(cacheWork, 0);
+  assert.equal(h.stored.size, 0);
+  assert.ok(events.some((event) => event.phase === "narration-requested"));
+  const next = await h.api.getTTSPlayer({ ...options, onDiagnostic: () => { throw new Error("observer"); } });
+  assert.match(h.requests[2].url, /^https:\/\/tts.test\//);
+  next.cleanup(); await next.finalize;
+  await assert.rejects(h.api.getTTSPlayer({ ...options, benchmarkEndpoint: "https://untrusted.test" }), /Unsupported/);
+});
+
+test("an old complete v6 cache entry is repaired once with no new connection or TTL extension", async () => {
+  const key = `v2::realtime-v6::es-MX::alloy::::${options.text}`;
+  const stored = new Map([[key, { key, blob: new Blob(["old silence and speech"]), timestamp: 9000 }]]);
+  let repairs = 0;
+  const prepareCache = async () => { repairs++; return { blob: new Blob(["speech only"], { type: "audio/wav" }), prepared: true }; };
+  const h = harness({ stored, prepareCache });
+  const player = await h.api.getTTSPlayer(options);
+  assert.equal(h.posts, 0);
+  assert.equal(await h.urls.get(player.audioUrl).text(), "speech only");
+  assert.equal(stored.get(key).timestamp, 9000);
+  assert.equal(stored.get(key).audioPreparationVersion, 1);
+  player.cleanup();
+  const reloaded = harness({ stored, prepareCache });
+  const replay = await reloaded.api.getTTSPlayer(options);
+  assert.equal(repairs, 1);
+  assert.equal(reloaded.posts, 0);
+  replay.cleanup();
+});
+
+test("new completed recordings are prepared before caching and cache repair failures preserve playback", async () => {
+  let prepared = 0;
+  const h = harness({ prepareCache: async (blob) => { prepared++; return { blob, prepared: true }; } });
+  const player = await start(h);
+  h.recorders[0].finalChunk = "complete recording ".repeat(100);
+  h.send(generated); h.send(drained); await h.advance(1000);
+  await player.finalize;
+  assert.equal(prepared, 1);
+  assert.equal([...h.stored.values()][0].audioPreparationVersion, 1);
+  const fallback = harness({ stored: new Map([...h.stored].map(([key, entry]) => [key, { ...entry, audioPreparationVersion: 0 }])), prepareCache: async (blob) => ({ blob, prepared: false }) });
+  const replay = await fallback.api.getTTSPlayer(options);
+  assert.equal(fallback.posts, 0);
+  assert.equal(await fallback.urls.get(replay.audioUrl).text(), "complete recording ".repeat(100));
+  replay.cleanup();
+});
 
 test("generation completion and a stalled media clock cannot truncate playback or its replay", async () => {
   const h = harness();
