@@ -128,7 +128,9 @@ function buildRealtimeSessionConfig(model) {
 exports.exchangeRealtimeSDP = onRequest(
   {
     region: REGION,
-    minInstances: 1,
+    // Cloudflare serves new clients; keep this endpoint for older app versions
+    // without reserving an idle Firebase instance.
+    minInstances: 0,
     maxInstances: 5,
     concurrency: 80,
     cors: false, // manual CORS

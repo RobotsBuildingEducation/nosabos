@@ -16,6 +16,7 @@ const realtimeConnections = createRealtimeTTSConnectionPool({
   exchange: appCheckFetch,
   createPeer: () => new RTCPeerConnection(),
   createStream: () => new MediaStream(),
+  createAudio: () => new Audio(),
   setTimer: (fn, delay) => setTimeout(fn, delay),
   clearTimer: (timer) => clearTimeout(timer),
   now: () => Date.now(),
@@ -588,7 +589,8 @@ async function getRealtimePlayer({
     const configured = REALTIME_URL ? new URL(REALTIME_URL) : null;
     const allowed = endpoint.origin === configured?.origin ||
       endpoint.origin === "https://us-central1-nosabo-30dcb.cloudfunctions.net" ||
-      endpoint.hostname === "nosabos-tts-proxy-staging.robotsbuildingeducation.workers.dev";
+      endpoint.hostname === "nosabos-tts-proxy-staging.robotsbuildingeducation.workers.dev" ||
+      endpoint.hostname === "nosabos-tts-proxy.robotsbuildingeducation.workers.dev";
     if (!allowed || endpoint.username || endpoint.password) throw new Error("Unsupported benchmark endpoint");
     endpoint.searchParams.set("model", REALTIME_MODEL);
     realtimeUrl = endpoint.href;
@@ -654,6 +656,9 @@ async function getRealtimePlayer({
   audio.playsInline = true;
   audio.muted = false;
   audio.volume = 1;
+  // The prepared stream was consumed silently while idle. Hand it off only
+  // after the real playback element is attached, preserving its live position.
+  warmedConnection?.releaseWarmAudio();
 
   const pc = warmedConnection?.pc || new RTCPeerConnection();
   if (!warmedConnection) pc.addTransceiver("audio", { direction: "recvonly" });

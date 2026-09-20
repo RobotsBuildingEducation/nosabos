@@ -7,6 +7,7 @@ export function createRealtimeTTSConnectionPool({
   exchange,
   createPeer = () => new RTCPeerConnection(),
   createStream = () => new MediaStream(),
+  createAudio = () => new Audio(),
   setTimer = setTimeout,
   clearTimer = clearTimeout,
   now = Date.now,
@@ -25,6 +26,13 @@ export function createRealtimeTTSConnectionPool({
     let settled = false;
     let closed = false;
     let deadline;
+    let warmAudio = null;
+    const releaseWarmAudio = () => {
+      if (!warmAudio) return;
+      const audio = warmAudio;
+      warmAudio = null;
+      try { audio.pause(); audio.srcObject = null; } catch { /* Best-effort media cleanup. */ }
+    };
     let resolveReady;
     let rejectReady;
     const ready = new Promise((resolve, reject) => { resolveReady = resolve; rejectReady = reject; });
@@ -41,6 +49,7 @@ export function createRealtimeTTSConnectionPool({
       expiry: null,
       claimed: false,
       detach,
+      releaseWarmAudio,
       close() {
         if (closed) return;
         closed = true;
@@ -48,6 +57,7 @@ export function createRealtimeTTSConnectionPool({
         clearTimer(connection.expiry);
         detach();
         controller.abort();
+        releaseWarmAudio();
         dc.close();
         pc.close();
         stream.getTracks().forEach((track) => track.stop());
@@ -57,7 +67,13 @@ export function createRealtimeTTSConnectionPool({
         }
       },
     };
-    const fail = () => connection.close();
+    const fail = () => {
+      if (!connection.claimed) {
+        if (idle === connection) idle = null;
+        retryAt = now() + 30000;
+      }
+      connection.close();
+    };
     const checkReady = () => {
       if (!settled && dc.readyState === "open" && stream.getAudioTracks().length) {
         settled = true;
@@ -71,6 +87,24 @@ export function createRealtimeTTSConnectionPool({
       tracks.filter(Boolean).forEach((track) => {
         if (!stream.getTracks().includes(track)) stream.addTrack(track);
       });
+      // An idle receiver still gets RTP silence. Without a consumer Chrome can
+      // queue it until Play, adding seconds of delay to an already-ready call.
+      // Consume silently while idle; no speech is requested or microphone used.
+      if (!warmAudio) {
+        try {
+          warmAudio = createAudio();
+          warmAudio.muted = true;
+          warmAudio.autoplay = true;
+          warmAudio.playsInline = true;
+          warmAudio.srcObject = stream;
+          const audio = warmAudio;
+          void audio.play()?.catch(() => {
+            // Detaching during handoff can reject a pending play() with
+            // AbortError. It must not close the now-active player's transport.
+            if (warmAudio === audio) fail();
+          });
+        } catch { fail(); }
+      }
       checkReady();
     };
     pc.onconnectionstatechange = () => {
@@ -130,7 +164,9 @@ export function createRealtimeTTSConnectionPool({
           return Promise.resolve(false);
         }
       }
-      return idle.ready.then(() => true, () => false);
+      const connection = idle;
+      return connection.ready.then(() => connection.dc.readyState === "open" &&
+        !["closed", "failed", "disconnected"].includes(connection.pc.connectionState), () => false);
     },
     async take() {
       const connection = idle;

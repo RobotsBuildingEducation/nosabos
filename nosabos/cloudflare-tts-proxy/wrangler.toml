@@ -5,6 +5,9 @@ account_id = "cfe53a18a4894aa8e5c2fe91af905d8a"
 workers_dev = true
 preview_urls = false
 
+[observability]
+enabled = true
+
 [vars]
 ALLOWED_ORIGINS = "https://piyali.app,https://www.piyali.app,https://nosabos.app,https://www.nosabos.app,https://nosabo-30dcb.web.app,https://nosabo-30dcb.firebaseapp.com,http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000"
 ALLOWED_MODELS = "gpt-realtime-2.1-mini"

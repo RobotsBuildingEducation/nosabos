@@ -16,23 +16,29 @@ const source = readFileSync(new URL("./tts.js", import.meta.url), "utf8")
 const options = { text: "Lee esta frase completa hasta la última palabra.", voice: "alloy", langTag: "es-MX" };
 const flush = async () => { for (let i = 0; i < 30; i++) await Promise.resolve(); };
 
-function harness({ stored = new Map(), setupFails = false, noTracks = false, stats = new Map(), recorderFails = false, storageFails = false, prepareCache = prepareTTSCacheAudio } = {}) {
+function harness({ stored = new Map(), setupFails = false, noTracks = false, stats = new Map(), recorderFails = false, storageFails = false, mutedAutoplayFails = false, mutedPlayPending = false, prepareCache = prepareTTSCacheAudio } = {}) {
   let now = 10000;
   let nextTimer = 0;
   const timers = new Map();
   const peers = [];
   const recorders = [];
+  const audios = [];
   const urls = new Map();
   let posts = 0;
   const requests = [];
   class Audio extends EventTarget {
+    constructor() { super(); audios.push(this); }
     currentTime = 0;
     paused = true;
     ended = false;
     removeAttribute() {}
     load() {}
     pause() { this.paused = true; }
-    async play() { this.paused = false; this.dispatchEvent(new Event("playing")); }
+    async play() {
+      if (this.muted && mutedAutoplayFails) throw new Error("Muted autoplay blocked");
+      this.paused = false; this.dispatchEvent(new Event("playing"));
+      if (this.muted && mutedPlayPending) return new Promise((resolve, reject) => { this.rejectPlay = reject; });
+    }
     dispatchEvent(event) {
       super.dispatchEvent(event);
       this[`on${event.type}`]?.(event);
@@ -141,7 +147,7 @@ function harness({ stored = new Map(), setupFails = false, noTracks = false, sta
   });
   vm.runInContext(`${source}\nglobalThis.api = { getTTSPlayer, isCached, stopAllTTSPlayback, warmRealtimeTTS, setTTSConnectionWarmupEnabled, clearPreparedConnection: () => realtimeConnections.clear() };`, context);
   return {
-    api: context.api, peers, recorders, stored, urls, timers, requests,
+    api: context.api, peers, recorders, audios, stored, urls, timers, requests,
     get posts() { return posts; },
     send(message) { peers.at(-1).channel.onmessage({ data: JSON.stringify(message) }); },
     async advance(ms) {
@@ -198,9 +204,16 @@ test("preparation opens receive-only transport without generating audio, and fir
   assert.equal(h.posts, 1, "Repeated warmups share one prepared connection");
   assert.equal(h.recorders.length, 0, "Idle silence is not recorded");
   assert.equal(h.peers[0].channel.sent.length, 0, "No text or response is sent while warming");
+  const idleAudio = h.audios[0];
+  assert.equal(idleAudio.muted, true, "Idle RTP silence is consumed without audible playback");
+  assert.equal(idleAudio.paused, false);
+  assert.equal(idleAudio.srcObject.getAudioTracks()[0], h.peers[0].track);
   assert.equal(JSON.parse(h.requests[0].body).session.audio.input.turn_detection, null);
   const player = await h.api.getTTSPlayer({ ...options, voice: "cedar", personality: "a friendly narrator" });
   await player.ready;
+  assert.equal(idleAudio.paused, true);
+  assert.equal(idleAudio.srcObject, null, "Release the silent consumer after handoff");
+  assert.equal(h.peers[0].track.stopped, false, "Handoff must not stop the active audio track");
   assert.equal(h.posts, 1, "Pressing Play does not perform another handshake");
   const messages = h.peers[0].channel.sent;
   assert.equal(messages[0].type, "conversation.item.create");
@@ -258,6 +271,8 @@ test("an unused prepared connection expires and disconnects without producing sp
   assert.equal(h.peers[0].connectionState, "closed");
   assert.equal(h.peers[0].track.stopped, true);
   assert.equal(h.peers[0].channel.sent.length, 0);
+  assert.equal(h.audios[0].paused, true);
+  assert.equal(h.audios[0].srcObject, null);
   assert.equal(h.timers.size, 0);
   const player = await h.api.getTTSPlayer(options);
   assert.equal(h.posts, 2);
@@ -271,6 +286,34 @@ test("a failed warmup is released and does not cause a retry storm", async () =>
   assert.equal(h.posts, 1);
   assert.equal(h.peers[0].connectionState, "closed");
   assert.equal(h.timers.size, 0);
+});
+
+test("blocked muted autoplay discards the unused connection and preserves on-demand playback", async () => {
+  const h = harness({ mutedAutoplayFails: true });
+  assert.equal(await h.api.warmRealtimeTTS(), false);
+  assert.equal(await h.api.warmRealtimeTTS(), false);
+  assert.equal(h.posts, 1, "Autoplay failure observes the retry cooldown");
+  assert.equal(h.peers[0].track.stopped, true);
+  assert.equal(h.audios[0].srcObject, null);
+  const player = await h.api.getTTSPlayer(options);
+  await player.ready;
+  assert.equal(h.posts, 2);
+  assert.equal(h.peers[1].channel.sent[1].type, "response.create");
+  player.cleanup(); await player.finalize;
+});
+
+test("detaching an idle sink with a pending play promise cannot close the claimed transport", async () => {
+  const h = harness({ mutedPlayPending: true });
+  assert.equal(await h.api.warmRealtimeTTS(), true);
+  const idleAudio = h.audios[0];
+  const player = await h.api.getTTSPlayer(options);
+  await player.ready;
+  idleAudio.rejectPlay(new Error("AbortError: playback interrupted by pause"));
+  await flush();
+  assert.equal(h.peers[0].connectionState, "connected");
+  assert.equal(h.peers[0].track.stopped, false);
+  player.cleanup(); await player.finalize;
+  assert.equal(h.peers[0].track.stopped, true);
 });
 
 test("visibility/page cleanup closes unused transport and aborts a pending preparation", async () => {

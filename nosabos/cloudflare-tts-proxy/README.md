@@ -14,6 +14,13 @@ Failures have a retry cooldown and fall back to an ordinary on-demand connection
 Prepared connections are not shared between players or reused after speaking, so
 voice locking and conversation history cannot affect another narration.
 
+While idle, a muted audio element consumes the prepared stream. Receiving RTP
+without consuming it let Chrome accumulate silence and added seconds of delay
+when Play finally attached an audio element. The silent consumer is detached
+after the real player attaches; expiry, failure, page hide, and hot reload also
+release it. If muted playback is blocked, preparation closes and ordinary
+on-demand playback remains available.
+
 On-demand connections receive narration settings in the initial SDP request.
 Complete recordings are decoded offline and stripped of leading connection
 silence, retaining 120 ms before speech and the entire ending. Existing v6 cache
@@ -25,18 +32,23 @@ safely cut at arbitrary byte offsets. Repaired entries therefore use more cache
 space (about 3× in the measured sample); no-silence recordings keep their original
 encoding. Offline decoding failures fall back to the original playable recording.
 
-## Production setup (only after local testing and explicit approval)
+## Production deployment
 
-Wrangler login only authorizes the CLI. Deployment and the frontend cutover are
-separate actions. The staging Worker is deployed with the user's approval; the
-production commands below still require approval after testing.
+The user approved the production cutover on 2026-09-19. The live frontend now
+uses `https://nosabos-tts-proxy.robotsbuildingeducation.workers.dev`; the separately
+named staging Worker remains the localhost default. The Firebase fallback has
+minimum instances zero. See [the rollout record](production-rollout.md) for
+deployed versions, verification, and rollback details.
+
+Wrangler login, Worker deployment, and frontend publication are separate actions.
+For a future approved production deployment:
 
 ```sh
 npm ci --prefix cloudflare-tts-proxy
 cd cloudflare-tts-proxy
 npx wrangler login --scopes account:read user:read workers_scripts:write
-npx wrangler deploy
-npx wrangler secret put OPENAI_API_KEY
+npx wrangler deploy --env ""
+npx wrangler secret put OPENAI_API_KEY --env ""
 ```
 
 The initial deployment returns 503 until the secret is installed. Secrets must
@@ -90,8 +102,11 @@ Open `/tests/browser/tts-playback.html` on Vite. The first narration must produc
 live audio and a complete recording; subsequent plays and a page reload must
 replay the recording without another narration request. Background preparation
 may still open one unused connection even when the requested text is cached.
-Clear this origin's TTS cache
-before testing a new endpoint so an old recording does not mask a failed setup.
+Use a new phrase when testing an endpoint so an existing recording does not mask
+a failed setup. `/tests/browser/tts-cache.html` inspects the ten newest recordings
+without changing them or calling OpenAI, including their encoding, preparation
+version, duration, and first sample above −60 dBFS. The comparison page below
+bypasses recordings entirely.
 For live Worker tests on localhost, register your Firebase App Check debug token
 in Firebase Console → App Check → web app → Manage debug tokens. Never disable
 production App Check to make a local test pass.
@@ -150,9 +165,9 @@ and session creation; it does not separate DNS, TLS, and model service work.
 `https://nosabos-tts-proxy-staging.robotsbuildingeducation.workers.dev`.
 The development-only `VITE_REALTIME_URL` points there and a registered App Check
 debug token is configured. Worker verification remains enabled. The public
-frontend and production Firebase deployment are unchanged. The comparison page
+frontend uses the separately deployed production Worker. The comparison page
 permits the configured origin, the existing Firebase
-origin, and that account's named staging Worker only, and only in development.
+origin, and that account's named staging and production Workers, only in development.
 
 Observe it in the [staging Worker dashboard](https://dash.cloudflare.com/cfe53a18a4894aa8e5c2fe91af905d8a/workers/services/view/nosabos-tts-proxy-staging/production):
 use **Metrics** for requests/CPU/errors and **Observability** for logs. The dashboard
@@ -216,9 +231,20 @@ Some trials became hidden and were excluded from timing aggregates; this verifie
 the hosted paths, not a statistical speed advantage. Use the foreground test page
 for additional comparable measurements.
 
-The production `.env` endpoint and Firebase `minInstances: 1` remain unchanged.
-No frontend or Firebase function was deployed. Production cutover still requires
-separate approval. The local debug token is named
+Production cutover was subsequently approved and completed: `.env` now points at
+the production Worker, Firebase Hosting serves the updated player including the
+idle-stream warmup fix, and `exchangeRealtimeSDP` has minimum instances zero.
+The scaling change used the Cloud Functions API with the update mask
+`serviceConfig.minInstanceCount`; Google performed its managed rebuild of the
+existing function. The source file mirrors `minInstances: 0` for future deploys.
+Other Firebase functions and hosting rewrites were not changed.
+
+Existing open app versions can still call Firebase until they update. Keeping
+the endpoint at zero minimum instances preserves that compatibility and removes
+the reserved-instance requirement; it does not guarantee a zero total Firebase
+bill. Actual usage, other services, and artifact storage can still incur costs.
+
+The local debug token is named
 `Nosabos local Cloudflare staging test 2026-09-19` in Firebase Console → App Check →
 the web app → Manage debug tokens, where it can be revoked after testing. Its
 value is stored only in ignored `.env.development.local` and
