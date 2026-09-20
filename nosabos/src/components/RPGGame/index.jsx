@@ -60,6 +60,7 @@ import {
 } from "./pixelArt";
 import useSoundSettings from "../../hooks/useSoundSettings";
 import {
+  createWarmTTSAudio,
   getTTSPlayer,
   TTS_LANG_TAG,
   getCharacterVoice,
@@ -9840,19 +9841,9 @@ export default function RPGGame({
                           // so TTS can play after the async speech recognition
                           // callback (mobile browsers block audio.play() without
                           // a gesture context). Fire-and-forget – don't await.
-                          try {
-                            const warm = new Audio();
-                            warm.playsInline = true;
-                            warm.src =
-                              "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
-                            warm
-                              .play()
-                              .then(() => warm.pause())
-                              .catch(() => {});
+                          void createWarmTTSAudio().then((warm) => {
                             preWarmedAudioRef.current = warm;
-                          } catch {
-                            // ignore – desktop doesn't need this
-                          }
+                          });
                           try {
                             await startRecording();
                           } catch {

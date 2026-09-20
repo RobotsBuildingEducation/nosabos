@@ -94,12 +94,15 @@
       let analyser;
       let silentOutput;
       try {
+        const warmAudioPromise = createWarmTTSAudio();
         context = new AudioContext();
         await context.resume();
-        const warmAudio = await createWarmTTSAudio();
+        const warmAudio = await warmAudioPromise;
         player = await getTTSPlayer({
           text, langTag: "es-MX", voice: "alloy", warmAudio,
-          onDiagnostic: ({ phase, prepared, stream }) => {
+          onDiagnostic: ({ phase, prepared, stream, stage, message }) => {
+            if (["app-check-start", "app-check-ready", "http-start", "http-headers", "sdp-answer"].includes(phase)) log(phase);
+            if (phase === "playback-error") log(`Failure during ${stage}: ${message}`);
             if (phase === "connection-selected") log(`Prepared connection: ${prepared ? "yes" : "no"}`);
             if (phase === "cache-hit") log("Cache hit; no generation needed");
             if (!stream || source || context.state !== "running") return;

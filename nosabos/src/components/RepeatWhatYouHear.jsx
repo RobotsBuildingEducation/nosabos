@@ -1,3 +1,4 @@
+import { createWarmTTSAudio } from "../utils/tts";
 import ActivityActionRow from "./ActivityActionRow";
 // components/RepeatWhatYouHear.jsx
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -240,32 +241,7 @@ export default function RepeatWhatYouHear({
     onSubmit(userAnswer);
   }, [getUserAnswer, onSubmit, playSound]);
 
-  const createWarmAudio = useCallback(async () => {
-    try {
-      const warm = new Audio();
-      warm.playsInline = true;
-      warm.muted = true;
-      warm.volume = 0;
-      warm.src =
-        "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
-      const warmPlay = warm.play();
-      warmPlay
-        ?.then(() => {
-          warm.pause();
-          try {
-            warm.currentTime = 0;
-          } catch {
-            // Mobile Safari can reject rewinding warmed audio; playback still works.
-          }
-        })
-        .catch(() => undefined);
-      warm.muted = false;
-      warm.volume = 1;
-      return warm;
-    } catch {
-      return null;
-    }
-  }, []);
+  const createWarmAudio = useCallback(createWarmTTSAudio, []);
 
   const primeTTSGesture = useCallback(() => {
     if (primedWarmAudioPromiseRef.current) return;

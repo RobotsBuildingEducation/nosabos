@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { Buffer } from "node:buffer";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import vm from "node:vm";
@@ -16,7 +17,7 @@ const source = readFileSync(new URL("./tts.js", import.meta.url), "utf8")
 const options = { text: "Lee esta frase completa hasta la última palabra.", voice: "alloy", langTag: "es-MX" };
 const flush = async () => { for (let i = 0; i < 30; i++) await Promise.resolve(); };
 
-function harness({ stored = new Map(), setupFails = false, noTracks = false, stats = new Map(), recorderFails = false, storageFails = false, mutedAutoplayFails = false, mutedPlayPending = false, prepareCache = prepareTTSCacheAudio } = {}) {
+function harness({ stored = new Map(), setupFails = false, noTracks = false, stats = new Map(), recorderFails = false, recorderStalls = false, storageFails = false, storageStalls = false, mutedAutoplayFails = false, mutedPlayPending = false, unlockPlayPending = false, exchange, prepareCache = prepareTTSCacheAudio } = {}) {
   let now = 10000;
   let nextTimer = 0;
   const timers = new Map();
@@ -37,6 +38,7 @@ function harness({ stored = new Map(), setupFails = false, noTracks = false, sta
     async play() {
       if (this.muted && mutedAutoplayFails) throw new Error("Muted autoplay blocked");
       this.paused = false; this.dispatchEvent(new Event("playing"));
+      if (this.src?.startsWith("data:audio/") && unlockPlayPending) return new Promise((resolve, reject) => { this.resolveUnlock = resolve; this.rejectUnlock = reject; });
       if (this.muted && mutedPlayPending) return new Promise((resolve, reject) => { this.rejectPlay = reject; });
     }
     dispatchEvent(event) {
@@ -70,6 +72,7 @@ function harness({ stored = new Map(), setupFails = false, noTracks = false, sta
     requestData() {}
     stop() {
       this.state = "inactive";
+      if (recorderStalls) return;
       queueMicrotask(() => {
         if (recorderFails) this.dispatchEvent(new Event("error"));
         // The last dataavailable is asynchronous and precedes stop in browsers.
@@ -103,6 +106,7 @@ function harness({ stored = new Map(), setupFails = false, noTracks = false, sta
   const indexedDB = {
     open() {
       const request = {};
+      if (storageStalls) return request;
       queueMicrotask(() => {
         request.result = {
           transaction() {
@@ -132,7 +136,7 @@ function harness({ stored = new Map(), setupFails = false, noTracks = false, sta
     },
   };
   const context = vm.createContext({
-    Audio, MediaStream, MediaRecorder, RTCPeerConnection, indexedDB, Blob, Event,
+    Audio, MediaStream, MediaRecorder, RTCPeerConnection, indexedDB, Blob, Event, AbortController,
     prepareTTSCacheAudio: prepareCache,
     createRealtimeTTSConnectionPool,
     Date: class extends Date { static now() { return now; } },
@@ -142,10 +146,11 @@ function harness({ stored = new Map(), setupFails = false, noTracks = false, sta
     clearTimeout(id) { timers.delete(id); },
     appCheckFetch: async (_url, request) => {
       if (request.method === "POST") { posts++; requests.push({ ...request, url: _url }); }
+      if (exchange) return exchange(_url, request);
       return { ok: !setupFails, status: 502, text: async () => "answer" };
     },
   });
-  vm.runInContext(`${source}\nglobalThis.api = { getTTSPlayer, isCached, stopAllTTSPlayback, warmRealtimeTTS, setTTSConnectionWarmupEnabled, clearPreparedConnection: () => realtimeConnections.clear() };`, context);
+  vm.runInContext(`${source}\nglobalThis.api = { getTTSPlayer, createWarmTTSAudio, primeTTSAudio, isCached, stopAllTTSPlayback, warmRealtimeTTS, setTTSConnectionWarmupEnabled, clearPreparedConnection: () => realtimeConnections.clear() };`, context);
   return {
     api: context.api, peers, recorders, audios, stored, urls, timers, requests,
     get posts() { return posts; },
@@ -645,4 +650,134 @@ test("cancelled TTS does not claim that transport playback started", async () =>
   const player = await h.api.getTTSPlayer(options);
   player.cleanup();
   assert.equal(await player.playbackStarted, false);
+});
+
+test("a pending gesture unlock cannot block startup or pause speech when it resolves late", async () => {
+  const h = harness({ unlockPlayPending: true });
+  let unlocked;
+  const priming = h.api.primeTTSAudio().then((audio) => { unlocked = audio; return audio; });
+  await flush();
+  assert.equal(unlocked, h.audios[0], "Unlock returns the element without awaiting browser play()");
+  assert.equal(unlocked.muted, false, "A silent clip requests permission for unmuted audio during the gesture");
+  const wav = Buffer.from(unlocked.src.split(",")[1], "base64");
+  assert.equal(wav.readUInt32LE(40), wav.length - 44, "The WAV contains real PCM data");
+  assert.ok(wav.length > 44);
+  const player = await h.api.getTTSPlayer(options);
+  assert.equal(player.audio, await priming);
+  await player.audio.play();
+  unlocked.resolveUnlock();
+  await flush();
+  assert.equal(player.audio.paused, false, "A late unlock completion must not pause the new source");
+  player.cleanup(); await player.finalize;
+  assert.equal(h.timers.size, 0);
+});
+
+test("an IndexedDB replay uses the element unlocked by the gesture", async () => {
+  const key = `v2::realtime-v6::es-MX::alloy::::${options.text}`;
+  const stored = new Map([[key, { key, blob: new Blob(["complete recording"]), timestamp: 9000, audioPreparationVersion: 1 }]]);
+  const h = harness({ stored, unlockPlayPending: true });
+  const warm = await h.api.primeTTSAudio();
+  const player = await h.api.getTTSPlayer(options);
+  assert.equal(player.audio, warm);
+  assert.ok(player.audioUrl);
+  assert.equal(h.posts, 0);
+  warm.rejectUnlock(new Error("Source replaced"));
+  await flush();
+  player.cleanup();
+});
+
+test("blocked IndexedDB falls back to narration without leaving a loading promise", async () => {
+  const h = harness({ storageStalls: true });
+  const pending = h.api.getTTSPlayer(options);
+  await h.advance(1500);
+  const player = await pending;
+  assert.equal(h.posts, 1);
+  player.cleanup(); await player.finalize;
+  assert.equal(h.timers.size, 0);
+});
+
+for (const stall of ["authentication / HTTP", "SDP body"]) {
+  test(`a stalled ${stall} times out, aborts, and cannot start a late narration`, async () => {
+    let resume;
+    const stalled = new Promise((resolve) => { resume = resolve; });
+    let calls = 0;
+    const h = harness({ exchange: async () => {
+      calls++;
+      if (calls === 1 && stall === "authentication / HTTP") await stalled;
+      return { ok: true, status: 200, text: async () => {
+        if (calls === 1 && stall === "SDP body") await stalled;
+        return "answer";
+      } };
+    } });
+    const failure = assert.rejects(h.api.getTTSPlayer(options), /startup timed out/);
+    await h.advance(20000);
+    await failure;
+    assert.equal(h.requests[0].signal.aborted, true);
+    assert.equal(h.peers[0].connectionState, "closed");
+    assert.equal(h.peers[0].channel.sent.length, 0);
+    resume(); await flush();
+    assert.equal(h.peers[0].channel.sent.length, 0, "A late response cannot trigger unwanted speech");
+    const retry = await h.api.getTTSPlayer(options);
+    assert.equal(h.posts, 2);
+    assert.equal(h.peers[1].channel.sent[1].type, "response.create");
+    retry.cleanup(); await retry.finalize;
+    assert.equal(h.timers.size, 0);
+  });
+}
+
+test("stop all cancels an in-flight SDP exchange before a player is returned", async () => {
+  const h = harness({ exchange: () => new Promise(() => {}) });
+  const failure = assert.rejects(h.api.getTTSPlayer(options), /cancelled/);
+  await flush();
+  assert.equal(h.posts, 1);
+  h.api.stopAllTTSPlayback();
+  await failure;
+  assert.equal(h.requests[0].signal.aborted, true);
+  assert.equal(h.peers[0].connectionState, "closed");
+  assert.equal(h.timers.size, 0);
+});
+
+test("stalled recorder shutdown releases playback UI and eventually closes transport", async () => {
+  const h = harness({ recorderStalls: true });
+  const player = await start(h);
+  let ended = false;
+  player.audio.onended = () => { ended = true; player.cleanup(); };
+  h.send(generated); h.send(drained);
+  await h.advance(1000);
+  await player.responseComplete;
+  assert.equal(ended, true);
+  assert.equal((await player.completion).status, "ended");
+  await h.advance(2000);
+  await player.finalize;
+  assert.equal(h.peers[0].connectionState, "closed");
+  assert.equal(h.stored.size, 0);
+  assert.equal(h.timers.size, 0);
+});
+
+test("a cache decoder stall cannot hold playback UI or transport open", async () => {
+  const h = harness({ prepareCache: () => new Promise(() => {}) });
+  const player = await start(h);
+  h.recorders[0].finalChunk = "complete recording ".repeat(100);
+  h.send(generated); h.send(drained);
+  await h.advance(1000);
+  await player.responseComplete;
+  await h.advance(2000);
+  await player.finalize;
+  assert.equal(h.peers[0].connectionState, "closed");
+  assert.equal(h.timers.size, 0);
+});
+
+test("gesture priming retries the same element and explicit handoff cannot share it with another player", async () => {
+  const h = harness({ unlockPlayPending: true });
+  const firstGesture = h.api.primeTTSAudio();
+  const nextGesture = h.api.primeTTSAudio();
+  assert.equal(h.audios.length, 1);
+  assert.equal(await firstGesture, await nextGesture);
+  const warmAudio = await firstGesture;
+  const first = await h.api.getTTSPlayer({ ...options, warmAudio });
+  const second = await h.api.getTTSPlayer({ ...options, text: "Otra frase." });
+  assert.notEqual(second.audio, first.audio, "A provided primed element is consumed exactly once");
+  first.cleanup(); second.cleanup();
+  await Promise.all([first.finalize, second.finalize]);
+  assert.equal(h.timers.size, 0);
 });

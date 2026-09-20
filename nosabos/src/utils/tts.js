@@ -233,49 +233,57 @@ export function warmRealtimeTTS({ force = false } = {}) {
   return realtimeConnections.warm({ force });
 }
 
-export async function createWarmTTSAudio() {
+// A real 50ms silent PCM clip. An empty WAV can leave play() pending on iOS.
+const TTS_UNLOCK_AUDIO = "data:audio/wav;base64,UklGRrQBAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YZABAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA";
+
+function createUnlockedTTSAudio() {
   try {
     const warm = new Audio();
     warm.playsInline = true;
-    warm.muted = true;
-    warm.volume = 0;
-    warm.src =
-      "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
-    await warm.play().catch(() => undefined);
-    try {
-      warm.pause();
-    } catch {
-      // Mobile Safari can reject pausing a just-unlocked element.
-    }
-    try {
-      warm.currentTime = 0;
-    } catch {
-      // Rewinding is best-effort; the warmed element is still reusable.
-    }
     warm.muted = false;
     warm.volume = 1;
+    warm.src = TTS_UNLOCK_AUDIO;
+    // Call synchronously inside the gesture, with audible playback permission.
+    // The samples themselves are silent. Never await this best-effort unlock or
+    // pause in a later callback: by then this element may be narrating speech.
+    void warm.play()?.catch(() => {});
     return warm;
   } catch {
     return null;
   }
 }
 
+export async function createWarmTTSAudio() {
+  return createUnlockedTTSAudio();
+}
+
 export function primeTTSAudio() {
-  if (!sharedWarmAudioPromise) {
-    sharedWarmAudioPromise = createWarmTTSAudio().catch(() => null);
+  if (!sharedWarmAudio) {
+    sharedWarmAudio = createUnlockedTTSAudio();
+  } else {
+    // A touchstart may not carry playback permission. Retry on the actual
+    // click using the same element, still synchronously within the gesture.
+    try { void sharedWarmAudio.play()?.catch(() => {}); } catch { /* Best effort. */ }
   }
-  return sharedWarmAudioPromise;
+  return Promise.resolve(sharedWarmAudio);
 }
 
 async function consumeSharedWarmAudio() {
-  const pendingWarmAudio = sharedWarmAudioPromise;
-  sharedWarmAudioPromise = null;
-  if (!pendingWarmAudio) return null;
-  try {
-    return await pendingWarmAudio;
-  } catch {
-    return null;
-  }
+  const audio = sharedWarmAudio;
+  sharedWarmAudio = null;
+  if (!audio) return createUnlockedTTSAudio();
+  try { void audio.play()?.catch(() => {}); } catch { /* Best effort. */ }
+  return audio;
+}
+
+function withTTSTimeout(promise, timeoutMs, message) {
+  let timer;
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error(message)), timeoutMs);
+    }),
+  ]).finally(() => clearTimeout(timer));
 }
 
 // ============================================================================
@@ -285,7 +293,7 @@ async function consumeSharedWarmAudio() {
 // In-memory cache for current session (instant access)
 const memoryCache = new Map();
 let realtimePreconnectStarted = false;
-let sharedWarmAudioPromise = null;
+let sharedWarmAudio = null;
 
 // IndexedDB configuration
 const DB_NAME = "tts-audio-cache";
@@ -357,6 +365,12 @@ function openDB() {
  * Get audio blob from IndexedDB
  */
 async function getFromIndexedDB(key) {
+  // Storage is optional. A blocked IndexedDB request must not block narration.
+  return withTTSTimeout(readFromIndexedDB(key), 1500, "TTS cache lookup timed out")
+    .catch(() => null);
+}
+
+async function readFromIndexedDB(key) {
   try {
     const db = await openDB();
     if (!db) return null;
@@ -600,6 +614,10 @@ async function getRealtimePlayer({
     try { onDiagnostic?.({ phase, ...details }); } catch { /* Observers cannot break playback. */ }
   };
   mark("player-start", { model: REALTIME_MODEL, endpoint: realtimeUrl, cacheEnabled: !disableCache });
+  // Reserve the gesture-unlocked element before storage/network awaits, for
+  // both cached playback and a fresh stream.
+  if (warmAudio === sharedWarmAudio) sharedWarmAudio = null;
+  const pendingAudio = warmAudio ? Promise.resolve(warmAudio) : consumeSharedWarmAudio();
 
   const sanitizedVoice = getPreferredTTSVoice(voice);
   const targetLangTag = langTag || TTS_LANG_TAG.es;
@@ -617,7 +635,7 @@ async function getRealtimePlayer({
     if (cachedBlob) {
       mark("cache-hit");
       memoryCache.set(cacheKey, cachedBlob);
-      return createAudioFromBlob(cachedBlob, warmAudio);
+      return createAudioFromBlob(cachedBlob, await pendingAudio);
     }
   }
 
@@ -628,7 +646,7 @@ async function getRealtimePlayer({
   const remoteStream = warmedConnection?.stream || new MediaStream();
   // Reuse a pre-warmed Audio element if provided (already unlocked by user
   // gesture on mobile) so that play() works outside a gesture context.
-  const audio = warmAudio || (await consumeSharedWarmAudio()) || new Audio();
+  const audio = (await pendingAudio) || new Audio();
   // Safari can get stuck on the old data URI source unless we fully detach it
   // before switching the element over to the live WebRTC stream.
   try {
@@ -681,6 +699,9 @@ async function getRealtimePlayer({
   });
   let finalizeResolved = false;
   let hardFallbackTimer = null;
+  let startupTimer = null;
+  const setupController = new AbortController();
+  let startupStage = "connecting";
   let playbackDrainTimer = null;
   let drainScheduled = false;
   let playbackCompletedNaturally = false;
@@ -777,6 +798,7 @@ async function getRealtimePlayer({
   const clearFinalizeTimers = () => {
     clearTimeout(playbackDrainTimer);
     clearTimeout(hardFallbackTimer);
+    clearTimeout(startupTimer);
   };
   const finishFinalize = () => {
     if (finalizeResolved) return;
@@ -791,6 +813,7 @@ async function getRealtimePlayer({
     if (finalizeResolved) return;
     playbackCompletedNaturally = false;
     playbackError = error;
+    mark("playback-error", { stage: startupStage, message: error.message });
     rejectReady?.(error);
     finishFinalize();
     audio.dispatchEvent(new Event("error"));
@@ -811,7 +834,7 @@ async function getRealtimePlayer({
     // buffer. Keep recording through that tail before stopping any tracks.
     let tailMs = 1000;
     try {
-      const stats = await pc.getStats();
+      const stats = await withTTSTimeout(pc.getStats(), 500, "TTS receiver stats timed out");
       stats.forEach((report) => {
         if (report.type !== "inbound-rtp" || report.kind !== "audio") return;
         const emitted = report.jitterBufferEmittedCount;
@@ -906,24 +929,27 @@ async function getRealtimePlayer({
       () => failPlayback(new Error("Realtime TTS playback timed out")),
       fallbackTimeoutMs,
     );
+    // Startup has its own deadline, independent of narration length. This also
+    // covers App Check, HTTP, SDP, and a connected transport that never speaks.
+    startupTimer = setTimeout(
+      () => failPlayback(new Error(`TTS startup timed out (${startupStage}). Please try again.`)),
+      20000,
+    );
   }).finally(async () => {
+    setupController.abort();
     unregisterActiveTTSPlayer(audio, cleanupFn);
     audio.removeEventListener("error", onPlaybackError);
     resolvePlaybackStarted(false);
     clearFinalizeTimers();
-    await stopRealtimeCacheRecording();
     resolveResponseComplete?.();
+    // Notify UI before optional recording/cache work, which can stall on iOS.
+    try {
+      if (audio.onended && !audio.ended) audio.dispatchEvent(new Event("ended"));
+    } catch { /* Best-effort media notification. */ }
+    await withTTSTimeout(stopRealtimeCacheRecording(), 2000, "TTS recorder shutdown timed out")
+      .catch(() => { recorderFailed = true; });
     // Mark as intentionally ended so components can ignore errors
     intentionalEnd = true;
-    // Dispatch 'ended' as a final notification for components that only watch
-    // the media element and do not await the finalize promise.
-    try {
-      if (audio.onended && !audio.ended) {
-        audio.dispatchEvent(new Event("ended"));
-      }
-    } catch {
-      // Some media elements reject synthetic events during teardown.
-    }
     // Clear error handler first to prevent AbortError from firing
     try {
       audio.onerror = null;
@@ -960,6 +986,7 @@ async function getRealtimePlayer({
     if (msg.type === "error") {
       failPlayback(new Error(msg.error?.message || "Realtime TTS failed"));
     } else if (msg.type === "response.done") {
+      clearTimeout(startupTimer);
       mark("generation-done", { status: msg.response?.status });
       // Audio-done events also arrive on failed/cancelled/incomplete responses.
       // Only a completed response is eligible to become a replay recording.
@@ -972,6 +999,8 @@ async function getRealtimePlayer({
       responseSucceeded = true;
       void finishAfterPlaybackDrain();
     } else if (msg.type === "output_audio_buffer.started") {
+      clearTimeout(startupTimer);
+      startupStage = "playing";
       mark("server-audio-started");
       resolvePlaybackStarted(true);
     } else if (msg.type === "output_audio_buffer.stopped") {
@@ -1036,44 +1065,63 @@ async function getRealtimePlayer({
     }
   };
 
+  cleanupFn = () => {
+    if (finalizeResolved) return;
+    intentionalEnd = true;
+    rejectReady?.(new Error("TTS playback cancelled"));
+    unregisterActiveTTSPlayer(audio, cleanupFn);
+    finishFinalize();
+  };
+  registerActiveTTSPlayer(audio, cleanupFn);
+  audio._ttsCleanup = cleanupFn;
+
+  // A timeout/cancel must settle getTTSPlayer even if an underlying browser or
+  // App Check promise ignores cancellation. Guard each continuation so late
+  // results cannot start speech after the caller has already stopped waiting.
+  const assertSetupActive = () => {
+    if (finalizeResolved) throw playbackError || new Error("TTS playback cancelled");
+  };
+  const setupStopped = completion.then(() => { assertSetupActive(); });
   try {
-    if (warmedConnection) {
-      dc.onopen();
-    } else {
-      mark("offer-start");
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      mark("offer-ready");
-      const resp = await appCheckFetch(realtimeUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sdp: offer.sdp, model: REALTIME_MODEL, session: narrationSession }),
-      }, { onTiming: (event) => mark(event.phase, event) });
-      const answer = await resp.text();
-      mark("sdp-answer", {
-        status: resp.status,
-        serverTiming: resp.headers?.get("Server-Timing"),
-        runtime: resp.headers?.get("X-TTS-Runtime"),
-        appCheck: resp.headers?.get("X-TTS-AppCheck"),
-        colo: resp.headers?.get("X-TTS-Colo"),
-      });
-      if (!resp.ok) throw new Error(`SDP exchange failed: ${resp.status}`);
-      await pc.setRemoteDescription({ type: "answer", sdp: answer });
-    }
+    await Promise.race([setupStopped, (async () => {
+      if (warmedConnection) {
+        dc.onopen();
+      } else {
+        mark("offer-start");
+        const offer = await pc.createOffer();
+        assertSetupActive();
+        await pc.setLocalDescription(offer);
+        assertSetupActive();
+        mark("offer-ready");
+        startupStage = "authentication / SDP exchange";
+        const resp = await appCheckFetch(realtimeUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sdp: offer.sdp, model: REALTIME_MODEL, session: narrationSession }),
+          signal: setupController.signal,
+        }, { onTiming: (event) => { startupStage = event.phase; mark(event.phase, event); } });
+        assertSetupActive();
+        const answer = await resp.text();
+        assertSetupActive();
+        mark("sdp-answer", {
+          status: resp.status,
+          serverTiming: resp.headers?.get("Server-Timing"),
+          runtime: resp.headers?.get("X-TTS-Runtime"),
+          appCheck: resp.headers?.get("X-TTS-AppCheck"),
+          colo: resp.headers?.get("X-TTS-Colo"),
+        });
+        if (!resp.ok) throw new Error(`SDP exchange failed: ${resp.status}`);
+        startupStage = "connecting audio";
+        await pc.setRemoteDescription({ type: "answer", sdp: answer });
+        assertSetupActive();
+      }
+    })()]);
   } catch (error) {
     failPlayback(error);
     await finalize;
     throw error;
   }
 
-  cleanupFn = () => {
-    intentionalEnd = true;
-    rejectReady?.(new Error("TTS playback cancelled"));
-    unregisterActiveTTSPlayer(audio, cleanupFn);
-    finishFinalize();
-  };
-  if (!finalizeResolved) registerActiveTTSPlayer(audio, cleanupFn);
-  audio._ttsCleanup = cleanupFn;
   // Prepare the next unused connection while this narration plays. Each player
   // still owns and closes its own connection, so voices/history never leak.
   if (usePreparedConnection && typeof window !== "undefined") void warmRealtimeTTS();
@@ -1218,6 +1266,7 @@ if (typeof window !== "undefined") {
     capture: true,
     passive: true,
   });
+  window.addEventListener("click", primeFromGesture, { capture: true, passive: true });
   const releasePreparedConnection = () => realtimeConnections.clear();
   const handleVisibility = () => {
     if (document.hidden) releasePreparedConnection();
@@ -1232,6 +1281,7 @@ if (typeof window !== "undefined") {
       if (idleCallback !== null) window.cancelIdleCallback?.(idleCallback);
       window.removeEventListener("pointerdown", primeFromGesture, true);
       window.removeEventListener("touchstart", primeFromGesture, true);
+      window.removeEventListener("click", primeFromGesture, true);
       window.removeEventListener("pagehide", releasePreparedConnection);
       document.removeEventListener("visibilitychange", handleVisibility);
     });

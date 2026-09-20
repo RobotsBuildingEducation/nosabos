@@ -89,9 +89,10 @@ async function runTrial(label, endpoint, text, voice) {
   };
   try {
     log("trial-start");
+    const warmAudioPromise = createWarmTTSAudio();
     context = new AudioContext();
     await context.resume();
-    const warmAudio = await createWarmTTSAudio();
+    const warmAudio = await warmAudioPromise;
     log("audio-unlocked", { contextState: context.state, outputLatency: context.outputLatency ?? null });
     activePlayer = await getTTSPlayer({
       text, voice, langTag: "es-MX", warmAudio, disableCache: true,

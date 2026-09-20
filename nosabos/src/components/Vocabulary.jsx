@@ -63,6 +63,7 @@ import RepeatWhatYouHear from "./RepeatWhatYouHear";
 import {
   TTS_LANG_TAG,
   getPreferredTTSVoice,
+  createWarmTTSAudio,
   getTTSPlayer,
   LOW_LATENCY_TTS_FORMAT,
   stopAllTTSPlayback,
@@ -5000,30 +5001,7 @@ Return JSON ONLY:
     ? supportCode
     : targetLang;
 
-  const createWarmAudio = useCallback(async () => {
-    try {
-      const warm = new Audio();
-      warm.playsInline = true;
-      warm.muted = true;
-      warm.volume = 0;
-      warm.src =
-        "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
-      const warmPlay = warm.play();
-      warmPlay
-        ?.then(() => {
-          warm.pause();
-          try {
-            warm.currentTime = 0;
-          } catch {}
-        })
-        .catch(() => undefined);
-      warm.muted = false;
-      warm.volume = 1;
-      return warm;
-    } catch {
-      return null;
-    }
-  }, []);
+  const createWarmAudio = useCallback(createWarmTTSAudio, []);
 
   const primeTTSGesture = useCallback(() => {
     if (primedWarmAudioPromiseRef.current) return;
