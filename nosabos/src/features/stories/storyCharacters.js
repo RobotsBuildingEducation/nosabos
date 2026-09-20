@@ -12,7 +12,7 @@ export const RPG_STORY_CHARACTERS = [
     id: "hamster",
     name: "Sheilfer",
     role: "radio host / narrator",
-    voice: "cedar",
+    voice: "echo",
     personality:
       "the narrator of the app, a relaxed but confident male voice guiding the experience",
     portraitIndex: "33",
@@ -42,7 +42,7 @@ export const RPG_STORY_CHARACTERS = [
     id: "cat",
     name: "Neko",
     role: "witty companion / playful feline",
-    voice: "coral",
+    voice: "sage",
     personality:
       "a sarcastic female cat humanoid, dry wit and playful disdain in every word",
     portraitIndex: "40",

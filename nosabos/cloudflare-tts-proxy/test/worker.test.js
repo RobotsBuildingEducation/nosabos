@@ -268,3 +268,146 @@ test("App Check verifies real signatures, issuer, audience, expiry, type, and ap
   parts[1] = btoa(JSON.stringify({ ...claims, sub: "forged" }));
   await assert.rejects(verifyAppCheck(parts.join("."), env, keys));
 });
+
+test("audio cache GET returns 404 on miss and PUT requires App Check", async () => {
+  const { worker } = setup();
+  // Missing key
+  const missing = await worker.fetch(new Request("https://worker.test/audio/missing-key", { method: "GET" }), env);
+  assert.equal(missing.status, 404);
+
+  // PUT without token
+  const putNoToken = await worker.fetch(new Request("https://worker.test/audio/v2::key", {
+    method: "PUT",
+    headers: { "Content-Type": "audio/wav" },
+    body: new Uint8Array([1, 2, 3]),
+  }), env);
+  assert.equal(putNoToken.status, 401);
+});
+
+test("audio cache PUT stores audio and subsequent GET serves with immutable headers", async () => {
+  class MockCache {
+    constructor() { this.store = new Map(); }
+    async match(req) {
+      const key = typeof req === "string" ? req : req.url;
+      const res = this.store.get(key);
+      return res ? res.clone() : undefined;
+    }
+    async put(req, res) {
+      const key = typeof req === "string" ? req : req.url;
+      this.store.set(key, res.clone());
+    }
+  }
+  const cache = new MockCache();
+  const worker = createWorker({
+    verifyToken: async (token) => { if (token !== "valid") throw new Error("invalid"); },
+    getCache: () => cache,
+  });
+
+  const audioKey = "v2::realtime-v6::es-MX::alloy::::hola";
+  const audioBytes = new Uint8Array([82, 73, 70, 70, 0, 0, 0, 0]); // RIFF...
+
+  // 1. PUT audio into cache
+  const putResponse = await worker.fetch(new Request(`https://worker.test/audio/${encodeURIComponent(audioKey)}`, {
+    method: "PUT",
+    headers: {
+      Origin: "https://piyali.app",
+      "Content-Type": "audio/wav",
+      "X-Firebase-AppCheck": "valid",
+    },
+    body: audioBytes,
+  }), env);
+  assert.equal(putResponse.status, 201);
+  const putJson = await putResponse.json();
+  assert.equal(putJson.status, "cached");
+  assert.equal(putJson.key, audioKey);
+
+  // 2. GET audio from cache
+  const getResponse = await worker.fetch(new Request(`https://worker.test/audio/${encodeURIComponent(audioKey)}`, {
+    method: "GET",
+    headers: { Origin: "https://piyali.app" },
+  }), env);
+  assert.equal(getResponse.status, 200);
+  assert.equal(getResponse.headers.get("Content-Type"), "audio/wav");
+  assert.equal(getResponse.headers.get("Cache-Control"), "public, max-age=31536000, immutable");
+  assert.equal(getResponse.headers.get("X-TTS-Cache"), "HIT-EDGE");
+  assert.equal(getResponse.headers.get("Access-Control-Allow-Origin"), "https://piyali.app");
+  const receivedBytes = new Uint8Array(await getResponse.arrayBuffer());
+  assert.deepEqual(receivedBytes, audioBytes);
+});
+
+test("audio cache rejects unsupported MIME types, empty bodies, and oversized payloads", async () => {
+  const { worker } = setup();
+  // Unsupported type
+  const badType = await worker.fetch(new Request("https://worker.test/audio/test-key", {
+    method: "PUT",
+    headers: { "Content-Type": "text/plain", "X-Firebase-AppCheck": "valid" },
+    body: "not audio",
+  }), env);
+  assert.equal(badType.status, 415);
+
+  // Empty body
+  const emptyBody = await worker.fetch(new Request("https://worker.test/audio/test-key", {
+    method: "PUT",
+    headers: { "Content-Type": "audio/wav", "X-Firebase-AppCheck": "valid" },
+    body: new Uint8Array([]),
+  }), env);
+  assert.equal(emptyBody.status, 400);
+
+  // Oversized (>512KB)
+  const hugeBody = await worker.fetch(new Request("https://worker.test/audio/test-key", {
+    method: "PUT",
+    headers: { "Content-Type": "audio/wav", "X-Firebase-AppCheck": "valid" },
+    body: new Uint8Array(512 * 1024 + 1),
+  }), env);
+  assert.equal(hugeBody.status, 413);
+});
+
+test("audio cache falls back to R2 and caches it at the edge", async () => {
+  class MockCache {
+    constructor() { this.store = new Map(); }
+    async match(req) {
+      const key = typeof req === "string" ? req : req.url;
+      const res = this.store.get(key);
+      return res ? res.clone() : undefined;
+    }
+    async put(req, res) {
+      const key = typeof req === "string" ? req : req.url;
+      this.store.set(key, res.clone());
+    }
+  }
+  const cache = new MockCache();
+  const r2Store = new Map();
+  const r2Bucket = {
+    async get(key) {
+      const entry = r2Store.get(key);
+      if (!entry) return null;
+      return { body: entry.body, httpMetadata: { contentType: entry.contentType }, httpEtag: '"r2-etag"' };
+    },
+    async put(key, body, options) {
+      r2Store.set(key, { body, contentType: options?.httpMetadata?.contentType || "audio/wav" });
+    },
+  };
+
+  const worker = createWorker({
+    verifyToken: async () => {},
+    getCache: () => cache,
+  });
+
+  const envWithR2 = { ...env, AUDIO_CACHE: r2Bucket };
+  const key = "v2::r2-only-phrase";
+  const audioData = new Uint8Array([1, 2, 3, 4]);
+
+  // Seed R2 directly
+  await r2Bucket.put(key, audioData, { httpMetadata: { contentType: "audio/wav" } });
+
+  // First GET: hits R2, populates cache
+  const firstGet = await worker.fetch(new Request(`https://worker.test/audio/${encodeURIComponent(key)}`), envWithR2);
+  assert.equal(firstGet.status, 200);
+  assert.equal(firstGet.headers.get("X-TTS-Cache"), "HIT-R2");
+  assert.deepEqual(new Uint8Array(await firstGet.arrayBuffer()), audioData);
+
+  // Second GET: hits edge cache directly
+  const secondGet = await worker.fetch(new Request(`https://worker.test/audio/${encodeURIComponent(key)}`), envWithR2);
+  assert.equal(secondGet.status, 200);
+  assert.equal(secondGet.headers.get("X-TTS-Cache"), "HIT-EDGE");
+});

@@ -5,6 +5,28 @@ const DEFAULT_RESPONSE_MODEL = "gpt-5.6-luna,gpt-5-nano";
 const MAX_BODY_BYTES = 64 * 1024;
 const UPSTREAM_TIMEOUT_MS = 30_000;
 const ALLOW_HEADERS = "Content-Type, Authorization, X-Firebase-AppCheck";
+const MAX_AUDIO_BYTES = 512 * 1024;
+const ALLOWED_AUDIO_TYPES = new Set([
+  "audio/wav",
+  "audio/x-wav",
+  "audio/webm",
+  "audio/ogg",
+  "audio/mp4",
+  "audio/mpeg",
+]);
+
+function parseAudioKey(pathname) {
+  if (!pathname.startsWith("/audio/")) return null;
+  const rawKey = pathname.slice("/audio/".length);
+  if (!rawKey) return null;
+  try {
+    const key = decodeURIComponent(rawKey).trim();
+    if (!key || key.length > 512) return null;
+    return key;
+  } catch {
+    return null;
+  }
+}
 
 class HttpError extends Error {
   constructor(status, message) {
@@ -109,7 +131,12 @@ async function parseResponsesRequest(request, env) {
   return body;
 }
 
-export function createWorker({ fetchUpstream = fetch, verifyToken = verifyAppCheck, now = Date.now } = {}) {
+export function createWorker({
+  fetchUpstream = fetch,
+  verifyToken = verifyAppCheck,
+  now = Date.now,
+  getCache = () => (typeof caches !== "undefined" ? caches.default : null),
+} = {}) {
   return {
     async fetch(request, env) {
       const url = new URL(request.url);
@@ -131,10 +158,10 @@ export function createWorker({ fetchUpstream = fetch, verifyToken = verifyAppChe
         "X-TTS-Colo": localRuntime ? "local" : request.cf?.colo || "unknown",
         ...(originAllowed ? {
           "Access-Control-Allow-Origin": origin,
-          "Access-Control-Allow-Methods": "POST, OPTIONS, GET, HEAD",
+          "Access-Control-Allow-Methods": "POST, OPTIONS, GET, HEAD, PUT",
           "Access-Control-Allow-Headers": ALLOW_HEADERS,
           "Access-Control-Max-Age": "86400",
-          "Access-Control-Expose-Headers": "Server-Timing, X-TTS-Runtime, X-TTS-AppCheck, X-TTS-Colo",
+          "Access-Control-Expose-Headers": "Server-Timing, X-TTS-Runtime, X-TTS-AppCheck, X-TTS-Colo, X-TTS-Cache",
         } : {}),
       };
       // Wall time across I/O, not precise CPU profiling: Workers' clocks only
@@ -154,12 +181,129 @@ export function createWorker({ fetchUpstream = fetch, verifyToken = verifyAppChe
       );
       const pathname = url.pathname.replace(/\/+$/, "") || "/";
       if (origin && !originAllowed) return json(403, { error: "Origin is not allowed." });
-      if (!["/", "/health", "/proxyResponses"].includes(pathname)) return json(404, { error: "Not found." });
+      if (
+        !["/", "/health", "/proxyResponses"].includes(pathname) &&
+        !pathname.startsWith("/audio/") &&
+        pathname !== "/audio"
+      ) {
+        return json(404, { error: "Not found." });
+      }
       if (request.method === "OPTIONS") return new Response(null, { status: 204, headers });
 
       // Disabling verification is only possible in the local workerd runtime.
       const localDev = env.REQUIRE_APPCHECK === "false" && localRuntime;
       headers["X-TTS-AppCheck"] = localDev ? "local-bypass" : "required";
+
+      // Audio edge cache endpoints (shared across learners)
+      if (pathname === "/audio" || pathname.startsWith("/audio/")) {
+        if (pathname === "/audio" || pathname === "/audio/") {
+          return json(400, { error: "Missing audio key." });
+        }
+        const audioKey = parseAudioKey(pathname);
+        if (!audioKey) return json(400, { error: "Invalid audio key." });
+
+        if (["GET", "HEAD"].includes(request.method)) {
+          const cache = getCache();
+          const cacheKeyRequest = new Request(url.origin + url.pathname, { method: "GET" });
+          if (cache) {
+            const cached = await cache.match(cacheKeyRequest);
+            console.log(`[Audio GET] ${audioKey} -> match: ${Boolean(cached)}`);
+            if (cached) {
+              const respHeaders = new Headers(cached.headers);
+              respHeaders.set("X-TTS-Cache", "HIT-EDGE");
+              if (origin && originAllowed) {
+                respHeaders.set("Access-Control-Allow-Origin", origin);
+              }
+              return new Response(request.method === "HEAD" ? null : cached.body, {
+                status: 200,
+                headers: respHeaders,
+              });
+            }
+          }
+          if (env.AUDIO_CACHE) {
+            const object = await env.AUDIO_CACHE.get(audioKey);
+            console.log(`[Audio GET R2] ${audioKey} -> object: ${Boolean(object)}`);
+            if (object) {
+              const contentType = object.httpMetadata?.contentType || "audio/wav";
+              const audioHeaders = new Headers({
+                ...headers,
+                "Content-Type": contentType,
+                "Cache-Control": "public, max-age=31536000, immutable",
+                "ETag": object.httpEtag || `"${audioKey}"`,
+                "X-TTS-Cache": "HIT-R2",
+              });
+              const r2Response = new Response(request.method === "HEAD" ? null : object.body, {
+                status: 200,
+                headers: audioHeaders,
+              });
+              if (cache && request.method === "GET") {
+                await cache.put(cacheKeyRequest, r2Response.clone());
+              }
+              return r2Response;
+            }
+          }
+          console.log(`[Audio GET] 404 Not Found: ${audioKey}`);
+          return json(404, { error: "Audio not found." });
+        }
+
+        if (request.method === "PUT") {
+          if (env.SESSION_RATE_LIMITER) {
+            const key = `audio-put:${request.headers.get("CF-Connecting-IP") || "local"}`;
+            const { success } = await timed("rate_limit", () => env.SESSION_RATE_LIMITER.limit({ key }));
+            if (!success) return json(429, { error: "Too many upload requests." }, { "Retry-After": "60" });
+          }
+          if (!localDev) {
+            const token = request.headers.get("X-Firebase-AppCheck");
+            if (!token || token.length > 8192) {
+              console.warn(`[Audio PUT] Missing/invalid App Check header`);
+              return json(401, { error: "A valid App Check token is required." });
+            }
+            try { await timed("app_check", () => verifyToken(token, env)); } catch (err) {
+              console.warn(`[Audio PUT] App Check verification failed: ${err.message}`);
+              return json(401, { error: "A valid App Check token is required." });
+            }
+            headers["X-TTS-AppCheck"] = "verified";
+          }
+          const contentType = (request.headers.get("Content-Type") || "").split(";")[0].trim().toLowerCase();
+          if (!ALLOWED_AUDIO_TYPES.has(contentType)) {
+            console.warn(`[Audio PUT] Unsupported format: ${contentType}`);
+            return json(415, { error: "Unsupported audio format." });
+          }
+          const arrayBuffer = await request.arrayBuffer();
+          if (arrayBuffer.byteLength === 0) {
+            return json(400, { error: "Empty audio payload." });
+          }
+          if (arrayBuffer.byteLength > MAX_AUDIO_BYTES) {
+            return json(413, { error: "Audio payload exceeds size limit." });
+          }
+
+          const cache = getCache();
+          const cacheKeyRequest = new Request(url.origin + url.pathname, { method: "GET" });
+          if (cache) {
+            const edgeResponse = new Response(arrayBuffer, {
+              status: 200,
+              headers: {
+                "Content-Type": contentType,
+                "Cache-Control": "public, max-age=31536000, immutable",
+                "X-TTS-Cache": "HIT-EDGE",
+                ...(originAllowed ? { "Access-Control-Allow-Origin": origin } : {}),
+              },
+            });
+            await cache.put(cacheKeyRequest, edgeResponse);
+            console.log(`[Audio PUT] Stored ${audioKey} in edge cache (${arrayBuffer.byteLength}B)`);
+          }
+          if (env.AUDIO_CACHE) {
+            await env.AUDIO_CACHE.put(audioKey, arrayBuffer, {
+              httpMetadata: { contentType },
+            });
+            console.log(`[Audio PUT] Stored ${audioKey} in R2`);
+          }
+          return json(201, { status: "cached", key: audioKey, size: arrayBuffer.byteLength });
+        }
+
+        return json(405, { error: "Method not allowed." }, { Allow: "GET, HEAD, PUT, OPTIONS" });
+      }
+
       const configured = Boolean(env.OPENAI_API_KEY && env.SESSION_RATE_LIMITER &&
         (localDev || (env.FIREBASE_PROJECT_NUMBER && env.FIREBASE_APP_ID)));
       if (["GET", "HEAD"].includes(request.method)) {

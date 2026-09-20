@@ -2,13 +2,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   RPG_STORY_CHARACTERS,
-  USER_CHARACTER,
   isUserCharacter,
   getStoryCharacter,
   getStoryCharacterVoice,
-  getStoryCharacterPersonality,
   getStoryCharacterPortraitId,
-  getUserProfilePicture,
   getUserPetType,
   getStoryCharacterPortraitPool,
   getRandomStoryCharacterPortraitId,
@@ -17,7 +14,7 @@ import {
 test("RPG_STORY_CHARACTERS contains Sheilfer, Jiraiya, Yoruichi, Neko, and Yachiru with correct voices and portraits", () => {
   const sheilfer = RPG_STORY_CHARACTERS.find((c) => c.name === "Sheilfer");
   assert.ok(sheilfer);
-  assert.equal(sheilfer.voice, "cedar");
+  assert.equal(sheilfer.voice, "echo");
   assert.equal(sheilfer.portraitIndex, "33");
 
   const jiraiya = RPG_STORY_CHARACTERS.find((c) => c.name === "Jiraiya");
@@ -32,7 +29,7 @@ test("RPG_STORY_CHARACTERS contains Sheilfer, Jiraiya, Yoruichi, Neko, and Yachi
 
   const neko = RPG_STORY_CHARACTERS.find((c) => c.name === "Neko");
   assert.ok(neko);
-  assert.equal(neko.voice, "coral");
+  assert.equal(neko.voice, "sage");
   assert.equal(neko.portraitIndex, "40");
 
   const yachiru = RPG_STORY_CHARACTERS.find((c) => c.name === "Yachiru");
@@ -51,10 +48,10 @@ test("isUserCharacter detects You and user display names", () => {
 });
 
 test("getStoryCharacterVoice resolves RPG character voices and user preference", () => {
-  assert.equal(getStoryCharacterVoice("Sheilfer"), "cedar");
+  assert.equal(getStoryCharacterVoice("Sheilfer"), "echo");
   assert.equal(getStoryCharacterVoice("Jiraiya"), "ash");
   assert.equal(getStoryCharacterVoice("Yoruichi"), "marin");
-  assert.equal(getStoryCharacterVoice("Neko"), "coral");
+  assert.equal(getStoryCharacterVoice("Neko"), "sage");
   assert.equal(getStoryCharacterVoice("Yachiru"), "shimmer");
   assert.equal(getStoryCharacterVoice("You", { progress: { voice: "shimmer" } }), "shimmer");
   assert.equal(getStoryCharacterVoice("You"), "alloy");

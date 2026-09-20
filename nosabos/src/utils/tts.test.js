@@ -17,7 +17,7 @@ const source = readFileSync(new URL("./tts.js", import.meta.url), "utf8")
 const options = { text: "Lee esta frase completa hasta la última palabra.", voice: "alloy", langTag: "es-MX" };
 const flush = async () => { for (let i = 0; i < 30; i++) await Promise.resolve(); };
 
-function harness({ stored = new Map(), setupFails = false, noTracks = false, stats = new Map(), recorderFails = false, recorderStalls = false, storageFails = false, storageStalls = false, mutedAutoplayFails = false, mutedPlayPending = false, unlockPlayPending = false, exchange, prepareCache = prepareTTSCacheAudio } = {}) {
+function harness({ stored = new Map(), edgeStored = new Map(), fetchImpl, setupFails = false, noTracks = false, stats = new Map(), recorderFails = false, recorderStalls = false, storageFails = false, storageStalls = false, mutedAutoplayFails = false, mutedPlayPending = false, unlockPlayPending = false, exchange, prepareCache = prepareTTSCacheAudio } = {}) {
   let now = 10000;
   let nextTimer = 0;
   const timers = new Map();
@@ -144,15 +144,39 @@ function harness({ stored = new Map(), setupFails = false, noTracks = false, sta
     console: { warn() {} },
     setTimeout(fn, delay) { const id = ++nextTimer; timers.set(id, { fn, at: now + delay }); return id; },
     clearTimeout(id) { timers.delete(id); },
+    fetch: fetchImpl || (async (_url) => {
+      const match = String(_url).match(/\/audio\/(.+)$/);
+      if (match) {
+        const key = decodeURIComponent(match[1]);
+        const blob = edgeStored.get(key);
+        if (blob) {
+          return {
+            status: 200,
+            headers: new Headers({ "Content-Type": blob.type || "audio/wav" }),
+            blob: async () => blob,
+          };
+        }
+      }
+      return { status: 404, blob: async () => null };
+    }),
     appCheckFetch: async (_url, request) => {
       if (request.method === "POST") { posts++; requests.push({ ...request, url: _url }); }
+      if (request.method === "PUT") {
+        requests.push({ ...request, url: _url });
+        const match = String(_url).match(/\/audio\/(.+)$/);
+        if (match) {
+          const key = decodeURIComponent(match[1]);
+          edgeStored.set(key, request.body);
+        }
+        return { ok: true, status: 201 };
+      }
       if (exchange) return exchange(_url, request);
       return { ok: !setupFails, status: 502, text: async () => "answer" };
     },
   });
   vm.runInContext(`${source}\nglobalThis.api = { getTTSPlayer, createWarmTTSAudio, primeTTSAudio, isCached, stopAllTTSPlayback, warmRealtimeTTS, setTTSConnectionWarmupEnabled, clearPreparedConnection: () => realtimeConnections.clear() };`, context);
   return {
-    api: context.api, peers, recorders, audios, stored, urls, timers, requests,
+    api: context.api, peers, recorders, audios, stored, edgeStored, urls, timers, requests,
     get posts() { return posts; },
     send(message) { peers.at(-1).channel.onmessage({ data: JSON.stringify(message) }); },
     async advance(ms) {
@@ -780,4 +804,54 @@ test("gesture priming retries the same element and explicit handoff cannot share
   first.cleanup(); second.cleanup();
   await Promise.all([first.finalize, second.finalize]);
   assert.equal(h.timers.size, 0);
+});
+
+test("edge cache hit bypasses WebRTC and saves audio into IndexedDB", async () => {
+  const edgeStored = new Map();
+  const testBlob = new Blob(["edge audio content"], { type: "audio/wav" });
+  const key = "v2::realtime-v6::es-MX::alloy::::Lee esta frase completa hasta la última palabra.";
+  edgeStored.set(key, testBlob);
+
+  const h = harness({ edgeStored });
+  const diagnostics = [];
+  const player = await h.api.getTTSPlayer({
+    ...options,
+    onDiagnostic: (d) => diagnostics.push(d),
+  });
+
+  assert.equal(h.peers.length, 0, "No WebRTC peer created on edge cache hit");
+  assert.equal(h.posts, 0, "No SDP exchange POST made on edge cache hit");
+  assert.ok(diagnostics.some((d) => d.phase === "cache-hit" && d.source === "edge"));
+
+  // Verify it saved to IndexedDB for next time
+  await flush();
+  assert.ok(h.stored.has(key), "Saved to IndexedDB after edge hit");
+
+  player.cleanup();
+  await player.finalize;
+});
+
+test("edge cache miss falls back to WebRTC and uploads completed recording to edge", async () => {
+  const h = harness();
+  const player = await start(h);
+  h.recorders[0].finalChunk = "complete recording ".repeat(100);
+  h.send(generated); h.send(drained);
+  await h.advance(1000);
+  await player.responseComplete;
+  await h.advance(2000);
+  await player.finalize;
+
+  const uploadReq = h.requests.find((r) => r.method === "PUT" && r.url.includes("/audio/"));
+  assert.ok(uploadReq, "Audio upload request sent to edge");
+  assert.ok(h.edgeStored.size > 0, "Edge cache populated on completion");
+});
+
+test("edge cache network failure falls back smoothly to WebRTC", async () => {
+  const h = harness({
+    fetchImpl: async () => { throw new Error("Network error"); },
+  });
+  const player = await start(h);
+  assert.equal(h.peers.length, 1, "WebRTC peer created despite edge network failure");
+  player.cleanup();
+  await player.finalize;
 });

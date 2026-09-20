@@ -50,7 +50,7 @@ export const TTS_LANG_TAG = {
   yua: "es-MX",
 };
 
-export const DEFAULT_TTS_VOICE = "alloy";
+export const DEFAULT_TTS_VOICE = "ash";
 
 // Default to opus for size efficiency; allow callers to request lower-latency formats
 export const DEFAULT_TTS_FORMAT = "opus";
@@ -116,12 +116,12 @@ export const CHARACTER_VOICES = {
       "an ancient male toad sage, wise and measured with a deep gravelly tone",
   },
   cat: {
-    voice: "coral",
+    voice: "sage",
     personality:
       "a sarcastic female cat humanoid, dry wit and playful disdain in every word",
   },
   hamster: {
-    voice: "cedar",
+    voice: "echo",
     personality:
       "the narrator of the app, a relaxed but confident male voice guiding the experience",
   },
@@ -162,31 +162,14 @@ function getRandomDefaultTTSVoice() {
   if (randomDefaultTTSVoice) return randomDefaultTTSVoice;
 
   try {
-    const storedVoice =
-      typeof window !== "undefined"
-        ? window.localStorage?.getItem(RANDOM_DEFAULT_TTS_VOICE_KEY)
-        : null;
-    if (SUPPORTED_TTS_VOICES.has(storedVoice)) {
-      randomDefaultTTSVoice = storedVoice;
-      return randomDefaultTTSVoice;
-    }
-  } catch {
-    // Local storage may be blocked; fall back to an in-memory default.
-  }
-
-  randomDefaultTTSVoice = getRandomVoice();
-
-  try {
     if (typeof window !== "undefined") {
-      window.localStorage?.setItem(
-        RANDOM_DEFAULT_TTS_VOICE_KEY,
-        randomDefaultTTSVoice,
-      );
+      window.localStorage?.removeItem(RANDOM_DEFAULT_TTS_VOICE_KEY);
     }
   } catch {
-    // Cache stability is best-effort when storage is unavailable.
+    // Local storage may be blocked; fall back to in-memory default.
   }
 
+  randomDefaultTTSVoice = DEFAULT_TTS_VOICE;
   return randomDefaultTTSVoice;
 }
 
@@ -194,7 +177,6 @@ export function getPreferredTTSVoice(...candidates) {
   for (const voice of candidates) {
     if (SUPPORTED_TTS_VOICES.has(voice)) return voice;
   }
-  // Pick once so realtime-mini TTS can reuse cache entries across replays.
   return getRandomDefaultTTSVoice();
 }
 
@@ -457,6 +439,75 @@ async function deleteFromIndexedDB(key) {
   }
 }
 
+function getWorkerAudioUrl(realtimeUrl, key) {
+  if (!realtimeUrl) return "";
+  try {
+    const origin = new URL(realtimeUrl).origin;
+    return `${origin}/audio/${encodeURIComponent(key)}`;
+  } catch {
+    return "";
+  }
+}
+
+function safeLogInfo(...args) {
+  if (import.meta.env?.DEV && typeof console !== "undefined" && typeof console.info === "function") {
+    console.info(...args);
+  }
+}
+
+function safeLogWarn(...args) {
+  if (import.meta.env?.DEV && typeof console !== "undefined" && typeof console.warn === "function") {
+    console.warn(...args);
+  }
+}
+
+async function fetchFromEdgeCache(key, realtimeUrl) {
+  const fetchFn = typeof fetch === "function" ? fetch : null;
+  if (!fetchFn) return null;
+  const url = getWorkerAudioUrl(realtimeUrl, key);
+  if (!url) return null;
+  const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+  const timeout = controller ? setTimeout(() => controller.abort(), 1500) : null;
+  try {
+    const response = await fetchFn(url, {
+      method: "GET",
+      signal: controller?.signal,
+    });
+    if (!response || response.status !== 200) {
+      safeLogInfo(`[TTS Edge Cache] Miss (${response?.status || "network"}) for: ${key}`);
+      return null;
+    }
+    const blob = await response.blob();
+    if (!blob || blob.size === 0) return null;
+    safeLogInfo(`[TTS Edge Cache] 🎯 HIT! (${blob.size}B, source=${response.headers?.get?.("X-TTS-Cache") || "EDGE"}) for: ${key}`);
+    return blob;
+  } catch (err) {
+    safeLogWarn("[TTS Edge Cache] Probe error:", err);
+    return null;
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
+}
+
+async function uploadToEdgeCache(key, blob, realtimeUrl) {
+  if (!blob || blob.size === 0) return;
+  const url = getWorkerAudioUrl(realtimeUrl, key);
+  if (!url) return;
+  try {
+    const contentType = blob.type || "audio/wav";
+    safeLogInfo(`[TTS Edge Cache] 📤 Uploading to edge: ${key} (${blob.size}B, ${contentType})`);
+    const res = await appCheckFetch(url, {
+      method: "PUT",
+      headers: { "Content-Type": contentType },
+      body: blob,
+    });
+    const data = await res.json().catch(() => ({}));
+    safeLogInfo(`[TTS Edge Cache] 📤 Upload result (${res.status}):`, data);
+  } catch (err) {
+    safeLogWarn("[TTS Edge Cache] 📤 Upload failed:", err);
+  }
+}
+
 /**
  * Clean up expired entries (call periodically)
  */
@@ -604,7 +655,9 @@ async function getRealtimePlayer({
     const allowed = endpoint.origin === configured?.origin ||
       endpoint.origin === "https://us-central1-nosabo-30dcb.cloudfunctions.net" ||
       endpoint.hostname === "nosabos-tts-proxy-staging.robotsbuildingeducation.workers.dev" ||
-      endpoint.hostname === "nosabos-tts-proxy.robotsbuildingeducation.workers.dev";
+      endpoint.hostname === "nosabos-tts-proxy.robotsbuildingeducation.workers.dev" ||
+      endpoint.hostname === "localhost" ||
+      endpoint.hostname === "127.0.0.1";
     if (!allowed || endpoint.username || endpoint.password) throw new Error("Unsupported benchmark endpoint");
     endpoint.searchParams.set("model", REALTIME_MODEL);
     realtimeUrl = endpoint.href;
@@ -630,11 +683,22 @@ async function getRealtimePlayer({
   );
 
   if (!disableCache) {
-    const cachedBlob =
+    let cachedBlob =
       memoryCache.get(cacheKey) || (await getFromIndexedDB(cacheKey));
     if (cachedBlob) {
-      mark("cache-hit");
+      safeLogInfo(`[TTS Cache] ⚡ Served from local browser cache (IndexedDB 0ms): ${cacheKey}`);
+      mark("cache-hit", { source: "local" });
       memoryCache.set(cacheKey, cachedBlob);
+      return createAudioFromBlob(cachedBlob, await pendingAudio);
+    }
+
+    cachedBlob = await fetchFromEdgeCache(cacheKey, realtimeUrl);
+    if (cachedBlob) {
+      mark("cache-hit", { source: "edge" });
+      memoryCache.set(cacheKey, cachedBlob);
+      saveToIndexedDB(cacheKey, cachedBlob, {
+        audioPreparationVersion: CACHE_AUDIO_PREPARATION_VERSION,
+      }).catch(() => {});
       return createAudioFromBlob(cachedBlob, await pendingAudio);
     }
   }
@@ -754,7 +818,7 @@ async function getRealtimePlayer({
                 cacheChunks[0]?.type ||
                 "audio/webm",
             });
-            if (blob.size > 512) await addToCache(cacheKey, blob);
+            if (blob.size > 512) await addToCache(cacheKey, blob, realtimeUrl);
           }
           resolveCacheRecorderDone?.();
         },
@@ -1300,12 +1364,15 @@ function getOrCreateBlobUrl(blob) {
   return url;
 }
 
-async function addToCache(cacheKey, blob) {
+async function addToCache(cacheKey, blob, realtimeUrl = "") {
   const prepared = await prepareTTSCacheAudio(blob);
   memoryCache.set(cacheKey, prepared.blob);
   await saveToIndexedDB(cacheKey, prepared.blob, {
     audioPreparationVersion: prepared.prepared ? CACHE_AUDIO_PREPARATION_VERSION : 0,
   });
+  if (realtimeUrl) {
+    uploadToEdgeCache(cacheKey, prepared.blob, realtimeUrl).catch(() => {});
+  }
 }
 
 function createAudioFromBlob(blob, warmAudio = null) {
