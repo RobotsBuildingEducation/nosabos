@@ -83,7 +83,7 @@ import VoiceOrb from "../VoiceOrb";
 import LoadingMiniGame from "../LoadingMiniGame";
 import playerSpriteSheetUrl from "../../sprites/sprite_sheet_6.png";
 import npcSpriteSheetUrl from "../../sprites/NPC_sprites.png";
-import yachiruSpriteUrl from "../../sprites/tutor/main_character_tutor_transparent.png";
+import yachiruSpriteUrl from "../../sprites/tutor/main_character_tutor_transparent.webp";
 import RandomCharacter from "../RandomCharacter";
 import {
   drawRpgCompanionFrame,
