@@ -162,9 +162,24 @@ function getLanguageTextProps(lang, { align = "start" } = {}) {
    LLM plumbing (fallback generation, translation, and grading)
 --------------------------- */
 const RESPONSES_URL = `${import.meta.env.VITE_RESPONSES_URL}/proxyResponses`;
-const MODEL = import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-5-nano";
+const MODEL = import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-5.6-luna";
 
-async function callResponses({ model, input }) {
+async function callResponses({ model = MODEL, input }) {
+  if (simplemodel) {
+    try {
+      const resp = await simplemodel.generateContent({
+        contents: [{ role: "user", parts: [{ text: input }] }],
+      });
+      const res = await resp.response;
+      const text = typeof res?.text === "function" ? res.text() : res?.text;
+      if (text && String(text).trim()) {
+        return String(text).trim();
+      }
+    } catch (geminiErr) {
+      console.warn("History Gemini callResponses failed, falling back to OpenAI:", geminiErr);
+    }
+  }
+
   try {
     const r = await appCheckFetch(RESPONSES_URL, {
       method: "POST",
@@ -173,7 +188,7 @@ async function callResponses({ model, input }) {
         Accept: "application/json",
       },
       body: JSON.stringify({
-        model,
+        model: model || MODEL,
         text: { format: { type: "text" } },
         input,
       }),

@@ -78,6 +78,7 @@ import {
   database,
   analytics,
   gradingLiteModel,
+  simplemodel,
 } from "../firebaseResources/firebaseResources";
 // Schema comes from firebase/ai (same package as getLiveGenerativeModel in the
 // bridge) so the tool's parameter schema matches what the Live model expects —
@@ -354,7 +355,7 @@ function buildTutorTurnDetection(pauseMs) {
 
 const RESPONSES_URL = `${import.meta.env.VITE_RESPONSES_URL}/proxyResponses`;
 const TRANSLATE_MODEL =
-  import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-5-nano";
+  import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-5.6-luna";
 const AUTO_DISCONNECT_MS = 15000;
 const ARCHIVE_GLYPH_DURATION_MS = 680;
 const ARCHIVE_GLYPH_DURATION_VARIANCE_MS = 150;
@@ -10778,46 +10779,66 @@ export default function Tutor({
       m.lang || targetLangRef.current || "",
     );
     const prompt = buildMessageTranslationPrompt(target, sourceLanguage);
+    const fullInput = `${prompt}\n\n${src}`;
 
-    const body = {
-      model: TRANSLATE_MODEL,
-      text: { format: { type: "text" } },
-      input: `${prompt}\n\n${src}`,
-    };
+    let mergedText = "";
 
-    const r = await appCheckFetch(RESPONSES_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify(body),
-    });
-
-    const ct = r.headers.get("content-type") || "";
-    const payload = ct.includes("application/json")
-      ? await r.json()
-      : await r.text();
-    if (!r.ok) {
-      const msg =
-        payload?.error?.message ||
-        (typeof payload === "string" ? payload : JSON.stringify(payload));
-      throw new Error(msg || `Translate HTTP ${r.status}`);
+    if (simplemodel) {
+      try {
+        const resp = await simplemodel.generateContent({
+          contents: [{ role: "user", parts: [{ text: fullInput }] }],
+        });
+        const res = await resp.response;
+        const text = typeof res?.text === "function" ? res.text() : res?.text;
+        if (text && String(text).trim()) {
+          mergedText = String(text).trim();
+        }
+      } catch (geminiErr) {
+        console.warn("Tutor Gemini translation failed, falling back to OpenAI:", geminiErr);
+      }
     }
 
-    const mergedText =
-      (typeof payload?.output_text === "string" && payload.output_text) ||
-      (Array.isArray(payload?.output) &&
-        payload.output
-          .map((it) =>
-            (it?.content || []).map((seg) => seg?.text || "").join(""),
-          )
-          .join(" ")
-          .trim()) ||
-      (Array.isArray(payload?.content) && payload.content[0]?.text) ||
-      (Array.isArray(payload?.choices) &&
-        (payload.choices[0]?.message?.content || "")) ||
-      "";
+    if (!mergedText) {
+      const body = {
+        model: TRANSLATE_MODEL,
+        text: { format: { type: "text" } },
+        input: fullInput,
+      };
+
+      const r = await appCheckFetch(RESPONSES_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+
+      const ct = r.headers.get("content-type") || "";
+      const payload = ct.includes("application/json")
+        ? await r.json()
+        : await r.text();
+      if (!r.ok) {
+        const msg =
+          payload?.error?.message ||
+          (typeof payload === "string" ? payload : JSON.stringify(payload));
+        throw new Error(msg || `Translate HTTP ${r.status}`);
+      }
+
+      mergedText =
+        (typeof payload?.output_text === "string" && payload.output_text) ||
+        (Array.isArray(payload?.output) &&
+          payload.output
+            .map((it) =>
+              (it?.content || []).map((seg) => seg?.text || "").join(""),
+            )
+            .join(" ")
+            .trim()) ||
+        (Array.isArray(payload?.content) && payload.content[0]?.text) ||
+        (Array.isArray(payload?.choices) &&
+          (payload.choices[0]?.message?.content || "")) ||
+        "";
+    }
 
     const parsed = safeParseJson(mergedText);
     const translation = (parsed?.translation || mergedText || "").trim();

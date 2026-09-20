@@ -53,6 +53,18 @@ Write the "translation" value entirely in ${languageName}.
 Keep the meaning faithful and learner-friendly.`;
 }
 
+export function buildDirectTranslationPrompt(targetLanguage) {
+  const target = normalizeSupportLanguage(
+    targetLanguage,
+    DEFAULT_SUPPORT_LANGUAGE,
+  );
+  const languageName = getLanguagePromptName(target) || target;
+
+  return `Translate the following into concise, natural ${languageName}.
+Return ONLY the direct translation text.
+Do not wrap in quotes. Do not output JSON. Do not include notes or introductory text.`;
+}
+
 export function getBaseLanguageCode(code) {
   return String(code || "")
     .trim()

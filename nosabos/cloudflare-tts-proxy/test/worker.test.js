@@ -8,6 +8,7 @@ const sdp = "v=0\r\no=- 1 1 IN IP4 127.0.0.1\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111\
 const env = {
   OPENAI_API_KEY: "server-test-secret",
   ALLOWED_ORIGINS: "https://piyali.app,http://localhost:5173",
+  ALLOWED_RESPONSE_MODELS: "gpt-5.6-luna,gpt-5-nano",
   FIREBASE_PROJECT_NUMBER: "123",
   FIREBASE_APP_ID: "test-app",
   REQUIRE_APPCHECK: "true",
@@ -53,6 +54,109 @@ test("JSON speech-practice sessions preserve transcription and VAD settings", as
   const response = await request({ headers: { "Content-Type": "application/json; charset=utf-8" }, body: JSON.stringify({ sdp, session }) });
   assert.equal(response.status, 200);
   assert.deepEqual(JSON.parse(calls[0][1].body.get("session")), { ...session, type: "realtime", model: "gpt-realtime-2.1-mini" });
+});
+
+test("proxyResponses forwards to OpenAI /v1/responses with minimal reasoning and low verbosity", async () => {
+  const responsesPayload = {
+    id: "resp_123",
+    output_text: "Hola, mundo",
+  };
+  const { request, calls } = setup({
+    fetchUpstream: async (...args) => {
+      calls.push(args);
+      return new Response(JSON.stringify(responsesPayload), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    },
+  });
+
+  const body = {
+    model: "gpt-5.6-luna",
+    input: "Translate Hello world",
+  };
+  const response = await request({
+    url: "https://worker.test/proxyResponses",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("Content-Type"), "application/json");
+  assert.equal(response.headers.get("Cache-Control"), "no-store");
+  assert.equal(response.headers.get("Access-Control-Allow-Origin"), "https://piyali.app");
+  assert.deepEqual(await response.json(), responsesPayload);
+
+  assert.equal(calls[0][0], "https://api.openai.com/v1/responses");
+  const upstream = calls[0][1];
+  assert.equal(upstream.headers.Authorization, "Bearer server-test-secret");
+  assert.equal(upstream.headers["Content-Type"], "application/json");
+  assert.equal(upstream.headers.Accept, "application/json");
+  assert.equal(upstream.redirect, "manual");
+
+  const sentBody = JSON.parse(upstream.body);
+  assert.equal(sentBody.model, "gpt-5.6-luna");
+  assert.equal(sentBody.input, "Translate Hello world");
+  assert.deepEqual(sentBody.reasoning, { effort: "none" });
+  assert.equal(sentBody.text.verbosity, "low");
+
+  // Also verify nano uses minimal
+  await request({
+    url: "https://worker.test/proxyResponses",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ model: "gpt-5-nano", input: "test nano" }),
+  });
+  const sentNano = JSON.parse(calls[1][1].body);
+  assert.equal(sentNano.model, "gpt-5-nano");
+  assert.deepEqual(sentNano.reasoning, { effort: "minimal" });
+});
+
+test("proxyResponses rejects unallowed models and invalid JSON", async () => {
+  const { request, calls } = setup();
+
+  // Invalid JSON
+  const invalidJson = await request({
+    url: "https://worker.test/proxyResponses",
+    headers: { "Content-Type": "application/json" },
+    body: "not json",
+  });
+  assert.equal(invalidJson.status, 400);
+
+  // Missing model
+  const missingModel = await request({
+    url: "https://worker.test/proxyResponses",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ input: "test" }),
+  });
+  assert.equal(missingModel.status, 400);
+
+  // Unallowed model
+  const badModel = await request({
+    url: "https://worker.test/proxyResponses",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ model: "gpt-4o", input: "test" }),
+  });
+  assert.equal(badModel.status, 400);
+
+  // Wrong content-type
+  const wrongCt = await request({
+    url: "https://worker.test/proxyResponses",
+    headers: { "Content-Type": "text/plain" },
+    body: JSON.stringify({ model: "gpt-5-nano", input: "test" }),
+  });
+  assert.equal(wrongCt.status, 415);
+
+  // Missing App Check rejected
+  const noAppCheck = await request({
+    url: "https://worker.test/proxyResponses",
+    headers: { "Content-Type": "application/json", "X-Firebase-AppCheck": "" },
+    body: JSON.stringify({ model: "gpt-5-nano", input: "test" }),
+  });
+  assert.equal(noAppCheck.status, 401);
+
+  assert.equal(calls.length, 0);
 });
 
 test("preflight and health checks do not contact OpenAI or require App Check", async () => {

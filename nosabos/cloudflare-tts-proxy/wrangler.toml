@@ -9,8 +9,9 @@ preview_urls = false
 enabled = true
 
 [vars]
-ALLOWED_ORIGINS = "https://piyali.app,https://www.piyali.app,https://nosabos.app,https://www.nosabos.app,https://nosabo-30dcb.web.app,https://nosabo-30dcb.firebaseapp.com,http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000"
+ALLOWED_ORIGINS = "https://piyali.app,https://www.piyali.app,https://nosabos.app,https://www.nosabos.app,https://nosabo-30dcb.web.app,https://nosabo-30dcb.firebaseapp.com,http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174,http://localhost:3000"
 ALLOWED_MODELS = "gpt-realtime-2.1-mini"
+ALLOWED_RESPONSE_MODELS = "gpt-5.6-luna,gpt-5-nano"
 REQUIRE_APPCHECK = "true"
 FIREBASE_PROJECT_NUMBER = "323662475274"
 FIREBASE_APP_ID = "1:323662475274:web:570aa2eb1beaf87810aff3"
@@ -31,8 +32,9 @@ preview_urls = false
 enabled = true
 
 [env.staging.vars]
-ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173,http://127.0.0.1:5174"
+ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174"
 ALLOWED_MODELS = "gpt-realtime-2.1-mini"
+ALLOWED_RESPONSE_MODELS = "gpt-5.6-luna,gpt-5-nano"
 REQUIRE_APPCHECK = "true"
 FIREBASE_PROJECT_NUMBER = "323662475274"
 FIREBASE_APP_ID = "1:323662475274:web:570aa2eb1beaf87810aff3"
