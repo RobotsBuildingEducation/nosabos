@@ -81,6 +81,8 @@ import {
   TTS_LANG_TAG,
   getPreferredTTSVoice,
   getTTSPlayer,
+  primeTTSAudio,
+  startTTSPlayback,
 } from "../utils/tts";
 import { buildVoicePersonaPolicy } from "../utils/voicePersonaPrompt";
 import {
@@ -1327,6 +1329,7 @@ export default function Conversations({
   const starterTtsAudioRef = useRef(null);
   const starterTtsCleanupRef = useRef(null);
   const starterTtsRequestRef = useRef(0);
+  const starterTtsDuckRef = useRef(null);
   // Bumped on every reset so an in-flight starter fetch from before the reset
   // (old goal or old language pair) is discarded instead of landing late.
   const starterFetchRequestRef = useRef(0);
@@ -2911,6 +2914,36 @@ Respond with ONLY a JSON object: {"target":"phrase in ${targetName}","support":"
     setStarterLoading(false);
   }
 
+  function duckConversationForStarterTts() {
+    if (starterTtsDuckRef.current) return;
+    const remote = audioRef.current;
+    const micTracks = localRef.current?.getAudioTracks?.() || [];
+    const duck = {
+      remote: Boolean(remote?.srcObject && !remote.muted),
+      mic: micTracks.some((track) => track.enabled),
+    };
+    if (duck.remote && remote) remote.muted = true;
+    if (duck.mic) setLocalMicEnabled(false);
+    try {
+      if (dcRef.current?.readyState === "open") {
+        dcRef.current.send(
+          JSON.stringify({ type: "input_audio_buffer.clear" }),
+        );
+      }
+    } catch {
+      // Best-effort: keep TTS from being transcribed as the learner.
+    }
+    starterTtsDuckRef.current = duck;
+  }
+
+  function unduckConversationAfterStarterTts() {
+    const duck = starterTtsDuckRef.current;
+    if (!duck) return;
+    starterTtsDuckRef.current = null;
+    if (duck.remote && audioRef.current) audioRef.current.muted = false;
+    if (duck.mic && !assistantInputLockedRef.current) setLocalMicEnabled(true);
+  }
+
   function stopStarterTts() {
     starterTtsRequestRef.current += 1;
     const audio = starterTtsAudioRef.current;
@@ -2933,6 +2966,7 @@ Respond with ONLY a JSON object: {"target":"phrase in ${targetName}","support":"
     } catch {
       // Best-effort player teardown.
     }
+    unduckConversationAfterStarterTts();
     setStarterTts("idle");
   }
 
@@ -2952,6 +2986,7 @@ Respond with ONLY a JSON object: {"target":"phrase in ${targetName}","support":"
     if (!text) return;
     const requestId = ++starterTtsRequestRef.current;
     setStarterTts("loading");
+    duckConversationForStarterTts();
     try {
       const player = await getTTSPlayer({
         text,
@@ -2965,6 +3000,11 @@ Respond with ONLY a JSON object: {"target":"phrase in ${targetName}","support":"
       const audio = player.audio;
       starterTtsAudioRef.current = audio;
       starterTtsCleanupRef.current = player.cleanup;
+      await player.ready;
+      if (requestId !== starterTtsRequestRef.current) {
+        player.cleanup?.();
+        return;
+      }
       let finished = false;
       const finish = () => {
         if (finished) return;
@@ -2975,17 +3015,8 @@ Respond with ONLY a JSON object: {"target":"phrase in ${targetName}","support":"
       audio.onended = finish;
       audio.onerror = finish;
       player.finalize?.then(finish, finish);
-      await player.ready;
-      if (requestId !== starterTtsRequestRef.current) {
-        player.cleanup?.();
-        return;
-      }
       setStarterTts("playing");
-      try {
-        await audio.play();
-      } catch (err) {
-        console.warn("Starter phrase audio play non-fatal:", err);
-      }
+      await startTTSPlayback(player);
     } catch (error) {
       console.error("Starter phrase TTS failed:", error);
       if (requestId === starterTtsRequestRef.current) {
@@ -3691,6 +3722,7 @@ Respond with ONLY a JSON object: {"target":"phrase in ${targetName}","support":"
                                   }
                                   size="xs"
                                   variant="ghost"
+                                  onPointerDown={primeTTSAudio}
                                   onClick={playStarterTts}
                                   aria-label={uiText("story_listen", "Listen")}
                                   color={

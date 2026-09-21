@@ -62,6 +62,7 @@ import useSoundSettings from "../../hooks/useSoundSettings";
 import {
   createWarmTTSAudio,
   getTTSPlayer,
+  startTTSPlayback,
   TTS_LANG_TAG,
   getCharacterVoice,
   getCharacterPersonality,
@@ -5409,7 +5410,7 @@ export default function RPGGame({
         });
         ttsPlayerRef.current = player;
         await player.ready;
-        await player.audio.play();
+        await startTTSPlayback(player);
       } catch {
         // non-blocking
       }

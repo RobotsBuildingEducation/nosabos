@@ -174,7 +174,7 @@ function harness({ stored = new Map(), edgeStored = new Map(), fetchImpl, setupF
       return { ok: !setupFails, status: 502, text: async () => "answer" };
     },
   });
-  vm.runInContext(`${source}\nglobalThis.api = { getTTSPlayer, createWarmTTSAudio, primeTTSAudio, isCached, stopAllTTSPlayback, warmRealtimeTTS, setTTSConnectionWarmupEnabled, clearPreparedConnection: () => realtimeConnections.clear(), prefetchTTSAudio, playCachedTTS };`, context);
+  vm.runInContext(`${source}\nglobalThis.api = { getTTSPlayer, startTTSPlayback, createWarmTTSAudio, primeTTSAudio, isCached, stopAllTTSPlayback, warmRealtimeTTS, setTTSConnectionWarmupEnabled, clearPreparedConnection: () => realtimeConnections.clear(), prefetchTTSAudio, playCachedTTS };`, context);
   return {
     api: context.api, peers, recorders, audios, stored, edgeStored, urls, timers, requests,
     get posts() { return posts; },
@@ -678,6 +678,22 @@ test("cancelled TTS does not claim that transport playback started", async () =>
   const player = await h.api.getTTSPlayer(options);
   player.cleanup();
   assert.equal(await player.playbackStarted, false);
+});
+
+test("startTTSPlayback does not call play() again on a live realtime stream", async () => {
+  const h = harness();
+  const player = await h.api.getTTSPlayer(options);
+  await player.ready;
+  let extraPlays = 0;
+  player.audio.play = async () => {
+    extraPlays += 1;
+    throw new Error("second play() would abort WebRTC audio");
+  };
+  h.send({ type: "output_audio_buffer.started" });
+  assert.equal(await h.api.startTTSPlayback(player), true);
+  assert.equal(extraPlays, 0);
+  player.cleanup();
+  await player.finalize;
 });
 
 test("a pending gesture unlock cannot block startup or pause speech when it resolves late", async () => {

@@ -698,6 +698,23 @@ export async function getTTSPlayer({
   });
 }
 
+export async function startTTSPlayback(player) {
+  const audio = player?.audio;
+  if (!audio) return false;
+  if (audio.srcObject) {
+    if (player.playbackStarted) {
+      return Boolean(await player.playbackStarted.catch(() => false));
+    }
+    return !audio.paused;
+  }
+  try {
+    await audio.play();
+    return true;
+  } catch {
+    return !audio.paused;
+  }
+}
+
 async function getRealtimePlayer({
   text,
   voice,
