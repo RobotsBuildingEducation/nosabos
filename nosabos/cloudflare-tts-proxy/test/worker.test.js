@@ -360,6 +360,72 @@ test("audio cache rejects unsupported MIME types, empty bodies, and oversized pa
     body: new Uint8Array(512 * 1024 + 1),
   }), env);
   assert.equal(hugeBody.status, 413);
+
+  // Silent WAV payload rejection
+  const silentWav = new Uint8Array(44 + 200);
+  const view = new DataView(silentWav.buffer);
+  const writeText = (offset, text) => { for (let i = 0; i < text.length; i++) view.setUint8(offset + i, text.charCodeAt(i)); };
+  writeText(0, "RIFF");
+  view.setUint32(4, silentWav.byteLength - 8, true);
+  writeText(8, "WAVE");
+  writeText(12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true); // PCM
+  view.setUint16(22, 1, true); // 1 channel
+  view.setUint32(24, 24000, true); // 24kHz
+  view.setUint32(28, 48000, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true); // 16-bit
+  writeText(36, "data");
+  view.setUint32(40, 200, true); // 200 bytes of zeros
+  const silentRes = await worker.fetch(new Request("https://worker.test/audio/silent-test-key", {
+    method: "PUT",
+    headers: { "Content-Type": "audio/wav", "X-Firebase-AppCheck": "valid" },
+    body: silentWav,
+  }), env);
+  assert.equal(silentRes.status, 400);
+  const silentJson = await silentRes.json();
+  assert.equal(silentJson.error, "Audio payload is silent.");
+});
+
+test("audio cache DELETE removes audio from R2 and edge cache with App Check", async () => {
+  class MockCache {
+    constructor() { this.store = new Map(); }
+    async match(req) { const key = typeof req === "string" ? req : req.url; return this.store.get(key)?.clone(); }
+    async put(req, res) { const key = typeof req === "string" ? req : req.url; this.store.set(key, res.clone()); }
+    async delete(req) { const key = typeof req === "string" ? req : req.url; return this.store.delete(key); }
+  }
+  const cache = new MockCache();
+  const r2Store = new Map();
+  const r2Bucket = {
+    async get(key) { const entry = r2Store.get(key); return entry ? { body: entry.body } : null; },
+    async put(key, body) { r2Store.set(key, { body }); },
+    async delete(key) { r2Store.delete(key); },
+  };
+  const worker = createWorker({ verifyToken: async (token) => { if (token !== "valid") throw new Error("bad"); }, getCache: () => cache });
+  const envWithR2 = { ...env, AUDIO_CACHE: r2Bucket };
+  const key = "v2::test-delete-key";
+
+  // 1. Seed cache and R2
+  await r2Bucket.put(key, new Uint8Array([1, 2, 3]));
+  await cache.put(`https://worker.test/audio/${encodeURIComponent(key)}`, new Response("cached"));
+
+  // 2. DELETE without App Check fails 401
+  const unauth = await worker.fetch(new Request(`https://worker.test/audio/${encodeURIComponent(key)}`, {
+    method: "DELETE",
+  }), envWithR2);
+  assert.equal(unauth.status, 401);
+
+  // 3. DELETE with App Check succeeds
+  const deleted = await worker.fetch(new Request(`https://worker.test/audio/${encodeURIComponent(key)}`, {
+    method: "DELETE",
+    headers: { "X-Firebase-AppCheck": "valid" },
+  }), envWithR2);
+  assert.equal(deleted.status, 200);
+  const deletedJson = await deleted.json();
+  assert.equal(deletedJson.status, "deleted");
+  assert.equal(r2Store.has(key), false);
+  assert.equal(await cache.match(`https://worker.test/audio/${encodeURIComponent(key)}`), undefined);
 });
 
 test("audio cache falls back to R2 and caches it at the edge", async () => {

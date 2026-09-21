@@ -232,7 +232,30 @@ export function warmRealtimeTTS({ force = false } = {}) {
 // A real 50ms silent PCM clip. An empty WAV can leave play() pending on iOS.
 const TTS_UNLOCK_AUDIO = "data:audio/wav;base64,UklGRrQBAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YZABAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA";
 
+export function activatePlaybackAudioSession() {
+  if (typeof navigator !== "undefined" && navigator.audioSession) {
+    try {
+      if (navigator.audioSession.type !== "playback") {
+        navigator.audioSession.type = "playback";
+      }
+    } catch {
+      // Best-effort audio session configuration.
+    }
+  }
+}
+
+if (typeof window !== "undefined") {
+  const onUserInteraction = () => {
+    activatePlaybackAudioSession();
+    primeTTSAudio();
+  };
+  window.addEventListener("touchstart", onUserInteraction, { capture: true, passive: true });
+  window.addEventListener("touchend", onUserInteraction, { capture: true, passive: true });
+  window.addEventListener("click", onUserInteraction, { capture: true, passive: true });
+}
+
 function createUnlockedTTSAudio() {
+  activatePlaybackAudioSession();
   try {
     const warm = new Audio();
     warm.playsInline = true;
@@ -395,13 +418,20 @@ async function readFromIndexedDB(key) {
         // silence. Repair those once without opening a new OpenAI session.
         if (result.audioPreparationVersion !== CACHE_AUDIO_PREPARATION_VERSION) {
           const prepared = await prepareTTSCacheAudio(result.blob);
-          if (prepared.prepared) {
+          if (prepared.isSilent) {
+            deleteFromIndexedDB(key);
+            resolve(null);
+            return;
+          }
+          if (prepared.prepared && prepared.blob) {
             await saveToIndexedDB(key, prepared.blob, {
               timestamp: result.timestamp,
               audioPreparationVersion: CACHE_AUDIO_PREPARATION_VERSION,
             });
+            resolve(prepared.blob);
+            return;
           }
-          resolve(prepared.blob);
+          resolve(result.blob);
           return;
         }
         resolve(result.blob);
@@ -1388,6 +1418,10 @@ function getOrCreateBlobUrl(blob) {
 
 async function addToCache(cacheKey, blob, realtimeUrl = "") {
   const prepared = await prepareTTSCacheAudio(blob);
+  if (!prepared.blob || prepared.isSilent) {
+    safeLogWarn(`[TTS Cache] ⚠️ Discarded silent or unverified recording for ${cacheKey}`);
+    return;
+  }
   memoryCache.set(cacheKey, prepared.blob);
   await saveToIndexedDB(cacheKey, prepared.blob, {
     audioPreparationVersion: prepared.prepared ? CACHE_AUDIO_PREPARATION_VERSION : 0,
@@ -1398,6 +1432,7 @@ async function addToCache(cacheKey, blob, realtimeUrl = "") {
 }
 
 function createAudioFromBlob(blob, warmAudio = null) {
+  activatePlaybackAudioSession();
   const audioUrl = getOrCreateBlobUrl(blob);
   const audio = warmAudio || new Audio();
   try {

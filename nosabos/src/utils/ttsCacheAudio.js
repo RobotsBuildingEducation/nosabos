@@ -1,7 +1,36 @@
-// Keep a small lead-in so quiet consonants and codec pre-roll are preserved.
+// Keep small lead-in and lead-out margins so quiet consonants and room decay are preserved.
 const LEAD_IN_SECONDS = 0.12;
+const LEAD_OUT_SECONDS = 0.15;
 const MIN_TRIM_SECONDS = 0.15;
-const SOUND_THRESHOLD = 0.001; // -60 dBFS; synthesized silence is near zero.
+const SOUND_THRESHOLD = 0.001; // -60 dBFS for onset/offset trimming.
+const MIN_PEAK_AMPLITUDE = 0.02; // -34 dBFS; real speech peaks far higher (0.2 - 0.8).
+const MIN_SPEECH_DURATION_SECONDS = 0.15; // Minimum total duration of audible speech.
+const MIN_RMS_AMPLITUDE = 0.002; // Minimum RMS energy across the recording.
+
+export function isAudibleSpeech(buffer) {
+  if (!buffer || !buffer.length || !buffer.sampleRate) return false;
+  const channels = Array.from({ length: buffer.numberOfChannels }, (_, index) => buffer.getChannelData(index));
+  if (!channels.length) return false;
+
+  let peak = 0;
+  let audibleFrames = 0;
+  let sumSquares = 0;
+  const totalSamples = buffer.length * channels.length;
+
+  for (const channel of channels) {
+    for (let i = 0; i < channel.length; i++) {
+      const abs = Math.abs(channel[i]);
+      if (abs > peak) peak = abs;
+      if (abs >= 0.01) audibleFrames++;
+      sumSquares += abs * abs;
+    }
+  }
+
+  const rms = Math.sqrt(sumSquares / totalSamples);
+  const audibleSeconds = audibleFrames / (buffer.sampleRate * channels.length);
+
+  return peak >= MIN_PEAK_AMPLITUDE && audibleSeconds >= MIN_SPEECH_DURATION_SECONDS && rms >= MIN_RMS_AMPLITUDE;
+}
 
 export function findTTSStartFrame(buffer) {
   const channels = Array.from({ length: buffer.numberOfChannels }, (_, index) => buffer.getChannelData(index));
@@ -11,12 +40,24 @@ export function findTTSStartFrame(buffer) {
       return start >= buffer.sampleRate * MIN_TRIM_SECONDS ? start : 0;
     }
   }
-  // Never turn an unexpectedly quiet recording into an empty/unplayable file.
   return 0;
 }
 
-export function encodeTTSWav(buffer, startFrame) {
-  const frames = buffer.length - startFrame;
+export function findTTSEndFrame(buffer) {
+  const channels = Array.from({ length: buffer.numberOfChannels }, (_, index) => buffer.getChannelData(index));
+  for (let frame = buffer.length - 1; frame >= 0; frame--) {
+    if (channels.some((channel) => Math.abs(channel[frame]) >= SOUND_THRESHOLD)) {
+      const end = Math.min(buffer.length, frame + Math.ceil(buffer.sampleRate * LEAD_OUT_SECONDS));
+      return (buffer.length - end) >= buffer.sampleRate * MIN_TRIM_SECONDS ? end : buffer.length;
+    }
+  }
+  return 0;
+}
+
+export function encodeTTSWav(buffer, startFrame = 0, endFrame = buffer.length) {
+  const safeStart = Math.max(0, Math.min(startFrame, buffer.length));
+  const safeEnd = Math.max(safeStart, Math.min(endFrame, buffer.length));
+  const frames = safeEnd - safeStart;
   const channels = buffer.numberOfChannels;
   const bytes = new ArrayBuffer(44 + frames * channels * 2);
   const view = new DataView(bytes);
@@ -38,7 +79,7 @@ export function encodeTTSWav(buffer, startFrame) {
   view.setUint32(40, bytes.byteLength - 44, true);
   const samples = Array.from({ length: channels }, (_, index) => buffer.getChannelData(index));
   let offset = 44;
-  for (let frame = startFrame; frame < buffer.length; frame++) {
+  for (let frame = safeStart; frame < safeEnd; frame++) {
     for (const channel of samples) {
       const sample = Math.max(-1, Math.min(1, channel[frame]));
       view.setInt16(offset, Math.round(sample * (sample < 0 ? 32768 : 32767)), true);
@@ -56,13 +97,17 @@ export async function prepareTTSCacheAudio(blob) {
     // speech output and keeps PCM cache size lower than device-rate (48 kHz) WAV.
     const context = new OfflineContext(1, 1, 24000);
     const decoded = await context.decodeAudioData(await blob.arrayBuffer());
+    if (!isAudibleSpeech(decoded)) {
+      return { blob: null, prepared: false, isSilent: true };
+    }
     const startFrame = findTTSStartFrame(decoded);
-    // MediaRecorder's compressed containers cannot safely be cut by byte/chunk
-    // offsets. Encode only when there is silence to remove, preserving every
-    // sample from the lead-in through the original recording's complete tail.
-    return { blob: startFrame ? encodeTTSWav(decoded, startFrame) : blob, prepared: true };
+    const endFrame = findTTSEndFrame(decoded);
+    // Trim leading silence and trailing silence, returning a clean WAV.
+    const wav = encodeTTSWav(decoded, startFrame, endFrame);
+    return { blob: wav, prepared: true, isSilent: false };
   } catch {
-    // Decode/format failures must not break otherwise playable cached audio.
+    // Decode/format failures on mock or unsupported environments preserve the blob
+    // so playback is not broken, but prepared is marked false.
     return { blob, prepared: false };
   }
 }

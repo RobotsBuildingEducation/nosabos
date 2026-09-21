@@ -28,6 +28,33 @@ function parseAudioKey(pathname) {
   }
 }
 
+function isWavSilent(arrayBuffer) {
+  if (arrayBuffer.byteLength < 44) return false;
+  const view = new DataView(arrayBuffer);
+  // RIFF and WAVE magic numbers
+  if (view.getUint32(0, false) !== 0x52494646 || view.getUint32(8, false) !== 0x57415645) {
+    return false;
+  }
+  let offset = 12;
+  while (offset + 8 <= arrayBuffer.byteLength) {
+    const chunkId = view.getUint32(offset, false);
+    const chunkSize = view.getUint32(offset + 4, true);
+    if (chunkId === 0x64617461) { // "data" chunk
+      const dataOffset = offset + 8;
+      const dataEnd = Math.min(arrayBuffer.byteLength, dataOffset + chunkSize);
+      let peak = 0;
+      for (let i = dataOffset; i + 1 < dataEnd; i += 2) {
+        const val = Math.abs(view.getInt16(i, true));
+        if (val > peak) peak = val;
+        if (val >= 655) return false; // >= 0.02 normalized amplitude
+      }
+      return peak < 655;
+    }
+    offset += 8 + chunkSize;
+  }
+  return false;
+}
+
 class HttpError extends Error {
   constructor(status, message) {
     super(message);
@@ -158,7 +185,7 @@ export function createWorker({
         "X-TTS-Colo": localRuntime ? "local" : request.cf?.colo || "unknown",
         ...(originAllowed ? {
           "Access-Control-Allow-Origin": origin,
-          "Access-Control-Allow-Methods": "POST, OPTIONS, GET, HEAD, PUT",
+          "Access-Control-Allow-Methods": "POST, OPTIONS, GET, HEAD, PUT, DELETE",
           "Access-Control-Allow-Headers": ALLOW_HEADERS,
           "Access-Control-Max-Age": "86400",
           "Access-Control-Expose-Headers": "Server-Timing, X-TTS-Runtime, X-TTS-AppCheck, X-TTS-Colo, X-TTS-Cache",
@@ -281,6 +308,10 @@ export function createWorker({
           if (arrayBuffer.byteLength > MAX_AUDIO_BYTES) {
             return json(413, { error: "Audio payload exceeds size limit." });
           }
+          if ((contentType === "audio/wav" || contentType === "audio/x-wav") && isWavSilent(arrayBuffer)) {
+            console.warn(`[Audio PUT] Rejected silent audio for ${audioKey}`);
+            return json(400, { error: "Audio payload is silent." });
+          }
 
           const cache = getCache();
           const cacheKeyRequest = new Request(url.origin + url.pathname, { method: "GET" });
@@ -306,7 +337,30 @@ export function createWorker({
           return json(201, { status: "cached", key: audioKey, size: arrayBuffer.byteLength });
         }
 
-        return json(405, { error: "Method not allowed." }, { Allow: "GET, HEAD, PUT, OPTIONS" });
+        if (request.method === "DELETE") {
+          if (!localDev) {
+            const token = request.headers.get("X-Firebase-AppCheck");
+            if (!token || token.length > 8192) {
+              return json(401, { error: "A valid App Check token is required." });
+            }
+            try { await timed("app_check", () => verifyToken(token, env)); } catch {
+              return json(401, { error: "A valid App Check token is required." });
+            }
+            headers["X-TTS-AppCheck"] = "verified";
+          }
+          const cache = getCache();
+          const cacheKeyRequest = new Request(url.origin + url.pathname, { method: "GET" });
+          if (cache) {
+            await cache.delete(cacheKeyRequest);
+          }
+          if (env.AUDIO_CACHE) {
+            await env.AUDIO_CACHE.delete(audioKey);
+            console.log(`[Audio DELETE] Deleted ${audioKey} from R2`);
+          }
+          return json(200, { status: "deleted", key: audioKey });
+        }
+
+        return json(405, { error: "Method not allowed." }, { Allow: "GET, HEAD, PUT, DELETE, OPTIONS" });
       }
 
       // Static media / asset edge cache endpoints (served from R2 with edge cache)

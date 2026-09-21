@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { encodeTTSWav, findTTSStartFrame, prepareTTSCacheAudio } from "./ttsCacheAudio.js";
+import { encodeTTSWav, findTTSStartFrame, findTTSEndFrame, isAudibleSpeech, prepareTTSCacheAudio } from "./ttsCacheAudio.js";
 
 function buffer(channels, sampleRate = 1000) {
   return { numberOfChannels: channels.length, length: channels[0].length, sampleRate, getChannelData: (index) => channels[index] };
@@ -73,4 +73,58 @@ test("offline preparation repairs a recording once and preserves playable audio 
     async decodeAudioData() { throw new Error("Unsupported recording format"); }
   };
   assert.deepEqual(await prepareTTSCacheAudio(blob), { blob, prepared: false });
+});
+
+test("isAudibleSpeech rejects silence, tiny spikes, and line noise while accepting speech", () => {
+  // 1. All zeros
+  const silent = buffer([new Float32Array(3000)]);
+  assert.equal(isAudibleSpeech(silent), false);
+
+  // 2. Line noise (peak < 0.02)
+  const noisy = new Float32Array(3000);
+  noisy.fill(0.005);
+  assert.equal(isAudibleSpeech(buffer([noisy])), false);
+
+  // 3. Short spike (50ms click at 1000Hz = 50 samples)
+  const click = new Float32Array(3000);
+  click.fill(0.8, 1000, 1050);
+  assert.equal(isAudibleSpeech(buffer([click])), false);
+
+  // 4. Genuine speech (300ms at 0.3)
+  const speech = new Float32Array(3000);
+  speech.fill(0.3, 1000, 1300);
+  assert.equal(isAudibleSpeech(buffer([speech])), true);
+});
+
+test("findTTSEndFrame trims trailing silence with lead-out margin", () => {
+  // 4000 samples at 1000Hz (4 seconds), speech ends at index 2000 (2.0s)
+  const samples = new Float32Array(4000);
+  samples.fill(0.3, 500, 2001);
+  const end = findTTSEndFrame(buffer([samples], 1000));
+  // 2000 + 150ms lead-out (150 frames) = 2150
+  assert.equal(end, 2150);
+
+  // When silence at the end is short (< 150ms), keeps entire length
+  const shortTail = new Float32Array(2100);
+  shortTail.fill(0.3, 500, 2000);
+  const endShort = findTTSEndFrame(buffer([shortTail], 1000));
+  assert.equal(endShort, 2100);
+});
+
+test("prepareTTSCacheAudio detects silent recordings and rejects them", async (t) => {
+  const previous = globalThis.OfflineAudioContext;
+  t.after(() => {
+    if (previous) globalThis.OfflineAudioContext = previous;
+    else delete globalThis.OfflineAudioContext;
+  });
+  const silentSamples = new Float32Array(3000);
+  globalThis.OfflineAudioContext = class {
+    constructor() {}
+    async decodeAudioData() { return buffer([silentSamples]); }
+  };
+  const silentBlob = new Blob(["silent recording"]);
+  const result = await prepareTTSCacheAudio(silentBlob);
+  assert.equal(result.prepared, false);
+  assert.equal(result.isSilent, true);
+  assert.equal(result.blob, null);
 });
