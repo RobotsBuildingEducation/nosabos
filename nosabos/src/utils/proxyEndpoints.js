@@ -65,3 +65,10 @@ export function getAudioCacheUrl(key, realtimeUrl) {
   }
   return `${base}/audio/${encodeURIComponent(key)}`;
 }
+
+export function getAssetUrl(assetPath) {
+  if (!assetPath) return "";
+  const cleanPath = String(assetPath).replace(/^\/+/, "");
+  const base = getProxyBaseUrl();
+  return `${base}/assets/${cleanPath}`;
+}

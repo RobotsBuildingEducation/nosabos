@@ -41,7 +41,7 @@ import { LuPencilLine, LuSun, LuMusic } from "react-icons/lu";
 import { RiMoonClearFill } from "react-icons/ri";
 import useSoundSettings from "../hooks/useSoundSettings";
 import { selectSound, submitActionSound } from "../constants/sounds";
-import awalkMusic from "../assets/awalk.mp3";
+import { getAssetUrl } from "../utils/proxyEndpoints";
 
 import VoiceOrb from "./VoiceOrb";
 import MangaLinksExperience from "./MangaLinksExperience";
@@ -4074,7 +4074,7 @@ export default function LinksPage() {
 
   // Manage Audio instance & Autoplay on render
   useEffect(() => {
-    const audio = new Audio(awalkMusic);
+    const audio = new Audio(getAssetUrl("audio/awalk.mp3"));
     audio.loop = true;
     audio.volume = 0.35;
     audioRef.current = audio;

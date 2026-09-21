@@ -68,6 +68,7 @@ import {
   getPreferredTTSVoice,
 } from "../../utils/tts";
 import { callResponses } from "../../utils/llm";
+import { getAssetUrl } from "../../utils/proxyEndpoints";
 import {
   splitDialogueSubtext,
   extractSpokenDialogue,
@@ -3448,21 +3449,20 @@ export default function RPGGame({
     if (backgroundMusicRef.current) return backgroundMusicRef.current;
 
     if (!backgroundMusicLoadPromiseRef.current) {
-      backgroundMusicLoadPromiseRef.current = import("../../assets/awalk.mp3")
-        .then(({ default: trackUrl }) => {
-          const audio = new Audio(trackUrl);
-          audio.loop = true;
-          audio.preload = "none";
-          audio.volume = RPG_MUSIC_VOLUME;
-          audio.playsInline = true;
-          backgroundMusicRef.current = audio;
-          return audio;
-        })
-        .catch((error) => {
-          backgroundMusicLoadPromiseRef.current = null;
-          console.warn("Failed to load RPG music track:", error);
-          return null;
-        });
+      backgroundMusicLoadPromiseRef.current = Promise.resolve().then(() => {
+        const trackUrl = getAssetUrl("audio/awalk.mp3");
+        const audio = new Audio(trackUrl);
+        audio.loop = true;
+        audio.preload = "none";
+        audio.volume = RPG_MUSIC_VOLUME;
+        audio.playsInline = true;
+        backgroundMusicRef.current = audio;
+        return audio;
+      }).catch((error) => {
+        backgroundMusicLoadPromiseRef.current = null;
+        console.warn("Failed to load RPG music track:", error);
+        return null;
+      });
     }
 
     return backgroundMusicLoadPromiseRef.current;

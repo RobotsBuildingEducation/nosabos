@@ -463,13 +463,19 @@ export function createWorker({
           const controller = new AbortController();
           const timeout = setTimeout(() => controller.abort(), UPSTREAM_TIMEOUT_MS);
           const upstreamStarted = now();
+          const accountId = env.CLOUDFLARE_ACCOUNT_ID || "cfe53a18a4894aa8e5c2fe91af905d8a";
+          const gatewayName = (env.AI_GATEWAY_NAME || "").trim();
+          const upstreamUrl = gatewayName
+            ? `https://gateway.ai.cloudflare.com/v1/${accountId}/${gatewayName}/openai/responses`
+            : "https://api.openai.com/v1/responses";
           try {
-            const upstream = await fetchUpstream("https://api.openai.com/v1/responses", {
+            const upstream = await fetchUpstream(upstreamUrl, {
               method: "POST",
               headers: {
                 Authorization: `Bearer ${env.OPENAI_API_KEY}`,
                 "Content-Type": "application/json",
                 Accept: "application/json",
+                ...(gatewayName ? { "cf-skip-cache": "true" } : {}),
               },
               body: JSON.stringify(body),
               signal: controller.signal,

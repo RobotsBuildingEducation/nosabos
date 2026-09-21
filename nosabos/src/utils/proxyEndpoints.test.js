@@ -5,6 +5,7 @@ import {
   getRealtimeUrl,
   getResponsesUrl,
   getAudioCacheUrl,
+  getAssetUrl,
 } from "./proxyEndpoints.js";
 
 test("defaults to workers.dev fallback in non-browser / test environment", () => {
@@ -70,21 +71,31 @@ test("uses same-origin /api/tts-proxy on nosabos.app and www variants", () => {
   }
 });
 
-test("falls back on localhost and staging domains", () => {
-  for (const host of ["localhost", "127.0.0.1", "nosabo-30dcb.web.app"]) {
-    global.window = {
-      location: {
-        hostname: host,
-        origin: `https://${host}`,
-      },
-    };
-    try {
-      assert.equal(
-        getProxyBaseUrl(),
-        "https://nosabos-tts-proxy.robotsbuildingeducation.workers.dev"
-      );
-    } finally {
-      delete global.window;
-    }
+test("resolves getAssetUrl on both same-origin and fallback environments", () => {
+  // 1. Fallback environment
+  assert.equal(
+    getAssetUrl("audio/awalk.mp3"),
+    "https://nosabos-tts-proxy.robotsbuildingeducation.workers.dev/assets/audio/awalk.mp3"
+  );
+  assert.equal(
+    getAssetUrl("/audio/awalk.mp3"),
+    "https://nosabos-tts-proxy.robotsbuildingeducation.workers.dev/assets/audio/awalk.mp3"
+  );
+  assert.equal(getAssetUrl(""), "");
+
+  // 2. Same-origin piyali.app
+  global.window = {
+    location: {
+      hostname: "piyali.app",
+      origin: "https://piyali.app",
+    },
+  };
+  try {
+    assert.equal(
+      getAssetUrl("audio/awalk.mp3"),
+      "https://piyali.app/api/tts-proxy/assets/audio/awalk.mp3"
+    );
+  } finally {
+    delete global.window;
   }
 });

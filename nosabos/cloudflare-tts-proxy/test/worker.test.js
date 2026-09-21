@@ -113,6 +113,23 @@ test("proxyResponses forwards to OpenAI /v1/responses with minimal reasoning and
   assert.deepEqual(sentNano.reasoning, { effort: "minimal" });
 });
 
+test("proxyResponses routes through Cloudflare AI Gateway when AI_GATEWAY_NAME is set", async () => {
+  const { request, calls } = setup();
+  const envWithGateway = {
+    ...env,
+    AI_GATEWAY_NAME: "nosabos-ai",
+    CLOUDFLARE_ACCOUNT_ID: "test-account-123",
+  };
+  const response = await request({
+    url: "https://worker.test/proxyResponses",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ model: "gpt-5.6-luna", input: "test gateway" }),
+  }, envWithGateway);
+  assert.equal(response.status, 200);
+  assert.equal(calls[0][0], "https://gateway.ai.cloudflare.com/v1/test-account-123/nosabos-ai/openai/responses");
+  assert.equal(calls[0][1].headers["cf-skip-cache"], "true");
+});
+
 test("proxyResponses rejects unallowed models and invalid JSON", async () => {
   const { request, calls } = setup();
 
