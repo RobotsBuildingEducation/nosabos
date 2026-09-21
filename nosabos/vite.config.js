@@ -1,9 +1,66 @@
 import crypto from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
 import process from "node:process";
+import zlib from "node:zlib";
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import { visualizer } from "rollup-plugin-visualizer";
+
+function precompressPlugin() {
+  return {
+    name: "precompress-plugin",
+    apply: "build",
+    enforce: "post",
+    closeBundle() {
+      const distDir = path.resolve(process.cwd(), "dist");
+      if (!fs.existsSync(distDir)) return;
+
+      function compressFiles(dir) {
+        const entries = fs.readdirSync(dir, { withFileTypes: true });
+        for (const entry of entries) {
+          const fullPath = path.join(dir, entry.name);
+          if (entry.isDirectory()) {
+            compressFiles(fullPath);
+          } else if (
+            /\.(js|css|html|json|svg)$/i.test(entry.name) &&
+            !entry.name.endsWith(".gz") &&
+            !entry.name.endsWith(".br")
+          ) {
+            const buffer = fs.readFileSync(fullPath);
+            if (buffer.length > 512) {
+              const gzipped = zlib.gzipSync(buffer, { level: 9 });
+              fs.writeFileSync(fullPath + ".gz", gzipped);
+            }
+          }
+        }
+      }
+      compressFiles(distDir);
+    },
+  };
+}
+
+function previewAssetFallbackPlugin() {
+  return {
+    name: "preview-asset-fallback",
+    configurePreviewServer(server) {
+      server.middlewares.use((req, res, next) => {
+        const url = req.url ? req.url.split("?")[0] : "";
+        if (url.startsWith("/assets/")) {
+          const filePath = path.resolve(process.cwd(), "dist", url.slice(1));
+          if (!fs.existsSync(filePath) && !fs.existsSync(filePath + ".gz")) {
+            res.statusCode = 404;
+            res.setHeader("Content-Type", "text/plain");
+            res.end("Asset not found");
+            return;
+          }
+        }
+        next();
+      });
+    },
+  };
+}
 
 function pwaVersionMetadataPlugin({ buildId, builtAt }) {
   const versionPayload = JSON.stringify(
@@ -71,6 +128,8 @@ export default defineConfig(({ mode, command }) => {
     plugins: [
     react(),
     pwaVersionMetadataPlugin({ buildId, builtAt }),
+    precompressPlugin(),
+    previewAssetFallbackPlugin(),
     VitePWA({
       workbox: {
         skipWaiting: true,
@@ -173,6 +232,21 @@ export default defineConfig(({ mode, command }) => {
               expiration: {
                 maxEntries: 100,
                 maxAgeSeconds: 60 * 24 * 60 * 60, // 60 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+          {
+            // Local fonts and static font files
+            urlPattern: ({ request }) => request.destination === "font",
+            handler: "CacheFirst",
+            options: {
+              cacheName: "nosabos-runtime-fonts",
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 365 * 24 * 60 * 60, // 1 year
               },
               cacheableResponse: {
                 statuses: [0, 200],

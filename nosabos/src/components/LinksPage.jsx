@@ -22,8 +22,7 @@ import {
   useToast,
   VStack,
 } from "@chakra-ui/react";
-import { LuSun, LuMusic } from "react-icons/lu";
-import { RiMoonClearFill } from "react-icons/ri";
+import { LuSun, LuMoon, LuMusic } from "react-icons/lu";
 import { getAssetUrl } from "../utils/proxyEndpoints";
 
 import VoiceOrb from "./VoiceOrb";
@@ -31,7 +30,6 @@ import MangaLinksExperience from "./MangaLinksExperience";
 import { CloudCanvas } from "./CloudCanvas/CloudCanvas";
 import CitizenshipIcon from "./CitizenshipIcon/CitizenshipIcon";
 import PatreonMotionMark from "./links/PatreonMotionMark";
-import { useDecentralizedIdentity } from "../hooks/useDecentralizedIdentity";
 import RandomCharacter from "./RandomCharacter";
 const logLinksEvent = (eventName, params) => {
   if (isLocalhost()) return;
@@ -658,7 +656,7 @@ const ThemeModeToggle = ({ themeMode, onModeChange }) => {
         isDark ? (
           <LuSun size={18} color="#fffaf0" strokeWidth={2.35} />
         ) : (
-          <RiMoonClearFill size={18} />
+          <LuMoon size={18} />
         )
       }
       size="sm"
@@ -734,8 +732,7 @@ const MusicToggle = ({ isMusicPlaying, onToggleMusic, isLightTheme }) => {
 };
 
 export default function LinksPage() {
-  const { generateNostrKeys, auth, postNostrContent, connectToNostr } =
-    useDecentralizedIdentity();
+  const hasTriggeredKeygen = useRef(false);
   const themeMode = useThemeStore((s) => s.themeMode);
   const syncThemeMode = useThemeStore((s) => s.syncThemeMode);
   const isLightTheme = themeMode === "light";
@@ -846,20 +843,27 @@ export default function LinksPage() {
     }
   }, []);
 
-  // Manage Audio instance & Autoplay on render
+  // Manage Audio instance & Autoplay lazily only when music is enabled
   useEffect(() => {
-    const audio = new Audio(getAssetUrl("audio/awalk.mp3"));
-    audio.loop = true;
-    audio.volume = 0.35;
-    audioRef.current = audio;
-
-    if (isMusicPlayingRef.current) {
-      safePlay();
+    if (!isMusicPlaying) {
+      if (audioRef.current) {
+        safePause();
+      }
+      return;
     }
+
+    if (!audioRef.current) {
+      const audio = new Audio(getAssetUrl("audio/awalk.mp3"));
+      audio.loop = true;
+      audio.volume = 0.35;
+      audioRef.current = audio;
+    }
+
+    safePlay();
 
     const handleFirstGesture = () => {
       if (!isMusicPlayingRef.current) return;
-      if (audio.paused) {
+      if (audioRef.current && audioRef.current.paused) {
         safePlay();
       }
     };
@@ -870,19 +874,18 @@ export default function LinksPage() {
     return () => {
       window.removeEventListener("pointerdown", handleFirstGesture);
       window.removeEventListener("keydown", handleFirstGesture);
-      audio.pause();
-      audio.src = "";
-      audioRef.current = null;
     };
-  }, []);
+  }, [isMusicPlaying]);
 
   useEffect(() => {
-    if (isMusicPlaying) {
-      safePlay();
-    } else {
-      safePause();
-    }
-  }, [isMusicPlaying]);
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = "";
+        audioRef.current = null;
+      }
+    };
+  }, []);
 
   const { isOpen, onOpen, onClose } = useDisclosure();
   const {
@@ -964,8 +967,6 @@ export default function LinksPage() {
     [isLightTheme, modalBg, modalBorderColor],
   );
 
-  const hasTriggeredKeygen = useRef(false);
-
   // Initialize language based on timezone detection
   useEffect(() => {
     initLanguage();
@@ -974,6 +975,31 @@ export default function LinksPage() {
   useEffect(() => {
     syncDocumentLanguage(language);
   }, [language]);
+
+  // Background Nostr key generation (runs on idle without blocking initial page render)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const hasStoredKeys =
+      Boolean(localStorage.getItem("local_nsec")) &&
+      Boolean(localStorage.getItem("local_npub"));
+
+    if (hasStoredKeys || hasTriggeredKeygen.current) return;
+    hasTriggeredKeygen.current = true;
+
+    const triggerKeygen = () => {
+      import("../utils/instantNostrKeygen")
+        .then(({ generateInstantNostrKeys }) => generateInstantNostrKeys(""))
+        .catch((err) => {
+          console.error("Failed to generate instant Nostr keys in background:", err);
+        });
+    };
+
+    if ("requestIdleCallback" in window) {
+      window.requestIdleCallback(triggerKeygen, { timeout: 3000 });
+    } else {
+      setTimeout(triggerKeygen, 1000);
+    }
+  }, []);
 
   // Load stored displayName and profilePicture
   useEffect(() => {
@@ -1189,41 +1215,6 @@ export default function LinksPage() {
     }
     return translations.welcome;
   };
-
-  // Background Nostr key generation (no UI)
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const hasStoredKeys =
-      Boolean(localStorage.getItem("local_nsec")) &&
-      Boolean(localStorage.getItem("local_npub"));
-
-    if (hasStoredKeys) {
-      return;
-    }
-
-    if (hasTriggeredKeygen.current) {
-      return;
-    }
-
-    hasTriggeredKeygen.current = true;
-    let isMounted = true;
-    const createInstantKeys = async () => {
-      try {
-        const defaultDisplayName = "";
-        await generateNostrKeys(defaultDisplayName);
-        if (!isMounted) return;
-        localStorage.setItem("displayName", defaultDisplayName);
-      } catch (error) {
-        console.error("Failed to generate instant Nostr keys:", error);
-      }
-    };
-
-    createInstantKeys();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [generateNostrKeys]);
 
   return (
     <Box
@@ -1514,9 +1505,6 @@ export default function LinksPage() {
             setDisplayName={setDisplayName}
             profilePicture={profilePicture}
             setProfilePicture={setProfilePicture}
-            postNostrContent={postNostrContent}
-            connectToNostr={connectToNostr}
-            auth={auth}
             handleSelectSound={handleSelectSound}
             handleSubmitActionSound={handleSubmitActionSound}
           />

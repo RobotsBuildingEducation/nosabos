@@ -31,11 +31,12 @@ import { logEvent } from "firebase/analytics";
 import { doc, updateDoc } from "firebase/firestore";
 import { analytics, database } from "../../firebaseResources/firebaseResources";
 import useNostrWalletStore from "../../hooks/useNostrWalletStore";
+import { useDecentralizedIdentity } from "../../hooks/useDecentralizedIdentity";
 import {
   nativeModalMotionProps,
   nativeOverlayMotionProps,
 } from "../../utils/modalMotion";
-import RouteLoadingOrb from "../RouteLoadingOrb";
+import VoiceOrb from "../VoiceOrb";
 
 // Lazy-load the heavy IdentityCard (contains styled-components, ~441 kB)
 const IdentityCard = lazy(() =>
@@ -76,13 +77,21 @@ export default function CustomizeProfileModal({
   setDisplayName,
   profilePicture,
   setProfilePicture,
-  postNostrContent,
-  connectToNostr,
-  auth,
+  postNostrContent: propPostNostrContent,
+  connectToNostr: propConnectToNostr,
+  auth: propAuth,
   handleSelectSound,
   handleSubmitActionSound,
 }) {
   const toast = useToast();
+  const {
+    postNostrContent: internalPostNostrContent,
+    connectToNostr: internalConnectToNostr,
+    auth: internalAuth,
+  } = useDecentralizedIdentity();
+  const postNostrContent = propPostNostrContent || internalPostNostrContent;
+  const connectToNostr = propConnectToNostr || internalConnectToNostr;
+  const auth = propAuth || internalAuth;
 
   const [usernameInput, setUsernameInput] = useState(displayName || "");
   const [profilePictureUrlInput, setProfilePictureUrlInput] = useState(
@@ -916,7 +925,7 @@ export default function CustomizeProfileModal({
               {/* Loading/hydration spinner */}
               {walletHydrating && !cashuWallet && (
                 <HStack py={2}>
-                  <RouteLoadingOrb size={24} />
+                  <VoiceOrb state="listening" size={24} />
                   <Text fontSize="sm" color={labelColor}>
                     {translations.loadingWallet}
                   </Text>

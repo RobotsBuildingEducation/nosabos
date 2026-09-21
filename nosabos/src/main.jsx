@@ -19,7 +19,7 @@ import { ChakraProvider } from "@chakra-ui/react";
 import { BrowserRouter as Router, Route, Routes, Outlet } from "react-router-dom";
 import { theme } from "./theme";
 const LandingPage = lazy(() => import("./components/LandingPage.jsx"));
-import RouteLoadingOrb from "./components/RouteLoadingOrb.jsx";
+import VoiceOrb from "./components/VoiceOrb.jsx";
 import AppLoadBoundary from "./components/AppLoadBoundary.jsx";
 import { initAppUpdateCoordinator } from "./pwa/appUpdateCoordinator";
 
@@ -55,10 +55,20 @@ const hasStoredKey = () => {
   return Boolean(secret && secret.trim());
 };
 
+const LOADING_ORB_STATES = ["idle", "listening", "speaking"];
+
+function getRandomLoadingOrbState() {
+  return LOADING_ORB_STATES[
+    Math.floor(Math.random() * LOADING_ORB_STATES.length)
+  ];
+}
+
 function RouteFallback() {
+  const orbState = useMemo(getRandomLoadingOrbState, []);
+
   return (
     <div className="route-fallback" aria-label="Loading">
-      <RouteLoadingOrb size={88} />
+      <VoiceOrb state={orbState} size={88} useWorker maxDpr={1} />
     </div>
   );
 }
@@ -73,6 +83,8 @@ function BootReadyBoundary({ children }) {
 }
 
 function BootOverlay({ visible }) {
+  const orbState = useMemo(getRandomLoadingOrbState, []);
+
   return (
     <div
       className={`route-fallback boot-overlay ${
@@ -81,7 +93,7 @@ function BootOverlay({ visible }) {
       aria-label="Loading"
       aria-hidden={!visible}
     >
-      <RouteLoadingOrb size={88} />
+      <VoiceOrb state={orbState} size={88} useWorker maxDpr={1} />
     </div>
   );
 }
@@ -247,17 +259,21 @@ createRoot(document.getElementById("root")).render(
               <Route
                 path="/links"
                 element={
-                  <BootReadyBoundary>
-                    <LinksPage />
-                  </BootReadyBoundary>
+                  <Suspense fallback={null}>
+                    <BootReadyBoundary>
+                      <LinksPage />
+                    </BootReadyBoundary>
+                  </Suspense>
                 }
               />
               <Route
                 path="/legacy-links"
                 element={
-                  <BootReadyBoundary>
-                    <LegacyLinksPage />
-                  </BootReadyBoundary>
+                  <Suspense fallback={null}>
+                    <BootReadyBoundary>
+                      <LegacyLinksPage />
+                    </BootReadyBoundary>
+                  </Suspense>
                 }
               />
               <Route
