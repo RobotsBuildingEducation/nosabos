@@ -1,4 +1,4 @@
-import { CEFR_LEVEL_COUNTS, CEFR_LEVELS } from "../data/flashcards/common.js";
+import { CEFR_LEVEL_COUNTS, CEFR_LEVELS } from "../data/flashcards/cefrConstants.js";
 import { LESSON_COUNTS, getLessonLevelFromId } from "./cefrProgress.js";
 
 export const COURSE_PROGRESS_SCHEMA_VERSION = 1;

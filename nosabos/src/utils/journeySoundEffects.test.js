@@ -132,7 +132,9 @@ test("JourneyRecordingModal wires selectSound and submitActionSound", () => {
 
   // Milestone selection
   assert.ok(
-    fileContent.includes("const selectMilestone = num => {\n    if (num > sessionCount || busy) return;\n    playSound(selectSound);"),
+    /const selectMilestone = \(?num\)? => {\s*if \(num > sessionCount \|\| busy\) return;\s*playSound\(selectSound\);/.test(
+      fileContent,
+    ),
     "selectMilestone should play selectSound",
   );
 
@@ -193,7 +195,7 @@ test("JourneyTestButton wires selectSound on trigger", () => {
     "JourneyTestButton should import selectSound",
   );
   assert.ok(
-    fileContent.includes("playSound(selectSound);\n          open();"),
+    /playSound\(selectSound\);\s*open\(\);/.test(fileContent),
     "JourneyTestButton should play selectSound on click",
   );
 });

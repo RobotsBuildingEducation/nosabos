@@ -31,12 +31,65 @@
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:ital,wght@0,700;1,700&family=Gaegu:wght@700&family=Patrick+Hand&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://res.cloudinary.com" crossorigin>
+  <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+  <link rel="dns-prefetch" href="https://fonts.gstatic.com">
+  <link rel="dns-prefetch" href="https://res.cloudinary.com">
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Comic+Neue:ital,wght@0,700;1,700&family=Gaegu:wght@700&family=Patrick+Hand&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Comic+Neue:ital,wght@0,700;1,700&family=Gaegu:wght@700&family=Patrick+Hand&display=swap" media="print" onload="this.media='all'">
+  <noscript>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Comic+Neue:ital,wght@0,700;1,700&family=Gaegu:wght@700&family=Patrick+Hand&display=swap">
+  </noscript>
   <title>Piyali | Your Personal Language Tutor.</title>
+  <style>
+    .initial-boot-shell {
+      min-height: 100dvh;
+      display: grid;
+      place-items: center;
+      background: #0c0c0f;
+    }
+    @media (prefers-color-scheme: light) {
+      .initial-boot-shell {
+        background: #fdf8ee;
+      }
+    }
+    [data-theme-mode="light"] .initial-boot-shell {
+      background: #fdf8ee;
+    }
+    .initial-boot-orb {
+      width: 88px;
+      height: 88px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #00ffff 0%, #7b61ff 42%, #ff5c8a 78%, #0c0c0f 100%);
+      box-shadow: 0 0 35px rgba(0, 255, 255, 0.4), 0 0 70px rgba(123, 97, 255, 0.25);
+      animation: initialOrbPulse 2.4s ease-in-out infinite alternate;
+      will-change: transform, opacity;
+    }
+    @keyframes initialOrbPulse {
+      0% { transform: scale(0.88); opacity: 0.8; filter: brightness(0.92); }
+      50% { transform: scale(1.04); opacity: 1; filter: brightness(1.15); }
+      100% { transform: scale(0.92); opacity: 0.85; filter: brightness(0.96); }
+    }
+  </style>
 </head>
 
 <body>
-  <div id="root"></div>
+  <div id="root">
+    <div class="initial-boot-shell">
+      <div class="initial-boot-orb" aria-label="Loading"></div>
+    </div>
+  </div>
+  <script>
+    window.addEventListener('vite:preloadError', (event) => {
+      const reloadKey = 'nosabos_vite_preload_recovery';
+      const last = sessionStorage.getItem(reloadKey);
+      const now = Date.now();
+      if (!last || now - Number(last) > 10000) {
+        sessionStorage.setItem(reloadKey, String(now));
+        window.location.reload();
+      }
+    });
+  </script>
   <script type="module" src="/src/main.jsx"></script>
 </body>
 

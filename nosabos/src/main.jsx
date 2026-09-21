@@ -18,10 +18,19 @@ import "./useThemeStore";
 import { ChakraProvider } from "@chakra-ui/react";
 import { BrowserRouter as Router, Route, Routes, Outlet } from "react-router-dom";
 import { theme } from "./theme";
-import LandingPage from "./components/LandingPage.jsx";
-import VoiceOrb from "./components/VoiceOrb.jsx";
+const LandingPage = lazy(() => import("./components/LandingPage.jsx"));
+import RouteLoadingOrb from "./components/RouteLoadingOrb.jsx";
 import AppLoadBoundary from "./components/AppLoadBoundary.jsx";
 import { initAppUpdateCoordinator } from "./pwa/appUpdateCoordinator";
+
+// Parallel prefetch for social media visitors arriving via link in bio (/links)
+if (
+  typeof window !== "undefined" &&
+  (window.location.pathname.startsWith("/links") ||
+    window.location.pathname.startsWith("/legacy-links"))
+) {
+  import("./components/LinksPage.jsx");
+}
 
 // Initialize the update coordinator singleton before route mounting
 initAppUpdateCoordinator();
@@ -46,20 +55,10 @@ const hasStoredKey = () => {
   return Boolean(secret && secret.trim());
 };
 
-const LOADING_ORB_STATES = ["idle", "listening", "speaking"];
-
-function getRandomLoadingOrbState() {
-  return LOADING_ORB_STATES[
-    Math.floor(Math.random() * LOADING_ORB_STATES.length)
-  ];
-}
-
 function RouteFallback() {
-  const orbState = useMemo(getRandomLoadingOrbState, []);
-
   return (
     <div className="route-fallback" aria-label="Loading">
-      <VoiceOrb state={orbState} size={88} useWorker maxDpr={1} />
+      <RouteLoadingOrb size={88} />
     </div>
   );
 }
@@ -74,8 +73,6 @@ function BootReadyBoundary({ children }) {
 }
 
 function BootOverlay({ visible }) {
-  const orbState = useMemo(getRandomLoadingOrbState, []);
-
   return (
     <div
       className={`route-fallback boot-overlay ${
@@ -84,7 +81,7 @@ function BootOverlay({ visible }) {
       aria-label="Loading"
       aria-hidden={!visible}
     >
-      <VoiceOrb state={orbState} size={88} useWorker maxDpr={1} />
+      <RouteLoadingOrb size={88} />
     </div>
   );
 }
@@ -173,17 +170,21 @@ function AppContainer() {
   useEffect(() => clearBootHideTimers, [clearBootHideTimers]);
 
   if (!isAuthenticated) {
-    return <LandingPage onAuthenticated={handleAuthenticated} />;
+    return (
+      <Suspense fallback={<RouteFallback />}>
+        <LandingPage onAuthenticated={handleAuthenticated} />
+      </Suspense>
+    );
   }
 
   return (
-    <AppLoadBoundary>
+    <>
       <Suspense fallback={null}>
         <App onBootReady={handleAppBootReady} />
       </Suspense>
       {bootOverlayMounted && <BootOverlay visible={bootOverlayVisible} />}
       <Outlet />
-    </AppLoadBoundary>
+    </>
   );
 }
 
@@ -205,7 +206,11 @@ function ProficiencyContainer() {
   }, []);
 
   if (!isAuthenticated) {
-    return <LandingPage onAuthenticated={handleAuthenticated} />;
+    return (
+      <Suspense fallback={<RouteFallback />}>
+        <LandingPage onAuthenticated={handleAuthenticated} />
+      </Suspense>
+    );
   }
 
   return (
@@ -221,57 +226,59 @@ createRoot(document.getElementById("root")).render(
   <ChakraProvider theme={theme}>
     <div className="app-shell">
       <Router>
-        <Suspense fallback={<RouteFallback />}>
-          <Routes>
-            <Route element={<AppContainer />}>
-              <Route path="/" element={null} />
-              <Route path="/onboarding" element={null} />
-              <Route path="/onboarding/*" element={null} />
-              <Route path="/subscribe" element={null} />
-            </Route>
-            <Route
-              path="/patreon-return"
-              element={
-                <BootReadyBoundary>
-                  <PatreonOAuthDrawerReturn />
-                </BootReadyBoundary>
-              }
-            />
-            <Route path="/proficiency" element={<ProficiencyContainer />} />
-            <Route
-              path="/links"
-              element={
-                <BootReadyBoundary>
-                  <LinksPage />
-                </BootReadyBoundary>
-              }
-            />
-            <Route
-              path="/legacy-links"
-              element={
-                <BootReadyBoundary>
-                  <LegacyLinksPage />
-                </BootReadyBoundary>
-              }
-            />
-            <Route
-              path="/squircle"
-              element={
-                <BootReadyBoundary>
-                  <SquirclePlayground />
-                </BootReadyBoundary>
-              }
-            />
-            <Route
-              path="/citizenship"
-              element={
-                <BootReadyBoundary>
-                  <CitizenshipGuide />
-                </BootReadyBoundary>
-              }
-            />
-          </Routes>
-        </Suspense>
+        <AppLoadBoundary>
+          <Suspense fallback={<RouteFallback />}>
+            <Routes>
+              <Route element={<AppContainer />}>
+                <Route path="/" element={null} />
+                <Route path="/onboarding" element={null} />
+                <Route path="/onboarding/*" element={null} />
+                <Route path="/subscribe" element={null} />
+              </Route>
+              <Route
+                path="/patreon-return"
+                element={
+                  <BootReadyBoundary>
+                    <PatreonOAuthDrawerReturn />
+                  </BootReadyBoundary>
+                }
+              />
+              <Route path="/proficiency" element={<ProficiencyContainer />} />
+              <Route
+                path="/links"
+                element={
+                  <BootReadyBoundary>
+                    <LinksPage />
+                  </BootReadyBoundary>
+                }
+              />
+              <Route
+                path="/legacy-links"
+                element={
+                  <BootReadyBoundary>
+                    <LegacyLinksPage />
+                  </BootReadyBoundary>
+                }
+              />
+              <Route
+                path="/squircle"
+                element={
+                  <BootReadyBoundary>
+                    <SquirclePlayground />
+                  </BootReadyBoundary>
+                }
+              />
+              <Route
+                path="/citizenship"
+                element={
+                  <BootReadyBoundary>
+                    <CitizenshipGuide />
+                  </BootReadyBoundary>
+                }
+              />
+            </Routes>
+          </Suspense>
+        </AppLoadBoundary>
       </Router>
     </div>
   </ChakraProvider>,

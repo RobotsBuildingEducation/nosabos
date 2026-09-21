@@ -70,7 +70,26 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
       }
     };
 
-    initializeConnection();
+    let canceled = false;
+    const runInit = () => {
+      if (!canceled) {
+        initializeConnection();
+      }
+    };
+
+    const idleHandle =
+      typeof window !== "undefined" && "requestIdleCallback" in window
+        ? window.requestIdleCallback(runInit, { timeout: 2000 })
+        : setTimeout(runInit, 1200);
+
+    return () => {
+      canceled = true;
+      if (typeof window !== "undefined" && "cancelIdleCallback" in window) {
+        window.cancelIdleCallback(idleHandle);
+      } else {
+        clearTimeout(idleHandle);
+      }
+    };
   }, []);
 
   const generateNostrKeys = async (userDisplayName = null) => {

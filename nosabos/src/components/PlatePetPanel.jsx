@@ -2005,8 +2005,7 @@ function CompanionOptionCanvas({ stage, petType = "ghost" }) {
     />
   );
 }
-
-export default function PlatePetPanel({
+function PlatePetPanel({
   lang = "en",
   health = DAILY_GOAL_PET_DEFAULT_HEALTH,
   variant = "setup",
@@ -2737,3 +2736,5 @@ export default function PlatePetPanel({
     </>
   );
 }
+
+export default React.memo(PlatePetPanel);

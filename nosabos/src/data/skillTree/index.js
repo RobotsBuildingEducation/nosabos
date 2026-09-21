@@ -6,7 +6,7 @@
  * selected CEFR level and target-language curriculum.
  */
 
-import { CEFR_LEVELS } from "../flashcards/common.js";
+import { CEFR_LEVELS } from "../flashcards/cefrConstants.js";
 import { loadTargetCurriculum } from "./targetCurriculum/load.js";
 
 export const SKILL_STATUS = {

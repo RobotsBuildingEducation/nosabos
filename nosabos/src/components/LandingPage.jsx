@@ -41,7 +41,6 @@ import { MdSupportAgent } from "react-icons/md";
 import { detectUserLanguage } from "../utils/languageDetection";
 import { useDecentralizedIdentity } from "../hooks/useDecentralizedIdentity";
 import useSoundSettings from "../hooks/useSoundSettings";
-import * as Tone from "tone";
 import { useThemeStore } from "../useThemeStore";
 import { getThemeModeToggleProps } from "../utils/themeModeToggleStyle";
 import {
@@ -1893,8 +1892,17 @@ const LandingPage = ({ onAuthenticated }) => {
   // never ran here because LandingPage renders before <App /> mounts.
   useEffect(() => {
     const handleFirstInteraction = () => {
-      // Tone.start() synchronously inside the gesture (required on iOS/mobile).
-      Tone.start();
+      // Resume browser AudioContext synchronously inside the gesture so
+      // mobile Safari unlocks audio cleanly without needing Tone.js yet.
+      const AudioContextClass =
+        typeof window !== "undefined" &&
+        (window.AudioContext || window.webkitAudioContext);
+      if (AudioContextClass) {
+        try {
+          const tempCtx = new AudioContextClass();
+          tempCtx.resume().then(() => tempCtx.close());
+        } catch (_) {}
+      }
       warmupAudio();
       document.removeEventListener("pointerdown", handleFirstInteraction);
       document.removeEventListener("keydown", handleFirstInteraction);

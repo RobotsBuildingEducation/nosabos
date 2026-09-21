@@ -18,7 +18,7 @@
  * level is not evidence of ability.
  */
 
-import { CEFR_LEVELS } from "../data/flashcards/common.js";
+import { CEFR_LEVELS } from "../data/flashcards/cefrConstants.js";
 
 // Completed generated decks -> phonics ladder level. Bands are wide on
 // purpose: each deck is a handful of cards, so reaching C2 by ladder alone
