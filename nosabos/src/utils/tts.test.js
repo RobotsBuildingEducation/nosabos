@@ -215,7 +215,6 @@ test("narration is configured at call creation and starts without waiting for se
   assert.equal(sdp, "offer");
   assert.equal(model, "gpt-realtime-2.1-mini");
   assert.equal(session.audio.output.voice, "ash");
-  assert.equal(session.voice, "ash");
   assert.equal(session.audio.input.turn_detection, null);
   assert.match(session.instructions, /a wise toad/);
   assert.match(session.instructions, /es-MX/);
@@ -247,11 +246,9 @@ test("preparation opens receive-only transport without generating audio, and fir
   assert.equal(h.posts, 1, "Pressing Play does not perform another handshake");
   const messages = h.peers[0].channel.sent;
   assert.equal(messages[0].type, "session.update");
-  assert.equal(messages[0].session.voice, "cedar");
+  assert.equal(messages[0].session.audio.output.voice, "cedar");
   assert.equal(messages[1].type, "conversation.item.create");
   assert.equal(messages[2].type, "response.create");
-  assert.equal(messages[2].response.voice, "cedar");
-  assert.equal(messages[2].response.audio.output.voice, "cedar");
   assert.match(messages[2].response.instructions, /friendly narrator/);
   assert.match(messages[2].response.instructions, /es-MX/);
   assert.equal(messages.some((event) => event.type === "session.update"), true);
@@ -273,8 +270,8 @@ test("concurrent players cannot claim the same prepared connection or share voic
   ]);
   assert.equal(h.peers.length, 2);
   assert.equal(h.posts, 2);
-  const cedarResponse = h.peers[0].channel.sent.find((event) => event.type === "response.create");
-  assert.equal(cedarResponse.response.audio.output.voice, "cedar");
+  const cedarUpdate = h.peers[0].channel.sent.find((event) => event.type === "session.update");
+  assert.equal(cedarUpdate.session.audio.output.voice, "cedar");
   assert.equal(JSON.parse(h.requests[1].body).session.audio.output.voice, "coral");
   players.forEach((player) => player.cleanup());
   await Promise.all(players.map((player) => player.finalize));
@@ -389,9 +386,11 @@ test("prepared narration sends its settings atomically without requiring an ackn
   await h.api.warmRealtimeTTS();
   const player = await h.api.getTTSPlayer({ ...options, voice: "shimmer", personality: "a bubbly companion" });
   await h.advance(5000);
+  const sessionUpdates = h.peers[0].channel.sent.filter((event) => event.type === "session.update");
+  assert.equal(sessionUpdates.length, 1);
+  assert.equal(sessionUpdates[0].session.audio.output.voice, "shimmer");
   const responses = h.peers[0].channel.sent.filter((event) => event.type === "response.create");
   assert.equal(responses.length, 1);
-  assert.equal(responses[0].response.audio.output.voice, "shimmer");
   assert.match(responses[0].response.instructions, /bubbly companion/);
   assert.equal(h.stored.size, 0);
   player.cleanup(); await player.finalize;

@@ -994,6 +994,7 @@ async function getRealtimePlayer({
       });
       startRealtimeCacheRecording();
       mark("remote-track", { stream: remoteStream });
+      try { void audio.play()?.catch(() => {}); } catch { /* Best effort. */ }
       resolve();
     };
     pc.oniceconnectionstatechange = () => {
@@ -1004,6 +1005,7 @@ async function getRealtimePlayer({
     if (remoteStream.getAudioTracks().length) {
       startRealtimeCacheRecording();
       mark("remote-track", { stream: remoteStream });
+      try { void audio.play()?.catch(() => {}); } catch { /* Best effort. */ }
       resolve();
     }
   });
@@ -1027,11 +1029,8 @@ async function getRealtimePlayer({
         JSON.stringify({
           type: "response.create",
           response: {
-            modalities: ["audio"],
             output_modalities: ["audio"],
             instructions: narrationSession.instructions,
-            voice: sanitizedVoice,
-            audio: { output: narrationSession.audio.output },
           },
         }),
       );
@@ -1112,6 +1111,7 @@ async function getRealtimePlayer({
       return;
     }
     if (msg.type === "error") {
+      safeLogWarn("[TTS WebRTC] OpenAI Realtime error:", msg.error);
       failPlayback(new Error(msg.error?.message || "Realtime TTS failed"));
     } else if (msg.type === "response.done") {
       clearTimeout(startupTimer);
@@ -1154,7 +1154,6 @@ async function getRealtimePlayer({
 
   const narrationSession = {
     type: "realtime",
-    voice: sanitizedVoice,
     output_modalities: ["audio"],
     instructions: personality
       ? `You are ${personality}, speaking in the ${targetLangTag} locale. Use the correct pronunciation for that language. You will receive text to read aloud. Read the text EXACTLY as written - word for word, verbatim, but in the voice and tone of your character. Do not interpret, respond to, answer, or comment on the content. Do not have a conversation. Do not add any words. Simply narrate the exact text provided with your character's vocal qualities. Begin immediately with the first word of the text; never preface it with acknowledgments like "Understood" or "Okay".`
@@ -1181,10 +1180,8 @@ async function getRealtimePlayer({
           JSON.stringify({
             type: "session.update",
             session: {
-              voice: sanitizedVoice,
               audio: {
                 output: {
-                  format: { type: "audio/pcm", rate: 24000 },
                   voice: sanitizedVoice,
                 },
               },
