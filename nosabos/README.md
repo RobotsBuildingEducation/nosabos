@@ -53,7 +53,10 @@ Node version 20+ is required.
 
 > Frontend paywall password 8. `VITE_PATREON_PASSCODE=your_patreon_subscriber_passcode`
 
-> Firebase functions URLs (deploy to create) 9. `VITE_RESPONSES_URL=your_firebase_functions_base_url` 10. `VITE_REALTIME_URL=your_firebase_function_exchangeRealtimeSDP_url`
+> API URLs (deploy to create) 9. `VITE_RESPONSES_URL=your_firebase_functions_base_url` 10. `VITE_REALTIME_URL=your_cloudflare_worker_url`
+
+Realtime audio uses the [Cloudflare SDP Worker](cloudflare-tts-proxy/README.md).
+That guide covers deployment, App Check, local testing, and Firebase rollback.
 
 > Google captcha needed to make Firebase Appcheck work (https://cloud.google.com/security/products/recaptcha) 11. `VITE_RECAPTCHA_SITE_KEY=your_recaptcha_v3_site_key`
 

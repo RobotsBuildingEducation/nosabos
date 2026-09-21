@@ -52,7 +52,7 @@ import {
   SOFT_STOP_BUTTON_BG,
   SOFT_STOP_BUTTON_HOVER_BG,
 } from "../utils/softStopButton";
-import { submitActionSound, deliciousSound, clickSound } from "../constants/sounds";
+import { submitActionSound } from "../constants/sounds";
 import RandomCharacter from "./RandomCharacter";
 import AnimatedEllipsis from "./AnimatedEllipsis";
 import { useThemeStore } from "../useThemeStore";
@@ -704,7 +704,6 @@ export default function LessonFlashcard({
       setXpAwarded(xp);
       if (isYes) await onCorrect?.(xp);
       setShowResult(true);
-      playSound(isYes ? deliciousSound : clickSound);
 
       if (isYes) {
         // Auto-collect to deck
@@ -827,10 +826,15 @@ export default function LessonFlashcard({
       };
       player.audio.onended = cleanup;
       player.audio.onerror = cleanup;
+      player.finalize?.then(cleanup, cleanup);
       await player.ready;
       setLoadingTts(false);
       setIsPlayingAudio(true);
-      await player.audio.play();
+      try {
+        await player.audio.play();
+      } catch (err) {
+        console.warn("LessonFlashcard audio play non-fatal:", err);
+      }
     } catch {
       stopAnswerAudio();
     }

@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>TTS Edge Cache Verification</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        max-width: 860px;
+        margin: 32px auto;
+        padding: 0 20px;
+        color: #1a202c;
+        line-height: 1.5;
+      }
+      h1 { margin-bottom: 4px; font-size: 24px; }
+      .subtitle { color: #718096; margin-top: 0; margin-bottom: 24px; }
+      .card {
+        background: #f7fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 20px;
+      }
+      .card h2 { font-size: 16px; margin-top: 0; margin-bottom: 12px; color: #2d3748; }
+      label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 6px; }
+      input, select, textarea {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 8px 12px;
+        border: 1px solid #cbd5e0;
+        border-radius: 6px;
+        font-size: 14px;
+        margin-bottom: 12px;
+      }
+      .row { display: flex; gap: 12px; }
+      .col { flex: 1; }
+      .btn {
+        background: #3182ce;
+        color: white;
+        border: none;
+        padding: 10px 18px;
+        font-size: 14px;
+        font-weight: 600;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.15s;
+        margin-right: 8px;
+        margin-bottom: 8px;
+      }
+      .btn:hover:not(:disabled) { background: #2b6cb0; }
+      .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+      .btn-secondary { background: #718096; }
+      .btn-secondary:hover:not(:disabled) { background: #4a5568; }
+      .btn-danger { background: #e53e3e; }
+      .btn-danger:hover:not(:disabled) { background: #c53030; }
+      .btn-success { background: #38a169; }
+      .btn-success:hover:not(:disabled) { background: #2f855a; }
+      pre {
+        background: #1a202c;
+        color: #e2e8f0;
+        padding: 14px;
+        border-radius: 6px;
+        font-size: 13px;
+        overflow-x: auto;
+        white-space: pre-wrap;
+        word-break: break-word;
+        max-height: 280px;
+      }
+      .badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+      .badge-hit { background: #c6f6d5; color: #22543d; }
+      .badge-miss { background: #fed7d7; color: #742a2a; }
+      .badge-edge { background: #feebc8; color: #7b341e; }
+    </style>
+  </head>
+  <body>
+    <h1>⚡ Cloudflare TTS Edge Cache Verification</h1>
+    <p class="subtitle">
+      Test and measure the shared Edge Audio Cache across Cloudflare Staging, Local workerd, and Production.
+    </p>
+
+    <!-- Configuration Card -->
+    <div class="card">
+      <h2>1. Environment & Phrase Configuration</h2>
+      <div class="row">
+        <div class="col">
+          <label for="workerEnv">Target Worker Endpoint</label>
+          <select id="workerEnv">
+            <option value="https://nosabos-tts-proxy-staging.robotsbuildingeducation.workers.dev" selected>
+              🟡 Staging Worker (nosabos-tts-proxy-staging) — Safe to test
+            </option>
+            <option value="http://127.0.0.1:8787">
+              💻 Local Worker (http://127.0.0.1:8787 via npm run tts:dev)
+            </option>
+            <option value="https://nosabos-tts-proxy.robotsbuildingeducation.workers.dev">
+              🟢 Production Worker (nosabos-tts-proxy)
+            </option>
+          </select>
+        </div>
+        <div class="col">
+          <label for="voice">Voice</label>
+          <select id="voice">
+            <option value="ash" selected>ash (default)</option>
+            <option value="echo">echo</option>
+            <option value="sage">sage</option>
+            <option value="marin">marin</option>
+            <option value="shimmer">shimmer</option>
+            <option value="alloy">alloy</option>
+            <option value="ballad">ballad</option>
+            <option value="coral">coral</option>
+            <option value="cedar">cedar</option>
+            <option value="verse">verse</option>
+          </select>
+          <div style="font-size: 11px; color: #718096; margin-top: -8px; margin-bottom: 8px;">
+            Your app's default voice: <b id="deviceVoiceNote">ash</b>
+          </div>
+        </div>
+      </div>
+
+      <label for="text">Phrase to Test</label>
+      <input id="text" type="text" value="madre" placeholder="Enter word or phrase (e.g. madre, biblioteca, hola)" />
+
+      <div style="font-size: 12px; color: #4a5568; margin-bottom: 8px;">
+        Computed Cache Key: <code id="cacheKeyDisplay" style="background:#edf2f7; padding:2px 6px; border-radius:4px;"></code>
+      </div>
+    </div>
+
+    <!-- Step 1: Probe Edge Cache directly -->
+    <div class="card">
+      <h2>2. Probe Edge Cache Directly (GET /audio/:key)</h2>
+      <p style="font-size: 13px; color: #4a5568; margin-top: 0;">
+        Sends a direct HTTP GET request to the Worker's edge cache without opening WebRTC. Fast check to see if Cloudflare already has this audio.
+      </p>
+      <button class="btn btn-secondary" id="probeBtn">Probe Edge Cache</button>
+      <span id="probeBadge"></span>
+      <div id="probeAudioContainer" style="margin-top: 10px;"></div>
+      <pre id="probeLog">Waiting for probe…</pre>
+    </div>
+
+    <!-- Step 2: Full Player Test -->
+    <div class="card">
+      <h2>3. App Player Integration Test (playTTS)</h2>
+      <p style="font-size: 13px; color: #4a5568; margin-top: 0;">
+        Runs the real app player: checks local IndexedDB &rarr; checks Cloudflare Edge Cache &rarr; generates via OpenAI Realtime if missing &rarr; uploads to Edge Cache on completion.
+      </p>
+      <button class="btn btn-success" id="playBtn">Play with App Player</button>
+      <button class="btn btn-danger" id="stopBtn" disabled>Stop</button>
+      <button class="btn btn-secondary" id="clearLocalBtn">Clear Local IndexedDB</button>
+      <span id="playerBadge"></span>
+      <pre id="playerLog">Ready to play.</pre>
+    </div>
+
+    <script type="module">
+      import {
+        getTTSPlayer,
+        getPreferredTTSVoice,
+        createWarmTTSAudio,
+        stopTTSPlayback,
+        clearTTSCache,
+      } from "/src/utils/tts.js";
+
+      const textInput = document.querySelector("#text");
+      const voiceSelect = document.querySelector("#voice");
+      const workerEnvSelect = document.querySelector("#workerEnv");
+      const cacheKeyDisplay = document.querySelector("#cacheKeyDisplay");
+
+      // Auto-detect and pre-select the exact voice this device uses in flashcards
+      const activeVoice = getPreferredTTSVoice();
+      if (activeVoice && Array.from(voiceSelect.options).some((o) => o.value === activeVoice)) {
+        voiceSelect.value = activeVoice;
+        document.querySelector("#deviceVoiceNote").textContent = activeVoice;
+      }
+
+      const probeBtn = document.querySelector("#probeBtn");
+      const probeBadge = document.querySelector("#probeBadge");
+      const probeLog = document.querySelector("#probeLog");
+      const probeAudioContainer = document.querySelector("#probeAudioContainer");
+
+      const playBtn = document.querySelector("#playBtn");
+      const stopBtn = document.querySelector("#stopBtn");
+      const clearLocalBtn = document.querySelector("#clearLocalBtn");
+      const playerBadge = document.querySelector("#playerBadge");
+      const playerLog = document.querySelector("#playerLog");
+
+      let currentPlayer = null;
+
+      function computeKey() {
+        const text = (textInput.value || "").trim().replace(/\s+/g, " ");
+        const voice = voiceSelect.value || "ash";
+        return ["v2", "realtime-v6", "es-MX", voice, "", text].join("::");
+      }
+
+      function updateKeyDisplay() {
+        cacheKeyDisplay.textContent = computeKey();
+      }
+      textInput.addEventListener("input", updateKeyDisplay);
+      voiceSelect.addEventListener("change", updateKeyDisplay);
+      updateKeyDisplay();
+
+      // --- Probe Edge Cache (Direct GET) ---
+      probeBtn.onclick = async () => {
+        probeBtn.disabled = true;
+        probeBadge.innerHTML = "";
+        probeAudioContainer.innerHTML = "";
+        const endpoint = workerEnvSelect.value.replace(/\/+$/, "");
+        const key = computeKey();
+        const url = `${endpoint}/audio/${encodeURIComponent(key)}`;
+
+        probeLog.textContent = `Probing GET ${url}…\n`;
+        const start = performance.now();
+
+        try {
+          const response = await fetch(url);
+          const duration = Math.round(performance.now() - start);
+
+          if (response.status === 200) {
+            const cacheStatus = response.headers.get("X-TTS-Cache") || "HIT";
+            const cacheControl = response.headers.get("Cache-Control") || "—";
+            const contentType = response.headers.get("Content-Type") || "—";
+            const blob = await response.blob();
+
+            probeBadge.innerHTML = `<span class="badge badge-hit">HIT (${duration} ms) — ${cacheStatus}</span>`;
+            probeLog.textContent = [
+              `✅ STATUS: 200 OK (${duration} ms)`,
+              `X-TTS-Cache: ${cacheStatus}`,
+              `Cache-Control: ${cacheControl}`,
+              `Content-Type: ${contentType}`,
+              `Payload Size: ${blob.size} bytes`,
+              `URL: ${url}`,
+            ].join("\n");
+
+            const audio = document.createElement("audio");
+            audio.controls = true;
+            audio.src = URL.createObjectURL(blob);
+            probeAudioContainer.appendChild(audio);
+            audio.play().catch(() => {});
+          } else {
+            const json = await response.json().catch(() => ({}));
+            probeBadge.innerHTML = `<span class="badge badge-miss">MISS (404) — ${duration} ms</span>`;
+            probeLog.textContent = [
+              `❌ STATUS: ${response.status} (${duration} ms)`,
+              `Response: ${JSON.stringify(json)}`,
+              `The audio is NOT cached on this worker yet.`,
+              `Click "Play with App Player" below to generate and cache it!`,
+            ].join("\n");
+          }
+        } catch (err) {
+          probeBadge.innerHTML = `<span class="badge badge-miss">ERROR</span>`;
+          probeLog.textContent = `Error reaching worker: ${err.message}\nMake sure CORS allows http://localhost:5173 or the worker is deployed.`;
+        } finally {
+          probeBtn.disabled = false;
+        }
+      };
+
+      // --- Play with App Player (Full Pipeline) ---
+      playBtn.onclick = async () => {
+        playBtn.disabled = true;
+        stopBtn.disabled = false;
+        playerBadge.innerHTML = "";
+        playerLog.textContent = "Starting player…\n";
+
+        const text = textInput.value;
+        const voice = voiceSelect.value;
+        const endpoint = workerEnvSelect.value;
+        const events = [];
+
+        const logPlayer = (msg) => {
+          events.push(msg);
+          playerLog.textContent = events.join("\n");
+        };
+
+        try {
+          const warmAudio = await createWarmTTSAudio();
+          currentPlayer = await getTTSPlayer({
+            text,
+            voice,
+            langTag: "es-MX",
+            warmAudio,
+            benchmarkEndpoint: endpoint,
+            onDiagnostic: (d) => {
+              if (d.phase === "cache-hit") {
+                logPlayer(`🎯 Cache Hit! Source: ${d.source || "local"}`);
+                playerBadge.innerHTML = `<span class="badge badge-hit">CACHE HIT (${d.source})</span>`;
+              } else if (d.phase === "edge-cache-lookup") {
+                logPlayer(`🔍 Looking up Edge Cache on Cloudflare…`);
+              } else if (d.phase === "cache-miss") {
+                logPlayer(`⚡ Cache Miss: Connecting to WebRTC / OpenAI Realtime…`);
+                playerBadge.innerHTML = `<span class="badge badge-edge">GENERATING LIVE</span>`;
+              } else if (d.phase === "player-start") {
+                logPlayer(`🚀 Player started on: ${d.endpoint}`);
+              }
+            },
+          });
+
+          await currentPlayer.ready;
+          logPlayer(`🔊 Audio playing…`);
+
+          const result = await currentPlayer.completion;
+          logPlayer(`🏁 Playback finished (status: ${result.status}).`);
+
+          await currentPlayer.finalize;
+          logPlayer(`💾 Audio finalized. Upload to edge triggered.`);
+
+          setTimeout(() => {
+            logPlayer(`\nTip: Click "Probe Edge Cache" above to verify the audio is now cached globally!`);
+          }, 800);
+        } catch (err) {
+          logPlayer(`❌ Error during playback: ${err.message}`);
+          playerBadge.innerHTML = `<span class="badge badge-miss">ERROR</span>`;
+        } finally {
+          playBtn.disabled = false;
+          stopBtn.disabled = true;
+        }
+      };
+
+      stopBtn.onclick = () => {
+        if (currentPlayer) {
+          stopTTSPlayback(currentPlayer.audio);
+          playerLog.textContent += "\n⏹ Stopped playback.";
+          stopBtn.disabled = true;
+          playBtn.disabled = false;
+        }
+      };
+
+      clearLocalBtn.onclick = async () => {
+        await clearTTSCache();
+        playerBadge.innerHTML = `<span class="badge badge-miss">LOCAL CLEARED</span>`;
+        playerLog.textContent = "🧹 Local IndexedDB cleared!\nNext playback will simulate a brand new user/device and check Cloudflare Edge Cache directly.";
+      };
+    </script>
+  </body>
+</html>

@@ -25,13 +25,11 @@ const BCP47_TO_WHISPER = {
   yua: "es",
 };
 
+import { getRealtimeUrl } from "../utils/proxyEndpoints";
+
 const REALTIME_MODEL =
   (import.meta.env?.VITE_REALTIME_MODEL || "gpt-realtime-2.1-mini") + "";
-const REALTIME_URL = import.meta.env?.VITE_REALTIME_URL
-  ? `${import.meta.env.VITE_REALTIME_URL}?model=${encodeURIComponent(
-      REALTIME_MODEL
-    )}`
-  : "";
+const REALTIME_URL = getRealtimeUrl(REALTIME_MODEL);
 const MIN_SPEECH_TURN_MS = 500;
 const TRANSCRIPT_GRACE_MS = 2500;
 const SESSION_UPDATE_EVENT_ID = "speech-practice-session-update";

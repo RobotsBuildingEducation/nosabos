@@ -72,7 +72,6 @@ import {
 } from "../utils/tts";
 import {
   clickSound,
-  deliciousSound,
   nextButtonSound,
   selectSound,
   submitActionSound,
@@ -4324,7 +4323,6 @@ export default function DelightQuestionLab({
         triggerDoneAnimation?.();
       }
     }
-    playSound(ok ? deliciousSound : clickSound);
 
     if (isFinalQuiz) {
       if (usesExternalQuiz) {

@@ -10,7 +10,7 @@ import { database } from "../../../firebaseResources/firebaseResources";
 import { getCefrProfile, normalizeCefrKey } from "../episodes/profile";
 
 const SCHEMA_VERSION = "v1";
-const FLAVOR_MODEL = "gpt-5-nano";
+const FLAVOR_MODEL = "gpt-5.6-luna";
 const MAX_LINE_LENGTH = 180;
 
 function cacheId({ targetLang, level, unitId, episodeId }) {

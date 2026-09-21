@@ -1,0 +1,4 @@
+# Copy to .dev.vars for local development. Never commit real keys.
+OPENAI_API_KEY=replace-with-your-openai-key
+# Optional local-only bypass; deployed workers always verify App Check.
+REQUIRE_APPCHECK=false

@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Responses API Comparison (Cloudflare vs Firebase)</title>
+    <style>
+      :root {
+        --primary: #2563eb;
+        --success: #16a34a;
+        --danger: #dc2626;
+        --bg-subtle: #f8fafc;
+        --border: #e2e8f0;
+      }
+      body {
+        font: 15px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        max-width: 1200px;
+        margin: 24px auto;
+        padding: 0 20px;
+        color: #1e293b;
+        background: #fff;
+      }
+      h1 { font-size: 24px; margin-bottom: 8px; }
+      p { margin: 6px 0 16px; color: #475569; }
+      .notice {
+        padding: 12px 16px;
+        background: #fef9c3;
+        border-left: 4px solid #eab308;
+        border-radius: 4px;
+        font-size: 14px;
+        margin-bottom: 20px;
+      }
+      .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 16px;
+      }
+      @media (max-width: 768px) {
+        .grid-2 { grid-template-columns: 1fr; }
+      }
+      label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 6px;
+        font-size: 14px;
+      }
+      input, textarea, select {
+        box-sizing: border-box;
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-size: 14px;
+        font-family: inherit;
+      }
+      input:focus, textarea:focus, select:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+      }
+      .quick-links {
+        font-size: 12px;
+        margin-top: 4px;
+      }
+      .quick-links a {
+        color: var(--primary);
+        text-decoration: none;
+        margin-right: 12px;
+        cursor: pointer;
+      }
+      .quick-links a:hover {
+        text-decoration: underline;
+      }
+      .btn-bar {
+        margin: 20px 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      button {
+        padding: 10px 18px;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        transition: opacity 0.15s;
+      }
+      button:hover:not(:disabled) { opacity: 0.9; }
+      button:disabled { opacity: 0.5; cursor: not-allowed; }
+      .btn-primary { background: var(--primary); color: #fff; }
+      .btn-cloudflare { background: #f97316; color: #fff; }
+      .btn-firebase { background: #f59e0b; color: #fff; }
+      .btn-secondary { background: #e2e8f0; color: #334155; }
+
+      .card {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 16px;
+        background: var(--bg-subtle);
+      }
+      .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--border);
+      }
+      .card-title { font-weight: 700; font-size: 16px; }
+      .badge {
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+      .badge-success { background: #dcfce7; color: #15803d; }
+      .badge-danger { background: #fee2e2; color: #b91c1c; }
+      .badge-neutral { background: #f1f5f9; color: #64748b; }
+      .stat-row {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 12px;
+        font-size: 13px;
+      }
+      .stat-item {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 8px 12px;
+        flex: 1;
+      }
+      .stat-label { color: #64748b; font-size: 11px; text-transform: uppercase; font-weight: 600; }
+      .stat-val { font-size: 18px; font-weight: 700; color: #0f172a; margin-top: 2px; }
+
+      .result-box {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 12px;
+        font-size: 14px;
+        line-height: 1.5;
+        min-height: 80px;
+        white-space: pre-wrap;
+      }
+      details {
+        margin-top: 12px;
+      }
+      summary {
+        font-size: 13px;
+        color: #64748b;
+        cursor: pointer;
+      }
+      pre {
+        background: #0f172a;
+        color: #f8fafc;
+        padding: 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        overflow-x: auto;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 24px;
+        font-size: 13px;
+      }
+      th, td {
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border);
+        text-align: left;
+      }
+      th { background: #f8fafc; font-weight: 600; color: #475569; }
+    </style>
+  </head>
+  <body>
+    <h1>Responses API Comparison</h1>
+    <p>Compare responses, latency, and headers between the Cloudflare Worker and Firebase Cloud Function.</p>
+
+    <div class="notice">
+      <strong>Isolated Development Harness:</strong> This page is served only during local development and makes zero changes to live production. You can test your local Cloudflare Worker (<code>npm run tts:dev</code>) or staging against the existing Firebase function.
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <label for="endpoint-a">Endpoint A — Cloudflare Worker</label>
+        <input id="endpoint-a" value="http://localhost:8787/proxyResponses" />
+        <div class="quick-links">
+          Quick set:
+          <a id="btn-set-local">Local (http://localhost:8787/proxyResponses)</a>
+          <a id="btn-set-staging">Staging (workers.dev)</a>
+        </div>
+      </div>
+      <div>
+        <label for="endpoint-b">Endpoint B — Firebase Cloud Function</label>
+        <input id="endpoint-b" value="https://us-central1-nosabo-30dcb.cloudfunctions.net/proxyResponses" />
+        <div class="quick-links">
+          <span>Active Firebase deployment</span>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <label for="model">Model</label>
+      <input id="model" value="gpt-5.6-luna" style="max-width: 300px; margin-bottom: 12px;" />
+    </div>
+
+    <div>
+      <label for="input-prompt">Test Prompt / Input</label>
+      <textarea id="input-prompt" rows="3">Translate to Mexican Spanish: "Good morning, my friend! How are you doing today?"</textarea>
+    </div>
+
+    <div class="btn-bar">
+      <button id="btn-test-cf" class="btn-cloudflare">Test Cloudflare (A)</button>
+      <button id="btn-test-fb" class="btn-firebase">Test Firebase (B)</button>
+      <button id="btn-test-both" class="btn-primary">Compare Both (A vs B)</button>
+      <button id="btn-clear" class="btn-secondary">Clear Results</button>
+    </div>
+
+    <div class="grid-2">
+      <!-- Card A -->
+      <div class="card" id="card-a">
+        <div class="card-header">
+          <div class="card-title">Cloudflare Worker (A)</div>
+          <span class="badge badge-neutral" id="badge-a">Idle</span>
+        </div>
+        <div class="stat-row">
+          <div class="stat-item">
+            <div class="stat-label">Latency</div>
+            <div class="stat-val" id="lat-a">—</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">HTTP Status</div>
+            <div class="stat-val" id="status-a">—</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">App Check</div>
+            <div class="stat-val" id="auth-a">—</div>
+          </div>
+        </div>
+        <label>Response Text</label>
+        <div class="result-box" id="text-a">Awaiting test execution...</div>
+        <details>
+          <summary>Headers & Timing</summary>
+          <pre id="headers-a">None</pre>
+        </details>
+        <details>
+          <summary>Raw JSON Output</summary>
+          <pre id="json-a">{}</pre>
+        </details>
+      </div>
+
+      <!-- Card B -->
+      <div class="card" id="card-b">
+        <div class="card-header">
+          <div class="card-title">Firebase Cloud Function (B)</div>
+          <span class="badge badge-neutral" id="badge-b">Idle</span>
+        </div>
+        <div class="stat-row">
+          <div class="stat-item">
+            <div class="stat-label">Latency</div>
+            <div class="stat-val" id="lat-b">—</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">HTTP Status</div>
+            <div class="stat-val" id="status-b">—</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">App Check</div>
+            <div class="stat-val" id="auth-b">—</div>
+          </div>
+        </div>
+        <label>Response Text</label>
+        <div class="result-box" id="text-b">Awaiting test execution...</div>
+        <details>
+          <summary>Headers & Timing</summary>
+          <pre id="headers-b">None</pre>
+        </details>
+        <details>
+          <summary>Raw JSON Output</summary>
+          <pre id="json-b">{}</pre>
+        </details>
+      </div>
+    </div>
+
+    <h2 style="font-size: 18px; margin-top: 32px;">Run History</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Target</th>
+          <th>Status</th>
+          <th>Latency</th>
+          <th>Preview</th>
+        </tr>
+      </thead>
+      <tbody id="history-rows">
+        <tr><td colspan="5" style="text-align: center; color: #94a3b8;">No runs in this session yet.</td></tr>
+      </tbody>
+    </table>
+
+    <script type="module" src="./responses-comparison.js"></script>
+  </body>
+</html>

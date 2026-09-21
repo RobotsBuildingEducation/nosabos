@@ -63,6 +63,7 @@ import RepeatWhatYouHear from "./RepeatWhatYouHear";
 import {
   TTS_LANG_TAG,
   getPreferredTTSVoice,
+  createWarmTTSAudio,
   getTTSPlayer,
   LOW_LATENCY_TTS_FORMAT,
   stopAllTTSPlayback,
@@ -5000,30 +5001,7 @@ Return JSON ONLY:
     ? supportCode
     : targetLang;
 
-  const createWarmAudio = useCallback(async () => {
-    try {
-      const warm = new Audio();
-      warm.playsInline = true;
-      warm.muted = true;
-      warm.volume = 0;
-      warm.src =
-        "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
-      const warmPlay = warm.play();
-      warmPlay
-        ?.then(() => {
-          warm.pause();
-          try {
-            warm.currentTime = 0;
-          } catch {}
-        })
-        .catch(() => undefined);
-      warm.muted = false;
-      warm.volume = 1;
-      return warm;
-    } catch {
-      return null;
-    }
-  }, []);
+  const createWarmAudio = useCallback(createWarmTTSAudio, []);
 
   const primeTTSGesture = useCallback(() => {
     if (primedWarmAudioPromiseRef.current) return;
@@ -5072,28 +5050,26 @@ Return JSON ONLY:
       speakAudioUrlRef.current = player.audioUrl;
 
       const audio = player.audio;
-      speakAudioRef.current = audio;
-      audio.onended = () => {
+      const cleanup = () => {
         if (requestId !== questionPlaybackRequestRef.current) return;
         setIsSpeakPlaying(false);
         speakAudioRef.current = null;
         player.cleanup?.();
       };
-      audio.onerror = () => {
-        if (requestId !== questionPlaybackRequestRef.current) return;
-        setIsSpeakPlaying(false);
-        speakAudioRef.current = null;
-        player.cleanup?.();
-      };
+      audio.onended = cleanup;
+      audio.onerror = cleanup;
+      player.finalize?.then(cleanup, cleanup);
       await player.ready;
       if (requestId !== questionPlaybackRequestRef.current) {
         player.cleanup?.();
         return;
       }
       setIsSpeakSynthesizing(false);
-      await audio.play();
-      if (requestId !== questionPlaybackRequestRef.current) return;
-      setIsSpeakPlaying(false);
+      try {
+        await audio.play();
+      } catch (err) {
+        console.warn("Vocabulary speak audio play non-fatal:", err);
+      }
     } catch (err) {
       if (requestId !== questionPlaybackRequestRef.current) return;
       console.error("Vocabulary speak playback failed", err);
@@ -5142,20 +5118,15 @@ Return JSON ONLY:
         }
 
         questionAudioUrlRef.current = player.audioUrl;
-        const audio = player.audio;
-        questionAudioRef.current = audio;
-        audio.onended = () => {
+        const cleanup = () => {
           if (requestId !== questionPlaybackRequestRef.current) return;
           setIsQuestionPlaying(false);
           questionAudioRef.current = null;
           player.cleanup?.();
         };
-        audio.onerror = () => {
-          if (requestId !== questionPlaybackRequestRef.current) return;
-          setIsQuestionPlaying(false);
-          questionAudioRef.current = null;
-          player.cleanup?.();
-        };
+        audio.onended = cleanup;
+        audio.onerror = cleanup;
+        player.finalize?.then(cleanup, cleanup);
         await player.ready;
         if (requestId !== questionPlaybackRequestRef.current) {
           player.cleanup?.();
@@ -5163,7 +5134,11 @@ Return JSON ONLY:
         }
         setIsQuestionSynthesizing(false);
         setIsQuestionPlaying(true);
-        await audio.play();
+        try {
+          await audio.play();
+        } catch (err) {
+          console.warn("Vocabulary question audio play non-fatal:", err);
+        }
       } catch (err) {
         if (requestId !== questionPlaybackRequestRef.current) return;
         console.error("Vocabulary question playback failed", err);

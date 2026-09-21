@@ -62,6 +62,7 @@ import VoiceOrb from "./VoiceOrb";
 import AnimatedEllipsis from "./AnimatedEllipsis";
 import { translations } from "../utils/translation";
 import {
+  buildDirectTranslationPrompt,
   buildMessageTranslationPrompt,
   buildSimpleTranslationPrompt,
   getBaseLanguageCode,
@@ -101,19 +102,15 @@ import {
   nativeOverlayMotionProps,
 } from "../utils/modalMotion";
 import { buildCurriculumPromptContext } from "../utils/lessonCurriculum";
+import { getRealtimeUrl, getResponsesUrl } from "../utils/proxyEndpoints";
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-2.1-mini") + "";
 
-const REALTIME_URL = import.meta.env.VITE_REALTIME_URL
-  ? `${import.meta.env.VITE_REALTIME_URL}?model=${encodeURIComponent(
-      REALTIME_MODEL,
-    )}`
-  : "";
-
-const RESPONSES_URL = `${import.meta.env.VITE_RESPONSES_URL}/proxyResponses`;
+const REALTIME_URL = getRealtimeUrl(REALTIME_MODEL);
+const RESPONSES_URL = getResponsesUrl();
 const TRANSLATE_MODEL =
-  import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-5-nano";
+  import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-5.6-luna";
 const AUTO_DISCONNECT_MS = 15000;
 
 /* ---------------------------
@@ -524,67 +521,6 @@ function AlignedBubble({
           >
             {secondaryNodes}
           </Box>
-        )}
-
-        {!!visiblePairs?.length && showSecondary && (
-          <Wrap
-            spacing={3}
-            mt={3}
-            shouldWrapChildren
-            dir={primaryTextProps.dir}
-            sx={{ unicodeBidi: "isolate" }}
-          >
-            {visiblePairs.slice(0, 8).map((p, i) => {
-              const color = colorFor(i);
-              return (
-                <WrapItem key={`${p.lhs}-${p.rhs}-${i}`} maxW="100%">
-                  <Box
-                    px={3}
-                    py={2.5}
-                    borderRadius="lg"
-                    style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
-                    borderWidth="1px"
-                    borderColor={
-                      isLightTheme
-                        ? hexToRgba(color, 0.34)
-                        : hexToRgba(color, 0.6)
-                    }
-                    background={isLightTheme ? APP_SURFACE : "#0b1220"}
-                    boxShadow={
-                      isLightTheme
-                        ? "0 6px 16px rgba(120,94,61,0.06)"
-                        : `0 6px 18px ${hexToRgba(color, 0.12)}`
-                    }
-                    color={isLightTheme ? APP_TEXT_PRIMARY : "whiteAlpha.900"}
-                    minW="0"
-                    maxW="260px"
-                  >
-                    <Text
-                      fontSize="sm"
-                      fontWeight="semibold"
-                      lineHeight="1.4"
-                      {...primaryTextProps}
-                      sx={mergeBidiSx(primaryTextProps)}
-                    >
-                      {p.lhs}
-                    </Text>
-                    <Text
-                      fontSize="xs"
-                      color={
-                        isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"
-                      }
-                      mt={1}
-                      lineHeight="1.35"
-                      {...secondaryTextProps}
-                      sx={mergeBidiSx(secondaryTextProps)}
-                    >
-                      {p.rhs}
-                    </Text>
-                  </Box>
-                </WrapItem>
-              );
-            })}
-          </Wrap>
         )}
 
         {canTranslate && (
@@ -3465,67 +3401,114 @@ Return ONLY JSON:
       return;
     }
 
-    const sourceLanguage = getBaseLanguageCode(
-      m.lang || targetLangRef.current || "",
-    );
-    const prompt = buildMessageTranslationPrompt(target, sourceLanguage);
-
-    const body = {
-      model: TRANSLATE_MODEL,
-      text: { format: { type: "text" } },
-      input: `${prompt}\n\n${src}`,
-    };
-
-    const r = await appCheckFetch(RESPONSES_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify(body),
-    });
-
-    const ct = r.headers.get("content-type") || "";
-    const payload = ct.includes("application/json")
-      ? await r.json()
-      : await r.text();
-    if (!r.ok) {
-      const msg =
-        payload?.error?.message ||
-        (typeof payload === "string" ? payload : JSON.stringify(payload));
-      throw new Error(msg || `Translate HTTP ${r.status}`);
+    function cleanStreamedTranslation(text) {
+      if (!text) return "";
+      let clean = text.trimStart();
+      if (clean.startsWith('"') || clean.startsWith('“')) {
+        clean = clean.slice(1);
+      }
+      return clean;
     }
 
-    const mergedText =
-      (typeof payload?.output_text === "string" && payload.output_text) ||
-      (Array.isArray(payload?.output) &&
-        payload.output
-          .map((it) =>
-            (it?.content || []).map((seg) => seg?.text || "").join(""),
-          )
-          .join(" ")
-          .trim()) ||
-      (Array.isArray(payload?.content) && payload.content[0]?.text) ||
-      (Array.isArray(payload?.choices) &&
-        (payload.choices[0]?.message?.content || "")) ||
-      "";
+    const prompt = buildDirectTranslationPrompt(target);
+    const fullInput = `${prompt}\n\n${src}`;
 
-    const parsed = safeParseJson(mergedText);
-    const translation = (parsed?.translation || mergedText || "").trim();
-    const rawPairs = Array.isArray(parsed?.pairs) ? parsed.pairs : [];
-    const pairs = tidyPairs(rawPairs, src);
+    let streamedText = "";
+
+    if (simplemodel) {
+      try {
+        const resp = await simplemodel.generateContentStream({
+          contents: [{ role: "user", parts: [{ text: fullInput }] }],
+        });
+
+        for await (const chunk of resp.stream) {
+          const piece =
+            typeof chunk.text === "function" ? chunk.text() : chunk.text || "";
+          if (piece) {
+            streamedText += piece;
+            const live = cleanStreamedTranslation(streamedText);
+            updateMessage(id, (prev) => ({
+              ...prev,
+              translation: live,
+              translationLang: target,
+              pairs: [],
+            }));
+          }
+        }
+      } catch (geminiErr) {
+        console.warn(
+          "RealTimeTest Gemini translation stream failed, falling back to OpenAI:",
+          geminiErr,
+        );
+      }
+    }
+
+    if (!streamedText.trim()) {
+      const body = {
+        model: TRANSLATE_MODEL,
+        text: { format: { type: "text" } },
+        input: fullInput,
+      };
+
+      const r = await appCheckFetch(RESPONSES_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+
+      const ct = r.headers.get("content-type") || "";
+      const payload = ct.includes("application/json")
+        ? await r.json()
+        : await r.text();
+      if (!r.ok) {
+        const msg =
+          payload?.error?.message ||
+          (typeof payload === "string" ? payload : JSON.stringify(payload));
+        throw new Error(msg || `Translate HTTP ${r.status}`);
+      }
+
+      const mergedText =
+        (typeof payload?.output_text === "string" && payload.output_text) ||
+        (Array.isArray(payload?.output) &&
+          payload.output
+            .map((it) =>
+              (it?.content || []).map((seg) => seg?.text || "").join(""),
+            )
+            .join(" ")
+            .trim()) ||
+        (Array.isArray(payload?.content) && payload.content[0]?.text) ||
+        (Array.isArray(payload?.choices) &&
+          (payload.choices[0]?.message?.content || "")) ||
+        "";
+      streamedText = mergedText;
+    }
+
+    let finalTranslation = streamedText.trim();
+    if (
+      (finalTranslation.startsWith('"') && finalTranslation.endsWith('"')) ||
+      (finalTranslation.startsWith('“') && finalTranslation.endsWith('”'))
+    ) {
+      finalTranslation = finalTranslation.slice(1, -1).trim();
+    }
+    if (finalTranslation.startsWith("{")) {
+      const parsed = safeParseJson(finalTranslation);
+      if (parsed?.translation) finalTranslation = parsed.translation.trim();
+    }
 
     updateMessage(id, (prev) => ({
       ...prev,
-      translation,
+      translation: finalTranslation,
       translationLang: target,
-      pairs,
+      pairs: [],
     }));
     await upsertAssistantTurn(id, {
       text: src,
       lang: m.lang || targetLangRef.current || "es",
-      translation,
-      pairs,
+      translation: finalTranslation,
+      pairs: [],
     });
   }
 

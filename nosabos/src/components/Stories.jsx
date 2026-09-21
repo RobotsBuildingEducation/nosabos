@@ -683,7 +683,7 @@ function SpeakingStoryMode({
     "alloy",
   ];
   const FEMALE_CHARACTER_VOICES = ["shimmer", "coral", "sage", "marin"];
-  const STORY_NARRATOR_VOICE = "cedar";
+  const STORY_NARRATOR_VOICE = "echo";
 
   const canonicalCharacterName = (name) =>
     String(name || "")

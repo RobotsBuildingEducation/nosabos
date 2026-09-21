@@ -1,3 +1,4 @@
+import { createWarmTTSAudio } from "../utils/tts";
 import ActivityActionRow from "./ActivityActionRow";
 // components/RepeatWhatYouHear.jsx
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -53,7 +54,7 @@ function getLanguageTextProps(lang, { align = "start" } = {}) {
 /**
  * RepeatWhatYouHear - A Duolingo-style listening and reconstruction exercise
  *
- * Users listen to a sentence (auto-played on render) and must rebuild it from
+ * Users listen to a sentence (via the TTS button) and must rebuild it from
  * a word bank in the order they heard.
  */
 export default function RepeatWhatYouHear({
@@ -121,7 +122,6 @@ export default function RepeatWhatYouHear({
               : "Assistant";
   const [bankOrder, setBankOrder] = useState([]);
   const [selectedWords, setSelectedWords] = useState([]);
-  const hasPlayedRef = useRef(false);
   const primedWarmAudioPromiseRef = useRef(null);
 
   useEffect(() => {
@@ -131,17 +131,6 @@ export default function RepeatWhatYouHear({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wordBank.join("|")]);
-
-  useEffect(() => {
-    hasPlayedRef.current = false;
-  }, [sourceSentence]);
-
-  useEffect(() => {
-    if (!loading && sourceSentence && !hasPlayedRef.current) {
-      hasPlayedRef.current = true;
-      onPlayTTS(sourceSentence);
-    }
-  }, [loading, onPlayTTS, sourceSentence]);
 
   const handleWordClick = useCallback(
     (wordIndex, bankPosition) => {
@@ -240,32 +229,7 @@ export default function RepeatWhatYouHear({
     onSubmit(userAnswer);
   }, [getUserAnswer, onSubmit, playSound]);
 
-  const createWarmAudio = useCallback(async () => {
-    try {
-      const warm = new Audio();
-      warm.playsInline = true;
-      warm.muted = true;
-      warm.volume = 0;
-      warm.src =
-        "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
-      const warmPlay = warm.play();
-      warmPlay
-        ?.then(() => {
-          warm.pause();
-          try {
-            warm.currentTime = 0;
-          } catch {
-            // Mobile Safari can reject rewinding warmed audio; playback still works.
-          }
-        })
-        .catch(() => undefined);
-      warm.muted = false;
-      warm.volume = 1;
-      return warm;
-    } catch {
-      return null;
-    }
-  }, []);
+  const createWarmAudio = useCallback(createWarmTTSAudio, []);
 
   const primeTTSGesture = useCallback(() => {
     if (primedWarmAudioPromiseRef.current) return;
@@ -386,9 +350,6 @@ export default function RepeatWhatYouHear({
   const nextLabel = t("practice_next_question");
 
   const handleManualPlay = useCallback(async () => {
-    // Claim playback immediately so the mount auto-play effect can't fire a
-    // second competing TTS request right after the user's first click.
-    hasPlayedRef.current = true;
     const warmAudio =
       (await consumePrimedWarmAudio()) || (await createWarmAudio());
     onPlayTTS(sourceSentence, { warmAudio });

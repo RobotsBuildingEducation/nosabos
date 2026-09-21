@@ -456,13 +456,25 @@ export default function NotesDrawer({
       setPlayingNoteId(note.id);
       setLoadingTts(null);
 
-      player.audio.onended = () => {
+      let finished = false;
+      const cleanup = () => {
+        if (finished) return;
+        if (audioRef.current && audioRef.current !== player.audio) return;
+        finished = true;
         setPlayingNoteId(null);
         stopAudio();
       };
 
-      await player.done;
-      setPlayingNoteId(null);
+      player.audio.onended = cleanup;
+      player.audio.onerror = cleanup;
+      player.finalize?.then(cleanup, cleanup);
+
+      await player.ready;
+      try {
+        await player.audio.play();
+      } catch (err) {
+        console.warn("NotesDrawer audio play non-fatal:", err);
+      }
     } catch (error) {
       console.error("TTS playback error:", error);
       setLoadingTts(null);

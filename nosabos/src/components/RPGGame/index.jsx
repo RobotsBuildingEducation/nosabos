@@ -60,13 +60,16 @@ import {
 } from "./pixelArt";
 import useSoundSettings from "../../hooks/useSoundSettings";
 import {
+  createWarmTTSAudio,
   getTTSPlayer,
+  startTTSPlayback,
   TTS_LANG_TAG,
   getCharacterVoice,
   getCharacterPersonality,
   getPreferredTTSVoice,
 } from "../../utils/tts";
 import { callResponses } from "../../utils/llm";
+import { getAssetUrl } from "../../utils/proxyEndpoints";
 import {
   splitDialogueSubtext,
   extractSpokenDialogue,
@@ -82,7 +85,7 @@ import VoiceOrb from "../VoiceOrb";
 import LoadingMiniGame from "../LoadingMiniGame";
 import playerSpriteSheetUrl from "../../sprites/sprite_sheet_6.png";
 import npcSpriteSheetUrl from "../../sprites/NPC_sprites.png";
-import yachiruSpriteUrl from "../../sprites/tutor/main_character_tutor_transparent.png";
+import yachiruSpriteUrl from "../../sprites/tutor/main_character_tutor_transparent.webp";
 import RandomCharacter from "../RandomCharacter";
 import {
   drawRpgCompanionFrame,
@@ -3447,21 +3450,20 @@ export default function RPGGame({
     if (backgroundMusicRef.current) return backgroundMusicRef.current;
 
     if (!backgroundMusicLoadPromiseRef.current) {
-      backgroundMusicLoadPromiseRef.current = import("../../assets/awalk.mp3")
-        .then(({ default: trackUrl }) => {
-          const audio = new Audio(trackUrl);
-          audio.loop = true;
-          audio.preload = "none";
-          audio.volume = RPG_MUSIC_VOLUME;
-          audio.playsInline = true;
-          backgroundMusicRef.current = audio;
-          return audio;
-        })
-        .catch((error) => {
-          backgroundMusicLoadPromiseRef.current = null;
-          console.warn("Failed to load RPG music track:", error);
-          return null;
-        });
+      backgroundMusicLoadPromiseRef.current = Promise.resolve().then(() => {
+        const trackUrl = getAssetUrl("audio/awalk.mp3");
+        const audio = new Audio(trackUrl);
+        audio.loop = true;
+        audio.preload = "none";
+        audio.volume = RPG_MUSIC_VOLUME;
+        audio.playsInline = true;
+        backgroundMusicRef.current = audio;
+        return audio;
+      }).catch((error) => {
+        backgroundMusicLoadPromiseRef.current = null;
+        console.warn("Failed to load RPG music track:", error);
+        return null;
+      });
     }
 
     return backgroundMusicLoadPromiseRef.current;
@@ -5408,7 +5410,7 @@ export default function RPGGame({
         });
         ttsPlayerRef.current = player;
         await player.ready;
-        await player.audio.play();
+        await startTTSPlayback(player);
       } catch {
         // non-blocking
       }
@@ -9840,19 +9842,9 @@ export default function RPGGame({
                           // so TTS can play after the async speech recognition
                           // callback (mobile browsers block audio.play() without
                           // a gesture context). Fire-and-forget – don't await.
-                          try {
-                            const warm = new Audio();
-                            warm.playsInline = true;
-                            warm.src =
-                              "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
-                            warm
-                              .play()
-                              .then(() => warm.pause())
-                              .catch(() => {});
+                          void createWarmTTSAudio().then((warm) => {
                             preWarmedAudioRef.current = warm;
-                          } catch {
-                            // ignore – desktop doesn't need this
-                          }
+                          });
                           try {
                             await startRecording();
                           } catch {

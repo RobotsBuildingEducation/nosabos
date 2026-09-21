@@ -9,9 +9,10 @@ import {
   extractOpenAIResponseText,
   getOpenAIResponseError,
 } from "./openAIResponsePayload";
+import { getResponsesUrl } from "./proxyEndpoints.js";
 
-const RESPONSES_URL = `${import.meta.env.VITE_RESPONSES_URL}/proxyResponses`;
-const DEFAULT_RESPONSES_MODEL = "gpt-5-nano";
+const RESPONSES_URL = getResponsesUrl();
+const DEFAULT_RESPONSES_MODEL = "gpt-5.6-luna";
 const STRUCTURED_RESPONSE_ATTEMPTS = 2;
 const STRUCTURED_RESPONSE_RETRY_DELAY_MS = 250;
 

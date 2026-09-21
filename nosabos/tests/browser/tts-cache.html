@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" />
+  <title>TTS cache inspection</title>
+  <style>
+    body { font: 16px system-ui; max-width: 1100px; margin: 32px auto; padding: 16px; }
+    button { padding: 10px; } table { width: 100%; border-collapse: collapse; }
+    td, th { padding: 8px; text-align: left; border-bottom: 1px solid #ccc; }
+    pre { white-space: pre-wrap; }
+  </style>
+  <h1>TTS cache inspection</h1>
+  <p>Read-only inspection of this origin's ten newest recordings. Decodes local audio to measure leading silence. Does not open a Realtime connection, generate speech, repair files, or delete cache entries.</p>
+  <button id="inspect">Inspect existing recordings</button>
+  <pre id="status">Ready</pre>
+  <table><thead><tr><th>Recorded</th><th>Text / voice</th><th>Encoding</th><th>Preparation version</th><th>Duration</th><th>First sound</th><th>Listen</th></tr></thead><tbody id="rows"></tbody></table>
+  <script type="module">
+    if (!import.meta.env.DEV) throw new Error("Development-only cache inspector");
+    const status = document.querySelector("#status");
+    const inspect = document.querySelector("#inspect");
+    const urls = [];
+    window.addEventListener("pagehide", () => urls.forEach(URL.revokeObjectURL));
+    inspect.onclick = async () => {
+      inspect.disabled = true;
+      document.querySelector("#rows").replaceChildren();
+      urls.splice(0).forEach(URL.revokeObjectURL);
+      try {
+        const entries = await new Promise((resolve, reject) => {
+          const request = indexedDB.open("tts-audio-cache", 1);
+          request.onupgradeneeded = () => { request.transaction.abort(); };
+          request.onerror = () => reject(new Error("No existing TTS cache on this origin"));
+          request.onsuccess = () => {
+            const db = request.result;
+            if (!db.objectStoreNames.contains("audio")) { db.close(); resolve([]); return; }
+            const transaction = db.transaction("audio", "readonly");
+            const read = transaction.objectStore("audio").getAll();
+            read.onsuccess = () => resolve(read.result);
+            read.onerror = () => reject(read.error);
+            transaction.oncomplete = () => db.close();
+          };
+        });
+        const recent = entries.sort((a, b) => b.timestamp - a.timestamp).slice(0, 10);
+        status.textContent = `${entries.length} stored recordings; inspecting ${recent.length} newest. No recordings changed.`;
+        for (const entry of recent) {
+          let duration = "—", firstSound = "—";
+          try {
+            const Context = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+            const context = new Context(1, 1, 24000);
+            const decoded = await context.decodeAudioData(await entry.blob.arrayBuffer());
+            const channels = Array.from({ length: decoded.numberOfChannels }, (_, i) => decoded.getChannelData(i));
+            let first = decoded.length;
+            for (let frame = 0; frame < decoded.length; frame++) {
+              if (channels.some(channel => Math.abs(channel[frame]) >= 0.001)) { first = frame; break; }
+            }
+            duration = `${decoded.duration.toFixed(3)} s`;
+            firstSound = first === decoded.length ? "All silent below −60 dBFS" : `${(first / decoded.sampleRate).toFixed(3)} s`;
+          } catch (error) { firstSound = `Decode failed: ${error.name}: ${error.message}`; }
+          const parts = entry.key.split("::");
+          const row = document.createElement("tr");
+          for (const value of [new Date(entry.timestamp).toISOString(), `${parts.slice(5).join("::").slice(0, 100)} (${parts[3]}, ${parts[1]})`, `${entry.blob.type}; ${entry.blob.size} bytes`, entry.audioPreparationVersion ?? "unprepared", duration, firstSound]) {
+            const cell = document.createElement("td"); cell.textContent = value; row.append(cell);
+          }
+          const cell = document.createElement("td");
+          const audio = document.createElement("audio");
+          audio.controls = true; audio.preload = "none";
+          audio.src = URL.createObjectURL(entry.blob); urls.push(audio.src);
+          cell.append(audio); row.append(cell); document.querySelector("#rows").append(row);
+        }
+      } catch (error) { status.textContent = error.message; }
+      finally { inspect.disabled = false; }
+    };
+  </script>
+</html>

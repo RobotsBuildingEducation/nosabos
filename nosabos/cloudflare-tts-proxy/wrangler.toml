@@ -1,0 +1,63 @@
+name = "nosabos-tts-proxy"
+main = "src/index.js"
+compatibility_date = "2026-05-01"
+account_id = "cfe53a18a4894aa8e5c2fe91af905d8a"
+workers_dev = true
+preview_urls = false
+
+routes = [
+  { pattern = "piyali.app/api/tts-proxy*", zone_name = "piyali.app" },
+  { pattern = "www.piyali.app/api/tts-proxy*", zone_name = "piyali.app" },
+  { pattern = "nosabos.app/api/tts-proxy*", zone_name = "nosabos.app" },
+  { pattern = "www.nosabos.app/api/tts-proxy*", zone_name = "nosabos.app" }
+]
+
+[observability]
+enabled = true
+
+[vars]
+ALLOWED_ORIGINS = "https://piyali.app,https://www.piyali.app,https://nosabos.app,https://www.nosabos.app,https://nosabo-30dcb.web.app,https://nosabo-30dcb.firebaseapp.com,http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174,http://localhost:3000"
+ALLOWED_MODELS = "gpt-realtime-2.1-mini"
+ALLOWED_RESPONSE_MODELS = "gpt-5.6-luna,gpt-5-nano"
+REQUIRE_APPCHECK = "true"
+FIREBASE_PROJECT_NUMBER = "323662475274"
+FIREBASE_APP_ID = "1:323662475274:web:570aa2eb1beaf87810aff3"
+DEBUG_UPSTREAM = "true"
+
+[[ratelimits]]
+name = "SESSION_RATE_LIMITER"
+namespace_id = "1909202601"
+simple = { limit = 120, period = 60 }
+
+[[r2_buckets]]
+binding = "AUDIO_CACHE"
+bucket_name = "nosabos-media"
+
+# A separately named test deployment. Deploying this does not switch the app.
+# Vars and bindings do not inherit into named environments.
+[env.staging]
+name = "nosabos-tts-proxy-staging"
+workers_dev = true
+preview_urls = false
+routes = []
+
+[env.staging.observability]
+enabled = true
+
+[env.staging.vars]
+ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174"
+ALLOWED_MODELS = "gpt-realtime-2.1-mini"
+ALLOWED_RESPONSE_MODELS = "gpt-5.6-luna,gpt-5-nano"
+REQUIRE_APPCHECK = "true"
+FIREBASE_PROJECT_NUMBER = "323662475274"
+FIREBASE_APP_ID = "1:323662475274:web:570aa2eb1beaf87810aff3"
+DEBUG_UPSTREAM = "true"
+
+[[env.staging.ratelimits]]
+name = "SESSION_RATE_LIMITER"
+namespace_id = "1909202602"
+simple = { limit = 120, period = 60 }
+
+[[env.staging.r2_buckets]]
+binding = "AUDIO_CACHE"
+bucket_name = "nosabos-media"

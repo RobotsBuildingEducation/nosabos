@@ -17,13 +17,15 @@ import {
 import { composeOpenAIRealtimeResponseInstructions } from "./openaiRealtimeResponseInstructions";
 import { DEFAULT_OPENAI_TUTOR_VOICE } from "./openaiTutorVoices";
 
+import { getProxyBaseUrl } from "./proxyEndpoints";
+
 const DEFAULT_REALTIME_MODEL =
   (
     import.meta.env?.VITE_TUTOR_REALTIME_MODEL ||
     import.meta.env?.VITE_REALTIME_MODEL ||
     "gpt-realtime-2.1-mini"
   ) + "";
-const REALTIME_BASE_URL = import.meta.env?.VITE_REALTIME_URL || "";
+const REALTIME_BASE_URL = getProxyBaseUrl();
 const DATA_CHANNEL_OPEN_TIMEOUT_MS = 12000;
 const DEFAULT_PAUSE_MS = 1200;
 

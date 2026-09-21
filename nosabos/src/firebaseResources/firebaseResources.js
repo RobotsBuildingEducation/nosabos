@@ -83,15 +83,23 @@ export async function getAppCheckHeaders() {
   }
 }
 
-export async function appCheckFetch(input, init = {}) {
+export async function appCheckFetch(input, init = {}, { onTiming } = {}) {
+  const mark = (phase, details = {}) => {
+    try { onTiming?.({ phase, ...details }); } catch { /* Diagnostics are optional. */ }
+  };
+  mark("app-check-start");
   const appCheckHeaders = await getAppCheckHeaders();
+  mark("app-check-ready", { tokenAttached: Boolean(appCheckHeaders["X-Firebase-AppCheck"]) });
   const headers = new Headers(init.headers || {});
 
   Object.entries(appCheckHeaders).forEach(([key, value]) => {
     headers.set(key, value);
   });
 
-  return fetch(input, { ...init, headers });
+  mark("http-start");
+  const response = await fetch(input, { ...init, headers });
+  mark("http-headers", { status: response.status });
+  return response;
 }
 
 const database = initializeFirestore(app, {

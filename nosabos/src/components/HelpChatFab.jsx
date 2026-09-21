@@ -51,7 +51,7 @@ import {
   FaPlus,
 } from "react-icons/fa";
 import { MdOutlineSupportAgent } from "react-icons/md";
-import { TTS_LANG_TAG, getPreferredTTSVoice, getTTSPlayer } from "../utils/tts";
+import { TTS_LANG_TAG, getPreferredTTSVoice, getTTSPlayer, startTTSPlayback } from "../utils/tts";
 
 const SAVED_CHATS_KEY = "nosabos_helpchat_saved_chats";
 const MORPHEME_MODE_KEY = "nosabos_helpchat_morpheme_mode";
@@ -110,14 +110,12 @@ import {
   parseMorphemeTranslationPlan,
 } from "../utils/helpChatMorpheme";
 
+import { getRealtimeUrl } from "../utils/proxyEndpoints";
+
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-2.1-mini") + "";
 
-const REALTIME_URL = import.meta.env.VITE_REALTIME_URL
-  ? `${import.meta.env.VITE_REALTIME_URL}?model=${encodeURIComponent(
-      REALTIME_MODEL,
-    )}`
-  : "";
+const REALTIME_URL = getRealtimeUrl(REALTIME_MODEL);
 const AUTO_DISCONNECT_MS = 15000;
 const APP_SURFACE = "var(--app-surface)";
 const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
@@ -1421,18 +1419,18 @@ const HelpChatFab = forwardRef(
 
           await player.ready;
           clearLoading();
-          try {
-            await player.audio.play();
-          } catch (err) {
-            console.warn("TTS play blocked", err);
-          }
+          await startTTSPlayback(player);
 
-          const cleanup = () => stopTtsPlayback();
+          let finished = false;
+          const cleanup = () => {
+            if (finished) return;
+            if (ttsAudioRef.current && ttsAudioRef.current !== player.audio) return;
+            finished = true;
+            stopTtsPlayback();
+          };
           player.audio.onended = cleanup;
           player.audio.onerror = cleanup;
-
-          await player.done;
-          stopTtsPlayback();
+          player.finalize?.then(cleanup, cleanup);
         } catch (error) {
           console.error("TTS playback error:", error);
           stopTtsPlayback();
