@@ -513,18 +513,27 @@ function safeLogWarn(...args) {
   }
 }
 
-async function fetchFromEdgeCache(key, realtimeUrl) {
+async function fetchFromEdgeCache(key, realtimeUrl, options = {}) {
   const fetchFn = typeof fetch === "function" ? fetch : null;
   if (!fetchFn) return null;
   const url = getWorkerAudioUrl(realtimeUrl, key);
   if (!url) return null;
   const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
-  const timeout = controller ? setTimeout(() => controller.abort(), 1500) : null;
+  const timeoutMs = options?.timeoutMs || 1500;
+  const timeout = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+  if (options?.signal) {
+    if (options.signal.aborted) return null;
+    options.signal.addEventListener("abort", () => controller?.abort(), { once: true });
+  }
   try {
-    const response = await fetchFn(url, {
+    const fetchInit = {
       method: "GET",
       signal: controller?.signal,
-    });
+    };
+    if (options?.priority) {
+      fetchInit.priority = options.priority;
+    }
+    const response = await fetchFn(url, fetchInit);
     if (!response || response.status !== 200) {
       safeLogInfo(`[TTS Edge Cache] Miss (${response?.status || "network"}) for: ${key}`);
       return null;
@@ -1334,6 +1343,196 @@ export async function isCached(
 }
 
 /**
+ * Safely and non-blockingly prefetch TTS audio from Cloudflare Edge Cache / R2 into local cache.
+ *
+ * GUARANTEES:
+ * - NEVER contacts OpenAI or opens WebRTC connections (zero token cost).
+ * - Only downloads audio that already exists in Cloudflare R2 / Edge.
+ * - Respects navigator.connection.saveData (skips if Data Saver is active).
+ * - Runs during idle browser time (requestIdleCallback) with priority: 'low'.
+ * - Staggers fetches to avoid cellular packet congestion.
+ * - Supports AbortController cancellation on component unmount.
+ */
+export function prefetchTTSAudio(
+  items,
+  {
+    langTag = TTS_LANG_TAG.es,
+    voice = DEFAULT_TTS_VOICE,
+    personality = "",
+    realtimeUrl = "",
+    intervalMs = 120,
+  } = {},
+) {
+  if (!items) {
+    return () => {};
+  }
+  if (typeof navigator !== "undefined" && navigator?.connection?.saveData) {
+    return () => {};
+  }
+
+  const rawList = Array.isArray(items) ? items : [items];
+  const queue = rawList
+    .map((item) => {
+      if (typeof item === "string") {
+        return {
+          text: item.trim(),
+          langTag,
+          voice,
+          personality,
+        };
+      }
+      return {
+        text: (item?.text || "").trim(),
+        langTag: item?.langTag || langTag,
+        voice: item?.voice || voice,
+        personality: item?.personality || personality,
+      };
+    })
+    .filter((item) => item.text);
+
+  if (queue.length === 0) return () => {};
+
+  const controller = new AbortController();
+  const schedule =
+    typeof window !== "undefined" &&
+    typeof window.requestIdleCallback === "function"
+      ? window.requestIdleCallback
+      : (cb) => setTimeout(cb, 10);
+
+  let handle = null;
+  let timerId = null;
+
+  handle = schedule(async (deadline) => {
+    for (const item of queue) {
+      if (controller.signal.aborted) break;
+
+      const sanitizedVoice = getPreferredTTSVoice(item.voice);
+      const targetLangTag = item.langTag || TTS_LANG_TAG.es;
+      const cacheKey = getCacheKey(
+        item.text,
+        targetLangTag,
+        REALTIME_CACHE_FORMAT,
+        sanitizedVoice,
+        item.personality,
+      );
+
+      // 1. Skip if already in memory cache
+      if (memoryCache.has(cacheKey)) continue;
+
+      // 2. Skip if already in IndexedDB
+      try {
+        const locallyCached = await getFromIndexedDB(cacheKey);
+        if (locallyCached) {
+          memoryCache.set(cacheKey, locallyCached);
+          continue;
+        }
+      } catch {
+        // Continue to edge check on IndexedDB error
+      }
+
+      // 3. Yield to main thread if deadline expired
+      if (
+        deadline &&
+        typeof deadline.timeRemaining === "function" &&
+        deadline.timeRemaining() <= 0
+      ) {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+
+      if (controller.signal.aborted) break;
+
+      // 4. Fetch from Cloudflare edge cache (NEVER calls OpenAI on GET)
+      try {
+        const blob = await fetchFromEdgeCache(cacheKey, realtimeUrl, {
+          signal: controller.signal,
+          priority: "low",
+          timeoutMs: 2500,
+        });
+        if (blob && blob.size > 0) {
+          memoryCache.set(cacheKey, blob);
+          saveToIndexedDB(cacheKey, blob, {
+            audioPreparationVersion: CACHE_AUDIO_PREPARATION_VERSION,
+          }).catch(() => {});
+        }
+      } catch {
+        // Prefetch failures are silent and non-blocking
+      }
+
+      // 5. Stagger requests
+      if (intervalMs > 0 && !controller.signal.aborted) {
+        await new Promise((resolve) => {
+          timerId = setTimeout(resolve, intervalMs);
+        });
+      }
+    }
+  });
+
+  return () => {
+    controller.abort();
+    if (timerId) clearTimeout(timerId);
+    if (
+      typeof window !== "undefined" &&
+      typeof window.cancelIdleCallback === "function" &&
+      typeof handle === "number"
+    ) {
+      window.cancelIdleCallback(handle);
+    } else if (handle) {
+      clearTimeout(handle);
+    }
+  };
+}
+
+/**
+ * Synchronously or near-instantaneously play pre-cached TTS audio on user interaction
+ * (e.g. word tile drop or click).
+ *
+ * Checks memory cache (0ms) and IndexedDB (<5ms).
+ * NEVER triggers WebRTC connection or OpenAI API calls.
+ */
+export async function playCachedTTS({
+  text,
+  langTag = TTS_LANG_TAG.es,
+  voice = DEFAULT_TTS_VOICE,
+  personality = "",
+  warmAudio = null,
+} = {}) {
+  if (!text || typeof text !== "string") return { played: false, player: null };
+  const sanitizedVoice = getPreferredTTSVoice(voice);
+  const targetLangTag = langTag || TTS_LANG_TAG.es;
+  const cacheKey = getCacheKey(
+    text,
+    targetLangTag,
+    REALTIME_CACHE_FORMAT,
+    sanitizedVoice,
+    personality,
+  );
+
+  let cachedBlob = memoryCache.get(cacheKey);
+  if (!cachedBlob) {
+    cachedBlob = await getFromIndexedDB(cacheKey);
+    if (cachedBlob) memoryCache.set(cacheKey, cachedBlob);
+  }
+
+  if (cachedBlob) {
+    try {
+      const player = createAudioFromBlob(cachedBlob, warmAudio);
+      const playPromise = player.audio.play();
+      if (playPromise && typeof playPromise.catch === "function") {
+        playPromise.catch((err) => {
+          safeLogWarn("[playCachedTTS] Playback failed:", err);
+        });
+      }
+      return { played: true, player };
+    } catch (err) {
+      safeLogWarn("[playCachedTTS] Error creating audio from cached blob:", err);
+      return { played: false, player: null };
+    }
+  }
+
+  return { played: false, player: null };
+}
+
+/**
  * Clear all TTS caches (useful for debugging or user-initiated clear)
  */
 export async function clearTTSCache() {
@@ -1389,7 +1588,9 @@ if (typeof window !== "undefined") {
     else void warmRealtimeTTS();
   };
   window.addEventListener("pagehide", releasePreparedConnection);
-  document.addEventListener("visibilitychange", handleVisibility);
+  if (typeof document !== "undefined") {
+    document.addEventListener("visibilitychange", handleVisibility);
+  }
   if (import.meta.hot) {
     import.meta.hot.dispose(() => {
       releasePreparedConnection();
@@ -1399,7 +1600,9 @@ if (typeof window !== "undefined") {
       window.removeEventListener("touchstart", primeFromGesture, true);
       window.removeEventListener("click", primeFromGesture, true);
       window.removeEventListener("pagehide", releasePreparedConnection);
-      document.removeEventListener("visibilitychange", handleVisibility);
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", handleVisibility);
+      }
     });
   }
 }

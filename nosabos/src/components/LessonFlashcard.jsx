@@ -52,7 +52,7 @@ import {
   SOFT_STOP_BUTTON_BG,
   SOFT_STOP_BUTTON_HOVER_BG,
 } from "../utils/softStopButton";
-import { submitActionSound, deliciousSound, clickSound } from "../constants/sounds";
+import { submitActionSound } from "../constants/sounds";
 import RandomCharacter from "./RandomCharacter";
 import AnimatedEllipsis from "./AnimatedEllipsis";
 import { useThemeStore } from "../useThemeStore";
@@ -704,7 +704,6 @@ export default function LessonFlashcard({
       setXpAwarded(xp);
       if (isYes) await onCorrect?.(xp);
       setShowResult(true);
-      playSound(isYes ? deliciousSound : clickSound);
 
       if (isYes) {
         // Auto-collect to deck

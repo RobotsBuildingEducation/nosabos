@@ -174,7 +174,7 @@ function harness({ stored = new Map(), edgeStored = new Map(), fetchImpl, setupF
       return { ok: !setupFails, status: 502, text: async () => "answer" };
     },
   });
-  vm.runInContext(`${source}\nglobalThis.api = { getTTSPlayer, createWarmTTSAudio, primeTTSAudio, isCached, stopAllTTSPlayback, warmRealtimeTTS, setTTSConnectionWarmupEnabled, clearPreparedConnection: () => realtimeConnections.clear() };`, context);
+  vm.runInContext(`${source}\nglobalThis.api = { getTTSPlayer, createWarmTTSAudio, primeTTSAudio, isCached, stopAllTTSPlayback, warmRealtimeTTS, setTTSConnectionWarmupEnabled, clearPreparedConnection: () => realtimeConnections.clear(), prefetchTTSAudio, playCachedTTS };`, context);
   return {
     api: context.api, peers, recorders, audios, stored, edgeStored, urls, timers, requests,
     get posts() { return posts; },
@@ -855,3 +855,47 @@ test("edge cache network failure falls back smoothly to WebRTC", async () => {
   player.cleanup();
   await player.finalize;
 });
+
+test("prefetchTTSAudio fetches from edge cache and saves to local IndexedDB and memory", async () => {
+  const edgeStored = new Map();
+  const testBlob = new Blob(["edge audio word"], { type: "audio/wav" });
+  const phrase = "gato";
+  const key = "v2::realtime-v6::es-MX::alloy::::gato";
+  edgeStored.set(key, testBlob);
+
+  const h = harness({ edgeStored });
+  const cancel = h.api.prefetchTTSAudio([phrase], { langTag: "es-MX", voice: "alloy", intervalMs: 0 });
+
+  await h.advance(100);
+  await flush();
+
+  assert.equal(await h.api.isCached(phrase, "es-MX", { voice: "alloy" }), true, "Phrase was cached locally by prefetch");
+  cancel();
+});
+
+test("playCachedTTS plays immediately from cache without WebRTC", async () => {
+  const stored = new Map();
+  const testBlob = new Blob(["cached audio word"], { type: "audio/wav" });
+  const phrase = "perro";
+  const key = "v2::realtime-v6::es-MX::alloy::::perro";
+  stored.set(key, { key, blob: testBlob, timestamp: Date.now() });
+
+  const h = harness({ stored });
+  const result = await h.api.playCachedTTS({ text: phrase, langTag: "es-MX", voice: "alloy" });
+
+  assert.equal(result.played, true, "playCachedTTS played from cache");
+  assert.ok(result.player, "Returned a player");
+  assert.equal(h.peers.length, 0, "No WebRTC peer was created");
+  assert.equal(h.posts, 0, "No SDP POST was made");
+  result.player.cleanup();
+});
+
+test("playCachedTTS returns played: false when audio is not cached", async () => {
+  const h = harness();
+  const result = await h.api.playCachedTTS({ text: "uncached phrase", langTag: "es-MX", voice: "alloy" });
+  assert.equal(result.played, false, "Did not play uncached audio");
+  assert.equal(result.player, null);
+  assert.equal(h.peers.length, 0, "Did not start WebRTC");
+});
+
+

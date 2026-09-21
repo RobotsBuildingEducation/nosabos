@@ -291,6 +291,7 @@ test("audio cache GET returns 404 on miss and PUT requires App Check", async () 
   // Missing key
   const missing = await worker.fetch(new Request("https://worker.test/audio/missing-key", { method: "GET" }), env);
   assert.equal(missing.status, 404);
+  assert.equal(missing.headers.get("Cache-Control"), "public, max-age=300");
 
   // PUT without token
   const putNoToken = await worker.fetch(new Request("https://worker.test/audio/v2::key", {
@@ -299,6 +300,47 @@ test("audio cache GET returns 404 on miss and PUT requires App Check", async () 
     body: new Uint8Array([1, 2, 3]),
   }), env);
   assert.equal(putNoToken.status, 401);
+});
+
+test("audio cache GET negative-caches 404 responses at edge", async () => {
+  class MockCache {
+    constructor() { this.store = new Map(); }
+    async match(req) {
+      const key = typeof req === "string" ? req : req.url;
+      const res = this.store.get(key);
+      return res ? res.clone() : undefined;
+    }
+    async put(req, res) {
+      const key = typeof req === "string" ? req : req.url;
+      this.store.set(key, res.clone());
+    }
+  }
+  const cache = new MockCache();
+  let r2GetCount = 0;
+  const worker = createWorker({
+    getCache: () => cache,
+  });
+  const testEnv = {
+    ...env,
+    AUDIO_CACHE: {
+      get: async () => {
+        r2GetCount++;
+        return null;
+      },
+    },
+  };
+
+  // First request: misses cache, queries R2, returns 404 and caches it
+  const res1 = await worker.fetch(new Request("https://worker.test/audio/unrecorded-phrase", { method: "GET" }), testEnv);
+  assert.equal(res1.status, 404);
+  assert.equal(r2GetCount, 1);
+  assert.equal(res1.headers.get("Cache-Control"), "public, max-age=300");
+
+  // Second request: served from edge cache, does NOT call R2 again
+  const res2 = await worker.fetch(new Request("https://worker.test/audio/unrecorded-phrase", { method: "GET" }), testEnv);
+  assert.equal(res2.status, 404);
+  assert.equal(r2GetCount, 1); // R2 was not queried again!
+  assert.equal(res2.headers.get("X-TTS-Cache"), "HIT-EDGE");
 });
 
 test("audio cache PUT stores audio and subsequent GET serves with immutable headers", async () => {

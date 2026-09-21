@@ -247,7 +247,7 @@ export function createWorker({
                 respHeaders.set("Access-Control-Allow-Origin", origin);
               }
               return new Response(request.method === "HEAD" ? null : cached.body, {
-                status: 200,
+                status: cached.status || 200,
                 headers: respHeaders,
               });
             }
@@ -275,7 +275,15 @@ export function createWorker({
             }
           }
           console.log(`[Audio GET] 404 Not Found: ${audioKey}`);
-          return json(404, { error: "Audio not found." });
+          const notFoundResponse = json(
+            404,
+            { error: "Audio not found." },
+            { "Cache-Control": "public, max-age=300", "X-TTS-Cache": "MISS-NEGATIVE-CACHE" },
+          );
+          if (cache && request.method === "GET") {
+            await cache.put(cacheKeyRequest, notFoundResponse.clone());
+          }
+          return notFoundResponse;
         }
 
         if (request.method === "PUT") {

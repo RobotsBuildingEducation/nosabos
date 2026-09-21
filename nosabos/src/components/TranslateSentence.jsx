@@ -22,12 +22,10 @@ import useSoundSettings from "../hooks/useSoundSettings";
 import { selectSound, submitActionSound } from "../constants/sounds";
 import { getLanguageDirection } from "../constants/languages";
 import {
-  getQuestionAssistantPanelProps,
   getQuestionChipProps,
   getQuestionToolButtonProps,
   questionDropTargetActiveStyles,
   questionSquircleStyle,
-  questionAssistantText,
 } from "./questionUiStyles";
 
 const renderSpeakerIcon = (loading) =>

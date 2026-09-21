@@ -54,7 +54,7 @@ function getLanguageTextProps(lang, { align = "start" } = {}) {
 /**
  * RepeatWhatYouHear - A Duolingo-style listening and reconstruction exercise
  *
- * Users listen to a sentence (auto-played on render) and must rebuild it from
+ * Users listen to a sentence (via the TTS button) and must rebuild it from
  * a word bank in the order they heard.
  */
 export default function RepeatWhatYouHear({
@@ -122,7 +122,6 @@ export default function RepeatWhatYouHear({
               : "Assistant";
   const [bankOrder, setBankOrder] = useState([]);
   const [selectedWords, setSelectedWords] = useState([]);
-  const hasPlayedRef = useRef(false);
   const primedWarmAudioPromiseRef = useRef(null);
 
   useEffect(() => {
@@ -132,17 +131,6 @@ export default function RepeatWhatYouHear({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wordBank.join("|")]);
-
-  useEffect(() => {
-    hasPlayedRef.current = false;
-  }, [sourceSentence]);
-
-  useEffect(() => {
-    if (!loading && sourceSentence && !hasPlayedRef.current) {
-      hasPlayedRef.current = true;
-      onPlayTTS(sourceSentence);
-    }
-  }, [loading, onPlayTTS, sourceSentence]);
 
   const handleWordClick = useCallback(
     (wordIndex, bankPosition) => {
@@ -362,9 +350,6 @@ export default function RepeatWhatYouHear({
   const nextLabel = t("practice_next_question");
 
   const handleManualPlay = useCallback(async () => {
-    // Claim playback immediately so the mount auto-play effect can't fire a
-    // second competing TTS request right after the user's first click.
-    hasPlayedRef.current = true;
     const warmAudio =
       (await consumePrimedWarmAudio()) || (await createWarmAudio());
     onPlayTTS(sourceSentence, { warmAudio });
