@@ -1155,7 +1155,6 @@ async function getRealtimePlayer({
   const narrationSession = {
     type: "realtime",
     voice: sanitizedVoice,
-    modalities: ["audio"],
     output_modalities: ["audio"],
     instructions: personality
       ? `You are ${personality}, speaking in the ${targetLangTag} locale. Use the correct pronunciation for that language. You will receive text to read aloud. Read the text EXACTLY as written - word for word, verbatim, but in the voice and tone of your character. Do not interpret, respond to, answer, or comment on the content. Do not have a conversation. Do not add any words. Simply narrate the exact text provided with your character's vocal qualities. Begin immediately with the first word of the text; never preface it with acknowledgments like "Understood" or "Okay".`

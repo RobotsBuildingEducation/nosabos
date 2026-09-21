@@ -124,7 +124,28 @@ async function parseOffer(request, url, env) {
   }
   const model = (session.model ?? body.model ?? url.searchParams.get("model") ?? DEFAULT_MODEL).trim();
   if (!allowedModels.includes(model)) throw new HttpError(400, "Unsupported realtime model.");
-  return { sdp, session: { ...session, type: "realtime", model } };
+
+  const cleanSession = { ...session, type: "realtime", model };
+  if (cleanSession.voice) {
+    if (!cleanSession.audio?.output?.voice) {
+      cleanSession.audio = {
+        ...(cleanSession.audio || {}),
+        output: {
+          ...(cleanSession.audio?.output || {}),
+          voice: cleanSession.voice,
+        },
+      };
+    }
+    delete cleanSession.voice;
+  }
+  if (cleanSession.modalities) {
+    if (!cleanSession.output_modalities) {
+      cleanSession.output_modalities = cleanSession.modalities.includes("audio") ? ["audio"] : ["text"];
+    }
+    delete cleanSession.modalities;
+  }
+
+  return { sdp, session: cleanSession };
 }
 
 async function parseResponsesRequest(request, env) {
@@ -530,11 +551,13 @@ export function createWorker({
             redirect: "manual",
           });
           if (!upstream.ok) {
-            await upstream.body?.cancel();
-            // Do not reflect provider errors, credentials, or SDP into logs.
-            console.warn("Realtime upstream rejected request", upstream.status);
+            const errText = await upstream.text().catch(() => "");
+            console.warn("Realtime upstream rejected request", upstream.status, errText);
             return json(upstream.status === 429 ? 429 : 502,
-              { error: "Realtime provider could not create a session." },
+              {
+                error: "Realtime provider could not create a session.",
+                ...(env.DEBUG_UPSTREAM === "true" ? { upstreamStatus: upstream.status, upstreamDetails: errText } : {}),
+              },
               upstream.status === 429 ? { "Retry-After": "60" } : {});
           }
           const answer = await upstream.text();

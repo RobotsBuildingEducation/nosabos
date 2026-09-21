@@ -135,7 +135,6 @@ export function createRealtimeTTSConnectionPool({
             session: {
               type: "realtime",
               model,
-              voice: defaultVoice,
               audio: {
                 input: { turn_detection: null },
                 output: {
