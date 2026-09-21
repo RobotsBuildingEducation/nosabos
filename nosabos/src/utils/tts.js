@@ -21,12 +21,15 @@ function getProxyBaseUrl() {
   return import.meta.env?.VITE_REALTIME_URL || "";
 }
 
+export const DEFAULT_TTS_VOICE = "ash";
+
 const REALTIME_URL = getProxyBaseUrl()
   ? `${getProxyBaseUrl()}?model=${encodeURIComponent(REALTIME_MODEL)}`
   : "";
 const realtimeConnections = createRealtimeTTSConnectionPool({
   url: REALTIME_URL,
   model: REALTIME_MODEL,
+  defaultVoice: DEFAULT_TTS_VOICE,
   exchange: appCheckFetch,
   createPeer: () => new RTCPeerConnection(),
   createStream: () => new MediaStream(),
@@ -64,14 +67,12 @@ export const TTS_LANG_TAG = {
   yua: "es-MX",
 };
 
-export const DEFAULT_TTS_VOICE = "ash";
-
 // Default to opus for size efficiency; allow callers to request lower-latency formats
 export const DEFAULT_TTS_FORMAT = "opus";
 export const LOW_LATENCY_TTS_FORMAT = "wav";
 // Only recordings made after successful generation AND WebRTC playout drain
 // are reusable. Older versions may contain truncated audio; never promote them.
-const REALTIME_CACHE_FORMAT = "realtime-v6";
+const REALTIME_CACHE_FORMAT = "realtime-v7";
 const CACHE_AUDIO_PREPARATION_VERSION = 1;
 const REALTIME_CACHE_MIME_TYPES = [
   "audio/webm;codecs=opus",
@@ -1026,8 +1027,10 @@ async function getRealtimePlayer({
         JSON.stringify({
           type: "response.create",
           response: {
+            modalities: ["audio"],
             output_modalities: ["audio"],
             instructions: narrationSession.instructions,
+            voice: sanitizedVoice,
             audio: { output: narrationSession.audio.output },
           },
         }),
@@ -1151,6 +1154,8 @@ async function getRealtimePlayer({
 
   const narrationSession = {
     type: "realtime",
+    voice: sanitizedVoice,
+    modalities: ["audio"],
     output_modalities: ["audio"],
     instructions: personality
       ? `You are ${personality}, speaking in the ${targetLangTag} locale. Use the correct pronunciation for that language. You will receive text to read aloud. Read the text EXACTLY as written - word for word, verbatim, but in the voice and tone of your character. Do not interpret, respond to, answer, or comment on the content. Do not have a conversation. Do not add any words. Simply narrate the exact text provided with your character's vocal qualities. Begin immediately with the first word of the text; never preface it with acknowledgments like "Understood" or "Okay".`
@@ -1168,6 +1173,26 @@ async function getRealtimePlayer({
     if (finalizeResolved) return;
     mark("data-channel-open", { prepared: Boolean(warmedConnection) });
     try {
+      if (
+        warmedConnection &&
+        warmedConnection.voice &&
+        warmedConnection.voice !== sanitizedVoice
+      ) {
+        dc.send(
+          JSON.stringify({
+            type: "session.update",
+            session: {
+              voice: sanitizedVoice,
+              audio: {
+                output: {
+                  format: { type: "audio/pcm", rate: 24000 },
+                  voice: sanitizedVoice,
+                },
+              },
+            },
+          }),
+        );
+      }
       // Send text as content to narrate
       dc.send(
         JSON.stringify({

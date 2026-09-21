@@ -14,7 +14,7 @@ const source = readFileSync(new URL("./tts.js", import.meta.url), "utf8")
   .replaceAll("import.meta.env", '({ DEV: true, VITE_REALTIME_URL: "https://tts.test/rtc" })')
   .replaceAll("import.meta.hot", "undefined")
   .replaceAll("export ", "");
-const options = { text: "Lee esta frase completa hasta la última palabra.", voice: "alloy", langTag: "es-MX" };
+const options = { text: "Lee esta frase completa hasta la última palabra.", voice: "ash", langTag: "es-MX" };
 const flush = async () => { for (let i = 0; i < 30; i++) await Promise.resolve(); };
 
 function harness({ stored = new Map(), edgeStored = new Map(), fetchImpl, setupFails = false, noTracks = false, stats = new Map(), recorderFails = false, recorderStalls = false, storageFails = false, storageStalls = false, mutedAutoplayFails = false, mutedPlayPending = false, unlockPlayPending = false, exchange, prepareCache = prepareTTSCacheAudio } = {}) {
@@ -214,7 +214,8 @@ test("narration is configured at call creation and starts without waiting for se
   const { sdp, session, model } = JSON.parse(request.body);
   assert.equal(sdp, "offer");
   assert.equal(model, "gpt-realtime-2.1-mini");
-  assert.equal(session.audio.output.voice, "alloy");
+  assert.equal(session.audio.output.voice, "ash");
+  assert.equal(session.voice, "ash");
   assert.equal(session.audio.input.turn_detection, null);
   assert.match(session.instructions, /a wise toad/);
   assert.match(session.instructions, /es-MX/);
@@ -245,12 +246,15 @@ test("preparation opens receive-only transport without generating audio, and fir
   assert.equal(h.peers[0].track.stopped, false, "Handoff must not stop the active audio track");
   assert.equal(h.posts, 1, "Pressing Play does not perform another handshake");
   const messages = h.peers[0].channel.sent;
-  assert.equal(messages[0].type, "conversation.item.create");
-  assert.equal(messages[1].type, "response.create");
-  assert.equal(messages[1].response.audio.output.voice, "cedar");
-  assert.match(messages[1].response.instructions, /friendly narrator/);
-  assert.match(messages[1].response.instructions, /es-MX/);
-  assert.equal(messages.some((event) => event.type === "session.update"), false);
+  assert.equal(messages[0].type, "session.update");
+  assert.equal(messages[0].session.voice, "cedar");
+  assert.equal(messages[1].type, "conversation.item.create");
+  assert.equal(messages[2].type, "response.create");
+  assert.equal(messages[2].response.voice, "cedar");
+  assert.equal(messages[2].response.audio.output.voice, "cedar");
+  assert.match(messages[2].response.instructions, /friendly narrator/);
+  assert.match(messages[2].response.instructions, /es-MX/);
+  assert.equal(messages.some((event) => event.type === "session.update"), true);
   h.send({ type: "session.updated" });
   assert.equal(messages.filter((event) => event.type === "response.create").length, 1);
   h.recorders[0].finalChunk = "complete narration ".repeat(100);
@@ -269,7 +273,8 @@ test("concurrent players cannot claim the same prepared connection or share voic
   ]);
   assert.equal(h.peers.length, 2);
   assert.equal(h.posts, 2);
-  assert.equal(h.peers[0].channel.sent[1].response.audio.output.voice, "cedar");
+  const cedarResponse = h.peers[0].channel.sent.find((event) => event.type === "response.create");
+  assert.equal(cedarResponse.response.audio.output.voice, "cedar");
   assert.equal(JSON.parse(h.requests[1].body).session.audio.output.voice, "coral");
   players.forEach((player) => player.cleanup());
   await Promise.all(players.map((player) => player.finalize));
@@ -420,8 +425,8 @@ test("benchmark bypasses prepared transport, all cache work, and does not change
   await assert.rejects(h.api.getTTSPlayer({ ...options, benchmarkEndpoint: "https://untrusted.test" }), /Unsupported/);
 });
 
-test("an old complete v6 cache entry is repaired once with no new connection or TTL extension", async () => {
-  const key = `v2::realtime-v6::es-MX::alloy::::${options.text}`;
+test("an old complete v7 cache entry is repaired once with no new connection or TTL extension", async () => {
+  const key = `v2::realtime-v7::es-MX::ash::::${options.text}`;
   const stored = new Map([[key, { key, blob: new Blob(["old silence and speech"]), timestamp: 9000 }]]);
   let repairs = 0;
   const prepareCache = async () => { repairs++; return { blob: new Blob(["speech only"], { type: "audio/wav" }), prepared: true }; };
@@ -697,7 +702,7 @@ test("a pending gesture unlock cannot block startup or pause speech when it reso
 });
 
 test("an IndexedDB replay uses the element unlocked by the gesture", async () => {
-  const key = `v2::realtime-v6::es-MX::alloy::::${options.text}`;
+  const key = `v2::realtime-v7::es-MX::ash::::${options.text}`;
   const stored = new Map([[key, { key, blob: new Blob(["complete recording"]), timestamp: 9000, audioPreparationVersion: 1 }]]);
   const h = harness({ stored, unlockPlayPending: true });
   const warm = await h.api.primeTTSAudio();
@@ -809,7 +814,7 @@ test("gesture priming retries the same element and explicit handoff cannot share
 test("edge cache hit bypasses WebRTC and saves audio into IndexedDB", async () => {
   const edgeStored = new Map();
   const testBlob = new Blob(["edge audio content"], { type: "audio/wav" });
-  const key = "v2::realtime-v6::es-MX::alloy::::Lee esta frase completa hasta la última palabra.";
+  const key = "v2::realtime-v7::es-MX::ash::::Lee esta frase completa hasta la última palabra.";
   edgeStored.set(key, testBlob);
 
   const h = harness({ edgeStored });
@@ -860,7 +865,7 @@ test("prefetchTTSAudio fetches from edge cache and saves to local IndexedDB and 
   const edgeStored = new Map();
   const testBlob = new Blob(["edge audio word"], { type: "audio/wav" });
   const phrase = "gato";
-  const key = "v2::realtime-v6::es-MX::alloy::::gato";
+  const key = "v2::realtime-v7::es-MX::alloy::::gato";
   edgeStored.set(key, testBlob);
 
   const h = harness({ edgeStored });
@@ -877,7 +882,7 @@ test("playCachedTTS plays immediately from cache without WebRTC", async () => {
   const stored = new Map();
   const testBlob = new Blob(["cached audio word"], { type: "audio/wav" });
   const phrase = "perro";
-  const key = "v2::realtime-v6::es-MX::alloy::::perro";
+  const key = "v2::realtime-v7::es-MX::alloy::::perro";
   stored.set(key, { key, blob: testBlob, timestamp: Date.now() });
 
   const h = harness({ stored });

@@ -54,7 +54,7 @@ test("getStoryCharacterVoice resolves RPG character voices and user preference",
   assert.equal(getStoryCharacterVoice("Neko"), "sage");
   assert.equal(getStoryCharacterVoice("Yachiru"), "shimmer");
   assert.equal(getStoryCharacterVoice("You", { progress: { voice: "shimmer" } }), "shimmer");
-  assert.equal(getStoryCharacterVoice("You"), "alloy");
+  assert.equal(getStoryCharacterVoice("You"), "ash");
 });
 
 test("getStoryCharacterPortraitId maps character names to distinct portraits", () => {

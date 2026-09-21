@@ -4,6 +4,7 @@
 export function createRealtimeTTSConnectionPool({
   url,
   model,
+  defaultVoice = "ash",
   exchange,
   createPeer = () => new RTCPeerConnection(),
   createStream = () => new MediaStream(),
@@ -45,6 +46,7 @@ export function createRealtimeTTSConnectionPool({
     };
     const connection = {
       pc, dc, stream, ready,
+      voice: defaultVoice,
       expiresAt: now() + idleMs,
       expiry: null,
       claimed: false,
@@ -130,7 +132,18 @@ export function createRealtimeTTSConnectionPool({
           body: JSON.stringify({
             sdp: offer.sdp,
             model,
-            session: { type: "realtime", model, audio: { input: { turn_detection: null } } },
+            session: {
+              type: "realtime",
+              model,
+              voice: defaultVoice,
+              audio: {
+                input: { turn_detection: null },
+                output: {
+                  format: { type: "audio/pcm", rate: 24000 },
+                  voice: defaultVoice,
+                },
+              },
+            },
           }),
           signal: controller.signal,
         });

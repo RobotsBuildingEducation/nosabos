@@ -1,3 +1,5 @@
+export const DEFAULT_STORY_VOICE = "ash";
+
 export const RPG_CHARACTER_PORTRAIT_POOLS = {
   hamster: ["33", "26", "25", "22"],
   frog: ["29", "32", "36"],
@@ -128,7 +130,7 @@ export function getStoryCharacter(name, user = null) {
     id: norm,
     name: name.trim(),
     role: "character",
-    voice: "alloy",
+    voice: DEFAULT_STORY_VOICE,
     personality: null,
     portraitIndex: fallbackId,
   };
@@ -158,10 +160,10 @@ export function getUserProfilePicture(user = null) {
 
 export function getStoryCharacterVoice(name, user = null) {
   if (isUserCharacter(name, user)) {
-    return user?.progress?.voice || "alloy";
+    return user?.progress?.voice || DEFAULT_STORY_VOICE;
   }
   const char = getStoryCharacter(name, user);
-  return char?.voice || "alloy";
+  return char?.voice || DEFAULT_STORY_VOICE;
 }
 
 export function getStoryCharacterPersonality(name) {
