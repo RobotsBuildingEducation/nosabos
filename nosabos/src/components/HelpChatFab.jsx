@@ -1425,12 +1425,16 @@ const HelpChatFab = forwardRef(
             console.warn("TTS play blocked", err);
           }
 
-          const cleanup = () => stopTtsPlayback();
+          let finished = false;
+          const cleanup = () => {
+            if (finished) return;
+            if (ttsAudioRef.current && ttsAudioRef.current !== player.audio) return;
+            finished = true;
+            stopTtsPlayback();
+          };
           player.audio.onended = cleanup;
           player.audio.onerror = cleanup;
-
-          await player.done;
-          stopTtsPlayback();
+          player.finalize?.then(cleanup, cleanup);
         } catch (error) {
           console.error("TTS playback error:", error);
           stopTtsPlayback();

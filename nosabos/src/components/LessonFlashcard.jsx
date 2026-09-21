@@ -826,10 +826,15 @@ export default function LessonFlashcard({
       };
       player.audio.onended = cleanup;
       player.audio.onerror = cleanup;
+      player.finalize?.then(cleanup, cleanup);
       await player.ready;
       setLoadingTts(false);
       setIsPlayingAudio(true);
-      await player.audio.play();
+      try {
+        await player.audio.play();
+      } catch (err) {
+        console.warn("LessonFlashcard audio play non-fatal:", err);
+      }
     } catch {
       stopAnswerAudio();
     }

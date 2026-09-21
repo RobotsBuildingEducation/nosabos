@@ -2965,19 +2965,27 @@ Respond with ONLY a JSON object: {"target":"phrase in ${targetName}","support":"
       const audio = player.audio;
       starterTtsAudioRef.current = audio;
       starterTtsCleanupRef.current = player.cleanup;
+      let finished = false;
       const finish = () => {
-        if (starterTtsAudioRef.current !== audio) return;
+        if (finished) return;
+        if (starterTtsAudioRef.current && starterTtsAudioRef.current !== audio) return;
+        finished = true;
         stopStarterTts();
       };
       audio.onended = finish;
       audio.onerror = finish;
+      player.finalize?.then(finish, finish);
       await player.ready;
       if (requestId !== starterTtsRequestRef.current) {
         player.cleanup?.();
         return;
       }
       setStarterTts("playing");
-      await audio.play();
+      try {
+        await audio.play();
+      } catch (err) {
+        console.warn("Starter phrase audio play non-fatal:", err);
+      }
     } catch (error) {
       console.error("Starter phrase TTS failed:", error);
       if (requestId === starterTtsRequestRef.current) {

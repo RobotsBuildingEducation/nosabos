@@ -1180,6 +1180,7 @@ async function getRealtimePlayer({
           JSON.stringify({
             type: "session.update",
             session: {
+              voice: sanitizedVoice,
               audio: {
                 output: {
                   voice: sanitizedVoice,
@@ -1280,6 +1281,7 @@ async function getRealtimePlayer({
     completion,
     responseComplete,
     finalize,
+    done: finalize,
     cleanup: cleanupFn,
   };
 }
@@ -1703,6 +1705,7 @@ function createAudioFromBlob(blob, warmAudio = null) {
     ready: Promise.resolve(),
     completion,
     finalize,
+    done: finalize,
     cleanup,
   };
 }
