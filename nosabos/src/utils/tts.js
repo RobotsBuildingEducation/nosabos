@@ -233,16 +233,24 @@ export function warmRealtimeTTS({ force = false } = {}) {
 // A real 50ms silent PCM clip. An empty WAV can leave play() pending on iOS.
 const TTS_UNLOCK_AUDIO = "data:audio/wav;base64,UklGRrQBAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YZABAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA";
 
-export function activatePlaybackAudioSession() {
+// "play-and-talk" (PlayAndRecord) supports both TTS playback and mic capture.
+// "playback" is output-only and makes getUserMedia throw
+// "AudioSession category not compatible with audio capture" on mobile Safari,
+// which broke Tutor / Conversations / every other mic surface.
+export function ensureTalkAudioSession() {
   if (typeof navigator !== "undefined" && navigator.audioSession) {
     try {
-      if (navigator.audioSession.type !== "playback") {
-        navigator.audioSession.type = "playback";
+      if (navigator.audioSession.type !== "play-and-talk") {
+        navigator.audioSession.type = "play-and-talk";
       }
     } catch {
       // Best-effort audio session configuration.
     }
   }
+}
+
+export function activatePlaybackAudioSession() {
+  ensureTalkAudioSession();
 }
 
 if (typeof window !== "undefined") {

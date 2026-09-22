@@ -39,6 +39,17 @@ export function createJourneyRecorder({
       current = run;
       onState({ status: "starting", seconds: 0 });
       try {
+        // Must precede getUserMedia: a "playback" audioSession (set by the TTS
+        // unlock) makes mobile Safari throw "AudioSession category not compatible
+        // with audio capture".
+        try {
+          const nav = globalThis.navigator;
+          if (nav?.audioSession && nav.audioSession.type !== "play-and-talk") {
+            nav.audioSession.type = "play-and-talk";
+          }
+        } catch {
+          // Best-effort; getUserMedia will surface real failures.
+        }
         run.stream = await mediaDevices.getUserMedia({ audio: true });
         if (disposed || current !== run) { release(run); return; }
         const mimeType = ["audio/webm;codecs=opus", "audio/mp4", "audio/ogg;codecs=opus"].find(type => Recorder.isTypeSupported?.(type));

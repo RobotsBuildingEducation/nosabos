@@ -636,6 +636,17 @@ class GeminiLiveRealtimeBridge {
     const ctx = new Ctx();
     if (ctx.state === "suspended") await ctx.resume();
     this.audioContext = ctx;
+    // Must precede getUserMedia: a "playback" audioSession (set by the TTS
+    // unlock) makes mobile Safari throw "AudioSession category not compatible
+    // with audio capture". "play-and-talk" allows mic + speaker.
+    try {
+      if (typeof navigator !== "undefined" && navigator.audioSession &&
+          navigator.audioSession.type !== "play-and-talk") {
+        navigator.audioSession.type = "play-and-talk";
+      }
+    } catch {
+      // Best-effort; getUserMedia will surface real failures.
+    }
     this.mediaStream = await navigator.mediaDevices.getUserMedia({
       audio: {
         echoCancellation: INPUT_ECHO_CANCELLATION,

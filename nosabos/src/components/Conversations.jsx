@@ -2022,6 +2022,17 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     setUiState("thinking");
     setMood("thoughtful");
     try {
+      // Must precede getUserMedia: a "playback" audioSession (set by the TTS
+      // unlock) makes mobile Safari throw "AudioSession category not compatible
+      // with audio capture".
+      try {
+        if (typeof navigator !== "undefined" && navigator.audioSession &&
+            navigator.audioSession.type !== "play-and-talk") {
+          navigator.audioSession.type = "play-and-talk";
+        }
+      } catch {
+        // Best-effort; getUserMedia will surface real failures.
+      }
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       localRef.current = stream;
       assistantInputLockedRef.current = false;

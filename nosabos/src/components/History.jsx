@@ -1049,6 +1049,16 @@ export default function History({
     const SpeechRec =
       window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRec) return;
+    // SpeechRecognition also captures mic audio — ensure the audio session
+    // allows capture, otherwise mobile Safari rejects it under "playback".
+    try {
+      if (typeof navigator !== "undefined" && navigator.audioSession &&
+          navigator.audioSession.type !== "play-and-talk") {
+        navigator.audioSession.type = "play-and-talk";
+      }
+    } catch {
+      // Best-effort; recognition will surface real failures.
+    }
     const rec = new SpeechRec();
     rec.continuous = true;
     rec.interimResults = true;

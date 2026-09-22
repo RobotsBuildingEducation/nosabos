@@ -1787,6 +1787,17 @@ const HelpChatFab = forwardRef(
         };
         pc.addTransceiver("audio", { direction: "recvonly" });
 
+        // Must precede getUserMedia: a "playback" audioSession (set by the TTS
+        // unlock) makes mobile Safari throw "AudioSession category not compatible
+        // with audio capture".
+        try {
+          if (typeof navigator !== "undefined" && navigator.audioSession &&
+              navigator.audioSession.type !== "play-and-talk") {
+            navigator.audioSession.type = "play-and-talk";
+          }
+        } catch {
+          // Best-effort; getUserMedia will surface real failures.
+        }
         const local = await navigator.mediaDevices.getUserMedia({
           audio: {
             echoCancellation: true,
