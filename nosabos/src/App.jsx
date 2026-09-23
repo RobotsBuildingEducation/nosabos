@@ -151,15 +151,14 @@ import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import useUserStore from "./hooks/useUserStore";
 import useModalStore from "./hooks/useModalStore";
 import { useDecentralizedIdentity } from "./hooks/useDecentralizedIdentity";
-import * as Tone from "tone";
 import useSoundSettings, {
   DEFAULT_TUTOR_VOLUME,
 } from "./hooks/useSoundSettings";
 
-import GrammarBook from "./components/GrammarBook";
+const GrammarBook = lazy(() => import("./components/GrammarBook"));
 import Onboarding from "./components/Onboarding";
 import VoiceOrb from "./components/VoiceOrb";
-import RealTimeTest from "./components/RealTimeTest";
+const RealTimeTest = lazy(() => import("./components/RealTimeTest"));
 import BottomDrawerDragHandle from "./components/BottomDrawerDragHandle";
 import VoicePreferenceField from "./components/VoicePreferenceField";
 
@@ -167,9 +166,9 @@ import { translations } from "./utils/translation";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "./utils/llm";
 import { clampCefrLevel, maxCefrLevel } from "./utils/phonicsLevel";
 import { isMasterUnlockActive } from "./utils/masterUnlock";
-import Vocabulary from "./components/Vocabulary";
-import StoryMode from "./components/Stories";
-import History from "./components/History";
+const Vocabulary = lazy(() => import("./components/Vocabulary"));
+const StoryMode = lazy(() => import("./components/Stories"));
+const History = lazy(() => import("./components/History"));
 import ActivityMenu, {
   ImmersionPracticeMenuIcon,
 } from "./components/ActivityMenu";
@@ -178,8 +177,8 @@ import QuestionActionArea from "./components/QuestionActionArea";
 import ActivityActionRow from "./components/ActivityActionRow";
 import { isFullNavigationSkillTreeMode } from "./utils/activityControls";
 import useQuestionActionStore from "./hooks/useQuestionActionStore";
-import HelpChatFab from "./components/HelpChatFab";
-import DailyGoalModal from "./components/DailyGoalModal";
+const HelpChatFab = lazy(() => import("./components/HelpChatFab"));
+const DailyGoalModal = lazy(() => import("./components/DailyGoalModal"));
 import DailyGoalPetPanel from "./components/DailyGoalPetPanel.jsx";
 import { getCustomizeModalCopy } from "./components/companionCustomizeCopy";
 import { IdentityPanel } from "./components/IdentityDrawer";
@@ -190,19 +189,19 @@ import { SUBSCRIPTION_SETTINGS_COPY } from "./components/subscriptionSettingsCop
 import { resolveSubscriptionAccess } from "./components/subscriptionAccessModel";
 import { useNostrWalletStore } from "./hooks/useNostrWalletStore";
 import { LuKey } from "react-icons/lu";
-import AlphabetBootcamp from "./components/AlphabetBootcamp";
+const AlphabetBootcamp = lazy(() => import("./components/AlphabetBootcamp"));
 
-import NotesDrawer from "./components/NotesDrawer";
+const NotesDrawer = lazy(() => import("./components/NotesDrawer"));
 import JourneyMilestoneGate from "./components/JourneyMilestoneGate";
 import JourneyTestButton from "./components/JourneyTestButton";
 import useVoiceJourney from "./hooks/useVoiceJourney";
-import RealWorldTasksModal, {
-  REAL_WORLD_TASKS_REFRESH_MS,
-} from "./components/RealWorldTasksModal";
+import { REAL_WORLD_TASKS_REFRESH_MS } from "./constants/realWorldTasks";
+const RealWorldTasksModal = lazy(() => import("./components/RealWorldTasksModal"));
 import useNotesStore from "./hooks/useNotesStore";
 import useRepairFocusStore from "./hooks/useRepairFocusStore";
 import { subscribeToTeamInvites } from "./utils/teams";
-import SkillTree, { GAME_LOADING_MESSAGES } from "./components/SkillTree";
+import { GAME_LOADING_MESSAGES } from "./utils/gameLoadingMessages";
+const SkillTree = lazy(() => import("./components/SkillTree"));
 import DailyPlateHome from "./components/DailyPlateHome";
 import {
   PLATE_BONUS_TOAST_COPY,
@@ -264,7 +263,7 @@ import {
   migrateUserToSchemaV2,
   USER_SCHEMA_VERSION,
 } from "./utils/userDataSchema";
-import CompanionRepairModal from "./components/CompanionRepairModal";
+const CompanionRepairModal = lazy(() => import("./components/CompanionRepairModal"));
 import {
   startLesson,
   completeLesson,
@@ -280,16 +279,16 @@ import {
   getLocalDayKey,
 } from "./utils/flashcardReview";
 import { RiArrowLeftLine } from "react-icons/ri";
-import SessionTimerModal from "./components/SessionTimerModal";
+const SessionTimerModal = lazy(() => import("./components/SessionTimerModal"));
 import SessionTimerBadge from "./components/SessionTimerBadge";
-import CommunityLanguageResourcesModal from "./components/CommunityLanguageResourcesModal";
+const CommunityLanguageResourcesModal = lazy(() => import("./components/CommunityLanguageResourcesModal"));
 import {
   getRemainingSeconds,
   setRemainingSeconds,
 } from "./provider/SessionTimerProvider";
 import ProficiencyTestModal from "./components/ProficiencyTestModal";
 import GettingStartedModal from "./components/GettingStartedModal";
-import BitcoinSupportModal from "./components/BitcoinSupportModal";
+const BitcoinSupportModal = lazy(() => import("./components/BitcoinSupportModal"));
 import RandomCharacter from "./components/RandomCharacter";
 import XpProgressHeader from "./components/XpProgressHeader";
 import {
@@ -334,7 +333,7 @@ import {
 } from "./utils/patreonDrawerReturn";
 import { waitForGameLoaderExploration } from "./utils/gameLoaderTiming";
 import { LESSON_COUNTS, getLessonLevelFromId } from "./utils/cefrProgress";
-import { CEFR_LEVEL_COUNTS as FLASHCARD_LEVEL_COUNTS } from "./data/flashcards/common";
+import { CEFR_LEVEL_COUNTS as FLASHCARD_LEVEL_COUNTS } from "./data/flashcards/cefrConstants";
 import {
   COURSE_PROGRESS_COLLECTION,
   COURSE_PROGRESS_SCHEMA_VERSION,
@@ -2944,12 +2943,16 @@ function TopBar({
           </DrawerBody>
         </DrawerContent>
       </Drawer>
-      <CommunityLanguageResourcesModal
-        isOpen={Boolean(communityLanguageCode)}
-        onClose={() => setCommunityLanguageCode(null)}
-        languageCode={communityLanguageCode}
-        appLanguage={appLanguage}
-      />
+      {communityLanguageCode ? (
+        <Suspense fallback={null}>
+          <CommunityLanguageResourcesModal
+            isOpen={Boolean(communityLanguageCode)}
+            onClose={() => setCommunityLanguageCode(null)}
+            languageCode={communityLanguageCode}
+            appLanguage={appLanguage}
+          />
+        </Suspense>
+      ) : null}
       <Modal
         isOpen={isPostsInfoOpen}
         onClose={() => setIsPostsInfoOpen(false)}
@@ -3032,6 +3035,15 @@ export default function App({ onBootReady } = {}) {
   const isMobile = useBreakpointValue({ base: true, md: false });
   const helpChatDisclosure = useDisclosure();
   const helpChatRef = useRef(null);
+  const [helpChatEverOpened, setHelpChatEverOpened] = useState(false);
+  const pendingHelpChatPayloadRef = useRef(null);
+
+  useEffect(() => {
+    if (helpChatDisclosure.isOpen) {
+      setHelpChatEverOpened(true);
+    }
+  }, [helpChatDisclosure.isOpen]);
+
   useAppUpdate();
   useUpdateBlocker(
     "active-onboarding-subscription",
@@ -3042,11 +3054,25 @@ export default function App({ onBootReady } = {}) {
     (text) => {
       const payload = (text || "").trim();
       if (!payload) return;
+      setHelpChatEverOpened(true);
       helpChatDisclosure.onOpen();
-      helpChatRef.current?.openAndSend(payload);
+      if (helpChatRef.current?.openAndSend) {
+        helpChatRef.current.openAndSend(payload);
+      } else {
+        pendingHelpChatPayloadRef.current = payload;
+      }
     },
     [helpChatDisclosure],
   );
+
+  const handleHelpChatMounted = useCallback((inst) => {
+    helpChatRef.current = inst;
+    if (inst && pendingHelpChatPayloadRef.current) {
+      const payload = pendingHelpChatPayloadRef.current;
+      pendingHelpChatPayloadRef.current = null;
+      inst.openAndSend(payload);
+    }
+  }, []);
   const [teamsOpen, setTeamsOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
   const [memoryInitialTab, setMemoryInitialTab] = useState("repairs");
@@ -3882,9 +3908,17 @@ export default function App({ onBootReady } = {}) {
   // Warm up audio on first user interaction to eliminate mobile audio delay
   useEffect(() => {
     const handleFirstInteraction = () => {
-      // Call Tone.start() synchronously inside the user gesture so the
-      // browser treats it as user-initiated (required on iOS / mobile).
-      Tone.start();
+      // Resume browser AudioContext synchronously inside the user gesture so
+      // mobile Safari unlocks audio playback cleanly without needing Tone.js yet.
+      const AudioContextClass =
+        typeof window !== "undefined" &&
+        (window.AudioContext || window.webkitAudioContext);
+      if (AudioContextClass) {
+        try {
+          const tempCtx = new AudioContextClass();
+          tempCtx.resume().then(() => tempCtx.close());
+        } catch (_) {}
+      }
       warmupAudio();
       // Remove listeners after first interaction
       document.removeEventListener("touchstart", handleFirstInteraction);
@@ -7677,9 +7711,10 @@ export default function App({ onBootReady } = {}) {
   );
 
   const renderRandomPanel = () => {
+    let content = null;
     switch (randomPick) {
       case "realtime":
-        return (
+        content = (
           <>
             {RandomHeader}
             <RealTimeTest
@@ -7702,8 +7737,9 @@ export default function App({ onBootReady } = {}) {
             />
           </>
         );
+        break;
       case "stories":
-        return (
+        content = (
           <>
             {RandomHeader}
             <StoryMode
@@ -7716,15 +7752,17 @@ export default function App({ onBootReady } = {}) {
             />
           </>
         );
+        break;
       case "reading":
-        return (
+        content = (
           <>
             {RandomHeader}
             <History userLanguage={appLanguage} />
           </>
         );
+        break;
       case "grammar":
-        return (
+        content = (
           <>
             {RandomHeader}
             <GrammarBook
@@ -7735,9 +7773,10 @@ export default function App({ onBootReady } = {}) {
             />
           </>
         );
+        break;
       case "vocabulary":
       default:
-        return (
+        content = (
           <>
             {RandomHeader}
             <Vocabulary
@@ -7749,7 +7788,9 @@ export default function App({ onBootReady } = {}) {
             />
           </>
         );
+        break;
     }
+    return <Suspense fallback={null}>{content}</Suspense>;
   };
 
   /* -----------------------------------
@@ -10588,30 +10629,36 @@ export default function App({ onBootReady } = {}) {
         deferBody={!timerModalImmediateBody}
       />
 
-      <RealWorldTasksModal
-        isOpen={realWorldTasksOpen}
-        onClose={() => setRealWorldTasksOpen(false)}
-        npub={activeNpub}
-        appLanguage={appLanguage}
-        targetLang={resolvedTargetLang}
-        cefrLevel={currentCEFRLevel}
-        realWorldTasks={realWorldTasks}
-        onTasksUpdated={handleRealWorldTasksUpdated}
-        onRewardClaimed={handleRealWorldRewardClaimed}
-      />
+      {realWorldTasksOpen ? (
+        <Suspense fallback={null}>
+          <RealWorldTasksModal
+            isOpen={realWorldTasksOpen}
+            onClose={() => setRealWorldTasksOpen(false)}
+            npub={activeNpub}
+            appLanguage={appLanguage}
+            targetLang={resolvedTargetLang}
+            cefrLevel={currentCEFRLevel}
+            realWorldTasks={realWorldTasks}
+            onTasksUpdated={handleRealWorldTasksUpdated}
+            onRewardClaimed={handleRealWorldRewardClaimed}
+          />
+        </Suspense>
+      ) : null}
 
-      <NotesDrawer
-        isOpen={notesOpen}
-        onClose={() => {
-          setNotesOpen(false);
-          setMemoryInitialTab("repairs");
-        }}
-        appLanguage={appLanguage}
-        targetLang={resolvedTargetLang}
-        npub={activeNpub}
-        initialTab={memoryInitialTab}
-        journeyResource={journeyResource}
-      />
+      <Suspense fallback={null}>
+        <NotesDrawer
+          isOpen={notesOpen}
+          onClose={() => {
+            setNotesOpen(false);
+            setMemoryInitialTab("repairs");
+          }}
+          appLanguage={appLanguage}
+          targetLang={resolvedTargetLang}
+          npub={activeNpub}
+          initialTab={memoryInitialTab}
+          journeyResource={journeyResource}
+        />
+      </Suspense>
 
       <JourneyMilestoneGate
         key={`${activeNpub}:${resolvedTargetLang}`}
@@ -10639,15 +10686,19 @@ export default function App({ onBootReady } = {}) {
         }}
       />
 
-      <CompanionRepairModal
-        isOpen={repairModalOpen}
-        onClose={() => setRepairModalOpen(false)}
-        plan={repairPlanToday}
-        targetLang={resolvedTargetLang}
-        appLanguage={appLanguage}
-        npub={activeNpub}
-        startIndex={plateSnapshot.byKind?.repair?.count || 0}
-      />
+      {repairModalOpen ? (
+        <Suspense fallback={null}>
+          <CompanionRepairModal
+            isOpen={repairModalOpen}
+            onClose={() => setRepairModalOpen(false)}
+            plan={repairPlanToday}
+            targetLang={resolvedTargetLang}
+            appLanguage={appLanguage}
+            npub={activeNpub}
+            startIndex={plateSnapshot.byKind?.repair?.count || 0}
+          />
+        </Suspense>
+      ) : null}
 
       {!isGameFullScreen && (
         <BottomActionBar
@@ -10718,16 +10769,18 @@ export default function App({ onBootReady } = {}) {
             />
           )}
           {showAlphabetBootcamp ? (
-            <AlphabetBootcamp
-              appLanguage={appLanguage}
-              targetLang={resolvedTargetLang}
-              npub={activeNpub}
-              languageXp={userProgress?.totalXp || 0}
-              cefrLevel={repairLessonCefrLevel}
-              placementLevel={phonicsPlacementLevel}
-              courseCeilingLevel={phonicsCourseCeilingLevel}
-              pauseMs={user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS}
-            />
+            <Suspense fallback={null}>
+              <AlphabetBootcamp
+                appLanguage={appLanguage}
+                targetLang={resolvedTargetLang}
+                npub={activeNpub}
+                languageXp={userProgress?.totalXp || 0}
+                cefrLevel={repairLessonCefrLevel}
+                placementLevel={phonicsPlacementLevel}
+                courseCeilingLevel={phonicsCourseCeilingLevel}
+                pauseMs={user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS}
+              />
+            </Suspense>
           ) : (
             // In plate mode the skill tree renders nothing visible, but it
             // stays mounted (display:none) so the keep-alive voice surfaces
@@ -10736,53 +10789,55 @@ export default function App({ onBootReady } = {}) {
               display={pathMode === "plate" ? "none" : "block"}
               aria-hidden={pathMode === "plate"}
             >
-              <SkillTree
-                targetLang={resolvedTargetLang}
-                level={resolvedLevel}
-                supportLang={resolvedSupportLang}
-                userProgress={userProgress}
-                dailyPlateSnapshot={plateSnapshot}
-                onStartLesson={handleStartLesson}
-                onCompleteFlashcard={handleCompleteFlashcard}
-                onRandomPracticeFlashcard={handleRandomPracticeFlashcard}
-                pauseMs={user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS}
-                showMultipleLevels={true}
-                levels={relevantLevels}
-                // Mode-specific level props
-                activeLessonLevel={displayActiveLessonLevel}
-                activeFlashcardLevel={displayActiveFlashcardLevel}
-                currentLessonLevel={currentLessonLevel}
-                currentFlashcardLevel={currentFlashcardLevel}
-                tutorUnlockedLevel={tutorUnlockedLevel}
-                onLessonLevelChange={handleLessonLevelChange}
-                onFlashcardLevelChange={handleFlashcardLevelChange}
-                lessonLevelCompletionStatus={lessonLevelCompletionStatus}
-                flashcardLevelCompletionStatus={flashcardLevelCompletionStatus}
-                isLessonProgressReady={isActiveLessonProgressReady}
-                isFlashcardProgressReady={isActiveFlashcardProgressReady}
-                // Legacy props (for backwards compatibility)
-                activeCEFRLevel={activeCEFRLevel}
-                currentCEFRLevel={currentCEFRLevel}
-                onLevelChange={handleLevelChange}
-                levelCompletionStatus={levelCompletionStatus}
-                // Conversations props
-                activeNpub={activeNpub}
-                // Path mode props (lifted from SkillTree)
-                pathMode={pathMode}
-                onPathModeChange={setPathMode}
-                scrollToLatestTrigger={scrollToLatestTrigger}
-                scrollToLatestUnlockedRef={scrollToLatestUnlockedRef}
-                initialUnits={skillTreeInitialUnits.units}
-                initialUnitsKey={skillTreeInitialUnits.key || ""}
-                onTutorFirstLessonComplete={handleTutorFirstLessonComplete}
-                onTutorDailyGoalCelebration={handleTutorDailyGoalCelebration}
-                bottomActionBarMinimized={isBottomActionBarMinimized}
-                onVoiceConnectionStatusChange={
-                  handleVoiceConnectionStatusChange
-                }
-                // Tutorial props
-                isTutorialComplete={hasCompletedSkillTreeTutorial}
-              />
+              <Suspense fallback={null}>
+                <SkillTree
+                  targetLang={resolvedTargetLang}
+                  level={resolvedLevel}
+                  supportLang={resolvedSupportLang}
+                  userProgress={userProgress}
+                  dailyPlateSnapshot={plateSnapshot}
+                  onStartLesson={handleStartLesson}
+                  onCompleteFlashcard={handleCompleteFlashcard}
+                  onRandomPracticeFlashcard={handleRandomPracticeFlashcard}
+                  pauseMs={user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS}
+                  showMultipleLevels={true}
+                  levels={relevantLevels}
+                  // Mode-specific level props
+                  activeLessonLevel={displayActiveLessonLevel}
+                  activeFlashcardLevel={displayActiveFlashcardLevel}
+                  currentLessonLevel={currentLessonLevel}
+                  currentFlashcardLevel={currentFlashcardLevel}
+                  tutorUnlockedLevel={tutorUnlockedLevel}
+                  onLessonLevelChange={handleLessonLevelChange}
+                  onFlashcardLevelChange={handleFlashcardLevelChange}
+                  lessonLevelCompletionStatus={lessonLevelCompletionStatus}
+                  flashcardLevelCompletionStatus={flashcardLevelCompletionStatus}
+                  isLessonProgressReady={isActiveLessonProgressReady}
+                  isFlashcardProgressReady={isActiveFlashcardProgressReady}
+                  // Legacy props (for backwards compatibility)
+                  activeCEFRLevel={activeCEFRLevel}
+                  currentCEFRLevel={currentCEFRLevel}
+                  onLevelChange={handleLevelChange}
+                  levelCompletionStatus={levelCompletionStatus}
+                  // Conversations props
+                  activeNpub={activeNpub}
+                  // Path mode props (lifted from SkillTree)
+                  pathMode={pathMode}
+                  onPathModeChange={setPathMode}
+                  scrollToLatestTrigger={scrollToLatestTrigger}
+                  scrollToLatestUnlockedRef={scrollToLatestUnlockedRef}
+                  initialUnits={skillTreeInitialUnits.units}
+                  initialUnitsKey={skillTreeInitialUnits.key || ""}
+                  onTutorFirstLessonComplete={handleTutorFirstLessonComplete}
+                  onTutorDailyGoalCelebration={handleTutorDailyGoalCelebration}
+                  bottomActionBarMinimized={isBottomActionBarMinimized}
+                  onVoiceConnectionStatusChange={
+                    handleVoiceConnectionStatusChange
+                  }
+                  // Tutorial props
+                  isTutorialComplete={hasCompletedSkillTreeTutorial}
+                />
+              </Suspense>
             </Box>
           )}
         </Box>
@@ -10865,115 +10920,125 @@ export default function App({ onBootReady } = {}) {
                   case "realtime":
                     return (
                       <TabPanel key="realtime" px={0} py={{ base: 0, md: 2 }}>
-                        <RealTimeTest
-                          key={`realtime-${lessonModuleNonce}`}
-                          auth={auth}
-                          activeNpub={activeNpub}
-                          activeNsec={activeNsec}
-                          level={user?.progress?.level}
-                          supportLang={resolvedSupportLang}
-                          targetLang={resolvedTargetLang}
-                          showTranslations={user?.progress?.showTranslations}
-                          pauseMs={
-                            user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS
-                          }
-                          helpRequest={user?.progress?.helpRequest}
-                          practicePronunciation={
-                            user?.progress?.practicePronunciation
-                          }
-                          lesson={activeLesson}
-                          lessonContent={activeLessonContent?.realtime}
-                          onSkip={switchToRandomLessonMode}
-                          bottomActionBarMinimized={isBottomActionBarMinimized}
-                          onSwitchedAccount={handleSwitchedAccount}
-                        />
+                        <Suspense fallback={null}>
+                          <RealTimeTest
+                            key={`realtime-${lessonModuleNonce}`}
+                            auth={auth}
+                            activeNpub={activeNpub}
+                            activeNsec={activeNsec}
+                            level={user?.progress?.level}
+                            supportLang={resolvedSupportLang}
+                            targetLang={resolvedTargetLang}
+                            showTranslations={user?.progress?.showTranslations}
+                            pauseMs={
+                              user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS
+                            }
+                            helpRequest={user?.progress?.helpRequest}
+                            practicePronunciation={
+                              user?.progress?.practicePronunciation
+                            }
+                            lesson={activeLesson}
+                            lessonContent={activeLessonContent?.realtime}
+                            onSkip={switchToRandomLessonMode}
+                            bottomActionBarMinimized={isBottomActionBarMinimized}
+                            onSwitchedAccount={handleSwitchedAccount}
+                          />
+                        </Suspense>
                       </TabPanel>
                     );
                   case "stories":
                     return (
                       <TabPanel key="stories" px={0} py={{ base: 0, md: 2 }}>
-                        <StoryMode
-                          key={`stories-${lessonModuleNonce}`}
-                          userLanguage={appLanguage}
-                          activeNpub={activeNpub}
-                          activeNsec={activeNsec}
-                          targetLang={resolvedTargetLang}
-                          supportLang={resolvedSupportLang}
-                          pauseMs={
-                            user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS
-                          }
-                          lesson={activeLesson}
-                          lessonContent={activeLessonContent?.stories}
-                          onSkip={switchToRandomLessonMode}
-                          lessonEarnedXp={activeLessonEarnedXp}
-                        />
+                        <Suspense fallback={null}>
+                          <StoryMode
+                            key={`stories-${lessonModuleNonce}`}
+                            userLanguage={appLanguage}
+                            activeNpub={activeNpub}
+                            activeNsec={activeNsec}
+                            targetLang={resolvedTargetLang}
+                            supportLang={resolvedSupportLang}
+                            pauseMs={
+                              user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS
+                            }
+                            lesson={activeLesson}
+                            lessonContent={activeLessonContent?.stories}
+                            onSkip={switchToRandomLessonMode}
+                            lessonEarnedXp={activeLessonEarnedXp}
+                          />
+                        </Suspense>
                       </TabPanel>
                     );
                   case "reading":
                     return (
                       <TabPanel key="reading" px={0} py={{ base: 0, md: 2 }}>
-                        <History
-                          key={`reading-${lessonModuleNonce}`}
-                          userLanguage={appLanguage}
-                          lesson={activeLesson}
-                          lessonContent={activeLessonContent?.reading}
-                          onSkip={switchToRandomLessonMode}
-                          lessonEarnedXp={activeLessonEarnedXp}
-                        />
+                        <Suspense fallback={null}>
+                          <History
+                            key={`reading-${lessonModuleNonce}`}
+                            userLanguage={appLanguage}
+                            lesson={activeLesson}
+                            lessonContent={activeLessonContent?.reading}
+                            onSkip={switchToRandomLessonMode}
+                            lessonEarnedXp={activeLessonEarnedXp}
+                          />
+                        </Suspense>
                       </TabPanel>
                     );
                   case "grammar":
                     return (
                       <TabPanel key="grammar" px={0} py={{ base: 0, md: 2 }}>
-                        <GrammarBook
-                          key={`grammar-${lessonModuleNonce}`}
-                          userLanguage={appLanguage}
-                          activeNpub={activeNpub}
-                          activeNsec={activeNsec}
-                          pauseMs={
-                            user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS
-                          }
-                          lesson={activeLesson}
-                          lessonContent={activeLessonContent?.grammar}
-                          isFinalQuiz={activeLesson?.isFinalQuiz || false}
-                          quizConfig={
-                            activeLesson?.quizConfig || {
-                              questionsRequired: 10,
-                              passingScore: 8,
+                        <Suspense fallback={null}>
+                          <GrammarBook
+                            key={`grammar-${lessonModuleNonce}`}
+                            userLanguage={appLanguage}
+                            activeNpub={activeNpub}
+                            activeNsec={activeNsec}
+                            pauseMs={
+                              user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS
                             }
-                          }
-                          onSkip={switchToRandomLessonMode}
-                          onExitQuiz={handleReturnToSkillTree}
-                          onSendHelpRequest={handleSendToHelpChat}
-                          lessonEarnedXp={activeLessonEarnedXp}
-                        />
+                            lesson={activeLesson}
+                            lessonContent={activeLessonContent?.grammar}
+                            isFinalQuiz={activeLesson?.isFinalQuiz || false}
+                            quizConfig={
+                              activeLesson?.quizConfig || {
+                                questionsRequired: 10,
+                                passingScore: 8,
+                              }
+                            }
+                            onSkip={switchToRandomLessonMode}
+                            onExitQuiz={handleReturnToSkillTree}
+                            onSendHelpRequest={handleSendToHelpChat}
+                            lessonEarnedXp={activeLessonEarnedXp}
+                          />
+                        </Suspense>
                       </TabPanel>
                     );
                   case "vocabulary":
                     return (
                       <TabPanel key="vocabulary" px={0} py={{ base: 0, md: 2 }}>
-                        <Vocabulary
-                          key={`vocabulary-${lessonModuleNonce}`}
-                          userLanguage={appLanguage}
-                          activeNpub={activeNpub}
-                          activeNsec={activeNsec}
-                          pauseMs={
-                            user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS
-                          }
-                          lesson={activeLesson}
-                          lessonContent={activeLessonContent?.vocabulary}
-                          isFinalQuiz={activeLesson?.isFinalQuiz || false}
-                          quizConfig={
-                            activeLesson?.quizConfig || {
-                              questionsRequired: 10,
-                              passingScore: 8,
+                        <Suspense fallback={null}>
+                          <Vocabulary
+                            key={`vocabulary-${lessonModuleNonce}`}
+                            userLanguage={appLanguage}
+                            activeNpub={activeNpub}
+                            activeNsec={activeNsec}
+                            pauseMs={
+                              user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS
                             }
-                          }
-                          onSkip={switchToRandomLessonMode}
-                          onExitQuiz={handleReturnToSkillTree}
-                          onSendHelpRequest={handleSendToHelpChat}
-                          lessonEarnedXp={activeLessonEarnedXp}
-                        />
+                            lesson={activeLesson}
+                            lessonContent={activeLessonContent?.vocabulary}
+                            isFinalQuiz={activeLesson?.isFinalQuiz || false}
+                            quizConfig={
+                              activeLesson?.quizConfig || {
+                                questionsRequired: 10,
+                                passingScore: 8,
+                              }
+                            }
+                            onSkip={switchToRandomLessonMode}
+                            onExitQuiz={handleReturnToSkillTree}
+                            onSendHelpRequest={handleSendToHelpChat}
+                            lessonEarnedXp={activeLessonEarnedXp}
+                          />
+                        </Suspense>
                       </TabPanel>
                     );
                   case "game":
@@ -11035,15 +11100,19 @@ export default function App({ onBootReady } = {}) {
         </Box>
       )}
 
-      <HelpChatFab
-        ref={helpChatRef}
-        progress={user?.progress}
-        appLanguage={appLanguage}
-        isOpen={helpChatDisclosure.isOpen}
-        onOpen={helpChatDisclosure.onOpen}
-        onClose={helpChatDisclosure.onClose}
-        showFloatingTrigger={false}
-      />
+      {helpChatEverOpened && (
+        <Suspense fallback={null}>
+          <HelpChatFab
+            ref={handleHelpChatMounted}
+            progress={user?.progress}
+            appLanguage={appLanguage}
+            isOpen={helpChatDisclosure.isOpen}
+            onOpen={helpChatDisclosure.onOpen}
+            onClose={helpChatDisclosure.onClose}
+            showFloatingTrigger={false}
+          />
+        </Suspense>
+      )}
 
       <ProficiencyTestModalSharedBackdropWrapper
         isOpen={proficiencyTestOpen}
@@ -11065,14 +11134,18 @@ export default function App({ onBootReady } = {}) {
         lang={appLanguage}
       />
 
-      <BitcoinSupportModal
-        isOpen={showTutorialBitcoinModal}
-        onClose={handleCloseTutorialBitcoinModal}
-        userLanguage={appLanguage}
-        identity={user?.identity || ""}
-        onSelectIdentity={handleIdentitySelection}
-        isIdentitySaving={isIdentitySaving}
-      />
+      {showTutorialBitcoinModal ? (
+        <Suspense fallback={null}>
+          <BitcoinSupportModal
+            isOpen={showTutorialBitcoinModal}
+            onClose={handleCloseTutorialBitcoinModal}
+            userLanguage={appLanguage}
+            identity={user?.identity || ""}
+            onSelectIdentity={handleIdentitySelection}
+            isIdentitySaving={isIdentitySaving}
+          />
+        </Suspense>
+      ) : null}
 
       <Modal
         isOpen={timeUpOpen}
@@ -12075,12 +12148,14 @@ function DailyGoalModalGate({ appChainOpen, ...props }) {
   if (isOpen) hasEverOpened.current = true;
   if (!hasEverOpened.current) return null;
   return (
-    <DailyGoalModal
-      isOpen={isOpen}
-      useSharedBackdrop={appChainOpen || isOpen || siblingOpen}
-      dismissible={dismissible}
-      {...props}
-    />
+    <Suspense fallback={null}>
+      <DailyGoalModal
+        isOpen={isOpen}
+        useSharedBackdrop={appChainOpen || isOpen || siblingOpen}
+        dismissible={dismissible}
+        {...props}
+      />
+    </Suspense>
   );
 }
 
@@ -12092,11 +12167,13 @@ function SessionTimerModalGate({ appChainOpen, ...props }) {
   if (isOpen) hasEverOpened.current = true;
   if (!hasEverOpened.current) return null;
   return (
-    <SessionTimerModal
-      isOpen={isOpen}
-      useSharedBackdrop={appChainOpen || isOpen || siblingOpen}
-      {...props}
-    />
+    <Suspense fallback={null}>
+      <SessionTimerModal
+        isOpen={isOpen}
+        useSharedBackdrop={appChainOpen || isOpen || siblingOpen}
+        {...props}
+      />
+    </Suspense>
   );
 }
 

@@ -5,7 +5,7 @@
  * separately for skill tree lessons and flashcards
  */
 
-import { CEFR_LEVELS, CEFR_LEVEL_COUNTS } from '../data/flashcards/common.js';
+import { CEFR_LEVELS, CEFR_LEVEL_COUNTS } from '../data/flashcards/cefrConstants.js';
 
 // Total user-facing lessons per CEFR level from the runtime learning path.
 // Includes core lessons, skill builders, integrated practice, game reviews, and quizzes.

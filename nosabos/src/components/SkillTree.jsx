@@ -248,7 +248,7 @@ import {
 import { getLessonProgressPercent } from "../utils/lessonProgress";
 import { createUnitRenderProgressSelector } from "../utils/skillTreeRenderProgress";
 import FlashcardSkillTree from "./FlashcardSkillTree";
-import { CEFR_LEVELS } from "../data/flashcards/common";
+import { CEFR_LEVELS } from "../data/flashcards/cefrConstants";
 import { MdOutlineDescription } from "react-icons/md";
 import { FaMicrophone } from "react-icons/fa";
 import { TbLanguage } from "react-icons/tb";

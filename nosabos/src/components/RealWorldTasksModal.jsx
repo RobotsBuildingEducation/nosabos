@@ -53,9 +53,10 @@ const APP_TEXT_PRIMARY = "var(--app-text-primary)";
 const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
 const APP_TEXT_MUTED = "var(--app-text-muted)";
 const APP_SHADOW = "var(--app-shadow-soft)";
-
-export const REAL_WORLD_TASKS_REWARD_XP = 15;
-export const REAL_WORLD_TASKS_REFRESH_MS = 6 * 60 * 60 * 1000; // 6 hours
+export {
+  REAL_WORLD_TASKS_REWARD_XP,
+  REAL_WORLD_TASKS_REFRESH_MS,
+} from "../constants/realWorldTasks.js";
 
 const TARGET_LANGUAGE_LABELS = {
   en: "English",

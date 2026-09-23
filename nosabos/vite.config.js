@@ -1,9 +1,66 @@
 import crypto from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
 import process from "node:process";
+import zlib from "node:zlib";
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import { visualizer } from "rollup-plugin-visualizer";
+
+function precompressPlugin() {
+  return {
+    name: "precompress-plugin",
+    apply: "build",
+    enforce: "post",
+    closeBundle() {
+      const distDir = path.resolve(process.cwd(), "dist");
+      if (!fs.existsSync(distDir)) return;
+
+      function compressFiles(dir) {
+        const entries = fs.readdirSync(dir, { withFileTypes: true });
+        for (const entry of entries) {
+          const fullPath = path.join(dir, entry.name);
+          if (entry.isDirectory()) {
+            compressFiles(fullPath);
+          } else if (
+            /\.(js|css|html|json|svg)$/i.test(entry.name) &&
+            !entry.name.endsWith(".gz") &&
+            !entry.name.endsWith(".br")
+          ) {
+            const buffer = fs.readFileSync(fullPath);
+            if (buffer.length > 512) {
+              const gzipped = zlib.gzipSync(buffer, { level: 9 });
+              fs.writeFileSync(fullPath + ".gz", gzipped);
+            }
+          }
+        }
+      }
+      compressFiles(distDir);
+    },
+  };
+}
+
+function previewAssetFallbackPlugin() {
+  return {
+    name: "preview-asset-fallback",
+    configurePreviewServer(server) {
+      server.middlewares.use((req, res, next) => {
+        const url = req.url ? req.url.split("?")[0] : "";
+        if (url.startsWith("/assets/")) {
+          const filePath = path.resolve(process.cwd(), "dist", url.slice(1));
+          if (!fs.existsSync(filePath) && !fs.existsSync(filePath + ".gz")) {
+            res.statusCode = 404;
+            res.setHeader("Content-Type", "text/plain");
+            res.end("Asset not found");
+            return;
+          }
+        }
+        next();
+      });
+    },
+  };
+}
 
 function pwaVersionMetadataPlugin({ buildId, builtAt }) {
   const versionPayload = JSON.stringify(
@@ -67,16 +124,166 @@ export default defineConfig(({ mode, command }) => {
         },
       },
     },
+
     plugins: [
     react(),
     pwaVersionMetadataPlugin({ buildId, builtAt }),
+    precompressPlugin(),
+    previewAssetFallbackPlugin(),
     VitePWA({
       workbox: {
-        maximumFileSizeToCacheInBytes: 10000000,
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
+        maximumFileSizeToCacheInBytes: 5000000,
         // OAuth, API navigations, and version metadata must always reach
         // Firebase Hosting / network directly rather than the index.html fallback.
-        navigateFallbackDenylist: [/^\/api(?:\/|$)/, /^\/version\.json$/],
-        globIgnores: ["**/version.json"],
+        navigateFallbackDenylist: [
+          /^\/api(?:\/|$)/,
+          /^\/version\.json$/,
+          /^\/assets\//,
+        ],
+        globIgnores: [
+          "**/version.json",
+          // Exclude target language curriculum chunks from precache (loaded on demand):
+          "**/assets/de-*.js",
+          "**/assets/el-*.js",
+          "**/assets/en-*.js",
+          "**/assets/fr-*.js",
+          "**/assets/ga-*.js",
+          "**/assets/it-*.js",
+          "**/assets/ja-*.js",
+          "**/assets/nl-*.js",
+          "**/assets/pl-*.js",
+          "**/assets/pt-*.js",
+          "**/assets/ru-*.js",
+          "**/assets/alignmentOverrides-*.js",
+          "**/assets/repairOverrides-*.js",
+          "**/assets/skillTreeLevelBuilder-*.js",
+          // Exclude CEFR level chunks (loaded on demand):
+          "**/assets/pre-a1-*.js",
+          "**/assets/a1-*.js",
+          "**/assets/a2-*.js",
+          "**/assets/b1-*.js",
+          "**/assets/b2-*.js",
+          "**/assets/c1-*.js",
+          "**/assets/c2-*.js",
+          // Exclude lazy secondary features and tabs (loaded on demand):
+          "**/assets/SkillTree-*.js",
+          "**/assets/AlphabetBootcamp-*.js",
+          "**/assets/GrammarBook-*.js",
+          "**/assets/Vocabulary-*.js",
+          "**/assets/History-*.js",
+          "**/assets/Stories-*.js",
+          "**/assets/RealTimeTest-*.js",
+          "**/assets/NotesDrawer-*.js",
+          "**/assets/DailyGoalModal-*.js",
+          "**/assets/DelightQuestionLab-*.js",
+          "**/assets/GameRouter-*.js",
+          "**/assets/legacyScenario-*.js",
+          "**/assets/CitizenshipGuide-*.js",
+          "**/assets/IdentityCard-*.js",
+          "**/assets/LoadingMiniGame-*.js",
+          "**/assets/ProficiencyTest-*.js",
+          "**/assets/LinksPage-*.js",
+          "**/assets/CustomizeProfileModal-*.js",
+          "**/assets/LegacyLinksPage-*.js",
+          "**/assets/SquirclePlayground-*.js",
+          "**/assets/PatreonOAuthDrawerReturn-*.js",
+          "**/assets/useBottomDrawerSwipeDismiss-*.js",
+          "**/assets/LandingPage-*.js",
+          "**/assets/HelpChatFab-*.js",
+          "**/assets/RealWorldTasksModal-*.js",
+          "**/assets/SessionTimerModal-*.js",
+          "**/assets/BitcoinSupportModal-*.js",
+          "**/assets/CompanionRepairModal-*.js",
+          "**/assets/*Localizer-*.js",
+          "**/assets/FeedbackRail-*.js",
+          "**/assets/providerGenerationTimeout-*.js",
+          // Exclude large image assets (sprites, character portraits) from precache:
+          "**/assets/*.webp",
+          "**/assets/*.png",
+          "**/assets/*.jpg",
+          "**/assets/*.jpeg",
+        ],
+        runtimeCaching: [
+          {
+            // On-demand JS & CSS chunks: cached when first accessed, then revalidated
+            urlPattern: ({ request }) =>
+              request.destination === "script" || request.destination === "style",
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "nosabos-runtime-scripts",
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+          {
+            // On-demand images: cached on first request
+            urlPattern: ({ request }) => request.destination === "image",
+            handler: "CacheFirst",
+            options: {
+              cacheName: "nosabos-runtime-images",
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 24 * 60 * 60, // 60 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+          {
+            // Local fonts and static font files
+            urlPattern: ({ request }) => request.destination === "font",
+            handler: "CacheFirst",
+            options: {
+              cacheName: "nosabos-runtime-fonts",
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 365 * 24 * 60 * 60, // 1 year
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+          {
+            // Google Fonts (stylesheets and woff2 font files)
+            urlPattern: /^https:\/\/fonts\.(?:googleapis|gstatic)\.com\/.*/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "nosabos-google-fonts",
+              expiration: {
+                maxEntries: 30,
+                maxAgeSeconds: 365 * 24 * 60 * 60, // 1 year
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+          {
+            // Cloudinary static assets (logos, mascots, badges)
+            urlPattern: /^https:\/\/res\.cloudinary\.com\/.*/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "nosabos-cloudinary-assets",
+              expiration: {
+                maxEntries: 60,
+                maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+        ],
       },
       manifest: {
         name: "Piyali",
@@ -107,7 +314,7 @@ export default defineConfig(({ mode, command }) => {
           },
         ],
       },
-      registerType: "prompt",
+      registerType: "autoUpdate",
       devOptions: {
         enabled: false,
       },

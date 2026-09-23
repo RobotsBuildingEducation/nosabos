@@ -164,8 +164,7 @@ function buildGoalHeatmapWeeks(
     };
   });
 }
-
-export default function PlateActivityHeatmap({
+function PlateActivityHeatmap({
   npub,
   lang = "en",
   completedGoalDates = [],
@@ -364,3 +363,5 @@ export default function PlateActivityHeatmap({
     </Box>
   );
 }
+
+export default React.memo(PlateActivityHeatmap);
