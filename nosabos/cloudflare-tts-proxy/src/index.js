@@ -1,7 +1,7 @@
 import { verifyAppCheck } from "./app-check.js";
 
 const DEFAULT_MODEL = "gpt-realtime-2.1-mini";
-const DEFAULT_RESPONSE_MODEL = "gpt-5.6-luna,gpt-5-nano";
+const DEFAULT_RESPONSE_MODEL = "gpt-6-luna,gpt-5-nano";
 const MAX_BODY_BYTES = 64 * 1024;
 const UPSTREAM_TIMEOUT_MS = 30_000;
 const ALLOW_HEADERS = "Content-Type, Authorization, X-Firebase-AppCheck";

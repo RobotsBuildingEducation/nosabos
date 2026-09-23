@@ -8,7 +8,7 @@ const sdp = "v=0\r\no=- 1 1 IN IP4 127.0.0.1\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111\
 const env = {
   OPENAI_API_KEY: "server-test-secret",
   ALLOWED_ORIGINS: "https://piyali.app,http://localhost:5173",
-  ALLOWED_RESPONSE_MODELS: "gpt-5.6-luna,gpt-5-nano",
+  ALLOWED_RESPONSE_MODELS: "gpt-6-luna,gpt-5-nano",
   FIREBASE_PROJECT_NUMBER: "123",
   FIREBASE_APP_ID: "test-app",
   REQUIRE_APPCHECK: "true",
@@ -72,7 +72,7 @@ test("proxyResponses forwards to OpenAI /v1/responses with minimal reasoning and
   });
 
   const body = {
-    model: "gpt-5.6-luna",
+    model: "gpt-6-luna",
     input: "Translate Hello world",
   };
   const response = await request({
@@ -97,7 +97,7 @@ test("proxyResponses forwards to OpenAI /v1/responses with minimal reasoning and
   assert.equal(upstream.redirect, "manual");
 
   const sentBody = JSON.parse(upstream.body);
-  assert.equal(sentBody.model, "gpt-5.6-luna");
+  assert.equal(sentBody.model, "gpt-6-luna");
   assert.equal(sentBody.input, "Translate Hello world");
   assert.deepEqual(sentBody.reasoning, { effort: "none" });
   assert.equal(sentBody.text.verbosity, "low");
@@ -123,7 +123,7 @@ test("proxyResponses routes through Cloudflare AI Gateway when AI_GATEWAY_NAME i
   const response = await request({
     url: "https://worker.test/proxyResponses",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ model: "gpt-5.6-luna", input: "test gateway" }),
+    body: JSON.stringify({ model: "gpt-6-luna", input: "test gateway" }),
   }, envWithGateway);
   assert.equal(response.status, 200);
   assert.equal(calls[0][0], "https://gateway.ai.cloudflare.com/v1/test-account-123/nosabos-ai/openai/responses");

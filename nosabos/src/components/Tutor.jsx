@@ -357,7 +357,7 @@ function buildTutorTurnDetection(pauseMs) {
 
 const RESPONSES_URL = getResponsesUrl();
 const TRANSLATE_MODEL =
-  import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-5.6-luna";
+  import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-6-luna";
 const AUTO_DISCONNECT_MS = 15000;
 const ARCHIVE_GLYPH_DURATION_MS = 680;
 const ARCHIVE_GLYPH_DURATION_VARIANCE_MS = 150;

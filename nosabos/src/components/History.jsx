@@ -163,7 +163,7 @@ function getLanguageTextProps(lang, { align = "start" } = {}) {
    LLM plumbing (fallback generation, translation, and grading)
 --------------------------- */
 const RESPONSES_URL = getResponsesUrl();
-const MODEL = import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-5.6-luna";
+const MODEL = import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-6-luna";
 
 async function callResponses({ model = MODEL, input }) {
   if (simplemodel) {

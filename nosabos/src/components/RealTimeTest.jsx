@@ -82,7 +82,15 @@ import {
   SOFT_STOP_BUTTON_GLOW,
   SOFT_STOP_BUTTON_HOVER_BG,
 } from "../utils/softStopButton";
-import { DEFAULT_TTS_VOICE, getPreferredTTSVoice } from "../utils/tts";
+import {
+  DEFAULT_TTS_VOICE,
+  TTS_LANG_TAG,
+  getPreferredTTSVoice,
+  getTTSPlayer,
+  primeTTSAudio,
+  startTTSPlayback,
+} from "../utils/tts";
+import { generateStarterPhrase, isFoundationStarterLevel } from "../utils/starterPhrase";
 import { REALTIME_PRACTICE_VOICE } from "../utils/realtimePracticeVoice";
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import { getAdultBeginnerToneRule } from "../utils/adultBeginnerTone";
@@ -110,7 +118,7 @@ const REALTIME_MODEL =
 const REALTIME_URL = getRealtimeUrl(REALTIME_MODEL);
 const RESPONSES_URL = getResponsesUrl();
 const TRANSLATE_MODEL =
-  import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-5.6-luna";
+  import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-6-luna";
 const AUTO_DISCONNECT_MS = 15000;
 
 /* ---------------------------
@@ -833,6 +841,15 @@ export default function RealTimeTest({
   const [isGeneratingGoal, setIsGeneratingGoal] = useState(false);
   const [streamingGoalText, setStreamingGoalText] = useState("");
   const goalStreamingRef = useRef(false);
+  const [starterPhrase, setStarterPhrase] = useState(null);
+  const [starterLoading, setStarterLoading] = useState(false);
+  const [starterVisible, setStarterVisible] = useState(false);
+  const [starterTts, setStarterTts] = useState("idle");
+  const starterFetchRequestRef = useRef(0);
+  const starterTtsRequestRef = useRef(0);
+  const starterTtsAudioRef = useRef(null);
+  const starterTtsCleanupRef = useRef(null);
+  const starterTtsDuckRef = useRef(null);
 
   // Track when XP has been granted for the active goal to avoid duplicates
   const lastGoalIdRef = useRef(null);
@@ -872,6 +889,148 @@ export default function RealTimeTest({
   const ui = translations[uiLang] || translations.en;
   const uiText = (key, fallback = "") =>
     ui?.[key] || translations.en?.[key] || fallback;
+
+  useEffect(() => {
+    starterFetchRequestRef.current += 1;
+    stopStarterTts();
+    setStarterPhrase(null);
+    setStarterLoading(false);
+    setStarterVisible(false);
+  }, [currentGoal?.id, lesson?.id, targetLang, uiLang]);
+  useEffect(() => () => stopStarterTts(), []);
+
+  async function fetchStarterPhrase() {
+    const goal = goalRef.current;
+    const goalText = goalTitleForUI(goal);
+    if (!goalText || goalCompleted) return;
+    const requestId = starterFetchRequestRef.current;
+    const goalId = goal?.id;
+    const target = targetLangRef.current;
+    const support = uiLang;
+    setStarterLoading(true);
+    try {
+      const lastAiMessage = [...messagesRef.current]
+        .reverse()
+        .find((message) => message.role === "assistant" && message.textFinal?.trim())
+        ?.textFinal?.trim() || "";
+      const phrase = await generateStarterPhrase({
+        model: simplemodel,
+        goal: goalText,
+        level: cefrLevelRef.current,
+        targetName: getLanguagePromptName(target) || "Spanish",
+        supportName: getLanguagePromptName(support) || "English",
+        lastAiMessage,
+        onUpdate: (partial) => {
+          if (
+            requestId === starterFetchRequestRef.current &&
+            goalRef.current?.id === goalId &&
+            targetLangRef.current === target
+          ) setStarterPhrase(partial);
+        },
+      });
+      if (
+        requestId === starterFetchRequestRef.current &&
+        goalRef.current?.id === goalId &&
+        targetLangRef.current === target
+      ) setStarterPhrase(phrase);
+    } catch (error) {
+      console.warn("RealTimeTest Gemini starter phrase failed:", error);
+      if (requestId === starterFetchRequestRef.current) {
+        setStarterPhrase(null);
+        setStarterVisible(false);
+      }
+    } finally {
+      if (requestId === starterFetchRequestRef.current) setStarterLoading(false);
+    }
+  }
+
+  function handleToggleStarter() {
+    if (starterVisible) {
+      setStarterVisible(false);
+      stopStarterTts();
+      return;
+    }
+    setStarterVisible(true);
+    if (!starterPhrase && !starterLoading) void fetchStarterPhrase();
+  }
+
+  function stopStarterTts() {
+    starterTtsRequestRef.current += 1;
+    const audio = starterTtsAudioRef.current;
+    starterTtsAudioRef.current = null;
+    const cleanup = starterTtsCleanupRef.current;
+    starterTtsCleanupRef.current = null;
+    if (audio) {
+      audio.onended = null;
+      audio.onerror = null;
+      try { audio.pause?.(); } catch { /* Best effort playback cleanup. */ }
+    }
+    try { cleanup?.(); } catch { /* Best effort playback cleanup. */ }
+    const duck = starterTtsDuckRef.current;
+    starterTtsDuckRef.current = null;
+    if (duck?.remote && duck.remote.srcObject === duck.remoteStream) {
+      duck.remote.muted = duck.remoteWasMuted;
+    }
+    duck?.micTracks.forEach((track) => {
+      if (track.readyState === "live" && !assistantInputLockedRef.current) track.enabled = true;
+    });
+    setStarterTts("idle");
+  }
+
+  async function playStarterTts() {
+    if (starterTts !== "idle") {
+      stopStarterTts();
+      return;
+    }
+    const text = String(starterPhrase?.target || "")
+      .replace(/_+/g, " ").replace(/\s{2,}/g, " ")
+      .replace(/\s+([.,!?;:])/g, "$1").trim();
+    if (!text) return;
+    const requestId = ++starterTtsRequestRef.current;
+    const remote = audioRef.current;
+    const micTracks = (localRef.current?.getAudioTracks?.() || [])
+      .filter((track) => track.enabled);
+    starterTtsDuckRef.current = {
+      remote,
+      remoteStream: remote?.srcObject,
+      remoteWasMuted: remote?.muted,
+      micTracks,
+    };
+    if (remote?.srcObject) remote.muted = true;
+    micTracks.forEach((track) => { track.enabled = false; });
+    try {
+      if (dcRef.current?.readyState === "open") {
+        dcRef.current.send(JSON.stringify({ type: "input_audio_buffer.clear" }));
+      }
+    } catch { /* The session may have closed while the phrase was playing. */ }
+    setStarterTts("loading");
+    try {
+      const player = await getTTSPlayer({
+        text,
+        voice: getPreferredTTSVoice(voiceRef.current),
+        langTag: TTS_LANG_TAG[targetLangRef.current] || TTS_LANG_TAG.es,
+      });
+      if (requestId !== starterTtsRequestRef.current) {
+        player.cleanup?.();
+        return;
+      }
+      starterTtsAudioRef.current = player.audio;
+      starterTtsCleanupRef.current = player.cleanup;
+      await player.ready;
+      if (requestId !== starterTtsRequestRef.current) return;
+      const finish = () => {
+        if (requestId === starterTtsRequestRef.current) stopStarterTts();
+      };
+      player.audio.onended = finish;
+      player.audio.onerror = finish;
+      player.finalize?.then(finish, finish);
+      setStarterTts("playing");
+      await startTTSPlayback(player);
+    } catch (error) {
+      console.warn("RealTimeTest starter phrase audio failed:", error);
+      if (requestId === starterTtsRequestRef.current) stopStarterTts();
+    }
+  }
 
   // ✅ Which language to show in secondary lane
   const secondaryPref =
@@ -1324,7 +1483,7 @@ export default function RealTimeTest({
         );
       }
     } catch {}
-    if (!locked) setLocalMicEnabled(true);
+    if (!locked && !starterTtsDuckRef.current) setLocalMicEnabled(true);
   }
   function safeCancelActiveResponse() {
     if (!dcRef.current || dcRef.current.readyState !== "open") return;
@@ -1573,6 +1732,7 @@ export default function RealTimeTest({
   }
 
   async function stop() {
+    stopStarterTts();
     clearAutoStopTimer();
     aliveRef.current = false;
     assistantInputLockedRef.current = false;
@@ -3855,6 +4015,63 @@ Return ONLY JSON:
                       <strong style={{ opacity: 0.9 }}>{tGoalCriteria}</strong>{" "}
                       {currentGoalRubricText}
                     </Text>
+                  ) : null}
+                  {isFoundationStarterLevel(cefrLevel) &&
+                    currentGoalTitleText && !isGeneratingGoal && !goalCompleted ? (
+                    <VStack spacing={1.5} width="100%" mt={2}>
+                      <Button
+                        size="xs"
+                        variant="outline"
+                        onClick={handleToggleStarter}
+                        color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
+                        borderColor={isLightTheme ? APP_BORDER_STRONG : "whiteAlpha.300"}
+                        bg={isLightTheme ? APP_SURFACE : "whiteAlpha.50"}
+                        fontWeight="medium"
+                        _hover={{ bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.100" }}
+                      >
+                        {starterVisible
+                          ? uiText("ra_starter_hide", "Hide phrase")
+                          : uiText("ra_starter_show", "Help me")}
+                      </Button>
+                      {starterVisible && (
+                        <Box
+                          px={3} py={2} borderRadius="md"
+                          bg={isLightTheme ? APP_SURFACE : "whiteAlpha.100"}
+                          border="1px solid"
+                          borderColor={isLightTheme ? APP_BORDER : "whiteAlpha.200"}
+                          maxW="90%" textAlign="center"
+                        >
+                          {starterPhrase ? (
+                            <>
+                              <HStack spacing={1.5} justify="center">
+                                <IconButton
+                                  icon={starterTts === "loading"
+                                    ? <Spinner size="xs" />
+                                    : <RiVolumeUpLine size={14} />}
+                                  size="xs" variant="ghost"
+                                  onPointerDown={primeTTSAudio}
+                                  onClick={playStarterTts}
+                                  isDisabled={starterLoading}
+                                  aria-label={uiText("story_listen", "Listen")}
+                                  color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
+                                />
+                                <Text fontSize="sm" fontWeight="semibold"
+                                  color={isLightTheme ? APP_TEXT_PRIMARY : "white"}>
+                                  {starterPhrase.target}
+                                </Text>
+                                {starterLoading && <Spinner size="xs" />}
+                              </HStack>
+                              {starterPhrase.support && (
+                                <Text fontSize="xs" opacity={0.7}
+                                  color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}>
+                                  {starterPhrase.support}
+                                </Text>
+                              )}
+                            </>
+                          ) : starterLoading ? <Spinner size="xs" /> : null}
+                        </Box>
+                      )}
+                    </VStack>
                   ) : null}
                   {goalFeedback && !isGeneratingGoal ? (
                     <HStack

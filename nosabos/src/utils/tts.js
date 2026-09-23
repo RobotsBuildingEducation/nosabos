@@ -1136,7 +1136,7 @@ async function getRealtimePlayer({
       return;
     }
     if (msg.type === "error") {
-      safeLogWarn("[TTS WebRTC] OpenAI Realtime error:", msg.error);
+      safeLogWarn("[TTS WebRTC] OpenAI Realtime error:", JSON.stringify(msg.error));
       failPlayback(new Error(msg.error?.message || "Realtime TTS failed"));
     } else if (msg.type === "response.done") {
       clearTimeout(startupTimer);
@@ -1205,7 +1205,7 @@ async function getRealtimePlayer({
           JSON.stringify({
             type: "session.update",
             session: {
-              voice: sanitizedVoice,
+              type: "realtime",
               audio: {
                 output: {
                   voice: sanitizedVoice,

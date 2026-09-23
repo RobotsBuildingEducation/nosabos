@@ -116,13 +116,14 @@ import {
 } from "../utils/modalMotion";
 
 import { getRealtimeUrl, getResponsesUrl } from "../utils/proxyEndpoints";
+import { generateStarterPhrase, isFoundationStarterLevel } from "../utils/starterPhrase";
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-2.1-mini") + "";
 const REALTIME_URL = getRealtimeUrl(REALTIME_MODEL);
 const RESPONSES_URL = getResponsesUrl();
 const TRANSLATE_MODEL =
-  import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-5.6-luna";
+  import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-6-luna";
 const AUTO_DISCONNECT_MS = 15000;
 const ARCHIVE_GLYPH_DURATION_MS = 680;
 
@@ -475,7 +476,7 @@ function safeParseJson(text) {
 // produce freely yet, so goals are sized to one utterance and a tap-to-reveal
 // starter phrase is offered under the goal.
 const isFoundationConversationLevel = (level) =>
-  level === "Pre-A1" || level === "A1";
+  isFoundationStarterLevel(level);
 
 // At foundation levels an open-ended goal ("introduce yourself and describe
 // your family members") is a production cliff — the learner knows a few dozen
@@ -2844,10 +2845,6 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
     const currentSettings = conversationSettingsRef.current;
     const selectedLevel =
       currentSettings.proficiencyLevel || maxProficiencyLevel || "A1";
-    const targetName =
-      getLanguagePromptName(targetLangRef.current) || "Spanish";
-    const supportName = getLanguagePromptName(resolvedSupportLang) || "English";
-
     try {
       const lastAiMessage =
         [...messagesRef.current]
@@ -2855,35 +2852,20 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
           .find((m) => m.role === "assistant" && (m.textFinal || "").trim())
           ?.textFinal?.trim() || "";
 
-      const prompt = `A ${selectedLevel} beginner is practicing spoken ${targetName} conversation. Their current goal: "${goalText}".${
-        lastAiMessage
-          ? `\nThe conversation partner just said: "${lastAiMessage}". The phrase must work as a natural spoken reply to that.`
-          : ""
-      }
-Write ONE starter phrase in ${targetName} the learner can say out loud to complete the goal: about 3-8 words, ${selectedLevel}-appropriate high-frequency chunks only, natural and friendly. If a personal detail belongs in it (their name, a family member, a thing they like), put "___" in that spot — at most one blank. Also give its ${supportName} translation (keep "___" as "___").
-Respond with ONLY a JSON object: {"target":"phrase in ${targetName}","support":"translation in ${supportName}"}`;
-
-      const r = await appCheckFetch(RESPONSES_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: TRANSLATE_MODEL,
-          text: { format: { type: "text" } },
-          input: prompt,
-        }),
+      const phrase = await generateStarterPhrase({
+        model: simplemodel,
+        goal: goalText,
+        level: selectedLevel,
+        targetName: getLanguagePromptName(targetLangRef.current) || "Spanish",
+        supportName: getLanguagePromptName(resolvedSupportLang) || "English",
+        lastAiMessage,
+        onUpdate: (partial) => {
+          if (
+            requestId === starterFetchRequestRef.current &&
+            currentGoalRef.current?.text?.en === goalText
+          ) setStarterPhrase(partial);
+        },
       });
-      const payload = r.ok ? await r.json() : null;
-      const responseText =
-        payload?.output_text ||
-        (Array.isArray(payload?.output) &&
-          payload.output
-            .map((it) =>
-              (it?.content || []).map((seg) => seg?.text || "").join(""),
-            )
-            .join(" ")
-            .trim()) ||
-        "";
-      const parsed = safeParseJson(responseText);
 
       // The goal may have advanced or the languages switched while we
       // fetched — a stale phrase would be the wrong reply or wrong language.
@@ -2893,19 +2875,13 @@ Respond with ONLY a JSON object: {"target":"phrase in ${targetName}","support":"
       ) {
         return;
       }
-      if (parsed?.target) {
-        setStarterPhrase({
-          target: String(parsed.target).trim(),
-          support: String(parsed.support || "").trim(),
-        });
-      } else {
-        setStarterVisible(false);
-      }
+      setStarterPhrase(phrase);
     } catch {
       if (
         requestId === starterFetchRequestRef.current &&
         currentGoalRef.current?.text?.en === goalText
       ) {
+        setStarterPhrase(null);
         setStarterVisible(false);
       }
     } finally {
@@ -3718,9 +3694,7 @@ Respond with ONLY a JSON object: {"target":"phrase in ${targetName}","support":"
                           maxW="90%"
                           textAlign="center"
                         >
-                          {starterLoading ? (
-                            <Spinner size="xs" />
-                          ) : starterPhrase ? (
+                          {starterPhrase ? (
                             <>
                               <HStack spacing={1.5} justify="center">
                                 <IconButton
@@ -3735,6 +3709,7 @@ Respond with ONLY a JSON object: {"target":"phrase in ${targetName}","support":"
                                   variant="ghost"
                                   onPointerDown={primeTTSAudio}
                                   onClick={playStarterTts}
+                                  isDisabled={starterLoading}
                                   aria-label={uiText("story_listen", "Listen")}
                                   color={
                                     isLightTheme
@@ -3753,6 +3728,7 @@ Respond with ONLY a JSON object: {"target":"phrase in ${targetName}","support":"
                                 >
                                   {starterPhrase.target}
                                 </Text>
+                                {starterLoading && <Spinner size="xs" />}
                               </HStack>
                               {starterPhrase.support && (
                                 <Text
@@ -3768,7 +3744,7 @@ Respond with ONLY a JSON object: {"target":"phrase in ${targetName}","support":"
                                 </Text>
                               )}
                             </>
-                          ) : null}
+                          ) : starterLoading ? <Spinner size="xs" /> : null}
                         </Box>
                       )}
                     </VStack>

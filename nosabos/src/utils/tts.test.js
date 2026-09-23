@@ -246,6 +246,8 @@ test("preparation opens receive-only transport without generating audio, and fir
   assert.equal(h.posts, 1, "Pressing Play does not perform another handshake");
   const messages = h.peers[0].channel.sent;
   assert.equal(messages[0].type, "session.update");
+  assert.equal(messages[0].session.type, "realtime", "Prepared voice updates must satisfy the GA session schema");
+  assert.equal(messages[0].session.voice, undefined, "Voice must not appear at the top level of a GA session");
   assert.equal(messages[0].session.audio.output.voice, "cedar");
   assert.equal(messages[1].type, "conversation.item.create");
   assert.equal(messages[2].type, "response.create");
@@ -917,5 +919,3 @@ test("playCachedTTS returns played: false when audio is not cached", async () =>
   assert.equal(result.player, null);
   assert.equal(h.peers.length, 0, "Did not start WebRTC");
 });
-
-
