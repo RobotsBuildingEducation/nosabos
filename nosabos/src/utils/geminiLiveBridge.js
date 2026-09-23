@@ -545,6 +545,8 @@ class GeminiLiveRealtimeBridge {
     this.mediaStream = null;
     this.workletNode = null;
     this.micSource = null;
+    this.micAnalyser = null;
+    this.micFloatBuffer = null;
     this.playbackDestination = null;
     this.playbackAnalyser = null;
     this.playbackFloatBuffer = null;
@@ -678,6 +680,20 @@ class GeminiLiveRealtimeBridge {
       this.handleInputAudioBuffer(buffer);
     };
     this.micSource.connect(this.workletNode);
+    try {
+      this.micAnalyser = ctx.createAnalyser();
+      this.micAnalyser.fftSize = 256;
+      this.micAnalyser.smoothingTimeConstant = 0.18;
+      this.micSource.connect(this.micAnalyser);
+      this.micSilent = ctx.createGain();
+      this.micSilent.gain.value = 0;
+      this.micAnalyser.connect(this.micSilent);
+      this.micSilent.connect(ctx.destination);
+      this.micFloatBuffer = new Float32Array(this.micAnalyser.fftSize);
+    } catch {
+      this.micAnalyser = null;
+      this.micFloatBuffer = null;
+    }
 
     this.playbackDestination = ctx.createMediaStreamDestination();
     this.playbackAnalyser = ctx.createAnalyser();
@@ -704,6 +720,8 @@ class GeminiLiveRealtimeBridge {
       analyser: this.playbackAnalyser,
       floatBuffer: this.playbackFloatBuffer,
       stream: this.playbackDestination.stream,
+      micAnalyser: this.micAnalyser,
+      micFloatBuffer: this.micFloatBuffer,
     });
   }
 
@@ -1488,6 +1506,13 @@ class GeminiLiveRealtimeBridge {
     } catch {
       // Audio graph cleanup is best-effort.
     }
+    try {
+      this.micAnalyser?.disconnect();
+    } catch {
+      // Audio graph cleanup is best-effort.
+    }
+    this.micAnalyser = null;
+    this.micFloatBuffer = null;
     try {
       this.playbackAnalyser?.disconnect();
     } catch {

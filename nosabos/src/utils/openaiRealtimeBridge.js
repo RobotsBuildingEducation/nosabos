@@ -170,6 +170,9 @@ class OpenAIRealtimeBridge {
     this.dc = null;
     this.localStream = null;
     this.audioContext = null;
+    this.micSource = null;
+    this.micAnalyser = null;
+    this.micFloatBuffer = null;
     this.closed = false;
     this.audioGraphReady = false;
     // Set once the server starts any audio response; from then on voice must
@@ -351,6 +354,7 @@ class OpenAIRealtimeBridge {
     this.localStream = await navigator.mediaDevices.getUserMedia({
       audio: true,
     });
+    this.attachMicAnalyser();
 
     const pc = new RTCPeerConnection();
     this.pc = pc;
@@ -372,7 +376,7 @@ class OpenAIRealtimeBridge {
         try {
           const AudioContextCtor =
             window.AudioContext || window.webkitAudioContext;
-          const audioContext = new AudioContextCtor();
+          const audioContext = this.audioContext || new AudioContextCtor();
           this.audioContext = audioContext;
           // ontrack fires outside the user gesture, so the context can start
           // suspended — a dead analyser would make the Tutor's unlock-after-
@@ -388,8 +392,10 @@ class OpenAIRealtimeBridge {
           this.onAudioGraph?.({
             audioContext,
             analyser,
-            floatBuffer: new Float32Array(analyser.frequencyBinCount),
+            floatBuffer: new Float32Array(analyser.fftSize),
             stream: destination.stream,
+            micAnalyser: this.micAnalyser,
+            micFloatBuffer: this.micFloatBuffer,
           });
         } catch {
           // visualization is optional; audio still plays via the element
@@ -506,9 +512,49 @@ class OpenAIRealtimeBridge {
     return this;
   }
 
+  attachMicAnalyser() {
+    if (this.micAnalyser || !this.localStream) return;
+    try {
+      const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+      if (!this.audioContext) {
+        this.audioContext = new AudioContextCtor();
+      }
+      this.audioContext.resume?.().catch?.(() => {});
+      const micSource = this.audioContext.createMediaStreamSource(this.localStream);
+      const micAnalyser = this.audioContext.createAnalyser();
+      micAnalyser.fftSize = 256;
+      micAnalyser.smoothingTimeConstant = 0.18;
+      micSource.connect(micAnalyser);
+      const silent = this.audioContext.createGain();
+      silent.gain.value = 0;
+      micAnalyser.connect(silent);
+      silent.connect(this.audioContext.destination);
+      this.micSilent = silent;
+      this.micSource = micSource;
+      this.micAnalyser = micAnalyser;
+      this.micFloatBuffer = new Float32Array(micAnalyser.fftSize);
+      this.onAudioGraph?.({
+        audioContext: this.audioContext,
+        micAnalyser,
+        micFloatBuffer: this.micFloatBuffer,
+      });
+    } catch {
+      // visualization is optional; capture still proceeds
+    }
+  }
+
   close() {
     if (this.closed) return;
     this.closed = true;
+    try {
+      this.micSilent?.disconnect();
+      this.micSource?.disconnect();
+    } catch {
+      /* already disconnected */
+    }
+    this.micSource = null;
+    this.micAnalyser = null;
+    this.micFloatBuffer = null;
     try {
       this.dc?.close?.();
     } catch {

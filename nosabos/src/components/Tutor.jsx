@@ -88,6 +88,7 @@ import { logEvent } from "firebase/analytics";
 
 import useUserStore from "../hooks/useUserStore";
 import VoiceOrb from "./VoiceOrb";
+import TutorViewportEdgeGlow from "./TutorViewportEdgeGlow";
 import AnimatedEllipsis from "./AnimatedEllipsis";
 import {
   CHAT_LOG_HIGHLIGHT_DURATION_MS,
@@ -3140,60 +3141,7 @@ function uiStateLabel(uiState, uiLang) {
   return "";
 }
 
-function TutorViewportEdgeGlow({
-  enabled = true,
-  state = "idle",
-  isLightTheme = false,
-}) {
-  if (!enabled) return null;
 
-  const isSpeaking = state === "speaking";
-  const isThinking = state === "thinking";
-  const isActive = isSpeaking || isThinking;
-  const opacity = isActive ? 1 : 0;
-  const animationDuration = isSpeaking || isThinking ? "2.35s" : "3.4s";
-  const restingShadow = isLightTheme
-    ? "inset 0 0 7px rgba(14, 165, 233, 0.34), inset 0 0 15px rgba(45, 212, 191, 0.22), inset 0 0 26px rgba(134, 239, 172, 0.12)"
-    : "inset 0 0 8px rgba(34, 211, 238, 0.4), inset 0 0 18px rgba(45, 212, 191, 0.26), inset 0 0 30px rgba(134, 239, 172, 0.14)";
-  const activeShadow = isLightTheme
-    ? "inset 0 0 11px rgba(14, 165, 233, 0.5), inset 0 0 24px rgba(45, 212, 191, 0.34), inset 0 0 42px rgba(134, 239, 172, 0.18)"
-    : "inset 0 0 12px rgba(34, 211, 238, 0.56), inset 0 0 27px rgba(45, 212, 191, 0.38), inset 0 0 46px rgba(134, 239, 172, 0.2)";
-
-  return (
-    <Portal>
-      <Box
-        aria-hidden="true"
-        pointerEvents="none"
-        position="fixed"
-        inset={0}
-        zIndex={1399}
-        opacity={opacity}
-        transition="opacity 460ms ease"
-        sx={{
-          "--edge-breathe": animationDuration,
-          "@keyframes tutorEdgeBreathe": {
-            "0%, 100%": {
-              filter: "saturate(1.24) brightness(1.08)",
-              boxShadow: restingShadow,
-            },
-            "50%": {
-              filter: "saturate(1.68) brightness(1.36)",
-              boxShadow: activeShadow,
-            },
-          },
-          "@media (prefers-reduced-motion: reduce)": {
-            "&, &::before, &::after": {
-              animation: "none",
-            },
-          },
-          animation:
-            "tutorEdgeBreathe var(--edge-breathe) ease-in-out infinite",
-          boxShadow: restingShadow,
-        }}
-      />
-    </Portal>
-  );
-}
 
 /* ---------------------------
    IndexedDB audio cache (per message)
@@ -3937,6 +3885,8 @@ export default function Tutor({
   const audioCtxRef = useRef(null);
   const analyserRef = useRef(null);
   const floatBufRef = useRef(null);
+  const micAnalyserRef = useRef(null);
+  const micFloatBufRef = useRef(null);
   const captureOutRef = useRef(null);
   const audioGraphReadyRef = useRef(false);
 
@@ -4043,6 +3993,8 @@ export default function Tutor({
   const [mood, setMood] = useState("neutral");
   const [replayingId, setReplayingId] = useState(null);
   const [translatingMessageId, setTranslatingMessageId] = useState(null);
+  const [isVisualTestSpeaking, setIsVisualTestSpeaking] = useState(false);
+  const visualTestTimerRef = useRef(null);
 
   useEffect(() => {
     onConnectionStatusChange?.(status);
@@ -4050,6 +4002,7 @@ export default function Tutor({
 
   useEffect(
     () => () => {
+      clearTimeout(visualTestTimerRef.current);
       onConnectionStatusChange?.("disconnected");
     },
     [onConnectionStatusChange],
@@ -5512,8 +5465,15 @@ export default function Tutor({
     status === "connected" && uiState !== "speaking" && uiState !== "thinking"
       ? "listening"
       : uiState;
-  const edgeGlowState = status === "connected" ? liveUiState : "idle";
-  const [displayRobotState, setDisplayRobotState] = useState(liveUiState);
+  const isSpeakingNow =
+    liveUiState === "speaking" || !!replayingId || isVisualTestSpeaking;
+  const edgeGlowState = isSpeakingNow
+    ? "speaking"
+    : status === "connected"
+      ? liveUiState
+      : "idle";
+  const effectiveRobotState = isVisualTestSpeaking ? "speaking" : liveUiState;
+  const [displayRobotState, setDisplayRobotState] = useState(effectiveRobotState);
   const [previousRobotState, setPreviousRobotState] = useState(null);
   const [isRobotTransitioning, setIsRobotTransitioning] = useState(false);
   const displayOrbState =
@@ -5526,9 +5486,9 @@ export default function Tutor({
       : getRealtimeOrbVisualState(previousRobotState);
 
   useEffect(() => {
-    if (liveUiState === displayRobotState) return;
+    if (effectiveRobotState === displayRobotState) return;
     setPreviousRobotState(displayRobotState);
-    setDisplayRobotState(liveUiState);
+    setDisplayRobotState(effectiveRobotState);
     setIsRobotTransitioning(true);
     const timer = setTimeout(() => {
       setIsRobotTransitioning(false);
@@ -5537,7 +5497,7 @@ export default function Tutor({
     return () => {
       clearTimeout(timer);
     };
-  }, [liveUiState, displayRobotState]);
+  }, [effectiveRobotState, displayRobotState]);
 
   // XP level calculation
   const xpLevelNumber = Math.floor(xp / 100) + 1;
@@ -6558,12 +6518,20 @@ export default function Tutor({
         analyser,
         floatBuffer,
         stream,
+        micAnalyser,
+        micFloatBuffer,
       }) => {
-        audioCtxRef.current = audioContext;
-        analyserRef.current = analyser;
-        floatBufRef.current = floatBuffer;
-        captureOutRef.current = stream;
-        audioGraphReadyRef.current = true;
+        if (audioContext) audioCtxRef.current = audioContext;
+        if (analyser && floatBuffer) {
+          analyserRef.current = analyser;
+          floatBufRef.current = floatBuffer;
+          captureOutRef.current = stream;
+          audioGraphReadyRef.current = true;
+        }
+        if (micAnalyser && micFloatBuffer) {
+          micAnalyserRef.current = micAnalyser;
+          micFloatBufRef.current = micFloatBuffer;
+        }
       };
       // Deterministic voice mapping: an explicit OpenAI voice pick is kept, and
       // Gemini-era names resolve to marin (OpenAI's strongest multilingual GA
@@ -6637,6 +6605,8 @@ export default function Tutor({
       tutorSessionReadyRef.current = false;
       setStatus("disconnected");
       setUiState("idle");
+      micAnalyserRef.current = null;
+      micFloatBufRef.current = null;
       setErr(e?.message || String(e));
     }
   }
@@ -6719,6 +6689,8 @@ export default function Tutor({
     audioCtxRef.current = null;
     analyserRef.current = null;
     floatBufRef.current = null;
+    micAnalyserRef.current = null;
+    micFloatBufRef.current = null;
     captureOutRef.current = null;
     audioGraphReadyRef.current = false;
 
@@ -11129,9 +11101,13 @@ export default function Tutor({
         </Portal>
       ) : null}
       <TutorViewportEdgeGlow
-        enabled={isActive}
+        enabled={isActive && status === "connected"}
         state={edgeGlowState}
         isLightTheme={isLightTheme}
+        analyserRef={micAnalyserRef}
+        floatBufRef={micFloatBufRef}
+        tutorAnalyserRef={analyserRef}
+        tutorFloatBufRef={floatBufRef}
       />
       <Box color="gray.100" position="relative" pb={4}>
         {/* Header area: lesson agenda separated from robot. No repair-focus
@@ -11241,6 +11217,26 @@ export default function Tutor({
               opacity={0.95}
               flexShrink={0}
               position="relative"
+              cursor={status !== "connected" ? "pointer" : "default"}
+              onClick={() => {
+                if (status !== "connected") {
+                  clearTimeout(visualTestTimerRef.current);
+                  setIsVisualTestSpeaking((prev) => {
+                    const next = !prev;
+                    if (next) {
+                      visualTestTimerRef.current = setTimeout(() => {
+                        setIsVisualTestSpeaking(false);
+                      }, 4500);
+                    }
+                    return next;
+                  });
+                }
+              }}
+              title={
+                status !== "connected"
+                  ? "Click to preview tutor speaking"
+                  : undefined
+              }
             >
               {previousRobotState && (
                 <Box

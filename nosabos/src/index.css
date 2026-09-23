@@ -494,12 +494,23 @@ button[role="tab"]:focus-visible,
   z-index: 1450 !important;
 }
 
-/* Prevent the background application from scrolling while activity menu is open */
+/* Prevent the background application from scrolling while activity menu is open.
+   Reserve the scrollbar slot so hiding it doesn't widen the page. */
 html[data-activity-menu-open="true"],
 body[data-activity-menu-open="true"] {
   overflow: hidden !important;
   overscroll-behavior: none !important;
   touch-action: none !important;
+}
+
+html[data-scrollbar-gap="true"] {
+  scrollbar-gutter: stable;
+}
+
+@supports not (scrollbar-gutter: stable) {
+  html[data-scrollbar-gap="true"] {
+    padding-right: var(--scrollbar-gap);
+  }
 }
 
 /* Feedback belongs to the entire activity surface, including its action row. */

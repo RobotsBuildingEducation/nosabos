@@ -33,20 +33,26 @@ const ActivityMenuBackdrop = React.forwardRef(function ActivityMenuBackdrop(
   ref,
 ) {
   useSafeLayoutEffect(() => {
-    if (typeof document === "undefined") return;
-    if (isOpen) {
-      document.body.setAttribute("data-activity-menu-open", "true");
-      document.documentElement.setAttribute("data-activity-menu-open", "true");
-    } else {
+    if (typeof document === "undefined") return undefined;
+    const root = document.documentElement;
+    const release = () => {
+      root.style.removeProperty("--scrollbar-gap");
+      root.removeAttribute("data-scrollbar-gap");
+      root.removeAttribute("data-activity-menu-open");
       document.body.removeAttribute("data-activity-menu-open");
-      document.documentElement.removeAttribute("data-activity-menu-open");
-    }
-    return () => {
-      if (typeof document !== "undefined") {
-        document.body.removeAttribute("data-activity-menu-open");
-        document.documentElement.removeAttribute("data-activity-menu-open");
-      }
     };
+    if (!isOpen) {
+      release();
+      return undefined;
+    }
+    const gap = window.innerWidth - root.clientWidth;
+    if (gap > 0) {
+      root.style.setProperty("--scrollbar-gap", `${gap}px`);
+      root.setAttribute("data-scrollbar-gap", "true");
+    }
+    document.body.setAttribute("data-activity-menu-open", "true");
+    root.setAttribute("data-activity-menu-open", "true");
+    return release;
   }, [isOpen]);
 
   if (!isOpen) return null;
