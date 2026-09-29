@@ -182,7 +182,7 @@ export default function useDailyImmersionTasks({
     void sync();
   }, [sync]);
 
-  const awardCompletion = useCallback(async (completedBatch, expectedScope = scopeRef.current) => {
+  const awardCompletion = useCallback(async (completedBatch, expectedScope = scopeRef.current, options = {}) => {
     if (!npub || !targetLang || !dayKey || rewardGuardRef.current) return;
     rewardGuardRef.current = true;
     setClaiming(true);
@@ -192,23 +192,37 @@ export default function useDailyImmersionTasks({
         source: "immersion",
         idempotencyKey: `daily-immersion:${targetLang}:${dayKey}`,
       });
-      const next = { ...completedBatch, rewarded: true, rewardedAt: new Date().toISOString() };
+      const next = {
+        ...completedBatch,
+        rewarded: true,
+        rewardedAt: completedBatch?.rewardedAt || new Date().toISOString(),
+      };
       await persist(next, expectedScope);
       if (scopeRef.current === expectedScope) {
-        setRewardJustAwarded(true);
-        void playSound(sparkleSound);
+        if (!options.alreadyCelebrated) {
+          setRewardJustAwarded(true);
+          void playSound(sparkleSound);
+        }
         onRewardClaimed?.(REAL_WORLD_TASKS_REWARD_XP);
       }
       return result;
     } catch (cause) {
       console.error("Could not automatically claim immersion reward:", cause);
       setRewardError(true);
+      if (options.alreadyCelebrated) {
+        setRewardJustAwarded(false);
+        const unrewarded = { ...completedBatch, rewarded: false };
+        if (scopeRef.current === expectedScope) {
+          patchUser?.({ realWorldTasks: unrewarded });
+        }
+        void persist(unrewarded, expectedScope).catch(() => {});
+      }
       throw cause;
     } finally {
       setClaiming(false);
       rewardGuardRef.current = false;
     }
-  }, [npub, targetLang, dayKey, persist, playSound, onRewardClaimed]);
+  }, [npub, targetLang, dayKey, persist, playSound, onRewardClaimed, patchUser]);
 
   useEffect(() => {
     setRewardJustAwarded(false);
@@ -230,17 +244,28 @@ export default function useDailyImmersionTasks({
     if (!batch || pending || claiming || state.status !== "ready" || index < 0 || index >= state.tasks.length) return;
     const completed = [...state.completed];
     completed[index] = !completed[index];
-    const next = { ...batch, completed };
+    const isCompletingAll = completed.length > 0 && completed.every(Boolean) && !batch.rewarded;
+    const next = isCompletingAll
+      ? { ...batch, completed, rewarded: true, rewardedAt: new Date().toISOString() }
+      : { ...batch, completed };
+
     patchUser?.({ realWorldTasks: next });
+
+    if (isCompletingAll) {
+      setRewardJustAwarded(true);
+      void playSound(sparkleSound);
+    }
+
     try {
-      await persist(next);
-      if (completed.length && completed.every(Boolean) && !batch.rewarded) {
-        await awardCompletion(next);
+      if (isCompletingAll) {
+        await awardCompletion(next, scopeRef.current, { alreadyCelebrated: true });
+      } else {
+        await persist(next);
       }
     } catch (cause) {
       console.error("Could not save immersion progress:", cause);
     }
-  }, [batch, pending, claiming, state, patchUser, persist, awardCompletion]);
+  }, [batch, pending, claiming, state, patchUser, persist, awardCompletion, playSound]);
 
   const retryReward = useCallback(() => {
     if (!batch || state.status !== "ready" || !state.completed.length ||

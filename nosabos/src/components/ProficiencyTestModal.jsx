@@ -17,6 +17,7 @@ import dogSticker from "../assets/10.webp";
 import { useThemeStore } from "../useThemeStore";
 import { t as tFn } from "../utils/translation";
 import { estimateSelfReportedPlacement, SELF_ASSESSMENT_OPTIONS } from "../utils/proficiencySelfAssessment";
+import { getCefrLevelDetails } from "../utils/cefrLevelInfo";
 import {
   nativeModalMotionProps,
   nativeOverlayMotionProps,
@@ -39,6 +40,7 @@ export default function ProficiencyTestModal({
   const language = targetLangLabel || tFn(lang, "proficiency_modal_language_fallback");
   const ui = (key, vars) => tFn(lang, key, vars);
   const estimate = estimateSelfReportedPlacement(selectedIds);
+  const levelDetails = estimate ? getCefrLevelDetails(estimate.level, lang) : null;
 
   useEffect(() => {
     if (!isOpen) return;
@@ -332,13 +334,33 @@ export default function ProficiencyTestModal({
                 bg={isLightTheme ? "#F1FAFB" : "whiteAlpha.100"}
                 border="1.5px solid"
                 borderColor={isLightTheme ? "#46B9CD" : "cyan.500"}
-                py={{ base: 3, md: 4 }}
+                py={{ base: 3.5, md: 4 }}
                 px={4}
               >
                 <Text fontSize={{ base: "2xl", md: "3xl" }} fontWeight="black" color={isLightTheme ? "#155D70" : "cyan.200"}>
                   {estimate.level}
                 </Text>
-                <Text fontSize="sm" fontWeight="medium" color={textSecondary} mt={0.5}>
+                {levelDetails?.name && (
+                  <Text
+                    fontSize={{ base: "md", md: "lg" }}
+                    fontWeight="bold"
+                    color={textPrimary}
+                    mt={0.5}
+                  >
+                    {levelDetails.name}
+                  </Text>
+                )}
+                {levelDetails?.description && (
+                  <Text
+                    fontSize="sm"
+                    color={textSecondary}
+                    mt={1}
+                    lineHeight="1.4"
+                  >
+                    {levelDetails.description}
+                  </Text>
+                )}
+                <Text fontSize="xs" fontWeight="medium" color={textMuted} mt={2.5}>
                   {ui("proficiency_modal_starting_elo", { score: estimate.rating })}
                 </Text>
               </Box>
