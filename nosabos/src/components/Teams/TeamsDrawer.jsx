@@ -85,9 +85,6 @@ export default function TeamsDrawer({
   const [selectedTab, setSelectedTab] = useState(0);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [justCreatedTeam, setJustCreatedTeam] = useState(null);
-  const [hasTeams, setHasTeams] = useState(
-    () => Array.isArray(initialTeams) && initialTeams.length > 0,
-  );
   const t = useMemo(
     () => overrideTranslations || translations[userLanguage] || translations.en,
     [overrideTranslations, userLanguage],
@@ -106,23 +103,15 @@ export default function TeamsDrawer({
   }, [isOpen]);
 
   useEffect(() => {
-    if (Array.isArray(initialTeams)) {
-      setHasTeams(initialTeams.length > 0);
-    }
-  }, [initialTeams]);
-
-  useEffect(() => {
-    const teamsTabIndex = hasTeams ? 0 : 1;
     if (
       isOpen &&
-      selectedTab === teamsTabIndex &&
+      selectedTab === 0 &&
       pendingInviteCount > 0 &&
       hasUnseenInvites
     ) {
       onInvitesViewed?.();
     }
   }, [
-    hasTeams,
     hasUnseenInvites,
     isOpen,
     onInvitesViewed,
@@ -132,17 +121,14 @@ export default function TeamsDrawer({
 
   const handleTeamCreated = (team) => {
     setJustCreatedTeam(team);
-    setHasTeams(true);
     setSelectedTab(0);
     setRefreshTrigger((prev) => prev + 1);
   };
 
   const handleTabChange = (index) => {
     setSelectedTab(index);
-    if (index === (hasTeams ? 0 : 1)) {
+    if (index === 0) {
       onInvitesViewed?.();
-    }
-    if (index === (hasTeams ? 0 : 1)) {
       setRefreshTrigger((prev) => prev + 1);
     }
   };
@@ -203,7 +189,7 @@ export default function TeamsDrawer({
                 border="none"
                 mb={2}
               >
-                {hasTeams && <Tab {...TEAM_TAB_STYLE} fontSize={{ base: "sm", md: "md" }}>
+                <Tab {...TEAM_TAB_STYLE} fontSize={{ base: "sm", md: "md" }}>
                   {t?.teams_tab_view || "Teams"}
                   {pendingInviteCount > 0 ? ` (${pendingInviteCount})` : ""}
                   {hasUnseenInvites && (
@@ -219,30 +205,13 @@ export default function TeamsDrawer({
                       bg="red.500"
                     />
                   )}
-                </Tab>}
+                </Tab>
                 <Tab {...TEAM_TAB_STYLE} fontSize={{ base: "sm", md: "md" }}>
                   {t?.teams_tab_feed || "Global feed"}
                 </Tab>
-                {!hasTeams && <Tab {...TEAM_TAB_STYLE} fontSize={{ base: "sm", md: "md" }}>
-                  {t?.teams_tab_view || "Teams"}
-                  {pendingInviteCount > 0 ? ` (${pendingInviteCount})` : ""}
-                  {hasUnseenInvites && (
-                    <Box
-                      as="span"
-                      aria-hidden="true"
-                      display="inline-block"
-                      verticalAlign="middle"
-                      ml={2}
-                      w="8px"
-                      h="8px"
-                      borderRadius="full"
-                      bg="red.500"
-                    />
-                  )}
-                </Tab>}
               </TabList>
               <TabPanels>
-                {hasTeams && <TabPanel px={0}>
+                <TabPanel px={0}>
                   <TeamCreation
                     userLanguage={userLanguage}
                     onTeamCreated={handleTeamCreated}
@@ -260,32 +229,13 @@ export default function TeamsDrawer({
                     targetLang={targetLang}
                     t={t}
                   />
-                </TabPanel>}
+                </TabPanel>
                 <TabPanel px={0}>
                   <TeamFeed
                     t={t}
                     fetchGlobalTeamFeed={fetchGlobalTeamFeed}
                   />
                 </TabPanel>
-                {!hasTeams && <TabPanel>
-                  <TeamCreation
-                    userLanguage={userLanguage}
-                    onTeamCreated={handleTeamCreated}
-                    t={t}
-                  />
-                  <TeamView
-                    userLanguage={userLanguage}
-                    refreshTrigger={refreshTrigger}
-                    isOpen={isOpen}
-                    initialTeams={initialTeams}
-                    initialTeamMemberProgress={initialTeamMemberProgress}
-                    initialTeamInvites={initialTeamInvites}
-                    justCreatedTeam={justCreatedTeam}
-                    currentUser={currentUser}
-                    targetLang={targetLang}
-                    t={t}
-                  />
-                </TabPanel>}
               </TabPanels>
             </Tabs>
           </Box>

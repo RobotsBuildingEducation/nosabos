@@ -126,3 +126,34 @@ test("reconcileUserTeams preserves legacy Firestore-only teams", () => {
   assert.equal(result.length, 1);
   assert.equal(result[0].id, "legacy_team");
 });
+
+test("reconcileUserTeams preserves newly created Firestore teams when Nostr relays have not indexed them yet", () => {
+  const userNpub = "npub1creator";
+
+  const createdTeams = [
+    {
+      id: "team_just_created",
+      teamName: "Super Learners",
+      createdBy: userNpub,
+      isCreator: true,
+      nostr: { id: "team_just_created", relays: [] },
+      members: [{ npub: "npub1invitee", status: "accepted" }],
+    },
+  ];
+
+  // Nostr query succeeded but relay indexing has not caught up yet
+  const nostrTeams = [];
+
+  const result = reconcileUserTeams({
+    createdTeams,
+    memberTeams: [],
+    nostrTeams,
+    userNpub,
+  });
+
+  assert.equal(result.length, 1);
+  assert.equal(result[0].id, "team_just_created");
+  assert.equal(result[0].teamName, "Super Learners");
+  assert.equal(result[0].isCreator, true);
+});
+

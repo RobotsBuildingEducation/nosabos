@@ -36,13 +36,10 @@ export const reconcileUserTeams = ({
     return true;
   });
 
-  // 2. Reconcile Firestore createdTeams against Nostr
-  const validCreatedTeams = createdTeams.filter((team) => {
-    const isNostrTeam = Boolean(team.nostr);
-    if (!isNostrTeam) return true;
-    if (!nostrTeamsLoaded) return true;
-    return activeNostrTeamMap.has(team.id);
-  });
+  // 2. Reconcile Firestore createdTeams
+  // Keep created teams from Firestore even if Nostr relay propagation is still pending,
+  // ensuring newly created teams remain visible immediately.
+  const validCreatedTeams = createdTeams.filter(Boolean);
 
   // 3. Merge teams with fromNostr first so Nostr roster takes precedence
   const allTeams = [...fromNostr, ...validCreatedTeams, ...validMemberTeams];

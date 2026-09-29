@@ -69,12 +69,36 @@ export default function TeamView({
   const toast = useToast();
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
-  const [myTeams, setMyTeams] = useState(() =>
-    Array.isArray(initialTeams) ? initialTeams : [],
-  );
+  const [myTeams, setMyTeams] = useState(() => {
+    const base = Array.isArray(initialTeams) ? initialTeams : [];
+    if (justCreatedTeam) {
+      return base.some(
+        (team) =>
+          team.id === justCreatedTeam.id &&
+          team.createdBy === justCreatedTeam.createdBy,
+      )
+        ? base
+        : [justCreatedTeam, ...base];
+    }
+    return base;
+  });
   const [teamInvites, setTeamInvites] = useState(() => initialTeamInvites || []);
-  const [teamMemberProgress, setTeamMemberProgress] = useState(() => initialTeamMemberProgress || {});
-  const [teamProgressLoading, setTeamProgressLoading] = useState({});
+  const [teamMemberProgress, setTeamMemberProgress] = useState(() => {
+    const base = initialTeamMemberProgress ? { ...initialTeamMemberProgress } : {};
+    if (justCreatedTeam) {
+      const creatorNpub =
+        justCreatedTeam.createdBy ||
+        (typeof window !== "undefined" ? localStorage.getItem("local_npub") : "");
+      const snapshot = currentUser ? progressSnapshot(currentUser, targetLang) : null;
+      if (snapshot && creatorNpub) {
+        base[justCreatedTeam.id] = [teamProgressRow(creatorNpub, snapshot, true)];
+      }
+    }
+    return base;
+  });
+  const [teamProgressLoading, setTeamProgressLoading] = useState(() =>
+    justCreatedTeam ? { [justCreatedTeam.id]: true } : {},
+  );
   const [loading, setLoading] = useState(!Array.isArray(initialTeams) && !justCreatedTeam);
   const [processingInvite, setProcessingInvite] = useState(null);
   const [sharingError, setSharingError] = useState("");
@@ -139,7 +163,16 @@ export default function TeamView({
         getUserTeams(userNpub),
         getUserTeamInvites(userNpub),
       ]);
-      setMyTeams(teams);
+      const mergedTeams =
+        justCreatedTeam &&
+        !teams.some(
+          (team) =>
+            team.id === justCreatedTeam.id &&
+            team.createdBy === justCreatedTeam.createdBy,
+        )
+          ? [justCreatedTeam, ...teams]
+          : teams;
+      setMyTeams(mergedTeams);
       setTeamInvites(invites);
       setLoading(false);
 
@@ -150,7 +183,7 @@ export default function TeamView({
         ? progressSnapshot(currentUserRef.current, targetLang)
         : null;
       if (creatorSnapshot) {
-        teams.forEach((team) => {
+        mergedTeams.forEach((team) => {
           if (team.isCreator) {
             creatorRows[team.id] = [teamProgressRow(userNpub, creatorSnapshot, true)];
           }
@@ -158,16 +191,16 @@ export default function TeamView({
         setTeamMemberProgress((previous) => ({ ...previous, ...creatorRows }));
       }
 
-      setTeamProgressLoading(Object.fromEntries(teams.map((team) => [team.id, true])));
+      setTeamProgressLoading(Object.fromEntries(mergedTeams.map((team) => [team.id, true])));
       const progressData = {};
-      const results = await Promise.allSettled(teams.map((team) => {
+      const results = await Promise.allSettled(mergedTeams.map((team) => {
         const creatorNpub = team.isCreator ? userNpub : team.createdBy;
         return getTeamMemberProgress(creatorNpub, team.id, userNpub, currentUserRef.current, targetLang);
       }));
       results.forEach((result, index) => {
-        progressData[teams[index].id] = result.status === "fulfilled"
+        progressData[mergedTeams[index].id] = result.status === "fulfilled"
           ? result.value
-          : creatorRows[teams[index].id] || null;
+          : creatorRows[mergedTeams[index].id] || null;
         if (result.status === "rejected") console.error("Team progress error", result.reason);
       });
       setTeamMemberProgress((previous) => ({ ...previous, ...progressData }));
