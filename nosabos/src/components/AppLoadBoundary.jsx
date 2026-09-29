@@ -7,6 +7,8 @@ import {
   getStaleAssetRecoveryInfo,
 } from "../pwa/staleAssetRecovery";
 
+const DEV_CHUNK_RECOVERY_KEY = "nosabos_dev_chunk_recovery_attempted";
+
 export default class AppLoadBoundary extends Component {
   constructor(props) {
     super(props);
@@ -48,6 +50,10 @@ export default class AppLoadBoundary extends Component {
 
   componentDidCatch(error) {
     console.error("Unable to load Piyali:", error);
+    if (isChunkLoadError(error) && import.meta.env.DEV) {
+      this.recoverDevelopmentChunkFailure();
+      return;
+    }
     // If a chunk load failed and we are online, proactively check for an app update
     if (isChunkLoadError(error) && navigator?.onLine) {
       appUpdateCoordinator.checkForUpdate({ force: true, reason: "chunk_error" }).catch(() => {});
@@ -67,9 +73,38 @@ export default class AppLoadBoundary extends Component {
 
   handlePreloadError(event) {
     console.warn("Vite preload error encountered:", event);
-    this.setState({
-      error: new Error("Failed to fetch dynamically imported module"),
-    });
+    const error = new Error("Failed to fetch dynamically imported module");
+    this.setState({ error });
+    if (import.meta.env.DEV) this.recoverDevelopmentChunkFailure();
+  }
+
+  async recoverDevelopmentChunkFailure(force = false) {
+    if (typeof window === "undefined") return;
+
+    try {
+      const lastAttempt = Number(sessionStorage.getItem(DEV_CHUNK_RECOVERY_KEY)) || 0;
+      if (!force && Date.now() - lastAttempt < 30_000) return;
+      sessionStorage.setItem(DEV_CHUNK_RECOVERY_KEY, String(Date.now()));
+
+      // A service worker can keep serving an old app shell even after Vite
+      // has switched to its current module graph. Remove local app caches and
+      // registrations, then fetch a fresh shell. This is dev-only; production
+      // PWA caches and update behavior are left alone.
+      if ("serviceWorker" in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map((registration) => registration.unregister()));
+      }
+      if ("caches" in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map((cacheName) => caches.delete(cacheName)));
+      }
+
+      const freshUrl = new URL(window.location.href);
+      freshUrl.searchParams.set("_piyali_reload", String(Date.now()));
+      window.location.replace(freshUrl.href);
+    } catch (error) {
+      console.warn("Could not automatically recover the local app shell:", error);
+    }
   }
 
   handleAction(actionType) {
@@ -88,6 +123,20 @@ export default class AppLoadBoundary extends Component {
     }
 
     if (typeof window !== "undefined") {
+      const isStaleAsset = isChunkLoadError(this.state.error);
+      if (isStaleAsset) {
+        if (import.meta.env.DEV) {
+          this.recoverDevelopmentChunkFailure(true);
+          return;
+        }
+        // A normal reload can reuse a stale cached document that still points
+        // at removed, hashed build assets. A unique URL forces the browser and
+        // any intermediary cache to request the current app shell.
+        const freshUrl = new URL(window.location.href);
+        freshUrl.searchParams.set("_piyali_reload", String(Date.now()));
+        window.location.replace(freshUrl.href);
+        return;
+      }
       window.location.reload();
     }
   }

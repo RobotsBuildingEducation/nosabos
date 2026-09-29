@@ -49,7 +49,7 @@ export const LINKS_PAGE_ZH_STATIC = {
   secretKeyWarning:
     "你的私密密钥是访问去中心化应用的密码。请安全保存，绝不要分享给任何人。",
   switchAccount: "切换账户",
-  pasteNsec: "在这里粘贴你的 nsec 密钥",
+  pasteNsec: "输入你的密钥",
   switchAccountHelp: "输入另一个 nsec 以切换到其他 Nostr 账户",
   bitcoinWallet: "Bitcoin 钱包",
   walletDescription1: "你的充值会帮助我们通过学习创造奖学金。",

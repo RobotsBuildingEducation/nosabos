@@ -66,7 +66,7 @@ const GERMAN_COPY = {
   "Ask about this lesson...": "Frag etwas zu dieser Lektion...",
   Send: "Senden",
   Stop: "Stopp",
-  "Immersion Practice": "Immersionsübung",
+  "Immersion & Score": "Immersion & Punktzahl",
   "3 tasks to use your language outside the app":
     "3 Aufgaben, um deine Sprache außerhalb der App zu nutzen",
   "Next batch in": "Nächster Stapel in",

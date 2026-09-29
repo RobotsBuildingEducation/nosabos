@@ -3,6 +3,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import * as model from "./learningIntelligenceModel.js";
+import * as eloModel from "./performanceEloModel.js";
 import { isGoalLessonReady } from "./lessonProgress.js";
 const getLocalDayKey = value => {
   assert.ok(value instanceof Date, "The date helper requires an explicit Date");
@@ -40,7 +41,7 @@ const firestore = {
     return work;
   },
 };
-globalThis.__astraTest = { firestore, store, focusStore, model, isGoalLessonReady, getLocalDayKey, callResponses: async options => { prompts.push(options.input); return typeof answer === "function" ? answer(options) : answer; } };
+globalThis.__astraTest = { firestore, store, focusStore, model, eloModel, isGoalLessonReady, getLocalDayKey, callResponses: async options => { prompts.push(options.input); return typeof answer === "function" ? answer(options) : answer; } };
 globalThis.window = { dispatchEvent() {} };
 const imports = {
   "firebase/firestore": "const { doc, getDoc, runTransaction } = globalThis.__astraTest.firestore;",
@@ -52,6 +53,8 @@ const imports = {
   "./flashcardReview": "const { getLocalDayKey } = globalThis.__astraTest;",
   "./lessonProgress": "const { isGoalLessonReady } = globalThis.__astraTest;",
   "./learningIntelligenceModel": "const { activeGoalFor, changeGoal, compactSummary, mergeEvidence, languageKey, normalizeGoalBlueprint, goalInstructions, GOAL_SURFACES, buildGoalLesson, goalModesFor, goalModeTarget, nextGoalMode } = globalThis.__astraTest.model;",
+  "./performanceEloModel": "const { applyGradedOutcome, initialEloLevelForUser, generationPerformanceContextFor, internalEloForUser, questionWorthForUser, SCORE_SCALE_VERSION } = globalThis.__astraTest.eloModel;",
+  "./questionDifficultyAssessment": "const assessGeneratedQuestionWorth = async ({ user, targetLang, questionLevel }) => globalThis.__astraTest.eloModel.questionWorthForUser(user, targetLang, questionLevel);",
 };
 let source = await readFile(new URL("./learningIntelligence.js", import.meta.url), "utf8");
 source = source.replace(/import\s+[\s\S]*?from\s+"([^"]+)";/g, (_match, specifier) => {
@@ -69,6 +72,63 @@ function reset() {
 const setGoal = (text, targetLang = "es", status = "active") => service.saveLearningGoal({ npub: "test-account", targetLang, text, status });
 const blueprint = () => service.getOrBuildGoalBlueprint({ npub: "test-account", targetLang: "es" });
 function setFocusFixture(bp) { focus = { npub: "test-account", targetLang: "es", supportLang: "en", surface: model.GOAL_SURFACES[bp.mode], blueprint: bp }; return focus; }
+
+test("graded outcomes persist one cross-level Score and compact memory per language", async () => {
+  reset();
+  databaseUser.proficiencyPlacements = { es: "B1", de: "A1" };
+  localUser.proficiencyPlacements = clone(databaseUser.proficiencyPlacements);
+  const event = { npub: "test-account", targetLang: "es", id: "a1-miss",
+    success: false, questionLevel: "A1", mode: "lesson", concept: "greetings" };
+  await service.recordGradedOutcome(event);
+  await service.recordGradedOutcome(event);
+  const bucket = databaseUser.learningIntelligence.es;
+  assert.equal(bucket.elo.totalGraded, 1);
+  assert.ok(bucket.elo.rating < 1451);
+  assert.equal(bucket.performanceSummary.byLevel.A1.missed, 1);
+  assert.equal(databaseUser.learningIntelligence.de, undefined);
+});
+
+test("grading applies the worth quoted when the problem was created", async () => {
+  reset();
+  databaseUser.proficiencyPlacements = { es: "A1" };
+  localUser = clone(databaseUser);
+  const worth = eloModel.questionWorthForUser(localUser, "es", "B1");
+  const movedRating = eloModel.scoreToElo(25);
+  databaseUser.learningIntelligence.es = { elo: { rating: movedRating, scaleVersion: 4 } };
+  await service.recordGradedOutcome({ npub: "test-account", targetLang: "es",
+    id: "fixed-worth", questionLevel: "B1", worth, success: true });
+  assert.equal(databaseUser.learningIntelligence.es.elo.rating,
+    movedRating + worth.gainBySupport.independent);
+  assert.equal(prompts.length, 0);
+});
+
+test("the first miss after fresh onboarding keeps the beginner at Score zero", async () => {
+  reset();
+  databaseUser.onboarding = { completed: true };
+  databaseUser.progress.level = "Pre-A1";
+  databaseUser.xp = 0;
+  databaseUser.streak = 0;
+  localUser = clone(databaseUser);
+  await service.recordGradedOutcome({ npub: "test-account", targetLang: "es",
+    id: "first-miss", success: false, questionLevel: "Pre-A1" });
+  assert.equal(eloModel.eloForUser(databaseUser, "es"), 0);
+  await service.recordGradedOutcome({ npub: "test-account", targetLang: "es",
+    id: "first-success", success: true, questionLevel: "Pre-A1" });
+  assert.equal(eloModel.eloForUser(databaseUser, "es"), 1);
+});
+
+test("Goal judging uses criteria, then records Elo without sending ability data to the judge", async () => {
+  reset();
+  await setGoal("Ask where my grandmother lived");
+  const task = setFocusFixture(await blueprint());
+  answer = JSON.stringify({ success: false, observation: "The learner did not ask a question", support: "independent", feedback: "Try asking where she lived." });
+  const result = await service.evaluateGoalAttempt(task, "Hola");
+  assert.equal(result.success, false);
+  assert.equal(databaseUser.learningIntelligence.es.elo.totalGraded, 1);
+  const judgePrompt = prompts.at(-1);
+  assert.match(judgePrompt, /successCriteria/);
+  assert.doesNotMatch(judgePrompt, /eloAtGeneration|eloRating|scoreAtGeneration/);
+});
 
 test("settings edits isolate languages and never change Custom Conversation preferences", async () => {
   reset();

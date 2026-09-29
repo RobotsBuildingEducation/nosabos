@@ -14,16 +14,16 @@ export const ACTIVITY_MENU_COPY = {
     zh: "设置",
   },
   immersion: {
-    en: "Immersion Practice",
-    es: "Práctica de inmersión",
-    pt: "Prática de imersão",
-    it: "Pratica di immersione",
-    fr: "Pratique d'immersion",
-    de: "Immersionsübung",
-    ja: "イマージョン練習",
-    hi: "इमर्शन अभ्यास",
-    ar: "تدريب الانغماس",
-    zh: "沉浸练习",
+    en: "Immersion & Score",
+    es: "Inmersión y puntuación",
+    pt: "Imersão e pontuação",
+    it: "Immersione e punteggio",
+    fr: "Immersion et score",
+    de: "Immersion & Punktzahl",
+    ja: "イマージョン＆スコア",
+    hi: "इमर्शन और स्कोर",
+    ar: "الانغماس والنقاط",
+    zh: "沉浸与分数",
   },
   assistant: {
     en: "Assistant",
@@ -125,10 +125,10 @@ export function getActivityMenuLabels(rawLang, t = {}) {
     settings = ACTIVITY_MENU_COPY.settings[lang];
   }
 
-  // Immersion Practice
+  // Immersion & Score
   let immersion =
     t?.real_world_tasks_title || ACTIVITY_MENU_COPY.immersion[lang];
-  if (lang !== "en" && immersion === "Immersion Practice") {
+  if (lang !== "en" && immersion === "Immersion & Score") {
     immersion = ACTIVITY_MENU_COPY.immersion[lang];
   }
 

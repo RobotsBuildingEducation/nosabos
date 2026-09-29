@@ -8,6 +8,7 @@
 
 import { CEFR_LEVELS } from "../flashcards/common.js";
 import { loadTargetCurriculum } from "./targetCurriculum/load.js";
+import { adaptIntroTutorialUnit } from "../../utils/introTutorial.js";
 
 export const SKILL_STATUS = {
   LOCKED: "locked",
@@ -97,17 +98,24 @@ export async function loadLearningPath(targetLang, level) {
 export async function loadMultiLevelLearningPath(
   targetLang,
   levels = ["A1", "A2"],
+  { introTutorialLevel = null } = {},
 ) {
   const requestedLevels = levels.filter((level) => CEFR_LEVELS.includes(level));
   const levelUnits = await Promise.all(
     requestedLevels.map((level) => loadLearningPath(targetLang, level)),
   );
-  return levelUnits.flatMap((units, index) =>
+  const regularUnits = levelUnits.flatMap((units, index) =>
     units.map((unit) => ({
       ...unit,
       cefrLevel: requestedLevels[index],
     })),
   );
+  if (!introTutorialLevel || introTutorialLevel === "Pre-A1") return regularUnits;
+  const preA1Units = await loadLearningPath(targetLang, "Pre-A1");
+  const tutorialUnit = preA1Units.find((unit) => unit.id === "unit-tutorial-pre-a1");
+  return tutorialUnit
+    ? [adaptIntroTutorialUnit(tutorialUnit, introTutorialLevel), ...regularUnits]
+    : regularUnits;
 }
 
 /**

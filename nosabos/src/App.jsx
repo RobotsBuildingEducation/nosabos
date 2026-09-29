@@ -94,7 +94,6 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   CheckCircleIcon,
-  ArrowBackIcon,
   CloseIcon,
   InfoOutlineIcon,
   ExternalLinkIcon,
@@ -131,6 +130,7 @@ import {
 } from "react-icons/pi";
 import { FiClock, FiCompass, FiPause, FiPlay, FiTarget } from "react-icons/fi";
 import { FaCalendarAlt, FaCalendarCheck } from "react-icons/fa";
+import { TbHeartHandshake } from "react-icons/tb";
 
 import {
   collection,
@@ -158,7 +158,7 @@ import useSoundSettings, {
 
 import GrammarBook from "./components/GrammarBook";
 import Onboarding from "./components/Onboarding";
-import VoiceOrb from "./components/VoiceOrb";
+import VoiceOrb from "./components/VoiceOrbNext";
 import RealTimeTest from "./components/RealTimeTest";
 import BottomDrawerDragHandle from "./components/BottomDrawerDragHandle";
 import VoicePreferenceField from "./components/VoicePreferenceField";
@@ -170,9 +170,7 @@ import { isMasterUnlockActive } from "./utils/masterUnlock";
 import Vocabulary from "./components/Vocabulary";
 import StoryMode from "./components/Stories";
 import History from "./components/History";
-import ActivityMenu, {
-  ImmersionPracticeMenuIcon,
-} from "./components/ActivityMenu";
+import ActivityMenu from "./components/ActivityMenu";
 import { getActivityMenuLabels } from "./utils/activityMenuCopy";
 import QuestionActionArea from "./components/QuestionActionArea";
 import ActivityActionRow from "./components/ActivityActionRow";
@@ -196,12 +194,23 @@ import NotesDrawer from "./components/NotesDrawer";
 import JourneyMilestoneGate from "./components/JourneyMilestoneGate";
 import JourneyTestButton from "./components/JourneyTestButton";
 import useVoiceJourney from "./hooks/useVoiceJourney";
-import RealWorldTasksModal, {
-  REAL_WORLD_TASKS_REFRESH_MS,
-} from "./components/RealWorldTasksModal";
+import RealWorldTasksModal from "./components/RealWorldTasksModal";
+import TeamsDrawer from "./components/Teams/TeamsDrawer";
+import { loadGlobalTeamFeed } from "./utils/globalTeamFeedCache";
+import { WaveBar } from "./components/WaveBar";
+import useDailyImmersionTasks from "./hooks/useDailyImmersionTasks";
+import {
+  dailyImmersionProgress,
+  hasImmersionPlacement,
+  nextLocalMidnight,
+} from "./utils/dailyImmersion";
 import useNotesStore from "./hooks/useNotesStore";
 import useRepairFocusStore from "./hooks/useRepairFocusStore";
-import { subscribeToTeamInvites } from "./utils/teams";
+import {
+  getTeamMemberProgress,
+  getUserTeams,
+  subscribeToTeamInvites,
+} from "./utils/teams";
 import SkillTree, { GAME_LOADING_MESSAGES } from "./components/SkillTree";
 import DailyPlateHome from "./components/DailyPlateHome";
 import {
@@ -227,6 +236,7 @@ import {
   electDailyQuestCourses,
   getDailyPlateDayKey,
   getDailyPlateSnapshot,
+  getFirstQuestDayKey,
   getNextPlateCourse,
   getQuestNeglectWeights,
   hasSeenFirstQuest,
@@ -243,6 +253,7 @@ import {
   startPlateSession,
   writeQuestPlate,
 } from "./utils/dailyPlate";
+import { needsIntroTutorial } from "./utils/introTutorial";
 import {
   buildEphemeralRepairLesson,
   completeRepairLesson,
@@ -275,6 +286,8 @@ import {
   hasCompletedLessonXp,
 } from "./utils/lessonProgress";
 import { awardXp } from "./utils/utils";
+import { ELO_LEVELS, scoreForUser } from "./utils/performanceEloModel";
+import { seedPlacementElo } from "./utils/proficiencySelfAssessment";
 import {
   buildFlashcardReviewUpdate,
   getLocalDayKey,
@@ -1412,13 +1425,10 @@ function TopBar({
   // ---- Local draft state (no autosave) ----
   const p = user?.progress || {};
   const [level, setLevel] = useState(migrateToCEFRLevel(p.level) || "Pre-A1");
-  const [supportLang, setSupportLang] = useState(
-    normalizeSupportLanguage(p.supportLang, DEFAULT_SUPPORT_LANGUAGE),
-  );
   const [tutorVoice, setTutorVoice] = useState(
     normalizeTutorVoice(p.tutorVoice || p.voice),
   );
-  const defaultPersonaSupportLang = p.supportLang || supportLang || appLanguage;
+  const defaultPersonaSupportLang = appLanguage;
   const defaultPersona =
     personaForSupportLanguage(
       p.tutorVoicePersona ?? p.voicePersona,
@@ -1516,9 +1526,8 @@ function TopBar({
     [appLanguage, showJapanese, t],
   );
   const selectedSupportOption =
-    supportLanguageOptions.find(
-      (option) => option.value === normalizeSupportLanguage(supportLang),
-    ) || supportLanguageOptions[0];
+    supportLanguageOptions.find((option) => option.value === appLanguage) ||
+    supportLanguageOptions[0];
   const selectedPracticeOption =
     practiceLanguageOptions.find((option) => option.value === targetLang) ||
     practiceLanguageOptions[0];
@@ -1527,16 +1536,8 @@ function TopBar({
   useEffect(() => {
     const q = user?.progress || {};
     setLevel(migrateToCEFRLevel(q.level) || "Pre-A1");
-    const incomingLang = normalizeSupportLanguage(
-      q.supportLang,
-      DEFAULT_SUPPORT_LANGUAGE,
-    );
-    if (!pendingLangRef.current || incomingLang === pendingLangRef.current) {
-      setSupportLang(incomingLang);
-    }
     setTutorVoice(normalizeTutorVoice(q.tutorVoice || q.voice));
-    const draftSupportLang =
-      pendingLangRef.current || incomingLang || supportLang || appLanguage;
+    const draftSupportLang = pendingLangRef.current || appLanguage;
     const nextVoicePersona =
       personaForSupportLanguage(
         q.tutorVoicePersona ?? q.voicePersona,
@@ -1559,7 +1560,7 @@ function TopBar({
   }, [user?.progress, user?.helpRequest]);
 
   useEffect(() => {
-    const localizedDefault = personaDefaultFor(supportLang || appLanguage);
+    const localizedDefault = personaDefaultFor(appLanguage);
     const current = (voicePersona || "").trim();
 
     if (
@@ -1571,7 +1572,7 @@ function TopBar({
       persistSettings({ tutorVoicePersona: localizedDefault });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appLanguage, supportLang]);
+  }, [appLanguage]);
 
   const persistSettings = useCallback(
     async (partial = {}) => {
@@ -2057,16 +2058,30 @@ function TopBar({
                   >
                     {dailyGoalLabel}:
                   </Text>
-                  <Text
-                    fontSize={{ base: "xs", md: "xs" }}
-                    fontWeight="bold"
-                    color={dailyGoalHudTextColor}
-                    lineHeight="1.2"
-                    fontVariantNumeric="tabular-nums"
-                    whiteSpace="nowrap"
+                  <Box
+                    w={{ base: "72px", sm: "96px", md: "120px" }}
+                    flexShrink={0}
+                    role="progressbar"
+                    aria-label={dailyGoalLabel}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={Math.min(100, dailyRawPct)}
                   >
-                    {dailyRawPct}%
-                  </Text>
+                    <WaveBar
+                      value={dailyRawPct}
+                      height={12}
+                      bg={
+                        themeMode === "light"
+                          ? "rgba(255, 255, 255, 0.58)"
+                          : "rgba(255,255,255,0.22)"
+                      }
+                      border={
+                        themeMode === "light"
+                          ? "rgba(91, 75, 58, 0.10)"
+                          : "rgba(255,255,255,0.14)"
+                      }
+                    />
+                  </Box>
                 </HStack>
               </HStack>
 
@@ -2481,7 +2496,7 @@ function TopBar({
                                 </Box>
                                 <MenuOptionGroup
                                   type="radio"
-                                  value={supportLang}
+                                  value={appLanguage}
                                   onChange={(value) => {
                                     const normalized = normalizeSupportLanguage(
                                       value,
@@ -2503,10 +2518,7 @@ function TopBar({
                                     ) {
                                       setVoicePersona(nextPersona);
                                     }
-                                    onSupportLangChange?.(
-                                      normalized,
-                                      setSupportLang,
-                                    );
+                                    onSupportLangChange?.(normalized);
                                     persistSettingsAfterPaint({
                                       supportLang: normalized,
                                       ...(shouldLocalizePersona && nextPersona
@@ -2681,7 +2693,7 @@ function TopBar({
                           voice={tutorVoice}
                           voicePersona={voicePersona}
                           targetLang={targetLang}
-                          supportLang={supportLang}
+                          supportLang={appLanguage}
                           appLanguage={appLanguage}
                           voiceOptions={getTutorVoiceOptions()}
                           normalizeVoice={normalizeTutorVoice}
@@ -3053,11 +3065,38 @@ export default function App({ onBootReady } = {}) {
   const [realWorldTasksOpen, setRealWorldTasksOpen] = useState(false);
   const [tasksTickNow, setTasksTickNow] = useState(() => Date.now());
   const [pendingTeamInviteCount, setPendingTeamInviteCount] = useState(0);
+  const [hasUnseenTeamInvite, setHasUnseenTeamInvite] = useState(false);
+  const pendingTeamInviteIdsRef = useRef(null);
+  const [preloadedTeams, setPreloadedTeams] = useState(null);
+  const [preloadedTeamsNpub, setPreloadedTeamsNpub] = useState("");
+  const [preloadedTeamMemberProgress, setPreloadedTeamMemberProgress] =
+    useState(null);
+  const [preloadedTeamInvites, setPreloadedTeamInvites] = useState(null);
 
-  // Periodically tick to drive the real-world tasks "ready" animation
+  // Keep the local daily quest and immersion date current, including after a sleeping tab resumes.
   useEffect(() => {
-    const id = setInterval(() => setTasksTickNow(Date.now()), 60 * 1000);
-    return () => clearInterval(id);
+    const tick = () => setTasksTickNow(Date.now());
+    const id = setInterval(tick, 60 * 1000);
+    let midnightId;
+    const scheduleMidnight = () => {
+      clearTimeout(midnightId);
+      midnightId = setTimeout(
+        () => {
+          tick();
+          scheduleMidnight();
+        },
+        Math.max(1, nextLocalMidnight(new Date()).getTime() - Date.now()),
+      );
+    };
+    scheduleMidnight();
+    document.addEventListener("visibilitychange", tick);
+    window.addEventListener("focus", tick);
+    return () => {
+      clearInterval(id);
+      clearTimeout(midnightId);
+      document.removeEventListener("visibilitychange", tick);
+      window.removeEventListener("focus", tick);
+    };
   }, []);
 
   // Notes store state for action bar animations
@@ -3071,6 +3110,7 @@ export default function App({ onBootReady } = {}) {
   const setUser = useUserStore((s) => s.setUser);
   const patchUser = useUserStore((s) => s.patchUser);
   const appLanguageSyncKeyRef = useRef("");
+  const settingsWriteQueueRef = useRef(Promise.resolve());
 
   const SUBSCRIPTION_PASSCODE_KEY = "subscriptionPasscode";
   const subscriptionPasscode = (
@@ -3138,6 +3178,8 @@ export default function App({ onBootReady } = {}) {
       resolvedSupportLang,
       DEFAULT_SUPPORT_LANGUAGE,
     );
+    if (pendingLangRef.current && desiredAppLanguage !== pendingLangRef.current)
+      return;
     const persistedAppLanguage = normalizeSupportLanguage(
       user?.appLanguage,
       DEFAULT_SUPPORT_LANGUAGE,
@@ -3218,8 +3260,6 @@ export default function App({ onBootReady } = {}) {
   const sendOneSatToNpub = useNostrWalletStore((s) => s.sendOneSatToNpub);
   const cashuWallet = useNostrWalletStore((s) => s.cashuWallet);
 
-  console.log("walletBalance", walletBalance);
-
   // walletBalance is now a clean number from the store
   const totalWalletBalance = useMemo(() => {
     const numeric = Number(walletBalance);
@@ -3229,7 +3269,7 @@ export default function App({ onBootReady } = {}) {
   const hasSpendableBalance = true;
 
   // DID / auth
-  const { generateNostrKeys, auth, postNostrContent } =
+  const { generateNostrKeys, auth, postNostrContent, getGlobalNotesWithProfilesByHashtag } =
     useDecentralizedIdentity(
       typeof window !== "undefined" ? localStorage.getItem("local_npub") : "",
       typeof window !== "undefined" ? localStorage.getItem("local_nsec") : "",
@@ -3247,6 +3287,59 @@ export default function App({ onBootReady } = {}) {
       : "",
   );
 
+  useEffect(() => {
+    if (!activeNpub) {
+      setPreloadedTeams(null);
+      setPreloadedTeamsNpub("");
+      setPreloadedTeamMemberProgress(null);
+      return undefined;
+    }
+    let active = true;
+    setPreloadedTeams(null);
+    setPreloadedTeamMemberProgress(null);
+    setPreloadedTeamsNpub(activeNpub);
+    getUserTeams(activeNpub)
+      .then(async (teams) => {
+        if (!active) return;
+        setPreloadedTeams(teams);
+        const results = await Promise.allSettled(
+          teams.map((team) =>
+            getTeamMemberProgress(
+              team.isCreator ? activeNpub : team.createdBy,
+              team.id,
+              activeNpub,
+            ),
+          ),
+        );
+        if (!active) return;
+        const progress = {};
+        results.forEach((result, index) => {
+          if (result.status === "fulfilled")
+            progress[teams[index].id] = result.value;
+          else
+            console.error("Preload team member progress error", result.reason);
+        });
+        setPreloadedTeamMemberProgress(progress);
+      })
+      .catch((error) => {
+        console.error("Preload teams error", error);
+        if (active) {
+          setPreloadedTeams([]);
+          setPreloadedTeamMemberProgress({});
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [activeNpub]);
+
+  useEffect(() => {
+    if (!activeNpub) return;
+    void loadGlobalTeamFeed(getGlobalNotesWithProfilesByHashtag).catch((error) => {
+      console.error("Preload global team feed error", error);
+    });
+  }, [activeNpub, getGlobalNotesWithProfilesByHashtag]);
+
   const isTestUnlockActive = useMemo(
     () => isMasterUnlockActive(activeNpub),
     [activeNpub],
@@ -3255,13 +3348,29 @@ export default function App({ onBootReady } = {}) {
   useEffect(() => {
     if (!activeNpub) {
       setPendingTeamInviteCount(0);
+      setHasUnseenTeamInvite(false);
+      setPreloadedTeamInvites(null);
+      pendingTeamInviteIdsRef.current = null;
       return;
     }
+    pendingTeamInviteIdsRef.current = null;
+    setHasUnseenTeamInvite(false);
+    setPreloadedTeamInvites(null);
     const unsubscribe = subscribeToTeamInvites(activeNpub, (invites = []) => {
-      const pendingCount = invites.filter(
-        (invite) => invite.status === "pending",
-      ).length;
-      setPendingTeamInviteCount(pendingCount);
+      setPreloadedTeamInvites({ npub: activeNpub, invites });
+      const pendingIds = new Set(
+        invites
+          .filter((invite) => invite.status === "pending")
+          .map((invite) => invite.id),
+      );
+      setPendingTeamInviteCount(pendingIds.size);
+      const previousIds = pendingTeamInviteIdsRef.current;
+      if (previousIds === null) {
+        setHasUnseenTeamInvite(pendingIds.size > 0);
+      } else if ([...pendingIds].some((id) => !previousIds.has(id))) {
+        setHasUnseenTeamInvite(true);
+      }
+      pendingTeamInviteIdsRef.current = pendingIds;
     });
     return () => unsubscribe?.();
   }, [activeNpub]);
@@ -3276,7 +3385,7 @@ export default function App({ onBootReady } = {}) {
   const pendingLangRef = useRef(null);
   const pendingLangTimeoutRef = useRef(null);
   const onSupportLangChange = useCallback(
-    (normalized, setSupportLangFn) => {
+    (normalized) => {
       pendingLangRef.current = normalized;
       if (pendingLangTimeoutRef.current)
         clearTimeout(pendingLangTimeoutRef.current);
@@ -3291,7 +3400,6 @@ export default function App({ onBootReady } = {}) {
       const applyOptimisticLanguage = () => {
         syncDocumentLanguage(normalized);
         setAppLanguage(normalized);
-        setSupportLangFn?.(normalized);
         if (user) {
           const currentProgress = user.progress || {};
           const nextVoicePersona = personaForSupportLanguage(
@@ -3833,9 +3941,10 @@ export default function App({ onBootReady } = {}) {
   const [isIdentitySaving] = useState(false);
 
   useEffect(() => {
-    // Default to false if user.allowPosts is not explicitly set
-    setAllowPosts(user?.allowPosts === true);
-  }, [user?.allowPosts]);
+    // New accounts default to allowing automatic community posts. Preserve an
+    // explicit opt-out stored on existing accounts.
+    setAllowPosts(Boolean(user && user.allowPosts !== false));
+  }, [user]);
 
   useEffect(() => {
     const resolvedThemeMode = normalizeThemeMode(
@@ -5560,13 +5669,14 @@ export default function App({ onBootReady } = {}) {
   const saveGlobalSettings = async (partial = {}) => {
     const npub = resolveNpub();
     if (!npub) return;
+    const latestUser = useUserStore.getState().user || user;
 
     const clampPause = (v) => {
       const n = Number.isFinite(v) ? Math.round(v) : DEFAULT_VOICE_PAUSE_MS;
       return Math.max(200, Math.min(4000, Math.round(n / 100) * 100));
     };
 
-    const prev = user?.progress || {
+    const prev = latestUser?.progress || {
       level: "Pre-A1",
       supportLang: "en",
       voice: "marin",
@@ -5580,7 +5690,7 @@ export default function App({ onBootReady } = {}) {
       practicePronunciation: false,
     };
     const nextSupportLang = normalizeSupportLanguage(
-      partial.supportLang ?? prev.supportLang,
+      pendingLangRef.current ?? partial.supportLang ?? prev.supportLang,
       DEFAULT_SUPPORT_LANGUAGE,
     );
     const nextVoicePersona =
@@ -5624,16 +5734,21 @@ export default function App({ onBootReady } = {}) {
           : false,
     };
     const nextThemeMode = normalizeThemeMode(
-      partial.themeMode ?? user?.themeMode ?? themeMode,
+      partial.themeMode ?? latestUser?.themeMode ?? themeMode,
     );
     syncThemeMode(nextThemeMode);
 
     const now = new Date().toISOString();
+    const derivedAppLanguage = normalizeSupportLanguage(
+      next.supportLang,
+      DEFAULT_SUPPORT_LANGUAGE,
+    );
     setUser?.({
-      ...(user || {}),
+      ...(latestUser || {}),
       local_npub: npub,
       updatedAt: now,
       helpRequest: next.helpRequest || "",
+      appLanguage: derivedAppLanguage,
       themeMode: nextThemeMode,
       progress: next,
       practicePronunciation: next.practicePronunciation,
@@ -5642,12 +5757,6 @@ export default function App({ onBootReady } = {}) {
     try {
       localStorage.setItem("progress", JSON.stringify(next));
     } catch {}
-
-    // Derive appLanguage from supportLang to keep them in sync
-    const derivedAppLanguage = normalizeSupportLanguage(
-      next.supportLang,
-      DEFAULT_SUPPORT_LANGUAGE,
-    );
 
     // Strip subcollection-backed data from the progress field before writing
     // to the user document. languageLessons, tutorLanguageLessons, and languageFlashcards live in
@@ -5660,19 +5769,26 @@ export default function App({ onBootReady } = {}) {
       ...progressForFirestore
     } = next;
 
-    await setDoc(
-      doc(database, "users", npub),
-      {
-        local_npub: npub,
-        updatedAt: now,
-        helpRequest: next.helpRequest || "",
-        progress: progressForFirestore,
-        practicePronunciation: next.practicePronunciation,
-        appLanguage: derivedAppLanguage,
-        themeMode: nextThemeMode,
-      },
-      { merge: true },
+    const writeSettings = () =>
+      setDoc(
+        doc(database, "users", npub),
+        {
+          local_npub: npub,
+          updatedAt: now,
+          helpRequest: next.helpRequest || "",
+          progress: progressForFirestore,
+          practicePronunciation: next.practicePronunciation,
+          appLanguage: derivedAppLanguage,
+          themeMode: nextThemeMode,
+        },
+        { merge: true },
+      );
+    const save = settingsWriteQueueRef.current.then(
+      writeSettings,
+      writeSettings,
     );
+    settingsWriteQueueRef.current = save.catch(() => {});
+    await save;
 
     window.dispatchEvent(
       new CustomEvent("app:globalSettingsUpdated", {
@@ -5809,6 +5925,21 @@ export default function App({ onBootReady } = {}) {
               { text: goalText, id: globalThis.crypto.randomUUID(), now },
             );
         }
+      const startingBucket = learningIntelligence[normalized.targetLang] || {};
+      if (
+        startingBucket.elo?.rating == null &&
+        Number(startingBucket.elo?.totalGraded || 0) === 0
+      ) {
+        learningIntelligence[normalized.targetLang] = seedPlacementElo(
+          startingBucket,
+          {
+            level: "Pre-A1",
+            rating: 0,
+            source: "onboarding_baseline",
+            now,
+          },
+        );
+      }
       await setDoc(
         doc(database, "users", id),
         {
@@ -5871,11 +6002,17 @@ export default function App({ onBootReady } = {}) {
         inferCefrLevelFromLessonId(lesson.id) ||
         resolvedLevel ||
         "Pre-A1";
-      const units = await loadLearningPath(resolvedTargetLang, inferredLevel);
-      const unit =
-        units.find((entry) =>
-          entry?.lessons?.some((candidate) => candidate?.id === lesson.id),
-        ) || null;
+      const unit = lesson.tutorialPracticeLevel
+        ? {
+            id: "unit-tutorial-pre-a1",
+            title: { en: "Getting Started" },
+            cefrLevel: lesson.tutorialPracticeLevel,
+            lessons: [lesson],
+          }
+        : (await loadLearningPath(resolvedTargetLang, inferredLevel)).find(
+            (entry) =>
+              entry?.lessons?.some((candidate) => candidate?.id === lesson.id),
+          ) || null;
       const reviewContext = buildGameReviewContext({
         lesson,
         unit,
@@ -5901,7 +6038,7 @@ export default function App({ onBootReady } = {}) {
         : await enrichLessonForGameReview(lesson);
 
     // Store pre-generated scenario for game lessons. Start the multi-module
-    // tutorial's Greeting Plaza preparation before awaiting the client chunk,
+    // tutorial's game preparation before awaiting the client chunk,
     // so both pieces warm concurrently while the learner is still entering
     // the tutorial and completing its earlier activities.
     const tutorialPreparationToken =
@@ -7163,51 +7300,19 @@ export default function App({ onBootReady } = {}) {
 
   const openProficiencyPromptIfNeeded = useCallback(() => {
     const latestUser = useUserStore.getState()?.user || user || {};
-    const hasProficiencyDecision = Object.prototype.hasOwnProperty.call(
-      latestUser,
-      "proficiencyPlacement",
-    );
-    const accountKey = activeNpub || "local";
-    const localShownKey = `proficiencyPromptShown:${accountKey}`;
-    let locallyShown = false;
+    const placements = latestUser.proficiencyPlacements;
+    const placement =
+      placements?.[resolvedTargetLang] ||
+      (!placements ? latestUser.proficiencyPlacement : null);
+    const accountKey = `${activeNpub || "local"}:${resolvedTargetLang}`;
 
-    try {
-      locallyShown = window.localStorage.getItem(localShownKey) === "1";
-    } catch {
-      locallyShown = false;
-    }
-
-    if (
-      hasProficiencyDecision ||
-      latestUser.proficiencyPromptShown === true ||
-      locallyShown ||
-      proficiencyPromptOpenedForRef.current === accountKey
-    ) {
+    if (placement || proficiencyPromptOpenedForRef.current === accountKey) {
       return;
     }
 
     proficiencyPromptOpenedForRef.current = accountKey;
-    try {
-      window.localStorage.setItem(localShownKey, "1");
-    } catch {
-      /* The Firestore flag remains the cross-device source of truth. */
-    }
-    patchUser?.({ proficiencyPromptShown: true });
     setProficiencyTestOpen(true);
-
-    if (activeNpub) {
-      void setDoc(
-        doc(database, "users", activeNpub),
-        {
-          proficiencyPromptShown: true,
-          updatedAt: new Date().toISOString(),
-        },
-        { merge: true },
-      ).catch((error) => {
-        console.warn("Failed to persist proficiency prompt state:", error);
-      });
-    }
-  }, [activeNpub, patchUser, user]);
+  }, [activeNpub, resolvedTargetLang, user]);
 
   const handleCompanionContinue = useCallback(() => {
     const latestUser = useUserStore.getState()?.user || user || {};
@@ -7221,38 +7326,6 @@ export default function App({ onBootReady } = {}) {
 
     openProficiencyPromptIfNeeded();
   }, [openProficiencyPromptIfNeeded, user]);
-
-  const handleProficiencySkip = useCallback(async () => {
-    flushSync(() => {
-      setProficiencyTestOpen(false);
-    });
-    // Record the decision locally first. "skipped" prevents the prompt from
-    // reappearing after later companion messages or on another session.
-    patchUser?.({
-      proficiencyPlacement: "skipped",
-      proficiencyPlacements: {
-        ...(user?.proficiencyPlacements || {}),
-        [resolvedTargetLang]: "skipped",
-      },
-    });
-    // Persist skip so the modal doesn't reappear every session.
-    const id = resolveNpub();
-    if (id) {
-      try {
-        await setDoc(
-          doc(database, "users", id),
-          {
-            proficiencyPlacement: "skipped",
-            proficiencyPlacements: { [resolvedTargetLang]: "skipped" },
-            updatedAt: new Date().toISOString(),
-          },
-          { merge: true },
-        );
-      } catch (e) {
-        console.warn("Failed to persist proficiency skip:", e);
-      }
-    }
-  }, [resolveNpub, patchUser, user?.proficiencyPlacements, resolvedTargetLang]);
 
   const handleProficiencyTakeTest = useCallback(() => {
     setProficiencyTestOpen(false);
@@ -8285,130 +8358,30 @@ export default function App({ onBootReady } = {}) {
   // Real-world tasks state derived from user document
   const realWorldTasks = user?.realWorldTasks || null;
 
-  // Ready = user should be prompted to generate/see a new batch
-  const realWorldTasksReady = useMemo(() => {
-    if (!realWorldTasks) return true;
-    if (
-      !Array.isArray(realWorldTasks.tasks) ||
-      realWorldTasks.tasks.length !== 3
-    ) {
-      return true;
-    }
-    if (
-      realWorldTasks.targetLang &&
-      realWorldTasks.targetLang !== resolvedTargetLang
-    ) {
-      return true;
-    }
-    const generatedAt = realWorldTasks.generatedAt
-      ? new Date(realWorldTasks.generatedAt).getTime()
-      : 0;
-    if (!generatedAt) return true;
-    return tasksTickNow - generatedAt >= REAL_WORLD_TASKS_REFRESH_MS;
-  }, [realWorldTasks, resolvedTargetLang, tasksTickNow]);
-
-  // When did the current "ready" state start? Used to decide if the user
-  // has already seen this ready notification.
-  const realWorldTasksReadySince = useMemo(() => {
-    if (!realWorldTasks) return 0;
-    const generatedAt = realWorldTasks.generatedAt
-      ? new Date(realWorldTasks.generatedAt).getTime()
-      : 0;
-    if (!generatedAt) return 0;
-    if (
-      !Array.isArray(realWorldTasks.tasks) ||
-      realWorldTasks.tasks.length !== 3
-    ) {
-      return 0;
-    }
-    if (
-      realWorldTasks.targetLang &&
-      realWorldTasks.targetLang !== resolvedTargetLang
-    ) {
-      return 0;
-    }
-    return generatedAt + REAL_WORLD_TASKS_REFRESH_MS;
-  }, [realWorldTasks, resolvedTargetLang]);
-
-  const realWorldTasksLastOpenedAt = user?.realWorldTasksLastOpenedAt
-    ? new Date(user.realWorldTasksLastOpenedAt).getTime()
-    : 0;
-
-  // Show the notification badge when the tasks are ready and the user
-  // hasn't opened the modal since the ready state began.
-  const realWorldTasksHasNotification =
-    realWorldTasksReady &&
-    realWorldTasksLastOpenedAt <
-      Math.max(1, realWorldTasksReadySince || tasksTickNow);
-
-  // True only when the current batch exists, hasn't been claimed,
-  // and has zero completed tasks — i.e. it is genuinely untouched.
-  const realWorldTasksBatchUntouched = Boolean(
-    realWorldTasks &&
-    !realWorldTasks.rewarded &&
-    Array.isArray(realWorldTasks.completed) &&
-    realWorldTasks.completed.length === 3 &&
-    !realWorldTasks.completed.some(Boolean),
+  // Tutor can start at a level unlocked by lessons, flashcards, or Tutor itself.
+  // Immersion compares the actual next Tutor and Skill Tree lessons below.
+  const tutorUnlockedLevel = clampCefrLevel(
+    user?.progress?.tutorUnlockedLevels?.[
+      String(resolvedTargetLang || "es").toLowerCase()
+    ] ?? user?.progress?.tutorUnlockedLevels?.[resolvedTargetLang],
   );
-
-  // 0-100% representing remaining time until the next batch. Full = lots
-  // of time left, 0 = ready for a new batch. Used to render a drain ring
-  // around the immersion action-bar button so users see the countdown
-  // without opening the drawer.
-  const realWorldTasksTimerProgress = useMemo(() => {
-    if (!realWorldTasks) return 0;
-    const generatedAt = realWorldTasks.generatedAt
-      ? new Date(realWorldTasks.generatedAt).getTime()
-      : 0;
-    if (!generatedAt) return 0;
-    if (
-      !Array.isArray(realWorldTasks.tasks) ||
-      realWorldTasks.tasks.length !== 3
-    ) {
-      return 0;
-    }
-    if (
-      realWorldTasks.targetLang &&
-      realWorldTasks.targetLang !== resolvedTargetLang
-    ) {
-      return 0;
-    }
-    const remainingMs = Math.max(
-      0,
-      REAL_WORLD_TASKS_REFRESH_MS - (tasksTickNow - generatedAt),
-    );
-    return Math.max(
-      0,
-      Math.min(100, (remainingMs / REAL_WORLD_TASKS_REFRESH_MS) * 100),
-    );
-  }, [realWorldTasks, resolvedTargetLang, tasksTickNow]);
-
-  const [realWorldTasksAttention, setRealWorldTasksAttention] = useState(false);
-  const prevAnimTriggerRef = useRef(false);
-
-  // Fire a brief one-time animation whenever the current batch is
-  // untouched (no completed tasks, not claimed). This re-fires on each
-  // page load / mount so the user sees a visual signal every time they
-  // return and still have pending tasks. It also re-fires when a new
-  // untouched batch replaces a touched/claimed one.
-  useEffect(() => {
-    if (realWorldTasksBatchUntouched && !prevAnimTriggerRef.current) {
-      setRealWorldTasksAttention(true);
-      const id = setTimeout(() => setRealWorldTasksAttention(false), 1800);
-      prevAnimTriggerRef.current = true;
-      return () => clearTimeout(id);
-    }
-    if (!realWorldTasksBatchUntouched) {
-      prevAnimTriggerRef.current = false;
-    }
-  }, [realWorldTasksBatchUntouched]);
-
-  const handleRealWorldTasksUpdated = useCallback(
-    (next) => {
-      patchUser({ realWorldTasks: next });
-    },
-    [patchUser],
-  );
+  const immersionTutorLevel =
+    maxCefrLevel(
+      currentLessonLevel,
+      currentFlashcardLevel,
+      tutorUnlockedLevel,
+    ) || "Pre-A1";
+  const immersionTasksCefrLevel =
+    maxCefrLevel(currentLessonLevel, immersionTutorLevel) || "Pre-A1";
+  const introTutorialLevel = needsIntroTutorial({
+    level: currentLessonLevel,
+    lessons: userProgress.lessons,
+    hasFirstQuestHistory:
+      shouldUseFixedFirstQuest(user, getDailyPlateDayKey()) ||
+      Boolean(getFirstQuestDayKey(user)),
+  })
+    ? currentLessonLevel
+    : null;
 
   const handleRealWorldRewardClaimed = useCallback(async () => {
     const npub = resolveNpub();
@@ -8424,6 +8397,65 @@ export default function App({ onBootReady } = {}) {
       console.error("Failed to refresh user after real-world reward:", err);
     }
   }, [resolveNpub, setUser]);
+
+  const immersionGoal = activeGoalFor(user, resolvedTargetLang);
+  const hasHydratedUserProgress = Boolean(
+    user?.progress && typeof user.progress === "object",
+  );
+  const dailyImmersion = useDailyImmersionTasks({
+    user,
+    npub: activeNpub,
+    targetLang: resolvedTargetLang,
+    appLanguage,
+    cefrLevel: immersionTasksCefrLevel,
+    lessonLevel: currentLessonLevel,
+    tutorLevel: immersionTutorLevel,
+    lessonProgress: userProgress?.lessons,
+    introTutorialLevel,
+    goal: immersionGoal,
+    enabled:
+      !isLoadingApp &&
+      hasHydratedUserProgress &&
+      hasImmersionPlacement(user, resolvedTargetLang) &&
+      !appOnboardingChainOpen &&
+      ((viewMode === "skillTree" &&
+        pathMode === "plate" &&
+        !showAlphabetBootcamp) ||
+        realWorldTasksOpen),
+    now: tasksTickNow,
+    patchUser,
+    onRewardClaimed: handleRealWorldRewardClaimed,
+  });
+  const realWorldTasksLastOpenedAt = user?.realWorldTasksLastOpenedAt
+    ? new Date(user.realWorldTasksLastOpenedAt).getTime()
+    : 0;
+  const realWorldTasksGeneratedAt = realWorldTasks?.generatedAt
+    ? new Date(realWorldTasks.generatedAt).getTime()
+    : 0;
+  const realWorldTasksHasNotification =
+    dailyImmersion.status === "ready" &&
+    !dailyImmersion.isGenerating &&
+    realWorldTasksLastOpenedAt < realWorldTasksGeneratedAt;
+  const realWorldTasksBatchUntouched =
+    dailyImmersion.status === "ready" &&
+    !dailyImmersion.rewarded &&
+    dailyImmersion.tasks.length > 0 &&
+    !dailyImmersion.completed.some(Boolean);
+  const realWorldTasksTimerProgress =
+    dailyImmersion.status === "ready"
+      ? dailyImmersionProgress(new Date(tasksTickNow))
+      : 0;
+  const [realWorldTasksAttention, setRealWorldTasksAttention] = useState(false);
+  const prevAnimTriggerRef = useRef(false);
+  useEffect(() => {
+    if (realWorldTasksBatchUntouched && !prevAnimTriggerRef.current) {
+      setRealWorldTasksAttention(true);
+      const id = setTimeout(() => setRealWorldTasksAttention(false), 1800);
+      prevAnimTriggerRef.current = true;
+      return () => clearTimeout(id);
+    }
+    if (!realWorldTasksBatchUntouched) prevAnimTriggerRef.current = false;
+  }, [realWorldTasksBatchUntouched]);
 
   const handleOpenRealWorldTasks = useCallback(() => {
     // Open immediately so the drawer animation starts on the next paint,
@@ -8449,6 +8481,12 @@ export default function App({ onBootReady } = {}) {
     });
   }, [activeNpub, patchUser]);
 
+  const handleOpenTeams = useCallback(() => setTeamsOpen(true), []);
+  const handleTeamInvitesViewed = useCallback(
+    () => setHasUnseenTeamInvite(false),
+    [],
+  );
+
   // State for which CEFR level is currently being viewed (separate for each mode)
   // Initialize with default, will be synced from user document when loaded
   const [activeLessonLevel, setActiveLessonLevel] = useState("Pre-A1");
@@ -8456,9 +8494,6 @@ export default function App({ onBootReady } = {}) {
   const normalizedTargetLang = String(resolvedTargetLang || "").toLowerCase();
   const levelsPersistenceKey = `${activeNpub || "local"}:${normalizedTargetLang}`;
   const [initializedLevelsKey, setInitializedLevelsKey] = useState(null);
-  const hasHydratedUserProgress =
-    user?.progress && typeof user.progress === "object";
-
   const savedLessonLevel = useMemo(
     () =>
       (CEFR_LEVELS.includes(
@@ -8523,6 +8558,82 @@ export default function App({ onBootReady } = {}) {
     savedLessonLevel,
     savedFlashcardLevel,
   ]);
+
+  const handleProficiencyStartAtLevel = useCallback(
+    async ({ level, rating, selectedIds = [], source = "self_report" }) => {
+      if (!ELO_LEVELS.includes(level))
+        throw new Error("Invalid starting level.");
+      const npub = resolveNpub();
+      if (!npub) throw new Error("Sign in to save your starting level.");
+      const lang = normalizedTargetLang;
+      const now = new Date().toISOString();
+      const userRef = doc(database, "users", npub);
+      const bucket = await runTransaction(database, async (transaction) => {
+        const snapshot = await transaction.get(userRef);
+        const data = snapshot.data() || {};
+        const nextBucket = seedPlacementElo(
+          data.learningIntelligence?.[lang] || {},
+          {
+            level,
+            rating,
+            selectedIds,
+            source,
+            now,
+          },
+        );
+        transaction.set(
+          userRef,
+          {
+            proficiencyPlacement: level,
+            proficiencyPlacements: { [lang]: level },
+            proficiencyPlacementAt: now,
+            activeLessonLevel: level,
+            activeFlashcardLevel: level,
+            progress: {
+              level,
+              activeLessonLevels: { [lang]: level },
+              activeFlashcardLevels: { [lang]: level },
+            },
+            learningIntelligence: { [lang]: nextBucket },
+            updatedAt: now,
+          },
+          { merge: true },
+        );
+        return nextBucket;
+      });
+      const latest = useUserStore.getState().user || {};
+      patchUser?.({
+        proficiencyPlacement: level,
+        proficiencyPlacements: {
+          ...latest.proficiencyPlacements,
+          [lang]: level,
+        },
+        proficiencyPlacementAt: now,
+        activeLessonLevel: level,
+        activeFlashcardLevel: level,
+        progress: {
+          ...latest.progress,
+          level,
+          activeLessonLevels: {
+            ...latest.progress?.activeLessonLevels,
+            [lang]: level,
+          },
+          activeFlashcardLevels: {
+            ...latest.progress?.activeFlashcardLevels,
+            [lang]: level,
+          },
+        },
+        learningIntelligence: {
+          ...latest.learningIntelligence,
+          [lang]: bucket,
+        },
+      });
+      setActiveLessonLevel(level);
+      setActiveFlashcardLevel(level);
+      setProficiencyTestOpen(false);
+    },
+    [normalizedTargetLang, patchUser, resolveNpub],
+  );
 
   // Legacy: Combined active level (for backwards compatibility)
   const [activeCEFRLevel, setActiveCEFRLevel] = useState(currentCEFRLevel);
@@ -9025,7 +9136,7 @@ export default function App({ onBootReady } = {}) {
   }, [displayActiveLessonLevel]);
 
   const relevantLevelsKey = relevantLevels.join("|");
-  const skillTreeInitialUnitsKey = `multi:${resolvedTargetLang}:${relevantLevelsKey}`;
+  const skillTreeInitialUnitsKey = `multi:${resolvedTargetLang}:${relevantLevelsKey}${introTutorialLevel ? `:intro-${introTutorialLevel}` : ""}`;
   const [skillTreeInitialUnits, setSkillTreeInitialUnits] = useState({
     key: null,
     units: null,
@@ -9048,7 +9159,9 @@ export default function App({ onBootReady } = {}) {
       prev.key === skillTreeInitialUnitsKey ? prev : { key: null, units: null },
     );
 
-    loadMultiLevelLearningPath(resolvedTargetLang, relevantLevels)
+    loadMultiLevelLearningPath(resolvedTargetLang, relevantLevels, {
+      introTutorialLevel,
+    })
       .then((nextUnits) => {
         if (!isMounted) return;
         setSkillTreeInitialUnits({
@@ -9080,6 +9193,7 @@ export default function App({ onBootReady } = {}) {
     skillTreeInitialUnitsKey,
     resolvedTargetLang,
     relevantLevels,
+    introTutorialLevel,
   ]);
 
   const handleBottomBarSettingsOpen = useCallback(() => {
@@ -9167,15 +9281,6 @@ export default function App({ onBootReady } = {}) {
     currentLessonLevel ||
     currentCEFRLevel ||
     "Pre-A1";
-
-  // Tutor-earned unlock, persisted by Tutor.jsx when every tutor lesson in a
-  // CEFR level is complete — lets tutor-only progress raise ceilings here and
-  // in SkillTree's maxProficiencyLevel.
-  const tutorUnlockedLevel = clampCefrLevel(
-    user?.progress?.tutorUnlockedLevels?.[
-      String(resolvedTargetLang || "es").toLowerCase()
-    ] ?? user?.progress?.tutorUnlockedLevels?.[resolvedTargetLang],
-  );
 
   // Phonics deck generation bounds. Placement seeds the bootcamp's own deck
   // ladder (the way it pre-unlocks levels elsewhere); the ceiling is built
@@ -9339,6 +9444,7 @@ export default function App({ onBootReady } = {}) {
       available: availableQuestKinds,
       avoid,
       seed: `${activeNpub}:${langKey}:${dayKey}`,
+      score: scoreForUser(currentUser, langKey),
       weights: getQuestNeglectWeights(
         currentUser,
         langKey,
@@ -9646,6 +9752,7 @@ export default function App({ onBootReady } = {}) {
         return;
       }
       // learn — show the skill tree, scrolled to the latest unlocked lesson
+      if (introTutorialLevel) handleLessonLevelChange(introTutorialLevel);
       goToSkillTreeMode("path");
       setScrollToLatestTrigger((prev) => prev + 1);
     },
@@ -9659,6 +9766,8 @@ export default function App({ onBootReady } = {}) {
       activeNpub,
       repairLessonCefrLevel,
       plateDayKey,
+      introTutorialLevel,
+      handleLessonLevelChange,
     ],
   );
 
@@ -10591,13 +10700,32 @@ export default function App({ onBootReady } = {}) {
       <RealWorldTasksModal
         isOpen={realWorldTasksOpen}
         onClose={() => setRealWorldTasksOpen(false)}
-        npub={activeNpub}
         appLanguage={appLanguage}
         targetLang={resolvedTargetLang}
-        cefrLevel={currentCEFRLevel}
-        realWorldTasks={realWorldTasks}
-        onTasksUpdated={handleRealWorldTasksUpdated}
-        onRewardClaimed={handleRealWorldRewardClaimed}
+        score={scoreForUser(user, resolvedTargetLang)}
+        immersion={dailyImmersion}
+      />
+
+      <TeamsDrawer
+        isOpen={teamsOpen}
+        fetchGlobalTeamFeed={getGlobalNotesWithProfilesByHashtag}
+        onClose={() => setTeamsOpen(false)}
+        userLanguage={appLanguage}
+        currentUser={user}
+        targetLang={resolvedTargetLang}
+        t={t}
+        pendingInviteCount={pendingTeamInviteCount}
+        initialTeams={preloadedTeamsNpub === activeNpub ? preloadedTeams : null}
+        initialTeamMemberProgress={
+          preloadedTeamsNpub === activeNpub ? preloadedTeamMemberProgress : null
+        }
+        initialTeamInvites={
+          preloadedTeamInvites?.npub === activeNpub
+            ? preloadedTeamInvites.invites
+            : null
+        }
+        hasUnseenInvites={hasUnseenTeamInvite}
+        onInvitesViewed={handleTeamInvitesViewed}
       />
 
       <NotesDrawer
@@ -10653,7 +10781,7 @@ export default function App({ onBootReady } = {}) {
         <BottomActionBar
           t={t}
           onOpenSettings={handleBottomBarSettingsOpen}
-          onOpenTeams={handleOpenRealWorldTasks}
+          onOpenTeams={handleOpenTeams}
           onOpenNotes={() => setNotesOpen(true)}
           realWorldTasksHasNotification={realWorldTasksHasNotification}
           realWorldTasksAttention={realWorldTasksAttention}
@@ -10667,7 +10795,7 @@ export default function App({ onBootReady } = {}) {
           onNavigateToSkillTree={handleReturnToSkillTree}
           onOpenHelpChat={helpChatDisclosure.onOpen}
           playSound={playSound}
-          hasPendingTeamInvite={pendingTeamInviteCount > 0}
+          hasPendingTeamInvite={hasUnseenTeamInvite}
           notesIsLoading={notesIsLoading}
           notesIsDone={notesIsDone}
           pathMode={pathMode}
@@ -10699,6 +10827,7 @@ export default function App({ onBootReady } = {}) {
               />} */
               targetLang={resolvedTargetLang}
               appLanguage={appLanguage}
+              immersion={dailyImmersion}
               dailyXp={dailyXpToday}
               dailyGoalXp={dailyGoalTarget}
               languageXp={companionXp}
@@ -10748,6 +10877,7 @@ export default function App({ onBootReady } = {}) {
                 pauseMs={user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS}
                 showMultipleLevels={true}
                 levels={relevantLevels}
+                introTutorialLevel={introTutorialLevel}
                 // Mode-specific level props
                 activeLessonLevel={displayActiveLessonLevel}
                 activeFlashcardLevel={displayActiveFlashcardLevel}
@@ -11048,7 +11178,7 @@ export default function App({ onBootReady } = {}) {
       <ProficiencyTestModalSharedBackdropWrapper
         isOpen={proficiencyTestOpen}
         appChainOpen={appOnboardingChainOpen}
-        onClose={handleProficiencySkip}
+        onStartAtLevel={handleProficiencyStartAtLevel}
         onTakeTest={handleProficiencyTakeTest}
         lang={appLanguage}
         targetLangLabel={
@@ -12420,12 +12550,12 @@ function BottomActionBar({
   );
   const settingsLabel = menuLabels.settings;
   const helpChatLabel = helpLabel || menuLabels.assistant;
-  const teamsLabel = t?.teams_drawer_title || "Teams";
-  const tasksLabel = menuLabels.immersion;
+  // Use a short explicit menu label; this shortcut opens Teams, while the
+  // similarly named Immersion & Score copy belongs to the old score modal.
+  const teamsLabel = "Teams";
   const notesLabel = menuLabels.memory;
   const modeMenuLabel = menuLabels.mode;
   const backLabel = menuLabels.back;
-  const exitLessonLabel = menuLabels.exitLesson;
   const closeMenuLabel = menuLabels.closeMenu;
 
   // Path mode configuration
@@ -12576,19 +12706,6 @@ function BottomActionBar({
       closeLabel={closeMenuLabel}
       backLabel={backLabel}
       items={[
-        ...(viewMode === "lesson"
-          ? [
-              {
-                id: "exitLesson",
-                label: exitLessonLabel,
-                icon: <ArrowBackIcon boxSize={5} />,
-                onClick: () => {
-                  playSound?.(selectSound);
-                  onNavigateToSkillTree?.();
-                },
-              },
-            ]
-          : []),
         {
           id: "settings",
           label: settingsLabel,
@@ -12597,14 +12714,25 @@ function BottomActionBar({
         },
         {
           id: "teams",
-          label: tasksLabel,
+          label: teamsLabel,
           icon: (
-            <ImmersionPracticeMenuIcon
-              progress={realWorldTasksTimerProgress}
-              hasNotification={realWorldTasksHasNotification}
-              attention={realWorldTasksAttention}
-              isLightTheme={isLightTheme}
-            />
+            <Box position="relative" display="inline-flex" overflow="visible">
+              <TbHeartHandshake size={20} />
+              {hasPendingTeamInvite && (
+                <Box
+                  position="absolute"
+                  top="-4px"
+                  right="-5px"
+                  w="9px"
+                  h="9px"
+                  borderRadius="full"
+                  bg="red.500"
+                  border="2px solid"
+                  borderColor={isLightTheme ? "#f4eee5" : "gray.800"}
+                  aria-hidden="true"
+                />
+              )}
+            </Box>
           ),
           onClick: () => handleActionClick(onOpenTeams),
         },
@@ -12646,17 +12774,33 @@ function BottomActionBar({
       onOpen={() => playSound?.(selectSound)}
       decoration={notesIsDone ? <NoteCaptureCrystalShards /> : null}
       triggerIcon={
-        notesIsDone ? (
-          <RiBookmarkFill
-            size={20}
-            color="var(--chakra-colors-yellow-400, #D69E2E)"
-          />
-        ) : (
-          <PiDotsNineBold
-            size={22}
-            color={isLightTheme ? "#1f1912" : "var(--app-text-primary)"}
-          />
-        )
+        <Box position="relative" display="inline-flex" overflow="visible">
+          {notesIsDone ? (
+            <RiBookmarkFill
+              size={20}
+              color="var(--chakra-colors-yellow-400, #D69E2E)"
+            />
+          ) : (
+            <PiDotsNineBold
+              size={22}
+              color={isLightTheme ? "#1f1912" : "var(--app-text-primary)"}
+            />
+          )}
+          {hasPendingTeamInvite && (
+            <Box
+              position="absolute"
+              top="-3px"
+              right="-4px"
+              w="9px"
+              h="9px"
+              borderRadius="full"
+              bg="red.500"
+              border="2px solid"
+              borderColor={isLightTheme ? "var(--app-page-bg)" : "gray.900"}
+              aria-hidden="true"
+            />
+          )}
+        </Box>
       }
       triggerProps={{
         "aria-label": currentMode.label || modeMenuLabel,

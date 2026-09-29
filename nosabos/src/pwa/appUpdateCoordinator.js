@@ -30,6 +30,7 @@ const DEFERRAL_DURATION_MS = 30 * 60 * 1000; // 30 minutes deferral when user pr
 const METADATA_FETCH_TIMEOUT_MS = 10 * 1000; // 10 seconds
 const ACTIVATION_TIMEOUT_MS = 10 * 1000; // 10 seconds
 const MAX_AUTO_RELOAD_ATTEMPTS = 2;
+const DEV_SW_CLEANUP_KEY = "nosabos_dev_sw_cleanup_reload";
 
 export const STORAGE_KEYS = {
   RELOAD_TARGET: "nosabos_update_reload_target",
@@ -151,6 +152,15 @@ export class AppUpdateCoordinator {
 
     if (!isBrowser) return;
 
+    // Local development uses Vite's module graph and must never be controlled
+    // by a production PWA worker. Unregister a worker left behind on this
+    // origin by an earlier run, then reload once so the current document also
+    // leaves the worker's control. This prevents stale precached HTML from
+    // requesting hashed production chunks that no longer exist.
+    if (import.meta.env.DEV) {
+      await this.clearDevelopmentServiceWorkers();
+    }
+
     // Track user interaction to distinguish cold starts from active usage
     const interactionEvents = ["pointerdown", "keydown", "touchstart"];
     const onFirstInteraction = () => {
@@ -173,8 +183,11 @@ export class AppUpdateCoordinator {
       window.addEventListener("focus", this.handleFocus);
     }
 
-    // Initialize Service Worker via workbox-window if supported
-    await this.initServiceWorker();
+    // The PWA plugin disables its worker in dev; keep the app-owned
+    // registration in sync with that policy.
+    if (!import.meta.env.DEV) {
+      await this.initServiceWorker();
+    }
 
     // Perform initial check
     this.checkForUpdate({ reason: "startup" }).catch(() => {});
@@ -182,6 +195,27 @@ export class AppUpdateCoordinator {
     // Start periodic check if visible
     if (this.document?.visibilityState === "visible") {
       this.startPeriodicCheck();
+    }
+  }
+
+  async clearDevelopmentServiceWorkers() {
+    if (!this.navigator || !("serviceWorker" in this.navigator)) return;
+
+    try {
+      const registrations = await this.navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.map((registration) => registration.unregister()));
+
+      if (this.navigator.serviceWorker.controller) {
+        const alreadyReloaded = this.storage?.getItem(DEV_SW_CLEANUP_KEY) === "1";
+        if (!alreadyReloaded) {
+          this.storage?.setItem(DEV_SW_CLEANUP_KEY, "1");
+          this.location?.reload();
+        }
+      } else {
+        this.storage?.removeItem(DEV_SW_CLEANUP_KEY);
+      }
+    } catch (error) {
+      console.warn("[PWA Update] Could not clear the development service worker:", error);
     }
   }
 

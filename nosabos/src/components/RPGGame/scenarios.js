@@ -347,7 +347,7 @@ function buildReviewContextBlock(reviewContext = null, lessonTerms = [], levelKe
           .slice(0, 8)
           .join(" | ")}.`
       : "",
-    reviewContext?.isTutorial
+    reviewContext?.isTutorial && !reviewContext?.tutorialPracticeLevel
       ? "TUTORIAL REVIEW: Greetings, saying your name, and simple polite responses only. No errands, mysteries, or abstract storylines."
       : "",
     isBeginnerReviewLevel(levelKey)
@@ -1737,7 +1737,7 @@ async function adaptQuestForReviewContext(
           .slice(0, 8)
           .join(" | ")}.`
       : "",
-    reviewContext?.isTutorial
+    reviewContext?.isTutorial && !reviewContext?.tutorialPracticeLevel
       ? "Tutorial rule: greetings, saying your name, and simple polite expressions only. No mysteries, errands, memory loss, urgency, or dramatic twists."
       : "",
     isBeginnerReviewLevel(levelKey)
@@ -3374,6 +3374,7 @@ function buildPrompt({
   npcCount,
   cefrLevel,
   reviewContext,
+  performanceContext,
 }) {
   const normalizedTargetLang = normalizePracticeLanguage(targetLang, "es");
   const normalizedSupportLang = normalizeSupportLanguage(supportLang, "en");
@@ -3406,6 +3407,7 @@ Return ONLY valid JSON (no markdown).
 Target language: ${targetLangName} (code: ${normalizedTargetLang})
 Support language: ${supportLangName} (code: ${normalizedSupportLang})
 CEFR proficiency level: ${levelKey}
+Curriculum CEFR: ${reviewContext?.cefrLevel || levelKey}. Live Elo ability context: ${JSON.stringify(performanceContext || {})}.
 
 ${languageGuard}
 CRITICAL - Language difficulty: ${dialogueGuidance}
@@ -3497,6 +3499,7 @@ Map theme requested: ${getMapName(mapId, "en")} (${mapId}).
 Target language: ${targetLangName} (code: ${normalizedTargetLang})
 Support language: ${supportLangName} (code: ${normalizedSupportLang})
 CEFR proficiency level: ${levelKey}
+Curriculum CEFR: ${reviewContext?.cefrLevel || levelKey}. Live Elo ability context: ${JSON.stringify(performanceContext || {})}.
 
 ${languageGuard}
 CRITICAL - Language difficulty: ${dialogueGuidance}
@@ -3792,6 +3795,7 @@ export async function generateScenarioWithAI(
   overrideTerms = null,
   cefrLevel = null,
   reviewContext = null,
+  performanceContext = null,
 ) {
   const normalizedTargetLang = normalizePracticeLanguage(targetLang, "es");
   const normalizedSupportLang = normalizeSupportLanguage(supportLang, "en");
@@ -3801,7 +3805,11 @@ export async function generateScenarioWithAI(
     effectiveReviewContext?.reviewTerms ||
     (await getLessonTerms(normalizedTargetLang));
   const isTutorial = !!effectiveReviewContext?.isTutorial;
-  const levelKey = cefrLevel || effectiveReviewContext?.cefrLevel || "A1";
+  const curriculumLevel = cefrLevel || effectiveReviewContext?.cefrLevel || "A1";
+  const suggestedLevel = performanceContext?.suggestedQuestionLevel;
+  const levelKey = isTutorial || !CEFR_LEVELS_FOR_GAME.includes(suggestedLevel)
+    ? curriculumLevel
+    : suggestedLevel;
   const npcCount = isTutorial
     ? 2
     : levelKey === "Pre-A1"
@@ -3815,6 +3823,7 @@ export async function generateScenarioWithAI(
     npcCount,
     cefrLevel: levelKey,
     reviewContext: effectiveReviewContext,
+    performanceContext,
   });
 
   const text = await callResponses({

@@ -57,7 +57,7 @@ export const LANDING_PAGE_PT_STATIC = {
   feature_notes: "Gerar notas",
   feature_notes_desc:
     "Crie notas de estudo completas a partir das suas lições para revisar depois.",
-  feature_immersion: "Prática de imersão",
+  feature_immersion: "Imersão e pontuação",
   feature_immersion_desc:
     "Complete tarefas fora do app para mergulhar no idioma e praticar de verdade.",
   feature_assistant: "Assistente pessoal",

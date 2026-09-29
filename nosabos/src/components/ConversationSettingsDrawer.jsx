@@ -32,7 +32,6 @@ import {
 } from "../constants/languages";
 import {
   nativeDrawerMotionProps,
-  nativeOverlayMotionProps,
 } from "../utils/modalMotion";
 
 const APP_SURFACE = "var(--app-surface)";
@@ -455,7 +454,7 @@ export function ConversationSettingsPanel({
             color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
             border="1px solid"
             borderColor={isLightTheme ? APP_BORDER : "transparent"}
-            boxShadow={isLightTheme ? APP_SHADOW : "0 4px 0px black"}
+            boxShadow={isLightTheme ? APP_SHADOW : "0 4px 0 var(--app-button-neutral-edge), 0 7px 16px var(--app-button-neutral-glow)"}
             _active={{ bg: isLightTheme ? APP_SURFACE : "gray.700" }}
             _hover={{ bg: isLightTheme ? APP_SURFACE : "gray.700" }}
             textAlign="left"

@@ -57,7 +57,7 @@ export const LANDING_PAGE_DE_STATIC = {
   feature_notes: "Notizen erstellen",
   feature_notes_desc:
     "Erstelle umfassende Lernnotizen aus deinen Lektionen, um sie später zu wiederholen.",
-  feature_immersion: "Immersionsübung",
+  feature_immersion: "Immersion & Punktzahl",
   feature_immersion_desc:
     "Erledige Aufgaben außerhalb der App, um in die Sprache einzutauchen und sie zu üben.",
   feature_assistant: "Persönlicher Assistent",

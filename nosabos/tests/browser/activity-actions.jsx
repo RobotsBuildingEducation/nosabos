@@ -54,10 +54,12 @@ function Activity({ second, phase, keyboard, onSubmit, onNext, onSkip }) {
           ? true
           : ["incorrect", "explanation"].includes(phase)
           ? false
+          : phase === "thinking"
+          ? "thinking"
           : null
       }
       actions={
-        phase !== "correct" && (
+        phase !== "correct" && phase !== "thinking" && (
           <ActivityActionRow
             primary={
               <Button
@@ -87,6 +89,8 @@ function Activity({ second, phase, keyboard, onSubmit, onNext, onSkip }) {
       <FeedbackRail
         compact
         t={copy}
+        userLanguage="en"
+        loading={phase === "thinking"}
         ok={
           phase === "correct"
             ? true
@@ -264,6 +268,17 @@ async function run(report) {
       checkRow("Continue", false);
       panels()[0].querySelector("[data-activity-primary] button").click();
       assert(continued === 1, "Continue handler");
+    });
+    await test("Thinking uses the neutral rail and yields to the result", async () => {
+      await render({ phase: "thinking" });
+      let panel = panels()[0];
+      assert(panel.dataset.questionFeedback === "thinking", "Thinking surface state");
+      assert(panel.querySelector("[data-feedback-loading] [role='status']")?.getAttribute("aria-label") === "Thinking", "Localized thinking status");
+      assert(panel.querySelector("[data-feedback-loading] .voice-orb-next"), "Voice orb is visible while grading");
+      await render({ phase: "correct" });
+      panel = panels()[0];
+      assert(panel.dataset.questionFeedback === "correct", "Final result replaces thinking");
+      assert(!panel.querySelector("[data-action-content-state='present'] [data-feedback-loading]"), "Thinking content has left the live rail");
     });
     await test("Correct feedback colors the full surface and restores lesson progress", async () => {
       await render({ phase: "correct" });
@@ -500,7 +515,7 @@ function Runner() {
               value={phase}
               onChange={(e) => setPhase(e.target.value)}
             >
-              {["ready", "correct", "incorrect", "explanation"].map((s) => (
+              {["ready", "thinking", "correct", "incorrect", "explanation"].map((s) => (
                 <option key={s}>{s}</option>
               ))}
             </Select>

@@ -278,7 +278,7 @@ export default function CEFRLevelNavigator({
               color="var(--app-text-primary)"
               fontSize="md"
               fontWeight="black"
-              boxShadow={`0 8px 24px ${levelInfo.color}22, 0 4px 12px rgba(0, 0, 0, 0.12)`}
+              boxShadow={`0 3px 10px ${levelInfo.color}18, 0 2px 5px rgba(0, 0, 0, 0.08)`}
             >
               {levelInfo.displayLabel || activeCEFRLevel}
             </Badge>

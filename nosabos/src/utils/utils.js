@@ -1,6 +1,6 @@
 import { nextGoalPreparationXp, getGoalPreparationXp } from "./lessonProgress";
 import { practiceXpAttribution } from "./learningIntelligenceModel";
-import { currentGoalFocus } from "./learningIntelligence";
+import { currentGoalFocus, recordGradedOutcome } from "./learningIntelligence";
 import { currentRepairFocus } from "../hooks/useRepairFocusStore";
 // src/utils/xp.js
 import { doc, runTransaction, serverTimestamp } from "firebase/firestore";
@@ -165,6 +165,9 @@ export async function awardXp(
   const goalPractice = currentGoalFocus();
   const repairPractice = currentRepairFocus();
   const { source, skillTreeLessonId } = practiceXpAttribution(options, goalPractice, repairPractice);
+  const idempotencyKey = typeof options.idempotencyKey === "string"
+    ? options.idempotencyKey.trim().slice(0, 180)
+    : "";
   const ref = doc(database, "users", npub);
   const delta = Math.max(1, Math.round(amount));
   const now = new Date();
@@ -185,10 +188,15 @@ export async function awardXp(
   let awardedActivityCount = null;
   let awardedLessonXp = null;
   let goalPreparationXp = null;
+  let duplicateAward = false;
 
   await runTransaction(database, async (tx) => {
     const [snap, monthSnap] = await Promise.all([tx.get(ref), tx.get(monthRef)]);
     const data = snap.exists() ? snap.data() : {};
+    if (idempotencyKey && data?.xpAwardReceipts?.[idempotencyKey]) {
+      duplicateAward = true;
+      return;
+    }
     const monthData = monthSnap.exists() ? monthSnap.data() : {};
     const langKey =
       typeof targetLang === "string" && targetLang.trim()
@@ -311,6 +319,16 @@ export async function awardXp(
         progress: nextProgress,
         dailyGoalPetHealth: nextPetHealth,
         dailyXpRecent: nextDailyXpRecent,
+        ...(idempotencyKey ? {
+          xpAwardReceipts: {
+            ...Object.fromEntries(
+              Object.entries(data?.xpAwardReceipts || {})
+                .sort((left, right) => String(left[1]).localeCompare(String(right[1])))
+                .slice(-99),
+            ),
+            [idempotencyKey]: now.toISOString(),
+          },
+        } : {}),
         ...(reached
           ? {
               dailyHasCelebrated: true,
@@ -358,6 +376,10 @@ export async function awardXp(
     }
   });
 
+  if (duplicateAward) {
+    return { amount: 0, npub, source, targetLang, duplicate: true };
+  }
+
   syncAwardedXpToLocalStore({
     npub,
     delta,
@@ -384,6 +406,26 @@ export async function awardXp(
           preparationXp: Math.max(getGoalPreparationXp(bucket, goalPractice.blueprint), goalPreparationXp),
         } },
       } });
+    }
+  }
+
+  // Only callers with an actual graded answer opt in. Quest bonuses, lesson
+  // completion rewards, and other XP awards are not performance evidence.
+  if (options.gradedOutcome) {
+    try {
+      await recordGradedOutcome({
+        npub,
+        id: options.gradedOutcome.id,
+        targetLang: awardedLangKey,
+        success: true,
+        questionLevel: options.gradedOutcome.questionLevel,
+        worth: options.gradedOutcome.worth,
+        support: options.gradedOutcome.support || "independent",
+        mode: options.gradedOutcome.mode || source || "practice",
+        concept: options.gradedOutcome.concept || "",
+      });
+    } catch (error) {
+      console.warn("Score save failed after graded XP:", error);
     }
   }
 

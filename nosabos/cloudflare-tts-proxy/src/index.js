@@ -4,6 +4,7 @@ const DEFAULT_MODEL = "gpt-realtime-2.1-mini";
 const DEFAULT_RESPONSE_MODEL = "gpt-6-luna,gpt-5-nano";
 const MAX_BODY_BYTES = 64 * 1024;
 const UPSTREAM_TIMEOUT_MS = 30_000;
+const RESPONSES_UPSTREAM_TIMEOUT_MS = 90_000;
 const ALLOW_HEADERS = "Content-Type, Authorization, X-Firebase-AppCheck";
 const MAX_AUDIO_BYTES = 512 * 1024;
 const ALLOWED_AUDIO_TYPES = new Set([
@@ -174,7 +175,13 @@ async function parseResponsesRequest(request, env) {
     throw new HttpError(400, `Model '${model}' not allowed. Allowed: ${allowedResponseModels.join(", ")}`);
   }
   const isLuna = model.includes("luna");
-  body.reasoning = { effort: isLuna ? "none" : "minimal" };
+  const requestedEffort = body.reasoning?.effort;
+  const lunaEfforts = new Set(["none", "low", "medium", "high"]);
+  body.reasoning = {
+    effort: isLuna && lunaEfforts.has(requestedEffort)
+      ? requestedEffort
+      : isLuna ? "none" : "minimal",
+  };
   body.text = { ...(body.text || {}), verbosity: "low" };
   return body;
 }
@@ -490,7 +497,7 @@ export function createWorker({
         if (pathname === "/proxyResponses") {
           const body = await timed("parse", () => parseResponsesRequest(request, env));
           const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), UPSTREAM_TIMEOUT_MS);
+          const timeout = setTimeout(() => controller.abort(), RESPONSES_UPSTREAM_TIMEOUT_MS);
           const upstreamStarted = now();
           const accountId = env.CLOUDFLARE_ACCOUNT_ID || "cfe53a18a4894aa8e5c2fe91af905d8a";
           const gatewayName = (env.AI_GATEWAY_NAME || "").trim();
@@ -526,7 +533,9 @@ export function createWorker({
             });
           } catch {
             return json(controller.signal.aborted ? 504 : 502, {
-              error: "Responses provider is unavailable. Try again shortly.",
+              error: controller.signal.aborted
+                ? "Responses provider timed out. Try again shortly."
+                : "Responses provider is unavailable. Try again shortly.",
             });
           } finally {
             clearTimeout(timeout);

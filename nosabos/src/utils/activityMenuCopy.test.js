@@ -37,14 +37,14 @@ test("getActivityMenuLabels returns fully localized labels for French without En
   const mockFrTranslations = {
     app_settings_aria: "Settings", // English inheritance bug
     app_help_chat: "Assistant",
-    real_world_tasks_title: "Pratique d'immersion",
+    real_world_tasks_title: "Immersion et score",
     app_notes: "Mémoire",
     app_mode_menu: "Mode",
   };
 
   const labels = getActivityMenuLabels("fr", mockFrTranslations);
   assert.equal(labels.settings, "Paramètres");
-  assert.equal(labels.immersion, "Pratique d'immersion");
+  assert.equal(labels.immersion, "Immersion et score");
   assert.equal(labels.assistant, "Assistant");
   assert.equal(labels.memory, "Mémoire");
   assert.equal(labels.mode, "Mode");
@@ -57,13 +57,13 @@ test("getActivityMenuLabels handles German without 'Einstellungen öffnen' scree
   const mockDeTranslations = {
     app_settings_aria: "Einstellungen öffnen",
     app_help_chat: "Assistent",
-    real_world_tasks_title: "Immersionsübung",
+    real_world_tasks_title: "Immersion & Punktzahl",
     app_notes: "Erinnerung",
   };
 
   const labels = getActivityMenuLabels("de", mockDeTranslations);
   assert.equal(labels.settings, "Einstellungen");
-  assert.equal(labels.immersion, "Immersionsübung");
+  assert.equal(labels.immersion, "Immersion & Punktzahl");
   assert.equal(labels.assistant, "Assistent");
   assert.equal(labels.memory, "Erinnerung");
 });
@@ -72,13 +72,13 @@ test("getActivityMenuLabels handles Italian correctly", () => {
   const mockItTranslations = {
     app_settings_aria: "Settings", // Inherited bug
     app_help_chat: "Assistente",
-    real_world_tasks_title: "Pratica di immersione",
+    real_world_tasks_title: "Immersione e punteggio",
     app_notes: "Memoria",
   };
 
   const labels = getActivityMenuLabels("it", mockItTranslations);
   assert.equal(labels.settings, "Impostazioni");
-  assert.equal(labels.immersion, "Pratica di immersione");
+  assert.equal(labels.immersion, "Immersione e punteggio");
   assert.equal(labels.assistant, "Assistente");
   assert.equal(labels.memory, "Memoria");
 });
@@ -87,7 +87,7 @@ test("getActivityMenuLabels handles Arabic correctly", () => {
   const mockArTranslations = {
     app_settings_aria: "Settings", // Inherited bug
     app_help_chat: "المساعد",
-    real_world_tasks_title: "تدريب الانغماس",
+    real_world_tasks_title: "الانغماس والنقاط",
     app_notes: "الذاكرة",
   };
 

@@ -1,4 +1,5 @@
 export const TRANSLATION_HI_STATIC = {
+  teams_view_name_not_set: "नाम अभी सेट नहीं किया गया है",
   correct: "सही!",
   dailyGoalProgress: "लक्ष्य",
   daily_goal_title: "लक्ष्य प्रबंधक",
@@ -15,6 +16,8 @@ export const TRANSLATION_HI_STATIC = {
   daily_goal_error_no_user_desc: "कृपया फिर से साइन इन करें।",
   daily_goal_error_save: "लक्ष्य सहेजा नहीं जा सका",
   daily_goal_activity_title: "XP गतिविधि",
+  daily_plate_view_activity: "गतिविधि देखें",
+  daily_plate_see_companion: "साथी देखें",
   daily_goal_activity_subtitle: "इस वर्ष",
   daily_goal_activity_empty: "कोई XP नहीं",
   daily_goal_activity_some: "कुछ XP",
@@ -335,7 +338,7 @@ export const TRANSLATION_HI_STATIC = {
   app_account_aria: "खाता",
   app_help_chat: "सहायक",
   app_notes: "स्मृति",
-  real_world_tasks_title: "इमर्शन अभ्यास",
+  real_world_tasks_title: "इमर्शन और स्कोर",
   app_mode_menu: "मोड",
   app_mode_alphabet: "वर्णमाला",
   app_mode_phonics: "ध्वनिकी",
@@ -377,7 +380,7 @@ export const TRANSLATION_HI_STATIC = {
   app_secret_placeholder: "nsec...",
   app_id_placeholder: "npub...",
   app_switch_account: "खाता बदलें",
-  app_nsec_placeholder: "खाता बदलने के लिए nsec कुंजी चिपकाएँ",
+  app_nsec_placeholder: "अपनी गुप्त कुंजी दर्ज करें",
   app_switch: "बदलें",
   app_switching: "बदला जा रहा है…",
   app_switch_note:

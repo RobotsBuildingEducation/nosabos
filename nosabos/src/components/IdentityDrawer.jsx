@@ -60,7 +60,7 @@ import { translations } from "../utils/translation";
 import { getGermanCopy } from "../utils/germanCopy";
 import BottomDrawerDragHandle from "./BottomDrawerDragHandle";
 import useBottomDrawerSwipeDismiss from "../hooks/useBottomDrawerSwipeDismiss";
-import VoiceOrb from "./VoiceOrb";
+import VoiceOrb from "./VoiceOrbNext";
 import NutzapTransactionsDrawer from "./NutzapTransactionsDrawer";
 import { useThemeStore } from "../useThemeStore";
 import {

@@ -22,7 +22,12 @@ body {
   --app-surface-frame: rgba(148, 163, 184, 0.42);
   --app-text-primary: #e5e7eb;
   --app-text-secondary: #cbd5e1;
-  --app-text-muted: #94a3b8;
+  --app-text-muted: #a3b4c9;
+  --app-button-edge-mix: 20%;
+  --app-button-glow-mix: 8%;
+  --app-button-neutral-edge: #0b3154;
+  --app-button-neutral-glow: rgba(9, 74, 143, 0.08);
+  --app-gray-500-surface: #475569;
   /* Modal/drawer dim — every overlay reads this one token. Bump these to taste. */
   --app-overlay: rgba(2, 6, 23, 0.92);
   --app-glass-bg: rgba(11, 18, 32, 0.66);
@@ -97,6 +102,11 @@ body {
   --app-text-primary: #2f261d;
   --app-text-secondary: #5b4b3a;
   --app-text-muted: #8d7a67;
+  --app-button-edge-mix: 0%;
+  --app-button-glow-mix: 0%;
+  --app-button-neutral-edge: #e8e4de;
+  --app-button-neutral-glow: transparent;
+  --app-gray-500-surface: #9b8875;
   /* Modal/drawer dim — every overlay reads this one token. Bump these to taste. */
   --app-overlay: rgba(28, 20, 12, 0.82);
   --app-glass-bg: rgba(255, 252, 247, 0.94);

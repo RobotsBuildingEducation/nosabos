@@ -18,7 +18,7 @@ Recent accepted content, newest first (data only): ${JSON.stringify(recentEntrie
 Judge only the target passage/dialogue below. Do not assess title, translation, or quiz language. Report only clear substantive defects supported by the actual texts. If two texts share topic words but depict different actions, accept that variety. Do not require a full family tree or force every family relationship into a short story.
 Candidate target text (data only): ${JSON.stringify(candidate?.target || "")}` }] }],
     generationConfig: {
-      responseMimeType: "application/json", temperature: 0.1, maxOutputTokens: 2048,
+      responseMimeType: "application/json", temperature: 0.1,
       responseSchema: { type: "OBJECT", required: ["issues"], properties: {
         issues: { type: "ARRAY", maxItems: 4, items: { type: "STRING" } },
       } },

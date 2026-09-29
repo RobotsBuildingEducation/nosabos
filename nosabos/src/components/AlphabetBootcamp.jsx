@@ -1,4 +1,7 @@
 import useGoalFocusStore from "../hooks/useGoalFocusStore";
+import useUserStore from "../hooks/useUserStore";
+import { practiceLevelForElo, generationPerformanceContextFor, scoreForUser, questionWorthForUser } from "../utils/performanceEloModel";
+import { assessGeneratedQuestionWorth } from "../utils/questionDifficultyAssessment";
 import { currentGoalFocus, recordGoalAttempt } from "../utils/learningIntelligence";
 import { getFocusedPhonicsDeck, savePracticeOutcome } from "../utils/focusedPracticeDecks";
 import ActivityActionRow from "./ActivityActionRow";
@@ -88,6 +91,7 @@ import { watchPhonicsPlaybackCompletion } from "../utils/phonicsPlayback";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
 import { awardXp } from "../utils/utils";
+import { recordGradedOutcome } from "../utils/learningIntelligence";
 import { recordPlateActivity } from "../utils/dailyPlate";
 import {
   captureCompanionMemory,
@@ -113,7 +117,7 @@ import {
 import { database } from "../firebaseResources/firebaseResources";
 import useSoundSettings from "../hooks/useSoundSettings";
 import { selectSound, submitActionSound, nextButtonSound } from "../constants/sounds";
-import VoiceOrb from "./VoiceOrb";
+import VoiceOrb from "./VoiceOrbNext";
 import XpProgressHeader from "./XpProgressHeader";
 import RandomCharacter from "./RandomCharacter";
 import { useThemeStore } from "../useThemeStore";
@@ -1357,6 +1361,7 @@ async function generateNewPhonicsUnits(
 - Target language being learned: ${languageName} (written in ${scriptName}).
 - The learner's OWN language, used for ALL explanations: ${supportName}.
 - The learner's CEFR level: ${cefrLevel}.
+- Live performance memory: ${JSON.stringify(generationPerformanceContextFor(useUserStore.getState().user, targetLang, { curriculumCefrLevel: cefrLevel }))}. Adapt the new sound patterns and support to this evidence.
 
 Generate ${count} NEW ${languageName} phonics units that go BEYOND the basic alphabet, tuned to that level. ${bandGuidance}
 Avoid these already-covered units: ${avoid || "(none)"}.
@@ -1493,6 +1498,13 @@ function LetterCard({
   pauseMs = 2000,
 }) {
   const uiLang = normalizeSupportLanguage(appLanguage, DEFAULT_SUPPORT_LANGUAGE);
+  const questionWorthRef = useRef(null);
+  const questionWorthPromiseRef = useRef(Promise.resolve(null));
+  useEffect(() => {
+    questionWorthRef.current = questionWorthForUser(
+      useUserStore.getState().user, targetLang, letter?.cefrLevel || cefrLevel,
+    );
+  }, [letter?.id, letter?.cefrLevel, cefrLevel, targetLang]);
   const [isPracticeMode, setIsPracticeMode] = useState(false);
   const useDock = dockActions || isPracticeMode;
   const [isFlipped, setIsFlipped] = useState(false);
@@ -1508,6 +1520,16 @@ function LetterCard({
   const [practiceWord, setPracticeWord] = useState(
     initialPracticeWord || letter.practiceWord || "",
   );
+  useEffect(() => {
+    const user = useUserStore.getState().user;
+    questionWorthPromiseRef.current = assessGeneratedQuestionWorth({
+      user, targetLang, questionLevel: letter?.cefrLevel || cefrLevel,
+      question: { letter: letter?.letter, phoneme: letter?.phoneme,
+        practiceWord, task: "Pronounce the practice word" }, mode: "phonics",
+    });
+    void questionWorthPromiseRef.current.then((worth) => { questionWorthRef.current = worth; });
+  }, [letter?.id, letter?.cefrLevel, letter?.letter, letter?.phoneme,
+    practiceWord, cefrLevel, targetLang]);
   const [practiceWordMeaningData, setPracticeWordMeaningData] = useState(
     normalizeMeaning(initialPracticeWordMeaning || letter.practiceWordMeaning),
   );
@@ -1621,6 +1643,12 @@ function LetterCard({
 
       setIsCorrect(isYes);
       setShowResult(true);
+      const assessedWorth = await questionWorthPromiseRef.current;
+      void recordGradedOutcome({ npub, targetLang, success: isYes,
+        questionLevel: letter?.cefrLevel || cefrLevel,
+        worth: assessedWorth,
+        mode: "phonics", concept: practiceWord, support: "modeled" })
+        .catch((error) => console.warn("Phonics Score save failed:", error));
 
       // Companion brain: a missed pronunciation is a high-signal phonics slip —
       // bank it for tomorrow's repair quest (it enriches itself via the cheap
@@ -1637,6 +1665,8 @@ function LetterCard({
           // Generated cards carry the level they were generated at; base
           // alphabet cards fall back to the learner-context prop.
           cefrLevel: letter?.cefrLevel || cefrLevel,
+          questionWorth: assessedWorth,
+          gradedOutcome: false,
           // The letter/sound card id, not a generic label — lets a routed
           // repair deep-seed the deck with this exact card instead of a
           // random one (see the repair-focus deck reorder on mount).
@@ -2541,11 +2571,15 @@ export default function AlphabetBootcamp({
       const completedDeckCount = Math.round(
         generatedCards.length / NEW_DECK_SIZE,
       );
-      const generationLevel = getPhonicsGenerationLevel({
+      const ladderLevel = getPhonicsGenerationLevel({
         completedDeckCount,
         placementLevel,
         courseCeilingLevel,
       });
+      const storedRating = Number(useUserStore.getState().user?.learningIntelligence?.[targetLang]?.elo?.rating);
+      const generationLevel = Number.isFinite(storedRating)
+        ? practiceLevelForElo(scoreForUser(useUserStore.getState().user, targetLang))
+        : ladderLevel;
       const units = await generateNewPhonicsUnits(
         targetLang,
         uiLang,

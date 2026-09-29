@@ -13,7 +13,7 @@ import useUserStore from "../hooks/useUserStore";
 import translations from "../utils/translation";
 import { getGermanCopy } from "../utils/germanCopy";
 import { getLanguageXp } from "../utils/progressTracking";
-import VoiceOrb from "./VoiceOrb";
+import VoiceOrb from "./VoiceOrbNext";
 import {
   DEFAULT_SUPPORT_LANGUAGE,
   DEFAULT_TARGET_LANGUAGE,

@@ -111,6 +111,15 @@ test("proxyResponses forwards to OpenAI /v1/responses with minimal reasoning and
   const sentNano = JSON.parse(calls[1][1].body);
   assert.equal(sentNano.model, "gpt-5-nano");
   assert.deepEqual(sentNano.reasoning, { effort: "minimal" });
+
+  await request({
+    url: "https://worker.test/proxyResponses",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ model: "gpt-6-luna", reasoning: { effort: "medium" }, input: "Daily immersion" }),
+  });
+  const sentMedium = JSON.parse(calls[2][1].body);
+  assert.equal(sentMedium.model, "gpt-6-luna");
+  assert.deepEqual(sentMedium.reasoning, { effort: "medium" });
 });
 
 test("proxyResponses routes through Cloudflare AI Gateway when AI_GATEWAY_NAME is set", async () => {
@@ -616,4 +625,3 @@ test("handles /api/tts-proxy subpath prefix identically to root endpoints", asyn
   const notFound = await worker.fetch(new Request("https://piyali.app/api/tts-proxy/unknown-path"), env);
   assert.equal(notFound.status, 404);
 });
-

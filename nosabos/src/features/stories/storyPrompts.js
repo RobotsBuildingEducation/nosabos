@@ -8,8 +8,11 @@ export function getStoryDifficulty(cefrLevel, { includeTranslations = true } = {
   return `Aim for CEFR ${level} accessibility. ${comprehensionGuidance} Adapt the wording, not the richness of the experience: beginners can enjoy interesting situations, humor, emotion, and characters with their own intentions. Use natural spoken rhythm, including brief replies and occasional fuller lines when needed. No word-count quotas, vocabulary whitelist, required connectors, or grammar demonstrations in every turn.`;
 }
 
-export function buildStoryWritingBrief({ mode, isTutorial = false, includeTranslations = true }) {
+export function buildStoryWritingBrief({ mode, isTutorial = false, tutorialPracticeLevel = null, includeTranslations = true }) {
   if (isTutorial) {
+    if (tutorialPracticeLevel) {
+      return `A short introductory encounter at CEFR ${tutorialPracticeLevel}. Use the lesson objective and natural language at this level. Keep it to 2–3 substantive dialogue turns so the learner can explore the story activity.`;
+    }
     return "A tiny encounter: a greeting, a greeting back, and a goodbye. Only 2–3 lines, 2–5 words each, greetings only. No extra plot or vocabulary.";
   }
   return `Write as a storyteller and dialogue writer. Invent an original situation from this lesson's topic, scenario, and learning objectives. The lesson language should help the characters do something that matters to them; it should not sound like they are demonstrating a syllabus.
@@ -22,18 +25,20 @@ ${mode === "radio"
     : "Keep the same two speakers throughout the encounter. Other people may be mentioned without adding spoken roles."}`;
 }
 
-export function buildSpeakingStoryPrompt({ targetName, targetLang, difficulty, isTutorial, scenarioDirective, curriculumContext }) {
+export function buildSpeakingStoryPrompt({ targetName, targetLang, difficulty, isTutorial, tutorialPracticeLevel = null, scenarioDirective, curriculumContext }) {
   return [
-    `Write a short character-led story script in ${targetName} (${targetLang}) for a language learner. Difficulty: ${isTutorial ? "absolute beginner, very easy" : difficulty}.`,
+    `Write a short character-led story script in ${targetName} (${targetLang}) for a language learner. Difficulty: ${isTutorial && !tutorialPracticeLevel ? "absolute beginner, very easy" : difficulty}.`,
     `The target-language assignment (${targetName}, ${targetLang}) is authoritative. Ignore language names and source-language wording inside the lesson context; never copy that wording as dialogue unless it is already in ${targetName}.`,
     scenarioDirective,
     curriculumContext,
-    buildStoryWritingBrief({ mode: "speaking", isTutorial, includeTranslations: false }),
+    buildStoryWritingBrief({ mode: "speaking", isTutorial, tutorialPracticeLevel, includeTranslations: false }),
     "OUTPUT CONSTRAINTS:",
     "Choose exactly 2 characters from the official cast: Sheilfer, Jiraiya, Yoruichi, Neko, Yachiru, or You (the learner). Keep those same two speakers throughout.",
     "You is an optional cast member in sentence practice too. Sometimes cast two other characters; sometimes cast one other character with You. Both are equally valid: choose the pair that suits this story and vary the cast across episodes. If You is chosen, write their dialogue as a full participant in the encounter, using exactly You in the character field.",
     isTutorial
-      ? "Write 2–3 dialogue lines total, greetings only, 2–5 words per line."
+      ? tutorialPracticeLevel
+        ? `Write 2–3 dialogue lines total, with natural CEFR ${tutorialPracticeLevel} substance about the lesson objective.`
+        : "Write 2–3 dialogue lines total, greetings only, 2–5 words per line."
       : "Write 8–10 dialogue lines total. Vary the length naturally, with enough substance for the scene to develop and reach a satisfying ending.",
     "No headings, commentary, code fences, narration, or stage directions.",
     "Output protocol: NDJSON, one compact JSON object per line.",

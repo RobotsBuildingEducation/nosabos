@@ -32,9 +32,9 @@ const appGray = {
   50: "#f8fafc",
   100: "#e5e7eb",
   200: "#cbd5e1",
-  300: "#94a3b8",
-  400: "#64748b",
-  500: "#475569",
+  300: "#b7c5d8",
+  400: "#a3b4c9",
+  500: "#879bb4",
   600: "#334155",
   700: "#1f2937",
   750: "#182031",
@@ -87,7 +87,8 @@ const duoBase = defineStyle((props) => {
 
     // Flat 3D press effect
     "--button-shadow": darker,
-    boxShadow: "0 4px 0 var(--button-shadow)",
+    "--button-accent": bg500,
+    boxShadow: "0 4px 0 color-mix(in srgb, var(--button-accent) var(--app-button-edge-mix), var(--button-shadow)), 0 7px 16px color-mix(in srgb, var(--button-accent) var(--app-button-glow-mix), transparent)",
     transform: "translateY(0)",
     transitionProperty: "transform, box-shadow",
     transitionDuration: "120ms",

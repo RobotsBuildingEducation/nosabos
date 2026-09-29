@@ -1,11 +1,19 @@
 import { doc, getDoc, runTransaction } from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
 import { callResponses } from "./llm";
+import useUserStore from "../hooks/useUserStore";
+import { generationPerformanceContextFor } from "./performanceEloModel";
 import {
   readAccountScopedJson,
   writeAccountScopedJson,
 } from "./dailyQuestState";
 import { getLocalDayKey } from "./flashcardReview";
+
+function goalPromptData(blueprint) {
+  const data = { ...blueprint };
+  delete data.scoreAtGeneration;
+  return data;
+}
 
 export function practiceArtifactKey(focus, mode) {
   return `${focus.targetLang}_${
@@ -163,12 +171,12 @@ export async function getFocusedPhonicsDeck(focus, alphabet = []) {
           focus.targetLang
         }, explanations in ${
           focus.supportLang
-        }. Original captured card: ${JSON.stringify(
+        }. Live ability context: ${JSON.stringify(generationPerformanceContextFor(useUserStore.getState().user, focus.targetLang))}. Original captured card: ${JSON.stringify(
           captured || {},
         )}. Required original word/sound: ${JSON.stringify(original)}. ${
           focus.blueprint
             ? `Goal: ${JSON.stringify(
-                focus.blueprint,
+                goalPromptData(focus.blueprint),
               )}. CEFR scaffolds; needed language may stretch.`
             : `Repair CEFR ${item?.cefrLevel || "Pre-A1"}; stay level-aware.`
         } First item original; then valid language-specific minimal pair OR close contrast; third a transfer word with the same sound in another context; optional natural phrase. Never invent English-style contrasts in another language. Preserve IPA/phoneme metadata when known. JSON array only: [{word,grapheme,phoneme,tip,meaning,role:"original|contrast|transfer|phrase"}].`,
@@ -237,8 +245,8 @@ export async function getGoalFlashcards(focus) {
     try {
       const raw = await callResponses({
         input: `Generate exactly 3 recall cards preparing this goal: ${JSON.stringify(
-          blueprint,
-        )}. Needed language may exceed CEFR with simple cues in ${
+          goalPromptData(blueprint),
+        )}. Live internal Elo, curriculum CEFR and performance memory: ${JSON.stringify(generationPerformanceContextFor(useUserStore.getState().user, focus.targetLang))}. Adapt recall challenge and support to this evidence. Needed language may exceed CEFR with simple cues in ${
           focus.supportLang
         }. Return only JSON array [{target:"answer in ${
           focus.targetLang

@@ -1055,49 +1055,47 @@ export default function ActivityMenu({
             >
               {view === "actions" ? (
               <>
-                {items.map((item) =>
-                  item.id === "exitLesson" ? (
-                    <MenuItem
-                      key={item.id}
-                      onClick={item.onClick}
-                      isDisabled={item.disabled}
-                      {...fullWidthBarProps}
+                {items.map((item) => (
+                  <MenuItem
+                    key={item.id}
+                    onClick={item.onClick}
+                    isDisabled={item.disabled}
+                    {...bentoTileProps}
+                    gridColumn={
+                      item.id === "settings" || item.id === "help"
+                        ? "1"
+                        : item.id === "teams" || item.id === "notes"
+                          ? "2"
+                          : undefined
+                    }
+                    gridRow={
+                      item.id === "settings"
+                        ? "2"
+                        : item.id === "teams"
+                          ? "2"
+                        : item.id === "help"
+                          ? "3"
+                          : item.id === "notes"
+                            ? "3"
+                            : undefined
+                    }
+                  >
+                    <Box mb={{ base: 1, sm: 1.5 }} flexShrink={0}>
+                      {renderItemIcon(item.icon, isLightTheme, item)}
+                    </Box>
+                    <Text
+                      fontWeight="semibold"
+                      fontSize={{ base: "13px", sm: "14px" }}
+                      lineHeight="1.25"
+                      noOfLines={2}
+                      wordBreak="break-word"
+                      textAlign="start"
+                      w="full"
                     >
-                      <HStack spacing={2.5} minW={0} w="full">
-                        {renderItemIcon(item.icon, isLightTheme, item)}
-                        <Text
-                          fontWeight="semibold"
-                          fontSize={{ base: "13px", sm: "14px" }}
-                          lineHeight="1.2"
-                        >
-                          {item.label}
-                        </Text>
-                      </HStack>
-                    </MenuItem>
-                  ) : (
-                    <MenuItem
-                      key={item.id}
-                      onClick={item.onClick}
-                      isDisabled={item.disabled}
-                      {...bentoTileProps}
-                    >
-                      <Box mb={{ base: 1, sm: 1.5 }} flexShrink={0}>
-                        {renderItemIcon(item.icon, isLightTheme, item)}
-                      </Box>
-                      <Text
-                        fontWeight="semibold"
-                        fontSize={{ base: "13px", sm: "14px" }}
-                        lineHeight="1.25"
-                        noOfLines={2}
-                        wordBreak="break-word"
-                        textAlign="start"
-                        w="full"
-                      >
-                        {item.label}
-                      </Text>
-                    </MenuItem>
-                  )
-                )}
+                      {item.label}
+                    </Text>
+                  </MenuItem>
+                ))}
                 <MenuItem
                   ref={modesRef}
                   closeOnSelect={false}

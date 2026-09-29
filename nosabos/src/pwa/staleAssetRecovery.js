@@ -19,6 +19,8 @@ export function isChunkLoadError(error) {
     /failed to fetch dynamically imported module/i.test(msg) ||
     /error loading dynamically imported module/i.test(msg) ||
     /importing a module script failed/i.test(msg) ||
+    /failed to load module script/i.test(msg) ||
+    /expected a javascript-or-wasm module script/i.test(msg) ||
     /loading chunk .* failed/i.test(msg) ||
     /dynamically imported module/i.test(msg)
   );

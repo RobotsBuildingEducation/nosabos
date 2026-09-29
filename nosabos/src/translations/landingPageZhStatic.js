@@ -54,7 +54,7 @@ export const LANDING_PAGE_ZH_STATIC = {
     "个性化目标会跟踪你的进度，并通过连续学习激励你坚持。",
   feature_notes: "生成笔记",
   feature_notes_desc: "从课程中生成完整学习笔记，方便日后复习。",
-  feature_immersion: "沉浸练习",
+  feature_immersion: "沉浸与分数",
   feature_immersion_desc:
     "完成应用外任务，让你在真实生活中沉浸式练习语言。",
   feature_assistant: "个人助手",

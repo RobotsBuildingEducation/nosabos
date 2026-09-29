@@ -72,6 +72,23 @@ That guide covers deployment, App Check, local testing, and Firebase rollback.
 
 15. `VITE_TUTOR_REALTIME_PROVIDER=gemini` || `VITE_TUTOR_REALTIME_PROVIDER=openai`
 
+#### Nostr teams
+
+New teams are public NIP-33 events (kind `30078`) on `wss://relay.primal.net`
+and `wss://relay.ditto.pub`. Create only asks for a team name and teammate
+npubs. The same events are what `https://robotsbuildingeducation.com` should
+read and write.
+
+A team event uses `d` = `learning-team:<id>`, `t` = `learning-team`, `name`,
+and a `p` tag for the creator and each teammate. A progress event uses `d` =
+`learning-progress` and versioned JSON content with the current language's
+0–100 `score`, `scoreLevel`, curriculum `level`, `xp`, goal progress, and a
+`companion` object (`name`, `type`, `level`, `health`). The learner publishes
+this public event when opening Teams and when these values change while Teams
+is open. Leaving publishes
+`d` = `learning-team-left:<creator-hex>:<id>`. Deleting republishes the team
+with a `deleted` tag. Existing Firestore teams still work and are not migrated.
+
 ##### .env.local
 
 > like step 15 in .env, configure this to change the UI and tutor API for openai or gemini realtime speech

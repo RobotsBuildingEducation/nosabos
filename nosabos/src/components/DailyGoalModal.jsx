@@ -262,13 +262,13 @@ const DailyGoalHeatmap = React.memo(function DailyGoalHeatmap({
 
   return (
     <Box
-      p={4}
+      p={{ base: 4, lg: 3 }}
       borderRadius="xl"
       bg={isLightTheme ? APP_SURFACE_MUTED : "gray.800"}
       border="1px solid"
       borderColor={isLightTheme ? APP_BORDER : "gray.700"}
     >
-      <HStack justify="space-between" align="baseline" mb={3} flexWrap="wrap">
+      <HStack justify="space-between" align="baseline" mb={{ base: 3, lg: 2 }} flexWrap="wrap">
         <Text
           fontSize="xs"
           fontWeight="bold"
@@ -287,7 +287,7 @@ const DailyGoalHeatmap = React.memo(function DailyGoalHeatmap({
         overflowX="auto"
         overflowY="hidden"
         w="100%"
-        pb={2}
+        pb={{ base: 2, lg: 1 }}
         sx={{
           "&::-webkit-scrollbar": {
             display: "none",
@@ -325,7 +325,7 @@ const DailyGoalHeatmap = React.memo(function DailyGoalHeatmap({
         </Box>
       </Box>
 
-      <HStack spacing={4} mt={4} flexWrap="wrap">
+      <HStack spacing={4} mt={{ base: 4, lg: 2 }} flexWrap="wrap">
         <HStack spacing={2}>
           <Box
             w="10px"
@@ -639,12 +639,7 @@ export default function DailyGoalModal({
         rounded="2xl"
         shadow={isLightTheme ? APP_SHADOW : "xl"}
         overflow="hidden"
-        maxH={{ base: "92vh", md: "880px" }}
-        sx={{
-          "@supports (height: 100dvh)": {
-            maxHeight: "92dvh",
-          },
-        }}
+        maxH={{ base: "92vh", lg: "calc(100dvh - 32px)" }}
       >
         {/* Header */}
         <Box
@@ -675,16 +670,11 @@ export default function DailyGoalModal({
         {/* Body */}
         <ModalBody
           px={{ base: 4, md: 6 }}
-          py={5}
-          overflowY="auto"
-          maxH={{ base: "72vh", md: "720px" }}
-          sx={{
-            "@supports (height: 100dvh)": {
-              maxHeight: "72dvh",
-            },
-          }}
+          py={{ base: 5, lg: 2 }}
+          overflowY={{ base: "auto", lg: "visible" }}
+          maxH={{ base: "72vh", lg: "none" }}
         >
-          <VStack align="stretch" spacing={5}>
+          <VStack align="stretch" spacing={{ base: 5, lg: 3 }}>
               <DailyGoalPetPanel
                 lang={resolvedLang}
                 health={petHealth}
@@ -807,7 +797,7 @@ export default function DailyGoalModal({
         {/* Footer */}
         <ModalFooter
           px={{ base: 4, md: 6 }}
-          py={4}
+          py={{ base: 4, lg: 2 }}
           borderTop="1px solid"
           borderColor={isLightTheme ? APP_BORDER : "gray.800"}
         >

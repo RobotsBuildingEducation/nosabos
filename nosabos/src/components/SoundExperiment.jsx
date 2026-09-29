@@ -35,7 +35,7 @@ import {
   PiCursorClickDuotone,
 } from "react-icons/pi";
 import { soundManager } from "../utils/SoundManager";
-import VoiceOrb from "./VoiceOrb";
+import VoiceOrb from "./VoiceOrbNext";
 
 // Color palette matching the SoundManager's color chords
 const COLOR_PALETTE = [

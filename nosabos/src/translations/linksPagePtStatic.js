@@ -49,7 +49,7 @@ export const LINKS_PAGE_PT_STATIC = {
   secretKeyWarning:
     "Sua chave secreta é a sua senha para acessar aplicativos descentralizados. Guarde-a com segurança e nunca a compartilhe com ninguém.",
   switchAccount: "Trocar conta",
-  pasteNsec: "Cole sua chave nsec aqui",
+  pasteNsec: "Insira sua chave secreta",
   switchAccountHelp: "Digite outro nsec para trocar para outra conta Nostr",
   bitcoinWallet: "Carteira Bitcoin",
   walletDescription1:

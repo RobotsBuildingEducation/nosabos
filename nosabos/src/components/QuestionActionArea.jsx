@@ -81,13 +81,15 @@ export default function QuestionActionArea({
       ? "correct"
       : feedback === false
         ? "incorrect"
+        : feedback === "thinking"
+          ? "thinking"
         : feedback === "assistant"
           ? "assistant"
           : "idle";
 
   useEffect(() => {
     responseMotion.stop();
-    if (!isOwner || suppress || reduceMotion || feedback == null) {
+    if (!isOwner || suppress || reduceMotion || feedback == null || feedback === "thinking") {
       responseMotion.set({ x: 0, scale: 1 });
       return;
     }

@@ -1182,20 +1182,21 @@ export async function generateSentenceDetectiveQuestion({
   lessonContent = null,
   onStream = null,
   recentQuestions = [],
+  performanceContext = null,
 }) {
   if (typeof generate !== "function") {
     throw new TypeError("A Sentence Detective generator is required.");
   }
 
   const rawQuestion = await generate(
-    buildSentenceDetectivePrompt({
+    `${buildSentenceDetectivePrompt({
       moduleType,
       targetLang,
       supportLang,
       cefrLevel,
       lessonContent,
       recentQuestions,
-    }),
+    })}${performanceContext ? `\nLive Elo ability context: ${JSON.stringify(performanceContext)}. Keep the lesson target and adjust sentence complexity and support to this evidence.` : ""}`,
     onStream,
   );
   const question = normalizeDelightQuestion(

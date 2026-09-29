@@ -638,9 +638,9 @@ export default function TranslateSentence({
 
         {/* Action buttons */}
         <QuestionActionArea
-          feedback={isAssistantOpen ? "assistant" : lastOk}
+          feedback={isAssistantOpen ? "assistant" : isSubmitting ? "thinking" : lastOk}
           actions={
-            !isAssistantOpen && (!showNext) && (
+            !isAssistantOpen && !isSubmitting && (!showNext) && (
               <ActivityActionRow
                 primary={
                   <Button
@@ -678,6 +678,7 @@ export default function TranslateSentence({
           <FeedbackRail
             compact
             ok={lastOk}
+            loading={isSubmitting}
             isAssistant={isAssistantOpen}
             assistantSupportText={assistantSupportText}
             isLoadingAssistantSupport={isLoadingAssistantSupport}

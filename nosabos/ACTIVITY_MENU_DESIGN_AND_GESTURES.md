@@ -52,20 +52,20 @@ The floating card utilizes a responsive 2-column Bento grid with frosted glass a
 +-------------------------------------------------------------+
 |                          ======                       [ X ] | <- Drag Handle Row (minH: 32px)
 |                                                             | <- Generous pb: 14px-16px
-| +---------------------------------------------------------+ |
-| |  [<-]  Exit lesson / Game Modes (Full Width Row)       | |
-| +---------------------------------------------------------+ |
+| +---------------------------+ +---------------------------+ |
+| | [Icon]                    | | [Icon]                    | |
+| |                           | |                           | |
+| | Label (bottom-left)       | | Label (bottom-left)       | |
+| +---------------------------+ +---------------------------+ |
+| +---------------------------+ +---------------------------+ |
+| | [Icon]                    | | [Icon]                    | |
+| |                           | |                           | |
+| | Label (bottom-left)       | | Label (bottom-left)       | |
+| +---------------------------+ +---------------------------+ |
 |                                                             |
-| +---------------------------+ +---------------------------+ |
-| | [Icon]                    | | [Icon]                    | |
-| |                           | |                           | |
-| | Label (bottom-left)       | | Label (bottom-left)       | |
-| +---------------------------+ +---------------------------+ |
-| +---------------------------+ +---------------------------+ |
-| | [Icon]                    | | [Icon]                    | |
-| |                           | |                           | |
-| | Label (bottom-left)       | | Label (bottom-left)       | |
-| +---------------------------+ +---------------------------+ |
+| +---------------------------------------------------------+ |
+| |  [Icon]  Modes (Full Width Row)                  [ > ]  | |
+| +---------------------------------------------------------+ |
 +-------------------------------------------------------------+
 ```
 
@@ -93,13 +93,13 @@ To eliminate visual crowding between the header controls and the menu buttons be
   - **Close 'X' Button**: Circular touch target (`32px × 32px`) with a `13px` close icon, absolute-positioned to the top-right corner and vertically centered.
 - **Vertical Clearance**:
   - Top padding: `pt={{ base: 1.5, sm: 2 }}` keeps the pill close to the top boundary.
-  - Bottom padding: `pb={{ base: 3.5, sm: 4 }}` (14px–16px). Combined with the grid gap (8px–10px), this provides **~24px–26px of clean breathing room** above the "Exit lesson" or top Bento row.
+  - Bottom padding: `pb={{ base: 3.5, sm: 4 }}` (14px–16px). Combined with the grid gap (8px–10px), this provides **~24px–26px of clean breathing room** above the top Bento row.
 
 ---
 
 ### 1.4 Focus Management & Accessibility
 
-By default, Chakra UI's `<Menu>` selects the first available menu item upon opening (`autoSelect={true}`), which inadvertently applied a bright blue focus ring (`_focusVisible`) to the "Exit lesson" button on touch or mouse click.
+By default, Chakra UI's `<Menu>` selects the first available menu item upon opening (`autoSelect={true}`), which inadvertently applied a bright blue focus ring (`_focusVisible`) to the first button on touch or mouse click.
 
 - **Solution**: Set `autoSelect={false}` on `<Menu>`.
 - **Result**:
@@ -239,7 +239,7 @@ In earlier iterations, releasing the card past the dismiss threshold triggered a
 | :---------------------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`src/components/ActivityMenu.jsx`](file:///Users/sheilferzepeda/Desktop/nosabos-x/nosabos/nosabos/src/components/ActivityMenu.jsx) | Main menu component, `useMenuSwipeDismiss` hook, header layout, bento grid, and `autoSelect={false}` config.                                  |
 | [`src/index.css`](file:///Users/sheilferzepeda/Desktop/nosabos-x/nosabos/nosabos/src/index.css)                                     | Body scroll locks (`overflow: hidden`), app-container background blur filter (`blur(12px)`), and z-index elevations (`1390`, `1450`, `1500`). |
-| [`src/App.jsx`](file:///Users/sheilferzepeda/Desktop/nosabos-x/nosabos/nosabos/src/App.jsx)                                         | Integration site providing menu actions (Exit lesson, Practice tasks, Settings, Notes, Help Chat).                                            |
+| [`src/App.jsx`](file:///Users/sheilferzepeda/Desktop/nosabos-x/nosabos/nosabos/src/App.jsx)                                         | Integration site providing menu actions (Practice tasks, Settings, Notes, Help Chat).                                                         |
 
 ---
 

@@ -35,7 +35,7 @@ import {
   IconButton,
 } from "@chakra-ui/react";
 import { ChevronDownIcon } from "@chakra-ui/icons";
-import VoiceOrb from "./VoiceOrb";
+import VoiceOrb from "./VoiceOrbNext";
 import AnimatedBackground from "./AnimatedBackground";
 import { MdSupportAgent } from "react-icons/md";
 import { detectUserLanguage } from "../utils/languageDetection";
@@ -106,7 +106,6 @@ const theme = {
   },
 };
 
-const HERO_VOICE_ORB_STATES = ["idle", "listening", "speaking"];
 const COMPACT_SECTION_PADDING = "clamp(48px, 7vw, 88px) 24px";
 const COMPACT_HEADING_MARGIN = "clamp(32px, 5vw, 44px)";
 
@@ -174,7 +173,7 @@ const translations = {
     feature_notes: "Generate Notes",
     feature_notes_desc:
       "Create comprehensive study notes from your lessons to review later.",
-    feature_immersion: "Immersion Practice",
+    feature_immersion: "Immersion & Score",
     feature_immersion_desc:
       "Complete tasks outside of the app to immerse and practice the language.",
     feature_assistant: "Personal Assistant",
@@ -235,7 +234,7 @@ const translations = {
     signin_title: "Welcome Back",
     signin_subtitle:
       "Paste the secret key you saved when you created your account.",
-    signin_placeholder: "Paste your secret key",
+    signin_placeholder: "Enter your secret key",
     signin_button: "Sign In",
     signin_extension: "Sign In With NIP-07 Extension",
     signin_or: "or",
@@ -322,7 +321,7 @@ const translations = {
     feature_notes: "Generar Notas",
     feature_notes_desc:
       "Crea notas de estudio de tus lecciones para revisarlas más tarde.",
-    feature_immersion: "Práctica de Inmersión",
+    feature_immersion: "Inmersión y puntuación",
     feature_immersion_desc:
       "Completa tareas fuera de la app para sumergirte y practicar el idioma.",
     feature_assistant: "Asistente Personal",
@@ -383,7 +382,7 @@ const translations = {
     signin_title: "Bienvenido de Nuevo",
     signin_subtitle:
       "Pega la llave secreta que guardaste cuando creaste tu cuenta.",
-    signin_placeholder: "Pega tu llave secreta",
+    signin_placeholder: "Ingresa tu llave secreta",
     signin_button: "Iniciar Sesión",
     signin_extension: "Iniciar sesión con extensión NIP-07",
     signin_or: "o",
@@ -470,7 +469,7 @@ const translations = {
     feature_notes: "Genera Note",
     feature_notes_desc:
       "Crea note di studio complete dalle tue lezioni da rivedere in seguito.",
-    feature_immersion: "Pratica di Immersione",
+    feature_immersion: "Immersione e punteggio",
     feature_immersion_desc:
       "Completa attività fuori dall'app per immergerti e praticare la lingua.",
     feature_assistant: "Assistente Personale",
@@ -530,7 +529,7 @@ const translations = {
     signin_title: "Bentornato",
     signin_subtitle:
       "Incolla la chiave segreta che hai salvato quando hai creato il tuo account.",
-    signin_placeholder: "Incolla la tua chiave segreta",
+    signin_placeholder: "Inserisci la tua chiave segreta",
     signin_button: "Accedi",
     signin_extension: "Accedi con l'estensione NIP-07",
     signin_or: "o",
@@ -628,7 +627,7 @@ translations.fr = {
   feature_notes: "Generer des Notes",
   feature_notes_desc:
     "Cree des notes d'etude completes depuis tes lecons pour les revoir plus tard.",
-  feature_immersion: "Pratique d'Immersion",
+  feature_immersion: "Immersion et score",
   feature_immersion_desc:
     "Complete des taches hors de l'app pour t'immerger et pratiquer la langue.",
   feature_assistant: "Assistant Personnel",
@@ -687,7 +686,7 @@ translations.fr = {
   signin_title: "Bon retour",
   signin_subtitle:
     "Colle la cle secrete que tu as sauvegardee lors de la creation du compte.",
-  signin_placeholder: "Colle ta cle secrete",
+  signin_placeholder: "Saisis ta clé secrète",
   signin_button: "Connexion",
   signin_extension: "Se connecter avec l’extension NIP-07",
   signin_or: "ou",
@@ -770,7 +769,7 @@ translations.ja = {
   feature_notes: "ノート生成",
   feature_notes_desc:
     "レッスン内容から、あとで見返せる学習ノートを自動で作成します。",
-  feature_immersion: "没入型練習",
+  feature_immersion: "イマージョン＆スコア",
   feature_immersion_desc:
     "アプリの外でも課題に取り組み、言語に浸りながら実践練習します。",
   feature_assistant: "パーソナルアシスタント",
@@ -835,7 +834,7 @@ translations.ja = {
   signin_title: "おかえりなさい",
   signin_subtitle:
     "アカウント作成時に保存したシークレットキーを貼り付けてください。",
-  signin_placeholder: "シークレットキーを貼り付け",
+  signin_placeholder: "秘密鍵を入力してください",
   signin_button: "サインイン",
   signin_extension: "NIP-07拡張機能でサインイン",
   signin_or: "または",
@@ -1302,7 +1301,6 @@ const LandingHeader = ({
   onStartLearning,
   onSignIn,
   isCreating,
-  voiceOrbState,
   showActions,
   isScrolled,
 }) => (
@@ -1316,7 +1314,7 @@ const LandingHeader = ({
   >
     <div className="piyali-landing-header-inner">
       <div className="piyali-landing-brand" aria-label="Piyali">
-        <VoiceOrb state={voiceOrbState} size={38} centered={false} />
+        <VoiceOrb size={50} centered={false} force3D showShadow={false} />
         <span>Piyali</span>
       </div>
       <div className="piyali-landing-actions">
@@ -1934,12 +1932,6 @@ const LandingPage = ({ onAuthenticated }) => {
   const [showHeaderActions, setShowHeaderActions] = useState(false);
   const [isHeaderScrolled, setIsHeaderScrolled] = useState(false);
   const heroSectionRef = useRef(null);
-  const [heroVoiceOrbState] = useState(() => {
-    const randomIndex = Math.floor(
-      Math.random() * HERO_VOICE_ORB_STATES.length,
-    );
-    return HERO_VOICE_ORB_STATES[randomIndex];
-  });
 
   const copy = translations[lang] || translations.en;
   const hasSecretKeyInDisplayName = isNsecSecretKeyLike(displayName);
@@ -2210,7 +2202,6 @@ const LandingPage = ({ onAuthenticated }) => {
         onStartLearning={handleInstantCreate}
         onSignIn={openSignInView}
         isCreating={isCreating}
-        voiceOrbState={heroVoiceOrbState}
         showActions={showHeaderActions}
         isScrolled={isHeaderScrolled}
       />

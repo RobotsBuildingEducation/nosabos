@@ -68,6 +68,8 @@ import {
   TTS_LANG_TAG,
 } from "../utils/tts";
 import { extractCEFRLevel } from "../utils/cefrUtils";
+import { eloForUser, practiceLevelForElo, generationPerformanceContextFor, questionWorthForUser } from "../utils/performanceEloModel";
+import { assessGeneratedQuestionWorths } from "../utils/questionDifficultyAssessment";
 import { getUserProficiencyLevel } from "../utils/cefrProgress";
 import { speechReasonTips } from "../utils/speechEvaluation";
 import { SpeakSuccessCard } from "./SpeakSuccessCard";
@@ -564,12 +566,15 @@ function SpeakingStoryMode({
 
   // Repair/ephemeral lessons carry an explicit CEFR level; regular path lessons
   // can still derive it from their level-coded id.
-  const cefrLevel =
+  const curriculumCefrLevel =
     lesson?.cefrLevel ||
     lessonContent?.cefrLevel ||
     (lesson?.id
       ? extractCEFRLevel(lesson.id)
       : getUserProficiencyLevel(progress, targetLang));
+  const cefrLevel = lesson?.isTutorial || lesson?.isFinalQuiz || lessonContent?.isGoal || lessonContent?.isRepair
+    ? curriculumCefrLevel
+    : practiceLevelForElo(eloForUser(user, targetLang));
 
   // APP/UI copy and support translations follow the resolved support language.
   const effectiveLang = normalizeSupportLanguage(supportLang || uiLang, "en");
@@ -598,6 +603,7 @@ function SpeakingStoryMode({
   const [sentenceCompleted, setSentenceCompleted] = useState(false); // Track when sentence is completed but not advanced
   const [lastSuccessInfo, setLastSuccessInfo] = useState(null);
   const [lastFeedback, setLastFeedback] = useState(null);
+  const [isEvaluatingAnswer, setIsEvaluatingAnswer] = useState(false);
 
   // accumulate this session, but award only at end
   const [sessionXp, setSessionXp] = useState(0);
@@ -613,6 +619,7 @@ function SpeakingStoryMode({
   // Refs
   const audioRef = useRef(null);
   const storyCacheRef = useRef(null);
+  const storyWorthReadyRef = useRef(Promise.resolve());
   const generationRequestRef = useRef(0);
   useEffect(() => () => { generationRequestRef.current++; }, []);
   const highlightIntervalRef = useRef(null);
@@ -843,6 +850,10 @@ function SpeakingStoryMode({
   // Stream dialogue lines and render as soon as the first sentence arrives
   const generateStoryGeminiStream = useCallback(async () => {
     const request = ++generationRequestRef.current;
+    const worth = questionWorthForUser(user, targetLang, cefrLevel);
+    storyCacheRef.current = null;
+    let finishWorth;
+    storyWorthReadyRef.current = new Promise((resolve) => { finishWorth = resolve; });
     const isCancelled = () => request !== generationRequestRef.current;
     setIsLoading(true);
     setIsStreaming(true);
@@ -862,8 +873,11 @@ function SpeakingStoryMode({
         targetName: LLM_LANG_NAME(targetLang), targetLang,
         difficulty: getStoryDifficulty(cefrLevel, { includeTranslations: false }),
         isTutorial: plan.isTutorial,
-        scenarioDirective: plan.isTutorial ? "Tutorial: a tiny greeting encounter only." : plan.objective,
-        curriculumContext: [focusedLessonPrompt(lessonContent), buildStoryDiversityPrompt(plan)].filter(Boolean).join("\n"),
+        tutorialPracticeLevel: lessonContent?.tutorialPracticeLevel,
+        scenarioDirective: plan.isTutorial && !lessonContent?.tutorialPracticeLevel ? "Tutorial: a tiny greeting encounter only." : plan.objective,
+        curriculumContext: [focusedLessonPrompt(lessonContent),
+          `Live performance memory: ${JSON.stringify(generationPerformanceContextFor(user, targetLang, { curriculumCefrLevel }))}. Adapt sentence complexity and support while keeping the story's topic and characters.`,
+          buildStoryDiversityPrompt(plan)].filter(Boolean).join("\n"),
       });
 
       let revealed = false;
@@ -896,6 +910,8 @@ function SpeakingStoryMode({
               fullStory: { tgt: item.tgt, sup: item.sup },
               sentences: [item],
               storyType: "conversation",
+              questionLevel: cefrLevel,
+              worth,
             });
           } else {
             setStoryData((prev) => {
@@ -918,7 +934,7 @@ function SpeakingStoryMode({
       try {
         const streamResp = await storyModel.generateContentStream({
           contents: [{ role: "user", parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: 4096, temperature: 0.7 },
+          generationConfig: { temperature: 0.7 },
         });
 
         for await (const chunk of streamResp.stream) {
@@ -946,7 +962,17 @@ function SpeakingStoryMode({
             },
             sentences: collectedSentences,
             storyType: "conversation",
+            questionLevel: cefrLevel,
+            worth,
           };
+          finalStory.sentenceWorths = await assessGeneratedQuestionWorths({
+            user: useUserStore.getState().user, targetLang, questionLevel: cefrLevel,
+            questions: finalStory.sentences.map((sentence) => ({
+              sentence: sentence.tgt, task: "Understand and pronounce this sentence",
+            })),
+            mode: "story",
+          });
+          if (isCancelled()) return;
           storyCacheRef.current = finalStory;
           recordStoryHistory(plan, { title: "Practice", target: finalStory.fullStory.tgt });
           setStoryData(finalStory);
@@ -962,16 +988,24 @@ function SpeakingStoryMode({
           generate: async (input, { isRevision }) => {
             const result = await (isRevision ? storyRevisionModel : storyModel).generateContent({
               contents: [{ role: "user", parts: [{ text: input }] }],
-              generationConfig: { maxOutputTokens: 8192 },
             });
             return result.response.text();
           },
         });
         if (isCancelled() || !story) return;
         recordStoryHistory(plan, { title: "Practice", target: story.fullStory.tgt });
-        storyCacheRef.current = story;
+        const sentenceWorths = await assessGeneratedQuestionWorths({
+          user: useUserStore.getState().user, targetLang, questionLevel: cefrLevel,
+          questions: story.sentences.map((sentence) => ({
+            sentence: sentence.tgt, task: "Understand and pronounce this sentence",
+          })),
+          mode: "story",
+        });
+        if (isCancelled()) return;
+        const leveledStory = { ...story, questionLevel: cefrLevel, worth, sentenceWorths };
+        storyCacheRef.current = leveledStory;
         setStoryType("conversation");
-        setStoryData(story);
+        setStoryData(leveledStory);
       }
     } catch (error) {
       if (!isCancelled()) {
@@ -980,6 +1014,7 @@ function SpeakingStoryMode({
         setGenerationError(true);
       }
     } finally {
+      finishWorth();
       if (!isCancelled()) {
         setIsLoading(false);
         setIsStreaming(false);
@@ -1368,6 +1403,10 @@ function SpeakingStoryMode({
       }
 
       if (!evaluation) return;
+      setIsEvaluatingAnswer(true);
+      await storyWorthReadyRef.current;
+      const sentenceWorth = storyCacheRef.current?.sentenceWorths?.[currentSentenceIndex]
+        || storyData?.worth;
 
       if (!evaluation.pass) {
         const tips = speechReasonTips(evaluation.reasons, {
@@ -1387,6 +1426,7 @@ function SpeakingStoryMode({
                 copy.speechIncorrect ||
                 "Try saying the sentence again clearly.",
         });
+        setIsEvaluatingAnswer(false);
 
         // Companion brain: a missed sentence-practice attempt (pronunciation) is
         // a high-signal weak spot — bank it for tomorrow's repair.
@@ -1398,7 +1438,8 @@ function SpeakingStoryMode({
           concept: target,
           userAnswer: recognizedText || "",
           expectedAnswer: target,
-          cefrLevel,
+          cefrLevel: storyData?.questionLevel || cefrLevel,
+          questionWorth: sentenceWorth,
           sourceContext: "story",
         });
 
@@ -1431,6 +1472,9 @@ function SpeakingStoryMode({
         if (npubLive) {
           awardXp(npubLive, xpAwarded, targetLang, {
             skillTreeLessonId: lesson?.id,
+            gradedOutcome: { questionLevel: storyData?.questionLevel || cefrLevel,
+              worth: sentenceWorth, mode: "story",
+              concept: target, support: "independent" },
           }).catch(() => {});
         }
       }
@@ -1466,6 +1510,7 @@ function SpeakingStoryMode({
             ? `${uiText.score}: ${evaluation.score}%`
             : null,
       });
+      setIsEvaluatingAnswer(false);
 
       // Mark sentence as completed, wait for user to click "Next"
       setSentenceCompleted(true);
@@ -2071,9 +2116,9 @@ function SpeakingStoryMode({
 
         <Box w="full" maxW="720px" mx="auto" mt={6}>
             <QuestionActionArea
-              feedback={lastFeedback ? lastFeedback.ok : null}
+              feedback={isEvaluatingAnswer ? "thinking" : lastFeedback ? lastFeedback.ok : null}
               actions={
-                lastFeedback?.ok ? null : (
+                isEvaluatingAnswer || lastFeedback?.ok ? null : (
                   <ActivityActionRow
                     tone={
                       isRecording
@@ -2173,16 +2218,17 @@ function SpeakingStoryMode({
                 )
               }
             >
-              {lastFeedback && (
+              {(lastFeedback || isEvaluatingAnswer) && (
                 <FeedbackRail
                   compact
-                  ok={lastFeedback.ok}
-                  xp={lastFeedback.xp || 0}
-                  statusLabel={lastFeedback.label}
-                  subtext={lastFeedback.subtext}
-                  explanationText={lastFeedback.explanation}
+                  ok={lastFeedback?.ok ?? null}
+                  loading={isEvaluatingAnswer}
+                  xp={lastFeedback?.xp || 0}
+                  statusLabel={lastFeedback?.label}
+                  subtext={lastFeedback?.subtext}
+                  explanationText={lastFeedback?.explanation}
                   lessonProgress={lessonProgress}
-                  showNext={lastFeedback.ok}
+                  showNext={lastFeedback?.ok}
                   onNext={handleNextSentence}
                   nextLabel={isLastSentence ? finishLabel : nextSentenceLabel}
                   t={(k) => t(effectiveLang, k)}

@@ -49,7 +49,7 @@ export const LINKS_PAGE_HI_STATIC = {
   secretKeyWarning:
     "आपकी सीक्रेट कुंजी विकेंद्रीकृत ऐप्स तक पहुंचने का पासवर्ड है। इसे सुरक्षित रखें और किसी के साथ साझा न करें।",
   switchAccount: "खाता बदलें",
-  pasteNsec: "अपनी nsec कुंजी यहां पेस्ट करें",
+  pasteNsec: "अपनी गुप्त कुंजी दर्ज करें",
   switchAccountHelp: "दूसरे Nostr खाते में बदलने के लिए कोई दूसरा nsec दर्ज करें",
   bitcoinWallet: "Bitcoin वॉलेट",
   walletDescription1:

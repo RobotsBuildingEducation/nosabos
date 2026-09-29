@@ -426,7 +426,7 @@ export default function Onboarding({
                               borderRadius: "4px",
                             },
                             "&::-webkit-scrollbar-thumb:hover": {
-                              bg: "gray.500",
+                              bg: "var(--app-gray-500-surface)",
                             },
                           }}
                         >
@@ -518,7 +518,7 @@ export default function Onboarding({
                               borderRadius: "4px",
                             },
                             "&::-webkit-scrollbar-thumb:hover": {
-                              bg: "gray.500",
+                              bg: "var(--app-gray-500-surface)",
                             },
                           }}
                         >
