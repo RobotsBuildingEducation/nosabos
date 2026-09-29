@@ -86,17 +86,10 @@ export function ImmersionTasksContent({ immersion, appLanguage = "en", petType =
   return (
     <VStack as="section" aria-label={copy.title} align="stretch" spacing={3}>
       {showHeading && (
-        <HStack align="start" justify="space-between" spacing={3}>
-          <Box>
-            <Text fontWeight="bold" color="var(--app-text-primary)">{copy.title}</Text>
-            <Text fontSize="sm" color="var(--app-text-secondary)">{copy.subtitle}</Text>
-          </Box>
-          {!immersion?.awaitingPlacement && (
-            <Text fontSize="xs" fontWeight="bold" color="var(--app-text-muted)" flexShrink={0}>
-              {completed.filter(Boolean).length}/{immersion?.goal ? 4 : 3}
-            </Text>
-          )}
-        </HStack>
+        <Box>
+          <Text fontWeight="bold" color="var(--app-text-primary)">{copy.title}</Text>
+          <Text fontSize="sm" color="var(--app-text-secondary)">{copy.subtitle}</Text>
+        </Box>
       )}
 
       {immersion?.awaitingPlacement && (

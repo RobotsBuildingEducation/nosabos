@@ -97,13 +97,13 @@ export default defineConfig(({ mode, command }) => {
 
           icons: [
             {
-              src: "https://res.cloudinary.com/dtkeyccga/image/upload/v1790620701/logos_512_x_512_px_13_saxgg9.png",
+              src: "https://res.cloudinary.com/dtkeyccga/image/upload/v1790678646/logos_512_x_512_px_15_aokgri.png",
               sizes: "512x512",
               type: "image/png",
               purpose: "any",
             },
             {
-              src: "https://res.cloudinary.com/dtkeyccga/image/upload/v1790620701/logos_512_x_512_px_13_saxgg9.png",
+              src: "https://res.cloudinary.com/dtkeyccga/image/upload/v1790678646/logos_512_x_512_px_15_aokgri.png",
               sizes: "512x512",
               type: "image/png",
               purpose: "maskable",

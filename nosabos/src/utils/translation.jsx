@@ -6,6 +6,7 @@ import { TRANSLATION_DE_STATIC } from "./translationDeStatic";
 import { TRANSLATION_HI_STATIC } from "./translationHiStatic";
 import { TRANSLATION_PT_STATIC } from "./translationPtStatic";
 import { TRANSLATION_ZH_STATIC } from "./translationZhStatic";
+import { PROFICIENCY_MODAL_TRANSLATIONS } from "./proficiencyModalTranslations";
 
 // Simple i18n helper for flat keys with {placeholders}
 export function t(lang = "en", key, vars = {}) {
@@ -5160,5 +5161,12 @@ translations.zh = {
     </div>
   ),
 };
+
+for (const [lang, dict] of Object.entries(PROFICIENCY_MODAL_TRANSLATIONS)) {
+  translations[lang] = {
+    ...(translations[lang] || {}),
+    ...dict,
+  };
+}
 
 export default translations;

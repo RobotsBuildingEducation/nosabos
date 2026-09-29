@@ -12,7 +12,9 @@ test("the horizontal capability trail covers every Score band in order", () => {
     const [floor, ceiling] = SCORE_LEVEL_BANDS[milestone.level];
     assert.ok(milestone.score >= floor && milestone.score <= ceiling);
     assert.ok(milestone.modes.length > 0);
-    assert.ok(milestone.en && milestone.es);
+    for (const lang of ["en", "es", "de", "fr", "it", "pt", "ja", "zh", "ru", "ar", "hi"]) {
+      assert.ok(typeof milestone[lang] === "string" && milestone[lang].length > 0, `Missing ${lang} on milestone ${milestone.score}`);
+    }
   }
   const modes = new Set(SCORE_MILESTONES.flatMap((item) => item.modes));
   for (const mode of ["lesson", "flashcards", "phonics", "tutor", "realtime", "reading", "stories", "game", "conversations"])

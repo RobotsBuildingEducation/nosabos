@@ -70,3 +70,36 @@ test("existing users get a default Score from their current level", () => {
   assert.equal(initialEloRating("C2"), 89);
   assert.equal(eloForUser({ proficiencyPlacements: { de: "B2" } }, "de"), 60);
 });
+
+test("proficiency onboarding modal has complete localization for all supported languages", async () => {
+  const { PROFICIENCY_MODAL_TRANSLATIONS } = await import("./proficiencyModalTranslations.js");
+  const languages = ["en", "es", "de", "fr", "it", "pt", "ja", "zh", "ru", "ar", "hi"];
+  const requiredKeys = [
+    "proficiency_modal_choose_start",
+    "proficiency_modal_choice_description",
+    "proficiency_modal_completely_new",
+    "proficiency_modal_find_level",
+    "proficiency_modal_select_all",
+    "proficiency_modal_part",
+    "proficiency_modal_back",
+    "proficiency_modal_next",
+    "proficiency_modal_done",
+    "proficiency_modal_result_title",
+    "proficiency_modal_result_description",
+    "proficiency_modal_result_range",
+    "proficiency_modal_starting_elo",
+    "proficiency_modal_start_level",
+    "proficiency_modal_take_test_now",
+    "proficiency_modal_save_error",
+    ...SELF_ASSESSMENT_OPTIONS.map((opt) => `proficiency_self_${opt.id}`),
+  ];
+
+  for (const lang of languages) {
+    assert.ok(PROFICIENCY_MODAL_TRANSLATIONS[lang], `Missing translations for ${lang}`);
+    for (const key of requiredKeys) {
+      const val = PROFICIENCY_MODAL_TRANSLATIONS[lang][key];
+      assert.ok(typeof val === "string" && val.length > 0, `Missing key "${key}" in language "${lang}"`);
+    }
+  }
+});
+
