@@ -1190,6 +1190,9 @@ function MangaChapter({
     link.analyticsName === "robots_building_education"
       ? link.title.trim().split(/\s+/)
       : null;
+  const isOrbArtwork =
+    link.analyticsName === "nosabos_app" ||
+    link.analyticsName === "robots_building_education";
   const actionProps = link.onLaunch
     ? {
         as: "button",
@@ -1403,7 +1406,8 @@ function MangaChapter({
                     link.analyticsName === "patreon"
                       ? "scale(0.7)"
                       : "scale(1.06)",
-                  md: "scale(2.8)",
+                  md: isOrbArtwork ? "scale(2.5)" : "scale(2.8)",
+                  lg: isOrbArtwork ? "scale(3.5)" : "scale(2.8)",
                 }}
                 sx={{
                   "@media screen and (min-width: 400px) and (max-width: 767px)": {
@@ -1466,11 +1470,8 @@ function MangaChapter({
                   <Box
                     as="span"
                     key={`${word}-${wordIndex}`}
-                    display={{ base: "block", md: "inline" }}
-                    mr={{
-                      base: 0,
-                      md: wordIndex < stackedBrandTitle.length - 1 ? "0.22em" : 0,
-                    }}
+                    display="block"
+                    whiteSpace="nowrap"
                   >
                     {word}
                   </Box>

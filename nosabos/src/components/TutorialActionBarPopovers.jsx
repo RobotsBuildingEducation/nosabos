@@ -70,7 +70,7 @@ const BUTTON_EXPLANATIONS = [
     id: "realWorldTasks",
     tutorialId: "teams",
     icon: FiCompass,
-    label: { en: "Immersion Practice", es: "Práctica de Inmersión", it: "Pratica di Immersione", fr: "Pratique d'immersion", de: "Immersionsübung", ja: "イマージョン練習", hi: "इमर्शन अभ्यास", ar: "تدريب الانغماس", zh: "沉浸练习" },
+    label: { en: "Immersion & Score", es: "Inmersión y puntuación", it: "Immersione e punteggio", fr: "Immersion et score", de: "Immersion & Punktzahl", ja: "イマージョン＆スコア", hi: "इमर्शन और स्कोर", ar: "الانغماس والنقاط", zh: "沉浸与分数" },
     description: {
       en: "Complete tasks outside of the app to immerse and practice the language.",
       es: "Completa tareas fuera de la app para sumergirte y practicar el idioma.",

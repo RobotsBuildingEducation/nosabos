@@ -35,6 +35,7 @@ import {
   WAVE_BAR_PROGRESS_START,
 } from "./WaveBar";
 import { useThemeStore } from "../useThemeStore";
+import { t as translate } from "../utils/translation";
 import { APP_DAILY_QUEST_RADIUS, APP_SQUIRCLE_SHAPE } from "../theme";
 import {
   DEFAULT_SUPPORT_LANGUAGE,
@@ -691,6 +692,8 @@ function drawAliveDog(ctx, frame, stage) {
   const palette = stage.palette;
   const phase = frame % 6;
   const motion = stage.motion ?? stage.key;
+  const celebrating = motion === "celebrate";
+  const beat = frame % 12;
   const xShift =
     motion === "stressed"
       ? phase % 2 === 0
@@ -710,7 +713,9 @@ function drawAliveDog(ctx, frame, stage) {
           : 0
       : 0;
   const bob =
-    motion === "happy"
+    celebrating
+      ? [0, 0, -1, -1, 0, 0, 0, -1, -1, 0, 0, 0][beat]
+      : motion === "happy"
       ? phase === 2 || phase === 4
         ? -2
         : 0
@@ -730,7 +735,9 @@ function drawAliveDog(ctx, frame, stage) {
               ? 1
               : 0;
   const tailWag =
-    motion === "happy"
+    celebrating
+      ? [-2, 2, -3, 3, -2, 2, -3, 3, -2, 2, -3, 2][beat]
+      : motion === "happy"
       ? phase % 2 === 0
         ? -2
         : 2
@@ -765,8 +772,10 @@ function drawAliveDog(ctx, frame, stage) {
   px(ctx, palette.fur, cx - 10 + xShift, by - 18 + bob, 20, 14);
   px(ctx, palette.belly, cx - 6 + xShift, by - 12 + bob, 12, 10);
   px(ctx, palette.accent, cx - 10 + xShift, by - 18 + bob, 20, 4);
-  px(ctx, palette.paw, cx - 8 + stride + xShift, by - 2, 6, 5);
-  px(ctx, palette.paw, cx + 2 - stride + xShift, by - 2, 6, 5);
+  if (!celebrating) {
+    px(ctx, palette.paw, cx - 8 + stride + xShift, by - 2, 6, 5);
+    px(ctx, palette.paw, cx + 2 - stride + xShift, by - 2, 6, 5);
+  }
   px(ctx, palette.fur, cx - 10 + xShift, headY, 20, 16);
   px(ctx, palette.furLight, cx - 8 + xShift, headY + 2, 16, 10);
   px(ctx, palette.ear, cx - 14 + xShift, headY + 2, 6, earHeight);
@@ -786,6 +795,16 @@ function drawAliveDog(ctx, frame, stage) {
 
   drawFaceExpression(ctx, stage.face, palette, cx + xShift, headY);
   drawDecoration(ctx, stage.decoration, frame, cx + xShift, headY);
+
+  if (celebrating) {
+    // Two little paw waves beside the face, with a short rest between them.
+    const leftUp = beat >= 2 && beat <= 4;
+    const rightUp = beat >= 7 && beat <= 9;
+    if (leftUp) px(ctx, palette.fur, cx - 12, by - 13, 4, 8);
+    if (rightUp) px(ctx, palette.fur, cx + 8, by - 13, 4, 8);
+    px(ctx, palette.paw, cx - (leftUp ? 15 : 8), by - (leftUp ? 16 : 2), 6, 5);
+    px(ctx, palette.paw, cx + (rightUp ? 9 : 2), by - (rightUp ? 16 : 2), 6, 5);
+  }
 
   ctx.restore();
 }
@@ -976,7 +995,14 @@ function drawAliveAlien(ctx, frame, stage) {
   let tilt = 0;
   let jitterX = 0;
   const pose = {};
-  if (motion === "happy" || motion === "healthy") {
+  if (motion === "celebrate") {
+    // Four feet rise in sequence, then tuck briefly for a small flourish.
+    const lead = Math.floor(t / 2) % 4;
+    pose.lift = (i) => (i === lead ? 3 : i === (lead + 3) % 4 ? 1 : 0);
+    tilt = [-1, 0, 1, 0][lead];
+    bob = t === 8 || t === 9 ? -2 : 0;
+    if (t === 8 || t === 9) pose.height = 2;
+  } else if (motion === "happy" || motion === "healthy") {
     bob = (
       motion === "happy"
         ? [0, -1, -1, 0, 0, 0, 0, 0, -2, -2, 0, 0]
@@ -1059,15 +1085,18 @@ function getGhostPalette(stage) {
 
 // The hem's three lobes can ripple independently (like trailing fabric);
 // `ripple(lobeIndex)` returns the per-lobe lift in px, or null for a still hem.
-function drawGhostBody(ctx, palette, cx, gy, ripple = null) {
+function drawGhostBody(ctx, palette, cx, gy, ripple = null, turnAngle = 0) {
+  // Keep the silhouette rounded as it turns; only the visible depth changes.
+  const inset = Math.round(4 * Math.abs(Math.sin(turnAngle))) / 2;
   for (let i = 0; i < GHOST_HW.length; i++) {
-    px(ctx, palette.body, cx - GHOST_HW[i], gy + i, 2 * GHOST_HW[i], 1);
+    const halfWidth = Math.max(2, GHOST_HW[i] - inset);
+    px(ctx, palette.body, cx - halfWidth, gy + i, 2 * halfWidth, 1);
   }
   const b = gy + GHOST_HW.length;
   const lobes = [
-    [-12, 7, -11, 5],
+    [-12 + inset, 7 - inset, -11 + inset, 5 - inset],
     [-3, 6, -2, 4],
-    [5, 7, 6, 5],
+    [5, 7 - inset, 6, 5 - inset],
   ];
   lobes.forEach(([x1, w1, x2, w2], i) => {
     const lift = ripple ? ripple(i) : 0;
@@ -1076,11 +1105,39 @@ function drawGhostBody(ctx, palette, cx, gy, ripple = null) {
     px(ctx, palette.body2, cx + x2, b + 1 + lift, w2, 1);
   });
   for (let i = 4; i < GHOST_HW.length; i++) {
-    px(ctx, palette.body2, cx + GHOST_HW[i] - 1, gy + i, 1, 1);
+    const halfWidth = Math.max(2, GHOST_HW[i] - inset);
+    px(ctx, palette.body2, cx + halfWidth - 1, gy + i, 1, 1);
   }
-  px(ctx, palette.bodyLight, cx - 6, gy + 2, 3, 1);
-  px(ctx, palette.bodyLight, cx - 8, gy + 3, 2, 1);
-  px(ctx, palette.bodyLight, cx - 9, gy + 4, 2, 1);
+  const highlightX = -6 + Math.round(6 * Math.sin(turnAngle)) / 2;
+  const drawHighlight = (row, x, width) => {
+    const halfWidth = Math.max(2, GHOST_HW[row] - inset);
+    const insideX = Math.max(-halfWidth, Math.min(halfWidth - width, x));
+    px(ctx, palette.bodyLight, cx + insideX, gy + row, width, 1);
+  };
+  drawHighlight(2, highlightX, 3);
+  drawHighlight(3, highlightX - 2, 2);
+  drawHighlight(4, highlightX - 3, 2);
+}
+
+function drawGhostTurningFace(ctx, palette, cx, gy, turnAngle) {
+  // Project each eye around the curved front of the ghost. Eyes fade out as
+  // they pass the silhouette, then reappear on the other side of the turn.
+  for (const eyeOffset of [-0.58, 0.58]) {
+    const visibility = Math.cos(turnAngle + eyeOffset);
+    if (visibility <= 0.08) continue;
+    const spread = Math.max(1, Math.round(6 * visibility) / 2);
+    const halfWidth = 12 - Math.round(4 * Math.abs(Math.sin(turnAngle))) / 2;
+    const projectedX = cx + Math.round(20 * Math.sin(turnAngle + eyeOffset)) / 2;
+    const eyeX = Math.max(cx - halfWidth + spread, Math.min(cx + halfWidth - spread - 1, projectedX));
+    ctx.globalAlpha = Math.min(1, (visibility - 0.08) / 0.35);
+    // Preserve the ghost's little smiling arches as the face turns away.
+    px(ctx, palette.eye, eyeX - spread, gy + 14, 1, 1);
+    px(ctx, palette.eye, eyeX - spread + 1, gy + 13, 1, 1);
+    px(ctx, palette.eye, eyeX - 0.5, gy + 12, 2, 1);
+    px(ctx, palette.eye, eyeX + spread - 1, gy + 13, 1, 1);
+    px(ctx, palette.eye, eyeX + spread, gy + 14, 1, 1);
+  }
+  ctx.globalAlpha = 1;
 }
 
 function drawGhostEyes(ctx, palette, key, cx, gy) {
@@ -1135,7 +1192,9 @@ function drawGhostCharacter(ctx, frame, stage) {
   let eyeDy = 0;
   let ripple = null;
   let alpha = 1;
-  if (motion === "happy") {
+  if (motion === "celebrate") {
+    ripple = (i) => -Math.round(Math.sin((t / 12) * Math.PI * 4 + i * 1.8) + 1) / 2;
+  } else if (motion === "happy") {
     drift = [0, -1, -2, -2, -2, -1, 0, 1, 2, 2, 1, 0][t];
     sway = [0, 1, 1, 0, -1, -1, 0, 1, 1, 0, -1, -1][t];
     eyeDx = sway;
@@ -1162,8 +1221,16 @@ function drawGhostCharacter(ctx, frame, stage) {
     px(ctx, COMPANION_SHADOW, cx - shadowW / 2, 37, shadowW, 1);
   }
   ctx.globalAlpha = alpha;
-  drawGhostBody(ctx, palette, cx + sway, gy, ripple);
-  drawGhostEyes(ctx, palette, stage.key, cx + sway + eyeDx, gy + eyeDy);
+  if (motion === "celebrate") {
+    const progress = t / 12;
+    const easedTurn = progress - (0.55 * Math.sin(2 * Math.PI * progress)) / (2 * Math.PI);
+    const turnAngle = easedTurn * 2 * Math.PI;
+    drawGhostBody(ctx, palette, cx, gy, ripple, turnAngle);
+    drawGhostTurningFace(ctx, palette, cx, gy, turnAngle);
+  } else {
+    drawGhostBody(ctx, palette, cx + sway, gy, ripple);
+    drawGhostEyes(ctx, palette, stage.key, cx + sway + eyeDx, gy + eyeDy);
+  }
   ctx.globalAlpha = 1;
   ctx.restore();
 }
@@ -1210,7 +1277,7 @@ function drawRobotChassis(ctx, p, cx, motion, t) {
   px(ctx, p.metal, cx - 1, 32, 2, 2);
   if (motion === "dead") return;
   const speed =
-    motion === "happy"
+    motion === "happy" || motion === "celebrate"
       ? 3
       : motion === "healthy"
         ? 2
@@ -1224,9 +1291,9 @@ function drawRobotChassis(ctx, p, cx, motion, t) {
   px(ctx, "#232a35", cx - 7 + ((scroll + 7) % 14), 33, 1, 1);
 }
 
-function drawRobotTorso(ctx, p, cx, by, key, armDrop) {
-  px(ctx, p.metal, cx - 11, 25 + by + armDrop, 2, 4);
-  px(ctx, p.metal, cx + 9, 25 + by + armDrop, 2, 4);
+function drawRobotTorso(ctx, p, cx, by, key, armDrop, armPose = null) {
+  px(ctx, p.metal, cx - 11, 25 + by + armDrop - (armPose?.left || 0), 2, 4);
+  px(ctx, p.metal, cx + 9, 25 + by + armDrop - (armPose?.right || 0), 2, 4);
   px(ctx, p.metal, cx - 8, 23 + by, 16, 1);
   px(ctx, p.metal, cx - 9, 24 + by, 18, 7);
   px(ctx, p.metal, cx - 8, 31 + by, 16, 1);
@@ -1340,7 +1407,9 @@ function drawRobotCharacter(ctx, frame, stage) {
   let rest = 0;
   let jitter = 0;
   let headJitter = 0;
-  if (motion === "happy") {
+  if (motion === "celebrate") {
+    bobs = [0, 0, -1, -1, 0, 0, -1, -1, 0, -1, 0, 0];
+  } else if (motion === "happy") {
     bobs = [0, -1, -2, -1, 0, 0, 0, -1, -2, -1, 0, 0];
   } else if (motion === "healthy") {
     bobs = [0, -1, -1, 0, 0, 0, 0, -1, -1, 0, 0, 0];
@@ -1363,7 +1432,11 @@ function drawRobotCharacter(ctx, frame, stage) {
     px(ctx, COMPANION_SHADOW, cx - 8, 36, 16, 1);
   }
   drawRobotChassis(ctx, palette, cx, motion, t);
-  drawRobotTorso(ctx, palette, cx + jitter, bodyBob, key, bodyBob < 0 ? 1 : 0);
+  const armPose = motion === "celebrate"
+    ? { left: t >= 2 && t <= 4 ? 4 : t === 9 ? 2 : 0,
+        right: t >= 6 && t <= 8 ? 4 : t === 9 ? 2 : 0 }
+    : null;
+  drawRobotTorso(ctx, palette, cx + jitter, bodyBob, key, bodyBob < 0 ? 1 : 0, armPose);
   drawRobotHead(ctx, palette, cx + headJitter, headBob, key, t);
   let faceDx = 0;
   if (key === "unhealthy") {
@@ -1591,7 +1664,15 @@ function drawSlimeCharacter(ctx, frame, stage) {
   let ballDx = 0;
   let ballDy = 0;
   let squish = false;
-  if (motion === "happy") {
+  if (motion === "celebrate") {
+    // A double jelly pulse and antenna flick, with no sideways travel.
+    const seq = [0, 1, 1, 2, 2, 1, 0, 1, 2, 2, 1, 0];
+    const hops = [0, 0, 0, -1, -2, 0, 0, 0, -1, -2, 0, 0];
+    rows = shapes[seq[t]];
+    hop = hops[t];
+    squish = seq[t] === 1;
+    ballDx = [0, -1, -2, -1, 0, 1, 2, 1, 0, -1, 0, 0][t];
+  } else if (motion === "happy") {
     // anticipation squash -> stretch launch -> airborne -> landing splat
     const seq = [0, 1, 1, 2, 2, 2, 1, 1, 0, 0, 2, 0];
     const hops = [0, 0, 0, -1, -3, -2, 0, 0, 0, 0, 0, 0];
@@ -1712,7 +1793,7 @@ function drawAxolotlGills(ctx, p, cx, o, ext = null, droop = 0) {
   });
 }
 
-function drawAxolotlBody(ctx, p, cx, o) {
+function drawAxolotlBody(ctx, p, cx, o, arms = null) {
   // oval (egg) silhouette
   px(ctx, p.body, cx - 4, 8 + o, 8, 1);
   px(ctx, p.body, cx - 6, 9 + o, 12, 1);
@@ -1731,8 +1812,8 @@ function drawAxolotlBody(ctx, p, cx, o) {
   px(ctx, p.belly, cx - 6, 19 + o, 12, 7);
   px(ctx, p.belly, cx - 5, 26 + o, 10, 1);
   // little arms
-  px(ctx, p.body, cx - 11, 23 + o, 3, 3);
-  px(ctx, p.body, cx + 8, 23 + o, 3, 3);
+  px(ctx, p.body, cx - 11, 23 + o - (arms?.left || 0), 3, 3);
+  px(ctx, p.body, cx + 8, 23 + o - (arms?.right || 0), 3, 3);
   // feet
   px(ctx, p.body, cx - 6, 29 + o, 5, 3);
   px(ctx, p.body, cx + 1, 29 + o, 5, 3);
@@ -1804,7 +1885,13 @@ function drawAxolotlCharacter(ctx, frame, stage) {
   let gillDroop = 0;
   let blink = false;
   let bubbles = false;
-  if (motion === "happy") {
+  if (motion === "celebrate") {
+    o = [0, -1, -1, -2, -1, 0, 0, 1, 0, -1, 0, 0][t];
+    wag = [0, -2, -1, 1, 2, 1, 0, -1, -2, 0, 2, 1][t];
+    gillExt = (i) => ((t + i * 2) % 5 < 2 ? 2 : 0);
+    bubbles = true;
+    blink = t === 10;
+  } else if (motion === "happy") {
     o = [0, -1, -2, -2, -1, 0, 0, 1, 2, 2, 1, 0][t];
     driftX = [0, 0, -1, -1, 0, 0, 0, 0, 1, 1, 0, 0][t];
     wag = [0, -1, 0, 1, 0, -1, 0, 1, 0, -1, 0, 1][t];
@@ -1836,7 +1923,10 @@ function drawAxolotlCharacter(ctx, frame, stage) {
   const ox = cx + driftX;
   drawAxolotlTail(ctx, palette, ox, o, wag);
   drawAxolotlGills(ctx, palette, ox, o, gillExt, gillDroop);
-  drawAxolotlBody(ctx, palette, ox, o);
+  const arms = motion === "celebrate"
+    ? { left: t >= 2 && t <= 4 ? 3 : 0, right: t >= 7 && t <= 9 ? 3 : 0 }
+    : null;
+  drawAxolotlBody(ctx, palette, ox, o, arms);
   drawAxolotlFace(ctx, stage.key, palette, ox, o, blink);
   if (bubbles) {
     const rise1 = 20 - (t % 12);
@@ -2011,6 +2101,7 @@ export default function PlatePetPanel({
   health = DAILY_GOAL_PET_DEFAULT_HEALTH,
   variant = "setup",
   showPreview = true,
+  fillHeight = false,
   // Today's XP, shown under the health bar when provided
   dailyXp = null,
   dailyGoalXp = 0,
@@ -2024,6 +2115,7 @@ export default function PlatePetPanel({
   onCustomizePet = null,
   // Optional manga speech balloon { text } — rendered at the pet's top-right.
   questBubble = null,
+  onViewActivity = null,
 }) {
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
@@ -2102,8 +2194,13 @@ export default function PlatePetPanel({
       style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
       p={{ base: isCelebration ? 2.5 : 3, md: isCelebration ? 4 : 5 }}
       w="100%"
+      h={fillHeight ? "100%" : undefined}
     >
-      <VStack spacing={{ base: 3, md: 4 }} align="stretch">
+      <VStack
+        h={fillHeight ? "100%" : undefined}
+        spacing={{ base: 3, md: 4 }}
+        align="stretch"
+      >
         <HStack
           align="flex-start"
           justify="space-between"
@@ -2379,7 +2476,8 @@ export default function PlatePetPanel({
                                 color={
                                   isLightTheme ? "#2563eb" : "blue.200"
                                 }
-                                boxSize={{ base: 4, md: 4.5 }}
+                                boxSize={{ base: 4, md: 6 }}
+                                flexShrink={0}
                               />
                               <Text
                                 fontSize="xs"
@@ -2429,6 +2527,26 @@ export default function PlatePetPanel({
             </VStack>
           </VStack>
         </HStack>
+
+        {typeof onViewActivity === "function" ? (
+          <Button
+            size="sm"
+            variant="outline"
+            bg="transparent"
+            color={isLightTheme ? "black" : "white"}
+            borderColor={isLightTheme ? "teal.600" : "teal.300"}
+            boxShadow="none"
+            _hover={{
+              bg: isLightTheme ? "teal.50" : "whiteAlpha.100",
+            }}
+            _active={{ bg: isLightTheme ? "teal.100" : "whiteAlpha.200" }}
+            alignSelf="center"
+            mt="auto"
+            onClick={onViewActivity}
+          >
+            {translate(resolvedLang, "daily_plate_view_activity") || "View activity"}
+          </Button>
+        ) : null}
 
         {showPreview ? (
           <HStack
@@ -2541,6 +2659,14 @@ export default function PlatePetPanel({
           borderColor={isLightTheme ? APP_BORDER : "gray.700"}
           rounded="2xl"
           mx={4}
+          sx={{
+            "&& > .chakra-modal__header": {
+              paddingBottom: "8px !important",
+            },
+            "&& > .chakra-modal__body:first-of-type": {
+              paddingTop: "8px !important",
+            },
+          }}
         >
           <ModalHeader
             fontSize="md"
@@ -2549,7 +2675,7 @@ export default function PlatePetPanel({
           >
             {customizeModalCopy.edit}
           </ModalHeader>
-          <ModalBody pt={{ base: 0, md: 6 }}>
+          <ModalBody pt={0}>
             <VStack align="stretch" spacing={4}>
               <Box>
                 <Text

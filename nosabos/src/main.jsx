@@ -19,9 +19,19 @@ import { ChakraProvider } from "@chakra-ui/react";
 import { BrowserRouter as Router, Route, Routes, Outlet } from "react-router-dom";
 import { theme } from "./theme";
 import LandingPage from "./components/LandingPage.jsx";
-import VoiceOrb from "./components/VoiceOrb.jsx";
+import VoiceOrb from "./components/VoiceOrbNext.jsx";
 import AppLoadBoundary from "./components/AppLoadBoundary.jsx";
 import { initAppUpdateCoordinator } from "./pwa/appUpdateCoordinator";
+
+// Keep the one-time cache-busting recovery parameter out of the visible URL
+// once the fresh application entry point has loaded.
+if (typeof window !== "undefined") {
+  const currentUrl = new URL(window.location.href);
+  if (currentUrl.searchParams.has("_piyali_reload")) {
+    currentUrl.searchParams.delete("_piyali_reload");
+    window.history.replaceState(window.history.state, "", currentUrl.href);
+  }
+}
 
 // Initialize the update coordinator singleton before route mounting
 initAppUpdateCoordinator();
@@ -32,6 +42,9 @@ const LegacyLinksPage = lazy(() => import("./components/LegacyLinksPage.jsx"));
 const ProficiencyTest = lazy(() => import("./components/ProficiencyTest.jsx"));
 const SquirclePlayground = lazy(
   () => import("./components/SquirclePlayground.jsx"),
+);
+const OrbingPlayground = lazy(
+  () => import("./components/orbing/OrbingPlayground.jsx"),
 );
 const CitizenshipGuide = lazy(
   () => import("./components/CitizenshipGuide.jsx"),
@@ -59,7 +72,7 @@ function RouteFallback() {
 
   return (
     <div className="route-fallback" aria-label="Loading">
-      <VoiceOrb state={orbState} size={88} useWorker maxDpr={1} />
+      <VoiceOrb state={orbState} size={88} useWorker maxDpr={1} excludeThinking={window.location.pathname === "/links"} />
     </div>
   );
 }
@@ -84,7 +97,7 @@ function BootOverlay({ visible }) {
       aria-label="Loading"
       aria-hidden={!visible}
     >
-      <VoiceOrb state={orbState} size={88} useWorker maxDpr={1} />
+      <VoiceOrb state={orbState} size={88} useWorker maxDpr={1} excludeThinking={window.location.pathname === "/links"} />
     </div>
   );
 }
@@ -238,6 +251,7 @@ createRoot(document.getElementById("root")).render(
               }
             />
             <Route path="/proficiency" element={<ProficiencyContainer />} />
+            <Route path="/orbing" element={<OrbingPlayground />} />
             <Route
               path="/links"
               element={

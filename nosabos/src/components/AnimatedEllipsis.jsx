@@ -5,11 +5,13 @@ export default function AnimatedEllipsis({
   color = "blue.200",
   ariaLabel = "Loading",
   justify = "center",
+  dotSize = "6px",
+  dotSpacing = 1.5,
   ...props
 }) {
   return (
     <HStack
-      spacing={1.5}
+      spacing={dotSpacing}
       minH="24px"
       justify={justify}
       role="status"
@@ -19,8 +21,8 @@ export default function AnimatedEllipsis({
       {[0, 1, 2].map((dot) => (
         <Box
           key={dot}
-          w="6px"
-          h="6px"
+          w={dotSize}
+          h={dotSize}
           borderRadius="full"
           bg={color}
           sx={{

@@ -52,7 +52,7 @@ import {
 import { logEvent } from "firebase/analytics";
 
 import useUserStore from "../hooks/useUserStore";
-import VoiceOrb from "./VoiceOrb";
+import VoiceOrb from "./VoiceOrbNext";
 import RandomCharacter from "./RandomCharacter";
 import AnimatedEllipsis from "./AnimatedEllipsis";
 import {
@@ -94,6 +94,9 @@ import {
   buildConversationTurnDetection,
 } from "../utils/conversationRealtimePolicy";
 import { getCEFRPromptHint } from "../utils/cefrUtils";
+import { recordGradedOutcome } from "../utils/learningIntelligence";
+import { eloForUser, practiceLevelForElo, generationPerformanceContextFor, questionWorthForUser } from "../utils/performanceEloModel";
+import { assessGeneratedQuestionWorth } from "../utils/questionDifficultyAssessment";
 import { getAdultBeginnerToneRule } from "../utils/adultBeginnerTone";
 import {
   getRandomSkillTreeTopics,
@@ -1303,8 +1306,10 @@ export default function Conversations({
 
   // Goal system - initialize with fallback, then generate AI topic
   const [currentGoal, setCurrentGoal] = useState(() => ({
-    text: getRandomFallbackTopic(maxProficiencyLevel),
+    text: getRandomFallbackTopic(practiceLevelForElo(eloForUser(user, targetLang))),
     completed: false,
+    questionLevel: practiceLevelForElo(eloForUser(user, targetLang)),
+    worth: questionWorthForUser(user, targetLang, practiceLevelForElo(eloForUser(user, targetLang))),
   }));
   const currentGoalRef = useRef(currentGoal);
   currentGoalRef.current = currentGoal;
@@ -1362,6 +1367,7 @@ export default function Conversations({
   }, []);
   const [isGeneratingGoal, setIsGeneratingGoal] = useState(false);
   const [goalFeedback, setGoalFeedback] = useState("");
+  const [orbFeedback, setOrbFeedback] = useState(null);
   const goalCheckPendingRef = useRef(false);
   // Failed attempts on the current goal; 2 misses re-anchor the goal so it
   // can't nag forever. Reset whenever a new goal is generated.
@@ -1389,8 +1395,10 @@ export default function Conversations({
 
     // Get current settings from ref (for use in async context)
     const currentSettings = conversationSettingsRef.current;
-    const selectedLevel =
-      currentSettings.proficiencyLevel || maxProficiencyLevel || "A1";
+    const selectedLevel = practiceLevelForElo(
+      eloForUser(useUserStore.getState().user, targetLangRef.current),
+    );
+    const worth = questionWorthForUser(useUserStore.getState().user, targetLangRef.current, selectedLevel);
     const customSubjects = currentSettings.conversationSubjects || "";
 
     try {
@@ -1422,6 +1430,8 @@ export default function Conversations({
         : "";
 
       const prompt = `You are creating a conversation practice topic for a ${selectedLevel} level language learner (${levelDescription}).
+
+Live learner performance: ${JSON.stringify(generationPerformanceContextFor(useUserStore.getState().user, targetLangRef.current))}. Use its recent accuracy and weak concepts to tune the topic and support; keep the selected challenge level ${selectedLevel}.
 
 Here are some topics from their learning curriculum that you can reference or be inspired by:
 ${skillTreeTopics.join("\n")}${customSubjectsPrompt}
@@ -1462,30 +1472,37 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       // Use the streamed text directly as the topic
       const topicText = fullText.trim();
       if (topicText) {
+        const assessedWorth = await assessGeneratedQuestionWorth({
+          user: useUserStore.getState().user, targetLang: targetLangRef.current,
+          questionLevel: selectedLevel, question: { goal: topicText,
+            task: "Respond in a live conversation" }, mode: "conversation",
+        });
         setCurrentGoal({
           text: {
             en: topicText,
             [resolvedSupportLang]: topicText,
           },
           completed: false,
+          questionLevel: selectedLevel,
+          worth: assessedWorth,
         });
       } else {
         // Use fallback if empty
         setCurrentGoal({
           text: getRandomFallbackTopic(selectedLevel),
           completed: false,
+          questionLevel: selectedLevel,
+          worth,
         });
       }
     } catch (e) {
       console.error("Topic generation error:", e);
       // Use fallback on error
-      const selectedLevel =
-        conversationSettingsRef.current.proficiencyLevel ||
-        maxProficiencyLevel ||
-        "A1";
       setCurrentGoal({
         text: getRandomFallbackTopic(selectedLevel),
         completed: false,
+        questionLevel: selectedLevel,
+        worth,
       });
     } finally {
       streamingRef.current = false;
@@ -2207,8 +2224,9 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       "conversation partner",
     );
     const currentSettings = conversationSettingsRef.current;
-    const selectedLevel =
-      currentSettings.proficiencyLevel || maxProficiencyLevel || "A1";
+    const selectedLevel = practiceLevelForElo(
+      eloForUser(useUserStore.getState().user, tLang),
+    );
     const practicePronunciation =
       currentSettings.practicePronunciation || false;
     const customSubjects = currentSettings.conversationSubjects || "";
@@ -2310,6 +2328,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       "Act as a language practice partner for free-form conversation.",
       strict,
       proficiencyHint,
+      `Live performance context: ${JSON.stringify(generationPerformanceContextFor(useUserStore.getState().user, tLang))}. Keep the same conversation topic and personality while adjusting complexity to the suggested question level.`,
       adultBeginnerTone,
       pronunciationInstructions,
       customSubjectsContext,
@@ -2629,6 +2648,11 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "...", "goa
         return "skipped";
       }
       if (parsed?.completed) {
+        setOrbFeedback((previous) => ({ id: (previous?.id || 0) + 1, result: "correct" }));
+        void recordGradedOutcome({ npub: currentNpub, targetLang: tLang,
+          success: true, questionLevel: goal.questionLevel, worth: goal.worth,
+          mode: "conversation", concept: goalText, support: "independent" })
+          .catch((error) => console.warn("Conversation Score save failed:", error));
         // Success renders as a checkmark on the goal line, not as text —
         // the next goal replaces this area too quickly for text to be read.
         setGoalFeedback("");
@@ -2646,6 +2670,13 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "...", "goa
         // where it went). Also re-anchor after 2 misses so a stuck goal can't
         // nag forever.
         const drifted = parsed?.goalStillFits === false;
+        if (!drifted) {
+          setOrbFeedback((previous) => ({ id: (previous?.id || 0) + 1, result: "wrong" }));
+          void recordGradedOutcome({ npub: currentNpub, targetLang: tLang,
+            success: false, questionLevel: goal.questionLevel, worth: goal.worth,
+            mode: "conversation", concept: goalText })
+            .catch((error) => console.warn("Conversation Score save failed:", error));
+        }
         if (drifted || goalFailStreakRef.current >= 2) {
           setGoalFeedback("");
           goalShepherdRef.current = "";
@@ -2699,8 +2730,10 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "...", "goa
 
     // Get current settings
     const currentSettings = conversationSettingsRef.current;
-    const selectedLevel =
-      currentSettings.proficiencyLevel || maxProficiencyLevel || "A1";
+    const selectedLevel = practiceLevelForElo(
+      eloForUser(useUserStore.getState().user, targetLangRef.current),
+    );
+    const worth = questionWorthForUser(useUserStore.getState().user, targetLangRef.current, selectedLevel);
     const customSubjects = currentSettings.conversationSubjects || "";
 
     try {
@@ -2737,6 +2770,8 @@ CRITICAL: The learner must be able to complete the new goal simply by replying n
         : `Previous goal was: "${currentGoal.text.en}"`;
 
       const prompt = `You are helping a ${selectedLevel} level language learner practice conversation.
+
+Live learner performance: ${JSON.stringify(generationPerformanceContextFor(useUserStore.getState().user, targetLangRef.current))}. Use the current Elo, recent accuracy and weak concepts when choosing this goal; keep the selected challenge level ${selectedLevel}.
 
 Recent conversation:
 ${recentMessages || "Just started"}
@@ -2782,6 +2817,8 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
         setCurrentGoal({
           text: getRandomFallbackTopic(selectedLevel),
           completed: false,
+          questionLevel: selectedLevel,
+          worth,
         });
         goalCheckPendingRef.current = false;
         setIsGeneratingGoal(false);
@@ -2802,27 +2839,36 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
 
       const parsed = safeParseJson(responseText);
       if (parsed?.en || parsed?.[resolvedSupportLang]) {
+        const assessedWorth = await assessGeneratedQuestionWorth({
+          user: useUserStore.getState().user, targetLang: targetLangRef.current,
+          questionLevel: selectedLevel,
+          question: { goal: parsed?.[resolvedSupportLang] || parsed.en,
+            previousMessage: lastAiMessage, task: "Respond in a live conversation" },
+          mode: "conversation",
+        });
         setCurrentGoal({
           text: {
             ...parsed,
             en: parsed.en || parsed[resolvedSupportLang] || "",
           },
           completed: false,
+          questionLevel: selectedLevel,
+          worth: assessedWorth,
         });
       } else {
         setCurrentGoal({
           text: getRandomFallbackTopic(selectedLevel),
           completed: false,
+          questionLevel: selectedLevel,
+          worth,
         });
       }
     } catch (e) {
       setCurrentGoal({
-        text: getRandomFallbackTopic(
-          conversationSettingsRef.current.proficiencyLevel ||
-            maxProficiencyLevel ||
-            "A1",
-        ),
+        text: getRandomFallbackTopic(selectedLevel),
         completed: false,
+        questionLevel: selectedLevel,
+        worth,
       });
     }
 
@@ -2842,9 +2888,9 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
     const requestId = starterFetchRequestRef.current;
     setStarterLoading(true);
 
-    const currentSettings = conversationSettingsRef.current;
-    const selectedLevel =
-      currentSettings.proficiencyLevel || maxProficiencyLevel || "A1";
+    const selectedLevel = practiceLevelForElo(
+      eloForUser(useUserStore.getState().user, targetLangRef.current),
+    );
     try {
       const lastAiMessage =
         [...messagesRef.current]
@@ -3649,7 +3695,7 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
                     for the current goal so a Pre-A1/A1 learner always has
                     words to try out loud. */}
                 {isFoundationConversationLevel(
-                  conversationSettings.proficiencyLevel || maxProficiencyLevel,
+                  practiceLevelForElo(eloForUser(user, targetLang)),
                 ) &&
                   !isGeneratingGoal &&
                   !currentGoal.completed &&
@@ -3793,6 +3839,9 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
                   transition="opacity 0.5s ease"
                 >
                   <VoiceOrb
+                    variant="tutor"
+                    callActive={status === "connected"}
+                    feedback={orbFeedback}
                     state={previousOrbState}
                     theme={isLightTheme ? "light" : "dark"}
                     size={voiceOrbSize}
@@ -3801,6 +3850,9 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
               )}
               <Box opacity={1} transition="opacity 0.5s ease">
                 <VoiceOrb
+                  variant="tutor"
+                  callActive={status === "connected"}
+                  feedback={orbFeedback}
                   state={displayOrbState}
                   theme={isLightTheme ? "light" : "dark"}
                   size={voiceOrbSize}

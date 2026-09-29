@@ -68,7 +68,7 @@ const LANG_COLORS = {
   nl: { bg: "orange.400", label: "NL" },
   nah: { bg: "teal.600", label: "NAH" },
   ru: { bg: "cyan.600", label: "RU" },
-  de: { bg: "gray.500", label: "DE" },
+  de: { bg: "var(--app-gray-500-surface)", label: "DE" },
   el: { bg: "blue.400", label: "EL" },
   pl: { bg: "pink.600", label: "PL" },
   ga: { bg: "green.500", label: "GA" },

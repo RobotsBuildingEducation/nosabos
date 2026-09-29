@@ -35,12 +35,15 @@ import {
 } from "../firebaseResources/firebaseResources"; // ✅ Gemini (client-side)
 import useUserStore from "../hooks/useUserStore";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
-import VoiceOrb from "./VoiceOrb";
+import VoiceOrb from "./VoiceOrbNext";
 import translations from "../utils/translation";
 import { MdOutlineSupportAgent } from "react-icons/md";
 import { PiSpeakerHighDuotone } from "react-icons/pi";
 import ReactMarkdown from "react-markdown";
 import { awardXp } from "../utils/utils";
+import { recordGradedOutcome } from "../utils/learningIntelligence";
+import { eloForUser, practiceLevelForElo, generationPerformanceContextFor, questionWorthForUser } from "../utils/performanceEloModel";
+import { assessGeneratedQuestionWorth } from "../utils/questionDifficultyAssessment";
 import { getLanguageXp } from "../utils/progressTracking";
 import {
   SOFT_STOP_BUTTON_BG,
@@ -314,9 +317,10 @@ function useSharedProgress() {
 /* ---------------------------
    Difficulty routing (CEFR-based)
 --------------------------- */
-function difficultyHint(cefrLevel) {
-  // Use CEFR level instead of XP for more accurate difficulty
-  return getCEFRPromptHint(cefrLevel);
+function difficultyHint(cefrLevel, targetLang, curriculumCefrLevel) {
+  return `${getCEFRPromptHint(cefrLevel)} Live performance memory: ${JSON.stringify(
+    generationPerformanceContextFor(useUserStore.getState().user, targetLang, { curriculumCefrLevel }),
+  )}. Keep the lesson topic, but adapt question complexity and support to this evidence.`;
 }
 
 /* ---------------------------
@@ -343,7 +347,7 @@ function buildFillStreamPrompt({
   const wantTranslation =
     showTranslations &&
     SUPPORT_CODE !== (targetLang === "en" ? "en" : targetLang);
-  const diff = lessonContent?.isGoal ? focusedLessonPrompt(lessonContent) : difficultyHint(cefrLevel);
+  const diff = lessonContent?.isGoal ? focusedLessonPrompt(lessonContent) : difficultyHint(cefrLevel, targetLang, lessonContent?.cefrLevel);
 
   // If lesson content is provided, use specific grammar topic/focus
   // Special handling for tutorial mode - use very simple "hello" content only
@@ -439,7 +443,7 @@ function buildMatchStreamPrompt({
   const TARGET = LANG_NAME(targetLang);
   const SUPPORT_CODE = resolveSupportLang(supportLang, appUILang);
   const SUPPORT = LANG_NAME(SUPPORT_CODE);
-  const diff = lessonContent?.isGoal ? focusedLessonPrompt(lessonContent) : difficultyHint(cefrLevel);
+  const diff = lessonContent?.isGoal ? focusedLessonPrompt(lessonContent) : difficultyHint(cefrLevel, targetLang, lessonContent?.cefrLevel);
   const curriculumScope = buildCurriculumPromptContext(
     lessonContent?.curriculumContext,
     { mode: "grammar" },
@@ -529,7 +533,7 @@ function buildMCStreamPrompt({
   const wantTranslation =
     showTranslations &&
     SUPPORT_CODE !== (targetLang === "en" ? "en" : targetLang);
-  const diff = lessonContent?.isGoal ? focusedLessonPrompt(lessonContent) : difficultyHint(cefrLevel);
+  const diff = lessonContent?.isGoal ? focusedLessonPrompt(lessonContent) : difficultyHint(cefrLevel, targetLang, lessonContent?.cefrLevel);
   const preferBlank = Math.random() < 0.6;
   const stemDirective = preferBlank
     ? `- Stem short (≤120 chars) and MUST include a blank "___" in the sentence.`
@@ -639,7 +643,7 @@ function buildMAStreamPrompt({
   const wantTranslation =
     showTranslations &&
     SUPPORT_CODE !== (targetLang === "en" ? "en" : targetLang);
-  const diff = lessonContent?.isGoal ? focusedLessonPrompt(lessonContent) : difficultyHint(cefrLevel);
+  const diff = lessonContent?.isGoal ? focusedLessonPrompt(lessonContent) : difficultyHint(cefrLevel, targetLang, lessonContent?.cefrLevel);
   const numBlanks = Math.random() < 0.5 ? 2 : 3;
 
   // If lesson content is provided, use specific grammar topic/focus
@@ -717,7 +721,7 @@ function buildSpeakGrammarStreamPrompt({
   const wantTranslation =
     showTranslations &&
     SUPPORT_CODE !== (targetLang === "en" ? "en" : targetLang);
-  const diff = lessonContent?.isGoal ? focusedLessonPrompt(lessonContent) : difficultyHint(cefrLevel);
+  const diff = lessonContent?.isGoal ? focusedLessonPrompt(lessonContent) : difficultyHint(cefrLevel, targetLang, lessonContent?.cefrLevel);
 
   // If lesson content is provided, use specific grammar topic/focus
   // Special handling for tutorial mode - use very simple "hello" content only
@@ -814,7 +818,7 @@ function buildTranslateStreamPrompt({
   const TARGET = LANG_NAME(targetLang);
   const SUPPORT_CODE = resolveSupportLang(supportLang, appUILang);
   const SUPPORT = LANG_NAME(SUPPORT_CODE);
-  const diff = lessonContent?.isGoal ? focusedLessonPrompt(lessonContent) : difficultyHint(cefrLevel);
+  const diff = lessonContent?.isGoal ? focusedLessonPrompt(lessonContent) : difficultyHint(cefrLevel, targetLang, lessonContent?.cefrLevel);
 
   // Determine source and answer languages based on direction
   const isTargetToSupport = direction === "target-to-support";
@@ -1019,13 +1023,6 @@ function GrammarBookLegacy({
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, []);
 
-  // Repair/ephemeral lessons carry an explicit CEFR level; regular path lessons
-  // can still derive it from their level-coded id.
-  const cefrLevel =
-    lesson?.cefrLevel ||
-    lessonContent?.cefrLevel ||
-    (lesson?.id ? extractCEFRLevel(lesson.id) : "A1");
-
   // Quiz mode state
   const [quizQuestionsAnswered, setQuizQuestionsAnswered] = useState(0);
   const [quizCorrectAnswers, setQuizCorrectAnswers] = useState(0);
@@ -1123,6 +1120,16 @@ function GrammarBookLegacy({
     progress.targetLang,
     DEFAULT_TARGET_LANGUAGE,
   );
+  // Repair/ephemeral lessons carry an explicit CEFR level; regular path lessons
+  // can still derive it from their level-coded id. Keep this after targetLang
+  // initialization because the ELO lookup uses the learner's target language.
+  const curriculumCefrLevel =
+    lesson?.cefrLevel ||
+    lessonContent?.cefrLevel ||
+    (lesson?.id ? extractCEFRLevel(lesson.id) : "A1");
+  const cefrLevel = isFinalQuiz || lessonContent?.topic === "tutorial" || lessonContent?.tutorialPracticeLevel || lessonContent?.isGoal || lessonContent?.isRepair
+    ? curriculumCefrLevel
+    : practiceLevelForElo(eloForUser(user, targetLang));
   const supportLang =
     progress.supportLang === "bilingual"
       ? "bilingual"
@@ -1199,7 +1206,20 @@ function GrammarBookLegacy({
   // explanation feature
   const [explanationText, setExplanationText] = useState("");
   const [isLoadingExplanation, setIsLoadingExplanation] = useState(false);
-  const [currentQuestionData, setCurrentQuestionData] = useState(null);
+  const [currentQuestionData, setCurrentQuestionDataState] = useState(null);
+  const questionWorthRef = useRef(questionWorthForUser(user, targetLang, cefrLevel));
+  const questionWorthPromiseRef = useRef(Promise.resolve(questionWorthRef.current));
+  const assessedQuestionSignatureRef = useRef(null);
+  const setCurrentQuestionData = (snapshot) => {
+    if (!snapshot) {
+      setCurrentQuestionDataState(null);
+      return;
+    }
+    setCurrentQuestionDataState({ ...snapshot,
+      questionLevel: snapshot.questionLevel || cefrLevel,
+      worth: snapshot.worth || questionWorthRef.current,
+    });
+  };
 
   // note creation feature
   const [isCreatingNote, setIsCreatingNote] = useState(false);
@@ -1218,9 +1238,15 @@ function GrammarBookLegacy({
       return;
     }
     if (lastOk !== false || !currentQuestionData) return;
+    if (currentQuestionData.eloRecorded) return;
     const sig = `${currentQuestionData.question || ""}|${currentQuestionData.userAnswer || ""}`;
     if (companionCapturedRef.current === sig) return;
     companionCapturedRef.current = sig;
+    void recordGradedOutcome({
+      npub, targetLang, success: false, questionLevel: currentQuestionData.questionLevel,
+      worth: currentQuestionData.worth,
+      mode: "grammar", concept: currentQuestionData.question || currentQuestionData.correctAnswer,
+    }).catch((error) => console.warn("Grammar Score save failed:", error));
     captureCompanionMemory({
       npub,
       targetLang,
@@ -1230,8 +1256,10 @@ function GrammarBookLegacy({
         currentQuestionData.question || currentQuestionData.correctAnswer || "",
       userAnswer: currentQuestionData.userAnswer || "",
       expectedAnswer: currentQuestionData.correctAnswer || "",
-      cefrLevel,
+      cefrLevel: currentQuestionData.questionLevel,
+      questionWorth: currentQuestionData.worth,
       sourceContext: "grammar",
+      gradedOutcome: false,
     });
     triggerDoneAnimation();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1411,6 +1439,14 @@ function GrammarBookLegacy({
 
   // Quiz mode helper function
   function handleQuizAnswer(isCorrect, questionSnapshot = null) {
+    if (isCorrect && !questionSnapshot?.eloRecorded) {
+      void recordGradedOutcome({
+        npub, targetLang, success: true, questionLevel: cefrLevel,
+        worth: questionWorthRef.current,
+        mode: "grammar", concept: questionSnapshot?.question || "",
+        support: assistantSupportText ? "prompted" : "independent",
+      }).catch((error) => console.warn("Grammar quiz Score save failed:", error));
+    }
     setQuizCurrentQuestionAttempted(true);
     // Quiz grading branches early-return before the normal setCurrentQuestionData,
     // so record the snapshot here — otherwise the companion capture effect (which
@@ -2118,6 +2154,7 @@ Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Ant
   const [sHint, setSHint] = useState("");
   const [sTranslation, setSTranslation] = useState("");
   const [sEval, setSEval] = useState(null);
+  const [isJudgingSpeech, setIsJudgingSpeech] = useState(false);
   const [loadingSpeakQ, setLoadingSpeakQ] = useState(false);
   const speakAudioRef = useRef(null);
   const speakAudioUrlRef = useRef(null);
@@ -2211,6 +2248,40 @@ Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Ant
   const [translateUIVariant, setTranslateUIVariant] = useState("repeat"); // "repeat" | "standard"
   const [repeatMode, setRepeatMode] = useState("target-tts-support-bank"); // translate-repeat submode
   const [questionTTsLang, setQuestionTTsLang] = useState(targetLang);
+
+  useEffect(() => {
+    let item = null;
+    if (mode === "fill" && !loadingQ && question)
+      item = { prompt: question, hint };
+    else if (mode === "mc" && !loadingMCQ && mcQ && mcChoices.length)
+      item = { prompt: mcQ, choices: mcChoices, answer: mcAnswer, hint: mcHint };
+    else if (mode === "ma" && !loadingMAQ && maQ && maChoices.length)
+      item = { prompt: maQ, choices: maChoices, answers: maAnswers, hint: maHint };
+    else if (mode === "speak" && !loadingSpeakQ && sPrompt)
+      item = { prompt: sPrompt, target: sTarget, hint: sHint };
+    else if (mode === "match" && !loadingMG && mLeft.length && mRight.length)
+      item = { prompt: mStem, left: mLeft, right: mRight, hint: mHint };
+    else if ((mode === "translate" || mode === "repeat") && !loadingTQ && tSentence && tWordBank.length)
+      item = { prompt: tSentence, wordBank: tWordBank, answer: tCorrectWords, hint: tHint };
+    else if (mode === "flashcard" && !loadingFC && fcConcept && fcAnswer)
+      item = { concept: fcConcept, answer: fcAnswer, task: "Recall the flashcard answer" };
+    if (!item) { assessedQuestionSignatureRef.current = null; return; }
+    const signature = JSON.stringify({ mode, item, cefrLevel, targetLang });
+    if (assessedQuestionSignatureRef.current === signature) return;
+    assessedQuestionSignatureRef.current = signature;
+    const pending = assessGeneratedQuestionWorth({
+      user: useUserStore.getState().user, targetLang, questionLevel: cefrLevel,
+      question: item, mode: `grammar:${mode}`,
+    });
+    questionWorthPromiseRef.current = pending;
+    void pending.then((worth) => {
+      if (assessedQuestionSignatureRef.current === signature) questionWorthRef.current = worth;
+    });
+  }, [mode, loadingQ, question, hint, loadingMCQ, mcQ, mcChoices, mcAnswer,
+    mcHint, loadingMAQ, maQ, maChoices, maAnswers, maHint, loadingSpeakQ,
+    sPrompt, sTarget, sHint, loadingMG, mStem, mLeft, mRight, mHint,
+    loadingTQ, tSentence, tWordBank, tCorrectWords, tHint, loadingFC,
+    fcConcept, fcAnswer, cefrLevel, targetLang]);
 
   const generatorDeckRef = useRef([]);
   const generateRandomRef = useRef(() => {});
@@ -3912,6 +3983,7 @@ Return JSON ONLY:
     setIsAssistantOpen(false);
     playSound(submitActionSound);
     setLoadingG(true);
+    questionWorthRef.current = await questionWorthPromiseRef.current;
 
     // Clear previous explanation when attempting a new answer
     setExplanationText("");
@@ -3952,6 +4024,12 @@ Return JSON ONLY:
     if (delta > 0) {
       await awardXp(npub, delta, targetLang, {
         skillTreeLessonId: lesson?.id,
+        gradedOutcome: {
+          questionLevel: cefrLevel,
+          worth: questionWorthRef.current,
+          mode: "grammar",
+          support: assistantSupportText ? "prompted" : "independent",
+        },
       }).catch(() => {});
     }
 
@@ -3989,6 +4067,7 @@ Return JSON ONLY:
     setIsAssistantOpen(false);
     playSound(submitActionSound);
     setLoadingMCG(true);
+    questionWorthRef.current = await questionWorthPromiseRef.current;
 
     // Clear previous explanation when attempting a new answer
     setExplanationText("");
@@ -4036,6 +4115,12 @@ Return JSON ONLY:
     if (delta > 0) {
       await awardXp(npub, delta, targetLang, {
         skillTreeLessonId: lesson?.id,
+        gradedOutcome: {
+          questionLevel: cefrLevel,
+          worth: questionWorthRef.current,
+          mode: "grammar",
+          support: assistantSupportText ? "prompted" : "independent",
+        },
       }).catch(() => {});
     }
 
@@ -4069,6 +4154,7 @@ Return JSON ONLY:
     setIsAssistantOpen(false);
     playSound(submitActionSound);
     setLoadingMAG(true);
+    questionWorthRef.current = await questionWorthPromiseRef.current;
 
     // Clear previous explanation when attempting a new answer
     setExplanationText("");
@@ -4122,6 +4208,12 @@ Return JSON ONLY:
     if (delta > 0) {
       await awardXp(npub, delta, targetLang, {
         skillTreeLessonId: lesson?.id,
+        gradedOutcome: {
+          questionLevel: cefrLevel,
+          worth: questionWorthRef.current,
+          mode: "grammar",
+          support: assistantSupportText ? "prompted" : "independent",
+        },
       }).catch(() => {});
     }
 
@@ -4160,6 +4252,7 @@ Return JSON ONLY:
     setIsAssistantOpen(false);
     playSound(submitActionSound);
     setLoadingMJ(true);
+    questionWorthRef.current = await questionWorthPromiseRef.current;
 
     // Clear previous explanation when attempting a new answer
     setExplanationText("");
@@ -4204,6 +4297,12 @@ Return JSON ONLY:
     if (delta > 0) {
       await awardXp(npub, delta, targetLang, {
         skillTreeLessonId: lesson?.id,
+        gradedOutcome: {
+          questionLevel: cefrLevel,
+          worth: questionWorthRef.current,
+          mode: "grammar",
+          support: assistantSupportText ? "prompted" : "independent",
+        },
       }).catch(() => {});
     }
 
@@ -4234,6 +4333,7 @@ Return JSON ONLY:
   // Submit for Translate mode
   async function submitTranslate(userWords) {
     if (!tSentence || !userWords || userWords.length === 0) return;
+    questionWorthRef.current = await questionWorthPromiseRef.current;
     setIsAssistantOpen(false);
     setLoadingTJ(true);
 
@@ -4300,6 +4400,12 @@ Return JSON ONLY:
     if (delta > 0) {
       await awardXp(npub, delta, targetLang, {
         skillTreeLessonId: lesson?.id,
+        gradedOutcome: {
+          questionLevel: cefrLevel,
+          worth: questionWorthRef.current,
+          mode: "grammar",
+          support: assistantSupportText ? "prompted" : "independent",
+        },
       }).catch(() => {});
     }
 
@@ -4351,6 +4457,8 @@ Return JSON ONLY:
         return;
       }
       if (!evaluation) return;
+      setIsJudgingSpeech(true);
+      questionWorthRef.current = await questionWorthPromiseRef.current;
 
       // Clear previous explanation when attempting a new answer
       setExplanationText("");
@@ -4369,6 +4477,7 @@ Return JSON ONLY:
           questionType: "speak",
         });
         setLastOk(ok);
+        setIsJudgingSpeech(false);
         setRecentXp(0);
         const nextFn =
           ok || isFinalQuiz
@@ -4383,10 +4492,17 @@ Return JSON ONLY:
       if (delta > 0) {
         await awardXp(npub, delta, targetLang, {
           skillTreeLessonId: lesson?.id,
+          gradedOutcome: {
+            questionLevel: cefrLevel,
+            worth: questionWorthRef.current,
+            mode: "grammar",
+            support: assistantSupportText ? "prompted" : "independent",
+          },
         }).catch(() => {});
       }
 
       setLastOk(ok);
+      setIsJudgingSpeech(false);
       setRecentXp(delta);
 
       // Store question data for explanation and note creation
@@ -4849,6 +4965,8 @@ Return JSON ONLY:
         }
 
         questionAudioUrlRef.current = player.audioUrl;
+        const audio = player.audio;
+        questionAudioRef.current = audio;
         const cleanup = () => {
           if (requestId !== questionPlaybackRequestRef.current) return;
           setIsQuestionPlaying(false);
@@ -5363,9 +5481,9 @@ Return JSON ONLY:
             )}
 
             <QuestionActionArea
-              feedback={isAssistantOpen ? "assistant" : lastOk}
+              feedback={isAssistantOpen ? "assistant" : loadingG ? "thinking" : lastOk}
               actions={
-                !isAssistantOpen && (!((lastOk === true || isFinalQuiz && lastOk === false) && nextAction)) && (
+                !isAssistantOpen && !loadingG && (!((lastOk === true || isFinalQuiz && lastOk === false) && nextAction)) && (
                   <ActivityActionRow
                     primary={
                       <Button
@@ -5415,6 +5533,7 @@ Return JSON ONLY:
               <FeedbackRail
                 compact
                 ok={lastOk}
+                loading={loadingG}
                 isAssistant={isAssistantOpen}
                 assistantSupportText={assistantSupportText}
                 isLoadingAssistantSupport={isLoadingAssistantSupport}
@@ -5657,9 +5776,9 @@ Return JSON ONLY:
             )}
 
             <QuestionActionArea
-              feedback={isAssistantOpen ? "assistant" : lastOk}
+              feedback={isAssistantOpen ? "assistant" : loadingMCG ? "thinking" : lastOk}
               actions={
-                !isAssistantOpen && (!((lastOk === true || isFinalQuiz && lastOk === false) && nextAction)) && (
+                !isAssistantOpen && !loadingMCG && (!((lastOk === true || isFinalQuiz && lastOk === false) && nextAction)) && (
                   <ActivityActionRow
                     primary={
                       <Button
@@ -5696,6 +5815,7 @@ Return JSON ONLY:
               <FeedbackRail
                 compact
                 ok={lastOk}
+                loading={loadingMCG}
                 isAssistant={isAssistantOpen}
                 assistantSupportText={assistantSupportText}
                 isLoadingAssistantSupport={isLoadingAssistantSupport}
@@ -5950,9 +6070,9 @@ Return JSON ONLY:
             )}
 
             <QuestionActionArea
-              feedback={isAssistantOpen ? "assistant" : lastOk}
+              feedback={isAssistantOpen ? "assistant" : loadingMAG ? "thinking" : lastOk}
               actions={
-                !isAssistantOpen && (!((lastOk === true || isFinalQuiz && lastOk === false) && nextAction)) && (
+                !isAssistantOpen && !loadingMAG && (!((lastOk === true || isFinalQuiz && lastOk === false) && nextAction)) && (
                   <ActivityActionRow
                     primary={
                       <Button
@@ -5989,6 +6109,7 @@ Return JSON ONLY:
               <FeedbackRail
                 compact
                 ok={lastOk}
+                loading={loadingMAG}
                 isAssistant={isAssistantOpen}
                 assistantSupportText={assistantSupportText}
                 isLoadingAssistantSupport={isLoadingAssistantSupport}
@@ -6106,9 +6227,9 @@ Return JSON ONLY:
             )}
 
             <QuestionActionArea
-              feedback={isAssistantOpen ? "assistant" : lastOk}
+              feedback={isAssistantOpen ? "assistant" : isJudgingSpeech ? "thinking" : lastOk}
               actions={
-                !isAssistantOpen && (!((lastOk === true || isFinalQuiz && lastOk === false) && nextAction)) && (
+                !isAssistantOpen && !isJudgingSpeech && (!((lastOk === true || isFinalQuiz && lastOk === false) && nextAction)) && (
                   <ActivityActionRow
                     tone={isSpeakRecording ? "stop" : "speak"}
                     primary={
@@ -6223,6 +6344,7 @@ Return JSON ONLY:
               <FeedbackRail
                 compact
                 ok={lastOk}
+                loading={isJudgingSpeech}
                 isAssistant={isAssistantOpen}
                 assistantSupportText={assistantSupportText}
                 isLoadingAssistantSupport={isLoadingAssistantSupport}
@@ -6539,9 +6661,9 @@ Return JSON ONLY:
             </Box>
 
             <QuestionActionArea
-              feedback={isAssistantOpen ? "assistant" : lastOk}
+              feedback={isAssistantOpen ? "assistant" : loadingMJ ? "thinking" : lastOk}
               actions={
-                !isAssistantOpen &&
+                !isAssistantOpen && !loadingMJ &&
                 (!((lastOk === true || isFinalQuiz && lastOk === false) && nextAction)) && (
                   <ActivityActionRow
                     primary={
@@ -6579,6 +6701,7 @@ Return JSON ONLY:
               <FeedbackRail
                 compact
                 ok={lastOk}
+                loading={loadingMJ}
                 isAssistant={isAssistantOpen}
                 assistantSupportText={assistantSupportText}
                 isLoadingAssistantSupport={isLoadingAssistantSupport}
@@ -6704,15 +6827,23 @@ Return JSON ONLY:
             deckSize={fcDeck.length}
             onOpenDeck={() => setShowDeckReview(true)}
             onCorrect={async (xpAmount) => {
+              questionWorthRef.current = await questionWorthPromiseRef.current;
               if (!isFinalQuiz) {
                 await awardXp(npub, xpAmount, targetLang, {
                   skillTreeLessonId: lesson?.id,
+                  gradedOutcome: {
+                    questionLevel: cefrLevel,
+                    worth: questionWorthRef.current,
+                    mode: "grammar",
+                    support: assistantSupportText ? "prompted" : "independent",
+                  },
                 }).catch(() => {});
               }
               setLastOk(true);
               setRecentXp(xpAmount);
             }}
-            onIncorrect={({ concept, userAnswer, correctAnswer }) => {
+            onIncorrect={async ({ concept, userAnswer, correctAnswer }) => {
+              questionWorthRef.current = await questionWorthPromiseRef.current;
               setCurrentQuestionData({
                 question: concept || fcConcept,
                 userAnswer,

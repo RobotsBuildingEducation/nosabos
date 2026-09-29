@@ -42,7 +42,7 @@ import {
 
 import useUserStore from "../hooks/useUserStore";
 import useBottomDrawerSwipeDismiss from "../hooks/useBottomDrawerSwipeDismiss";
-import VoiceOrb from "./VoiceOrb";
+import VoiceOrb from "./VoiceOrbNext";
 import BottomDrawerDragHandle from "./BottomDrawerDragHandle";
 import {
   ArchiveTextAnimation,
@@ -76,6 +76,7 @@ import {
   getHighestProficiencyPlacement,
   isHigherProficiencyPlacement,
 } from "../utils/proficiencyPlacement";
+import { scoreFromPlacementEvidence, seedPlacementElo } from "../utils/proficiencySelfAssessment";
 
 import { getRealtimeUrl } from "../utils/proxyEndpoints";
 
@@ -1789,6 +1790,7 @@ export default function ProficiencyTest() {
   async function runAssessment() {
     setIsEvaluating(true);
     setAssessmentError(false);
+    setAssessmentScores(null);
     // Collect the full conversation for analysis
     const sorted = [...messagesRef.current].sort(
       (a, b) => (a.ts || 0) - (b.ts || 0),
@@ -1956,6 +1958,8 @@ Return ONLY valid JSON:
         setAssessmentSummary(
           parsed?.summary || ui.proficiency_test_assess_fallback,
         );
+        if (parsed?.scores && typeof parsed.scores === "object")
+          setAssessmentScores(parsed.scores);
       }
     } catch (e) {
       console.error("Assessment failed:", e);
@@ -1976,6 +1980,7 @@ Return ONLY valid JSON:
       return;
     }
 
+    const assessedScore = scoreFromPlacementEvidence(assessedLevel, assessmentScores);
     try {
       const userRef = doc(database, "users", currentNpub);
       const localPlacement = user?.proficiencyPlacements?.[targetLang];
@@ -1984,10 +1989,12 @@ Return ONLY valid JSON:
         assessedLevel,
       );
       let placementRaised = false;
+      let seededEloBucket = null;
 
       await runTransaction(database, async (transaction) => {
         const snapshot = await transaction.get(userRef);
-        const storedPlacement = snapshot.data()?.proficiencyPlacements?.[
+        const data = snapshot.data() || {};
+        const storedPlacement = data.proficiencyPlacements?.[
           targetLang
         ];
         const previousPlacement = getHighestProficiencyPlacement(
@@ -2003,12 +2010,19 @@ Return ONLY valid JSON:
           previousPlacement,
         );
 
-        if (!placementRaised) return;
-
         const now = new Date().toISOString();
-        transaction.set(
-          userRef,
-          {
+        const storedBucket = data.learningIntelligence?.[targetLang] || {};
+        const hasGradedHistory = Number(storedBucket.elo?.totalGraded) > 0;
+        seededEloBucket = null;
+        if (!hasGradedHistory) {
+          seededEloBucket = seedPlacementElo(storedBucket, {
+            level: assessedLevel, rating: assessedScore, source: "placement_test", now,
+          });
+        }
+        if (!placementRaised && hasGradedHistory) return;
+        transaction.set(userRef, {
+          ...(!hasGradedHistory ? { learningIntelligence: { [targetLang]: seededEloBucket } } : {}),
+          ...(placementRaised ? {
             proficiencyPlacement: savedPlacement,
             proficiencyPlacements: { [targetLang]: savedPlacement },
             proficiencyPlacementAt: now,
@@ -2019,10 +2033,9 @@ Return ONLY valid JSON:
               activeLessonLevels: { [targetLang]: savedPlacement },
               activeFlashcardLevels: { [targetLang]: savedPlacement },
             },
-            updatedAt: now,
-          },
-          { merge: true },
-        );
+          } : {}),
+          updatedAt: now,
+        }, { merge: true });
       });
 
       if (placementRaised) {
@@ -2036,6 +2049,12 @@ Return ONLY valid JSON:
           ...(user?.proficiencyPlacements || {}),
           [targetLang]: savedPlacement,
         },
+        ...(seededEloBucket ? {
+          learningIntelligence: {
+            ...useUserStore.getState().user?.learningIntelligence,
+            [targetLang]: seededEloBucket,
+          },
+        } : {}),
         ...(placementRaised
           ? {
               activeLessonLevel: savedPlacement,
@@ -2063,6 +2082,7 @@ Return ONLY valid JSON:
   }, [
     currentNpub,
     assessedLevel,
+    assessmentScores,
     targetLang,
     navigate,
     patchUser,
@@ -2755,7 +2775,7 @@ Return ONLY valid JSON:
 
         <VStack spacing={0.5} align="center" mt={2}>
           <Box width="132px" opacity={0.95}>
-            <VoiceOrb state={orbUiState} />
+            <VoiceOrb variant="tutor" callActive={status === "connected"} state={orbUiState} />
           </Box>
           {uiStateLabel(liveUiState, ui) && (
             <Text

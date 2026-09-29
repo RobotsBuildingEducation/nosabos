@@ -290,7 +290,7 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
             ? await services.generateStream(streamPrompt)
             : await storyModel.generateContentStream({
                 contents: [{ role: "user", parts: [{ text: streamPrompt }] }],
-                generationConfig: { temperature: 0.7, maxOutputTokens: 8192 },
+                generationConfig: { temperature: 0.7 },
               });
 
           for await (const chunk of streamResult.stream) {

@@ -47,6 +47,9 @@ import {
 import translations from "../utils/translation";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
 import { awardXp } from "../utils/utils";
+import { recordGradedOutcome } from "../utils/learningIntelligence";
+import { eloForUser, practiceLevelForElo, generationPerformanceContextFor } from "../utils/performanceEloModel";
+import { assessGeneratedQuestionWorth } from "../utils/questionDifficultyAssessment";
 import { captureCompanionMemory } from "../utils/companionMemory";
 import { extractCEFRLevel } from "../utils/cefrUtils";
 import { generateNoteContent, buildNoteObject } from "../utils/noteGeneration";
@@ -3386,10 +3389,13 @@ export default function DelightQuestionLab({
   const threeWordChallengeCopy = getThreeWordChallengeCopy(supportLang);
   const naturalOrWeirdCopy = getNaturalOrWeirdCopy(supportLang);
   const supportDirection = getLanguageDirection(supportLang, "ltr");
-  const cefrLevel =
+  const curriculumCefrLevel =
     lesson?.cefrLevel ||
     lessonContent?.cefrLevel ||
     (lesson?.id ? extractCEFRLevel(lesson.id) : "A1");
+  const cefrLevel = isFinalQuiz || lessonContent?.topic === "tutorial" || lessonContent?.tutorialPracticeLevel || lessonContent?.isGoal || lessonContent?.isRepair
+    ? curriculumCefrLevel
+    : practiceLevelForElo(eloForUser(user, targetLang));
   const npub = strongNpub(user);
 
   const [variantIndex, setVariantIndex] = useState(0);
@@ -3652,8 +3658,8 @@ export default function DelightQuestionLab({
     try {
       const targetName = getDelightLanguageName(targetLang);
       const supportName = getDelightLanguageName(supportLang);
-      const levelHint = cefrLevel
-        ? `The learner's proficiency is CEFR ${cefrLevel}.`
+      const levelHint = question?.questionLevel
+        ? `This question was generated at CEFR ${question.questionLevel}.`
         : "";
 
       const instruction = [
@@ -3962,12 +3968,18 @@ export default function DelightQuestionLab({
           cefrLevel,
           lessonContent,
           recentQuestions: recentQuestionSummariesRef.current,
+          performanceContext: generationPerformanceContextFor(useUserStore.getState().user, targetLang, { curriculumCefrLevel }),
         });
-        return requireValidQuestion(generated);
+        const candidate = requireValidQuestion(generated);
+        const worth = await assessGeneratedQuestionWorth({
+          user: useUserStore.getState().user, targetLang, questionLevel: cefrLevel,
+          question: candidate, mode: `lesson:${variantMeta.id}`,
+        });
+        return { ...candidate, questionLevel: cefrLevel, worth };
       }
 
       const generated = await generate(
-        buildDelightQuestionPrompt({
+        `${buildDelightQuestionPrompt({
           variant: variantMeta.id,
           moduleType,
           targetLang,
@@ -3975,14 +3987,18 @@ export default function DelightQuestionLab({
           cefrLevel,
           lessonContent,
           recentQuestions: recentQuestionSummariesRef.current,
-        }),
+        })}\nLive performance memory: ${JSON.stringify(generationPerformanceContextFor(useUserStore.getState().user, targetLang, { curriculumCefrLevel }))}. Keep the lesson topic and adjust question complexity and support to this evidence.`,
       );
       const candidate = requireValidQuestion(generated);
       if (candidate.variant === "morphology_forge" && !(await validateMorphologyForgeQuestion(candidate, {
         targetLang, supportLang, cefrLevel,
         judge: (input) => callResponses({ model: DEFAULT_RESPONSES_MODEL, input }),
       }))) throw new Error("The generated word pieces do not solve the sentence naturally.");
-      return candidate;
+      const worth = await assessGeneratedQuestionWorth({
+        user: useUserStore.getState().user, targetLang, questionLevel: cefrLevel,
+        question: candidate, mode: `lesson:${variantMeta.id}`,
+      });
+      return { ...candidate, questionLevel: cefrLevel, worth };
     };
 
     const generationTask = questionModel
@@ -4285,6 +4301,7 @@ export default function DelightQuestionLab({
       }
     }
 
+    const questionLevel = question?.questionLevel || cefrLevel;
     const xp = ok
       ? calculateDelightQuestionXp(question, submittedResponse, {
           revealedClues,
@@ -4292,7 +4309,16 @@ export default function DelightQuestionLab({
         })
       : 0;
     if (!isFinalQuiz && xp > 0) {
-      await awardXp(npub, xp, targetLang, { skillTreeLessonId: lesson?.id }).catch(() => {});
+      await awardXp(npub, xp, targetLang, {
+        skillTreeLessonId: lesson?.id,
+        gradedOutcome: { questionLevel, worth: question.worth, mode: moduleType,
+          support: assistantSupportText || revealedClues > 1 ? "prompted" : "independent" },
+      }).catch(() => {});
+    } else if (isFinalQuiz && ok) {
+      void recordGradedOutcome({ npub, targetLang, success: true,
+        questionLevel, worth: question.worth, mode: moduleType,
+        concept: question.sentence || question.prompt || "",
+        support: "independent" }).catch((error) => console.warn("Delight Score save failed:", error));
     }
     setResult(Boolean(ok));
     setRecentXp(isFinalQuiz ? 0 : xp);
@@ -4315,7 +4341,8 @@ export default function DelightQuestionLab({
             "Missed practice item",
           userAnswer: mem.userAnswer,
           expectedAnswer: mem.expectedAnswer,
-          cefrLevel,
+          cefrLevel: questionLevel,
+          questionWorth: question.worth,
           sourceContext: question.variant || moduleType || "delight_question",
         }).catch((err) => {
           console.warn("Delight question memory capture error:", err);
@@ -4341,6 +4368,7 @@ export default function DelightQuestionLab({
             question.correction ||
             "",
           questionType: question.variant,
+          eloRecorded: true,
         });
       } else {
         setQuizHistory((history) => [...history, Boolean(ok)]);
@@ -4348,6 +4376,7 @@ export default function DelightQuestionLab({
     }
     setSubmitting(false);
   }, [
+    assistantSupportText,
     cefrLevel,
     isFinalQuiz,
     lesson?.id,
@@ -5222,7 +5251,7 @@ export default function DelightQuestionLab({
         </Box>
 
         <QuestionActionArea
-          feedback={isAssistantOpen ? "assistant" : result}
+          feedback={isAssistantOpen ? "assistant" : submitting ? "thinking" : result}
           actions={
             !isAssistantOpen &&
             (result === null || (!isFinalQuiz && result === false)) && (
@@ -5264,10 +5293,11 @@ export default function DelightQuestionLab({
             )
           }
         >
-          {question && (result !== null || isAssistantOpen) && (
+          {question && (result !== null || submitting || isAssistantOpen) && (
             <FeedbackRail
               compact
               ok={result}
+              loading={submitting}
               isAssistant={isAssistantOpen}
               assistantSupportText={assistantSupportText}
               isLoadingAssistantSupport={isLoadingAssistantSupport}

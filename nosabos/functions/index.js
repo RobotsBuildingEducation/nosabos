@@ -46,7 +46,11 @@ const CORS_ORIGINS = [
 ];
 
 // Only permit the models you actually use with /proxyResponses
-const ALLOWED_RESPONSE_MODELS = new Set(["gpt-5-nano"]);
+const ALLOWED_RESPONSE_MODELS = new Set([
+  "gpt-6-luna",
+  "gpt-5.6-luna",
+  "gpt-5-nano",
+]);
 const DEFAULT_REALTIME_MODEL = "gpt-realtime-2.1-mini";
 
 // Enable after the web client is deployed with App Check initialized.
@@ -237,8 +241,14 @@ exports.proxyResponses = onRequest(
       );
     }
 
-    // Inject minimal reasoning effort and low verbosity
-    body.reasoning = { effort: "minimal" };
+    // Luna requests may select a supported reasoning effort; other allowed
+    // models keep the proxy's minimal default.
+    const requestedEffort = body.reasoning?.effort;
+    body.reasoning = {
+      effort: model.includes("luna") && ["none", "low", "medium", "high"].includes(requestedEffort)
+        ? requestedEffort
+        : "minimal",
+    };
     body.text = { ...(body.text || {}), verbosity: "low" };
 
     let upstream;

@@ -1361,9 +1361,9 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
 
       {/* Persistent Question Action Area */}
       <QuestionActionArea
-        feedback={showResult ? isCorrect : null}
+        feedback={isGrading ? "thinking" : showResult ? isCorrect : null}
         actions={
-          !showResult ? (
+          !showResult && !isGrading ? (
             <ActivityActionRow
               primary={
                 <Button
@@ -1391,7 +1391,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                 </Button>
               )}
             </ActivityActionRow>
-          ) : !isCorrect ? (
+          ) : showResult && !isCorrect ? (
             <ActivityActionRow
               primary={
                 <Button
@@ -1418,11 +1418,12 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
           ) : null
         }
       >
-        {showResult && (
+        {(showResult || isGrading) && (
           <FeedbackRail
             compact
             lessonProgress={lessonProgress}
-            ok={isCorrect}
+            ok={showResult ? isCorrect : null}
+            loading={isGrading}
             xp={xpAwarded}
             showNext={isCorrect}
             onNext={handleNextQuestion}

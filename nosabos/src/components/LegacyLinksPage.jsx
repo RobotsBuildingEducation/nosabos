@@ -43,7 +43,7 @@ import useSoundSettings from "../hooks/useSoundSettings";
 import { selectSound, submitActionSound } from "../constants/sounds";
 
 import { RoleCanvas } from "./RoleCanvas/RoleCanvas";
-import VoiceOrb from "./VoiceOrb";
+import VoiceOrb from "./VoiceOrbNext";
 
 import { CloudCanvas } from "./CloudCanvas/CloudCanvas";
 import CitizenshipIcon from "./CitizenshipIcon/CitizenshipIcon";

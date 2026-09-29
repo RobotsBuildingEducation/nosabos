@@ -130,7 +130,7 @@ export const linksPageTranslations = {
     secretKeyWarning:
       "Your secret key is your password to access decentralized apps. Keep it safe and never share it with anyone.",
     switchAccount: "Switch Account",
-    pasteNsec: "Paste your nsec key here",
+    pasteNsec: "Enter your secret key",
     switchAccountHelp:
       "Enter a different nsec to switch to another Nostr account",
 
@@ -322,7 +322,7 @@ export const linksPageTranslations = {
     secretKeyWarning:
       "La tua chiave segreta è la tua password per accedere alle app decentralizzate. Conservala al sicuro e non condividerla mai con nessuno.",
     switchAccount: "Cambia Account",
-    pasteNsec: "Incolla la tua chiave nsec qui",
+    pasteNsec: "Inserisci la tua chiave segreta",
     switchAccountHelp:
       "Inserisci un nsec diverso per passare a un altro account Nostr",
 
@@ -518,7 +518,7 @@ export const linksPageTranslations = {
     secretKeyWarning:
       "Tu clave secreta es tu contrasena para acceder a apps descentralizadas. Guardala de forma segura y nunca la compartas con nadie.",
     switchAccount: "Cambiar Cuenta",
-    pasteNsec: "Pega tu clave nsec aqui",
+    pasteNsec: "Ingresa tu clave secreta",
     switchAccountHelp:
       "Ingresa un nsec diferente para cambiar a otra cuenta de Nostr",
 
@@ -875,7 +875,7 @@ linksPageTranslations.ar = {
   secretKeyWarning:
     "المفتاح السري هو كلمة السر بتاعتك للتطبيقات اللامركزية. خليه في مكان آمن وما تشاركوش مع أي حد.",
   switchAccount: "بدّل الحساب",
-  pasteNsec: "الصق مفتاح nsec هنا",
+  pasteNsec: "أدخل مفتاحك السري",
   switchAccountHelp: "اكتب nsec مختلف علشان تبدّل لحساب Nostr تاني",
   bitcoinWallet: "محفظة بيتكوين",
   walletDescription1: "إيداعاتك بتساعدنا نعمل منح دراسية من خلال التعلّم.",
@@ -1046,7 +1046,7 @@ linksPageTranslations.fr = {
   secretKeyWarning:
     "Ta cle secrete est ton mot de passe pour acceder aux apps decentralisees. Garde-la en securite et ne la partage jamais.",
   switchAccount: "Changer de compte",
-  pasteNsec: "Colle ta cle nsec ici",
+  pasteNsec: "Saisis ta clé secrète",
   switchAccountHelp: "Entre un autre nsec pour changer de compte Nostr",
   bitcoinWallet: "Portefeuille Bitcoin",
   walletDescription1:
@@ -1217,7 +1217,7 @@ linksPageTranslations.ja = {
   secretKeyWarning:
     "シークレットキーは分散型アプリにアクセスするためのパスワードです。安全に保管し、誰にも共有しないでください。",
   switchAccount: "アカウントを切り替え",
-  pasteNsec: "nsecキーをここに貼り付け",
+  pasteNsec: "秘密鍵を入力してください",
   switchAccountHelp: "別のNostrアカウントに切り替えるには別のnsecを入力します",
   bitcoinWallet: "Bitcoinウォレット",
   walletDescription1:
@@ -1395,7 +1395,7 @@ linksPageTranslations.de = {
   secretKeyWarning:
     "Dein geheimer Schlüssel ist dein Passwort für dezentrale Apps. Bewahre ihn sicher auf und teile ihn nie.",
   switchAccount: "Konto wechseln",
-  pasteNsec: "nsec-Schlüssel hier einfügen",
+  pasteNsec: "Gib deinen geheimen Schlüssel ein",
   switchAccountHelp:
     "Gib einen anderen nsec ein, um zu einem anderen Nostr-Konto zu wechseln",
   bitcoinWallet: "Bitcoin-Wallet",

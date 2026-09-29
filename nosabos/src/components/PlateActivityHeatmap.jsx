@@ -5,7 +5,7 @@
 // has zero coupling to modal internals — it imports only stable utils,
 // reads the theme itself, and builds its own localized labels.
 import React, { useMemo } from "react";
-import { Box, HStack, Text } from "@chakra-ui/react";
+import { Box, Button, HStack, Text, VStack } from "@chakra-ui/react";
 import {
   DEFAULT_SUPPORT_LANGUAGE,
   getLanguageLocale,
@@ -172,6 +172,7 @@ export default function PlateActivityHeatmap({
   dailyXpHistory = {},
   currentDailyXp = 0,
   currentGoalXp = 0,
+  onSeeCompanion,
 }) {
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
@@ -190,6 +191,7 @@ export default function PlateActivityHeatmap({
       empty: getLabel("daily_goal_activity_empty", "No XP"),
       some: getLabel("daily_goal_activity_some", "Some XP"),
       goal: getLabel("daily_goal_activity_goal", "Daily goal reached"),
+      seeCompanion: getLabel("daily_plate_see_companion", "See companion"),
     };
   }, [lang]);
 
@@ -234,29 +236,46 @@ export default function PlateActivityHeatmap({
 
   return (
     <Box
-      p={4}
+      w="100%"
+      h="100%"
+      minW={0}
+      maxW="100%"
+      display="flex"
+      flexDirection="column"
+      p={{ base: 3, md: 5 }}
       borderRadius={APP_DAILY_QUEST_RADIUS}
       style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
       bg={isLightTheme ? APP_SURFACE_MUTED : "gray.800"}
       border="1px solid"
       borderColor={isLightTheme ? APP_BORDER : "gray.700"}
     >
-      <HStack justify="space-between" align="baseline" mb={3} flexWrap="wrap">
-        <Text
-          fontSize="xs"
-          fontWeight="bold"
-          color={isLightTheme ? APP_TEXT_SECONDARY : "gray.300"}
-          textTransform="uppercase"
-          letterSpacing="0.08em"
-        >
-          {labels.title}
-        </Text>
-        <Text fontSize="xs" color={isLightTheme ? APP_TEXT_MUTED : "gray.500"}>
-          {labels.subtitle}
-        </Text>
+      <HStack justify="space-between" align="center" mb={3}>
+        <VStack align="start" spacing={0}>
+          <Text
+            fontSize="xs"
+            fontWeight="bold"
+            color={isLightTheme ? APP_TEXT_SECONDARY : "gray.300"}
+            textTransform="uppercase"
+            letterSpacing="0.08em"
+          >
+            {labels.title}
+          </Text>
+          <Text fontSize="xs" color={isLightTheme ? APP_TEXT_MUTED : "gray.500"}>
+            {labels.subtitle}
+          </Text>
+        </VStack>
       </HStack>
 
       <Box
+        flex="1"
+        minH={0}
+        display="flex"
+        flexDirection="column"
+        justifyContent="center"
+      >
+      <Box
+        display="flex"
+        flexDirection="column"
         overflowX="auto"
         overflowY="hidden"
         w="100%"
@@ -298,7 +317,14 @@ export default function PlateActivityHeatmap({
         </Box>
       </Box>
 
-      <HStack spacing={4} mt={4} flexWrap="wrap">
+      <HStack
+        justify="flex-start"
+        align="center"
+        spacing={4}
+        mt={2}
+        flexWrap="wrap"
+      >
+        <HStack spacing={4} flexWrap="wrap">
         <HStack spacing={2}>
           <Box
             w="10px"
@@ -360,7 +386,28 @@ export default function PlateActivityHeatmap({
             {labels.goal}
           </Text>
         </HStack>
+        </HStack>
       </HStack>
+      </Box>
+      {typeof onSeeCompanion === "function" ? (
+        <Button
+          size="sm"
+          variant="outline"
+          bg="transparent"
+          color={isLightTheme ? "black" : "white"}
+          borderColor={isLightTheme ? "teal.600" : "teal.300"}
+          boxShadow="none"
+          _hover={{
+            bg: isLightTheme ? "teal.50" : "whiteAlpha.100",
+          }}
+          _active={{ bg: isLightTheme ? "teal.100" : "whiteAlpha.200" }}
+          alignSelf="center"
+          mt="auto"
+          onClick={onSeeCompanion}
+        >
+          {labels.seeCompanion}
+        </Button>
+      ) : null}
     </Box>
   );
 }

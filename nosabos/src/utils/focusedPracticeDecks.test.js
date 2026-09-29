@@ -38,7 +38,7 @@ let source = await readFile(
 );
 source = source.replace(/import\s+[\s\S]*?from\s+"([^"]+)";/g, () => "");
 source =
-  "const database = {}; const { doc, getDoc, runTransaction, callResponses, readAccountScopedJson, writeAccountScopedJson, getLocalDayKey } = globalThis.__deckTest;\n" +
+  "const database = {}; const { doc, getDoc, runTransaction, callResponses, readAccountScopedJson, writeAccountScopedJson, getLocalDayKey } = globalThis.__deckTest; const useUserStore = { getState: () => ({ user: {} }) }; const generationPerformanceContextFor = () => ({ eloRating: 800, curriculumCefrLevel: 'Pre-A1' });\n" +
   source;
 const decks = await import(
   `data:text/javascript;base64,${Buffer.from(source).toString("base64")}`

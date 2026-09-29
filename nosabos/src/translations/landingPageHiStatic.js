@@ -57,7 +57,7 @@ export const LANDING_PAGE_HI_STATIC = {
   feature_notes: "नोट्स बनाएं",
   feature_notes_desc:
     "अपनी कक्षाओं से विस्तृत अध्ययन नोट्स बनाएं ताकि बाद में समीक्षा कर सकें।",
-  feature_immersion: "इमर्शन अभ्यास",
+  feature_immersion: "इमर्शन और स्कोर",
   feature_immersion_desc:
     "ऐप के बाहर के कार्य पूरे करें ताकि भाषा में डूबकर अभ्यास कर सकें।",
   feature_assistant: "व्यक्तिगत सहायक",

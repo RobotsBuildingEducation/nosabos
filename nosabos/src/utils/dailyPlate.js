@@ -347,6 +347,7 @@ export function electDailyQuestCourses({
   avoid = [],
   seed = null,
   weights = null,
+  score = null,
 } = {}) {
   const pool = available.filter(kind => kind && kind !== "goal" && kind !== "repair");
   const rng = seed != null ? makeSeededRandom(String(seed)) : Math.random;
@@ -355,8 +356,16 @@ export function electDailyQuestCourses({
   if (pool.length <= clamped) return orderQuestKinds(pool);
 
   const avoidSet = new Set(avoid);
+  const rating = score == null ? NaN : Number(score);
+  const difficultyWeights = Number.isFinite(rating)
+    ? rating < 32
+      ? { review: 1.5, phonics: 1.35, speak: 1.2, learn: 0.9, conversation: 0.7 }
+      : rating >= 60
+        ? { conversation: 1.45, learn: 1.25, speak: 1.15, review: 0.8, phonics: 0.8 }
+        : { review: 1, phonics: 1, speak: 1, learn: 1, conversation: 1 }
+    : {};
   const weightFor = (kind) => {
-    const base = weights?.[kind] ?? 1;
+    const base = (weights?.[kind] ?? 1) * (difficultyWeights[kind] || 1);
     return avoidSet.has(kind) ? base * 0.25 : base;
   };
   const picked = weightedSampleWithoutReplacement(pool, weightFor, clamped, rng);

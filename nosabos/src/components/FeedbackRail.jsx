@@ -22,8 +22,9 @@ import RandomCharacter, { characterImagesMap } from "./RandomCharacter";
 import useSoundSettings from "../hooks/useSoundSettings";
 import useNotesStore from "../hooks/useNotesStore";
 import { deliciousSound, clickSound, sparkleSound } from "../constants/sounds";
-import VoiceOrb from "./VoiceOrb";
+import VoiceOrb from "./VoiceOrbNext";
 import AnimatedEllipsis from "./AnimatedEllipsis";
+import { t as translate } from "../utils/translation";
 import {
   getQuestionFeedbackPanelProps,
   getQuestionAssistantPanelProps,
@@ -90,6 +91,7 @@ const FeedbackRail = React.memo(
     closeAssistantLabel,
     statusLabel,
     subtext,
+    loading = false,
   }) => {
     const hasPlayedRef = useRef(false);
     const reduceMotion = useReducedMotion();
@@ -108,6 +110,10 @@ const FeedbackRail = React.memo(
     // wrong result represented by this shared rail gets one capture animation,
     // including phonics and any future exercise that adopts FeedbackRail.
     useEffect(() => {
+      if (loading) {
+        hasPlayedRef.current = false;
+        return;
+      }
       if (ok === true && !hasPlayedRef.current) {
         hasPlayedRef.current = true;
         playSound(deliciousSound);
@@ -120,7 +126,38 @@ const FeedbackRail = React.memo(
       if (ok === null) {
         hasPlayedRef.current = false;
       }
-    }, [ok, playSound, triggerDoneAnimation]);
+    }, [ok, loading, playSound, triggerDoneAnimation]);
+
+    if (loading && !isAssistant) {
+      const translated = t?.("proficiency_thinking");
+      const thinkingLabel = translated && translated !== "proficiency_thinking"
+        ? translated
+        : translate(userLanguage, "proficiency_thinking");
+      return (
+        <MotionBox
+          key="thinking"
+          initial={reduceMotion ? false : { opacity: 0, y: 6, filter: "blur(3px)" }}
+          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+          transition={{ duration: reduceMotion ? 0 : 0.24, ease: [0.22, 1, 0.36, 1] }}
+          data-activity-feedback-content=""
+          data-feedback-loading=""
+          px={compact ? 1 : 4}
+          py={compact ? 2 : 4}
+          borderRadius={compact ? undefined : "xl"}
+          bg={compact ? undefined : "var(--app-glass-bg-soft)"}
+          borderWidth={compact ? undefined : "1px"}
+          borderColor={compact ? undefined : "var(--app-border)"}
+        >
+          <HStack justify="center" spacing={2} minH="52px" role="status" aria-live="polite" aria-label={thinkingLabel}>
+            <Box aria-hidden="true"><VoiceOrb variant="tutor" state="thinking" size={52} centered={false} force3D showShadow={false} /></Box>
+            <Text fontWeight="bold" color="var(--app-text-primary)">{thinkingLabel}</Text>
+            <Box aria-hidden="true" transform="translateY(5px)">
+              <AnimatedEllipsis color="var(--app-text-secondary)" justify="flex-start" dotSize="4px" dotSpacing={1} minH="16px" />
+            </Box>
+          </HStack>
+        </MotionBox>
+      );
+    }
 
     if (ok === null && !isAssistant) return null;
 

@@ -2,9 +2,12 @@ import useGoalFocusStore from "../hooks/useGoalFocusStore";
 import {
   currentGoalFocus,
   evaluateGoalAttempt,
+  recordGradedOutcome,
   recordGoalAttempt,
 } from "../utils/learningIntelligence";
 import { goalInstructions, buildGoalLesson } from "../utils/learningIntelligenceModel";
+import { eloForUser, practiceLevelForElo, generationPerformanceContextFor, questionWorthForUser } from "../utils/performanceEloModel";
+import { assessGeneratedQuestionWorth } from "../utils/questionDifficultyAssessment";
 import ActivityActionRow from "./ActivityActionRow";
 import QuestionActionArea from "./QuestionActionArea";
 // components/Tutor.jsx
@@ -87,7 +90,7 @@ import { Schema } from "firebase/ai";
 import { logEvent } from "firebase/analytics";
 
 import useUserStore from "../hooks/useUserStore";
-import VoiceOrb from "./VoiceOrb";
+import VoiceOrb from "./VoiceOrbNext";
 import TutorViewportEdgeGlow from "./TutorViewportEdgeGlow";
 import AnimatedEllipsis from "./AnimatedEllipsis";
 import {
@@ -3264,8 +3267,8 @@ function TutorPathLevelHeader({
           textShadow={isLightTheme ? "none" : "0 1px 3px rgba(0,0,0,0.45)"}
           boxShadow={
             isLightTheme
-              ? `0 8px 24px ${levelInfo.color}22`
-              : `0 10px 26px ${levelInfo.color}40, inset 0 1px 0 rgba(255,255,255,0.24)`
+              ? `0 3px 10px ${levelInfo.color}18`
+              : `0 4px 12px ${levelInfo.color}28, inset 0 1px 0 rgba(255,255,255,0.24)`
           }
         >
           {levelInfo.label || activeLevel}
@@ -3978,6 +3981,7 @@ export default function Tutor({
 
   // Connection/UI state
   const [status, setStatus] = useState("disconnected");
+  const [orbFeedback, setOrbFeedback] = useState(null);
   const [err, setErr] = useState("");
   const [uiState, setUiStateState] = useState("idle");
   const uiStateRef = useRef("idle");
@@ -5155,6 +5159,11 @@ export default function Tutor({
 
   // Turn counter for XP awarding
   const turnCountRef = useRef(0);
+  const gradedTutorQuestionLevelRef = useRef(null);
+  const gradedTutorQuestionWorthRef = useRef(null);
+  const tutorWorthPromisesRef = useRef(new Map());
+  const gradedTutorQuestionWorthPromiseRef = useRef(Promise.resolve(null));
+  const tutorEloSessionIdRef = useRef(globalThis.crypto.randomUUID());
   // Award turn XP at most once per learner turn, so multiple verdict sources
   // (transcript grader, background re-check, markTurnSuccessful tool call) can't
   // stack XP for the same turn. Keyed on turnCountRef.current.
@@ -6600,6 +6609,7 @@ export default function Tutor({
       applyLanguagePolicyNow();
       scheduleAutoStop();
     } catch (e) {
+      console.error("Tutor realtime connection failed:", e);
       clearAutoStopTimer();
       clearTutorKickoffTimer();
       tutorSessionReadyRef.current = false;
@@ -6736,24 +6746,38 @@ export default function Tutor({
   /* ---------------------------
      Language instructions with proficiency level
   --------------------------- */
+  function getTutorAdaptiveLevel(fallback = "A1") {
+    const lesson = selectedTutorLessonRef.current;
+    if (isTutorStarterAgendaLesson(lesson) || lesson?.isFinalQuiz || lesson?.isGoal)
+      return fallback;
+    return practiceLevelForElo(
+      eloForUser(useUserStore.getState().user, targetLangRef.current),
+    );
+  }
+
+  function liveGoalInstructions(goal) {
+    return `${goalInstructions(goal.blueprint, goal.supportLang)}\nCurrent ability context (use this for difficulty and support if the daily blueprint is older): ${JSON.stringify(generationPerformanceContextFor(useUserStore.getState().user, goal.targetLang || targetLangRef.current, { curriculumCefrLevel: goal.blueprint.curriculumCefrLevel }))}`;
+  }
+
   function buildLanguageInstructions() {
     const goal = currentGoalFocus("tutor");
-    if (goal) return goalInstructions(goal.blueprint, goal.supportLang);
+    if (goal) return liveGoalInstructions(goal);
     const persona = String((voicePersonaRef.current ?? "").slice(0, 240));
     const personaPolicy = buildVoicePersonaPolicy(persona, "tutor");
     const tLang = targetLangRef.current;
+    const unit = selectedTutorUnitRef.current;
     const currentSettings = conversationSettingsRef.current;
     const tutorLessonDetails = buildTutorLessonContext(
       selectedTutorLessonRef.current,
-      selectedTutorUnitRef.current,
+      unit,
       resolvedSupportLang,
       tLang,
     );
-    const selectedLevel =
+    const selectedLevel = getTutorAdaptiveLevel(
       tutorLessonDetails?.level ||
       currentSettings.proficiencyLevel ||
       maxProficiencyLevel ||
-      "A1";
+      "A1");
     const customSubjects = currentSettings.conversationSubjects || "";
     const supportCode = normalizeSupportLanguage(
       supportLangRef.current || resolvedSupportLang,
@@ -7031,6 +7055,7 @@ export default function Tutor({
         "# Lesson and level",
         tutorLessonContext,
         proficiencyHint,
+        `Internal Elo and compact performance memory: ${JSON.stringify(generationPerformanceContextFor(useUserStore.getState().user, tLang, { curriculumCefrLevel: unit?.cefrLevel || selectedTutorLessonRef.current?.cefrLevel }))}. Adapt the support and question complexity to this performance signal while keeping the selected lesson objective.`,
         preA1HardCeiling,
         customSubjectsContext,
         "# Progress and evaluation",
@@ -7066,6 +7091,7 @@ export default function Tutor({
       teacherTalkLanguageInstruction,
       codeSwitchingAudioInstruction,
       proficiencyHint,
+      `Internal Elo and compact performance memory: ${JSON.stringify(generationPerformanceContextFor(useUserStore.getState().user, tLang, { curriculumCefrLevel: unit?.cefrLevel || selectedTutorLessonRef.current?.cefrLevel }))}. Adapt the support and question complexity to this performance signal while keeping the selected lesson objective.`,
       preA1HardCeiling,
       customSubjectsContext,
       tutorLessonContext,
@@ -7099,7 +7125,7 @@ export default function Tutor({
 
   function buildOpenAIResponseInstructionsPrefix() {
     const goal = currentGoalFocus("tutor");
-    if (goal) return goalInstructions(goal.blueprint, goal.supportLang);
+    if (goal) return liveGoalInstructions(goal);
     const tLang = targetLangRef.current || targetLang || "es";
     const supportCode = normalizeSupportLanguage(
       supportLangRef.current || resolvedSupportLang,
@@ -7115,11 +7141,11 @@ export default function Tutor({
       supportCode,
       tLang,
     );
-    const selectedLevel =
+    const selectedLevel = getTutorAdaptiveLevel(
       tutorLessonDetails?.level ||
       conversationSettingsRef.current.proficiencyLevel ||
       maxProficiencyLevel ||
-      "A1";
+      "A1");
     // The composed response.instructions REPLACE the session instructions on
     // every OpenAI response, so this policy must carry everything that has to
     // hold on every turn (phonology, level ceiling, coherence, boundaries) —
@@ -7151,11 +7177,11 @@ export default function Tutor({
       supportCode,
       tLang,
     );
-    const selectedLevel =
+    const selectedLevel = getTutorAdaptiveLevel(
       tutorLessonDetails?.level ||
       conversationSettingsRef.current.proficiencyLevel ||
       maxProficiencyLevel ||
-      "A1";
+      "A1");
     return buildTutorPersistentResponseSuffix({
       persona: voicePersonaRef.current,
       supportLanguageCode: supportCode,
@@ -7211,7 +7237,7 @@ export default function Tutor({
 
   function buildTutorKickoffInstructions() {
     const goal = currentGoalFocus("tutor");
-    if (goal) return goalInstructions(goal.blueprint, goal.supportLang);
+    if (goal) return liveGoalInstructions(goal);
     const tLang = targetLangRef.current || targetLang || "es";
     const lesson = selectedTutorLessonRef.current;
     const unit = selectedTutorUnitRef.current;
@@ -7239,12 +7265,12 @@ export default function Tutor({
         targetLanguageName,
         supportLanguageName,
       });
-    const selectedLevel =
+    const selectedLevel = getTutorAdaptiveLevel(
       unit?.cefrLevel ||
       unit?.level ||
       conversationSettingsRef.current.proficiencyLevel ||
       maxProficiencyLevel ||
-      "A1";
+      "A1");
     const isEarlyTutorLevel = isTutorEarlyLevel(selectedLevel);
     const isAdvancedTutorLevel =
       isTutorAdvancedConversationLevel(selectedLevel);
@@ -7379,7 +7405,7 @@ export default function Tutor({
 
   function buildTutorWelcomeInstructions() {
     const goal = currentGoalFocus("tutor");
-    if (goal) return goalInstructions(goal.blueprint, goal.supportLang);
+    if (goal) return liveGoalInstructions(goal);
     const tLang = targetLangRef.current || targetLang || "es";
     const targetLanguageName =
       getLanguagePromptName(tLang) || "the target language";
@@ -7506,12 +7532,12 @@ export default function Tutor({
     const recentSessionContext =
       buildRecentTutorSessionContextInstruction();
     const unit = selectedTutorUnitRef.current;
-    const selectedLevel =
+    const selectedLevel = getTutorAdaptiveLevel(
       unit?.cefrLevel ||
       unit?.level ||
       conversationSettingsRef.current.proficiencyLevel ||
       maxProficiencyLevel ||
-      "Pre-A1";
+      "Pre-A1");
     const signatureExperienceInstruction =
       getTutorSignatureExperienceInstruction({
         selectedLevel,
@@ -7799,12 +7825,12 @@ export default function Tutor({
     const requiredXp = getTutorLessonXpRequired(lesson);
     const earnedXp = Math.max(0, tutorLessonEarnedXpRef.current || 0);
     const remainingXp = Math.max(0, requiredXp - earnedXp);
-    const selectedLevel =
+    const selectedLevel = getTutorAdaptiveLevel(
       selectedTutorUnitRef.current?.cefrLevel ||
       selectedTutorUnitRef.current?.level ||
       conversationSettingsRef.current.proficiencyLevel ||
       maxProficiencyLevel ||
-      "Pre-A1";
+      "Pre-A1");
 
     return [
       "APP-TRACKED STARTER AGENDA STATE:",
@@ -7846,7 +7872,7 @@ export default function Tutor({
       : TUTOR_TURN_VERDICT.REJECTED,
   ) {
     const goal = currentGoalFocus("tutor");
-    if (goal) return goalInstructions(goal.blueprint, goal.supportLang);
+    if (goal) return liveGoalInstructions(goal);
     const lesson = selectedTutorLessonRef.current;
     const unit = selectedTutorUnitRef.current;
     const tutorPurpose = lesson?.tutorPurpose || "instruction";
@@ -7875,12 +7901,12 @@ export default function Tutor({
         targetLanguageName,
         supportLanguageName,
       });
-    const selectedLevel =
+    const selectedLevel = getTutorAdaptiveLevel(
       unit?.cefrLevel ||
       unit?.level ||
       conversationSettingsRef.current.proficiencyLevel ||
       maxProficiencyLevel ||
-      "A1";
+      "A1");
     const isEarlyTutorLevel = isTutorEarlyLevel(selectedLevel);
     const isAdvancedTutorLevel =
       isTutorAdvancedConversationLevel(selectedLevel);
@@ -9354,12 +9380,12 @@ export default function Tutor({
       getLanguagePromptName(tLang) || "the target language";
     const supportLanguageName =
       getLanguagePromptName(supportCode) || "the user's support language";
-    const selectedLevel =
+    const selectedLevel = getTutorAdaptiveLevel(
       unit?.cefrLevel ||
       unit?.level ||
       conversationSettingsRef.current.proficiencyLevel ||
       maxProficiencyLevel ||
-      "A1";
+      "A1");
     const latestAssistantText = getLatestTutorAssistantText(
       messagesRef.current,
     );
@@ -9503,6 +9529,10 @@ export default function Tutor({
           JSON.stringify(opts),
           { record: false },
         );
+        if (!verdict.success && hasTutorMeaningfulTranscript(userMessage) &&
+          tutorXpAwardedTurnRef.current !== turnCountRef.current) {
+          setOrbFeedback({ id: `${turnCountRef.current}:wrong`, result: "wrong" });
+        }
         return { successful: verdict.success, confidence: 1, reason: verdict.feedback };
       } catch { return { successful: false, confidence: 0, reason: "Goal check unavailable; retry" }; }
     }
@@ -9565,6 +9595,7 @@ export default function Tutor({
             expectedAnswer: slipCorrection,
             cefrLevel: selectedTutorLessonRef.current?.unit?.cefrLevel,
             sourceContext: "tutor",
+            gradedOutcome: false,
           });
         }
       }
@@ -9589,6 +9620,21 @@ export default function Tutor({
       }
 
       const gatedSuccessful = successful && confidence >= 0.55;
+      if (parsed.mistake === true && !gatedSuccessful && confidence >= 0.55) {
+        if (tutorXpAwardedTurnRef.current !== turnCountRef.current) {
+          setOrbFeedback({ id: `${turnCountRef.current}:wrong`, result: "wrong" });
+        }
+        void gradedTutorQuestionWorthPromiseRef.current.then((worth) => recordGradedOutcome({
+          npub: currentNpub,
+          id: `tutor:${tutorEloSessionIdRef.current}:${turnCountRef.current}`,
+          targetLang: targetLangRef.current,
+          success: false,
+          questionLevel: gradedTutorQuestionLevelRef.current || getTutorAdaptiveLevel(selectedTutorLessonRef.current?.unit?.cefrLevel || selectedTutorLessonRef.current?.cefrLevel),
+          worth: worth || gradedTutorQuestionWorthRef.current,
+          mode: "tutor",
+          concept: String(parsed.concept || parsed.correction || ""),
+        })).catch((error) => console.warn("Tutor Score save failed:", error));
+      }
       return {
         successful: gatedSuccessful,
         confidence,
@@ -9888,6 +9934,7 @@ export default function Tutor({
       return { xpGain: 0, lessonCompletionTriggered: false };
     }
     tutorXpAwardedTurnRef.current = turnCountRef.current;
+    setOrbFeedback({ id: `${turnCountRef.current}:correct`, result: "correct" });
 
     const xpGain =
       Math.floor(
@@ -9899,9 +9946,18 @@ export default function Tutor({
 
     const awardPromise = (async () => {
       try {
+        const assessedWorth = await gradedTutorQuestionWorthPromiseRef.current;
         // Untagged: turn XP doesn't fill the plate — the Tutor course counts
         // completed Tutor lessons.
-        const awardResult = await awardXp(npub, xpGain, targetLangRef.current);
+        const awardResult = await awardXp(npub, xpGain, targetLangRef.current, {
+          gradedOutcome: {
+            id: `tutor:${tutorEloSessionIdRef.current}:${turnCountRef.current}`,
+            questionLevel: gradedTutorQuestionLevelRef.current || getTutorAdaptiveLevel(selectedTutorLessonRef.current?.unit?.cefrLevel || selectedTutorLessonRef.current?.cefrLevel),
+            worth: assessedWorth || gradedTutorQuestionWorthRef.current,
+            mode: "tutor",
+            support: "independent",
+          },
+        });
         await syncTutorDailyGoalXpFromFirestore(npub);
         logEvent(analytics, "conversation_turn_xp", { xp: xpGain });
         return awardResult;
@@ -10023,6 +10079,19 @@ export default function Tutor({
           const args = getLiveToolCallArgs(fc);
           const slipConcept = String(args.concept || "").trim();
           if (slipConcept) {
+            if (tutorXpAwardedTurnRef.current !== turnCountRef.current) {
+              setOrbFeedback({ id: `${turnCountRef.current}:wrong`, result: "wrong" });
+            }
+            void gradedTutorQuestionWorthPromiseRef.current.then((worth) => recordGradedOutcome({
+              npub: currentNpub,
+              id: `tutor:${tutorEloSessionIdRef.current}:${turnCountRef.current}`,
+              targetLang: targetLangRef.current,
+              success: false,
+              questionLevel: gradedTutorQuestionLevelRef.current || getTutorAdaptiveLevel(selectedTutorLessonRef.current?.unit?.cefrLevel || selectedTutorLessonRef.current?.cefrLevel),
+              worth: worth || gradedTutorQuestionWorthRef.current,
+              mode: "tutor",
+              concept: slipConcept,
+            })).catch((error) => console.warn("Tutor Score save failed:", error));
             captureCompanionMemory({
               targetLang: targetLangRef.current,
               supportLang: supportLangRef.current || "en",
@@ -10032,6 +10101,7 @@ export default function Tutor({
               expectedAnswer: String(args.correction || ""),
               cefrLevel: selectedTutorLessonRef.current?.unit?.cefrLevel,
               sourceContext: "tutor",
+              gradedOutcome: false,
             });
           }
         } else if (fc?.name) {
@@ -10281,6 +10351,15 @@ export default function Tutor({
         return;
       }
       turnCountRef.current += 1;
+      const latestTutorQuestion = [...messagesRef.current].reverse().find((message) =>
+        message.role === "assistant" && !message.welcome);
+      gradedTutorQuestionLevelRef.current = latestTutorQuestion?.questionLevel || getTutorAdaptiveLevel(
+        selectedTutorLessonRef.current?.unit?.cefrLevel || selectedTutorLessonRef.current?.cefrLevel,
+      );
+      gradedTutorQuestionWorthRef.current = latestTutorQuestion?.worth || null;
+      gradedTutorQuestionWorthPromiseRef.current =
+        tutorWorthPromisesRef.current.get(latestTutorQuestion?.id) ||
+        Promise.resolve(latestTutorQuestion?.worth || null);
       // Past the welcome/kickoff phase — real practice turns can now be graded.
       lessonPracticeStartedRef.current = true;
       const currentLesson = selectedTutorLessonRef.current;
@@ -10325,6 +10404,9 @@ export default function Tutor({
         });
         if (!aliveRef.current) return;
         if (currentLesson.id !== selectedTutorLessonRef.current?.id) return;
+        if (!turnSuccess.successful && turnSuccess.quizAnswered && turnSuccess.confidence >= 0.55) {
+          setOrbFeedback({ id: `${turnCountRef.current}:wrong`, result: "wrong" });
+        }
         const turnVerdict = resolveTutorTurnVerdict({
           semanticAttempted: true,
           semanticSuccessful: turnSuccess.successful,
@@ -10634,6 +10716,26 @@ export default function Tutor({
         }
         updateMessage(mid, (m) => ({ ...m, done: true }));
         if (t !== "response.canceled") {
+          const generated = messagesRef.current.find((message) => message.id === mid);
+          if (generated && !generated.welcome && generated.textFinal?.trim()) {
+            const pendingWorth = assessGeneratedQuestionWorth({
+              user: useUserStore.getState().user, targetLang: targetLangRef.current,
+              questionLevel: generated.questionLevel, question: {
+                tutorPrompt: generated.textFinal,
+                lesson: selectedTutorLessonRef.current?.title || "",
+              }, mode: "tutor",
+            });
+            tutorWorthPromisesRef.current.set(mid, pendingWorth);
+            void pendingWorth.then((worth) => {
+              updateMessage(mid, (message) => message.textFinal === generated.textFinal
+                ? { ...message, worth } : message);
+              if (gradedTutorQuestionWorthRef.current === generated.worth) {
+                gradedTutorQuestionWorthRef.current = worth;
+              }
+            });
+          }
+        }
+        if (t !== "response.canceled") {
           // The just-finished tutor reply defines what the learner will practice
           // next. Refresh OpenAI ASR with those exact phrases before reopening
           // the mic; the helper is a no-op for Gemini.
@@ -10673,6 +10775,9 @@ export default function Tutor({
     const exists = messagesRef.current.some((m) => m.id === mid);
     if (!exists) {
       const isWelcome = tutorWelcomeRidSetRef.current.has(rid);
+      const questionLevel = getTutorAdaptiveLevel(
+        selectedTutorLessonRef.current?.unit?.cefrLevel || selectedTutorLessonRef.current?.cefrLevel,
+      );
       pushMessage({
         id: mid,
         role: "assistant",
@@ -10690,6 +10795,10 @@ export default function Tutor({
         done: false,
         hasAudio: false,
         welcome: isWelcome,
+        questionLevel,
+        worth: isWelcome ? null : questionWorthForUser(
+          useUserStore.getState().user, targetLangRef.current, questionLevel,
+        ),
         ts: Date.now(),
       });
     }
@@ -11246,6 +11355,9 @@ export default function Tutor({
                   transition="opacity 0.5s ease"
                 >
                   <VoiceOrb
+                    variant="tutor"
+                    callActive={status === "connected"}
+                    feedback={orbFeedback}
                     state={previousOrbState}
                     theme={isLightTheme ? "light" : "dark"}
                     size={voiceOrbSize}
@@ -11254,6 +11366,9 @@ export default function Tutor({
               )}
               <Box opacity={1} transition="opacity 0.5s ease">
                 <VoiceOrb
+                  variant="tutor"
+                  callActive={status === "connected"}
+                  feedback={orbFeedback}
                   state={displayOrbState}
                   theme={isLightTheme ? "light" : "dark"}
                   size={voiceOrbSize}

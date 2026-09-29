@@ -1,4 +1,5 @@
 export const TRANSLATION_AR_STATIC = {
+  teams_view_name_not_set: "الاسم لم يُحدَّد بعد",
   correct: "صح!",
   dailyGoalProgress: "الهدف",
   daily_goal_title: "مدير الهدف",
@@ -15,6 +16,8 @@ export const TRANSLATION_AR_STATIC = {
   daily_goal_error_no_user_desc: "سجّل الدخول تاني.",
   daily_goal_error_save: "ماقدرناش نحفظ الهدف",
   daily_goal_activity_title: "نشاط XP",
+  daily_plate_view_activity: "عرض النشاط",
+  daily_plate_see_companion: "عرض الرفيق",
   daily_goal_activity_subtitle: "السنة دي",
   daily_goal_activity_empty: "مفيش XP",
   daily_goal_activity_some: "شوية XP",
@@ -271,7 +274,7 @@ export const TRANSLATION_AR_STATIC = {
   app_settings_aria: "الإعدادات",
   app_help_chat: "المساعد",
   app_notes: "الذاكرة",
-  real_world_tasks_title: "تدريب الانغماس",
+  real_world_tasks_title: "الانغماس والنقاط",
   app_mode_menu: "الأنماط",
   app_mode_alphabet: "الأبجدية",
   app_mode_phonics: "الصوتيات",
@@ -307,7 +310,7 @@ export const TRANSLATION_AR_STATIC = {
   app_switch_account: "بدّل الحساب",
   app_switch_note:
     "هنطلع المفتاح العام (npub) من المفتاح السري ونبدّل الحساب بأمان.",
-  app_nsec_placeholder: "الصق مفتاح nsec علشان تبدّل",
+  app_nsec_placeholder: "أدخل مفتاحك السري",
   app_switching: "جارٍ التبديل…",
   app_switch: "بدّل",
   account_final_step_title: "انسخ المفتاح السري علشان تسجّل الدخول.",

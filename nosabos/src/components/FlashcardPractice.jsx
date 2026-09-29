@@ -49,6 +49,10 @@ import { WaveBar } from "./WaveBar";
 import useNotesStore from "../hooks/useNotesStore";
 import { generateNoteContent, buildNoteObject } from "../utils/noteGeneration";
 import { captureCompanionMemory } from "../utils/companionMemory";
+import { recordGradedOutcome } from "../utils/learningIntelligence";
+import { questionWorthForUser } from "../utils/performanceEloModel";
+import { assessGeneratedQuestionWorth } from "../utils/questionDifficultyAssessment";
+import useUserStore from "../hooks/useUserStore";
 import { RiBookmarkLine } from "react-icons/ri";
 import { FiHelpCircle } from "react-icons/fi";
 import useSoundSettings from "../hooks/useSoundSettings";
@@ -289,24 +293,48 @@ export default function FlashcardPractice({
   // single miss is captured once, regardless of how many times the result
   // effect re-runs.
   const companionCapturedRef = useRef(null);
+  const eloCapturedRef = useRef(null);
+  const questionWorthRef = useRef(null);
+  const questionWorthPromiseRef = useRef(Promise.resolve(null));
+  useEffect(() => {
+    if (!isOpen) { questionWorthRef.current = null; return; }
+    const user = useUserStore.getState().user;
+    questionWorthRef.current = questionWorthForUser(user, targetLang, card?.cefrLevel);
+    questionWorthPromiseRef.current = assessGeneratedQuestionWorth({
+      user, targetLang, questionLevel: card?.cefrLevel,
+      question: { card, task: "Recall and produce the target-language card answer" },
+      mode: "flashcard",
+    });
+    void questionWorthPromiseRef.current.then((worth) => { questionWorthRef.current = worth; });
+  }, [isOpen, card?.id, card?.cefrLevel, targetLang]);
   useEffect(() => {
     if (!isOpen) {
       companionCapturedRef.current = null;
+      eloCapturedRef.current = null;
       return;
+    }
+    if (showResult && isCorrect && assessmentMode === "ai") {
+      const cardId = card?.id || "";
+      if (eloCapturedRef.current !== cardId) {
+        eloCapturedRef.current = cardId;
+        void questionWorthPromiseRef.current.then((worth) => recordGradedOutcome({
+          targetLang, success: true, questionLevel: worth?.questionLevel || card?.cefrLevel,
+          worth, mode: "flashcard", concept: getConceptText(card, effectiveCardLanguage),
+          support: "independent",
+        })).catch((error) => console.warn("Flashcard Score save failed:", error));
+      }
     }
     if (!showResult || isCorrect || assessmentMode !== "ai") return;
     const cardId = card?.id || "";
     if (companionCapturedRef.current === cardId) return;
     companionCapturedRef.current = cardId;
-    captureCompanionMemory({
-      targetLang,
-      supportLang: effectiveCardLanguage,
-      sourceMode: "flashcard",
+    void questionWorthPromiseRef.current.then((worth) => captureCompanionMemory({
+      targetLang, supportLang: effectiveCardLanguage, sourceMode: "flashcard",
       concept: getConceptText(card, effectiveCardLanguage),
       userAnswer: textAnswer || recognizedText || "",
-      cefrLevel: card?.cefrLevel,
-      sourceContext: "flashcards",
-    });
+      cefrLevel: worth?.questionLevel || card?.cefrLevel,
+      questionWorth: worth, sourceContext: "flashcards",
+    }));
     triggerDoneAnimation();
     // textAnswer/recognizedText are read at capture time but intentionally not
     // deps — capture is gated on the showResult transition, not keystrokes.
@@ -637,6 +665,7 @@ export default function FlashcardPractice({
         expectedAnswer: streamedAnswer || "",
         cefrLevel: card?.cefrLevel,
         sourceContext: "flashcard-again",
+        gradedOutcome: false,
       });
       triggerDoneAnimation();
     }
@@ -690,6 +719,7 @@ export default function FlashcardPractice({
         userAnswer: abandonedAttempt,
         cefrLevel: card?.cefrLevel,
         sourceContext: "flashcard-abandoned",
+        gradedOutcome: false,
       });
     }
 

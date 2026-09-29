@@ -1,4 +1,4 @@
-import { currentGoalFocus, recordLearningEvidence, repairSummaryFor } from "./learningIntelligence";
+import { currentGoalFocus, recordGradedOutcome, recordLearningEvidence, repairSummaryFor } from "./learningIntelligence";
 import {
   activeGoalFor,
   compactSummary,
@@ -32,6 +32,7 @@ import {
 } from "./companionMemoryCopy";
 import { callResponses } from "./llm";
 import { normalizeCEFRLevel } from "./cefrUtils";
+import { generationPerformanceContextFor, performanceContextFor } from "./performanceEloModel";
 import { questDayDocumentId } from "./userDataSchema";
 import {
   DEFAULT_SUPPORT_LANGUAGE,
@@ -856,9 +857,17 @@ export async function captureCompanionMemory({
   userAnswer,
   expectedAnswer,
   cefrLevel,
+  questionWorth,
   sourceContext,
+  gradedOutcome = true,
   now = new Date(),
 }) {
+  if (gradedOutcome) {
+    void recordGradedOutcome({
+      npub: resolveNpub(npub), targetLang, success: false,
+      questionLevel: cefrLevel, worth: questionWorth, mode: sourceMode, concept,
+    }).catch((error) => console.warn("Score save failed:", error));
+  }
   const goalFocus = currentGoalFocus();
   if (goalFocus && goalFocus.npub === npub && goalFocus.targetLang === normalizePlateLang(targetLang)) {
     await recordLearningEvidence({ npub, targetLang, kind: "goal", event: {
@@ -1104,7 +1113,10 @@ export function buildEphemeralRepairLesson({
   const items = Array.isArray(plan?.items) ? plan.items : [];
   const concepts = items.map((it) => it?.concept).filter(Boolean);
   if (!concepts.length) return null;
-  const lessonCefrLevel = displayCEFRLevel(cefrLevel, "Pre-A1");
+  const lessonCefrLevel = performanceContextFor(
+    useUserStore.getState().user,
+    targetLang,
+  ).suggestedQuestionLevel || displayCEFRLevel(cefrLevel, "Pre-A1");
   const isFoundationLevel = isFoundationCEFRLevel(lessonCefrLevel);
   const levelGuard = repairLessonLevelGuard(lessonCefrLevel);
 
@@ -1164,6 +1176,7 @@ export function buildEphemeralRepairLesson({
     title: { ...REPAIR_COPY.title },
     description: { ...REPAIR_COPY.intro },
     cefrLevel: lessonCefrLevel,
+    curriculumCefrLevel: displayCEFRLevel(cefrLevel, "Pre-A1"),
     // Small goal: a handful of correct answers in the seeded engines completes
     // the lesson through the normal XP-goal path.
     xpReward: 10,
@@ -1784,7 +1797,10 @@ export async function getOrBuildRepairDeck({ focus, now = new Date() }) {
   const supportBase = String(focus?.supportLang || "en").toLowerCase() || "en";
   const dayKey = plan?.dayKey || getCompanionDayKey(now);
   const stepIndex = Math.max(0, Number(focus?.stepIndex) || 0);
-  const level = displayCEFRLevel(item?.cefrLevel, "Pre-A1");
+  const level = performanceContextFor(
+    useUserStore.getState().user,
+    langKey,
+  ).suggestedQuestionLevel || displayCEFRLevel(item?.cefrLevel, "Pre-A1");
 
   const cacheKey = `${focus?.npub || "anonymous"}:${repairDeckStorageKey(langKey, dayKey, stepIndex)}`;
   const cached = readCachedRepairDeck(cacheKey);
@@ -2066,6 +2082,7 @@ function buildBatchInput({
   cefrLevel,
   goal,
   goalProgress,
+  performance,
 }) {
   const targetName = langName(targetLang);
   const supportName = langName(appLanguage);
@@ -2108,8 +2125,8 @@ function buildBatchInput({
           goalProgress,
         )}`
       : "",
-    `The learner is at CEFR level ${level}. Keep every prompt, answer, and the overall difficulty appropriate for ${level} — simpler and more concrete for Pre-A1/A1, more nuanced for higher levels. Never exceed their level.`,
-    levelGuard,
+    `The curriculum track is CEFR ${level}. Live performance across ALL CEFR levels: ${JSON.stringify(performance)}. Set this repair's question difficulty near ${performance?.suggestedQuestionLevel || level}, even when that is below or above the curriculum track. Keep the same repair concept but change scaffolding and complexity. The actual question level determines the effect of its answer on Score.`,
+    performance?.suggestedQuestionLevel === level ? levelGuard : "",
     `Durable repair learning intelligence (use prior outcomes, avoid recently repaired targets unless checking transfer): ${JSON.stringify(repairSummaryFor(useUserStore.getState().user, targetLang))}`,
     `The repair runs as a SEQUENCE of short activities — one per item — so pick each item's "mode" to match how THAT weak concept is best PRACTICED. Every mode is a real interactive surface, so choose deliberately:`,
     `- "tutor": producing a specific target-language phrase or sentence correctly out loud, functional language you'd say to another person, or focused grammar-in-speech coaching.`,
@@ -2369,6 +2386,7 @@ export async function runDailyBatch({
           cefrLevel,
           goal,
           goalProgress,
+          performance: generationPerformanceContextFor(currentUser, langKey),
         }),
       });
       const parsed = parseBlueprintJson(raw);

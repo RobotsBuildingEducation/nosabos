@@ -22,7 +22,6 @@ export function buildStoryGenerationRequest(prompt) {
     contents: [{ role: "user", parts: [{ text: prompt }] }],
     generationConfig: {
       responseMimeType: "application/json",
-      maxOutputTokens: 8192,
       responseSchema: {
         type: "OBJECT", required: ["title", "segments"],
         properties: {

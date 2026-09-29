@@ -17,7 +17,7 @@ export const storyServices = {
   async generateStream(prompt) {
     return storyModel.generateContentStream({
       contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.7, maxOutputTokens: 8192 },
+      generationConfig: { temperature: 0.7 },
     });
   },
   async translate(text, targetLang, supportLang) {
@@ -27,7 +27,6 @@ export const storyServices = {
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       generationConfig: {
         temperature: 0.2,
-        maxOutputTokens: 128,
       },
     });
     return response.response.text().trim().replace(/^["']|["']$/g, "");

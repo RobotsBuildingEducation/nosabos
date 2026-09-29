@@ -46,7 +46,7 @@ export function createStoryPlan({ lessonContent, lessonId, npub, targetLang, mod
     buildCurriculumPromptContext(lessonContent?.curriculumContext, { mode: "stories", includeExamples: false }),
     lessonContent?.storyScope?.objective || lessonContent?.prompt || lessonContent?.scenario || lessonContent?.topic,
   ].filter(Boolean).join("\n");
-  return { ...identity, mode, subject, purpose, recentEntries, objective, isTutorial: lessonContent?.topic === "tutorial" };
+  return { ...identity, mode, subject, purpose, recentEntries, objective, isTutorial: lessonContent?.topic === "tutorial" || Boolean(lessonContent?.tutorialPracticeLevel) };
 }
 
 export function buildStoryDiversityPrompt(plan) {

@@ -564,9 +564,9 @@ export default function RepeatWhatYouHear({
             </SortableList>
 
         <QuestionActionArea
-          feedback={isAssistantOpen ? "assistant" : lastOk}
+          feedback={isAssistantOpen ? "assistant" : isSubmitting ? "thinking" : lastOk}
           actions={
-            !isAssistantOpen && (!showNext) && (
+            !isAssistantOpen && !isSubmitting && (!showNext) && (
               <ActivityActionRow
                 primary={
                   <Button
@@ -604,6 +604,7 @@ export default function RepeatWhatYouHear({
           <FeedbackRail
             compact
             ok={lastOk}
+            loading={isSubmitting}
             isAssistant={isAssistantOpen}
             assistantSupportText={assistantSupportText}
             isLoadingAssistantSupport={isLoadingAssistantSupport}

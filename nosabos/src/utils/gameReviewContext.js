@@ -38,7 +38,9 @@ function collectModeTerms(modeData = {}) {
     ...(Array.isArray(modeData.focusPoints) ? modeData.focusPoints : []),
     ...(Array.isArray(modeData.topics) ? modeData.topics : []),
     ...(Array.isArray(modeData.unitTopics) ? modeData.unitTopics : []),
-    modeData.topic,
+    modeData.tutorialPracticeLevel && modeData.topic === "tutorial"
+      ? ""
+      : modeData.topic,
     modeData.scenario,
     modeData.unitTitle,
   ]);
@@ -111,7 +113,7 @@ export function buildGameReviewContext({
     .toLowerCase()
     .split(/[-_]/)[0];
   const usesTargetLanguageAdapter =
-    !!normalizedTargetLang && normalizedTargetLang !== "es";
+    !!normalizedTargetLang && normalizedTargetLang !== "es" && !lesson?.tutorialPracticeLevel;
   const relevantLessons = collectRelevantLessons(lesson, unit);
   const curriculumSnapshot = isReviewLesson(lesson)
     ? buildUnitCurriculumSnapshot(unit, {
@@ -167,7 +169,7 @@ export function buildGameReviewContext({
 
   const unitTitle = getLocalizedText(unit?.title, "en") || lesson?.content?.game?.unitTitle || "";
   const lessonTitle = getLocalizedText(lesson?.title, "en");
-  const tutorialTerms = lesson?.isTutorial
+  const tutorialTerms = lesson?.isTutorial && !lesson?.tutorialPracticeLevel
     ? ["hello", "hi", "good morning", "goodbye", "my name is"]
     : [];
   const finalTerms = uniqueStrings([
@@ -176,7 +178,7 @@ export function buildGameReviewContext({
     ...(Array.isArray(lesson?.content?.game?.focusPoints)
       ? lesson.content.game.focusPoints
       : []),
-    lesson?.content?.game?.topic,
+    lesson?.tutorialPracticeLevel ? "" : lesson?.content?.game?.topic,
     lesson?.content?.game?.unitTitle,
     unitTitle,
     lessonTitle,
@@ -186,7 +188,9 @@ export function buildGameReviewContext({
     lesson?.isTutorial ? "tutorial" : lesson?.isGame ? "unit_review" : "lesson_review";
 
   const curriculumSummary = lesson?.isTutorial
-    ? "Tutorial review. Keep the game limited to greetings, saying your name, and very simple polite responses."
+    ? lesson?.tutorialPracticeLevel
+      ? `Tutorial review at CEFR ${lesson.tutorialPracticeLevel}. Introduce the game interaction using ${lesson?.content?.game?.focusPoints?.[0]}. Keep the language appropriate to this level.`
+      : "Tutorial review. Keep the game limited to greetings, saying your name, and very simple polite responses."
     : lesson?.isGame
       ? `Unit review for ${unitTitle || lessonTitle}. Recycle the key language from this chapter only.`
       : `Review the active lesson ${lessonTitle} using nearby chapter topics and the current proficiency level.`;
@@ -194,6 +198,7 @@ export function buildGameReviewContext({
   return {
     mode,
     isTutorial: !!lesson?.isTutorial,
+    tutorialPracticeLevel: lesson?.tutorialPracticeLevel || null,
     isGameReview: !!lesson?.isGame,
     cefrLevel,
     unitId: unit?.id || "",

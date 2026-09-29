@@ -81,7 +81,7 @@ import {
 import { useSpeechPractice } from "../../hooks/useSpeechPractice";
 import { useUserStore } from "../../hooks/useUserStore";
 import HelpChatFab from "../HelpChatFab";
-import VoiceOrb from "../VoiceOrb";
+import VoiceOrb from "../VoiceOrbNext";
 import LoadingMiniGame from "../LoadingMiniGame";
 import playerSpriteSheetUrl from "../../sprites/sprite_sheet_6.png";
 import npcSpriteSheetUrl from "../../sprites/NPC_sprites.png";
@@ -110,6 +110,7 @@ import {
   normalizeSupportLanguage,
 } from "../../constants/languages";
 import { buildGameReviewContext } from "../../utils/gameReviewContext";
+import { generationPerformanceContextFor } from "../../utils/performanceEloModel";
 import { matchSpokenTarget } from "./content/speechMatch";
 import { getAdultBeginnerToneRule } from "../../utils/adultBeginnerTone";
 import {
@@ -3097,6 +3098,9 @@ export default function RPGGame({
   // CEFR proficiency level from lesson context - controls dialogue complexity
   const cefrLevel =
     reviewContext?.cefrLevel || lessonContext?.content?.game?.cefrLevel || null;
+  const adaptiveCefrLevel = reviewContext?.isTutorial
+    ? cefrLevel
+    : generationPerformanceContextFor(user, targetLangProp || reviewContext?.targetLang || lessonContext?.targetLang || user?.progress?.targetLang || "es").suggestedQuestionLevel;
   const cefrDialogueRule = useMemo(() => {
     const rules = {
       "Pre-A1": {
@@ -3116,9 +3120,9 @@ export default function RPGGame({
         en: "B1 level. You can use moderately complex sentences. Mix of tenses allowed. Everyday and familiar topics.",
       },
     };
-    if (!cefrLevel) return { es: "", en: "" };
-    return rules[cefrLevel] || { es: "", en: "" };
-  }, [cefrLevel]);
+    if (!adaptiveCefrLevel) return { es: "", en: "" };
+    return rules[adaptiveCefrLevel] || { es: "", en: "" };
+  }, [adaptiveCefrLevel]);
 
   const localStorageSettings = useMemo(() => {
     try {
@@ -3614,8 +3618,8 @@ export default function RPGGame({
     [cefrDialogueRule],
   );
   const adultBeginnerToneRule = useMemo(
-    () => getAdultBeginnerToneRule(cefrLevel, "rpg"),
-    [cefrLevel],
+    () => getAdultBeginnerToneRule(adaptiveCefrLevel, "rpg"),
+    [adaptiveCefrLevel],
   );
   const objectExamineCefrPromptRule = useMemo(() => {
     const rules = {
@@ -3626,10 +3630,10 @@ export default function RPGGame({
       B1: "Object examine rule for B1: use one natural, concrete line about the object itself. Keep it grounded in the environment.",
     };
     return (
-      rules[cefrLevel] ||
+      rules[adaptiveCefrLevel] ||
       "Write one brief, natural line about the object itself."
     );
-  }, [cefrLevel]);
+  }, [adaptiveCefrLevel]);
   const strictTargetLanguageGuard = useMemo(
     () =>
       [
@@ -3664,7 +3668,7 @@ export default function RPGGame({
               .slice(0, 8)
               .join(" | ")}.`
           : "",
-        reviewContext?.isTutorial
+        reviewContext?.isTutorial && !reviewContext?.tutorialPracticeLevel
           ? "Tutorial rule: greetings, saying your name, and other ultra-basic polite expressions only."
           : "",
         ["Pre-A1", "A1"].includes(cefrLevel || "")
@@ -3715,6 +3719,7 @@ export default function RPGGame({
     (...sections) =>
       [
         cefrPromptRule,
+        `Live Elo ability context: ${JSON.stringify(generationPerformanceContextFor(useUserStore.getState().user, targetLang))}. Keep the current lesson's topics while adjusting dialogue challenge and support.`,
         adultBeginnerToneRule,
         strictTargetLanguageGuard,
         reviewPromptContext,
@@ -3729,6 +3734,7 @@ export default function RPGGame({
       cefrPromptRule,
       reviewPromptContext,
       strictTargetLanguageGuard,
+      targetLang,
     ],
   );
   const buildDynamicSpeechReplyPrompt = useCallback(
@@ -3868,6 +3874,7 @@ export default function RPGGame({
             "Area";
       const prompt = [
         objectExamineCefrPromptRule,
+        `Live Elo ability context: ${JSON.stringify(generationPerformanceContextFor(useUserStore.getState().user, targetLang))}. Preserve the object's meaning and adjust sentence complexity.`,
         objectExaminePromptContext,
         `Target language: ${targetLangName} (code: ${targetLang}).`,
         `Support language: ${supportLangName} (code: ${supportLang}). Use it ONLY for the supportName and supportText fields.`,
@@ -3883,7 +3890,7 @@ export default function RPGGame({
         "Do not mention quests, tasks, controls, objectives, NPCs, greetings, or family-role words unless the object itself directly shows them.",
         "Bad shape: a greeting, a random unit phrase, or a sentence unrelated to the object.",
         "Good shape: a short observation that still makes sense even if the player only sees the object name and the object sprite.",
-        ["Pre-A1", "A1"].includes(cefrLevel || "")
+        ["Pre-A1", "A1"].includes(adaptiveCefrLevel || "")
           ? "For beginner levels, it is better to be simple and literal than thematic. A direct line like 'It is a table' is better than a clever but off-topic phrase."
           : "",
         `Current area: ${mapName}.`,
@@ -3978,7 +3985,7 @@ export default function RPGGame({
       return loadPromise;
     },
     [
-      cefrLevel,
+      adaptiveCefrLevel,
       getObjectExamineKey,
       syncObjectExamineFromCache,
       scenario?.id,
@@ -5460,6 +5467,7 @@ export default function RPGGame({
           overrideTerms.length ? overrideTerms : null,
           reviewContext?.cefrLevel || gameContent?.cefrLevel || null,
           reviewContext,
+          generationPerformanceContextFor(useUserStore.getState().user, targetLang),
         );
         if (requestToken !== scenarioLoadTokenRef.current) return;
         setScenario(generated);

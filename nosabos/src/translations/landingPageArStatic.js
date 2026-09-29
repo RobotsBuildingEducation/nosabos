@@ -57,7 +57,7 @@ export const LANDING_PAGE_AR_STATIC = {
   feature_notes: "إنشاء ملاحظات",
   feature_notes_desc:
     "أنشئ ملاحظات مذاكرة شاملة من دروسك علشان تراجعها بعدين.",
-  feature_immersion: "تدريب الانغماس",
+  feature_immersion: "الانغماس والنقاط",
   feature_immersion_desc:
     "نفّذ مهام خارج التطبيق علشان تمارس اللغة في الحياة الواقعية.",
   feature_assistant: "مساعد شخصي",

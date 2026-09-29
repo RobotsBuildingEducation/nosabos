@@ -58,7 +58,7 @@ import {
 import { logEvent } from "firebase/analytics";
 
 import useUserStore from "../hooks/useUserStore";
-import VoiceOrb from "./VoiceOrb";
+import VoiceOrb from "./VoiceOrbNext";
 import AnimatedEllipsis from "./AnimatedEllipsis";
 import { translations } from "../utils/translation";
 import {
@@ -76,6 +76,8 @@ import {
   useArchiveTextStream,
 } from "./realtimeArchiveStream";
 import { awardXp } from "../utils/utils";
+import { eloForUser, practiceLevelForElo, generationPerformanceContextFor, questionWorthForUser } from "../utils/performanceEloModel";
+import { assessGeneratedQuestionWorth } from "../utils/questionDifficultyAssessment";
 import { captureCompanionMemory } from "../utils/companionMemory";
 import {
   SOFT_STOP_BUTTON_BG,
@@ -715,10 +717,13 @@ export default function RealTimeTest({
 
   // Repair/ephemeral lessons carry an explicit CEFR level; regular path lessons
   // can still derive it from their level-coded id.
-  const cefrLevel =
+  const curriculumCefrLevel =
     lesson?.cefrLevel ||
     lessonContent?.cefrLevel ||
     (lesson?.id ? extractCEFRLevel(lesson.id) : "A1");
+  const cefrLevel = lesson?.isTutorial || lesson?.isFinalQuiz || lessonContent?.isGoal || lessonContent?.isRepair
+    ? curriculumCefrLevel
+    : practiceLevelForElo(eloForUser(user, initialTargetLanguage));
 
   // Refs for realtime
   const audioRef = useRef(null); // remote stream sink
@@ -835,6 +840,7 @@ export default function RealTimeTest({
   const [currentGoal, setCurrentGoal] = useState(null);
   const goalRef = useRef(null);
   const [goalFeedback, setGoalFeedback] = useState("");
+  const [orbFeedback, setOrbFeedback] = useState(null);
   const goalBusyRef = useRef(false);
   const [goalCompleted, setGoalCompleted] = useState(false); // Track when goal is completed but not advanced
   const goalXpAwardedRef = useRef(false);
@@ -2411,7 +2417,8 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
     // Prevent multiple simultaneous calls
     if (goalStreamingRef.current || isGeneratingGoal) return;
     if (lessonContent?.topic === "tutorial") {
-      const tutorialGoal = buildTutorialGoal();
+      const tutorialGoal = { ...buildTutorialGoal(), questionLevel: cefrLevelRef.current,
+        worth: questionWorthForUser(useUserStore.getState().user, targetLangRef.current, cefrLevelRef.current) };
       setCurrentGoal(tutorialGoal);
       goalRef.current = tutorialGoal;
       setGoalCompleted(false);
@@ -2436,10 +2443,8 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
       [];
     const lessonTitle = lesson?.title?.en || "";
     const lessonDesc = lesson?.description?.en || "";
-    const cefrLvl =
-      lesson?.cefrLevel ||
-      lessonContent?.cefrLevel ||
-      (lesson?.id ? extractCEFRLevel(lesson.id) : "A1");
+    const cefrLvl = cefrLevelRef.current;
+    const worth = questionWorthForUser(useUserStore.getState().user, targetLangRef.current, cefrLvl);
     const cefrHint = lessonContent?.isGoal ? focusedLessonPrompt(lessonContent) : getCEFRPromptHint(cefrLvl);
     const goalLangCode = uiLang;
     const goalLangName = getLanguagePromptName(goalLangCode) || "English";
@@ -2457,6 +2462,7 @@ Topic: ${topic}
 Focus areas: ${focusPoints.join(", ") || "general vocabulary and grammar"}
 Level: ${cefrHint}
 ${curriculumPromptContext}
+Live learner performance: ${JSON.stringify(generationPerformanceContextFor(useUserStore.getState().user, targetLangRef.current, { curriculumCefrLevel }))}. Use the current Elo, recent accuracy and weak concepts to tune this goal while keeping the selected challenge level ${cefrLvl}.
 
 ${
   currentScenario
@@ -2494,6 +2500,12 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
 
       const goalText = fullText.trim();
       if (goalText) {
+        const assessedWorth = await assessGeneratedQuestionWorth({
+          user: useUserStore.getState().user, targetLang: targetLangRef.current,
+          questionLevel: cefrLvl, question: { goal: goalText,
+            lesson: lessonTitle, task: "Complete a live conversation goal" },
+          mode: "realtime",
+        });
         const goalLang = goalUiLangCode();
         const localizedTitleKey = `title_${goalLang}`;
         const localizedRubricKey = `rubric_${goalLang}`;
@@ -2521,6 +2533,8 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
           successCriteria: goalText,
           roleplayPrompt: `Help the learner to: ${goalText}. Create a realistic scenario and guide them.`,
           goalIndex: (currentGoal?.goalIndex || 0) + 1,
+          questionLevel: cefrLvl,
+          worth: assessedWorth,
           attempts: 0,
           status: "active",
           createdAt: isoNow(),
@@ -2558,7 +2572,8 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
   }
   async function ensureCurrentGoalSeed(npub, userData) {
     if (lessonContent?.topic === "tutorial") {
-      const tutorialGoal = buildTutorialGoal();
+      const tutorialGoal = { ...buildTutorialGoal(), questionLevel: cefrLevelRef.current,
+        worth: questionWorthForUser(useUserStore.getState().user, targetLangRef.current, cefrLevelRef.current) };
       return tutorialGoal;
     }
     generateGoalVariation();
@@ -2872,6 +2887,7 @@ Return ONLY JSON:
       if (fbUI || fbTL) setGoalFeedback(fbUI || fbTL);
 
       if (met && !goalXpAwardedRef.current) {
+        setOrbFeedback((previous) => ({ id: (previous?.id || 0) + 1, result: "correct" }));
         const xpGain = computeXpDelta({
           met: true,
           conf,
@@ -2880,6 +2896,10 @@ Return ONLY JSON:
         });
         await awardXp(currentNpub, xpGain, targetLangRef.current, {
           skillTreeLessonId: lesson?.id,
+          gradedOutcome: { questionLevel: goal.questionLevel || cefrLevelRef.current,
+            worth: goal.worth,
+            mode: "realtime", concept: titleTL || goal.title_en || "",
+            support: nextAttempts > 1 ? "prompted" : "independent" },
         });
         goalXpAwardedRef.current = true;
       }
@@ -2890,6 +2910,7 @@ Return ONLY JSON:
         stop();
         setGoalCompleted(true); // Mark goal as completed, wait for user to click "Next Goal"
       } else {
+        setOrbFeedback((previous) => ({ id: (previous?.id || 0) + 1, result: "wrong" }));
         // Companion brain: the learner's turn did NOT meet the goal — that's the
         // "incorrect" signal for this mode. Bank it, deduped by the goal (concept)
         // so multiple tries on the same goal collapse into one note.
@@ -2900,7 +2921,8 @@ Return ONLY JSON:
           concept: titleTL || goal.title_en || "",
           userAnswer: userUtterance,
           expectedAnswer: rubricTL || "",
-          cefrLevel: cefrLevelRef.current,
+          cefrLevel: goal.questionLevel || cefrLevelRef.current,
+          questionWorth: goal.worth,
           sourceContext: "realtime-goal",
         });
       }
@@ -3007,6 +3029,7 @@ Return ONLY JSON:
       "Keep replies very brief (≤25 words) and natural.",
       "IMPORTANT: Do NOT start the conversation. Wait for the user to speak first. Never greet or initiate - only respond to what the user says.",
       levelHint,
+      `Live performance memory: ${JSON.stringify(generationPerformanceContextFor(useUserStore.getState().user, tLang, { curriculumCefrLevel }))}. Adapt the challenge of the next exchange to this evidence while keeping the current objective.`,
       adultBeginnerTone,
       focusLine,
       pronLine,
@@ -4161,7 +4184,7 @@ Return ONLY JSON:
 
             <VStack spacing={0.5} align="center">
               <Box width="132px" opacity={0.95} flexShrink={0}>
-                <VoiceOrb state={orbUiState} />
+                <VoiceOrb variant="tutor" callActive={status === "connected"} feedback={orbFeedback} state={orbUiState} />
               </Box>
               {!!liveStateLabel && (
                 <Text

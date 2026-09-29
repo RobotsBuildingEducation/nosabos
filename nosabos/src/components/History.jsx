@@ -44,6 +44,8 @@ import translations from "../utils/translation";
 import { getGermanCopy } from "../utils/germanCopy";
 import { awardXp } from "../utils/utils";
 import { captureCompanionMemory } from "../utils/companionMemory";
+import { eloForUser, practiceLevelForElo, generationPerformanceContextFor, questionWorthForUser } from "../utils/performanceEloModel";
+import { assessGeneratedQuestionWorth } from "../utils/questionDifficultyAssessment";
 import { getLanguageXp } from "../utils/progressTracking";
 import {
   appCheckFetch,
@@ -65,7 +67,7 @@ import { getResponsesUrl } from "../utils/proxyEndpoints";
 import useSoundSettings from "../hooks/useSoundSettings";
 import { submitActionSound, nextButtonSound, deliciousSound, clickSound, selectSound } from "../constants/sounds";
 import RandomCharacter from "./RandomCharacter";
-import VoiceOrb from "./VoiceOrb";
+import VoiceOrb from "./VoiceOrbNext";
 import {
   HistoryLectureSkeleton,
   HistoryQuestionSkeleton,
@@ -488,8 +490,10 @@ function useSharedProgress() {
 /* ---------------------------
    Difficulty + Prompts
 --------------------------- */
-function difficultyHint(cefrLevel) {
-  return getCEFRPromptHint(cefrLevel);
+function difficultyHint(cefrLevel, targetLang, curriculumCefrLevel) {
+  return `${getCEFRPromptHint(cefrLevel)} Live performance memory: ${JSON.stringify(
+    generationPerformanceContextFor(useUserStore.getState().user, targetLang, { curriculumCefrLevel }),
+  )}. Adapt complexity while preserving the reading topic.`;
 }
 
 function tutorialReadingDirective(targetLanguage) {
@@ -515,10 +519,11 @@ function buildSeedLecturePrompt({
 }) {
   const TARGET = LANG_NAME(targetLang);
   const SUPPORT = LANG_NAME(supportLang);
-  const diff = lessonContent?.isGoal ? focusedLessonPrompt(lessonContent) : difficultyHint(cefrLevel);
+  const diff = lessonContent?.isGoal ? focusedLessonPrompt(lessonContent) : difficultyHint(cefrLevel, targetLang, lessonContent?.cefrLevel);
   const specs = getReadingLevelSpecs(cefrLevel);
 
   const isTutorial = lessonContent?.topic === "tutorial";
+  const isAdaptiveTutorial = Boolean(lessonContent?.tutorialPracticeLevel);
   const topicText = isTutorial
     ? "a first welcome for a language learner"
     : lessonContent?.topic ||
@@ -544,7 +549,7 @@ Topic: ${topicText}. ${promptText}.${tutorialDirective}
 ${curriculumPromptContext}
 
 Content requirements:
-${isTutorial ? "- Exactly the four sentences specified above" : `- Length: ${specs.wordCount} (${specs.sentenceCount}). Sentence length: ${specs.sentenceLength}. Minimum 100 words, increasing up to 300 words based on proficiency level.`}
+${isTutorial ? "- Exactly the four sentences specified above" : isAdaptiveTutorial ? `- Four to six connected sentences at CEFR ${cefrLevel}; this is a brief introduction to reading mode.` : `- Length: ${specs.wordCount} (${specs.sentenceCount}). Sentence length: ${specs.sentenceLength}. Minimum 100 words, increasing up to 300 words based on proficiency level.`}
 ${isTutorial ? "- Preserve their meaning and order" : `- Level: ${diff}. Write natural connected reading prose (not a dialogue script or speaker labels).`}
 - Ground the text in everyday situations and authentic vocabulary related to ${topicText}.
 
@@ -572,7 +577,7 @@ function buildLecturePrompt({
 }) {
   const TARGET = LANG_NAME(targetLang);
   const SUPPORT = LANG_NAME(supportLang);
-  const diff = lessonContent?.isGoal ? focusedLessonPrompt(lessonContent) : difficultyHint(cefrLevel);
+  const diff = lessonContent?.isGoal ? focusedLessonPrompt(lessonContent) : difficultyHint(cefrLevel, targetLang, lessonContent?.cefrLevel);
   const specs = getReadingLevelSpecs(cefrLevel);
   const prev =
     previousTitles && previousTitles.length
@@ -580,6 +585,7 @@ function buildLecturePrompt({
       : "(none yet)";
 
   const isTutorial = lessonContent?.topic === "tutorial";
+  const isAdaptiveTutorial = Boolean(lessonContent?.tutorialPracticeLevel);
   const topicText = isTutorial
     ? "a first welcome for a language learner"
     : lessonContent?.topic ||
@@ -608,7 +614,7 @@ previous_titles:
 ${prev}
 
 Content requirements:
-${isTutorial ? "- Exactly the four sentences specified above" : `- Length: ${specs.wordCount} (${specs.sentenceCount}). Sentence length: ${specs.sentenceLength}. Minimum 100 words, increasing up to 300 words based on proficiency level.`}
+${isTutorial ? "- Exactly the four sentences specified above" : isAdaptiveTutorial ? `- Four to six connected sentences at CEFR ${cefrLevel}; this is a brief introduction to reading mode.` : `- Length: ${specs.wordCount} (${specs.sentenceCount}). Sentence length: ${specs.sentenceLength}. Minimum 100 words, increasing up to 300 words based on proficiency level.`}
 ${isTutorial ? "- Preserve their meaning and order" : `- Level: ${diff}. Write natural connected reading prose (not a dialogue script or speaker labels).`}
 - Choose a fresh everyday situation related to ${topicText}.
 
@@ -766,7 +772,7 @@ function buildStreamingPrompt({
 }) {
   const TARGET = LANG_NAME(targetLang);
   const SUPPORT = LANG_NAME(supportLang);
-  const diff = lessonContent?.isGoal ? focusedLessonPrompt(lessonContent) : difficultyHint(cefrLevel);
+  const diff = lessonContent?.isGoal ? focusedLessonPrompt(lessonContent) : difficultyHint(cefrLevel, targetLang, lessonContent?.cefrLevel);
   const specs = getReadingLevelSpecs(cefrLevel);
   const prev =
     previousTitles && previousTitles.length
@@ -787,6 +793,21 @@ function buildStreamingPrompt({
       `1) {"type":"title","text":"<a simple welcome title in ${TARGET}>"}`,
       `2) Emit exactly four {"type":"target","text":"<one specified sentence in ${TARGET}>"} lines.`,
       `3) Emit exactly three {"type":"takeaway","text":"<a very short beginner takeaway in ${SUPPORT}>"} lines.`,
+      ...streamingReviewQuestionProtocol(reviewQuestionType, supportLang),
+      '4) Finally emit {"type":"done"}',
+    ].join("\n");
+  }
+
+  if (lessonContent?.tutorialPracticeLevel) {
+    return [
+      `Create the first reading activity for a CEFR ${cefrLevel} ${TARGET} learner.`,
+      `Write four to six connected sentences about ${lessonContent.topic}. ${lessonContent.prompt || ""}`,
+      `Use natural CEFR ${cefrLevel} language, with a concise title and exactly three short takeaways in ${SUPPORT}.`,
+      `Write title and target sentences ONLY in ${TARGET}; takeaways ONLY in ${SUPPORT}.`,
+      "OUTPUT PROTOCOL — NDJSON (one compact JSON object per line):",
+      `1) {"type":"title","text":"<title in ${TARGET}>"}`,
+      `2) Emit four to six {"type":"target","text":"<one sentence in ${TARGET}>"} lines.`,
+      `3) Emit exactly three {"type":"takeaway","text":"<takeaway in ${SUPPORT}>"} lines.`,
       ...streamingReviewQuestionProtocol(reviewQuestionType, supportLang),
       '4) Finally emit {"type":"done"}',
     ].join("\n");
@@ -936,12 +957,15 @@ export default function History({
 
   // Repair/ephemeral lessons carry an explicit CEFR level; regular path lessons
   // can still derive it from their level-coded id.
-  const cefrLevel =
+  const curriculumCefrLevel =
     lesson?.cefrLevel ||
     lessonContent?.cefrLevel ||
     (lesson?.id
       ? extractCEFRLevel(lesson.id)
       : getUserProficiencyLevel(progress, targetLang));
+  const cefrLevel = lesson?.isFinalQuiz || lessonContent?.topic === "tutorial" || lessonContent?.tutorialPracticeLevel || lessonContent?.isGoal || lessonContent?.isRepair
+    ? curriculumCefrLevel
+    : practiceLevelForElo(eloForUser(user, targetLang));
 
   // Track lesson content changes to auto-trigger generation
   const lessonContentKey = useMemo(
@@ -1328,6 +1352,12 @@ export default function History({
       xpAward,
       xpReason,
       reviewFormat: chosenReviewFormat,
+      questionLevel: cefrLevel,
+      worth: await assessGeneratedQuestionWorth({
+        user: useUserStore.getState().user, targetLang, questionLevel: cefrLevel,
+        question: { passage: safeTarget, task: "Answer a comprehension question about the passage" },
+        mode: "reading",
+      }),
       createdAtClient: Date.now(),
       awarded: false, // ← XP not yet claimed
     };
@@ -1513,6 +1543,13 @@ export default function History({
           bundledReviewQuestion,
           plannedReviewQuestionType,
         ),
+        questionLevel: cefrLevel,
+        worth: await assessGeneratedQuestionWorth({
+          user: useUserStore.getState().user, targetLang, questionLevel: cefrLevel,
+          question: { passage: safeTarget, reviewQuestion: bundledReviewQuestion,
+            task: "Answer the review question about the passage" },
+          mode: "reading",
+        }),
         reviewQuestionType: plannedReviewQuestionType,
         createdAtClient: Date.now(),
         awarded: false,
@@ -1684,7 +1721,15 @@ export default function History({
       const parsed = safeParseJSON(raw);
       if (parsed) {
         const normalizedQuestion = normalizeReviewQuestion(parsed, type);
-        if (normalizedQuestion) setReviewQuestion(normalizedQuestion);
+        if (normalizedQuestion) {
+          const questionLevel = activeLecture?.questionLevel || cefrLevel;
+          const worth = await assessGeneratedQuestionWorth({
+            user: useUserStore.getState().user, targetLang, questionLevel,
+            question: { passage: text, reviewQuestion: normalizedQuestion },
+            mode: "reading_review",
+          });
+          setReviewQuestion({ ...normalizedQuestion, questionLevel, worth });
+        }
       }
     } catch (e) {
       console.error("Failed to generate review question", e);
@@ -1753,7 +1798,8 @@ export default function History({
         concept: reviewQuestion.question || "",
         userAnswer: reviewAnswer || "",
         expectedAnswer: reviewQuestion.answer || "",
-        cefrLevel,
+        cefrLevel: reviewQuestion.questionLevel || activeLecture?.questionLevel || cefrLevel,
+        questionWorth: reviewQuestion.worth || activeLecture?.worth,
         sourceContext: "reading",
       });
     }
@@ -1764,6 +1810,9 @@ export default function History({
       if (amt > 0) {
         await awardXp(npub, amt, targetLang, {
           skillTreeLessonId: lesson?.id,
+          gradedOutcome: { questionLevel: reviewQuestion.questionLevel || activeLecture.questionLevel || cefrLevel,
+            worth: reviewQuestion.worth || activeLecture.worth, mode: "reading",
+            concept: reviewQuestion.question || "", support: "independent" },
         }).catch(() => {});
       }
       setLectures((prev) =>
@@ -1887,7 +1936,10 @@ Return ONLY valid JSON:
   // Reset review state when lecture changes
   useEffect(() => {
     setReviewFormat(activeLecture?.reviewFormat || null);
-    setReviewQuestion(activeLecture?.reviewQuestion || null);
+    setReviewQuestion(activeLecture?.reviewQuestion
+      ? { ...activeLecture.reviewQuestion, questionLevel: activeLecture.questionLevel || cefrLevel,
+        worth: activeLecture.worth }
+      : null);
     setExplanationText("");
     setIsLoadingExplanation(false);
     setReviewAnswer("");
@@ -2631,9 +2683,9 @@ Return ONLY valid JSON:
           </Box>
         </HStack>
         <QuestionActionArea
-          feedback={reviewFormat === "speech" ? (speechSubmitted ? true : null) : reviewCorrect}
+          feedback={reviewFormat === "speech" ? (speechSubmitted ? true : null) : isCheckingAnswer ? "thinking" : reviewCorrect}
           actions={
-            <ActivityActionRow
+            !isCheckingAnswer && <ActivityActionRow
               tone={
                 isListening
                   ? "stop"
@@ -2710,8 +2762,11 @@ Return ONLY valid JSON:
                     </Button>
                   )
                 ) : (
-                  <Button isDisabled isLoading={isLoading || isGenerating}>
-                    {t("reading_loading")}
+                  <Button
+                    isDisabled
+                    aria-label={t("reading_loading") || "Loading"}
+                  >
+                    <Spinner size="sm" thickness="2px" color="currentColor" />
                   </Button>
                 )
               }
@@ -3047,6 +3102,7 @@ Return ONLY valid JSON:
             <FeedbackRail
               compact
               ok={reviewCorrect}
+              loading={isCheckingAnswer}
               showNext={false}
               t={(key) =>
                 ({

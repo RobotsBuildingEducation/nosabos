@@ -37,7 +37,7 @@ function Check() {
           if (mode === "practice") {
             const prompt = buildSpeakingStoryPrompt({ targetName: "English", targetLang: "en", difficulty: getStoryDifficulty("Pre-A1", { includeTranslations: false }), isTutorial: false, scenarioDirective: plan.objective, curriculumContext: buildStoryDiversityPrompt(plan) });
             const story = await generatePracticeStory({ prompt, plan, review,
-              generate: async (input, { isRevision }) => { requests++; const r = await (isRevision ? storyRevisionModel : storyModel).generateContent({ contents: [{ role: "user", parts: [{ text: input }] }], generationConfig: { maxOutputTokens: 8192 } }); return r.response.text(); },
+              generate: async (input, { isRevision }) => { requests++; const r = await (isRevision ? storyRevisionModel : storyModel).generateContent({ contents: [{ role: "user", parts: [{ text: input }] }] }); return r.response.text(); },
             });
             candidate = { title: "Practice", target: story.fullStory.tgt };
           } else {

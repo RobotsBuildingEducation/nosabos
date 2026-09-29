@@ -43,10 +43,9 @@ import useSoundSettings from "../hooks/useSoundSettings";
 import { selectSound, submitActionSound } from "../constants/sounds";
 import { getAssetUrl } from "../utils/proxyEndpoints";
 
-import VoiceOrb from "./VoiceOrb";
+import VoiceOrb from "./VoiceOrbNext";
 import MangaLinksExperience from "./MangaLinksExperience";
 
-import { CloudCanvas } from "./CloudCanvas/CloudCanvas";
 import CitizenshipIcon from "./CitizenshipIcon/CitizenshipIcon";
 import { useDecentralizedIdentity } from "../hooks/useDecentralizedIdentity";
 import { NDKKind } from "@nostr-dev-kit/ndk";
@@ -3503,14 +3502,27 @@ function MangaProjectScene({
             </Text>
             <Heading
               fontFamily="'DM Sans', sans-serif"
-              fontSize={{ base: "4xl", md: "6xl" }}
+              fontSize={link.titleLines
+                ? { base: "4xl", md: "clamp(2.4rem, 4vw, 3.75rem)" }
+                : { base: "4xl", md: "6xl" }}
               lineHeight="0.92"
               letterSpacing="-0.055em"
               fontWeight="900"
               mb={5}
               textAlign={pageDirection === "rtl" ? "right" : "left"}
             >
-              {link.title}
+              {link.titleLines
+                ? link.titleLines.map((word, wordIndex) => (
+                    <Text
+                      as="span"
+                      display={{ base: "inline", lg: "block" }}
+                      whiteSpace={{ base: "normal", lg: "nowrap" }}
+                      key={`${word}-${wordIndex}`}
+                    >
+                      {word}{wordIndex < link.titleLines.length - 1 ? " " : ""}
+                    </Text>
+                  ))
+                : link.title}
             </Heading>
             <Text
               fontFamily="'DM Sans', sans-serif"
@@ -4409,7 +4421,7 @@ export default function LinksPage() {
           alignItems="center"
           justifyContent="center"
         >
-          <VoiceOrb state={noSabosOrbState} />
+          <VoiceOrb state={noSabosOrbState} excludeThinking />
         </Box>
       ),
       launchAppText: translations.launchApp,
@@ -4423,6 +4435,7 @@ export default function LinksPage() {
     },
     {
       title: translations.rbeTitle,
+      titleLines: translations.rbeTitle.trim().split(/\s+/),
       description: translations.rbeDescription,
       href: rbeUrl,
       analyticsName: "robots_building_education",
@@ -4434,10 +4447,8 @@ export default function LinksPage() {
           alignItems="center"
           w={{ base: "110px", md: "120px" }}
           h={{ base: "110px", md: "120px" }}
-          transform="scale(0.75)"
-          transformOrigin="center"
         >
-          <CloudCanvas />
+          <VoiceOrb state="idle" size={108} palette="peach" excludeThinking />
         </Box>
       ),
       launchAppText: translations.launchApp,
@@ -5522,6 +5533,7 @@ export default function LinksPage() {
                 {walletHydrating && !cashuWallet && (
                   <HStack py={2}>
                     <VoiceOrb
+                      excludeThinking
                       state={
                         ["idle", "listening", "speaking"][
                           Math.floor(Math.random() * 3)

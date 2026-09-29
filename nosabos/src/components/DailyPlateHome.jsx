@@ -11,9 +11,11 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Box, Button, HStack, Text, VStack } from "@chakra-ui/react";
 import { CheckCircleIcon } from "@chakra-ui/icons";
 import { FiPlay, FiRotateCcw } from "react-icons/fi";
+import { motion, useReducedMotion } from "framer-motion";
 
 import { WaveBar } from "./WaveBar";
 import PlatePetPanel from "./PlatePetPanel";
+import PlateScoreJourney from "./PlateScoreJourney";
 import PlateActivityHeatmap from "./PlateActivityHeatmap";
 import useSoundSettings from "../hooks/useSoundSettings";
 import { useThemeStore } from "../useThemeStore";
@@ -50,6 +52,7 @@ import {
   getStoredPlateHeadline,
 } from "../utils/dailyPlateHeadline";
 import { loadLearningPath } from "../data/skillTree/index.js";
+import { scoreForUser } from "../utils/performanceEloModel";
 
 const START_COPY = {
   en: "Start tasks",
@@ -130,9 +133,12 @@ export default function DailyPlateHome({
   companionLevel = 1,
   onCustomizePet,
   journeyTestControl,
+  immersion,
 }) {
   const playSound = useSoundSettings((s) => s.playSound);
   const isLightTheme = useThemeStore((s) => s.themeMode) === "light";
+  const reduceMotion = useReducedMotion();
+  const [showActivity, setShowActivity] = useState(false);
 
   // Completed-quest styling — stronger teal so a done row reads clearly on
   // both the cream (light) and navy (dark) page backgrounds.
@@ -464,6 +470,7 @@ export default function DailyPlateHome({
       return "";
     }
   }, [appLanguage, now]);
+  const currentScore = scoreForUser(user, targetLang);
 
   const hasStartedTask =
     sessionActive || courses.some((course) => course.count > 0);
@@ -771,37 +778,89 @@ export default function DailyPlateHome({
 
         {/* Pet + daily activity — same data the daily-goal modal shows,
             minus the goal-setting controls (the top bar opens that). */}
-        <PlatePetPanel
-          lang={appLanguage}
-          health={petHealth}
-          variant="setup"
-          showPreview={false}
-          dailyXp={dailyXp}
-          dailyGoalXp={dailyGoalXp}
-          totalXp={languageXp}
-          petName={petName}
+        <Box
+          w="100%"
+          minW={0}
+          maxW="100%"
+          display="grid"
+          gridTemplateColumns="minmax(0, 1fr)"
+        >
+          <motion.div
+            animate={{ opacity: showActivity ? 0 : 1 }}
+            transition={{ duration: reduceMotion ? 0.01 : 0.24 }}
+            aria-hidden={showActivity}
+            inert={showActivity}
+            style={{
+              width: "100%",
+              minWidth: 0,
+              maxWidth: "100%",
+              display: "flex",
+              flexDirection: "column",
+              gridArea: "1 / 1",
+              pointerEvents: showActivity ? "none" : "auto",
+              zIndex: showActivity ? 0 : 1,
+            }}
+          >
+            <PlatePetPanel
+              lang={appLanguage}
+              health={petHealth}
+              variant="setup"
+              showPreview={false}
+              dailyXp={dailyXp}
+              dailyGoalXp={dailyGoalXp}
+              totalXp={languageXp}
+              petName={petName}
+              petType={petType}
+              companionLevel={companionLevel}
+              fillHeight
+              onCustomizePet={onCustomizePet}
+              onViewActivity={() => setShowActivity(true)}
+              questBubble={
+                showBubble
+                  ? {
+                      text: bubbleText,
+                      onDismiss: dismissBubble,
+                      fontSize: ["welcome", "welcomeGoal"].includes(leadKind)
+                        ? "sm"
+                        : undefined,
+                    }
+                  : null
+              }
+            />
+          </motion.div>
+          <motion.div
+            animate={{ opacity: showActivity ? 1 : 0 }}
+            transition={{ duration: reduceMotion ? 0.01 : 0.24 }}
+            aria-hidden={!showActivity}
+            inert={!showActivity}
+            style={{
+              width: "100%",
+              minWidth: 0,
+              maxWidth: "100%",
+              display: "flex",
+              flexDirection: "column",
+              gridArea: "1 / 1",
+              pointerEvents: showActivity ? "auto" : "none",
+              zIndex: showActivity ? 1 : 0,
+            }}
+          >
+            <PlateActivityHeatmap
+              npub={user?.id || user?.local_npub || ""}
+              lang={appLanguage}
+              completedGoalDates={completedGoalDates}
+              dailyXpHistory={dailyXpHistory}
+              currentDailyXp={dailyXp}
+              currentGoalXp={dailyGoalXp}
+              onSeeCompanion={() => setShowActivity(false)}
+            />
+          </motion.div>
+        </Box>
+        <PlateScoreJourney
+          score={currentScore}
+          targetLang={targetLang}
+          appLanguage={appLanguage}
+          immersion={immersion}
           petType={petType}
-          companionLevel={companionLevel}
-          onCustomizePet={onCustomizePet}
-          questBubble={
-            showBubble
-              ? {
-                  text: bubbleText,
-                  onDismiss: dismissBubble,
-                  fontSize: ["welcome", "welcomeGoal"].includes(leadKind)
-                    ? "sm"
-                    : undefined,
-                }
-              : null
-          }
-        />
-        <PlateActivityHeatmap
-          npub={user?.id || user?.local_npub || ""}
-          lang={appLanguage}
-          completedGoalDates={completedGoalDates}
-          dailyXpHistory={dailyXpHistory}
-          currentDailyXp={dailyXp}
-          currentGoalXp={dailyGoalXp}
         />
 
         {/* Reset-plate button hidden for now — re-enable by uncommenting.

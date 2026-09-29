@@ -2615,6 +2615,7 @@ export default function SkillTree({
   isTutorialComplete = true, // Whether skill tree tutorial is complete (lessons locked until complete)
   initialUnits = null,
   initialUnitsKey = "",
+  introTutorialLevel = null,
 }) {
   // Lesson-detail modal state lives in useModalStore so clicking a lesson
   // node does NOT re-render this 3,000-line SkillTree component before the
@@ -2666,17 +2667,6 @@ export default function SkillTree({
     }
   }, [scrollToLatestUnlocked, scrollToLatestUnlockedRef]);
 
-  // Scroll to latest unlocked when trigger changes (and we're in path mode)
-  useEffect(() => {
-    if (scrollToLatestTrigger > 0 && pathMode === "path") {
-      // Use a longer timeout to ensure the path view has rendered
-      const timer = setTimeout(() => {
-        scrollToLatestUnlocked();
-      }, 300);
-      return () => clearTimeout(timer);
-    }
-  }, [scrollToLatestTrigger, pathMode, scrollToLatestUnlocked]);
-
   // Select appropriate level props based on current mode
   const effectiveActiveLevel =
     pathMode === "path" ? activeLessonLevel : activeFlashcardLevel;
@@ -2697,7 +2687,7 @@ export default function SkillTree({
   const levelsKey = Array.isArray(levels) ? levels.join("|") : "";
   const requestedUnitsKey = `${showMultipleLevels ? "multi" : "single"}:${targetLang}:${
     showMultipleLevels ? levelsKey : level
-  }`;
+  }${introTutorialLevel ? `:intro-${introTutorialLevel}` : ""}`;
   const hasInitialUnits =
     Array.isArray(initialUnits) && initialUnitsKey === requestedUnitsKey;
   const [units, setUnits] = useState(() =>
@@ -2728,6 +2718,7 @@ export default function SkillTree({
           ? await loadMultiLevelLearningPath(
               targetLang,
               levelsKey ? levelsKey.split("|") : [],
+              { introTutorialLevel },
             )
           : await loadLearningPath(targetLang, level);
 
@@ -2758,6 +2749,7 @@ export default function SkillTree({
     initialUnits,
     pathMode,
     requestedUnitsKey,
+    introTutorialLevel,
   ]);
 
   // Filter units to show only the effective active level for the current mode
@@ -2939,6 +2931,25 @@ export default function SkillTree({
     }
     return null;
   }, [visibleUnits, userProgress, isTutorialComplete]);
+
+  // Wait for the selected level's units before scrolling from the daily quest.
+  useEffect(() => {
+    if (
+      scrollToLatestTrigger <= 0 ||
+      pathMode !== "path" ||
+      renderLoadedUnitsKey !== requestedUnitsKey ||
+      !latestUnlockedLessonId
+    ) return undefined;
+    const timer = setTimeout(scrollToLatestUnlocked, 300);
+    return () => clearTimeout(timer);
+  }, [
+    scrollToLatestTrigger,
+    pathMode,
+    renderLoadedUnitsKey,
+    requestedUnitsKey,
+    latestUnlockedLessonId,
+    scrollToLatestUnlocked,
+  ]);
 
   const pathModeContent = useMemo(() => {
     const isLevelReady =

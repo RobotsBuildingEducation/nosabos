@@ -323,8 +323,19 @@ test("all five lesson modules at every CEFR level receive exact targets and the 
       assert.match(content.levelGuard, /MAY exceed/);
     }
     assert.equal(lesson.isRepair, undefined);
-    assert.match(goalInstructions(blueprint), /CEFR .* scaffolding only/);
+    assert.match(goalInstructions(blueprint), /Elo-adapted question difficulty/);
   }
+});
+
+test("Goal practice can use an Elo-guided difficulty below its curriculum track", () => {
+  const blueprint = normalizeGoalBlueprint(
+    { mode: "lesson", targetLanguage: ["Hallo"] },
+    { ...context, cefrLevel: "B1", performance: { score: 18, suggestedQuestionLevel: "A1" } },
+  );
+  assert.equal(blueprint.curriculumCefrLevel, "B1");
+  assert.equal(blueprint.cefrLevel, "A1");
+  assert.equal(buildGoalLesson(blueprint).cefrLevel, "A1");
+  assert.doesNotMatch(goalInstructions({ ...blueprint, scoreAtGeneration: 46 }), /scoreAtGeneration/);
 });
 
 
