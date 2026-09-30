@@ -4,7 +4,11 @@ import { getDailyGoalPetHealth } from "./dailyGoalPet.js";
 import { getCompanionLevelFromXp, getEffectivePetType } from "./petTypes.js";
 
 export const TEAM_KIND = 30078;
-export const TEAM_RELAYS = ["wss://relay.primal.net", "wss://relay.ditto.pub"];
+export const TEAM_RELAYS = [
+  "wss://relay.primal.net",
+  "wss://relay.ditto.pub",
+  "wss://nos.lol",
+];
 export const TEAM_TAG = "learning-team";
 export const PROGRESS_D = "learning-progress";
 const QUERY_TIMEOUT_MS = 7000;

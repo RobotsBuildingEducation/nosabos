@@ -31,7 +31,11 @@ test("a team event is a public roster both apps can query", () => {
   assert.equal(team.name, "Weekend Study");
   assert.deepEqual(team.members, [creator, member].map((hex) => nip19.npubEncode(hex)));
   assert.equal(team.deleted, false);
-  assert.deepEqual(TEAM_RELAYS, ["wss://relay.primal.net", "wss://relay.ditto.pub"]);
+  assert.deepEqual(TEAM_RELAYS, [
+    "wss://relay.primal.net",
+    "wss://relay.ditto.pub",
+    "wss://nos.lol",
+  ]);
 });
 
 test("progress snapshot shares the displayed score, level, and companion separately from XP", () => {

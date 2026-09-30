@@ -11,7 +11,11 @@ import NDK, {
 } from "@nostr-dev-kit/ndk";
 
 const ndk = new NDK({
-  explicitRelayUrls: ["wss://relay.ditto.pub", "wss://relay.primal.net"],
+  explicitRelayUrls: [
+    "wss://relay.ditto.pub",
+    "wss://relay.primal.net",
+    "wss://nos.lol",
+  ],
 });
 
 console.log("ndk created:", ndk);
@@ -179,6 +183,7 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
           explicitRelayUrls: [
             "wss://relay.ditto.pub",
             "wss://relay.primal.net",
+            "wss://nos.lol",
           ],
         });
 
