@@ -19,6 +19,8 @@ import {
   FaCalendarCheck,
   FaPaw,
   FaRoute,
+  FaGlobeAmericas,
+  FaChartLine,
 } from "react-icons/fa";
 import { LuBookAudio, LuSun } from "react-icons/lu";
 import { RiMoonClearFill } from "react-icons/ri";
@@ -161,7 +163,7 @@ const translations = {
     feature_grammar: "Grammar Book",
     feature_grammar_desc:
       "Quick rule references, concept drills, and adaptive review sets that strengthen your foundation.",
-    feature_skilltree: "Skill Tree",
+    feature_skilltree: "Lessons",
     feature_skilltree_desc:
       "Structured learning paths that build your abilities step by step with clear progress visualization.",
     feature_flashcards: "Vocabulary",
@@ -173,9 +175,18 @@ const translations = {
     feature_notes: "Generate Notes",
     feature_notes_desc:
       "Create comprehensive study notes from your lessons to review later.",
-    feature_immersion: "Immersion & Score",
+    feature_immersion: "Real-World Immersion",
     feature_immersion_desc:
       "Complete tasks outside of the app to immerse and practice the language.",
+    feature_elo: "Elo Scoring",
+    feature_elo_desc:
+      "A chess-style rating model that tracks your true ability on every answer and dynamically adapts question difficulty.",
+    feature_teams: "Learning Teams",
+    feature_teams_desc:
+      "Form study squads with friends to share daily goals, streaks, companion growth, and progress in real time.",
+    feature_global_feed: "Global Feed",
+    feature_global_feed_desc:
+      "Discover notes, study updates, and tips shared by learners worldwide on the decentralized network.",
     feature_assistant: "Personal Assistant",
     feature_assistant_desc:
       "Get personalized guidance and recommendations when you need help.",
@@ -308,7 +319,7 @@ const translations = {
     feature_grammar: "Laboratorios de Gramática",
     feature_grammar_desc:
       "Referencias rápidas, ejercicios conceptuales y sets de repaso adaptativos.",
-    feature_skilltree: "Árbol de Habilidades",
+    feature_skilltree: "Lecciones",
     feature_skilltree_desc:
       "Rutas de aprendizaje estructuradas que construyen tus habilidades paso a paso.",
     feature_flashcards: "Ejercicios de Vocabulario",
@@ -321,9 +332,18 @@ const translations = {
     feature_notes: "Generar Notas",
     feature_notes_desc:
       "Crea notas de estudio de tus lecciones para revisarlas más tarde.",
-    feature_immersion: "Inmersión y puntuación",
+    feature_immersion: "Inmersión en el Mundo Real",
     feature_immersion_desc:
       "Completa tareas fuera de la app para sumergirte y practicar el idioma.",
+    feature_elo: "Puntuación Elo",
+    feature_elo_desc:
+      "Un modelo de calificación estilo ajedrez que mide tu dominio real en cada respuesta y adapta la dificultad de los ejercicios.",
+    feature_teams: "Equipos de Aprendizaje",
+    feature_teams_desc:
+      "Crea grupos de estudio con amigos para compartir metas diarias, rachas, crecimiento del compañero y progreso en tiempo real.",
+    feature_global_feed: "Feed Global",
+    feature_global_feed_desc:
+      "Descubre notas, avances y consejos compartidos por estudiantes de todo el mundo en la red descentralizada.",
     feature_assistant: "Asistente Personal",
     feature_assistant_desc:
       "Obtén orientación y recomendaciones personalizadas cuando las necesites.",
@@ -457,7 +477,7 @@ const translations = {
     feature_grammar: "Libro di Grammatica",
     feature_grammar_desc:
       "Riferimenti rapidi alle regole, esercizi concettuali e set di revisione adattivi per rafforzare le basi.",
-    feature_skilltree: "Albero delle Abilità",
+    feature_skilltree: "Lezioni",
     feature_skilltree_desc:
       "Percorsi di apprendimento strutturati che costruiscono le abilità passo dopo passo con una visualizzazione chiara dei progressi.",
     feature_flashcards: "Vocabolario",
@@ -469,9 +489,18 @@ const translations = {
     feature_notes: "Genera Note",
     feature_notes_desc:
       "Crea note di studio complete dalle tue lezioni da rivedere in seguito.",
-    feature_immersion: "Immersione e punteggio",
+    feature_immersion: "Immersione Reale",
     feature_immersion_desc:
       "Completa attività fuori dall'app per immergerti e praticare la lingua.",
+    feature_elo: "Punteggio Elo",
+    feature_elo_desc:
+      "Un sistema di valutazione stile scacchi che misura la tua vera abilità a ogni risposta e adatta dinamicamente la difficoltà.",
+    feature_teams: "Squadre di Apprendimento",
+    feature_teams_desc:
+      "Crea gruppi di studio con amici per condividere obiettivi giornalieri, serie, crescita del compagno e progressi in tempo reale.",
+    feature_global_feed: "Feed Globale",
+    feature_global_feed_desc:
+      "Scopri note, aggiornamenti e suggerimenti condivisi da studenti di tutto il mondo sulla rete decentralizzata.",
     feature_assistant: "Assistente Personale",
     feature_assistant_desc:
       "Ottieni guida e raccomandazioni personalizzate quando ne hai bisogno.",
@@ -558,10 +587,22 @@ const translations = {
   },
 };
 
-translations.pt = LANDING_PAGE_PT_STATIC;
-translations.de = LANDING_PAGE_DE_STATIC;
-translations.hi = LANDING_PAGE_HI_STATIC;
-translations.zh = LANDING_PAGE_ZH_STATIC;
+translations.pt = {
+  ...translations.en,
+  ...LANDING_PAGE_PT_STATIC,
+};
+translations.de = {
+  ...translations.en,
+  ...LANDING_PAGE_DE_STATIC,
+};
+translations.hi = {
+  ...translations.en,
+  ...LANDING_PAGE_HI_STATIC,
+};
+translations.zh = {
+  ...translations.en,
+  ...LANDING_PAGE_ZH_STATIC,
+};
 translations.ar = {
   ...translations.en,
   ...LANDING_PAGE_AR_STATIC,
@@ -615,7 +656,7 @@ translations.fr = {
   feature_grammar: "Livre de Grammaire",
   feature_grammar_desc:
     "References rapides, exercices de notions et revisions adaptatives pour renforcer tes bases.",
-  feature_skilltree: "Arbre de Competences",
+  feature_skilltree: "Leçons",
   feature_skilltree_desc:
     "Des parcours structures qui construisent tes competences etape par etape avec une visualisation claire des progres.",
   feature_flashcards: "Vocabulaire",
@@ -627,9 +668,18 @@ translations.fr = {
   feature_notes: "Generer des Notes",
   feature_notes_desc:
     "Cree des notes d'etude completes depuis tes lecons pour les revoir plus tard.",
-  feature_immersion: "Immersion et score",
+  feature_immersion: "Immersion dans le Monde Réel",
   feature_immersion_desc:
     "Complete des taches hors de l'app pour t'immerger et pratiquer la langue.",
+  feature_elo: "Score Elo",
+  feature_elo_desc:
+    "Un modèle de classement inspiré des échecs qui évalue votre maîtrise réelle à chaque réponse et ajuste la difficulté en continu.",
+  feature_teams: "Équipes d'Apprentissage",
+  feature_teams_desc:
+    "Créez des groupes d'étude avec vos amis pour partager vos objectifs quotidiens, séries, évolution du compagnon et progrès en temps réel.",
+  feature_global_feed: "Fil d'Actualité Mondial",
+  feature_global_feed_desc:
+    "Découvrez des notes, actualités d'apprentissage et astuces partagées par des apprenants du monde entier sur le réseau décentralisé.",
   feature_assistant: "Assistant Personnel",
   feature_assistant_desc:
     "Obtiens une aide et des recommandations personnalisees quand tu en as besoin.",
@@ -758,7 +808,7 @@ translations.ja = {
   feature_grammar: "文法ブック",
   feature_grammar_desc:
     "短いルール解説、概念ドリル、適応型復習で基礎を強化します。",
-  feature_skilltree: "スキルツリー",
+  feature_skilltree: "レッスン",
   feature_skilltree_desc:
     "段階的な学習パスと進捗の見える化で、着実に力を伸ばします。",
   feature_flashcards: "語彙",
@@ -769,9 +819,18 @@ translations.ja = {
   feature_notes: "ノート生成",
   feature_notes_desc:
     "レッスン内容から、あとで見返せる学習ノートを自動で作成します。",
-  feature_immersion: "イマージョン＆スコア",
+  feature_immersion: "実践イマージョン",
   feature_immersion_desc:
     "アプリの外でも課題に取り組み、言語に浸りながら実践練習します。",
+  feature_elo: "Eloレーティング",
+  feature_elo_desc:
+    "チェス着想のレート評価モデルが回答ごとの真の実力を測定し、問題の難易度をリアルタイムに最適化します。",
+  feature_teams: "学習チーム",
+  feature_teams_desc:
+    "仲間とスタディグループを結成し、毎日の目標やストリーク、コンパニオンの成長、進捗をリアルタイムに共有できます。",
+  feature_global_feed: "グローバルフィード",
+  feature_global_feed_desc:
+    "分散型ネットワーク上で世界中の学習者が共有する学習ノートや成果、ヒントを発見できます。",
   feature_assistant: "パーソナルアシスタント",
   feature_assistant_desc:
     "困ったときに、あなたに合った案内やおすすめを受け取れます。",
@@ -2099,6 +2158,21 @@ const LandingPage = ({ onAuthenticated }) => {
       icon: <FaCompass />,
       title: copy.feature_immersion,
       desc: copy.feature_immersion_desc,
+    },
+    {
+      icon: <FaChartLine />,
+      title: copy.feature_elo,
+      desc: copy.feature_elo_desc,
+    },
+    {
+      icon: <FaUsers />,
+      title: copy.feature_teams,
+      desc: copy.feature_teams_desc,
+    },
+    {
+      icon: <FaGlobeAmericas />,
+      title: copy.feature_global_feed,
+      desc: copy.feature_global_feed_desc,
     },
     {
       icon: <FaMicrophone />,

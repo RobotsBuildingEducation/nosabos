@@ -4421,7 +4421,7 @@ export default function LinksPage() {
           alignItems="center"
           justifyContent="center"
         >
-          <VoiceOrb state={noSabosOrbState} excludeThinking />
+          <VoiceOrb state={noSabosOrbState} excludeThinking sharedRenderer />
         </Box>
       ),
       launchAppText: translations.launchApp,
@@ -4448,7 +4448,7 @@ export default function LinksPage() {
           w={{ base: "110px", md: "120px" }}
           h={{ base: "110px", md: "120px" }}
         >
-          <VoiceOrb state="idle" size={108} palette="peach" excludeThinking />
+          <VoiceOrb state="idle" size={108} palette="peach" excludeThinking sharedRenderer />
         </Box>
       ),
       launchAppText: translations.launchApp,

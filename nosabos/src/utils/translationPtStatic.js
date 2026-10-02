@@ -781,7 +781,7 @@ export const TRANSLATION_PT_STATIC = {
   "vocab_quiz_not_passed": "Teste não aprovado",
   "vocab_quiz_score_passed": "{correct} corretas • necesitabas {needed}",
   "vocab_quiz_score_failed": "{correct} corretas • necesitas {needed} para aprobar",
-  "vocab_back_to_skill_tree": "Voltar para a árvore",
+  "vocab_back_to_skill_tree": "Voltar para as lições",
   "vocab_mc_instruction": "Escolha la resposta correta",
   "vocab_ma_instruction": "Selecione todas as respostas corretas",
   "vocab_match_instruction": "Empareja as palabras",

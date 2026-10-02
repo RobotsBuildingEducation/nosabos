@@ -45,7 +45,7 @@ export const LANDING_PAGE_HI_STATIC = {
   feature_grammar: "व्याकरण पुस्तक",
   feature_grammar_desc:
     "तेज़ नियम संदर्भ, अवधारणा अभ्यास और अनुकूलित पुनरावृत्ति जो आपकी नींव मज़बूत करती है।",
-  feature_skilltree: "स्किल ट्री",
+  feature_skilltree: "पाठ",
   feature_skilltree_desc:
     "संरचित सीखने के रास्ते जो आपकी क्षमताओं को चरण-दर-चरण विकसित करते हैं।",
   feature_flashcards: "शब्दावली",
@@ -57,9 +57,18 @@ export const LANDING_PAGE_HI_STATIC = {
   feature_notes: "नोट्स बनाएं",
   feature_notes_desc:
     "अपनी कक्षाओं से विस्तृत अध्ययन नोट्स बनाएं ताकि बाद में समीक्षा कर सकें।",
-  feature_immersion: "इमर्शन और स्कोर",
+  feature_immersion: "रियल-वर्ल्ड इमर्शन",
   feature_immersion_desc:
     "ऐप के बाहर के कार्य पूरे करें ताकि भाषा में डूबकर अभ्यास कर सकें।",
+  feature_elo: "एलो स्कोरिंग",
+  feature_elo_desc:
+    "शतरंज-शैली की रेटिंग प्रणाली जो आपके वास्तविक कौशल का मूल्यांकन करती है और प्रश्नों की कठिनाई को स्वतः समायोजित करती है।",
+  feature_teams: "लर्निंग टीम्स",
+  feature_teams_desc:
+    "दोस्तों के साथ स्टडी ग्रुप बनाएं और दैनिक लक्ष्य, स्ट्रीक्स, साथी की प्रगति और स्कोर रीयल-टाइम में साझा करें।",
+  feature_global_feed: "ग्लोबल फीड",
+  feature_global_feed_desc:
+    "विकेंद्रीकृत नेटवर्क पर दुनिया भर के शिक्षार्थियों द्वारा साझा किए गए अध्ययन नोट्स और सुझाव देखें।",
   feature_assistant: "व्यक्तिगत सहायक",
   feature_assistant_desc:
     "ज़रूरत पड़ने पर व्यक्तिगत मार्गदर्शन और सुझाव पाएं।",

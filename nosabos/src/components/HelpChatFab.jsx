@@ -51,6 +51,7 @@ import {
   FaPlus,
 } from "react-icons/fa";
 import { MdOutlineSupportAgent } from "react-icons/md";
+import VoiceWaveIcon from "./VoiceWaveIcon";
 import { TTS_LANG_TAG, getPreferredTTSVoice, getTTSPlayer, startTTSPlayback } from "../utils/tts";
 
 const SAVED_CHATS_KEY = "nosabos_helpchat_saved_chats";
@@ -639,6 +640,7 @@ const HelpChatFab = forwardRef(
 
     // Realtime voice chat state
     const [realtimeStatus, setRealtimeStatus] = useState("disconnected"); // disconnected | connecting | connected
+    const [realtimeStream, setRealtimeStream] = useState(null);
     const audioRef = useRef(null);
     const pcRef = useRef(null);
     const localRef = useRef(null);
@@ -1622,6 +1624,12 @@ const HelpChatFab = forwardRef(
             clearRealtimeAutoStopTimer();
             ensurePendingRealtimeTurn();
             disableRealtimeVAD();
+            if (realtimeAliveRef.current) {
+              realtimeAutoStopTimerRef.current = setTimeout(() => {
+                if (!realtimeAliveRef.current) return;
+                stopRealtimeRef.current();
+              }, 25000);
+            }
             return;
           }
 
@@ -1633,6 +1641,12 @@ const HelpChatFab = forwardRef(
               responseId,
             );
             disableRealtimeVAD();
+            if (realtimeAliveRef.current) {
+              realtimeAutoStopTimerRef.current = setTimeout(() => {
+                if (!realtimeAliveRef.current) return;
+                stopRealtimeRef.current();
+              }, 45000);
+            }
             return;
           }
 
@@ -1852,12 +1866,14 @@ const HelpChatFab = forwardRef(
         await pc.setRemoteDescription({ type: "answer", sdp: answer });
 
         setRealtimeStatus("connected");
+        setRealtimeStream(local);
         realtimeAliveRef.current = true;
         scheduleRealtimeAutoStop();
       } catch (e) {
         console.error("Realtime connection error:", e);
         clearRealtimeAutoStopTimer();
         setRealtimeStatus("disconnected");
+        setRealtimeStream(null);
         toast({
           status: "error",
           title: helpUi.connectionErrorTitle,
@@ -1879,6 +1895,7 @@ const HelpChatFab = forwardRef(
     const stopRealtime = useCallback(() => {
       clearRealtimeAutoStopTimer();
       realtimeAliveRef.current = false;
+      setRealtimeStream(null);
       currentAssistantIdRef.current = null;
       realtimeTurnQueueRef.current = [];
       realtimeResponseToMessageRef.current.clear();
@@ -1964,6 +1981,19 @@ const HelpChatFab = forwardRef(
         stopRealtime();
       }
     }, [isOpen, stopRealtime]);
+
+    // Disconnect realtime when user tabs out
+    useEffect(() => {
+      const handleVisibilityChange = () => {
+        if (document.hidden && realtimeAliveRef.current) {
+          stopRealtime();
+        }
+      };
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+      return () => {
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
+      };
+    }, [stopRealtime]);
 
     useEffect(() => {
       if (!isOpen && replayingId) {
@@ -2353,9 +2383,13 @@ const HelpChatFab = forwardRef(
                               }
                               icon={
                                 realtimeStatus === "connected" ? (
-                                  <FaStop />
+                                  <VoiceWaveIcon
+                                    stream={realtimeStream}
+                                    size={14}
+                                    color="currentColor"
+                                  />
                                 ) : realtimeStatus === "connecting" ? (
-                                  <Spinner size="xs" />
+                                  <Spinner size="xs" thickness="2px" />
                                 ) : (
                                   <FaMicrophone />
                                 )
@@ -2368,7 +2402,7 @@ const HelpChatFab = forwardRef(
                                 realtimeStatus === "connecting" || sending
                               }
                               colorScheme={
-                                realtimeStatus === "connected" ? "red" : "gray"
+                                realtimeStatus === "connected" ? "teal" : "gray"
                               }
                               variant={
                                 realtimeStatus === "connected"
@@ -2436,8 +2470,24 @@ const HelpChatFab = forwardRef(
                                   playSound(clickSound);
                                   handleStop();
                                 }}
-                                colorScheme="red"
-                                icon={<FaStop />}
+                                colorScheme="gray"
+                                variant="solid"
+                                bg="var(--app-surface-muted, rgba(255, 255, 255, 0.08))"
+                                color="var(--app-text-primary, inherit)"
+                                border="1px solid"
+                                borderColor="var(--app-border, rgba(255, 255, 255, 0.12))"
+                                _hover={{
+                                  bg: "var(--app-surface-hover, rgba(255, 255, 255, 0.14))",
+                                }}
+                                icon={
+                                  <Box
+                                    as="span"
+                                    w="10px"
+                                    h="10px"
+                                    bg="currentColor"
+                                    borderRadius="2px"
+                                  />
+                                }
                                 size="sm"
                                 rounded="full"
                               />
@@ -2597,9 +2647,13 @@ const HelpChatFab = forwardRef(
                               }
                               icon={
                                 realtimeStatus === "connected" ? (
-                                  <FaStop />
+                                  <VoiceWaveIcon
+                                    stream={realtimeStream}
+                                    size={14}
+                                    color="currentColor"
+                                  />
                                 ) : realtimeStatus === "connecting" ? (
-                                  <Spinner size="xs" />
+                                  <Spinner size="xs" thickness="2px" />
                                 ) : (
                                   <FaMicrophone />
                                 )
@@ -2612,7 +2666,7 @@ const HelpChatFab = forwardRef(
                                 realtimeStatus === "connecting" || sending
                               }
                               colorScheme={
-                                realtimeStatus === "connected" ? "red" : "gray"
+                                realtimeStatus === "connected" ? "teal" : "gray"
                               }
                               variant={
                                 realtimeStatus === "connected"
@@ -2680,8 +2734,24 @@ const HelpChatFab = forwardRef(
                                   playSound(clickSound);
                                   handleStop();
                                 }}
-                                colorScheme="red"
-                                icon={<FaStop />}
+                                colorScheme="gray"
+                                variant="solid"
+                                bg="var(--app-surface-muted, rgba(255, 255, 255, 0.08))"
+                                color="var(--app-text-primary, inherit)"
+                                border="1px solid"
+                                borderColor="var(--app-border, rgba(255, 255, 255, 0.12))"
+                                _hover={{
+                                  bg: "var(--app-surface-hover, rgba(255, 255, 255, 0.14))",
+                                }}
+                                icon={
+                                  <Box
+                                    as="span"
+                                    w="10px"
+                                    h="10px"
+                                    bg="currentColor"
+                                    borderRadius="2px"
+                                  />
+                                }
                                 size="sm"
                                 rounded="full"
                               />

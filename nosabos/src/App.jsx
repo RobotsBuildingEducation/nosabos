@@ -1,3 +1,8 @@
+import usePiyaliAchievements from "./hooks/usePiyaliAchievements.js";
+import AchievementUnlockFallback from "./components/AchievementUnlockFallback.jsx";
+import { awardProgressionAchievements } from "./utils/achievements.js";
+import { previewAchievementUnlock } from "./achievements/unlockStore.js";
+import { achievementText } from "./achievements/copy.js";
 import GoalLessonCompletion from "./components/GoalLessonCompletion";
 import {
   getGoalPreparationXp,
@@ -1372,6 +1377,7 @@ function TopBar({
   onPatreonCancelReplacement,
   openSubscriptionTab = false,
   onSubscriptionSurfaceOpen,
+  onOpenProficiencyModal,
 }) {
   const playSliderTick = useSoundSettings((s) => s.playSliderTick);
   const toast = useToast();
@@ -2665,20 +2671,20 @@ function TopBar({
                           }}
                           onClick={() => {
                             closeSettings();
-                            navigate("/proficiency");
+                            onOpenProficiencyModal?.();
                           }}
                           mt={4}
                         >
                           {uiCopy(appLanguage, {
-                            en: "Take proficiency proficiency test",
-                            es: "Realizar prueba de nivel",
-                            pt: "Fazer teste de nível",
-                            it: "Fai il test di livello",
-                            fr: "Passer le test de niveau",
-                            ja: "レベルテストを受ける",
-                            hi: "प्रवीणता परीक्षण दें",
-                            ar: "إجراء اختبار المستوى",
-                            zh: "参加水平测试",
+                            en: "Change proficiency level",
+                            es: "Cambiar nivel de competencia",
+                            pt: "Alterar nível de proficiência",
+                            it: "Modifica livello di competenza",
+                            fr: "Modifier le niveau de compétence",
+                            ja: "習熟度レベルを変更",
+                            hi: "प्रवीणता स्तर बदलें",
+                            ar: "تغيير مستوى الكفاءة",
+                            zh: "更改语言水平",
                           })}
                         </Button>
 
@@ -3382,6 +3388,7 @@ export default function App({ onBootReady } = {}) {
     return normalizeSupportLanguage(stored, DEFAULT_SUPPORT_LANGUAGE);
   });
   // Guards stale Firestore snapshots from reverting an in-flight language change.
+  usePiyaliAchievements(user, resolvedTargetLang, activeNpub, appLanguage);
   const pendingLangRef = useRef(null);
   const pendingLangTimeoutRef = useRef(null);
   const onSupportLangChange = useCallback(
@@ -4118,9 +4125,8 @@ export default function App({ onBootReady } = {}) {
   // Every load starts on the Daily Quest home ("plate") — the last-used mode
   // intentionally does not survive a refresh/return. The one exception is the
   // one-shot "pathModeHandoff" key, written by flows on other routes that need
-  // to land somewhere specific on remount (the proficiency test queues
-  // "tutor"); it's consumed here so it can't leak into later loads. Invalid
-  // values are sanitized to "plate" by the validation effect below.
+  // to land somewhere specific on remount; it's consumed here so it can't leak
+  // into later loads. Invalid values are sanitized to "plate" by the validation effect below.
   const [pathMode, setPathMode] = useState(() => {
     if (typeof window !== "undefined") {
       try {
@@ -5031,6 +5037,8 @@ export default function App({ onBootReady } = {}) {
   const [timerModalImmediateBody, setTimerModalImmediateBody] = useState(false);
   const [timeUpOpen, setTimeUpOpen] = useState(false);
   const [hasTimer, setHasTimer] = useState(false);
+  const timerOwnerRef = useRef(null);
+  const timerSessionIdRef = useRef(null);
   const timerIntervalRef = useRef(null);
   const timerHydratedRef = useRef(false);
   const sessionTimerStorageKey = useMemo(
@@ -5043,6 +5051,12 @@ export default function App({ onBootReady } = {}) {
   const appOnboardingChainOpen = proficiencyTestOpen || gettingStartedOpen;
 
   useEffect(() => {
+    if (timeUpOpen && timerOwnerRef.current === activeNpub && timerSessionIdRef.current && timerDurationSeconds > 0) {
+      void awardProgressionAchievements({ npub: activeNpub, source: "nosabos", events: [{ metric: "session_timers", id: timerSessionIdRef.current }] }).catch(error => console.warn("Timer achievement:", error));
+    }
+  }, [timeUpOpen, timerDurationSeconds, activeNpub]);
+
+  useEffect(() => {
     if (timeUpOpen) {
       playSound(sparkleSound);
     }
@@ -5050,6 +5064,8 @@ export default function App({ onBootReady } = {}) {
 
   useEffect(() => {
     timerHydratedRef.current = false;
+    timerSessionIdRef.current = null;
+    timerOwnerRef.current = activeNpub;
 
     if (typeof window === "undefined") {
       timerHydratedRef.current = true;
@@ -5071,6 +5087,7 @@ export default function App({ onBootReady } = {}) {
       }
 
       const stored = JSON.parse(raw);
+      timerSessionIdRef.current = stored.sessionId || null;
       const storedMinutes = String(stored?.minutes || "10");
       const storedDuration = Number(stored?.durationSeconds);
       const storedRemaining = Number(stored?.remainingSeconds);
@@ -5125,7 +5142,7 @@ export default function App({ onBootReady } = {}) {
     } finally {
       timerHydratedRef.current = true;
     }
-  }, [sessionTimerStorageKey]);
+  }, [sessionTimerStorageKey, activeNpub]);
 
   useEffect(() => {
     if (!timerHydratedRef.current || typeof window === "undefined") return;
@@ -5136,6 +5153,7 @@ export default function App({ onBootReady } = {}) {
       window.sessionStorage.setItem(
         sessionTimerStorageKey,
         JSON.stringify({
+          sessionId: timerSessionIdRef.current,
           minutes: timerMinutes,
           remainingSeconds: timerPaused ? getRemainingSeconds() : null,
           durationSeconds: timerDurationSeconds,
@@ -5204,6 +5222,7 @@ export default function App({ onBootReady } = {}) {
       clearInterval(timerIntervalRef.current);
       timerIntervalRef.current = null;
     }
+    timerSessionIdRef.current = null;
     setTimerActive(false);
     setTimerPaused(false);
     setRemainingSeconds(null);
@@ -5232,6 +5251,8 @@ export default function App({ onBootReady } = {}) {
 
       runAfterNextPaint(() => {
         handleResetTimer();
+        timerOwnerRef.current = activeNpub;
+        timerSessionIdRef.current = globalThis.crypto.randomUUID();
         const seconds = parsedMinutes * 60;
         const endsAt = Date.now() + seconds * 1000;
         setTimerDurationSeconds(seconds);
@@ -5243,7 +5264,7 @@ export default function App({ onBootReady } = {}) {
         setHasTimer(true);
       });
     },
-    [handleResetTimer, runAfterNextPaint, setTimerModalOpen, timerMinutes],
+    [activeNpub, handleResetTimer, runAfterNextPaint, setTimerModalOpen, timerMinutes],
   );
 
   const handleCloseTimeUp = useCallback(() => {
@@ -8630,6 +8651,11 @@ export default function App({ onBootReady } = {}) {
       });
       setActiveLessonLevel(level);
       setActiveFlashcardLevel(level);
+      try {
+        const langKey = String(lang || "es").toLowerCase();
+        window.localStorage.setItem(`tutorPathLevel:${langKey}`, level);
+        window.localStorage.removeItem(`tutorPathLesson:${langKey}`);
+      } catch {}
       setProficiencyTestOpen(false);
     },
     [normalizedTargetLang, patchUser, resolveNpub],
@@ -10593,6 +10619,7 @@ export default function App({ onBootReady } = {}) {
 
   return (
     <Box minH="100dvh" bg="var(--app-page-bg)" color="gray.50" width="100%">
+      <AchievementUnlockFallback />
       <AnimatedBackground />
       {!isGameFullScreen && (
         <TopBar
@@ -10656,6 +10683,7 @@ export default function App({ onBootReady } = {}) {
           onPatreonCancelReplacement={handlePatreonDrawerCancelReplacement}
           openSubscriptionTab={subscriptionDrawerRequested}
           onSubscriptionSurfaceOpen={handlePatreonSubscriptionSurfaceOpen}
+          onOpenProficiencyModal={() => setProficiencyTestOpen(true)}
         />
       )}
 
@@ -10966,6 +10994,19 @@ export default function App({ onBootReady } = {}) {
           pb={{ base: 32, md: 24 }}
           w="100%"
         >
+          {activeLesson?.isTutorial && currentTab === activeLesson.modes?.[0] && (
+            <HStack justify="flex-end" maxW="560px" mx="auto" mb={2}>
+              <Button
+                size="xs"
+                variant="outline"
+                colorScheme="yellow"
+                borderRadius="full"
+                onClick={() => previewAchievementUnlock("nosabos")}
+              >
+                {achievementText("testUnlock", appLanguage)}
+              </Button>
+            </HStack>
+          )}
           {/* Tutorial Stepper - shows progress through tutorial modules */}
           {isTutorialMode && activeLesson?.isTutorial && (
             <TutorialStepper
@@ -10997,6 +11038,7 @@ export default function App({ onBootReady } = {}) {
                       <TabPanel key="realtime" px={0} py={{ base: 0, md: 2 }}>
                         <RealTimeTest
                           key={`realtime-${lessonModuleNonce}`}
+                          isActive={currentTab === "realtime"}
                           auth={auth}
                           activeNpub={activeNpub}
                           activeNsec={activeNsec}
@@ -11180,6 +11222,7 @@ export default function App({ onBootReady } = {}) {
         appChainOpen={appOnboardingChainOpen}
         onStartAtLevel={handleProficiencyStartAtLevel}
         onTakeTest={handleProficiencyTakeTest}
+        onClose={() => setProficiencyTestOpen(false)}
         lang={appLanguage}
         targetLangLabel={
           t[`language_${resolvedTargetLang}`] ||
@@ -12695,7 +12738,7 @@ function BottomActionBar({
 
   const questionMenuSlot = useQuestionActionStore((state) => state.menuSlot);
   const showFullNavigation = isFullNavigationSkillTreeMode(viewMode, pathMode);
-  const activityMenu = Boolean(questionMenuSlot) && !showFullNavigation;
+  const activityMenu = Boolean(questionMenuSlot);
 
   const renderActivityMenu = (placement = "top-start") => (
     <ActivityMenu

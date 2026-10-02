@@ -1,4 +1,7 @@
 import useGoalFocusStore from "../hooks/useGoalFocusStore";
+import { awardTutorLevelAchievements } from "../utils/achievements.js";
+import { previewAchievementUnlock } from "../achievements/unlockStore.js";
+import { achievementText } from "../achievements/copy.js";
 import {
   currentGoalFocus,
   evaluateGoalAttempt,
@@ -53,7 +56,15 @@ import {
 } from "@chakra-ui/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { layoutWithLines, prepareWithSegments } from "@chenglou/pretext";
-import { FaMicrophone, FaStop, FaRegCommentDots } from "react-icons/fa";
+import {
+  FaMicrophone,
+  FaMicrophoneSlash,
+  FaPause,
+  FaPlay,
+  FaPhoneSlash,
+  FaStop,
+  FaRegCommentDots,
+} from "react-icons/fa";
 import { MdOutlineTranslate } from "react-icons/md";
 import { LuChartColumnIncreasing } from "react-icons/lu";
 import {
@@ -91,7 +102,9 @@ import { logEvent } from "firebase/analytics";
 
 import useUserStore from "../hooks/useUserStore";
 import VoiceOrb from "./VoiceOrbNext";
+import { voiceCallControlStyle } from "../utils/voiceCallControlStyle.js";
 import TutorViewportEdgeGlow from "./TutorViewportEdgeGlow";
+import { useTutorVoiceLevel } from "../hooks/useTutorVoiceLevel.js";
 import AnimatedEllipsis from "./AnimatedEllipsis";
 import {
   CHAT_LOG_HIGHLIGHT_DURATION_MS,
@@ -361,7 +374,7 @@ function buildTutorTurnDetection(pauseMs) {
 const RESPONSES_URL = getResponsesUrl();
 const TRANSLATE_MODEL =
   import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-6-luna";
-const AUTO_DISCONNECT_MS = 15000;
+const AUTO_DISCONNECT_MS = 30000;
 const ARCHIVE_GLYPH_DURATION_MS = 680;
 const ARCHIVE_GLYPH_DURATION_VARIANCE_MS = 150;
 const ARCHIVE_ANIMATION_BUFFER_MS = 180;
@@ -3981,6 +3994,18 @@ export default function Tutor({
 
   // Connection/UI state
   const [status, setStatus] = useState("disconnected");
+  const [isMuted, setIsMuted] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const isMutedRef = useRef(false);
+  const isPausedRef = useRef(false);
+  const pauseSafetyTimerRef = useRef(null);
+
+  const clearPauseSafetyTimer = useCallback(() => {
+    if (pauseSafetyTimerRef.current) {
+      clearTimeout(pauseSafetyTimerRef.current);
+      pauseSafetyTimerRef.current = null;
+    }
+  }, []);
   const [orbFeedback, setOrbFeedback] = useState(null);
   const [err, setErr] = useState("");
   const [uiState, setUiStateState] = useState("idle");
@@ -4556,6 +4581,12 @@ export default function Tutor({
 
   const storedTutorUnlockedLevel =
     user?.progress?.tutorUnlockedLevels?.[getTutorStorageLang(targetLang)];
+
+  useEffect(() => {
+    if (!currentNpub || isTutorPathLoading || isTutorProgressLoading || !tutorPathUnits.length) return;
+    void awardTutorLevelAchievements({ npub: currentNpub, level: tutorEarnedLevel })
+      .catch(error => console.warn("Tutor achievement save failed:", error));
+  }, [currentNpub, isTutorPathLoading, isTutorProgressLoading, tutorPathUnits, tutorEarnedLevel]);
 
   useEffect(() => {
     if (!currentNpub) return;
@@ -5482,6 +5513,15 @@ export default function Tutor({
       ? liveUiState
       : "idle";
   const effectiveRobotState = isVisualTestSpeaking ? "speaking" : liveUiState;
+  const tutorVoiceLevelRef = useTutorVoiceLevel({
+    enabled: isActive && status === "connected" && !isPaused,
+    state: edgeGlowState,
+    microphoneEnabled: !isMuted,
+    micAnalyserRef,
+    micFloatBufRef,
+    tutorAnalyserRef: analyserRef,
+    tutorFloatBufRef: floatBufRef,
+  });
   const [displayRobotState, setDisplayRobotState] = useState(effectiveRobotState);
   const [previousRobotState, setPreviousRobotState] = useState(null);
   const [isRobotTransitioning, setIsRobotTransitioning] = useState(false);
@@ -6483,6 +6523,11 @@ export default function Tutor({
     // on screen and waiting for the learner to speak.
     startFreshTutorConversationSession();
     clearAutoStopTimer();
+    clearPauseSafetyTimer();
+    isMutedRef.current = false;
+    isPausedRef.current = false;
+    setIsMuted(false);
+    setIsPaused(false);
     clearTutorKickoffTimer();
     tutorKickoffSentRef.current = hasStartedTutorLessonConversation();
     tutorKickoffRetryCountRef.current = 0;
@@ -6622,6 +6667,11 @@ export default function Tutor({
   }
 
   async function stop() {
+    clearPauseSafetyTimer();
+    isMutedRef.current = false;
+    isPausedRef.current = false;
+    setIsMuted(false);
+    setIsPaused(false);
     // Snapshot the last finalized turn in the background. This intentionally
     // does not await Firestore, so stopping audio remains immediate.
     queueTutorConversationDraftSave(
@@ -6742,6 +6792,23 @@ export default function Tutor({
       restoreTutorLessonAfterRepair();
     }
   }
+
+  const stopRef = useRef(stop);
+  useEffect(() => {
+    stopRef.current = stop;
+  }, [stop]);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && aliveRef.current) {
+        stopRef.current?.();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
 
   /* ---------------------------
      Language instructions with proficiency level
@@ -8173,7 +8240,9 @@ export default function Tutor({
     const shouldPlayListeningCue = assistantSpeakingRef.current;
     assistantSpeakingRef.current = false;
     enableVAD();
-    resumeListeningWithAutoStop({ playCue: shouldPlayListeningCue });
+    if (!isPausedRef.current) {
+      resumeListeningWithAutoStop({ playCue: shouldPlayListeningCue });
+    }
   }
 
   function scheduleAssistantUnlockAfterQuiet() {
@@ -8583,6 +8652,7 @@ export default function Tutor({
 
   /** Re-enable server VAD and reattach mic track after AI finishes speaking. */
   function enableVAD() {
+    if (isPausedRef.current || isMutedRef.current) return;
     const micTrack = localRef.current?.getAudioTracks()?.[0];
     if (pcRef.current && micTrack) {
       pcRef.current.getSenders().forEach((s) => {
@@ -8871,6 +8941,148 @@ export default function Tutor({
       stop();
     }, AUTO_DISCONNECT_MS);
   }
+
+  const toggleMute = useCallback(() => {
+    if (status !== "connected" || isPausedRef.current) return;
+    const nextMuted = !isMutedRef.current;
+    isMutedRef.current = nextMuted;
+    setIsMuted(nextMuted);
+
+    if (nextMuted) {
+      localRef.current?.getAudioTracks()?.forEach((t) => {
+        t.enabled = false;
+      });
+      if (pcRef.current) {
+        pcRef.current.getSenders?.().forEach((s) => {
+          if (s.track?.kind === "audio") {
+            s.replaceTrack(null).catch(() => {});
+          }
+        });
+      }
+      if (dcRef.current?.readyState === "open") {
+        try {
+          dcRef.current.send(
+            JSON.stringify({ type: "input_audio_buffer.clear" }),
+          );
+          dcRef.current.send(
+            JSON.stringify({
+              type: "session.update",
+              session: { turn_detection: null },
+            }),
+          );
+        } catch {}
+      }
+    } else {
+      localRef.current?.getAudioTracks()?.forEach((t) => {
+        t.enabled = true;
+      });
+      const micTrack = localRef.current?.getAudioTracks()?.[0];
+      if (pcRef.current && micTrack) {
+        pcRef.current.getSenders?.().forEach((s) => {
+          if (!s.track || s.track?.kind === "audio") {
+            s.replaceTrack(micTrack).catch(() => {});
+          }
+        });
+      }
+      if (dcRef.current?.readyState === "open") {
+        try {
+          dcRef.current.send(
+            JSON.stringify({
+              type: "session.update",
+              session: {
+                turn_detection: buildEnabledTurnDetectionConfig(),
+              },
+            }),
+          );
+        } catch {}
+      }
+    }
+  }, [status]);
+
+  const togglePause = useCallback(() => {
+    if (status !== "connected") return;
+    const nextPaused = !isPausedRef.current;
+    isPausedRef.current = nextPaused;
+    setIsPaused(nextPaused);
+
+    if (nextPaused) {
+      if (dcRef.current?.readyState === "open") {
+        try {
+          dcRef.current.send(JSON.stringify({ type: "response.cancel" }));
+        } catch {}
+      }
+      if (audioRef.current) {
+        try {
+          audioRef.current.pause();
+        } catch {}
+      }
+      localRef.current?.getAudioTracks()?.forEach((t) => {
+        t.enabled = false;
+      });
+      if (pcRef.current) {
+        pcRef.current.getSenders?.().forEach((s) => {
+          if (s.track?.kind === "audio") {
+            s.replaceTrack(null).catch(() => {});
+          }
+        });
+      }
+      if (dcRef.current?.readyState === "open") {
+        try {
+          dcRef.current.send(
+            JSON.stringify({ type: "input_audio_buffer.clear" }),
+          );
+          dcRef.current.send(
+            JSON.stringify({
+              type: "session.update",
+              session: { turn_detection: null },
+            }),
+          );
+        } catch {}
+      }
+      clearAutoStopTimer();
+      clearPauseSafetyTimer();
+      pauseSafetyTimerRef.current = setTimeout(() => {
+        if (aliveRef.current) {
+          stop();
+        }
+      }, 5 * 60 * 1000);
+      setUiState("idle");
+    } else {
+      clearPauseSafetyTimer();
+      if (audioRef.current) {
+        try {
+          audioRef.current.play().catch(() => {});
+        } catch {}
+      }
+      if (!isMutedRef.current) {
+        localRef.current?.getAudioTracks()?.forEach((t) => {
+          t.enabled = true;
+        });
+        const micTrack = localRef.current?.getAudioTracks()?.[0];
+        if (pcRef.current && micTrack) {
+          pcRef.current.getSenders?.().forEach((s) => {
+            if (!s.track || s.track?.kind === "audio") {
+              s.replaceTrack(micTrack).catch(() => {});
+            }
+          });
+        }
+        if (dcRef.current?.readyState === "open") {
+          try {
+            dcRef.current.send(
+              JSON.stringify({
+                type: "session.update",
+                session: {
+                  turn_detection: buildEnabledTurnDetectionConfig(),
+                },
+              }),
+            );
+          } catch {}
+        }
+      }
+      scheduleAutoStop();
+      setUiState("listening");
+    }
+  }, [status]);
 
   function clearTutorKickoffTimer() {
     if (tutorKickoffTimerRef.current) {
@@ -10156,13 +10368,14 @@ export default function Tutor({
     }
 
     if (
+      t === "input_audio_buffer.speech_started" ||
       t === "input_audio_buffer.local_speech_started" ||
       t === "input_audio_buffer.local_speech_active"
     ) {
-      // Gemini may need a moment to recognize/transcribe a short answer. Keep
+      // Gemini and OpenAI may need a moment to recognize/transcribe a short answer. Keep
       // the independent Tutor inactivity timeout from closing a healthy live
       // session while microphone activity is still arriving.
-      scheduleAutoStop();
+      clearAutoStopTimer();
       return;
     }
 
@@ -11210,13 +11423,10 @@ export default function Tutor({
         </Portal>
       ) : null}
       <TutorViewportEdgeGlow
-        enabled={isActive && status === "connected"}
+        enabled={isActive && status === "connected" && !isPaused && !tutorGameLaunch}
         state={edgeGlowState}
         isLightTheme={isLightTheme}
-        analyserRef={micAnalyserRef}
-        floatBufRef={micFloatBufRef}
-        tutorAnalyserRef={analyserRef}
-        tutorFloatBufRef={floatBufRef}
+        audioLevelRef={tutorVoiceLevelRef}
       />
       <Box color="gray.100" position="relative" pb={4}>
         {/* Header area: lesson agenda separated from robot. No repair-focus
@@ -11251,6 +11461,15 @@ export default function Tutor({
                   {uiText("app_mode_path", "Lessons")}
                 </Button>
                 <HStack spacing={2}>
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    colorScheme="yellow"
+                    borderRadius="full"
+                    onClick={() => previewAchievementUnlock("nosabos")}
+                  >
+                    {achievementText("testUnlock", uiLang)}
+                  </Button>
                   <IconButton
                     ref={chatLogButtonRef}
                     icon={<FaRegCommentDots size={14} />}
@@ -11359,6 +11578,7 @@ export default function Tutor({
                     callActive={status === "connected"}
                     feedback={orbFeedback}
                     state={previousOrbState}
+                    audioLevelRef={status === "connected" ? tutorVoiceLevelRef : undefined}
                     theme={isLightTheme ? "light" : "dark"}
                     size={voiceOrbSize}
                   />
@@ -11370,19 +11590,33 @@ export default function Tutor({
                   callActive={status === "connected"}
                   feedback={orbFeedback}
                   state={displayOrbState}
+                  audioLevelRef={status === "connected" ? tutorVoiceLevelRef : undefined}
                   theme={isLightTheme ? "light" : "dark"}
                   size={voiceOrbSize}
                 />
               </Box>
             </Box>
-            {status === "connected" && uiStateLabel(liveUiState, uiLang) && (
+            {status === "connected" && (isPaused || isMuted) ? (
+              <Badge
+                colorScheme={isPaused ? "yellow" : "red"}
+                variant="subtle"
+                rounded="full"
+                px={2.5}
+                py={0.5}
+                fontSize="xs"
+                textTransform="uppercase"
+                letterSpacing="wider"
+              >
+                {isPaused ? "Paused" : "Muted"}
+              </Badge>
+            ) : status === "connected" && uiStateLabel(liveUiState, uiLang) ? (
               <Text
                 fontSize="xs"
                 color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
               >
                 {uiStateLabel(liveUiState, uiLang)}
               </Text>
-            )}
+            ) : null}
           </VStack>
         </VStack>
 
@@ -11458,41 +11692,90 @@ export default function Tutor({
           </VStack>
         </Box>
 
-        {/* Bottom dock - Connect button only */}
+        {/* Bottom dock - Controls */}
         <QuestionActionArea
           actions={
             <ActivityActionRow
-              tone={status === "connected" ? "stop" : "speak"}
+              tone="speak"
               primary={
-                <Button
-                  key={status === "connected" ? "end" : "start"}
-                  onClick={(e) => {
-                    e.currentTarget?.blur?.();
-                    if (status === "connected") {
-                      stop();
-                    } else {
+                status === "connected" ? (
+                  <HStack
+                    data-call-controls=""
+                    spacing={3}
+                    justify="center"
+                    align="center"
+                    w="full"
+                  >
+                    {/* Mute Button (Icon only) */}
+                    <IconButton
+                      icon={
+                        isMuted ? (
+                          <FaMicrophoneSlash size={18} />
+                        ) : (
+                          <FaMicrophone size={18} />
+                        )
+                      }
+                      aria-label={isMuted ? "Unmute microphone" : "Mute microphone"}
+                      onClick={toggleMute}
+                      isDisabled={isPaused}
+                      h="40px"
+                      flex="1 1 0"
+                      maxW="88px"
+                      borderRadius="18px"
+                      {...voiceCallControlStyle(isMuted)}
+                    />
+
+                    {/* Pause Button (Icon only) */}
+                    <IconButton
+                      icon={isPaused ? <FaPlay size={16} /> : <FaPause size={16} />}
+                      aria-label={isPaused ? "Resume tutor" : "Pause tutor"}
+                      onClick={togglePause}
+                      h="40px"
+                      flex="1 1 0"
+                      maxW="88px"
+                      borderRadius="18px"
+                      {...voiceCallControlStyle(isPaused)}
+                    />
+
+                    {/* End Button (Icon only) */}
+                    <IconButton
+                      icon={<FaPhoneSlash size={18} />}
+                      aria-label="End tutor session"
+                      onClick={stop}
+                      h="40px"
+                      flex="1 1 0"
+                      maxW="88px"
+                      borderRadius="18px"
+                      variant="solid"
+                      bg={SOFT_STOP_BUTTON_BG || "red.500"}
+                      color="white"
+                      boxShadow="none"
+                      _hover={{
+                        bg: SOFT_STOP_BUTTON_HOVER_BG || "red.600",
+                      }}
+                      _active={{ transform: "scale(0.96)" }}
+                      transition="all 0.15s ease"
+                    />
+                  </HStack>
+                ) : (
+                  <Button
+                    key="start"
+                    onClick={(e) => {
+                      e.currentTarget?.blur?.();
                       start();
-                    }
-                  }}
-                  size="lg"
-                  height="48px"
-                  px={4}
-                  rounded="full"
-                  textShadow={isLightTheme ? "none" : "0 0 16px rgba(0,0,0,0.9)"}
-                >
-                  {status === "connected" ? (
-                    <>
-                      <FaStop /> &nbsp; {uiText("ra_btn_end", "End")}
-                    </>
-                  ) : (
-                    <>
-                      <FaMicrophone /> &nbsp;{" "}
-                      {status === "connecting"
-                        ? uiText("ra_btn_starting", "Starting...")
-                        : uiText("ra_btn_start", "Start")}
-                    </>
-                  )}
-                </Button>
+                    }}
+                    size="lg"
+                    height="48px"
+                    px={4}
+                    rounded="full"
+                    textShadow={isLightTheme ? "none" : "0 0 16px rgba(0,0,0,0.9)"}
+                  >
+                    <FaMicrophone /> &nbsp;{" "}
+                    {status === "connecting"
+                      ? uiText("ra_btn_starting", "Starting...")
+                      : uiText("ra_btn_start", "Start")}
+                  </Button>
+                )
               }
             ></ActivityActionRow>
           }

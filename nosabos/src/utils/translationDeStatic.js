@@ -397,7 +397,7 @@ export const TRANSLATION_DE_STATIC = {
   vocab_quiz_not_passed: "Quiz nicht bestanden",
   vocab_quiz_score_passed: "{correct} richtig • Benötigt {needed}",
   vocab_quiz_score_failed: "{correct} richtig • {needed} zum Bestehen nötig",
-  vocab_back_to_skill_tree: "Zurück zum Skill-Tree",
+  vocab_back_to_skill_tree: "Zurück zu den Lektionen",
   vocab_assistant_error: "Gerade konnte keine Antwort erstellt werden.",
   vocab_explanation_error: "Gerade konnte keine Erklärung erstellt werden.",
   vocab_create_note_error: "Notiz konnte nicht erstellt werden",

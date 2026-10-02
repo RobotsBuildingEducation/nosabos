@@ -109,6 +109,8 @@ export function useSpeechPractice({
   const sessionVersionRef = useRef(0);
   const [isRecording, setIsRecording] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [isEvaluating, setIsEvaluating] = useState(false);
+  const [stream, setStream] = useState(null);
 
   // Check if we have the realtime URL configured
   const supportsSpeech = useMemo(() => {
@@ -151,14 +153,34 @@ export function useSpeechPractice({
     evalRef.current.timeoutId = null;
     evalRef.current.silenceTimeoutId = null;
     evalRef.current.connectionTimeoutId = null;
+    evalRef.current.finishRecording = null;
+    evalRef.current.scheduleFinish = null;
+    evalRef.current.userStopped = false;
     evalRef.current.inProgress = false;
     evalRef.current.speechDone = false;
     transcriptRef.current = "";
+    setStream(null);
     setIsRecording(false);
     setIsConnecting(false);
+    setIsEvaluating(false);
   }, []);
 
   useEffect(() => cleanup, [cleanup]);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (
+        document.hidden &&
+        (isRecording || isConnecting || localStreamRef.current || pcRef.current)
+      ) {
+        cleanup();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [cleanup, isRecording, isConnecting]);
 
   const report = useCallback(
     async ({ recognizedText = "", confidence = 0, audioMetrics, method }) => {
@@ -236,6 +258,7 @@ export function useSpeechPractice({
       return;
     }
     localStreamRef.current = localStream;
+    setStream(localStream);
 
     try {
       const pc = new RTCPeerConnection();
@@ -288,6 +311,7 @@ export function useSpeechPractice({
         if (!evalRef.current.inProgress || evalRef.current.speechDone) return;
         evalRef.current.speechDone = true;
         waitingForTurnEnd = false;
+        setIsEvaluating(true);
 
         if (evalRef.current.timeoutId) clearTimeout(evalRef.current.timeoutId);
         if (evalRef.current.silenceTimeoutId)
@@ -307,6 +331,9 @@ export function useSpeechPractice({
 
         cleanup();
       };
+
+      evalRef.current.finishRecording = finishRecording;
+      evalRef.current.scheduleFinish = scheduleFinish;
 
       dc.onopen = () => {
         if (!isCurrentSession()) return;
@@ -350,7 +377,9 @@ export function useSpeechPractice({
                 finishRecording();
               }, timeoutMs);
 
-              if (waitingForTurnEnd) {
+              if (evalRef.current.userStopped) {
+                scheduleFinish(80);
+              } else if (waitingForTurnEnd) {
                 scheduleFinish(Math.min(speechStopDelayMs, 180));
               }
             }
@@ -558,21 +587,39 @@ export function useSpeechPractice({
   ]);
 
   const stopRecording = useCallback(() => {
-    if (!evalRef.current.inProgress) return;
+    if (!evalRef.current.inProgress || evalRef.current.speechDone) return;
 
-    const finalTranscript = transcriptRef.current.trim();
-    evalRef.current.speechDone = true;
+    const currentTranscript = transcriptRef.current.trim();
+    if (currentTranscript) {
+      evalRef.current.finishRecording?.();
+      return;
+    }
 
-    // Report whatever we have
-    report({
-      recognizedText: finalTranscript,
-      confidence: finalTranscript ? 0.9 : 0,
-      audioMetrics: null,
-      method: "realtime-whisper",
-    });
+    evalRef.current.userStopped = true;
+    setIsEvaluating(true);
+    setIsRecording(false);
+    setStream(null);
 
-    cleanup();
-  }, [report, cleanup]);
+    try {
+      localStreamRef.current?.getTracks()?.forEach((track) => track.stop());
+    } catch {}
+
+    try {
+      if (dcRef.current?.readyState === "open") {
+        dcRef.current.send(
+          JSON.stringify({ type: "input_audio_buffer.commit" })
+        );
+      }
+    } catch {}
+
+    if (evalRef.current.scheduleFinish) {
+      evalRef.current.scheduleFinish(1200, { waitForTranscript: true });
+    } else if (evalRef.current.finishRecording) {
+      evalRef.current.finishRecording();
+    } else {
+      cleanup();
+    }
+  }, [cleanup]);
 
   return {
     startRecording,
@@ -580,6 +627,8 @@ export function useSpeechPractice({
     cancelRecording: cleanup,
     isRecording,
     isConnecting,
+    isEvaluating,
+    stream,
     supportsSpeech,
   };
 }

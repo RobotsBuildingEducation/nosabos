@@ -1,3 +1,5 @@
+import { phonicsCompletionEvidence } from "../achievements/phonicsProgress.js";
+import { awardProgressionAchievements } from "../utils/achievements.js";
 import useGoalFocusStore from "../hooks/useGoalFocusStore";
 import useUserStore from "../hooks/useUserStore";
 import { practiceLevelForElo, generationPerformanceContextFor, scoreForUser, questionWorthForUser } from "../utils/performanceEloModel";
@@ -102,13 +104,14 @@ import {
   SOFT_STOP_BUTTON_BG,
   SOFT_STOP_BUTTON_HOVER_BG,
 } from "../utils/softStopButton";
+import VoiceWaveIcon from "./VoiceWaveIcon";
 import { WaveBar } from "./WaveBar";
 import {
   collection,
   doc,
   getDoc,
   getDocs,
-  limit,
+  getDocsFromServer,
   query,
   serverTimestamp,
   setDoc,
@@ -565,7 +568,7 @@ const ALPHABET_UI_TEXT = {
     complete: "Congratulations! You've completed the alphabet.",
     deckComplete: "Deck cleared! Generate a new one to keep going.",
     generateDeckError: "Couldn't generate a new deck. Please try again.",
-    startSkillTree: "Start skill tree",
+    startSkillTree: "Start lessons",
     newRound: "New round",
     collection: "Collection",
     loadError: "We couldn't load the alphabet. Please try again.",
@@ -605,7 +608,7 @@ const ALPHABET_UI_TEXT = {
     note:
       "Después de esto, cambia al modo Ruta en el menú para explorar las lecciones.",
     complete: "¡Felicidades! Has completado el alfabeto.",
-    startSkillTree: "Iniciar árbol de habilidades",
+    startSkillTree: "Iniciar lecciones",
     newRound: "Nueva ronda",
     collection: "Colección",
     loadError: "No pudimos cargar el alfabeto. Intenta nuevamente.",
@@ -1427,6 +1430,7 @@ async function saveGeneratedPhonicsUnit(npub, targetLang, card) {
         letterId: card.id,
         targetLang,
         generated: true,
+        generatedDeckSize: card.generatedDeckSize || null,
         cefrLevel: card.cefrLevel || null,
         grapheme: card.letter || "",
         ...pickGeneratedDisplayFields(card),
@@ -1591,6 +1595,8 @@ function LetterCard({
     stopRecording,
     isRecording,
     isConnecting,
+    isEvaluating,
+    stream,
     supportsSpeech,
   } = useSpeechPractice({
     targetText: practiceWord || "placeholder",
@@ -2321,33 +2327,28 @@ function LetterCard({
                 {!useDock && (
                   <Button
                     size="md"
-                    colorScheme={
-                      isRecording ? undefined : isConnecting ? "yellow" : "teal"
-                    }
-                    bg={isRecording ? SOFT_STOP_BUTTON_BG : undefined}
-                    boxShadow={isRecording ? "0px 4px 0px #e03767" : undefined}
-                    color={isRecording ? "white" : undefined}
+                    colorScheme={isConnecting ? "yellow" : "teal"}
                     leftIcon={
                       isConnecting ? (
                         <Spinner size="xs" />
-                      ) : isRecording ? (
-                        <FaStop />
-                      ) : (
+                      ) : !isRecording ? (
                         <FaMicrophone />
-                      )
+                      ) : undefined
                     }
                     onClick={handleRecord}
-                    isDisabled={!supportsSpeech || isConnecting}
+                    isDisabled={!supportsSpeech || isConnecting || isEvaluating}
+                    isLoading={isEvaluating}
                     _hover={{
                       transform: "scale(1.02)",
-                      ...(isRecording ? { bg: SOFT_STOP_BUTTON_HOVER_BG } : {}),
                     }}
                   >
-                    {isConnecting
-                      ? uiText(uiLang, "connecting")
-                      : isRecording
-                      ? uiText(uiLang, "stop")
-                      : uiText(uiLang, "record")}
+                    {isConnecting ? (
+                      uiText(uiLang, "connecting")
+                    ) : isRecording ? (
+                      <VoiceWaveIcon stream={stream} size={18} color="currentColor" />
+                    ) : (
+                      uiText(uiLang, "record")
+                    )}
                   </Button>
                 )}
               </>
@@ -2362,9 +2363,7 @@ function LetterCard({
           actions={
             <ActivityActionRow
               tone={
-                isRecording
-                  ? "stop"
-                  : showResult && isCorrect
+                showResult && isCorrect
                   ? "success"
                   : isPracticeMode && !showResult
                   ? "speak"
@@ -2372,18 +2371,19 @@ function LetterCard({
               }
               primary={
                 <Button
-                  key={isRecording ? "stop" : "record"}
-                  colorScheme={isRecording ? "pink" : "teal"}
-                  isLoading={isGeneratingWord || isGrading || isConnecting}
+                  key={isPracticeMode && isRecording ? "listening" : "record"}
+                  colorScheme="teal"
+                  isLoading={isGeneratingWord || isGrading || isConnecting || isEvaluating}
                   isDisabled={
                     isGeneratingWord ||
                     isGrading ||
                     isConnecting ||
+                    isEvaluating ||
                     (isPracticeMode && !supportsSpeech)
                   }
                   leftIcon={
-                    isPracticeMode && !showResult ? (
-                      isRecording ? <FaStop /> : <FaMicrophone />
+                    isPracticeMode && !showResult && !isRecording ? (
+                      <FaMicrophone />
                     ) : undefined
                   }
                   onClick={
@@ -2406,9 +2406,11 @@ function LetterCard({
                     ? isCorrect
                       ? uiText(uiLang, onCardCollected ? "next" : "nextWord")
                       : uiText(uiLang, "tryAgain")
-                    : isRecording
-                    ? uiText(uiLang, "stop")
-                    : uiText(uiLang, "record")}
+                    : isRecording ? (
+                        <VoiceWaveIcon stream={stream} size={20} color="currentColor" />
+                      ) : (
+                        uiText(uiLang, "record")
+                      )}
                 </Button>
               }
             >
@@ -2597,7 +2599,7 @@ export default function AlphabetBootcamp({
       }
       const stamp = Date.now();
       const newCards = units.map((u, i) =>
-        buildGeneratedCard(u, uiLang, `gen_${stamp}_${i}`, generationLevel),
+        ({ ...buildGeneratedCard(u, uiLang, `gen_${stamp}_${i}`, generationLevel), generatedDeckSize: units.length }),
       );
       await Promise.all(
         newCards.map((c) => saveGeneratedPhonicsUnit(npub, targetLang, c)),
@@ -2660,6 +2662,26 @@ export default function AlphabetBootcamp({
     deck.length === 0 &&
     totalCards > 0 &&
     collectedLetters.length >= totalCards;
+
+  const reportedPhonicsRef = useRef("");
+  useEffect(() => {
+    if (!npub || !isInitialized || focusedPractice) return;
+    const local = phonicsCompletionEvidence(targetLang, alphabet, [...alphabet, ...generatedCards].map(card => ({ ...card,
+      letterId: card.id, correctCount: collectedLetters.some(collected => collected.id === card.id) ? 1 : 0,
+    })));
+    if (!isComplete && !local.events.length) return;
+    const signature = `${npub}:${targetLang}:${isComplete}:${local.events.map(event => event.id).sort().join(",")}`;
+    if (reportedPhonicsRef.current === signature) return;
+    let cancelled = false;
+    void getDocsFromServer(query(collection(database, "users", npub, "alphabetPractice"), where("targetLang", "==", targetLang)))
+      .then(snapshot => {
+        if (cancelled) return;
+        const proof = phonicsCompletionEvidence(targetLang, alphabet, snapshot.docs.map(document => document.data()));
+        reportedPhonicsRef.current = signature;
+        return awardProgressionAchievements({ npub, source: "nosabos", ...proof });
+      }).catch(error => console.warn("Phonics achievements:", error));
+    return () => { cancelled = true; };
+  }, [npub, targetLang, isInitialized, isComplete, focusedPractice, alphabet, generatedCards, collectedLetters]);
 
   // XP progress calculations
   const xpLevelNumber = Math.floor(currentXp / 100) + 1;
@@ -2815,7 +2837,6 @@ export default function AlphabetBootcamp({
           query(
             collection(database, "users", npub, "alphabetPractice"),
             where("targetLang", "==", targetLang),
-            limit(250),
           ),
         );
 
@@ -2850,6 +2871,7 @@ export default function AlphabetBootcamp({
                 tts: data.tts || "",
                 type: "sound",
                 generated: true,
+                generatedDeckSize: data.generatedDeckSize || null,
                 cefrLevel: data.cefrLevel || null,
                 ...pickGeneratedDisplayFields(data),
               });

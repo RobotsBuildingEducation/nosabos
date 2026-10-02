@@ -43,13 +43,14 @@ export default function GlassContainer({
   elasticity,
   shadowIntensity,
   allowLightModeGlass = false,
+  disableEffects = false,
   fallbackBlur = "0px",
   fallbackBg = "var(--app-glass-bg)",
   ...rest
 }) {
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
-  const shouldUseGlassEffects = !isLightTheme || allowLightModeGlass;
+  const shouldUseGlassEffects = !disableEffects && (!isLightTheme || allowLightModeGlass);
   const fallbackStyle = useMemo(
     () => ({
       backdropFilter: shouldUseGlassEffects ? `blur(${fallbackBlur})` : "none",

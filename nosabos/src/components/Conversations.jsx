@@ -32,6 +32,10 @@ import {
 import { layoutWithLines, prepareWithSegments } from "@chenglou/pretext";
 import {
   FaMicrophone,
+  FaMicrophoneSlash,
+  FaPause,
+  FaPlay,
+  FaPhoneSlash,
   FaStop,
   FaCheckCircle,
   FaDice,
@@ -53,6 +57,9 @@ import { logEvent } from "firebase/analytics";
 
 import useUserStore from "../hooks/useUserStore";
 import VoiceOrb from "./VoiceOrbNext";
+import { voiceCallControlStyle } from "../utils/voiceCallControlStyle.js";
+import TutorViewportEdgeGlow from "./TutorViewportEdgeGlow.jsx";
+import { useTutorVoiceLevel } from "../hooks/useTutorVoiceLevel.js";
 import RandomCharacter from "./RandomCharacter";
 import AnimatedEllipsis from "./AnimatedEllipsis";
 import {
@@ -69,6 +76,8 @@ import {
 } from "../utils/supportTranslation";
 import { getBidiTextProps, mergeBidiSx } from "../utils/bidiText";
 import { awardXp } from "../utils/utils";
+import { awardProgressionAchievements } from "../utils/achievements.js";
+import { conversationCompletionEvent } from "../achievements/conversationProgress.js";
 import { recordPlateActivity } from "../utils/dailyPlate";
 import { getLanguageXp } from "../utils/progressTracking";
 import {
@@ -127,7 +136,7 @@ const REALTIME_URL = getRealtimeUrl(REALTIME_MODEL);
 const RESPONSES_URL = getResponsesUrl();
 const TRANSLATE_MODEL =
   import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-6-luna";
-const AUTO_DISCONNECT_MS = 15000;
+const AUTO_DISCONNECT_MS = 30000;
 const ARCHIVE_GLYPH_DURATION_MS = 680;
 
 const CONVERSATION_SUMMARY_COPY = {
@@ -1091,6 +1100,8 @@ export default function Conversations({
   const audioCtxRef = useRef(null);
   const analyserRef = useRef(null);
   const floatBufRef = useRef(null);
+  const micAnalyserRef = useRef(null);
+  const micFloatBufRef = useRef(null);
   const captureOutRef = useRef(null);
   const audioGraphReadyRef = useRef(false);
 
@@ -1115,6 +1126,18 @@ export default function Conversations({
 
   // Connection/UI state
   const [status, setStatus] = useState("disconnected");
+  const [isMuted, setIsMuted] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const isMutedRef = useRef(false);
+  const isPausedRef = useRef(false);
+  const pauseSafetyTimerRef = useRef(null);
+
+  const clearPauseSafetyTimer = useCallback(() => {
+    if (pauseSafetyTimerRef.current) {
+      clearTimeout(pauseSafetyTimerRef.current);
+      pauseSafetyTimerRef.current = null;
+    }
+  }, []);
   const [err, setErr] = useState("");
   const [uiState, setUiState] = useState("idle");
   const [volume] = useState(0);
@@ -1313,6 +1336,8 @@ export default function Conversations({
   }));
   const currentGoalRef = useRef(currentGoal);
   currentGoalRef.current = currentGoal;
+  const achievementOwnerRef = useRef(null);
+  achievementOwnerRef.current = { npub: currentNpub, language: targetLang };
 
   // Keep the live session's instructions in sync with the active goal so the
   // AI steers toward it instead of asking competing follow-up questions.
@@ -1614,6 +1639,16 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
   const [displayRobotState, setDisplayRobotState] = useState(liveUiState);
   const [previousRobotState, setPreviousRobotState] = useState(null);
   const [isRobotTransitioning, setIsRobotTransitioning] = useState(false);
+  const voiceVisualsEnabled = isActive && status === "connected" && !isPaused;
+  const voiceLevelRef = useTutorVoiceLevel({
+    enabled: voiceVisualsEnabled,
+    state: liveUiState,
+    microphoneEnabled: !isMuted,
+    micAnalyserRef,
+    micFloatBufRef,
+    tutorAnalyserRef: analyserRef,
+    tutorFloatBufRef: floatBufRef,
+  });
   const displayOrbState = getRealtimeOrbVisualState(displayRobotState);
   const previousOrbState = getRealtimeOrbVisualState(previousRobotState);
 
@@ -2035,6 +2070,11 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     setSessionTurns(0);
     setGoalsCompleted(0);
     clearAutoStopTimer();
+    clearPauseSafetyTimer();
+    isMutedRef.current = false;
+    isPausedRef.current = false;
+    setIsMuted(false);
+    setIsPaused(false);
     setErr("");
     setStatus("connecting");
     setUiState("thinking");
@@ -2071,13 +2111,21 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
           audioCtxRef.current = ctx;
           const src = ctx.createMediaStreamSource(e.streams[0]);
           const analyser = ctx.createAnalyser();
-          analyser.fftSize = 256;
+          analyser.fftSize = 2048;
           src.connect(analyser);
           analyserRef.current = analyser;
-          floatBufRef.current = new Float32Array(analyser.frequencyBinCount);
+          floatBufRef.current = new Float32Array(analyser.fftSize);
           const dest = ctx.createMediaStreamDestination();
           src.connect(dest);
           captureOutRef.current = dest;
+          // Analyse the microphone without routing it to the speakers.
+          const micSource = ctx.createMediaStreamSource(localRef.current);
+          const micAnalyser = ctx.createAnalyser();
+          micAnalyser.fftSize = 2048;
+          micSource.connect(micAnalyser);
+          micAnalyserRef.current = micAnalyser;
+          micFloatBufRef.current = new Float32Array(micAnalyser.fftSize);
+          void ctx.resume().catch(() => {});
           audioGraphReadyRef.current = true;
         }
       };
@@ -2117,6 +2165,11 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
   }
 
   async function stop() {
+    clearPauseSafetyTimer();
+    isMutedRef.current = false;
+    isPausedRef.current = false;
+    setIsMuted(false);
+    setIsPaused(false);
     clearAutoStopTimer();
     aliveRef.current = false;
     assistantInputLockedRef.current = false;
@@ -2179,6 +2232,8 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     audioCtxRef.current = null;
     analyserRef.current = null;
     floatBufRef.current = null;
+    micAnalyserRef.current = null;
+    micFloatBufRef.current = null;
     captureOutRef.current = null;
     audioGraphReadyRef.current = false;
 
@@ -2208,6 +2263,23 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     setUiState("idle");
     setMood("neutral");
   }
+
+  const stopRef = useRef(stop);
+  useEffect(() => {
+    stopRef.current = stop;
+  }, [stop]);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && aliveRef.current) {
+        stopRef.current?.();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
 
   async function handleEndConversation() {
     await stop();
@@ -2490,6 +2562,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
 
   /** Re-enable server VAD and reattach mic track after AI finishes speaking. */
   function enableVAD() {
+    if (isPausedRef.current || isMutedRef.current) return;
     const micTrack = localRef.current?.getAudioTracks()?.[0];
     if (pcRef.current && micTrack) {
       pcRef.current.getSenders().forEach((s) => {
@@ -2530,6 +2603,148 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     }, AUTO_DISCONNECT_MS);
   }
 
+  const toggleMute = useCallback(() => {
+    if (status !== "connected" || isPausedRef.current) return;
+    const nextMuted = !isMutedRef.current;
+    isMutedRef.current = nextMuted;
+    setIsMuted(nextMuted);
+
+    if (nextMuted) {
+      localRef.current?.getAudioTracks()?.forEach((t) => {
+        t.enabled = false;
+      });
+      if (pcRef.current) {
+        pcRef.current.getSenders().forEach((s) => {
+          if (s.track?.kind === "audio") {
+            s.replaceTrack(null).catch(() => {});
+          }
+        });
+      }
+      if (dcRef.current?.readyState === "open") {
+        try {
+          dcRef.current.send(
+            JSON.stringify({ type: "input_audio_buffer.clear" }),
+          );
+          dcRef.current.send(
+            JSON.stringify({
+              type: "session.update",
+              session: buildRealtimeVadSession(null),
+            }),
+          );
+        } catch {}
+      }
+    } else {
+      localRef.current?.getAudioTracks()?.forEach((t) => {
+        t.enabled = true;
+      });
+      const micTrack = localRef.current?.getAudioTracks()?.[0];
+      if (pcRef.current && micTrack) {
+        pcRef.current.getSenders().forEach((s) => {
+          if (!s.track || s.track?.kind === "audio") {
+            s.replaceTrack(micTrack).catch(() => {});
+          }
+        });
+      }
+      if (dcRef.current?.readyState === "open") {
+        try {
+          dcRef.current.send(
+            JSON.stringify({
+              type: "session.update",
+              session: buildRealtimeVadSession(
+                buildConversationTurnDetection(pauseMsRef.current),
+              ),
+            }),
+          );
+        } catch {}
+      }
+    }
+  }, [status]);
+
+  const togglePause = useCallback(() => {
+    if (status !== "connected") return;
+    const nextPaused = !isPausedRef.current;
+    isPausedRef.current = nextPaused;
+    setIsPaused(nextPaused);
+
+    if (nextPaused) {
+      if (dcRef.current?.readyState === "open") {
+        try {
+          dcRef.current.send(JSON.stringify({ type: "response.cancel" }));
+        } catch {}
+      }
+      if (audioRef.current) {
+        try {
+          audioRef.current.pause();
+        } catch {}
+      }
+      localRef.current?.getAudioTracks()?.forEach((t) => {
+        t.enabled = false;
+      });
+      if (pcRef.current) {
+        pcRef.current.getSenders().forEach((s) => {
+          if (s.track?.kind === "audio") {
+            s.replaceTrack(null).catch(() => {});
+          }
+        });
+      }
+      if (dcRef.current?.readyState === "open") {
+        try {
+          dcRef.current.send(
+            JSON.stringify({ type: "input_audio_buffer.clear" }),
+          );
+          dcRef.current.send(
+            JSON.stringify({
+              type: "session.update",
+              session: buildRealtimeVadSession(null),
+            }),
+          );
+        } catch {}
+      }
+      clearAutoStopTimer();
+      clearPauseSafetyTimer();
+      pauseSafetyTimerRef.current = setTimeout(() => {
+        if (aliveRef.current) {
+          handleEndConversation();
+        }
+      }, 5 * 60 * 1000);
+      setUiState("idle");
+    } else {
+      clearPauseSafetyTimer();
+      if (audioRef.current) {
+        try {
+          audioRef.current.play().catch(() => {});
+        } catch {}
+      }
+      if (!isMutedRef.current) {
+        localRef.current?.getAudioTracks()?.forEach((t) => {
+          t.enabled = true;
+        });
+        const micTrack = localRef.current?.getAudioTracks()?.[0];
+        if (pcRef.current && micTrack) {
+          pcRef.current.getSenders().forEach((s) => {
+            if (!s.track || s.track?.kind === "audio") {
+              s.replaceTrack(micTrack).catch(() => {});
+            }
+          });
+        }
+        if (dcRef.current?.readyState === "open") {
+          try {
+            dcRef.current.send(
+              JSON.stringify({
+                type: "session.update",
+                session: buildRealtimeVadSession(
+                  buildConversationTurnDetection(pauseMsRef.current),
+                ),
+              }),
+            );
+          } catch {}
+        }
+      }
+      scheduleAutoStop();
+      setUiState("listening");
+    }
+  }, [status]);
+
   /* ---------------------------
      Goal-based XP system with AI evaluation
   --------------------------- */
@@ -2539,6 +2754,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
   // the verdict ("skipped" = no verdict: nothing gradable or check not run).
   async function evaluateGoalCompletion(userMessage, aiResponse) {
     const goal = currentGoalRef.current;
+    const achievementOwner = { ...achievementOwnerRef.current };
     if (goal.completed || goalCheckPendingRef.current) return "skipped";
     if (!userMessage || userMessage.length < 3) return "skipped";
 
@@ -2648,6 +2864,11 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "...", "goa
         return "skipped";
       }
       if (parsed?.completed) {
+        if (parsed.completed === true && achievementOwner.npub === achievementOwnerRef.current.npub && achievementOwner.language === achievementOwnerRef.current.language) {
+          const event = conversationCompletionEvent({ goal, language: tLang, completed: true });
+          if (event) void awardProgressionAchievements({ npub: achievementOwner.npub, source: "nosabos", events: [event] })
+            .catch(error => console.warn("Conversation achievement:", error));
+        }
         setOrbFeedback((previous) => ({ id: (previous?.id || 0) + 1, result: "correct" }));
         void recordGradedOutcome({ npub: currentNpub, targetLang: tLang,
           success: true, questionLevel: goal.questionLevel, worth: goal.worth,
@@ -3153,7 +3374,12 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
       return;
     }
 
-    if (t === "input_audio_buffer.speech_started") {
+    if (
+      t === "input_audio_buffer.speech_started" ||
+      t === "input_audio_buffer.local_speech_started" ||
+      t === "input_audio_buffer.local_speech_active"
+    ) {
+      clearAutoStopTimer();
       manualResponseRequestedRef.current = false;
       responseStartTimeRef.current = null;
       return;
@@ -3162,6 +3388,7 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
     // Server VAD still owns speech boundaries, but response creation is
     // manual so the current personality can be attached to this exact turn.
     if (t === "input_audio_buffer.speech_stopped") {
+      clearAutoStopTimer();
       setLocalMicEnabled(false);
       setUiState("thinking");
       setMood("thoughtful");
@@ -3169,6 +3396,7 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
     }
 
     if (t === "input_audio_buffer.committed") {
+      clearAutoStopTimer();
       requestConversationResponse();
       return;
     }
@@ -3181,9 +3409,11 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
       manualResponseRequestedRef.current = false;
       enableVAD();
       setAssistantInputLocked(false);
-      setUiState(status === "connected" ? "listening" : "idle");
-      setMood("neutral");
-      if (aliveRef.current) scheduleAutoStop();
+      if (!isPausedRef.current) {
+        setUiState(status === "connected" ? "listening" : "idle");
+        setMood("neutral");
+        if (aliveRef.current) scheduleAutoStop();
+      }
       return;
     }
 
@@ -3558,6 +3788,12 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
   --------------------------- */
   return (
     <>
+      <TutorViewportEdgeGlow
+        enabled={voiceVisualsEnabled}
+        state={liveUiState}
+        isLightTheme={isLightTheme}
+        audioLevelRef={voiceLevelRef}
+      />
       <Box
         color="gray.100"
         position="relative"
@@ -3842,6 +4078,7 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
                     variant="tutor"
                     callActive={status === "connected"}
                     feedback={orbFeedback}
+                    audioLevelRef={voiceLevelRef}
                     state={previousOrbState}
                     theme={isLightTheme ? "light" : "dark"}
                     size={voiceOrbSize}
@@ -3853,20 +4090,34 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
                   variant="tutor"
                   callActive={status === "connected"}
                   feedback={orbFeedback}
+                  audioLevelRef={voiceLevelRef}
                   state={displayOrbState}
                   theme={isLightTheme ? "light" : "dark"}
                   size={voiceOrbSize}
                 />
               </Box>
             </Box>
-            {status === "connected" && uiStateLabel(liveUiState, uiLang) && (
+            {status === "connected" && (isPaused || isMuted) ? (
+              <Badge
+                colorScheme={isPaused ? "yellow" : "red"}
+                variant="subtle"
+                rounded="full"
+                px={2.5}
+                py={0.5}
+                fontSize="xs"
+                textTransform="uppercase"
+                letterSpacing="wider"
+              >
+                {isPaused ? "Paused" : "Muted"}
+              </Badge>
+            ) : status === "connected" && uiStateLabel(liveUiState, uiLang) ? (
               <Text
                 fontSize="xs"
                 color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
               >
                 {uiStateLabel(liveUiState, uiLang)}
               </Text>
-            )}
+            ) : null}
           </VStack>
         </VStack>
 
@@ -3937,41 +4188,90 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
           </VStack>
         </Box>
 
-        {/* Bottom dock - Connect button only */}
+        {/* Bottom dock - Controls */}
         <QuestionActionArea
           actions={
             <ActivityActionRow
-              tone={status === "connected" ? "stop" : "speak"}
+              tone="speak"
               primary={
-                <Button
-                  key={status === "connected" ? "end" : "start"}
-                  onClick={(e) => {
-                    e.currentTarget?.blur?.();
-                    if (status === "connected") {
-                      handleEndConversation();
-                    } else {
+                status === "connected" ? (
+                  <HStack
+                    data-call-controls=""
+                    spacing={3}
+                    justify="center"
+                    align="center"
+                    w="full"
+                  >
+                    {/* Mute Button (Icon only) */}
+                    <IconButton
+                      icon={
+                        isMuted ? (
+                          <FaMicrophoneSlash size={18} />
+                        ) : (
+                          <FaMicrophone size={18} />
+                        )
+                      }
+                      aria-label={isMuted ? "Unmute microphone" : "Mute microphone"}
+                      onClick={toggleMute}
+                      isDisabled={isPaused}
+                      h="40px"
+                      flex="1 1 0"
+                      maxW="88px"
+                      borderRadius="18px"
+                      {...voiceCallControlStyle(isMuted)}
+                    />
+
+                    {/* Pause Button (Icon only) */}
+                    <IconButton
+                      icon={isPaused ? <FaPlay size={16} /> : <FaPause size={16} />}
+                      aria-label={isPaused ? "Resume conversation" : "Pause conversation"}
+                      onClick={togglePause}
+                      h="40px"
+                      flex="1 1 0"
+                      maxW="88px"
+                      borderRadius="18px"
+                      {...voiceCallControlStyle(isPaused)}
+                    />
+
+                    {/* End Button (Icon only) */}
+                    <IconButton
+                      icon={<FaPhoneSlash size={18} />}
+                      aria-label="End conversation"
+                      onClick={handleEndConversation}
+                      h="40px"
+                      flex="1 1 0"
+                      maxW="88px"
+                      borderRadius="18px"
+                      variant="solid"
+                      bg={SOFT_STOP_BUTTON_BG || "red.500"}
+                      color="white"
+                      boxShadow="none"
+                      _hover={{
+                        bg: SOFT_STOP_BUTTON_HOVER_BG || "red.600",
+                      }}
+                      _active={{ transform: "scale(0.96)" }}
+                      transition="all 0.15s ease"
+                    />
+                  </HStack>
+                ) : (
+                  <Button
+                    key="start"
+                    onClick={(e) => {
+                      e.currentTarget?.blur?.();
                       start();
-                    }
-                  }}
-                  size="lg"
-                  height="48px"
-                  px={4}
-                  rounded="full"
-                  textShadow={isLightTheme ? "none" : "0 0 16px rgba(0,0,0,0.9)"}
-                >
-                  {status === "connected" ? (
-                    <>
-                      <FaStop /> &nbsp; {uiText("ra_btn_end", "End")}
-                    </>
-                  ) : (
-                    <>
-                      <FaMicrophone /> &nbsp;{" "}
-                      {status === "connecting"
-                        ? uiText("ra_btn_starting", "Starting...")
-                        : uiText("ra_btn_start", "Start")}
-                    </>
-                  )}
-                </Button>
+                    }}
+                    size="lg"
+                    height="48px"
+                    px={4}
+                    rounded="full"
+                    textShadow={isLightTheme ? "none" : "0 0 16px rgba(0,0,0,0.9)"}
+                  >
+                    <FaMicrophone /> &nbsp;{" "}
+                    {status === "connecting"
+                      ? uiText("ra_btn_starting", "Starting...")
+                      : uiText("ra_btn_start", "Start")}
+                  </Button>
+                )
               }
             ></ActivityActionRow>
           }

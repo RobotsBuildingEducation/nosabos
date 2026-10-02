@@ -61,6 +61,7 @@ import {
   SOFT_STOP_BUTTON_GLOW,
   SOFT_STOP_BUTTON_HOVER_BG,
 } from "../utils/softStopButton";
+import VoiceWaveIcon from "./VoiceWaveIcon";
 import { submitActionSound, deliciousSound, selectSound, nextButtonSound } from "../constants/sounds";
 import AnimatedEllipsis from "./AnimatedEllipsis";
 import { useThemeStore } from "../useThemeStore";
@@ -543,6 +544,8 @@ export default function FlashcardPractice({
     stopRecording,
     isRecording,
     isConnecting,
+    isEvaluating,
+    stream,
     supportsSpeech,
   } = useSpeechPractice({
     targetText: "answer", // Placeholder - we use AI grading instead of strict matching
@@ -1334,58 +1337,44 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
                         <Button
                           w="100%"
                           size="lg"
-                          colorScheme={
-                            isRecording
-                              ? undefined
-                              : isConnecting
-                                ? "yellow"
-                                : "teal"
-                          }
+                          colorScheme={isConnecting ? "yellow" : "teal"}
                           bg={
-                            isRecording
-                              ? SOFT_STOP_BUTTON_BG
-                              : isLightTheme && !isConnecting
-                                ? "#56a89b"
-                                : undefined
-                          }
-                          color={
-                            isRecording || (isLightTheme && !isConnecting)
-                              ? "white"
+                            isLightTheme && !isConnecting
+                              ? "#56a89b"
                               : undefined
                           }
-                          boxShadow={
-                            isRecording ? SOFT_STOP_BUTTON_GLOW : undefined
+                          color={
+                            isLightTheme && !isConnecting
+                              ? "white"
+                              : undefined
                           }
                           leftIcon={
                             isConnecting ? (
                               <Spinner size="xs" thickness="3px" />
-                            ) : isRecording ? (
-                              <RiStopCircleLine size={20} />
-                            ) : (
+                            ) : !isRecording ? (
                               <RiMicLine size={20} />
-                            )
+                            ) : undefined
                           }
                           onClick={handleRecord}
-                          isDisabled={!supportsSpeech || isConnecting}
+                          isLoading={isEvaluating}
+                          isDisabled={!supportsSpeech || isConnecting || isEvaluating}
                           _hover={{
                             transform: "translateY(-2px)",
-                            boxShadow: isRecording
-                              ? SOFT_STOP_BUTTON_GLOW
-                              : isLightTheme
-                                ? "0 6px 14px rgba(86, 168, 155, 0.18)"
-                                : `0 8px 20px ${cefrColor.primary}40`,
-                            ...(isRecording
-                              ? { bg: SOFT_STOP_BUTTON_HOVER_BG }
-                              : {}),
+                            boxShadow: isLightTheme
+                              ? "0 6px 14px rgba(86, 168, 155, 0.18)"
+                              : `0 8px 20px ${cefrColor.primary}40`,
                           }}
                           padding={9}
                           _active={{ transform: "translateY(0)" }}
+                          aria-label={getTranslation("flashcard_record_answer")}
                         >
-                          {isConnecting
-                            ? getTranslation("vocab_connecting")
-                            : isRecording
-                              ? getTranslation("flashcard_stop_recording")
-                              : getTranslation("flashcard_record_answer")}
+                          {isConnecting ? (
+                            getTranslation("vocab_connecting")
+                          ) : isRecording ? (
+                            <VoiceWaveIcon stream={stream} size={24} color="currentColor" />
+                          ) : (
+                            getTranslation("flashcard_record_answer")
+                          )}
                         </Button>
 
                         {/* Recognized speech text */}

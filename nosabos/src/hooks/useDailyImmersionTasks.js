@@ -106,7 +106,7 @@ export default function useDailyImmersionTasks({
           const skillTree = immersionLessonCandidate({
             units: skillUnits, progress: lessonProgress,
             completedCount: skillCount, level: lessonLevel,
-            mode: "Skill Tree",
+            mode: "Lessons",
             priorityLessonId: introTutorialLevel ? INTRO_TUTORIAL_LESSON_ID : null,
           });
           const tutor = immersionLessonCandidate({

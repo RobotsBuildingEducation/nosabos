@@ -17,6 +17,10 @@ import { WaveBar } from "./WaveBar";
 import PlatePetPanel from "./PlatePetPanel";
 import PlateScoreJourney from "./PlateScoreJourney";
 import PlateActivityHeatmap from "./PlateActivityHeatmap";
+import AchievementCelebrationModal from "./AchievementCelebrationModal.jsx";
+import { achievementText } from "../achievements/copy.js";
+import { awardRandomAchievement } from "../utils/achievements.js";
+import { previewAchievementUnlock } from "../achievements/unlockStore.js";
 import useSoundSettings from "../hooks/useSoundSettings";
 import { useThemeStore } from "../useThemeStore";
 import { APP_DAILY_QUEST_RADIUS, APP_SQUIRCLE_SHAPE } from "../theme";
@@ -153,6 +157,26 @@ export default function DailyPlateHome({
 
   const [now, setNow] = useState(() => new Date());
   const [isResettingPlate, setIsResettingPlate] = useState(false);
+  const [celebrationAchievement, setCelebrationAchievement] = useState(null);
+  const [isAchievementModalOpen, setIsAchievementModalOpen] = useState(false);
+  const [isAwardingAchievement, setIsAwardingAchievement] = useState(false);
+
+  const handleTestAchievement = async () => {
+    // Open the collection immediately; relay sync/signing can take a while.
+    // A network failure must not keep the transcript inaccessible.
+    setIsAchievementModalOpen(true);
+    if (isAwardingAchievement) return;
+    try {
+      setIsAwardingAchievement(true);
+      const achievement = await awardRandomAchievement(user?.npub, "nosabos");
+      setCelebrationAchievement(achievement);
+    } catch (err) {
+      console.error("Failed to award test achievement:", err);
+    } finally {
+      setIsAwardingAchievement(false);
+    }
+  };
+
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 60_000);
     return () => clearInterval(id);
@@ -522,7 +546,23 @@ export default function DailyPlateHome({
       zIndex={1}
     >
       <VStack w="100%" maxW="560px" spacing={3} align="stretch">
-        {journeyTestControl && <HStack justify="flex-end">{journeyTestControl}</HStack>}
+        <HStack justify="flex-end" spacing={2} wrap="wrap">
+          {journeyTestControl}
+          <Button
+            size="xs"
+            variant="outline"
+            colorScheme="teal"
+            borderRadius="full"
+            aria-busy={isAwardingAchievement}
+            onClick={handleTestAchievement}
+            leftIcon={<span>🏆</span>}
+          >
+            {achievementText("test", appLanguage)}
+          </Button>
+          <Button size="xs" variant="outline" colorScheme="yellow" borderRadius="full" onClick={() => previewAchievementUnlock("nosabos")}>
+            {achievementText("testUnlock", appLanguage)}
+          </Button>
+        </HStack>
         {/* Header */}
         <Box textAlign="center">
           <Text
@@ -878,6 +918,16 @@ export default function DailyPlateHome({
           </Button>
         ) : null}
         */}
+        {/* Achievement Celebration Modal */}
+        <AchievementCelebrationModal
+          isOpen={isAchievementModalOpen}
+          onClose={() => setIsAchievementModalOpen(false)}
+          achievement={celebrationAchievement}
+          npub={user?.npub}
+          appSource="nosabos"
+          language={appLanguage}
+          onAchievementAwarded={(newAch) => setCelebrationAchievement(newAch)}
+        />
       </VStack>
     </Box>
   );

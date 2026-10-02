@@ -79,6 +79,7 @@ import {
   simplemodel,
 } from "../../firebaseResources/firebaseResources";
 import { useSpeechPractice } from "../../hooks/useSpeechPractice";
+import VoiceWaveIcon from "../VoiceWaveIcon";
 import { useUserStore } from "../../hooks/useUserStore";
 import HelpChatFab from "../HelpChatFab";
 import VoiceOrb from "../VoiceOrbNext";
@@ -7890,6 +7891,8 @@ export default function RPGGame({
     stopRecording,
     isRecording,
     isConnecting,
+    isEvaluating,
+    stream,
     supportsSpeech,
   } = useSpeechPractice({
     targetText:
@@ -9821,17 +9824,15 @@ export default function RPGGame({
                       <IconButton
                         aria-label={isRecording ? ui.micStop : ui.micStart}
                         size="sm"
-                        colorScheme={isRecording ? undefined : "teal"}
-                        bg={isRecording ? SOFT_STOP_BUTTON_SOLID_BG : undefined}
-                        color={isRecording ? "white" : undefined}
-                        boxShadow={isRecording ? "red" : undefined}
-                        _hover={
-                          isRecording
-                            ? { bg: SOFT_STOP_BUTTON_SOLID_HOVER_BG }
-                            : undefined
+                        colorScheme="teal"
+                        icon={
+                          isRecording ? (
+                            <VoiceWaveIcon stream={stream} size={16} color="currentColor" />
+                          ) : (
+                            <FaMicrophone />
+                          )
                         }
-                        icon={<FaMicrophone />}
-                        isLoading={isConnecting}
+                        isLoading={isConnecting || isEvaluating}
                         onClick={async () => {
                           if (!supportsSpeech) {
                             toast({

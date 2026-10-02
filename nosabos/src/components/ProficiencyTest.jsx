@@ -30,7 +30,15 @@ import {
   GridItem,
 } from "@chakra-ui/react";
 import { CloseIcon } from "@chakra-ui/icons";
-import { FaMicrophone, FaRegCommentDots, FaStop } from "react-icons/fa";
+import {
+  FaMicrophone,
+  FaMicrophoneSlash,
+  FaPause,
+  FaPlay,
+  FaPhoneSlash,
+  FaRegCommentDots,
+  FaStop,
+} from "react-icons/fa";
 import { LuBadgeCheck } from "react-icons/lu";
 import { useNavigate } from "react-router-dom";
 import { doc, getDoc, runTransaction } from "firebase/firestore";
@@ -43,6 +51,9 @@ import {
 import useUserStore from "../hooks/useUserStore";
 import useBottomDrawerSwipeDismiss from "../hooks/useBottomDrawerSwipeDismiss";
 import VoiceOrb from "./VoiceOrbNext";
+import { voiceCallControlStyle } from "../utils/voiceCallControlStyle.js";
+import TutorViewportEdgeGlow from "./TutorViewportEdgeGlow.jsx";
+import { useTutorVoiceLevel } from "../hooks/useTutorVoiceLevel.js";
 import BottomDrawerDragHandle from "./BottomDrawerDragHandle";
 import {
   ArchiveTextAnimation,
@@ -86,7 +97,7 @@ const REALTIME_MODEL =
 const REALTIME_URL = getRealtimeUrl(REALTIME_MODEL);
 
 const MAX_EXCHANGES = 10;
-const AUTO_DISCONNECT_MS = 15000;
+const AUTO_DISCONNECT_MS = 30000;
 const MATRIX_PANEL_SX = {
   position: "relative",
   overflow: "hidden",
@@ -149,7 +160,7 @@ const PAPER_PAGE_SX = {
     opacity: 0.4,
     pointerEvents: "none",
   },
-  "& > :not([data-proficiency-bottom-dock='true'])": {
+  "& > :not([data-proficiency-bottom-dock='true']):not(.tutor-ambient)": {
     position: "relative",
     zIndex: 1,
   },
@@ -680,8 +691,8 @@ function queueTutorPlacementStart(targetLang, level) {
   try {
     const langKey = String(targetLang || "es").toLowerCase();
     // One-shot key consumed by App's pathMode initializer on the next mount —
-    // the app otherwise always boots to the Daily Quest home.
-    window.localStorage.setItem("pathModeHandoff", "tutor");
+    // ensures return lands on the Today's Focus home ("plate").
+    window.localStorage.setItem("pathModeHandoff", "plate");
     window.localStorage.setItem(getTutorPathLevelStorageKey(langKey), level);
     window.localStorage.removeItem(getTutorPathLessonStorageKey(langKey));
     if (level !== "Pre-A1") {
@@ -1117,6 +1128,8 @@ export default function ProficiencyTest() {
   const audioCtxRef = useRef(null);
   const analyserRef = useRef(null);
   const floatBufRef = useRef(null);
+  const tutorAnalyserRef = useRef(null);
+  const tutorFloatBufRef = useRef(null);
   const captureOutRef = useRef(null);
   const audioGraphReadyRef = useRef(false);
 
@@ -1126,6 +1139,27 @@ export default function ProficiencyTest() {
   const [uiState, setUiState] = useState("idle");
   const [mood, setMood] = useState("neutral");
   const [showChatLog, setShowChatLog] = useState(false);
+
+  // Mute & Pause controls
+  const [isMuted, setIsMuted] = useState(false);
+  const isMutedRef = useRef(false);
+  useEffect(() => {
+    isMutedRef.current = isMuted;
+  }, [isMuted]);
+
+  const [isPaused, setIsPaused] = useState(false);
+  const isPausedRef = useRef(false);
+  const pauseSafetyTimerRef = useRef(null);
+  useEffect(() => {
+    isPausedRef.current = isPaused;
+  }, [isPaused]);
+
+  const clearPauseSafetyTimer = useCallback(() => {
+    if (pauseSafetyTimerRef.current) {
+      clearTimeout(pauseSafetyTimerRef.current);
+      pauseSafetyTimerRef.current = null;
+    }
+  }, []);
 
   // Messages
   const messagesRef = useRef([]);
@@ -1468,6 +1502,7 @@ export default function ProficiencyTest() {
 
   /** Re-enable server VAD and reattach mic track after AI finishes speaking. */
   function enableVAD() {
+    if (isPausedRef.current || isMutedRef.current) return;
     const micTrack = localRef.current?.getAudioTracks()?.[0];
     if (pcRef.current && micTrack) {
       pcRef.current.getSenders().forEach((s) => {
@@ -1507,6 +1542,161 @@ export default function ProficiencyTest() {
       stop();
     }, AUTO_DISCONNECT_MS);
   }
+
+  const toggleMute = useCallback(() => {
+    if (status !== "connected" || isPausedRef.current) return;
+    const nextMuted = !isMutedRef.current;
+    isMutedRef.current = nextMuted;
+    setIsMuted(nextMuted);
+
+    if (nextMuted) {
+      // Detach mic track (costs $0.00 in audio input tokens)
+      if (pcRef.current) {
+        pcRef.current.getSenders().forEach((s) => {
+          if (s.track?.kind === "audio") {
+            s.replaceTrack(null).catch(() => {});
+          }
+        });
+      }
+      if (dcRef.current?.readyState === "open") {
+        try {
+          dcRef.current.send(
+            JSON.stringify({ type: "input_audio_buffer.clear" }),
+          );
+          dcRef.current.send(
+            JSON.stringify({
+              type: "session.update",
+              session: buildRealtimeVadSession(null),
+            }),
+          );
+        } catch {}
+      }
+    } else {
+      // Reattach mic track and restore server VAD
+      const micTrack = localRef.current?.getAudioTracks()?.[0];
+      if (pcRef.current && micTrack) {
+        pcRef.current.getSenders().forEach((s) => {
+          if (!s.track || s.track?.kind === "audio") {
+            s.replaceTrack(micTrack).catch(() => {});
+          }
+        });
+      }
+      if (dcRef.current?.readyState === "open") {
+        try {
+          dcRef.current.send(
+            JSON.stringify({
+              type: "session.update",
+              session: buildRealtimeVadSession({
+                type: "server_vad",
+                silence_duration_ms: pauseMs || 800,
+                threshold: 0.35,
+                prefix_padding_ms: 120,
+                interrupt_response: false,
+              }),
+            }),
+          );
+        } catch {}
+      }
+    }
+  }, [status, pauseMs]);
+
+  const togglePause = useCallback(() => {
+    if (status !== "connected") return;
+    const nextPaused = !isPausedRef.current;
+    isPausedRef.current = nextPaused;
+    setIsPaused(nextPaused);
+
+    if (nextPaused) {
+      // 1. If AI is speaking, cancel speech immediately to stop audio output tokens
+      if (dcRef.current?.readyState === "open") {
+        try {
+          dcRef.current.send(JSON.stringify({ type: "response.cancel" }));
+        } catch {}
+      }
+      if (audioRef.current) {
+        try {
+          audioRef.current.pause();
+        } catch {}
+      }
+
+      // 2. Detach mic track & disable VAD to stop audio input tokens
+      if (pcRef.current) {
+        pcRef.current.getSenders().forEach((s) => {
+          if (s.track?.kind === "audio") {
+            s.replaceTrack(null).catch(() => {});
+          }
+        });
+      }
+      if (dcRef.current?.readyState === "open") {
+        try {
+          dcRef.current.send(
+            JSON.stringify({ type: "input_audio_buffer.clear" }),
+          );
+          dcRef.current.send(
+            JSON.stringify({
+              type: "session.update",
+              session: buildRealtimeVadSession(null),
+            }),
+          );
+        } catch {}
+      }
+
+      // 3. Pause the 30-second disconnect timer
+      clearAutoStopTimer();
+
+      // 4. Start 5-minute safety timeout to prevent forgotten zombie sessions
+      clearPauseSafetyTimer();
+      pauseSafetyTimerRef.current = setTimeout(() => {
+        if (aliveRef.current) {
+          stop();
+        }
+      }, 5 * 60 * 1000);
+
+      setUiState("idle");
+      setMood("neutral");
+    } else {
+      // Resuming from pause:
+      clearPauseSafetyTimer();
+
+      // Resume remote audio if paused
+      if (audioRef.current) {
+        try {
+          audioRef.current.play().catch(() => {});
+        } catch {}
+      }
+
+      // Restore mic track and VAD (unless user has mic explicitly muted)
+      if (!isMutedRef.current) {
+        const micTrack = localRef.current?.getAudioTracks()?.[0];
+        if (pcRef.current && micTrack) {
+          pcRef.current.getSenders().forEach((s) => {
+            if (!s.track || s.track?.kind === "audio") {
+              s.replaceTrack(micTrack).catch(() => {});
+            }
+          });
+        }
+        if (dcRef.current?.readyState === "open") {
+          try {
+            dcRef.current.send(
+              JSON.stringify({
+                type: "session.update",
+                session: buildRealtimeVadSession({
+                  type: "server_vad",
+                  silence_duration_ms: pauseMs || 800,
+                  threshold: 0.35,
+                  prefix_padding_ms: 120,
+                  interrupt_response: false,
+                }),
+              }),
+            );
+          } catch {}
+        }
+      }
+
+      setUiState("listening");
+      scheduleAutoStop();
+    }
+  }, [status, pauseMs, clearPauseSafetyTimer]);
 
   async function handleRealtimeEvent(evt) {
     if (!aliveRef.current) return;
@@ -1675,6 +1865,11 @@ export default function ProficiencyTest() {
       t === "response.canceled"
     ) {
       if (t === "response.canceled") setAssistantInputLocked(false);
+      enableVAD();
+      setAssistantInputLocked(false);
+      setUiState(status === "connected" ? "listening" : "idle");
+      setMood("neutral");
+      if (aliveRef.current) scheduleAutoStop();
       isIdleRef.current = true;
       const mid = rid && respToMsg.current.get(rid);
       if (mid) {
@@ -1703,7 +1898,13 @@ export default function ProficiencyTest() {
       return;
     }
 
-    if (t === "input_audio_buffer.speech_started") {
+    if (
+      t === "input_audio_buffer.speech_started" ||
+      t === "input_audio_buffer.local_speech_started" ||
+      t === "input_audio_buffer.local_speech_active"
+    ) {
+      clearAutoStopTimer();
+      if (t === "input_audio_buffer.local_speech_active") return;
       if (assistantInputLockedRef.current) return;
       const turn = {
         id: uid(),
@@ -1725,6 +1926,7 @@ export default function ProficiencyTest() {
     }
 
     if (t === "input_audio_buffer.speech_stopped") {
+      clearAutoStopTimer();
       if (assistantInputLockedRef.current) return;
       const now = Date.now();
       const turn = currentSpeechTurnRef.current;
@@ -1736,36 +1938,23 @@ export default function ProficiencyTest() {
       currentSpeechTurnRef.current = null;
       stopSpeechSampling();
 
-      if (t === "input_audio_buffer.speech_stopped") {
-        const now = Date.now();
-        const turn = currentSpeechTurnRef.current;
-        if (turn) {
-          turn.endTs = now;
-          turn.durationMs = Math.max(0, now - (turn.startTs || now));
-          if (turn.rmsSamples > 0)
-            turn.rmsAvg = turn.rmsTotal / turn.rmsSamples;
-        }
-        currentSpeechTurnRef.current = null;
-        stopSpeechSampling();
+      // Create placeholder user message so it renders before the AI response
+      const placeholderId = uid();
+      pendingUserMsgRef.current = placeholderId;
+      pushMessage({
+        id: placeholderId,
+        role: "user",
+        lang: targetLang,
+        textFinal: "",
+        textStream: "",
+        done: false,
+        pendingTranscript: true,
+        ts: now,
+      });
 
-        // Create placeholder user message so it renders before the AI response
-        const placeholderId = uid();
-        pendingUserMsgRef.current = placeholderId;
-        pushMessage({
-          id: placeholderId,
-          role: "user",
-          lang: targetLang,
-          textFinal: "",
-          textStream: "",
-          done: false,
-          pendingTranscript: true,
-          ts: now,
-        });
-
-        setUiState("thinking");
-        setMood("thinking");
-        disableVAD();
-      }
+      setUiState("thinking");
+      setMood("thinking");
+      disableVAD();
       return;
     }
 
@@ -1976,6 +2165,9 @@ Return ONLY valid JSON:
   /* ---- Unlock levels and return to app ---- */
   const handleReturnToApp = useCallback(async () => {
     if (!currentNpub || !assessedLevel) {
+      try {
+        window.localStorage.setItem("pathModeHandoff", "plate");
+      } catch {}
       navigate("/");
       return;
     }
@@ -2078,6 +2270,10 @@ Return ONLY valid JSON:
       console.error("Failed to save proficiency placement:", e);
     }
 
+    try {
+      window.localStorage.setItem("pathModeHandoff", "plate");
+    } catch {}
+
     navigate("/");
   }, [
     currentNpub,
@@ -2131,6 +2327,9 @@ Return ONLY valid JSON:
         console.warn("Failed to persist proficiency skip:", e);
       }
     }
+    try {
+      window.localStorage.setItem("pathModeHandoff", "plate");
+    } catch {}
     navigate("/");
   }, [
     currentNpub,
@@ -2201,10 +2400,14 @@ Return ONLY valid JSON:
     };
   }, [assessmentScores]);
 
-  /* ---- Connect / Disconnect ---- */
   async function start() {
     playSound(submitActionSound);
     clearAutoStopTimer();
+    clearPauseSafetyTimer();
+    setIsMuted(false);
+    setIsPaused(false);
+    isMutedRef.current = false;
+    isPausedRef.current = false;
     setErr("");
     setMessages([]);
     respToMsg.current.clear();
@@ -2230,14 +2433,29 @@ Return ONLY valid JSON:
       const pc = new RTCPeerConnection();
       pcRef.current = pc;
 
-      const remote = new MediaStream();
-      if (audioRef.current) {
-        audioRef.current.srcObject = remote;
-        audioRef.current.autoplay = true;
-        audioRef.current.playsInline = true;
-      }
       pc.ontrack = (e) => {
-        e.streams[0].getTracks().forEach((t) => remote.addTrack(t));
+        const stream =
+          e.streams?.[0] || new MediaStream(e.track ? [e.track] : []);
+        if (audioRef.current) {
+          audioRef.current.srcObject = stream;
+          audioRef.current.play().catch(() => {});
+        }
+        // The existing analyser measures learner speech for assessment.
+        // Keep tutor playback separate so the aura follows the audible response.
+        const ctx = audioCtxRef.current;
+        if (ctx && !tutorAnalyserRef.current) {
+          try {
+            const source = ctx.createMediaStreamSource(stream);
+            const analyser = ctx.createAnalyser();
+            analyser.fftSize = 2048;
+            source.connect(analyser);
+            tutorAnalyserRef.current = analyser;
+            tutorFloatBufRef.current = new Float32Array(analyser.fftSize);
+            void ctx.resume().catch(() => {});
+          } catch (error) {
+            console.warn("Tutor audio analysis init failed:", error?.message || error);
+          }
+        }
       };
       pc.addTransceiver("audio", { direction: "recvonly" });
 
@@ -2277,6 +2495,7 @@ Return ONLY valid JSON:
           analyserRef.current = analyser;
           floatBufRef.current = new Float32Array(analyser.fftSize);
           audioGraphReadyRef.current = true;
+          void ctx.resume().catch(() => {});
         } catch (e) {
           console.warn("Mic AudioContext init failed:", e?.message || e);
         }
@@ -2344,6 +2563,11 @@ Return ONLY valid JSON:
 
   function stop() {
     clearAutoStopTimer();
+    clearPauseSafetyTimer();
+    setIsMuted(false);
+    setIsPaused(false);
+    isMutedRef.current = false;
+    isPausedRef.current = false;
     aliveRef.current = false;
     assistantInputLockedRef.current = false;
     setLocalMicEnabled(true);
@@ -2393,6 +2617,8 @@ Return ONLY valid JSON:
     audioCtxRef.current = null;
     analyserRef.current = null;
     floatBufRef.current = null;
+    tutorAnalyserRef.current = null;
+    tutorFloatBufRef.current = null;
     captureOutRef.current = null;
     currentSpeechTurnRef.current = null;
     stopSpeechSampling();
@@ -2401,11 +2627,29 @@ Return ONLY valid JSON:
     setUiState("idle");
   }
 
+  const stopRef = useRef(stop);
+  useEffect(() => {
+    stopRef.current = stop;
+  }, [stop]);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && aliveRef.current) {
+        stopRef.current?.();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       aliveRef.current = false;
       clearAutoStopTimer();
+      clearPauseSafetyTimer();
       if (streamFlushTimerRef.current)
         clearTimeout(streamFlushTimerRef.current);
       stopSpeechSampling();
@@ -2487,7 +2731,24 @@ Return ONLY valid JSON:
     isLightTheme,
   );
   const liveUiState =
-    status === "connected" && uiState === "idle" ? "listening" : uiState;
+    isPaused
+      ? "idle"
+      : isMuted
+        ? "idle"
+        : status === "connected" && uiState === "idle"
+          ? "listening"
+          : uiState;
+  const voiceVisualsEnabled = status === "connected" && !isPaused;
+  const atmosphereState = status === "connected" && uiState === "idle" ? "listening" : uiState;
+  const voiceLevelRef = useTutorVoiceLevel({
+    enabled: voiceVisualsEnabled,
+    state: atmosphereState,
+    microphoneEnabled: !isMuted,
+    micAnalyserRef: analyserRef,
+    micFloatBufRef: floatBufRef,
+    tutorAnalyserRef,
+    tutorFloatBufRef,
+  });
   const orbUiState = getRealtimeOrbVisualState(liveUiState);
 
   /* ---- Render ---- */
@@ -2634,13 +2895,20 @@ Return ONLY valid JSON:
                   mixBlendMode: "screen",
                   pointerEvents: "none",
                 },
-                "& > :not([data-proficiency-bottom-dock='true'])": {
+                "& > :not([data-proficiency-bottom-dock='true']):not(.tutor-ambient)": {
                   position: "relative",
                   zIndex: 1,
                 },
               }
         }
       >
+        <TutorViewportEdgeGlow
+          enabled={voiceVisualsEnabled}
+          state={atmosphereState}
+          isLightTheme={isLightTheme}
+          audioLevelRef={voiceLevelRef}
+          ambientInPlace
+        />
         {/* Header */}
         <Box px={4} py={4} position="relative">
           <IconButton
@@ -2775,16 +3043,43 @@ Return ONLY valid JSON:
 
         <VStack spacing={0.5} align="center" mt={2}>
           <Box width="132px" opacity={0.95}>
-            <VoiceOrb variant="tutor" callActive={status === "connected"} state={orbUiState} />
+            <VoiceOrb
+              variant="tutor"
+              callActive={status === "connected" && !isPaused}
+              audioLevelRef={voiceLevelRef}
+              state={orbUiState}
+            />
           </Box>
-          {uiStateLabel(liveUiState, ui) && (
+          {status === "connected" && isPaused ? (
+            <Badge
+              variant="subtle"
+              colorScheme="yellow"
+              borderRadius="full"
+              px={2.5}
+              py={0.5}
+              fontSize="xs"
+            >
+              Paused
+            </Badge>
+          ) : status === "connected" && isMuted ? (
+            <Badge
+              variant="subtle"
+              colorScheme="red"
+              borderRadius="full"
+              px={2.5}
+              py={0.5}
+              fontSize="xs"
+            >
+              Muted
+            </Badge>
+          ) : uiStateLabel(liveUiState, ui) ? (
             <Text
               fontSize="xs"
               color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
             >
               {uiStateLabel(liveUiState, ui)}
             </Text>
-          )}
+          ) : null}
         </VStack>
 
         {/* Live assistant panel */}
@@ -2857,73 +3152,109 @@ Return ONLY valid JSON:
         <Center
           data-proficiency-bottom-dock="true"
           position="fixed"
-          bottom="22px"
+          bottom="24px"
           left="0"
           right="0"
           zIndex={30}
           px={4}
         >
-          <VStack spacing={2} w="100%" maxW="560px" justify="center">
-            <Button
-              onClick={status === "connected" ? stop : start}
-              size="lg"
-              height="64px"
-              px={{ base: 8, md: 12 }}
-              rounded="full"
-              colorScheme={status === "connected" ? undefined : "cyan"}
-              background={
-                status === "connected"
-                  ? SOFT_STOP_BUTTON_BG
-                  : isLightTheme
+          {status === "connected" ? (
+            <HStack spacing={3} justify="center" align="center">
+              {/* Mute Button (Icon only) */}
+              <IconButton
+                icon={
+                  isMuted ? (
+                    <FaMicrophoneSlash size={20} />
+                  ) : (
+                    <FaMicrophone size={20} />
+                  )
+                }
+                aria-label={isMuted ? "Unmute microphone" : "Mute microphone"}
+                onClick={toggleMute}
+                isDisabled={isPaused}
+                size="lg"
+                w="56px"
+                h="56px"
+                isRound
+                {...voiceCallControlStyle(isMuted)}
+              />
+
+              {/* Pause Button (Icon only) */}
+              <IconButton
+                icon={isPaused ? <FaPlay size={18} /> : <FaPause size={18} />}
+                aria-label={isPaused ? "Resume test" : "Pause test"}
+                onClick={togglePause}
+                size="lg"
+                w="56px"
+                h="56px"
+                isRound
+                {...voiceCallControlStyle(isPaused)}
+              />
+
+              {/* End Button (Icon only) */}
+              <IconButton
+                icon={<FaPhoneSlash size={20} />}
+                aria-label="End test"
+                onClick={stop}
+                size="lg"
+                w="56px"
+                h="56px"
+                isRound
+                variant="solid"
+                bg={SOFT_STOP_BUTTON_BG || "red.500"}
+                color="white"
+                boxShadow="none"
+                _hover={{
+                  bg: SOFT_STOP_BUTTON_HOVER_BG || "red.600",
+                  transform: "scale(1.05)",
+                }}
+                _active={{ transform: "scale(0.95)" }}
+                transition="all 0.15s ease"
+              />
+            </HStack>
+          ) : (
+            <VStack spacing={2} w="100%" maxW="560px" justify="center">
+              <Button
+                onClick={start}
+                size="lg"
+                height="64px"
+                px={{ base: 8, md: 12 }}
+                rounded="full"
+                colorScheme="cyan"
+                background={
+                  isLightTheme
                     ? "linear-gradient(180deg, #40c6d9 0%, #2fb4c7 100%)"
                     : undefined
-              }
-              boxShadow={
-                status === "connected"
-                  ? SOFT_STOP_BUTTON_GLOW
-                  : isLightTheme
+                }
+                boxShadow={
+                  isLightTheme
                     ? "0 10px 24px rgba(66, 168, 181, 0.22), 0 4px 0 rgba(41, 126, 136, 0.82)"
                     : undefined
-              }
-              _hover={
-                status === "connected"
-                  ? { bg: SOFT_STOP_BUTTON_HOVER_BG }
-                  : isLightTheme
+                }
+                _hover={
+                  isLightTheme
                     ? {
                         bg: "linear-gradient(180deg, #35bfd3 0%, #27adc0 100%)",
                       }
                     : undefined
-              }
-              color={
-                status === "connected"
-                  ? "white"
-                  : isLightTheme
-                    ? "white"
-                    : "white"
-              }
-              border={
-                isLightTheme && status !== "connected"
-                  ? "1px solid rgba(255,255,255,0.55)"
-                  : undefined
-              }
-              textShadow={isLightTheme ? "none" : "0 0 16px rgba(0,0,0,0.9)"}
-              mb={3}
-              isDisabled={userMessageCount >= MAX_EXCHANGES}
-            >
-              {status === "connected" ? (
-                <>
-                  <FaStop /> &nbsp; {ui.story_stop}
-                </>
-              ) : (
-                <>
-                  <FaMicrophone /> &nbsp;{" "}
-                  {status === "connecting"
-                    ? ui.vocab_connecting
-                    : ui.proficiency_test_start}
-                </>
-              )}
-            </Button>
-          </VStack>
+                }
+                color="white"
+                border={
+                  isLightTheme
+                    ? "1px solid rgba(255,255,255,0.55)"
+                    : undefined
+                }
+                textShadow={isLightTheme ? "none" : "0 0 16px rgba(0,0,0,0.9)"}
+                mb={3}
+                isDisabled={userMessageCount >= MAX_EXCHANGES}
+              >
+                <FaMicrophone /> &nbsp;{" "}
+                {status === "connecting"
+                  ? ui.vocab_connecting
+                  : ui.proficiency_test_start}
+              </Button>
+            </VStack>
+          )}
         </Center>
 
         {err && (
@@ -3454,7 +3785,13 @@ Return ONLY valid JSON:
                 fontWeight="bold"
                 rounded="xl"
                 isDisabled={!assessedLevel}
-                color={isLightTheme ? "#083344" : undefined}
+                color="white"
+                _hover={{
+                  color: "white",
+                }}
+                _active={{
+                  color: "white",
+                }}
                 boxShadow={
                   isLightTheme
                     ? "0 8px 18px rgba(66, 168, 181, 0.18)"
