@@ -1,3 +1,4 @@
+import { getSpeechPracticeErrorFeedback } from "../utils/speechPracticeFeedback.js";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import {
@@ -553,9 +554,7 @@ export default function FlashcardPractice({
     onResult: ({ recognizedText, error }) => {
       if (error) {
         toast({
-          title: getTranslation("flashcard_eval_error_title"),
-          description: getTranslation("flashcard_eval_error_desc"),
-          status: "error",
+          ...getSpeechPracticeErrorFeedback(error, getTranslation),
           duration: 2500,
         });
         return;
@@ -852,6 +851,8 @@ export default function FlashcardPractice({
           status: "error",
           duration: 3200,
         });
+      } else {
+        toast({ ...getSpeechPracticeErrorFeedback(err, getTranslation), duration: 3200 });
       }
     }
   };

@@ -1,3 +1,4 @@
+import { getSpeechPracticeErrorFeedback } from "../utils/speechPracticeFeedback.js";
 import ActivityActionRow from "./ActivityActionRow";
 import React, {
   useCallback,
@@ -3557,11 +3558,7 @@ export default function DelightQuestionLab({
       if (error) {
         pendingSpeechSubmissionRef.current = null;
         toast({
-          title: t("flashcard_eval_error_title") || "Speech error",
-          description:
-            t("flashcard_eval_error_desc") ||
-            "Please check microphone access and try again.",
-          status: "error",
+          ...getSpeechPracticeErrorFeedback(error, t),
           duration: 2800,
         });
         return;
@@ -3571,7 +3568,7 @@ export default function DelightQuestionLab({
       if (!transcript) {
         pendingSpeechSubmissionRef.current = null;
         toast({
-          title: t("flashcard_eval_error_title") || "Speech not detected",
+          ...getSpeechPracticeErrorFeedback({ code: "no-speech" }, t),
           status: "warning",
           duration: 2200,
         });

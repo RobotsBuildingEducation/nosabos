@@ -1,3 +1,4 @@
+import { getSpeechPracticeErrorFeedback } from "../utils/speechPracticeFeedback.js";
 import ActivityActionRow from "./ActivityActionRow";
 // components/LessonFlashcard.jsx
 // Inline flashcard question UI for Vocabulary/Grammar modules.
@@ -672,7 +673,7 @@ export default function LessonFlashcard({
     targetLang,
     onResult: ({ recognizedText: rt, error }) => {
       if (error) {
-        toast({ title: t("speech_error"), status: "error", duration: 2500 });
+        toast({ ...getSpeechPracticeErrorFeedback(error, t), duration: 2500 });
         return;
       }
       const text = rt || "";

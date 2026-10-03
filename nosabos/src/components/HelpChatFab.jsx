@@ -2395,7 +2395,7 @@ const HelpChatFab = forwardRef(
                                 )
                               }
                               onClick={() => {
-                                playSound(clickSound);
+                                playSound(submitActionSound);
                                 toggleRealtime();
                               }}
                               isDisabled={
@@ -2659,7 +2659,7 @@ const HelpChatFab = forwardRef(
                                 )
                               }
                               onClick={() => {
-                                playSound(clickSound);
+                                playSound(submitActionSound);
                                 toggleRealtime();
                               }}
                               isDisabled={

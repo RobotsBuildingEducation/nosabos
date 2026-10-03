@@ -1,3 +1,4 @@
+import { getSpeechPracticeErrorFeedback } from "../utils/speechPracticeFeedback.js";
 import { focusedLessonPrompt } from "../utils/learningIntelligenceModel";
 import ActivityActionRow from "./ActivityActionRow";
 import QuestionActionArea from "./QuestionActionArea";
@@ -1394,9 +1395,7 @@ function SpeakingStoryMode({
 
       if (error) {
         toast({
-          title: t(effectiveLang, "story_audio_eval_error_title"),
-          description: t(effectiveLang, "story_audio_eval_error_desc"),
-          status: "error",
+          ...getSpeechPracticeErrorFeedback(error, (key) => t(effectiveLang, key)),
           duration: 2500,
           position: "top",
         });

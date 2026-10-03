@@ -135,6 +135,7 @@ function toGaSession(session = {}, { omitVoice = false } = {}) {
 class OpenAIRealtimeBridge {
   constructor({
     audioElement = null,
+    inputAudioEnabled = true,
     initialInstructions = "",
     responseInstructionsPrefix = "",
     responseInstructionsSuffix = "",
@@ -150,6 +151,7 @@ class OpenAIRealtimeBridge {
     onError,
   } = {}) {
     this.audioElement = audioElement;
+    this.inputAudioEnabled = !!inputAudioEnabled;
     this.initialInstructions = initialInstructions;
     this.responseInstructionsPrefix = responseInstructionsPrefix;
     this.responseInstructionsSuffix = responseInstructionsSuffix;
@@ -305,8 +307,9 @@ class OpenAIRealtimeBridge {
   }
 
   setInputAudioEnabled(enabled) {
+    this.inputAudioEnabled = !!enabled;
     this.localStream?.getAudioTracks?.().forEach((track) => {
-      track.enabled = !!enabled;
+      track.enabled = this.inputAudioEnabled;
     });
   }
 
@@ -326,10 +329,10 @@ class OpenAIRealtimeBridge {
       instructions: this.initialInstructions || "",
       voice: this.voice || DEFAULT_OPENAI_TUTOR_VOICE,
       input_audio_transcription: this.inputTranscription,
-      turn_detection: {
+      turn_detection: this.inputAudioEnabled ? {
         ...DEFAULT_TURN_DETECTION,
         silence_duration_ms: this.pauseMs,
-      },
+      } : null,
     };
   }
 
@@ -354,6 +357,7 @@ class OpenAIRealtimeBridge {
     this.localStream = await navigator.mediaDevices.getUserMedia({
       audio: true,
     });
+    this.setInputAudioEnabled(this.inputAudioEnabled);
     this.attachMicAnalyser();
 
     const pc = new RTCPeerConnection();

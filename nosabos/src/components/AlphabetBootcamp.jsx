@@ -1,3 +1,5 @@
+import { t } from "../utils/translation";
+import { getSpeechPracticeErrorFeedback } from "../utils/speechPracticeFeedback.js";
 import { phonicsCompletionEvidence } from "../achievements/phonicsProgress.js";
 import { awardProgressionAchievements } from "../utils/achievements.js";
 import useGoalFocusStore from "../hooks/useGoalFocusStore";
@@ -1605,9 +1607,7 @@ function LetterCard({
     onResult: ({ recognizedText: text, error }) => {
       if (error) {
         toast({
-          title: uiText(uiLang, "recordingErrorTitle"),
-          description: uiText(uiLang, "recordingErrorDescription"),
-          status: "error",
+          ...getSpeechPracticeErrorFeedback(error, (key) => t(uiLang, key)),
           duration: 2500,
         });
         return;

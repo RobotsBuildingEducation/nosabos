@@ -1,3 +1,11 @@
+import {
+  canEnableRealtimeInput,
+  snapshotRealtimeMessages,
+  buildRealtimeResumeContext,
+  captureRealtimeSpeech,
+  resumeRealtimeSpeech,
+  closeRealtimeTransport,
+} from "../utils/realtimeSessionControls.js";
 import useGoalFocusStore from "../hooks/useGoalFocusStore";
 import { awardTutorLevelAchievements } from "../utils/achievements.js";
 import { previewAchievementUnlock } from "../achievements/unlockStore.js";
@@ -61,10 +69,10 @@ import {
   FaMicrophoneSlash,
   FaPause,
   FaPlay,
-  FaPhoneSlash,
   FaStop,
   FaRegCommentDots,
 } from "react-icons/fa";
+import { ImPhoneHangUp } from "react-icons/im";
 import { MdOutlineTranslate } from "react-icons/md";
 import { LuChartColumnIncreasing } from "react-icons/lu";
 import {
@@ -3966,6 +3974,8 @@ export default function Tutor({
     if (
       realtimeProviderRef.current !== "openai" ||
       !aliveRef.current ||
+      isMutedRef.current ||
+      isPausedRef.current ||
       assistantInputLockedRef.current ||
       dcRef.current?.readyState !== "open"
     ) {
@@ -3998,14 +4008,13 @@ export default function Tutor({
   const [isPaused, setIsPaused] = useState(false);
   const isMutedRef = useRef(false);
   const isPausedRef = useRef(false);
-  const pauseSafetyTimerRef = useRef(null);
+  const pausedMessagesRef = useRef([]);
+  const pausedSpeechRef = useRef(null);
+  const connectionEpochRef = useRef(0);
+  const micSenderRef = useRef(null);
+  const connectionTransitionRef = useRef(false);
 
-  const clearPauseSafetyTimer = useCallback(() => {
-    if (pauseSafetyTimerRef.current) {
-      clearTimeout(pauseSafetyTimerRef.current);
-      pauseSafetyTimerRef.current = null;
-    }
-  }, []);
+
   const [orbFeedback, setOrbFeedback] = useState(null);
   const [err, setErr] = useState("");
   const [uiState, setUiStateState] = useState("idle");
@@ -6515,21 +6524,29 @@ export default function Tutor({
   /* ---------------------------
      WebRTC Start
   --------------------------- */
-  async function start() {
+  async function start({ resume = false } = {}) {
+    if (connectionTransitionRef.current) return;
+    connectionTransitionRef.current = true;
+    const connectionEpoch = ++connectionEpochRef.current;
+    const resumeMuted = resume && isMutedRef.current;
+    const resumeSpeech = resume && !!pausedSpeechRef.current;
+    if (!resume) {
+      pausedMessagesRef.current = [];
+      pausedSpeechRef.current = null;
+    }
     playSound(submitActionSound);
-    // A Start press always creates a fresh visible realtime session. Preserve
+    // A fresh Start clears the visible transcript; Resume keeps it. Preserve
     // the prior transcript only as private same-lesson continuity context so
     // the tutor can initiate intelligently instead of leaving a stale bubble
     // on screen and waiting for the learner to speak.
-    startFreshTutorConversationSession();
+    if (!resume) startFreshTutorConversationSession();
     clearAutoStopTimer();
-    clearPauseSafetyTimer();
-    isMutedRef.current = false;
+    isMutedRef.current = resumeMuted;
     isPausedRef.current = false;
-    setIsMuted(false);
+    setIsMuted(resumeMuted);
     setIsPaused(false);
     clearTutorKickoffTimer();
-    tutorKickoffSentRef.current = hasStartedTutorLessonConversation();
+    tutorKickoffSentRef.current = resume || hasStartedTutorLessonConversation();
     tutorKickoffRetryCountRef.current = 0;
     tutorWelcomePendingReplyRef.current = false;
     tutorWelcomeRidSetRef.current.clear();
@@ -6539,7 +6556,8 @@ export default function Tutor({
     setMood("thoughtful");
     try {
       await ensureSelectedTutorLessonStarted();
-      assistantInputLockedRef.current = false;
+      if (connectionEpoch !== connectionEpochRef.current) return;
+      assistantInputLockedRef.current = resumeSpeech;
       // Hint BOTH the learner's target language and their support (UI) language to
       // Gemini's input transcription. Native-audio transcription only takes hints,
       // not a hard lock, so it can still drift to a phonetically close language — the
@@ -6575,6 +6593,7 @@ export default function Tutor({
         micAnalyser,
         micFloatBuffer,
       }) => {
+        if (connectionEpoch !== connectionEpochRef.current) return;
         if (audioContext) audioCtxRef.current = audioContext;
         if (analyser && floatBuffer) {
           analyserRef.current = analyser;
@@ -6605,6 +6624,7 @@ export default function Tutor({
         realtimeProvider === "openai"
           ? await createOpenAIRealtimeBridge({
               audioElement: audioRef.current,
+              inputAudioEnabled: !resumeMuted && !resumeSpeech,
               // Session instructions are the compact policy, same as the
               // per-response prefix — NOT the Gemini-tuned pile. Responses
               // normally override them anyway, but anything that inherits the
@@ -6622,12 +6642,18 @@ export default function Tutor({
                 : null,
               inputTranscriptionKeywords:
                 getCurrentTutorTranscriptionKeywords(),
-              onEvent: handleRealtimeEvent,
-              onError: (message) => setErr((prev) => prev || message),
+              onEvent: (event) => {
+                if (connectionEpoch !== connectionEpochRef.current || isPausedRef.current) return;
+                return handleRealtimeEvent(event);
+              },
+              onError: (message) => {
+                if (connectionEpoch === connectionEpochRef.current) setErr((prev) => prev || message);
+              },
               onAudioGraph: handleTutorAudioGraph,
             })
           : await createGeminiLiveRealtimeBridge({
               audioElement: audioRef.current,
+              inputAudioEnabled: !resumeMuted && !resumeSpeech,
               initialInstructions: buildLanguageInstructions(),
               responseInstructionsSuffix:
                 buildTutorResponseInstructionsSuffix(),
@@ -6636,10 +6662,19 @@ export default function Tutor({
                 ? inputLanguageCodes
                 : null,
               tools: TUTOR_TOOL_GRADING_ENABLED ? [TUTOR_LIVE_TOOLS] : undefined,
-              onEvent: handleRealtimeEvent,
-              onError: (message) => setErr((prev) => prev || message),
+              onEvent: (event) => {
+                if (connectionEpoch !== connectionEpochRef.current || isPausedRef.current) return;
+                return handleRealtimeEvent(event);
+              },
+              onError: (message) => {
+                if (connectionEpoch === connectionEpochRef.current) setErr((prev) => prev || message);
+              },
               onAudioGraph: handleTutorAudioGraph,
             });
+      if (connectionEpoch !== connectionEpochRef.current) {
+        await bridge.close();
+        return;
+      }
       dcRef.current = bridge;
       pcRef.current = bridge;
       localRef.current = bridge.mediaStream;
@@ -6649,29 +6684,37 @@ export default function Tutor({
 
       setStatus("connected");
       aliveRef.current = true;
+      setLocalMicEnabled(true);
       tutorSessionReadyRef.current = true;
       setUiState("idle");
       applyLanguagePolicyNow();
+      if (resumeSpeech) resumePausedSpeech(connectionEpoch);
       scheduleAutoStop();
     } catch (e) {
+      if (connectionEpoch !== connectionEpochRef.current) return;
       console.error("Tutor realtime connection failed:", e);
       clearAutoStopTimer();
       clearTutorKickoffTimer();
       tutorSessionReadyRef.current = false;
-      setStatus("disconnected");
+      await stop({ preservePause: resume });
       setUiState("idle");
       micAnalyserRef.current = null;
       micFloatBufRef.current = null;
       setErr(e?.message || String(e));
+    } finally {
+      connectionTransitionRef.current = false;
     }
   }
 
-  async function stop() {
-    clearPauseSafetyTimer();
-    isMutedRef.current = false;
-    isPausedRef.current = false;
-    setIsMuted(false);
-    setIsPaused(false);
+  async function stop({ preservePause = false } = {}) {
+    const stopEpoch = ++connectionEpochRef.current;
+    connectionTransitionRef.current = true;
+    aliveRef.current = false;
+    setStatus(preservePause ? "pausing" : "disconnecting");
+    if (!preservePause) isMutedRef.current = false;
+    isPausedRef.current = preservePause;
+    setIsMuted(isMutedRef.current);
+    setIsPaused(preservePause);
     // Snapshot the last finalized turn in the background. This intentionally
     // does not await Firestore, so stopping audio remains immediate.
     queueTutorConversationDraftSave(
@@ -6691,7 +6734,7 @@ export default function Tutor({
     assistantInputLockedRef.current = false;
     assistantSpeakingRef.current = false;
     pendingUserAudioCommitRef.current = false;
-    setLocalMicEnabled(true);
+    setLocalMicEnabled(false);
     try {
       if (dcRef.current?.readyState === "open") {
         dcRef.current.send(
@@ -6734,14 +6777,14 @@ export default function Tutor({
       pcRef.current?.getReceivers?.().forEach((r) => r.track && r.track.stop());
     } catch {}
 
-    try {
-      dcRef.current?.close();
-    } catch {}
+    const closingTransport = closeRealtimeTransport({
+      channel: dcRef.current,
+      connection: pcRef.current,
+      stream: localRef.current,
+    });
     dcRef.current = null;
-    try {
-      pcRef.current?.close();
-    } catch {}
     pcRef.current = null;
+    micSenderRef.current = null;
 
     try {
       audioCtxRef.current?.close?.();
@@ -6782,13 +6825,20 @@ export default function Tutor({
       } catch {}
     });
 
-    setStatus("disconnected");
+    await closingTransport;
+    if (stopEpoch !== connectionEpochRef.current) return;
+    connectionTransitionRef.current = false;
+    if (!preservePause) {
+      pausedMessagesRef.current = [];
+      pausedSpeechRef.current = null;
+    }
+    setStatus(preservePause ? "paused" : "disconnected");
     setUiState("idle");
     setMood("neutral");
 
     // A repair skip mid-conversation deferred its lesson restore to here so
     // the session wasn't yanked out from under the learner.
-    if (pendingTutorRepairRestoreRef.current) {
+    if (!preservePause && pendingTutorRepairRestoreRef.current) {
       restoreTutorLessonAfterRepair();
     }
   }
@@ -6826,7 +6876,7 @@ export default function Tutor({
     return `${goalInstructions(goal.blueprint, goal.supportLang)}\nCurrent ability context (use this for difficulty and support if the daily blueprint is older): ${JSON.stringify(generationPerformanceContextFor(useUserStore.getState().user, goal.targetLang || targetLangRef.current, { curriculumCefrLevel: goal.blueprint.curriculumCefrLevel }))}`;
   }
 
-  function buildLanguageInstructions() {
+  function buildLanguageInstructionsBase() {
     const goal = currentGoalFocus("tutor");
     if (goal) return liveGoalInstructions(goal);
     const persona = String((voicePersonaRef.current ?? "").slice(0, 240));
@@ -7190,7 +7240,14 @@ export default function Tutor({
       .join("\n");
   }
 
-  function buildOpenAIResponseInstructionsPrefix() {
+  function buildLanguageInstructions() {
+    return [
+      buildLanguageInstructionsBase(),
+      buildRealtimeResumeContext(pausedMessagesRef.current),
+    ].filter(Boolean).join("\n\n");
+  }
+
+  function buildOpenAIResponseInstructionsPrefixBase() {
     const goal = currentGoalFocus("tutor");
     if (goal) return liveGoalInstructions(goal);
     const tLang = targetLangRef.current || targetLang || "es";
@@ -7226,6 +7283,13 @@ export default function Tutor({
       sameLanguage: supportCode === tLang,
       persona: String((voicePersonaRef.current ?? "").slice(0, 240)),
     });
+  }
+
+  function buildOpenAIResponseInstructionsPrefix() {
+    return [
+      buildOpenAIResponseInstructionsPrefixBase(),
+      buildRealtimeResumeContext(pausedMessagesRef.current),
+    ].filter(Boolean).join("\n\n");
   }
 
   // Persistent response-local requirements for BOTH realtime providers.
@@ -8165,11 +8229,19 @@ export default function Tutor({
   }
 
   function buildTurnDetectionConfig() {
-    if (assistantInputLockedRef.current) return null;
+    if (isMutedRef.current || isPausedRef.current || assistantInputLockedRef.current) {
+      return null;
+    }
     return buildEnabledTurnDetectionConfig();
   }
 
   function setLocalMicEnabled(enabled) {
+    enabled = canEnableRealtimeInput({
+      enabled,
+      muted: isMutedRef.current,
+      paused: isPausedRef.current,
+      locked: assistantInputLockedRef.current,
+    });
     // Route mic state through the Gemini bridge so "muted" also means no
     // billable input-audio stream.
     try {
@@ -8180,6 +8252,17 @@ export default function Tutor({
         track.enabled = enabled;
       });
     } catch {}
+    // Remember the microphone sender even while detached. A recvonly audio
+    // transceiver also has a null sender; attaching to it would duplicate input.
+    const micTrack = localRef.current?.getAudioTracks?.()[0];
+    const sender = micSenderRef.current || pcRef.current?.getSenders?.()
+      .find((candidate) => micTrack && candidate.track === micTrack);
+    if (sender) {
+      micSenderRef.current = sender;
+      try {
+        sender.replaceTrack(enabled ? micTrack : null).catch(() => {});
+      } catch { /* the connection may already be closed */ }
+    }
   }
 
   // Prevent background sounds from barging in while the assistant is speaking.
@@ -8632,13 +8715,7 @@ export default function Tutor({
 
   /** Disable VAD and detach mic track so the user cannot interrupt AI speech. */
   function disableVAD() {
-    if (pcRef.current) {
-      pcRef.current.getSenders().forEach((s) => {
-        if (s.track?.kind === "audio") {
-          s.replaceTrack(null).catch(() => {});
-        }
-      });
-    }
+    setLocalMicEnabled(false);
     if (!dcRef.current || dcRef.current.readyState !== "open") return;
     try {
       dcRef.current.send(
@@ -8652,15 +8729,8 @@ export default function Tutor({
 
   /** Re-enable server VAD and reattach mic track after AI finishes speaking. */
   function enableVAD() {
-    if (isPausedRef.current || isMutedRef.current) return;
-    const micTrack = localRef.current?.getAudioTracks()?.[0];
-    if (pcRef.current && micTrack) {
-      pcRef.current.getSenders().forEach((s) => {
-        if (!s.track || s.track?.kind === "audio") {
-          s.replaceTrack(micTrack).catch(() => {});
-        }
-      });
-    }
+    if (isPausedRef.current || isMutedRef.current || assistantInputLockedRef.current) return;
+    setLocalMicEnabled(true);
     if (!dcRef.current || dcRef.current.readyState !== "open") return;
     try {
       dcRef.current.send(
@@ -8935,6 +9005,7 @@ export default function Tutor({
   }
 
   function scheduleAutoStop() {
+    if (isPausedRef.current || !aliveRef.current || assistantInputLockedRef.current) return;
     clearAutoStopTimer();
     autoStopTimerRef.current = setTimeout(() => {
       if (!aliveRef.current) return;
@@ -8942,147 +9013,78 @@ export default function Tutor({
     }, AUTO_DISCONNECT_MS);
   }
 
-  const toggleMute = useCallback(() => {
+  function toggleMute() {
     if (status !== "connected" || isPausedRef.current) return;
     const nextMuted = !isMutedRef.current;
     isMutedRef.current = nextMuted;
     setIsMuted(nextMuted);
-
-    if (nextMuted) {
-      localRef.current?.getAudioTracks()?.forEach((t) => {
-        t.enabled = false;
-      });
-      if (pcRef.current) {
-        pcRef.current.getSenders?.().forEach((s) => {
-          if (s.track?.kind === "audio") {
-            s.replaceTrack(null).catch(() => {});
-          }
-        });
-      }
-      if (dcRef.current?.readyState === "open") {
-        try {
-          dcRef.current.send(
-            JSON.stringify({ type: "input_audio_buffer.clear" }),
-          );
-          dcRef.current.send(
-            JSON.stringify({
-              type: "session.update",
-              session: { turn_detection: null },
-            }),
-          );
-        } catch {}
-      }
-    } else {
-      localRef.current?.getAudioTracks()?.forEach((t) => {
-        t.enabled = true;
-      });
-      const micTrack = localRef.current?.getAudioTracks()?.[0];
-      if (pcRef.current && micTrack) {
-        pcRef.current.getSenders?.().forEach((s) => {
-          if (!s.track || s.track?.kind === "audio") {
-            s.replaceTrack(micTrack).catch(() => {});
-          }
-        });
-      }
-      if (dcRef.current?.readyState === "open") {
-        try {
-          dcRef.current.send(
-            JSON.stringify({
-              type: "session.update",
-              session: {
-                turn_detection: buildEnabledTurnDetectionConfig(),
-              },
-            }),
-          );
-        } catch {}
-      }
+    setLocalMicEnabled(!nextMuted);
+    if (dcRef.current?.readyState === "open") {
+      try {
+        dcRef.current.send(JSON.stringify({ type: "input_audio_buffer.clear" }));
+        dcRef.current.send(JSON.stringify({
+          type: "session.update",
+          session: { turn_detection: buildTurnDetectionConfig() },
+        }));
+      } catch { /* connection is closing */ }
     }
-  }, [status]);
+    if (!nextMuted) enableVAD();
+  }
 
-  const togglePause = useCallback(() => {
-    if (status !== "connected") return;
-    const nextPaused = !isPausedRef.current;
-    isPausedRef.current = nextPaused;
-    setIsPaused(nextPaused);
-
-    if (nextPaused) {
-      if (dcRef.current?.readyState === "open") {
-        try {
-          dcRef.current.send(JSON.stringify({ type: "response.cancel" }));
-        } catch {}
-      }
-      if (audioRef.current) {
-        try {
-          audioRef.current.pause();
-        } catch {}
-      }
-      localRef.current?.getAudioTracks()?.forEach((t) => {
-        t.enabled = false;
+  function resumePausedSpeech(connectionEpoch) {
+    if (connectionEpoch !== connectionEpochRef.current || isPausedRef.current) return;
+    clearAutoStopTimer();
+    setAssistantInputLocked(true);
+    setUiState("speaking");
+    try {
+      resumeRealtimeSpeech({
+        channel: dcRef.current,
+        speech: pausedSpeechRef.current,
+        freshReply: true,
+        instructions: realtimeProviderRef.current === "openai" ? buildOpenAIResponseInstructionsPrefix() : buildLanguageInstructions(),
+        onComplete: () => {
+          if (connectionEpoch !== connectionEpochRef.current || isPausedRef.current) return;
+          pausedSpeechRef.current = null;
+          finishAssistantOutput();
+        },
       });
-      if (pcRef.current) {
-        pcRef.current.getSenders?.().forEach((s) => {
-          if (s.track?.kind === "audio") {
-            s.replaceTrack(null).catch(() => {});
-          }
-        });
-      }
-      if (dcRef.current?.readyState === "open") {
-        try {
-          dcRef.current.send(
-            JSON.stringify({ type: "input_audio_buffer.clear" }),
-          );
-          dcRef.current.send(
-            JSON.stringify({
-              type: "session.update",
-              session: { turn_detection: null },
-            }),
-          );
-        } catch {}
-      }
-      clearAutoStopTimer();
-      clearPauseSafetyTimer();
-      pauseSafetyTimerRef.current = setTimeout(() => {
-        if (aliveRef.current) {
-          stop();
-        }
-      }, 5 * 60 * 1000);
-      setUiState("idle");
-    } else {
-      clearPauseSafetyTimer();
-      if (audioRef.current) {
-        try {
-          audioRef.current.play().catch(() => {});
-        } catch {}
-      }
-      if (!isMutedRef.current) {
-        localRef.current?.getAudioTracks()?.forEach((t) => {
-          t.enabled = true;
-        });
-        const micTrack = localRef.current?.getAudioTracks()?.[0];
-        if (pcRef.current && micTrack) {
-          pcRef.current.getSenders?.().forEach((s) => {
-            if (!s.track || s.track?.kind === "audio") {
-              s.replaceTrack(micTrack).catch(() => {});
-            }
-          });
-        }
-        if (dcRef.current?.readyState === "open") {
-          try {
-            dcRef.current.send(
-              JSON.stringify({
-                type: "session.update",
-                session: {
-                  turn_detection: buildEnabledTurnDetectionConfig(),
-                },
-              }),
-            );
-          } catch {}
-        }
-      }
-      scheduleAutoStop();
+    } catch (error) {
+      setErr(error?.message || "Could not resume speech. Please pause and try Resume again.");
+      setAssistantInputLocked(false);
+      enableVAD();
       setUiState("listening");
+      scheduleAutoStop();
     }
-  }, [status]);
+  }
+
+  async function togglePause() {
+    if (connectionTransitionRef.current) return;
+    if (isPausedRef.current) {
+      await start({ resume: true });
+      return;
+    }
+    if (status !== "connected") return;
+    // Freeze streamed text locally before closing; learning state stays mounted.
+    const snapshot = snapshotRealtimeMessages(messagesRef.current, streamBuffersRef.current);
+    pausedSpeechRef.current = captureRealtimeSpeech({
+      channel: dcRef.current,
+      messages: snapshot,
+      pending: assistantInputLockedRef.current || !isIdleRef.current,
+    });
+    pausedMessagesRef.current = snapshot;
+    messagesRef.current = snapshot;
+    setMessages(snapshot);
+    streamBuffersRef.current.clear();
+    isPausedRef.current = true;
+    setIsPaused(true);
+    setLocalMicEnabled(false);
+    connectionTransitionRef.current = true;
+    try {
+      await stop({ preservePause: true });
+    } finally {
+      connectionTransitionRef.current = false;
+    }
+  }
 
   function clearTutorKickoffTimer() {
     if (tutorKickoffTimerRef.current) {
@@ -10196,6 +10198,8 @@ export default function Tutor({
      Realtime event handler
   --------------------------- */
   async function handleRealtimeEvent(evt) {
+    const eventEpoch = connectionEpochRef.current;
+    if (isPausedRef.current) return;
     let data;
     try {
       data = JSON.parse(evt.data);
@@ -10615,6 +10619,7 @@ export default function Tutor({
           directPhraseAnswer: false,
           acceptedPhrases: regularAcceptedPhrases,
         });
+      if (eventEpoch !== connectionEpochRef.current || isPausedRef.current) return;
         if (!aliveRef.current) return;
         if (currentLesson.id !== selectedTutorLessonRef.current?.id) return;
         if (!turnSuccess.successful && turnSuccess.quizAnswered && turnSuccess.confidence >= 0.55) {
@@ -10687,6 +10692,7 @@ export default function Tutor({
           directPhraseAnswer,
           acceptedPhrases: regularAcceptedPhrases,
         });
+      if (eventEpoch !== connectionEpochRef.current || isPausedRef.current) return;
         if (!aliveRef.current) return;
         if (currentLesson?.id !== selectedTutorLessonRef.current?.id) return;
         turnVerdict = resolveTutorTurnVerdict({
@@ -10733,6 +10739,7 @@ export default function Tutor({
           regularPhraseMatch: regularTurnAccepted,
           acceptedPhrases: regularAcceptedPhrases,
         });
+      if (eventEpoch !== connectionEpochRef.current || isPausedRef.current) return;
         if (!aliveRef.current) return;
         if (currentLesson?.id !== selectedTutorLessonRef.current?.id) return;
         if (turnSuccess.objectiveAdvanced === true) {
@@ -10766,6 +10773,7 @@ export default function Tutor({
           directPhraseAnswer,
           acceptedPhrases: regularAcceptedPhrases,
         });
+      if (eventEpoch !== connectionEpochRef.current || isPausedRef.current) return;
         if (!aliveRef.current) return;
         if (currentLesson?.id !== selectedTutorLessonRef.current?.id) return;
         const progressResult = applySuccessfulTutorTurnProgress({
@@ -11596,7 +11604,7 @@ export default function Tutor({
                 />
               </Box>
             </Box>
-            {status === "connected" && (isPaused || isMuted) ? (
+            {(status === "connected" || isPaused) && (isPaused || isMuted) ? (
               <Badge
                 colorScheme={isPaused ? "yellow" : "red"}
                 variant="subtle"
@@ -11698,7 +11706,7 @@ export default function Tutor({
             <ActivityActionRow
               tone="speak"
               primary={
-                status === "connected" ? (
+                (status === "connected" || isPaused) ? (
                   <HStack
                     data-call-controls=""
                     spacing={3}
@@ -11717,7 +11725,7 @@ export default function Tutor({
                       }
                       aria-label={isMuted ? "Unmute microphone" : "Mute microphone"}
                       onClick={toggleMute}
-                      isDisabled={isPaused}
+                      isDisabled={isPaused || status !== "connected"}
                       h="40px"
                       flex="1 1 0"
                       maxW="88px"
@@ -11730,6 +11738,7 @@ export default function Tutor({
                       icon={isPaused ? <FaPlay size={16} /> : <FaPause size={16} />}
                       aria-label={isPaused ? "Resume tutor" : "Pause tutor"}
                       onClick={togglePause}
+                      isDisabled={status !== "connected" && status !== "paused"}
                       h="40px"
                       flex="1 1 0"
                       maxW="88px"
@@ -11739,7 +11748,7 @@ export default function Tutor({
 
                     {/* End Button (Icon only) */}
                     <IconButton
-                      icon={<FaPhoneSlash size={18} />}
+                      icon={<ImPhoneHangUp size={18} />}
                       aria-label="End tutor session"
                       onClick={stop}
                       h="40px"
@@ -11760,6 +11769,7 @@ export default function Tutor({
                 ) : (
                   <Button
                     key="start"
+                    isDisabled={status === "connecting" || status === "disconnecting"}
                     onClick={(e) => {
                       e.currentTarget?.blur?.();
                       start();

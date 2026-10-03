@@ -1,3 +1,11 @@
+import {
+  canEnableRealtimeInput,
+  snapshotRealtimeMessages,
+  buildRealtimeResumeContext,
+  captureRealtimeSpeech,
+  resumeRealtimeSpeech,
+  closeRealtimeTransport,
+} from "../utils/realtimeSessionControls.js";
 import React, {
   useEffect,
   useMemo,
@@ -35,10 +43,10 @@ import {
   FaMicrophoneSlash,
   FaPause,
   FaPlay,
-  FaPhoneSlash,
   FaRegCommentDots,
   FaStop,
 } from "react-icons/fa";
+import { ImPhoneHangUp } from "react-icons/im";
 import { LuBadgeCheck } from "react-icons/lu";
 import { useNavigate } from "react-router-dom";
 import { doc, getDoc, runTransaction } from "firebase/firestore";
@@ -1149,17 +1157,16 @@ export default function ProficiencyTest() {
 
   const [isPaused, setIsPaused] = useState(false);
   const isPausedRef = useRef(false);
-  const pauseSafetyTimerRef = useRef(null);
+  const pausedMessagesRef = useRef([]);
+  const pausedSpeechRef = useRef(null);
+  const connectionEpochRef = useRef(0);
+  const micSenderRef = useRef(null);
+  const connectionTransitionRef = useRef(false);
   useEffect(() => {
     isPausedRef.current = isPaused;
   }, [isPaused]);
 
-  const clearPauseSafetyTimer = useCallback(() => {
-    if (pauseSafetyTimerRef.current) {
-      clearTimeout(pauseSafetyTimerRef.current);
-      pauseSafetyTimerRef.current = null;
-    }
-  }, []);
+
 
   // Messages
   const messagesRef = useRef([]);
@@ -1301,7 +1308,9 @@ export default function ProficiencyTest() {
   }
 
   function buildTurnDetectionConfig() {
-    if (assistantInputLockedRef.current) return null;
+    if (isMutedRef.current || isPausedRef.current || assistantInputLockedRef.current) {
+      return null;
+    }
     return {
       type: "server_vad",
       silence_duration_ms: pauseMs,
@@ -1349,11 +1358,28 @@ export default function ProficiencyTest() {
   }
 
   function setLocalMicEnabled(enabled) {
+    enabled = canEnableRealtimeInput({
+      enabled,
+      muted: isMutedRef.current,
+      paused: isPausedRef.current,
+      locked: assistantInputLockedRef.current,
+    });
     try {
       localRef.current?.getAudioTracks?.().forEach((track) => {
         track.enabled = enabled;
       });
     } catch {}
+    // Remember the microphone sender even while detached. A recvonly audio
+    // transceiver also has a null sender; attaching to it would duplicate input.
+    const micTrack = localRef.current?.getAudioTracks?.()[0];
+    const sender = micSenderRef.current || pcRef.current?.getSenders?.()
+      .find((candidate) => micTrack && candidate.track === micTrack);
+    if (sender) {
+      micSenderRef.current = sender;
+      try {
+        sender.replaceTrack(enabled ? micTrack : null).catch(() => {});
+      } catch { /* the connection may already be closed */ }
+    }
   }
 
   // Keep microphone input closed while the assistant audio is still playing.
@@ -1388,7 +1414,7 @@ export default function ProficiencyTest() {
   }
 
   /* ---- Build proficiency assessment instructions ---- */
-  function buildProficiencyInstructions() {
+  function buildProficiencyInstructionsBase() {
     const langName =
       {
         es: "Spanish",
@@ -1453,6 +1479,13 @@ export default function ProficiencyTest() {
       .join(" ");
   }
 
+  function buildProficiencyInstructions() {
+    return [
+      buildProficiencyInstructionsBase(),
+      buildRealtimeResumeContext(pausedMessagesRef.current),
+    ].filter(Boolean).join("\n\n");
+  }
+
   /* ---- Event handling ---- */
   function extractTextFromItem(item) {
     const parts = Array.isArray(item?.content) ? item.content : [];
@@ -1481,13 +1514,7 @@ export default function ProficiencyTest() {
 
   /** Disable VAD and detach mic track so the user cannot interrupt AI speech. */
   function disableVAD() {
-    if (pcRef.current) {
-      pcRef.current.getSenders().forEach((s) => {
-        if (s.track?.kind === "audio") {
-          s.replaceTrack(null).catch(() => {});
-        }
-      });
-    }
+    setLocalMicEnabled(false);
     if (!dcRef.current || dcRef.current.readyState !== "open") return;
     try {
       dcRef.current.send(JSON.stringify({ type: "input_audio_buffer.clear" }));
@@ -1502,15 +1529,8 @@ export default function ProficiencyTest() {
 
   /** Re-enable server VAD and reattach mic track after AI finishes speaking. */
   function enableVAD() {
-    if (isPausedRef.current || isMutedRef.current) return;
-    const micTrack = localRef.current?.getAudioTracks()?.[0];
-    if (pcRef.current && micTrack) {
-      pcRef.current.getSenders().forEach((s) => {
-        if (!s.track || s.track?.kind === "audio") {
-          s.replaceTrack(micTrack).catch(() => {});
-        }
-      });
-    }
+    if (isPausedRef.current || isMutedRef.current || assistantInputLockedRef.current) return;
+    setLocalMicEnabled(true);
     if (!dcRef.current || dcRef.current.readyState !== "open") return;
     try {
       dcRef.current.send(
@@ -1536,6 +1556,7 @@ export default function ProficiencyTest() {
   }
 
   function scheduleAutoStop() {
+    if (isPausedRef.current || !aliveRef.current || assistantInputLockedRef.current) return;
     clearAutoStopTimer();
     autoStopTimerRef.current = setTimeout(() => {
       if (!aliveRef.current) return;
@@ -1543,162 +1564,83 @@ export default function ProficiencyTest() {
     }, AUTO_DISCONNECT_MS);
   }
 
-  const toggleMute = useCallback(() => {
+  function toggleMute() {
     if (status !== "connected" || isPausedRef.current) return;
     const nextMuted = !isMutedRef.current;
     isMutedRef.current = nextMuted;
     setIsMuted(nextMuted);
-
-    if (nextMuted) {
-      // Detach mic track (costs $0.00 in audio input tokens)
-      if (pcRef.current) {
-        pcRef.current.getSenders().forEach((s) => {
-          if (s.track?.kind === "audio") {
-            s.replaceTrack(null).catch(() => {});
-          }
-        });
-      }
-      if (dcRef.current?.readyState === "open") {
-        try {
-          dcRef.current.send(
-            JSON.stringify({ type: "input_audio_buffer.clear" }),
-          );
-          dcRef.current.send(
-            JSON.stringify({
-              type: "session.update",
-              session: buildRealtimeVadSession(null),
-            }),
-          );
-        } catch {}
-      }
-    } else {
-      // Reattach mic track and restore server VAD
-      const micTrack = localRef.current?.getAudioTracks()?.[0];
-      if (pcRef.current && micTrack) {
-        pcRef.current.getSenders().forEach((s) => {
-          if (!s.track || s.track?.kind === "audio") {
-            s.replaceTrack(micTrack).catch(() => {});
-          }
-        });
-      }
-      if (dcRef.current?.readyState === "open") {
-        try {
-          dcRef.current.send(
-            JSON.stringify({
-              type: "session.update",
-              session: buildRealtimeVadSession({
-                type: "server_vad",
-                silence_duration_ms: pauseMs || 800,
-                threshold: 0.35,
-                prefix_padding_ms: 120,
-                interrupt_response: false,
-              }),
-            }),
-          );
-        } catch {}
-      }
+    setLocalMicEnabled(!nextMuted);
+    if (dcRef.current?.readyState === "open") {
+      try {
+        dcRef.current.send(JSON.stringify({ type: "input_audio_buffer.clear" }));
+        dcRef.current.send(JSON.stringify({
+          type: "session.update",
+          session: buildRealtimeVadSession(buildTurnDetectionConfig()),
+        }));
+      } catch { /* connection is closing */ }
     }
-  }, [status, pauseMs]);
+    if (!nextMuted) enableVAD();
+  }
 
-  const togglePause = useCallback(() => {
-    if (status !== "connected") return;
-    const nextPaused = !isPausedRef.current;
-    isPausedRef.current = nextPaused;
-    setIsPaused(nextPaused);
-
-    if (nextPaused) {
-      // 1. If AI is speaking, cancel speech immediately to stop audio output tokens
-      if (dcRef.current?.readyState === "open") {
-        try {
-          dcRef.current.send(JSON.stringify({ type: "response.cancel" }));
-        } catch {}
-      }
-      if (audioRef.current) {
-        try {
-          audioRef.current.pause();
-        } catch {}
-      }
-
-      // 2. Detach mic track & disable VAD to stop audio input tokens
-      if (pcRef.current) {
-        pcRef.current.getSenders().forEach((s) => {
-          if (s.track?.kind === "audio") {
-            s.replaceTrack(null).catch(() => {});
-          }
-        });
-      }
-      if (dcRef.current?.readyState === "open") {
-        try {
-          dcRef.current.send(
-            JSON.stringify({ type: "input_audio_buffer.clear" }),
-          );
-          dcRef.current.send(
-            JSON.stringify({
-              type: "session.update",
-              session: buildRealtimeVadSession(null),
-            }),
-          );
-        } catch {}
-      }
-
-      // 3. Pause the 30-second disconnect timer
-      clearAutoStopTimer();
-
-      // 4. Start 5-minute safety timeout to prevent forgotten zombie sessions
-      clearPauseSafetyTimer();
-      pauseSafetyTimerRef.current = setTimeout(() => {
-        if (aliveRef.current) {
-          stop();
-        }
-      }, 5 * 60 * 1000);
-
-      setUiState("idle");
-      setMood("neutral");
-    } else {
-      // Resuming from pause:
-      clearPauseSafetyTimer();
-
-      // Resume remote audio if paused
-      if (audioRef.current) {
-        try {
-          audioRef.current.play().catch(() => {});
-        } catch {}
-      }
-
-      // Restore mic track and VAD (unless user has mic explicitly muted)
-      if (!isMutedRef.current) {
-        const micTrack = localRef.current?.getAudioTracks()?.[0];
-        if (pcRef.current && micTrack) {
-          pcRef.current.getSenders().forEach((s) => {
-            if (!s.track || s.track?.kind === "audio") {
-              s.replaceTrack(micTrack).catch(() => {});
-            }
-          });
-        }
-        if (dcRef.current?.readyState === "open") {
-          try {
-            dcRef.current.send(
-              JSON.stringify({
-                type: "session.update",
-                session: buildRealtimeVadSession({
-                  type: "server_vad",
-                  silence_duration_ms: pauseMs || 800,
-                  threshold: 0.35,
-                  prefix_padding_ms: 120,
-                  interrupt_response: false,
-                }),
-              }),
-            );
-          } catch {}
-        }
-      }
-
+  function resumePausedSpeech(connectionEpoch) {
+    if (connectionEpoch !== connectionEpochRef.current || isPausedRef.current) return;
+    clearAutoStopTimer();
+    setAssistantInputLocked(true);
+    setUiState("speaking");
+    try {
+      resumeRealtimeSpeech({
+        channel: dcRef.current,
+        speech: pausedSpeechRef.current,
+        instructions: buildProficiencyInstructions(),
+        onComplete: () => {
+          if (connectionEpoch !== connectionEpochRef.current || isPausedRef.current) return;
+          pausedSpeechRef.current = null;
+          setAssistantInputLocked(false);
+          enableVAD();
+          setUiState("listening");
+          scheduleAutoStop();
+        },
+      });
+    } catch (error) {
+      setErr(error?.message || "Could not resume speech. Please pause and try Resume again.");
+      setAssistantInputLocked(false);
+      enableVAD();
       setUiState("listening");
       scheduleAutoStop();
     }
-  }, [status, pauseMs, clearPauseSafetyTimer]);
+  }
+
+  async function togglePause() {
+    if (connectionTransitionRef.current) return;
+    if (isPausedRef.current) {
+      await start({ resume: true });
+      return;
+    }
+    if (status !== "connected") return;
+    // Freeze streamed text locally before closing; learning state stays mounted.
+    const snapshot = snapshotRealtimeMessages(messagesRef.current, streamBuffersRef.current);
+    pausedSpeechRef.current = captureRealtimeSpeech({
+      channel: dcRef.current,
+      messages: snapshot,
+      pending: assistantInputLockedRef.current || !isIdleRef.current,
+    });
+    pausedMessagesRef.current = snapshot;
+    messagesRef.current = snapshot;
+    setMessages(snapshot);
+    streamBuffersRef.current.clear();
+    isPausedRef.current = true;
+    setIsPaused(true);
+    setLocalMicEnabled(false);
+    connectionTransitionRef.current = true;
+    try {
+      await stop({ preservePause: true });
+    } finally {
+      connectionTransitionRef.current = false;
+    }
+  }
 
   async function handleRealtimeEvent(evt) {
+    if (isPausedRef.current) return;
     if (!aliveRef.current) return;
     let data;
     try {
@@ -1864,12 +1806,15 @@ export default function ProficiencyTest() {
       t === "response.done" ||
       t === "response.canceled"
     ) {
-      if (t === "response.canceled") setAssistantInputLocked(false);
-      enableVAD();
-      setAssistantInputLocked(false);
-      setUiState(status === "connected" ? "listening" : "idle");
-      setMood("neutral");
-      if (aliveRef.current) scheduleAutoStop();
+      // Generation can finish before WebRTC plays the remaining audio. Keep
+      // input locked until output_audio_buffer.stopped, including on Resume.
+      if (t === "response.canceled") {
+        setAssistantInputLocked(false);
+        enableVAD();
+        setUiState(status === "connected" ? "listening" : "idle");
+        setMood("neutral");
+        if (aliveRef.current) scheduleAutoStop();
+      }
       isIdleRef.current = true;
       const mid = rid && respToMsg.current.get(rid);
       if (mid) {
@@ -2400,26 +2345,36 @@ Return ONLY valid JSON:
     };
   }, [assessmentScores]);
 
-  async function start() {
+  async function start({ resume = false } = {}) {
+    if (connectionTransitionRef.current) return;
+    connectionTransitionRef.current = true;
+    const connectionEpoch = ++connectionEpochRef.current;
+    const resumeMuted = resume && isMutedRef.current;
+    const resumeSpeech = resume && !!pausedSpeechRef.current;
+    if (!resume) {
+      pausedMessagesRef.current = [];
+      pausedSpeechRef.current = null;
+    }
     playSound(submitActionSound);
     clearAutoStopTimer();
-    clearPauseSafetyTimer();
-    setIsMuted(false);
+    setIsMuted(resumeMuted);
     setIsPaused(false);
-    isMutedRef.current = false;
+    isMutedRef.current = resumeMuted;
     isPausedRef.current = false;
     setErr("");
-    setMessages([]);
+    if (!resume) setMessages([]);
     respToMsg.current.clear();
     guardrailItemIdsRef.current = [];
     pendingGuardrailTextRef.current = "";
-    assessmentDoneRef.current = false;
-    setShowResult(false);
-    setAssessedLevel(null);
-    setAssessmentSummary("");
-    setAssessmentScores(null);
-    speechTurnsRef.current = [];
-    currentSpeechTurnRef.current = null;
+    if (!resume) {
+      assessmentDoneRef.current = false;
+      setShowResult(false);
+      setAssessedLevel(null);
+      setAssessmentSummary("");
+      setAssessmentScores(null);
+      speechTurnsRef.current = [];
+      currentSpeechTurnRef.current = null;
+    }
     stopSpeechSampling();
     streamBuffersRef.current = new Map();
     if (streamFlushTimerRef.current) {
@@ -2434,6 +2389,7 @@ Return ONLY valid JSON:
       pcRef.current = pc;
 
       pc.ontrack = (e) => {
+        if (connectionEpoch !== connectionEpochRef.current) return;
         const stream =
           e.streams?.[0] || new MediaStream(e.track ? [e.track] : []);
         if (audioRef.current) {
@@ -2477,8 +2433,13 @@ Return ONLY valid JSON:
           autoGainControl: true,
         },
       });
+      if (connectionEpoch !== connectionEpochRef.current) {
+        local.getTracks().forEach((track) => track.stop());
+        pc.close();
+        return;
+      }
       localRef.current = local;
-      assistantInputLockedRef.current = false;
+      assistantInputLockedRef.current = resumeSpeech;
       setLocalMicEnabled(true);
       local.getTracks().forEach((track) => pc.addTrack(track, local));
 
@@ -2505,6 +2466,7 @@ Return ONLY valid JSON:
       dcRef.current = dc;
 
       dc.onopen = () => {
+        if (connectionEpoch !== connectionEpochRef.current) return;
         const voiceName = selectedVoice;
         const instructions = buildProficiencyInstructions();
 
@@ -2534,9 +2496,13 @@ Return ONLY valid JSON:
             },
           }),
         );
+        if (resumeSpeech) resumePausedSpeech(connectionEpoch);
       };
 
-      dc.onmessage = handleRealtimeEvent;
+      dc.onmessage = (event) => {
+        if (connectionEpoch !== connectionEpochRef.current || isPausedRef.current) return;
+        return handleRealtimeEvent(event);
+      };
 
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
@@ -2547,30 +2513,39 @@ Return ONLY valid JSON:
       });
       const answer = await resp.text();
       if (!resp.ok) throw new Error(`SDP exchange failed: HTTP ${resp.status}`);
+      if (connectionEpoch !== connectionEpochRef.current) { pc.close(); return; }
       await pc.setRemoteDescription({ type: "answer", sdp: answer });
+      if (connectionEpoch !== connectionEpochRef.current) { pc.close(); return; }
 
       setStatus("connected");
       aliveRef.current = true;
-      setUiState("listening");
+      setLocalMicEnabled(true);
+      setUiState(resumeSpeech ? "thinking" : "listening");
       scheduleAutoStop();
     } catch (e) {
+      if (connectionEpoch !== connectionEpochRef.current) return;
       clearAutoStopTimer();
-      setStatus("disconnected");
+      await stop({ preservePause: resume });
       setUiState("idle");
       setErr(e?.message || String(e));
+    } finally {
+      connectionTransitionRef.current = false;
     }
   }
 
-  function stop() {
+  async function stop({ preservePause = false } = {}) {
+    const stopEpoch = ++connectionEpochRef.current;
+    connectionTransitionRef.current = true;
+    aliveRef.current = false;
+    setStatus(preservePause ? "pausing" : "disconnecting");
     clearAutoStopTimer();
-    clearPauseSafetyTimer();
-    setIsMuted(false);
-    setIsPaused(false);
-    isMutedRef.current = false;
-    isPausedRef.current = false;
+    if (!preservePause) isMutedRef.current = false;
+    setIsMuted(isMutedRef.current);
+    setIsPaused(preservePause);
+    isPausedRef.current = preservePause;
     aliveRef.current = false;
     assistantInputLockedRef.current = false;
-    setLocalMicEnabled(true);
+    setLocalMicEnabled(false);
     try {
       if (dcRef.current?.readyState === "open") {
         try {
@@ -2605,10 +2580,13 @@ Return ONLY valid JSON:
     try {
       localRef.current?.getTracks().forEach((t) => t.stop());
     } catch {}
-    try {
-      pcRef.current?.close();
-    } catch {}
+    const closingTransport = closeRealtimeTransport({
+      channel: dcRef.current,
+      connection: pcRef.current,
+      stream: localRef.current,
+    });
     pcRef.current = null;
+    micSenderRef.current = null;
     dcRef.current = null;
     localRef.current = null;
     try {
@@ -2623,7 +2601,14 @@ Return ONLY valid JSON:
     currentSpeechTurnRef.current = null;
     stopSpeechSampling();
     audioGraphReadyRef.current = false;
-    setStatus("disconnected");
+    await closingTransport;
+    if (stopEpoch !== connectionEpochRef.current) return;
+    connectionTransitionRef.current = false;
+    if (!preservePause) {
+      pausedMessagesRef.current = [];
+      pausedSpeechRef.current = null;
+    }
+    setStatus(preservePause ? "paused" : "disconnected");
     setUiState("idle");
   }
 
@@ -2649,8 +2634,7 @@ Return ONLY valid JSON:
     return () => {
       aliveRef.current = false;
       clearAutoStopTimer();
-      clearPauseSafetyTimer();
-      if (streamFlushTimerRef.current)
+        if (streamFlushTimerRef.current)
         clearTimeout(streamFlushTimerRef.current);
       stopSpeechSampling();
       try {
@@ -3050,7 +3034,7 @@ Return ONLY valid JSON:
               state={orbUiState}
             />
           </Box>
-          {status === "connected" && isPaused ? (
+          {isPaused ? (
             <Badge
               variant="subtle"
               colorScheme="yellow"
@@ -3158,7 +3142,7 @@ Return ONLY valid JSON:
           zIndex={30}
           px={4}
         >
-          {status === "connected" ? (
+          {(status === "connected" || isPaused) ? (
             <HStack spacing={3} justify="center" align="center">
               {/* Mute Button (Icon only) */}
               <IconButton
@@ -3171,7 +3155,7 @@ Return ONLY valid JSON:
                 }
                 aria-label={isMuted ? "Unmute microphone" : "Mute microphone"}
                 onClick={toggleMute}
-                isDisabled={isPaused}
+                isDisabled={isPaused || status !== "connected"}
                 size="lg"
                 w="56px"
                 h="56px"
@@ -3184,6 +3168,7 @@ Return ONLY valid JSON:
                 icon={isPaused ? <FaPlay size={18} /> : <FaPause size={18} />}
                 aria-label={isPaused ? "Resume test" : "Pause test"}
                 onClick={togglePause}
+                isDisabled={status !== "connected" && status !== "paused"}
                 size="lg"
                 w="56px"
                 h="56px"
@@ -3193,7 +3178,7 @@ Return ONLY valid JSON:
 
               {/* End Button (Icon only) */}
               <IconButton
-                icon={<FaPhoneSlash size={20} />}
+                icon={<ImPhoneHangUp size={20} />}
                 aria-label="End test"
                 onClick={stop}
                 size="lg"
@@ -3216,6 +3201,7 @@ Return ONLY valid JSON:
             <VStack spacing={2} w="100%" maxW="560px" justify="center">
               <Button
                 onClick={start}
+                isDisabled={status === "connecting" || status === "disconnecting"}
                 size="lg"
                 height="64px"
                 px={{ base: 8, md: 12 }}

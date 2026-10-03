@@ -1,3 +1,4 @@
+import { getSpeechPracticeErrorFeedback } from "../../utils/speechPracticeFeedback.js";
 import { getStoryDifficulty } from "./storyPrompts";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Avatar, Badge, Box, Button, Center, Flex, HStack, Icon, IconButton, SimpleGrid, Spinner, Text, VisuallyHidden, VStack } from "@chakra-ui/react";
@@ -221,7 +222,7 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
     onResult: ({ evaluation, error }) => {
       if (!mounted.current || !currentTurn || speechTurnRef.current !== currentTurn) return;
       if (error || !evaluation) {
-        setSpeechError(copy.recordingError);
+        setSpeechError(error ? getSpeechPracticeErrorFeedback(error, (key) => t(effectiveLang, key)).description : copy.recordingError);
         return;
       }
       speechTurnRef.current = null;

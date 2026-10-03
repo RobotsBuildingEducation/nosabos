@@ -1,3 +1,4 @@
+import { getSpeechPracticeErrorFeedback } from "../utils/speechPracticeFeedback.js";
 import { focusedLessonPrompt } from "../utils/learningIntelligenceModel";
 import ActivityActionRow from "./ActivityActionRow";
 // components/GrammarBook.jsx
@@ -4450,9 +4451,7 @@ Return JSON ONLY:
       if (!sTarget) return;
       if (error) {
         toast({
-          title: t("flashcard_eval_error_title"),
-          description: t("vocab_eval_error_mic_desc"),
-          status: "error",
+          ...getSpeechPracticeErrorFeedback(error, t),
           duration: 2600,
         });
         return;

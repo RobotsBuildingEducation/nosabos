@@ -489,6 +489,7 @@ export async function createGeminiLiveVoicePreviewPlayer({
 
 export async function createGeminiLiveRealtimeBridge({
   audioElement = null,
+  inputAudioEnabled = true,
   initialInstructions = "",
   responseInstructionsSuffix = "",
   voice = DEFAULT_GEMINI_LIVE_VOICE,
@@ -500,6 +501,7 @@ export async function createGeminiLiveRealtimeBridge({
 } = {}) {
   const bridge = new GeminiLiveRealtimeBridge({
     audioElement,
+    inputAudioEnabled,
     initialInstructions,
     responseInstructionsSuffix,
     voice,
@@ -509,13 +511,19 @@ export async function createGeminiLiveRealtimeBridge({
     onAudioGraph,
     onError,
   });
-  await bridge.connect();
+  try {
+    await bridge.connect();
+  } catch (error) {
+    await bridge.close();
+    throw error;
+  }
   return bridge;
 }
 
 class GeminiLiveRealtimeBridge {
   constructor({
     audioElement,
+    inputAudioEnabled,
     initialInstructions,
     responseInstructionsSuffix,
     voice,
@@ -558,11 +566,12 @@ class GeminiLiveRealtimeBridge {
     this.pendingManualResponses = [];
     this.activeResponse = null;
     this.scheduledSources = new Set();
+    this.savedPlayback = null;
     this.nextStartTime = 0;
     this.inputTranscript = "";
     this.suppressAutoTurn = false;
-    this.desiredInputAudioEnabled = true;
-    this.inputAudioEnabled = true;
+    this.desiredInputAudioEnabled = !!inputAudioEnabled;
+    this.inputAudioEnabled = !!inputAudioEnabled;
     this.inputSpeechActiveUntil = 0;
     this.lastLocalSpeechActivityAt = 0;
     this.completedResponsesSinceReset = 0;
@@ -656,6 +665,7 @@ class GeminiLiveRealtimeBridge {
         autoGainControl: INPUT_AUTO_GAIN_CONTROL,
       },
     });
+    this.applyInputAudioEnabled();
 
     const workletBlob = new Blob([AUDIO_WORKLET_SOURCE], {
       type: "application/javascript",
@@ -967,6 +977,17 @@ class GeminiLiveRealtimeBridge {
     // serverContent. Surface them to the consumer (Tutor) before the
     // serverContent early-return below would silently drop them.
     if (message?.type === "toolCall" && Array.isArray(message.functionCalls)) {
+      const response = this.activeResponse || this.pendingResponses[0];
+      if (response?.metadata?.kind === "pause_resume") {
+        // Resuming speech is not a new learner attempt. Enforce this locally
+        // as well as in the prompt so replay cannot award XP or advance a test.
+        await this.sendToolResponses(message.functionCalls.map((call) => ({
+          id: call.id,
+          name: call.name,
+          response: { allowed: false, reason: "Finish the interrupted speech without grading or changing lesson progress." },
+        })));
+        return;
+      }
       this.emitOrBuffer(
         {
           type: "event",
@@ -1197,6 +1218,7 @@ class GeminiLiveRealtimeBridge {
       this.closed ||
       this.readyState !== "open" ||
       this.resettingSession ||
+      !this.inputAudioEnabled ||
       !this.session ||
       !buffer?.byteLength
     ) {
@@ -1310,6 +1332,10 @@ class GeminiLiveRealtimeBridge {
         this.nextStartTime,
       );
       source.start(this.nextStartTime);
+      // Keep only scheduled/unplayed PCM; completed chunks are released by
+      // onended. Pause can trim the current chunk at its exact sample offset.
+      source.pausedPcm = bytes;
+      source.pausedStartTime = this.nextStartTime;
       this.nextStartTime += buffer.duration;
     } catch (error) {
       this.handleError(error);
@@ -1352,6 +1378,12 @@ class GeminiLiveRealtimeBridge {
   }
 
   checkAndFinalizeResponse() {
+    if (this.savedPlayback && this.scheduledSources.size === 0) {
+      const { onComplete } = this.savedPlayback;
+      this.savedPlayback = null;
+      if (!this.closed) onComplete();
+      return;
+    }
     if (
       this.serverTurnComplete &&
       this.activeResponse &&
@@ -1368,6 +1400,7 @@ class GeminiLiveRealtimeBridge {
   }
 
   interruptPlayback() {
+    this.savedPlayback = null;
     for (const source of this.scheduledSources) {
       try {
         source.stop(0);
@@ -1379,6 +1412,34 @@ class GeminiLiveRealtimeBridge {
     if (this.audioContext) {
       this.nextStartTime = this.audioContext.currentTime;
     }
+  }
+
+  capturePausedOutput() {
+    const response = this.savedPlayback?.snapshot || this.activeResponse;
+    if (!response) return null;
+    const now = this.audioContext?.currentTime || 0;
+    const chunks = [];
+    for (const source of this.scheduledSources) {
+      const bytes = source.pausedPcm;
+      if (!bytes) continue;
+      const offset = Math.min(bytes.byteLength,
+        Math.max(0, Math.floor((now - source.pausedStartTime) * OUTPUT_SAMPLE_RATE)) * 2);
+      if (offset < bytes.byteLength) chunks.push(toBase64(bytes.slice(offset)));
+    }
+    for (const item of this.responseBuffer) {
+      if (item.type === "audio") chunks.push(item.data);
+    }
+    return {
+      chunks,
+      text: response.text || response.modelTextFallback || "",
+      complete: this.savedPlayback ? response.complete : this.serverTurnComplete,
+    };
+  }
+
+  playSavedOutput(snapshot, onComplete) {
+    this.savedPlayback = { snapshot, onComplete };
+    snapshot.chunks.forEach((chunk) => this.playAudio(chunk));
+    this.checkAndFinalizeResponse();
   }
 
   setOutputGain(value) {
