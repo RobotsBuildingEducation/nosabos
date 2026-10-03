@@ -2062,7 +2062,7 @@ function TopBar({
                     overflow="hidden"
                     textOverflow="ellipsis"
                   >
-                    {dailyGoalLabel}:
+                    {dailyGoalLabel}
                   </Text>
                   <Box
                     w={{ base: "72px", sm: "96px", md: "120px" }}
