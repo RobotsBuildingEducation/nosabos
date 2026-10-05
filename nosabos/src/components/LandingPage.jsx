@@ -2156,9 +2156,9 @@ const LandingPage = ({ onAuthenticated }) => {
       desc: copy.feature_memory_desc,
     },
     {
-      icon: <FaRoute />,
-      title: copy.feature_journey,
-      desc: copy.feature_journey_desc,
+      icon: <FaChartLine />,
+      title: copy.feature_score || copy.feature_elo,
+      desc: copy.feature_score_desc || copy.feature_elo_desc,
     },
     {
       icon: <FaCalendarCheck />,
@@ -2191,9 +2191,9 @@ const LandingPage = ({ onAuthenticated }) => {
       desc: copy.feature_immersion_desc,
     },
     {
-      icon: <FaChartLine />,
-      title: copy.feature_score || copy.feature_elo,
-      desc: copy.feature_score_desc || copy.feature_elo_desc,
+      icon: <FaRoute />,
+      title: copy.feature_journey,
+      desc: copy.feature_journey_desc,
     },
     {
       icon: <FaTrophy />,

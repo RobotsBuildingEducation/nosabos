@@ -2,6 +2,15 @@ import React, { Children } from "react";
 import { Box, Flex } from "@chakra-ui/react";
 
 const TONE_PALETTES = {
+  achievement: {
+    bg: "#a97916",
+    hoverBg: "#906512",
+    activeBg: "#805810",
+    focusBg: "#a97916",
+    focusOutline: "#b7791f",
+    shadow: "0 4px 0 #785411",
+    activeShadow: "0 2px 0 #785411",
+  },
   purple: {
     bg: "purple.500",
     hoverBg: "purple.600",
@@ -197,16 +206,18 @@ export default function ActivityActionRow({
             boxShadow: `${palette.shadow} !important`,
           },
           "& > button:focus, & > button[data-focus], &:not(:has([data-call-controls])) button:focus, &:not(:has([data-call-controls])) button[data-focus]": {
+            ...(palette.focusBg ? { background: palette.focusBg } : {}),
             transform: "translateY(0)",
             boxShadow: `${palette.shadow} !important`,
           },
           "& > button:focus-visible, &:not(:has([data-call-controls])) button:focus-visible": {
-            outline: "2px solid var(--question-tool-accent-strong)",
+            outline: `2px solid ${palette.focusOutline || "var(--question-tool-accent-strong)"}`,
             outlineOffset: "3px",
             transform: "translateY(0)",
             boxShadow: `${palette.shadow} !important`,
           },
           "& > button:active:not(:disabled), & > button[data-active]:not(:disabled), &:not(:has([data-call-controls])) button:active:not(:disabled), &:not(:has([data-call-controls])) button[data-active]:not(:disabled)": {
+            ...(palette.activeBg ? { background: palette.activeBg } : {}),
             transform: "translateY(4px)",
             boxShadow: "none !important",
           },

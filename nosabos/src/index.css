@@ -538,15 +538,6 @@ html[data-scrollbar-gap="true"] {
   --activity-feedback-tint: var(--question-achievement-bg);
 }
 
-[data-question-action-area][data-question-feedback="achievement"] [data-activity-primary] button {
-  background: #a97916;
-  box-shadow: 0 4px 0 #785411 !important;
-}
-
-[data-question-action-area][data-question-feedback="achievement"] [data-activity-primary] button:hover {
-  background: #906512;
-}
-
 [data-question-action-area][data-question-feedback="incorrect"] {
   --activity-feedback-accent: var(--question-error-accent);
   --activity-feedback-tint: var(--question-error-bg);

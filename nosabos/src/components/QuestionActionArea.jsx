@@ -406,7 +406,7 @@ export default function QuestionActionArea({
                           feedback={feedback}
                           reduceMotion={reduceMotion || !shown}
                           actions={unlock ? (
-                            <ActivityActionRow primary={
+                            <ActivityActionRow tone="achievement" primary={
                               <Button key="achievement-continue" onClick={dismiss}>
                                 {achievementText("continue", language)}
                               </Button>
