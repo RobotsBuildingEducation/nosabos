@@ -21,6 +21,7 @@ import {
   FaRoute,
   FaGlobeAmericas,
   FaChartLine,
+  FaTrophy,
 } from "react-icons/fa";
 import { LuBookAudio, LuSun } from "react-icons/lu";
 import { RiMoonClearFill } from "react-icons/ri";
@@ -175,12 +176,18 @@ const translations = {
     feature_notes: "Generate Notes",
     feature_notes_desc:
       "Create comprehensive study notes from your lessons to review later.",
-    feature_immersion: "Real-World Immersion",
+    feature_immersion: "Immersion",
     feature_immersion_desc:
       "Complete tasks outside of the app to immerse and practice the language.",
-    feature_elo: "Elo Scoring",
+    feature_score: "Score",
+    feature_score_desc:
+      "An adaptive rating model that tracks your true ability on every answer and dynamically adapts question difficulty.",
+    feature_elo: "Score",
     feature_elo_desc:
-      "A chess-style rating model that tracks your true ability on every answer and dynamically adapts question difficulty.",
+      "An adaptive rating model that tracks your true ability on every answer and dynamically adapts question difficulty.",
+    feature_achievements: "Cross-Platform Achievements",
+    feature_achievements_desc:
+      "Earn verified completion awards and milestone badges that sync seamlessly across devices and platforms.",
     feature_teams: "Learning Teams",
     feature_teams_desc:
       "Form study squads with friends to share daily goals, streaks, companion growth, and progress in real time.",
@@ -332,12 +339,18 @@ const translations = {
     feature_notes: "Generar Notas",
     feature_notes_desc:
       "Crea notas de estudio de tus lecciones para revisarlas más tarde.",
-    feature_immersion: "Inmersión en el Mundo Real",
+    feature_immersion: "Inmersión",
     feature_immersion_desc:
       "Completa tareas fuera de la app para sumergirte y practicar el idioma.",
-    feature_elo: "Puntuación Elo",
+    feature_score: "Puntuación",
+    feature_score_desc:
+      "Un modelo de calificación adaptativo que mide tu dominio real en cada respuesta y adapta la dificultad de los ejercicios.",
+    feature_elo: "Puntuación",
     feature_elo_desc:
-      "Un modelo de calificación estilo ajedrez que mide tu dominio real en cada respuesta y adapta la dificultad de los ejercicios.",
+      "Un modelo de calificación adaptativo que mide tu dominio real en cada respuesta y adapta la dificultad de los ejercicios.",
+    feature_achievements: "Logros Multiplataforma",
+    feature_achievements_desc:
+      "Obtén insignias y recompensas verificadas de finalización que se sincronizan sin problemas entre dispositivos.",
     feature_teams: "Equipos de Aprendizaje",
     feature_teams_desc:
       "Crea grupos de estudio con amigos para compartir metas diarias, rachas, crecimiento del compañero y progreso en tiempo real.",
@@ -489,12 +502,18 @@ const translations = {
     feature_notes: "Genera Note",
     feature_notes_desc:
       "Crea note di studio complete dalle tue lezioni da rivedere in seguito.",
-    feature_immersion: "Immersione Reale",
+    feature_immersion: "Immersione",
     feature_immersion_desc:
       "Completa attività fuori dall'app per immergerti e praticare la lingua.",
-    feature_elo: "Punteggio Elo",
+    feature_score: "Punteggio",
+    feature_score_desc:
+      "Un sistema di valutazione adattivo che misura la tua vera abilità a ogni risposta e adatta dinamicamente la difficoltà.",
+    feature_elo: "Punteggio",
     feature_elo_desc:
-      "Un sistema di valutazione stile scacchi che misura la tua vera abilità a ogni risposta e adatta dinamicamente la difficoltà.",
+      "Un sistema di valutazione adattivo che misura la tua vera abilità a ogni risposta e adatta dinamicamente la difficoltà.",
+    feature_achievements: "Obiettivi Multipiattaforma",
+    feature_achievements_desc:
+      "Ottieni badge e premi di completamento verificati sincronizzati perfettamente tra tutti i dispositivi.",
     feature_teams: "Squadre di Apprendimento",
     feature_teams_desc:
       "Crea gruppi di studio con amici per condividere obiettivi giornalieri, serie, crescita del compagno e progressi in tempo reale.",
@@ -668,12 +687,18 @@ translations.fr = {
   feature_notes: "Generer des Notes",
   feature_notes_desc:
     "Cree des notes d'etude completes depuis tes lecons pour les revoir plus tard.",
-  feature_immersion: "Immersion dans le Monde Réel",
+  feature_immersion: "Immersion",
   feature_immersion_desc:
     "Complete des taches hors de l'app pour t'immerger et pratiquer la langue.",
-  feature_elo: "Score Elo",
+  feature_score: "Score",
+  feature_score_desc:
+    "Un modèle d'évaluation adaptatif qui évalue votre maîtrise réelle à chaque réponse et ajuste la difficulté en continu.",
+  feature_elo: "Score",
   feature_elo_desc:
-    "Un modèle de classement inspiré des échecs qui évalue votre maîtrise réelle à chaque réponse et ajuste la difficulté en continu.",
+    "Un modèle d'évaluation adaptatif qui évalue votre maîtrise réelle à chaque réponse et ajuste la difficulté en continu.",
+  feature_achievements: "Succès Multiplateforme",
+  feature_achievements_desc:
+    "Débloquez des récompenses et des badges de complétion vérifiés synchronisés en toute fluidité entre vos appareils.",
   feature_teams: "Équipes d'Apprentissage",
   feature_teams_desc:
     "Créez des groupes d'étude avec vos amis pour partager vos objectifs quotidiens, séries, évolution du compagnon et progrès en temps réel.",
@@ -819,12 +844,18 @@ translations.ja = {
   feature_notes: "ノート生成",
   feature_notes_desc:
     "レッスン内容から、あとで見返せる学習ノートを自動で作成します。",
-  feature_immersion: "実践イマージョン",
+  feature_immersion: "イマージョン",
   feature_immersion_desc:
     "アプリの外でも課題に取り組み、言語に浸りながら実践練習します。",
-  feature_elo: "Eloレーティング",
+  feature_score: "スコア",
+  feature_score_desc:
+    "回答ごとに真の実力を測定し、問題の難易度をリアルタイムに最適化する適応型レート評価モデル。",
+  feature_elo: "スコア",
   feature_elo_desc:
-    "チェス着想のレート評価モデルが回答ごとの真の実力を測定し、問題の難易度をリアルタイムに最適化します。",
+    "回答ごとに真の実力を測定し、問題の難易度をリアルタイムに最適化する適応型レート評価モデル。",
+  feature_achievements: "クロスプラットフォーム実績",
+  feature_achievements_desc:
+    "複数のデバイスやプラットフォーム間でシームレスに同期される、検証済みの修了バッジと実績を獲得。",
   feature_teams: "学習チーム",
   feature_teams_desc:
     "仲間とスタディグループを結成し、毎日の目標やストリーク、コンパニオンの成長、進捗をリアルタイムに共有できます。",
@@ -2161,8 +2192,13 @@ const LandingPage = ({ onAuthenticated }) => {
     },
     {
       icon: <FaChartLine />,
-      title: copy.feature_elo,
-      desc: copy.feature_elo_desc,
+      title: copy.feature_score || copy.feature_elo,
+      desc: copy.feature_score_desc || copy.feature_elo_desc,
+    },
+    {
+      icon: <FaTrophy />,
+      title: copy.feature_achievements,
+      desc: copy.feature_achievements_desc,
     },
     {
       icon: <FaUsers />,

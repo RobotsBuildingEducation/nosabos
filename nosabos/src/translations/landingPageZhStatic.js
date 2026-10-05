@@ -54,12 +54,18 @@ export const LANDING_PAGE_ZH_STATIC = {
     "个性化目标会跟踪你的进度，并通过连续学习激励你坚持。",
   feature_notes: "生成笔记",
   feature_notes_desc: "从课程中生成完整学习笔记，方便日后复习。",
-  feature_immersion: "真实沉浸",
+  feature_immersion: "沉浸体验",
   feature_immersion_desc:
-    "完成应用外任务，让你在真实生活中沉浸式练习语言。",
-  feature_elo: "Elo 动态评分",
+    "完成应用外任务，让你在日常生活中沉浸式练习语言。",
+  feature_score: "动态评分",
+  feature_score_desc:
+    "精准衡量每一次作答表现并动态调整题目难度的自适应评估算法。",
+  feature_elo: "动态评分",
   feature_elo_desc:
-    "源自国际象棋的水平评估算法，精准衡量每一次作答表现并动态调整题目难度。",
+    "精准衡量每一次作答表现并动态调整题目难度的自适应评估算法。",
+  feature_achievements: "跨平台成就",
+  feature_achievements_desc:
+    "获得经过验证的学习完成奖励与里程碑徽章，在多设备与平台间无缝同步。",
   feature_teams: "学习团队",
   feature_teams_desc:
     "与好友组建学习小组，实时分享每日目标、连胜记录、宠物伙伴成长与学习进度。",

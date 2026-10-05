@@ -1,8 +1,8 @@
 import usePiyaliAchievements from "./hooks/usePiyaliAchievements.js";
+import useAccountSnapshot from "./hooks/useAccountSnapshot.js";
+import { awardPiyaliFlashcardProgress } from "./utils/piyaliFlashcardAchievements.js";
 import AchievementUnlockFallback from "./components/AchievementUnlockFallback.jsx";
 import { awardProgressionAchievements } from "./utils/achievements.js";
-import { previewAchievementUnlock } from "./achievements/unlockStore.js";
-import { achievementText } from "./achievements/copy.js";
 import GoalLessonCompletion from "./components/GoalLessonCompletion";
 import {
   getGoalPreparationXp,
@@ -194,6 +194,7 @@ import { resolveSubscriptionAccess } from "./components/subscriptionAccessModel"
 import { useNostrWalletStore } from "./hooks/useNostrWalletStore";
 import { LuKey } from "react-icons/lu";
 import AlphabetBootcamp from "./components/AlphabetBootcamp";
+import { getAuthoredPhonicsFocusCards } from "./data/phonics/index.js";
 
 import NotesDrawer from "./components/NotesDrawer";
 import JourneyMilestoneGate from "./components/JourneyMilestoneGate";
@@ -6282,6 +6283,10 @@ export default function App({ onBootReady } = {}) {
           resolvedTargetLang || "es",
         ).toLowerCase();
 
+        await awardPiyaliFlashcardProgress({ npub, language: activityLanguageKey,
+          cards: [{ ...card, ...reviewPatch }],
+        });
+
         await awardXp(npub, xpAmount, resolvedTargetLang);
 
         const userRef = doc(database, "users", npub);
@@ -7553,15 +7558,17 @@ export default function App({ onBootReady } = {}) {
     user?.identity,
   ]);
 
-  // ✅ Listen to XP changes; random tab adds toast + auto-pick next
+  // Keep one listener per account; use current UI state for XP side effects.
   useEffect(() => {
-    if (!activeNpub) return;
-    const ref = doc(database, "users", activeNpub);
-    const unsub = onSnapshot(ref, (snap) => {
+    prevXpRef.current = null;
+  }, [activeNpub]);
+  useAccountSnapshot(
+    activeNpub,
+    (snap) => {
       const data = snap.exists() ? snap.data() : {};
       const newXp = Number(data?.xp || 0);
       const latestUser = useUserStore.getState()?.user || {};
-      const existingProgress = latestUser?.progress || user?.progress || {};
+      const existingProgress = latestUser?.progress || {};
       const rawProgress = data?.progress || { totalXp: newXp };
 
       // The user document's progress field may contain stale languageLessons/
@@ -7729,24 +7736,8 @@ export default function App({ onBootReady } = {}) {
 
         maybePostNostrProgress({ totalXp: newXp });
       }
-    });
-    return () => unsub();
-  }, [
-    activeNpub,
-    currentTab,
-    t,
-    toast,
-    appLanguage,
-    hasSpendableBalance,
-    sendOneSatToNpub,
-    pickRandomFeature,
-    patchUser,
-    queueCompanionUnlocks,
-    maybePostNostrProgress,
-    viewMode,
-    activeLesson,
-    resolvedTargetLang,
-  ]);
+    },
+  );
 
   const RandomHeader = (
     <Box
@@ -9259,6 +9250,7 @@ export default function App({ onBootReady } = {}) {
               units,
               userProgress?.lessons || {},
               hasCompletedSkillTreeTutorial,
+              user?.proficiencyPlacements?.[resolvedTargetLang],
             ),
           );
     if (lessonAvailable) kinds.push("learn");
@@ -9273,6 +9265,7 @@ export default function App({ onBootReady } = {}) {
     userProgress?.lessons,
     hasCompletedSkillTreeTutorial,
     resolvedTargetLang,
+    user?.proficiencyPlacements?.[resolvedTargetLang],
   ]);
 
   // Stable per-day language/day keys (independent of the elected kinds), used
@@ -9308,15 +9301,12 @@ export default function App({ onBootReady } = {}) {
     currentCEFRLevel ||
     "Pre-A1";
 
-  // Phonics deck generation bounds. Placement seeds the bootcamp's own deck
-  // ladder (the way it pre-unlocks levels elsewhere); the ceiling is built
-  // from UNLOCKED levels only — never display/active browse state, so viewing
-  // a B2 tab can't inflate generated phonics difficulty. Placement can be the
-  // literal string "skipped", which clampCefrLevel filters out.
+  // Start the authored curriculum at placement, or the highest unlocked
+  // course level. Browsing a different skill-tree tab does not change this.
   const phonicsPlacementLevel = clampCefrLevel(
     user?.proficiencyPlacements?.[resolvedTargetLang],
   );
-  const phonicsCourseCeilingLevel =
+  const phonicsCourseLevel =
     maxCefrLevel(
       currentLessonLevel,
       currentFlashcardLevel,
@@ -9662,6 +9652,12 @@ export default function App({ onBootReady } = {}) {
     [handleReturnToSkillTree, viewMode],
   );
 
+  const handlePhonicsFocusUnavailable = useCallback((focus) => {
+    if (focus.blueprint) useGoalFocusStore.getState().setFocus({ ...focus, surface: "tutor" });
+    else useRepairFocusStore.getState().setFocus({ ...focus, surface: "tutor" });
+    goToSkillTreeMode("tutor");
+  }, [goToSkillTreeMode]);
+
   // Route a course to its surface — that's it. The user engages each surface
   // themselves (press connect in the Tutor, tap a lesson, start a card), so
   // the quest never auto-starts a session or picks the activity for them.
@@ -9690,7 +9686,8 @@ export default function App({ onBootReady } = {}) {
           const mode = nextGoalMode(bucket, blueprint);
           if (!mode) return;
           const routedBlueprint = { ...blueprint, mode };
-          const surface = GOAL_SURFACES[mode];
+          const surface = mode === "phonics" && !getAuthoredPhonicsFocusCards({ targetLang: resolvedTargetLang, supportLang: appLanguage, blueprint: routedBlueprint }).length
+            ? "tutor" : GOAL_SURFACES[mode];
           useGoalFocusStore.getState().setFocus({
             npub: activeNpub,
             targetLang: resolvedTargetLang,
@@ -9718,7 +9715,8 @@ export default function App({ onBootReady } = {}) {
         const stepsDone = plateSnapshot.byKind?.repair?.count || 0;
         const step = getNextRepairStep(repairPlanToday, stepsDone);
         if (step) {
-          const repairSurface = REPAIR_MODE_TO_SURFACE[step.mode];
+          const repairSurface = step.mode === "phonics" && !getAuthoredPhonicsFocusCards({ targetLang: resolvedTargetLang, supportLang: appLanguage, plan: step.plan }).length
+            ? "tutor" : REPAIR_MODE_TO_SURFACE[step.mode];
           if (repairSurface) {
             useRepairFocusStore.getState().setFocus({
               plan: step.plan,
@@ -10880,9 +10878,9 @@ export default function App({ onBootReady } = {}) {
               targetLang={resolvedTargetLang}
               npub={activeNpub}
               languageXp={userProgress?.totalXp || 0}
-              cefrLevel={repairLessonCefrLevel}
+              cefrLevel={phonicsCourseLevel}
               placementLevel={phonicsPlacementLevel}
-              courseCeilingLevel={phonicsCourseCeilingLevel}
+              onFocusedPracticeUnavailable={handlePhonicsFocusUnavailable}
               pauseMs={user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS}
             />
           ) : (
@@ -10912,6 +10910,7 @@ export default function App({ onBootReady } = {}) {
                 currentLessonLevel={currentLessonLevel}
                 currentFlashcardLevel={currentFlashcardLevel}
                 tutorUnlockedLevel={tutorUnlockedLevel}
+                placementLevel={user?.proficiencyPlacements?.[resolvedTargetLang] || null}
                 onLessonLevelChange={handleLessonLevelChange}
                 onFlashcardLevelChange={handleFlashcardLevelChange}
                 lessonLevelCompletionStatus={lessonLevelCompletionStatus}
@@ -10994,19 +10993,6 @@ export default function App({ onBootReady } = {}) {
           pb={{ base: 32, md: 24 }}
           w="100%"
         >
-          {activeLesson?.isTutorial && currentTab === activeLesson.modes?.[0] && (
-            <HStack justify="flex-end" maxW="560px" mx="auto" mb={2}>
-              <Button
-                size="xs"
-                variant="outline"
-                colorScheme="yellow"
-                borderRadius="full"
-                onClick={() => previewAchievementUnlock("nosabos")}
-              >
-                {achievementText("testUnlock", appLanguage)}
-              </Button>
-            </HStack>
-          )}
           {/* Tutorial Stepper - shows progress through tutorial modules */}
           {isTutorialMode && activeLesson?.isTutorial && (
             <TutorialStepper

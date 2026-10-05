@@ -2,6 +2,7 @@ import { Buffer } from "node:buffer";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { getAuthoredPhonicsDeck, getAuthoredPhonicsFocusCards, PHONICS_VERSION, PHONICS_LEVELS } from "../data/phonics/index.js";
 
 const clone = (value) => structuredClone(value);
 const remote = new Map();
@@ -10,6 +11,7 @@ let generated = "invalid JSON";
 let modelCalls = 0;
 const day = "2026-09-09";
 globalThis.__deckTest = {
+  getAuthoredPhonicsDeck, getAuthoredPhonicsFocusCards, PHONICS_VERSION, PHONICS_LEVELS,
   doc: (_db, ...path) => path.join("/"),
   getDoc: async (key) => ({ data: () => clone(remote.get(key)) }),
   runTransaction: async (_db, fn) =>
@@ -38,7 +40,7 @@ let source = await readFile(
 );
 source = source.replace(/import\s+[\s\S]*?from\s+"([^"]+)";/g, () => "");
 source =
-  "const database = {}; const { doc, getDoc, runTransaction, callResponses, readAccountScopedJson, writeAccountScopedJson, getLocalDayKey } = globalThis.__deckTest; const useUserStore = { getState: () => ({ user: {} }) }; const generationPerformanceContextFor = () => ({ eloRating: 800, curriculumCefrLevel: 'Pre-A1' });\n" +
+  "const database = {}; const { doc, getDoc, runTransaction, callResponses, readAccountScopedJson, writeAccountScopedJson, getLocalDayKey, getAuthoredPhonicsDeck, getAuthoredPhonicsFocusCards, PHONICS_VERSION, PHONICS_LEVELS } = globalThis.__deckTest; const useUserStore = { getState: () => ({ user: {} }) }; const generationPerformanceContextFor = () => ({ eloRating: 800, curriculumCefrLevel: 'Pre-A1' });\n" +
   source;
 const decks = await import(
   `data:text/javascript;base64,${Buffer.from(source).toString("base64")}`
@@ -69,20 +71,21 @@ function repair(account = "a") {
     },
   };
 }
-test("phonics failure retains the captured word, writing system and phoneme, with account isolation", async () => {
+test("authored phonics retains the captured word without a model, with account isolation", async () => {
   remote.clear();
   cache.clear();
   modelCalls = 0;
   generated = new Error("offline model");
   const a = await decks.getFocusedPhonicsDeck(repair());
-  assert.equal(a.cards.length, 1);
+  assert.equal(a.cards.length, 3);
   assert.equal(a.cards[0].practiceWord, "perro");
-  assert.equal(a.cards[0].letter, "rr");
-  assert.equal(a.cards[0].phoneme, "r");
+  assert.match(a.cards[0].letter, /rr/);
+  assert.equal(a.cards[0].cefrLevel, "A1");
+  assert.equal(a.cards[0].authored, true);
   assert.equal(a.cards[0].isRepair, true);
   assert.equal(a.cards[0].isGoal, false);
   await decks.getFocusedPhonicsDeck(repair("b"));
-  assert.equal(modelCalls, 2);
+  assert.equal(modelCalls, 0);
   assert.equal(remote.size, 2);
 });
 test("a focused mini-deck persists item and transfer outcomes across device/cache loss", async () => {
@@ -127,7 +130,7 @@ test("a focused mini-deck persists item and transfer outcomes across device/cach
   cache.clear();
   const restored = await decks.getFocusedPhonicsDeck(focus);
   assert.deepEqual(restored, result);
-  assert.equal(modelCalls, 1);
+  assert.equal(modelCalls, 0);
 });
 test("goal recall fallback preserves exact goal chunks and uses separate artifacts", async () => {
   remote.clear();

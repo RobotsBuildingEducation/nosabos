@@ -27,6 +27,7 @@ import {
   TUTOR_CONVERSATION_DRAFT_VERSION,
 } from "./tutorConversationDraft.js";
 import { isMasterUnlockActive } from "./masterUnlock.js";
+import { isContentUnlockedByPlacement } from "./proficiencyPlacement.js";
 
 // Version the Tutor agenda checkpoint so full-XP records written before the
 // app-owned agenda gate can be migrated without weakening completion rules for
@@ -669,6 +670,11 @@ export function getLessonStatus(userProgress, lesson, targetLang) {
   }
 
   if (isMasterUnlockActive()) {
+    return SKILL_STATUS.AVAILABLE;
+  }
+
+  if (isContentUnlockedByPlacement(userProgress?.proficiencyPlacements?.[lang],
+    lesson.cefrLevel || getLessonLevelFromId(lesson.id))) {
     return SKILL_STATUS.AVAILABLE;
   }
 

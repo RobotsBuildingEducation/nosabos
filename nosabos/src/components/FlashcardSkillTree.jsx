@@ -1,4 +1,5 @@
 import { awardXp } from "../utils/utils";
+import { isContentUnlockedByPlacement } from "../utils/proficiencyPlacement.js";
 import useGoalFocusStore from "../hooks/useGoalFocusStore";
 import {
   currentGoalFocus,
@@ -56,6 +57,7 @@ import useUserStore from "../hooks/useUserStore";
 import { selectSound } from "../constants/sounds";
 import { useThemeStore } from "../useThemeStore";
 import { getFlashcardDailyTarget } from "../utils/dailyQuestTargets";
+import { mergeFlashcardActivityCounts } from "../utils/flashcardActivity.js";
 import {
   FLASHCARD_REVIEW_STATES,
   FLASHCARD_SCHEDULER_STATES,
@@ -110,28 +112,6 @@ const getEffectiveCardLanguage = (supportLang) => {
   return appLang;
 };
 
-function normalizeActivityMap(activityMap = {}) {
-  return Object.entries(activityMap).reduce((accumulator, [dayKey, count]) => {
-    if (!dayKey) return accumulator;
-
-    const normalizedCount = Math.max(0, Number(count) || 0);
-    if (normalizedCount > 0) {
-      accumulator[dayKey] = normalizedCount;
-    }
-
-    return accumulator;
-  }, {});
-}
-
-function getProgressTimestamp(progress = {}) {
-  const rawValue =
-    progress?.updatedAt || progress?.lastReviewedAt || progress?.completedAt;
-  if (!rawValue) return 0;
-
-  const timestamp = new Date(rawValue).getTime();
-  return Number.isNaN(timestamp) ? 0 : timestamp;
-}
-
 function buildFallbackActivityMap(progressMap = {}) {
   return Object.values(progressMap).reduce((accumulator, progress) => {
     const dayKey = getLocalDayKey(
@@ -144,22 +124,14 @@ function buildFallbackActivityMap(progressMap = {}) {
   }, {});
 }
 
-function buildOptimisticActivityMap(localProgressOverrides = {}, baseProgressMap = {}) {
-  return Object.entries(localProgressOverrides).reduce(
-    (accumulator, [cardId, progress]) => {
-      const dayKey = getLocalDayKey(
+function buildOptimisticActivityMap(localProgressOverrides = {}) {
+  return Object.values(localProgressOverrides).reduce(
+    (accumulator, progress) => {
+      const dayKey = progress.activityDayKey || getLocalDayKey(
         progress?.lastReviewedAt || progress?.completedAt,
       );
       if (!dayKey) return accumulator;
-
-      const overrideTimestamp = getProgressTimestamp(progress);
-      const baseTimestamp = getProgressTimestamp(baseProgressMap?.[cardId]);
-
-      if (overrideTimestamp && overrideTimestamp <= baseTimestamp) {
-        return accumulator;
-      }
-
-      accumulator[dayKey] = (accumulator[dayKey] || 0) + 1;
+      accumulator[dayKey] = Math.max(accumulator[dayKey] || 0, Number(progress.activityCountAfterReview) || 0);
       return accumulator;
     },
     {},
@@ -660,6 +632,7 @@ export default function FlashcardSkillTree({
   targetLang = "es",
   supportLang = "en",
   activeCEFRLevel = null,
+  placementLevel = null,
   pauseMs = 2000,
   isActive = true,
   isProgressReady = true,
@@ -672,6 +645,7 @@ export default function FlashcardSkillTree({
   const openFlashcardPractice = useModalStore((s) => s.openFlashcardPractice);
   const closeFlashcardPractice = useModalStore((s) => s.closeFlashcardPractice);
   const [localProgressOverrides, setLocalProgressOverrides] = useState({});
+  const progressOwner = useUserStore((s) => s.user?.local_npub || s.user?.npub || s.user?.id || "");
   const [flashcardData, setFlashcardData] = useState([]);
   const [isLoadingFlashcards, setIsLoadingFlashcards] = useState(true);
   const [loadedFlashcardDataKey, setLoadedFlashcardDataKey] = useState("");
@@ -697,7 +671,7 @@ export default function FlashcardSkillTree({
 
   useEffect(() => {
     setLocalProgressOverrides({});
-  }, [targetLang]);
+  }, [targetLang, progressOwner]);
 
   useEffect(() => {
     if (!isActive) return undefined;
@@ -998,34 +972,15 @@ export default function FlashcardSkillTree({
   );
 
   const optimisticActivityMap = useMemo(
-    () =>
-      buildOptimisticActivityMap(
-        localProgressOverrides,
-        userProgress.flashcards || EMPTY_PROGRESS,
-      ),
-    [localProgressOverrides, userProgress.flashcards],
+    () => buildOptimisticActivityMap(localProgressOverrides),
+    [localProgressOverrides],
   );
 
-  const dailyActivityMap = useMemo(() => {
-    const storedActivityMap = normalizeActivityMap(
-      userProgress.flashcardActivity || EMPTY_PROGRESS,
-    );
-    const mergedActivityMap = { ...storedActivityMap };
-
-    Object.entries(fallbackActivityMap).forEach(([dayKey, count]) => {
-      mergedActivityMap[dayKey] = Math.max(
-        Number(mergedActivityMap[dayKey]) || 0,
-        count,
-      );
-    });
-
-    Object.entries(optimisticActivityMap).forEach(([dayKey, count]) => {
-      mergedActivityMap[dayKey] =
-        (Number(mergedActivityMap[dayKey]) || 0) + count;
-    });
-
-    return mergedActivityMap;
-  }, [
+  const dailyActivityMap = useMemo(() => mergeFlashcardActivityCounts(
+    userProgress.flashcardActivity,
+    fallbackActivityMap,
+    optimisticActivityMap,
+  ), [
     fallbackActivityMap,
     optimisticActivityMap,
     userProgress.flashcardActivity,
@@ -1047,10 +1002,9 @@ export default function FlashcardSkillTree({
     [dailyActivityMap],
   );
 
-  const dailyProgressPct = Math.min(
-    100,
-    Math.round((reviewedTodayCount / effectiveDailyTarget) * 100),
-  );
+  const dailyProgressPct = effectiveDailyTarget > 0
+    ? Math.round((reviewedTodayCount / effectiveDailyTarget) * 100)
+    : 0;
 
   const getNextReviewNote = useCallback(
     (snapshot) => {
@@ -1088,6 +1042,10 @@ export default function FlashcardSkillTree({
         return "active";
       }
 
+      if (!snapshot?.completed && isContentUnlockedByPlacement(placementLevel, card.cefrLevel || activeCEFRLevel)) {
+        return "active";
+      }
+
       if (!snapshot?.completed) {
         const cardIndex = deckData.findIndex(
           (entry) => entry.id === card.id,
@@ -1103,7 +1061,7 @@ export default function FlashcardSkillTree({
 
       return "scheduled";
     },
-    [firstNewCard, firstNewCardIndex, deckData, reviewSnapshotMap],
+    [firstNewCard, firstNewCardIndex, deckData, reviewSnapshotMap, placementLevel, activeCEFRLevel],
   );
 
   const openPracticeCard = useCallback(
@@ -1162,12 +1120,16 @@ export default function FlashcardSkillTree({
         return;
       }
 
+      const activityDayKey = getLocalDayKey(card.reviewPatch?.lastReviewedAt || card.reviewPatch?.updatedAt || new Date());
+      const activityCountAfterReview = (Number(dailyActivityMap[activityDayKey]) || 0) + 1;
       setLocalProgressOverrides((current) => ({
         ...current,
         [card.id]: {
           ...(current[card.id] || EMPTY_PROGRESS),
           ...(card.reviewPatch || EMPTY_PROGRESS),
           completed: card.reviewPatch?.completed === true,
+          activityDayKey,
+          activityCountAfterReview,
         },
       }));
 
@@ -1183,7 +1145,7 @@ export default function FlashcardSkillTree({
 
       closeFlashcardPractice();
     },
-    [closeFlashcardPractice, onRandomPractice, onStartFlashcard, targetLang, toast],
+    [closeFlashcardPractice, onRandomPractice, onStartFlashcard, targetLang, toast, dailyActivityMap],
   );
 
   const handleClosePractice = useCallback(() => {
@@ -1197,6 +1159,7 @@ export default function FlashcardSkillTree({
       reviewSnapshotMap={reviewSnapshotMap}
       getCardStatus={getCardStatus}
       resolveCardStatus={(card) => {
+        if (isContentUnlockedByPlacement(placementLevel, card.cefrLevel || activeCEFRLevel)) return "active";
         if (card.id === firstNewCard?.id) return "active";
 
         const cardIndex = deckData.findIndex(
@@ -1322,10 +1285,7 @@ export default function FlashcardSkillTree({
                   {getTranslation("flashcard_daily_target")}
                 </Text>
                 <Text fontSize="sm" color={APP_TEXT_SECONDARY}>
-                  {getTranslation("flashcard_cards_done_today", {
-                    count: reviewedTodayCount,
-                    target: effectiveDailyTarget,
-                  })}
+                  {dailyProgressPct}%
                 </Text>
               </HStack>
               <WaveBar

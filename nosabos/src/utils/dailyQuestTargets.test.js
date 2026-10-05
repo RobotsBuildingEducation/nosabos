@@ -8,6 +8,23 @@ import {
   getFlashcardDailyTarget,
 } from "./dailyQuestTargets.js";
 
+test("the introductory quest always asks for five cards across learners, languages, and days", () => {
+  for (let day = 0; day < 400; day += 1) {
+    const input = {
+      userKey: `npub-${day % 17}`,
+      langKey: day % 2 === 0 ? "es" : "fr",
+      dayKey: `day-${day}`,
+      isFirstSession: true,
+    };
+    const target = getDailyQuestFlashcardTarget(input);
+    assert.equal(target, 5);
+    // Both the overview and card modal inherit the introductory plate target.
+    assert.equal(getFlashcardDailyTarget({
+      plateSnapshot: { byKind: { review: { kind: "review", target } } },
+    }), 5);
+  }
+});
+
 test("daily quest flashcard targets stay stable for a learner, language, and day", () => {
   const input = {
     userKey: "npub-test-learner",
@@ -111,4 +128,3 @@ test("getFlashcardDailyTarget returns random between 3-7 when Today's Focus does
   }
   assert.deepEqual([...seen].sort(), [3, 4, 5, 6, 7]);
 });
-

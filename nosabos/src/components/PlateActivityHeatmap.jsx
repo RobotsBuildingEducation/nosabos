@@ -5,7 +5,8 @@
 // has zero coupling to modal internals — it imports only stable utils,
 // reads the theme itself, and builds its own localized labels.
 import React, { useMemo } from "react";
-import { Box, Button, HStack, Text, VStack } from "@chakra-ui/react";
+import { Box, HStack, Text, VStack } from "@chakra-ui/react";
+import DailyPlateActions from "./DailyPlateActions.jsx";
 import {
   DEFAULT_SUPPORT_LANGUAGE,
   getLanguageLocale,
@@ -172,7 +173,8 @@ export default function PlateActivityHeatmap({
   dailyXpHistory = {},
   currentDailyXp = 0,
   currentGoalXp = 0,
-  onSeeCompanion,
+  onViewCompanion,
+  onViewAchievements,
 }) {
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
@@ -191,7 +193,7 @@ export default function PlateActivityHeatmap({
       empty: getLabel("daily_goal_activity_empty", "No XP"),
       some: getLabel("daily_goal_activity_some", "Some XP"),
       goal: getLabel("daily_goal_activity_goal", "Daily goal reached"),
-      seeCompanion: getLabel("daily_plate_see_companion", "See companion"),
+      viewCompanion: getLabel("daily_plate_see_companion", "Companion"),
     };
   }, [lang]);
 
@@ -389,25 +391,8 @@ export default function PlateActivityHeatmap({
         </HStack>
       </HStack>
       </Box>
-      {typeof onSeeCompanion === "function" ? (
-        <Button
-          size="sm"
-          variant="outline"
-          bg="transparent"
-          color={isLightTheme ? "black" : "white"}
-          borderColor={isLightTheme ? "teal.600" : "teal.300"}
-          boxShadow="none"
-          _hover={{
-            bg: isLightTheme ? "teal.50" : "whiteAlpha.100",
-          }}
-          _active={{ bg: isLightTheme ? "teal.100" : "whiteAlpha.200" }}
-          alignSelf="center"
-          mt="auto"
-          onClick={onSeeCompanion}
-        >
-          {labels.seeCompanion}
-        </Button>
-      ) : null}
+      <DailyPlateActions primaryLabel={labels.viewCompanion} onPrimary={onViewCompanion}
+        onAchievements={onViewAchievements} language={lang} isLightTheme={isLightTheme} />
     </Box>
   );
 }

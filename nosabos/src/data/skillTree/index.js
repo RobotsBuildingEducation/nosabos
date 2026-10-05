@@ -9,6 +9,7 @@
 import { CEFR_LEVELS } from "../flashcards/common.js";
 import { loadTargetCurriculum } from "./targetCurriculum/load.js";
 import { adaptIntroTutorialUnit } from "../../utils/introTutorial.js";
+import { isContentUnlockedByPlacement } from "../../utils/proficiencyPlacement.js";
 
 export const SKILL_STATUS = {
   LOCKED: "locked",
@@ -148,8 +149,9 @@ export function getLatestUnlockedLesson(
   units = [],
   lessonsMap = {},
   isTutorialComplete = true,
+  placementLevel = null,
 ) {
-  if (!isTutorialComplete || !Array.isArray(units)) return null;
+  if (!Array.isArray(units)) return null;
 
   for (let unitIndex = 0; unitIndex < units.length; unitIndex++) {
     const unit = units[unitIndex];
@@ -161,6 +163,8 @@ export function getLatestUnlockedLesson(
       lessonIndex++
     ) {
       const lesson = unit.lessons[lessonIndex];
+      const placedContent = isContentUnlockedByPlacement(placementLevel, lesson.cefrLevel || unit.cefrLevel);
+      if (!isTutorialComplete && !placedContent) continue;
       const status = lessonsMap?.[lesson.id]?.status;
 
       if (status === SKILL_STATUS.IN_PROGRESS) {
@@ -186,7 +190,7 @@ export function getLatestUnlockedLesson(
             SKILL_STATUS.COMPLETED;
         }
 
-        if (isPreviousCompleted) {
+        if (placedContent || isPreviousCompleted) {
           return { lesson, unit };
         }
       }

@@ -3,6 +3,7 @@
 // Standalone copy of the daily-goal pet panel for the Daily Plate home —
 // kept independent of the modal's component file on purpose.
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import DailyPlateActions from "./DailyPlateActions.jsx";
 import {
   Badge,
   Box,
@@ -2116,6 +2117,7 @@ export default function PlatePetPanel({
   // Optional manga speech balloon { text } — rendered at the pet's top-right.
   questBubble = null,
   onViewActivity = null,
+  onViewAchievements = null,
 }) {
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
@@ -2528,25 +2530,9 @@ export default function PlatePetPanel({
           </VStack>
         </HStack>
 
-        {typeof onViewActivity === "function" ? (
-          <Button
-            size="sm"
-            variant="outline"
-            bg="transparent"
-            color={isLightTheme ? "black" : "white"}
-            borderColor={isLightTheme ? "teal.600" : "teal.300"}
-            boxShadow="none"
-            _hover={{
-              bg: isLightTheme ? "teal.50" : "whiteAlpha.100",
-            }}
-            _active={{ bg: isLightTheme ? "teal.100" : "whiteAlpha.200" }}
-            alignSelf="center"
-            mt="auto"
-            onClick={onViewActivity}
-          >
-            {translate(resolvedLang, "daily_plate_view_activity") || "View activity"}
-          </Button>
-        ) : null}
+        <DailyPlateActions primaryLabel={translate(resolvedLang, "daily_plate_view_activity") || "Activity"}
+          onPrimary={onViewActivity} onAchievements={onViewAchievements}
+          language={resolvedLang} isLightTheme={isLightTheme} />
 
         {showPreview ? (
           <HStack

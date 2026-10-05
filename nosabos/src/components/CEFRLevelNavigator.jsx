@@ -39,6 +39,8 @@ export default function CEFRLevelNavigator({
   levelProgress = 0,
   supportLang = "en",
   levelCompletionStatus = {},
+  masterUnlocked,
+  showCompletionBadge = true,
 }) {
   const resolvedSupportLang = normalizeSupportLanguage(supportLang);
   const currentLevelIndex = CEFR_LEVELS.indexOf(activeCEFRLevel);
@@ -49,7 +51,7 @@ export default function CEFRLevelNavigator({
   const nextLevel = hasNext ? CEFR_LEVELS[currentLevelIndex + 1] : null;
   const previousLevel = hasPrevious ? CEFR_LEVELS[currentLevelIndex - 1] : null;
 
-  const isTestUnlocked = isMasterUnlockActive();
+  const isTestUnlocked = masterUnlocked ?? isMasterUnlockActive();
 
   // A level is unlocked if:
   // 1. Test mode is active, OR
@@ -183,7 +185,7 @@ export default function CEFRLevelNavigator({
           )}
         </HStack>
         {/* Completion Badge */}
-        {levelProgress >= 100 && isCurrentUserLevel && (
+        {showCompletionBadge && levelProgress >= 100 && isCurrentUserLevel && (
           <Box>
             <HStack
               justify="center"

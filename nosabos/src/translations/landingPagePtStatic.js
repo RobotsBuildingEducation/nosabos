@@ -57,12 +57,18 @@ export const LANDING_PAGE_PT_STATIC = {
   feature_notes: "Gerar notas",
   feature_notes_desc:
     "Crie notas de estudo completas a partir das suas lições para revisar depois.",
-  feature_immersion: "Imersão no Mundo Real",
+  feature_immersion: "Imersão",
   feature_immersion_desc:
-    "Complete tarefas fora do app para mergulhar no idioma e praticar de verdade.",
-  feature_elo: "Pontuação Elo",
+    "Complete tarefas fora do app para mergulhar no idioma e praticar no dia a dia.",
+  feature_score: "Pontuação",
+  feature_score_desc:
+    "Um modelo de classificação adaptativo que mede seu domínio real a cada resposta e ajusta a dificuldade dinamicamente.",
+  feature_elo: "Pontuação",
   feature_elo_desc:
-    "Um modelo de classificação estilo xadrez que mede seu domínio real a cada resposta e ajusta a dificuldade dinamicamente.",
+    "Um modelo de classificação adaptativo que mede seu domínio real a cada resposta e ajusta a dificuldade dinamicamente.",
+  feature_achievements: "Conquistas Multiplataforma",
+  feature_achievements_desc:
+    "Conquiste emblemas e marcos de conclusão verificados que sincronizam perfeitamente entre dispositivos.",
   feature_teams: "Equipes de Aprendizagem",
   feature_teams_desc:
     "Crie grupos de estudo com amigos para acompanhar metas diárias, sequências, evolução do companheiro e progresso em tempo real.",

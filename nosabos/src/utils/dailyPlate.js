@@ -50,8 +50,8 @@ export const DAILY_PLATE_KINDS = ["review", "learn", "speak"];
 export const DAILY_PLATE_COURSE_ORDER = ["speak", "learn", "review"];
 
 export const DAILY_PLATE_TARGETS = {
-  // Snapshot generation replaces this fallback with the stable daily 4-6
-  // target. The Cards screen keeps its separate, standalone 12-card goal.
+  // The introductory quest uses five cards; later quests use a stable 4-6
+  // target. The Cards screen follows this target when review is on the plate.
   review: DAILY_QUEST_FLASHCARD_TARGET_DEFAULT,
   learn: 1, // skill-tree lessons completed
   speak: 1, // Tutor lessons completed
@@ -182,6 +182,7 @@ export function getDailyPlateSnapshot(
                 user?.local_npub || user?.identity || user?.id || "",
               langKey,
               dayKey,
+              isFirstSession,
             })
           : kind === "repair"
             ? // Repair's "done" target is however many items the companion

@@ -57,12 +57,18 @@ export const LANDING_PAGE_DE_STATIC = {
   feature_notes: "Notizen erstellen",
   feature_notes_desc:
     "Erstelle umfassende Lernnotizen aus deinen Lektionen, um sie später zu wiederholen.",
-  feature_immersion: "Reale Immersion",
+  feature_immersion: "Immersion",
   feature_immersion_desc:
-    "Erledige Aufgaben außerhalb der App, um in die Sprache einzutauchen und sie zu üben.",
-  feature_elo: "Elo-Bewertung",
+    "Erledige Aufgaben außerhalb der App, um im Alltag in die Sprache einzutauchen und sie zu üben.",
+  feature_score: "Score",
+  feature_score_desc:
+    "Ein adaptives Bewertungssystem, das deine tatsächliche Leistung bei jeder Antwort erfasst und die Aufgabenschwierigkeit dynamisch anpasst.",
+  feature_elo: "Score",
   feature_elo_desc:
-    "Ein schachbasiertes Bewertungssystem, das deine tatsächliche Leistung bei jeder Antwort erfasst und die Aufgabenschwierigkeit dynamisch anpasst.",
+    "Ein adaptives Bewertungssystem, das deine tatsächliche Leistung bei jeder Antwort erfasst und die Aufgabenschwierigkeit dynamisch anpasst.",
+  feature_achievements: "Plattformübergreifende Erfolge",
+  feature_achievements_desc:
+    "Verdiene verifizierte Abschluss-Auszeichnungen und Meilenstein-Abzeichen, die nahtlos über alle Geräte synchronisiert werden.",
   feature_teams: "Lernteams",
   feature_teams_desc:
     "Erstelle Lerngruppen mit Freunden, um tägliche Ziele, Serien, Begleiter-Level und Fortschritte in Echtzeit zu teilen.",

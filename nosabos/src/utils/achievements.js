@@ -1,9 +1,11 @@
 import { earnedProgressionIds, meetsProgressionRequirement } from "../achievements/progressionEvidence.js";
 import { unlockStore } from "../achievements/unlockStore.js";
+import { applyAchievementBackfill, finishAchievementBackfill } from "../achievements/backfill.js";
 import { createRetrySync } from "../achievements/retrySync.js";
 import { localJournal } from "../achievements/localJournal.js";
 import { syncStatus } from "../achievements/syncStatus.js";
 import { withSyncDeadline, confirmRelayPublish, createSingleFlight } from "../achievements/syncDeadline.js";
+import { readAchievementRelayEvents } from "../achievements/relayTransport.js";
 import { progressionSnapshot, readProgressLedger, mergeStoredProgress, restoreProgressJournal, subscribeProgress, refreshProgressRevision } from "../achievements/progressionRuntime.js";
 import { ACHIEVEMENTS, CATALOG_VERSION, completeCollectionAwards, earnedTutorAchievementIds, hasEarnedRequirement, hasCompletedCourses, isCatalogAchievement } from "../achievements/catalog.js";
 export { ACHIEVEMENTS } from "../achievements/catalog.js";
@@ -12,10 +14,13 @@ import { finalizeEvent, getPublicKey, nip19, SimplePool, verifyEvent } from "nos
 export const ACHIEVEMENT_KIND = 30078;
 export const ACHIEVEMENT_D = "learning-achievements";
 export const ACHIEVEMENT_TAG = "learning-achievements";
+export const ACHIEVEMENT_SOURCE = "nosabos";
+export const ACHIEVEMENT_IDENTIFIERS = [ACHIEVEMENT_D, `${ACHIEVEMENT_D}:nosabos`, `${ACHIEVEMENT_D}:robotsbuildingeducation`];
 export const ACHIEVEMENT_RELAYS = [
   "wss://relay.primal.net",
   "wss://relay.ditto.pub",
   "wss://nos.lol",
+  "wss://relay.damus.io",
 ];
 
 const LOCAL_STORAGE_KEY_PREFIX = "learning_achievements_v1_";
@@ -65,13 +70,15 @@ async function syncCloudAchievements(npub) {
   storeAchievements(npub, merged, { schedule: false });
   if (JSON.stringify(current) !== JSON.stringify(merged)) relaySync.schedule(npub);
   PROGRESS_SOURCES.forEach((source, index) => mergeStoredProgress(npub, source, remoteProgress[index]));
+  const backfill = await withSyncDeadline(adapter.prepareBackfill?.(npub));
+  await applyAchievementBackfill(npub, backfill, { awardProgressionAchievements, awardAchievements });
   await evaluateRestoredProgress(npub, adapter);
   const awards = getStoredAchievements(npub);
   const ledgers = PROGRESS_SOURCES.map(source => readProgressLedger(npub, source));
-  await withSyncDeadline(Promise.all([
+  await withSyncDeadline(finishAchievementBackfill(npub, adapter, () => Promise.all([
     adapter.save(npub, awards),
     ...PROGRESS_SOURCES.map((source, index) => adapter.saveProgress(npub, source, ledgers[index])),
-  ]));
+  ])));
   localJournal.confirmRemoteSave(`${LOCAL_STORAGE_KEY_PREFIX}${npub}`, awards);
   PROGRESS_SOURCES.forEach((source, index) => localJournal.confirmRemoteSave(`learning_achievement_progress_v4:${npub}:${source}`, ledgers[index]));
 }
@@ -247,17 +254,17 @@ export const storeAchievements = (npub, unlockedMap, { schedule = true } = {}) =
   if (schedule && hasBrowserStorage() && effectiveNpub) scheduleAchievementSync(effectiveNpub);
 };
 
-export const buildAchievementEvent = (unlockedMap) => ({
+export const buildAchievementEvent = (unlockedMap, { source, createdAt = Math.floor(Date.now() / 1000) } = {}) => ({
   kind: ACHIEVEMENT_KIND,
   content: JSON.stringify({
     schemaVersion: 1,
     catalogVersion: CATALOG_VERSION,
     unlocked: unlockedMap,
-    updatedAt: Math.floor(Date.now() / 1000),
+    updatedAt: createdAt,
   }),
-  created_at: Math.floor(Date.now() / 1000),
+  created_at: createdAt,
   tags: [
-    ["d", ACHIEVEMENT_D],
+    ["d", source ? `${ACHIEVEMENT_D}:${source}` : ACHIEVEMENT_D],
     ["t", ACHIEVEMENT_TAG],
   ],
 });
@@ -265,7 +272,7 @@ export const buildAchievementEvent = (unlockedMap) => ({
 export const parseAchievementEvent = (event) => {
   if (!event || event.kind !== ACHIEVEMENT_KIND) return null;
   const dTag = event.tags?.find((t) => t[0] === "d")?.[1];
-  if (dTag !== ACHIEVEMENT_D) return null;
+  if (!ACHIEVEMENT_IDENTIFIERS.includes(dTag)) return null;
   try {
     const parsed = JSON.parse(event.content || "{}");
     return mergeAchievementMaps(parsed?.unlocked);
@@ -301,27 +308,28 @@ async function syncAccountAchievements(effectiveNpub, { strict = false } = {}) {
 
   const pool = new SimplePool();
   try {
-    const event = await pool.get(ACHIEVEMENT_RELAYS, {
+    const authenticate = template => signAchievementTemplate(effectiveNpub, template, `auth:${JSON.stringify(template.tags)}`);
+    const events = (await readAchievementRelayEvents(pool, ACHIEVEMENT_RELAYS, {
       kinds: [ACHIEVEMENT_KIND],
-      "#d": [ACHIEVEMENT_D],
+      "#d": ACHIEVEMENT_IDENTIFIERS,
       authors: [hex],
-    }, { maxWait: QUERY_TIMEOUT_MS });
+      limit: ACHIEVEMENT_IDENTIFIERS.length,
+    }, { authenticate, timeout: QUERY_TIMEOUT_MS })).filter(event => event.pubkey === hex && verifyEvent(event) && parseAchievementEvent(event) !== null);
+    const before = getStoredAchievements(effectiveNpub);
+    localMap = completeCourseAward(mergeAchievementMaps(before, ...events.map(parseAchievementEvent)));
+    storeAchievements(effectiveNpub, localMap, { schedule: false });
+    if (hasBrowserStorage() && JSON.stringify(before) !== JSON.stringify(localMap)) cloudSync.schedule(effectiveNpub);
 
-    if (event && verifyEvent(event)) {
-      const remoteUnlocked = parseAchievementEvent(event) || {};
-      localMap = completeCourseAward(mergeAchievementMaps(getStoredAchievements(effectiveNpub), remoteUnlocked));
-      const before = getStoredAchievements(effectiveNpub);
-      storeAchievements(effectiveNpub, localMap, { schedule: false });
-      if (hasBrowserStorage() && JSON.stringify(before) !== JSON.stringify(localMap)) cloudSync.schedule(effectiveNpub);
-
-      // If local has unlocked items that remote event didn't include yet, publish the unified union back to Nostr!
-      const hasNewLocal = Object.entries(localMap).some(([id, record]) => JSON.stringify(record) !== JSON.stringify(remoteUnlocked[id]));
-      if (hasNewLocal) {
-        await publishStoredAchievements(effectiveNpub, pool);
-      }
-    } else if (Object.keys(getStoredAchievements(effectiveNpub)).length > 0) {
-      // Remote had no event yet, but we have local achievements: broadcast them now!
-      await publishStoredAchievements(effectiveNpub, pool);
+    // Each host owns an address. Concurrent writes from the two apps can no
+    // longer replace one another before either has seen the other's awards.
+    const ownEvents = events.filter(event => event.tags.some(tag => tag[0] === "d" && tag[1] === `${ACHIEVEMENT_D}:${ACHIEVEMENT_SOURCE}`));
+    const needsPublish = !ownEvents.length || ownEvents.some(event => {
+      const remote = parseAchievementEvent(event);
+      return Object.entries(localMap).some(([id, record]) => JSON.stringify(record) !== JSON.stringify(remote[id]));
+    });
+    if (needsPublish && Object.keys(localMap).length) {
+      const createdAt = Math.max(Math.floor(Date.now() / 1000), ...ownEvents.map(event => event.created_at + 1));
+      await publishStoredAchievements(effectiveNpub, pool, { authenticate, createdAt });
     }
   } catch (err) {
     console.warn("Nostr achievement sync warning:", err);
@@ -334,15 +342,22 @@ async function syncAccountAchievements(effectiveNpub, { strict = false } = {}) {
   return getStoredAchievements(effectiveNpub);
 }
 
-async function publishStoredAchievements(npub, pool) {
+async function signAchievementTemplate(npub, template, requestKey) {
   const signer = await withSyncDeadline(signerRequest(`${npub}:key`, () => getSigner(npub)));
   if (!signer) throw new Error("A matching signer is needed to publish achievements");
-  // Include awards earned while the relay read or signer was waiting.
-  const signed = await withSyncDeadline(signerRequest(`${npub}:sign`, () => signer(buildAchievementEvent(getStoredAchievements(npub)))));
+  const signed = await withSyncDeadline(signerRequest(`${npub}:${requestKey}`, () => signer(typeof template === "function" ? template() : template)));
   if (!verifyEvent(signed) || signed.pubkey !== pubkeyFromNpub(npub)) throw new Error("Invalid achievement signature");
+  return signed;
+}
+
+async function publishStoredAchievements(npub, pool, { authenticate, createdAt }) {
+  // Include awards earned while the relay read or signer was waiting.
+  const signed = await signAchievementTemplate(npub, () => buildAchievementEvent(getStoredAchievements(npub), {
+    source: ACHIEVEMENT_SOURCE, createdAt,
+  }), "sign");
   // At least one relay must acknowledge the event. Waiting for every relay
   // would let a stalled one hide a successful publish to another.
-  await confirmRelayPublish(pool.publish(ACHIEVEMENT_RELAYS, signed));
+  await confirmRelayPublish(pool.publish(ACHIEVEMENT_RELAYS, signed, { onauth: authenticate }));
 }
 
 // Awards from older catalogs remain in the event, but only current IDs count
@@ -369,17 +384,17 @@ export function completeCourseAward(unlocked) {
 // Serialize writes for one identity. Simultaneous learning handlers must not
 // publish different replaceable events that each omit the other's award.
 const awardQueues = new Map();
-export const awardAchievements = ({ npub, achievementIds, test = false, progressionEvidence }) => {
+export const awardAchievements = ({ npub, achievementIds, test = false, progressionEvidence, notify = true }) => {
   const { npub: effectiveNpub } = resolveEffectiveIdentity(npub);
   const key = effectiveNpub || "guest";
   const pending = (awardQueues.get(key) || Promise.resolve()).catch(() => {}).then(() =>
-    awardAchievementBatch({ npub: effectiveNpub, achievementIds, test, progressionEvidence }));
+    awardAchievementBatch({ npub: effectiveNpub, achievementIds, test, progressionEvidence, notify }));
   awardQueues.set(key, pending);
   void pending.finally(() => { if (awardQueues.get(key) === pending) awardQueues.delete(key); }).catch(() => {});
   return pending;
 };
 
-async function awardAchievementBatch({ npub: effectiveNpub, achievementIds, test, progressionEvidence }) {
+async function awardAchievementBatch({ npub: effectiveNpub, achievementIds, test, progressionEvidence, notify }) {
   let currentUnlocked = getStoredAchievements(effectiveNpub);
   const alreadyRecorded = id => currentUnlocked[id] && (!currentUnlocked[id].test || test);
   const ids = [...new Set(achievementIds)].filter(isCatalogAchievement).filter(id => !alreadyRecorded(id));
@@ -401,7 +416,7 @@ async function awardAchievementBatch({ npub: effectiveNpub, achievementIds, test
   }
   if (!awarded.length) return [];
   storeAchievements(effectiveNpub, updatedUnlocked);
-  for (const [id, record] of Object.entries(updatedUnlocked)) {
+  for (const [id, record] of notify ? Object.entries(updatedUnlocked) : []) {
     const previous = currentUnlocked[id];
     if (isCatalogAchievement(id) && (!previous || (previous.test && !record.test))) {
       unlockStore.enqueue(effectiveNpub || "", ACHIEVEMENTS[id], { test: Boolean(record.test) });
@@ -416,14 +431,14 @@ export const awardAchievement = async ({ npub, achievementId, test = false }) =>
   return awarded[0] || null;
 };
 
-// Only call this with the earned, contiguous curriculum unlock. Do not pass
-// placement, selected lesson difficulty, or the adaptive practice Score.
-export const awardProgressionAchievements = async ({ npub, source, evidence = {}, events = [] }) => {
+// Evaluate confirmed completion evidence; placement, selected lesson difficulty
+// and the adaptive practice Score do not prove completed work.
+export const awardProgressionAchievements = async ({ npub, source, evidence = {}, events = [], notify = true }) => {
   if (!npub) return [];
   const snapshot = progressionSnapshot(npub, source, evidence, events);
   const current = getStoredAchievements(npub);
   const ids = earnedProgressionIds(source, snapshot).filter(id => !hasEarnedRequirement(current, [id]));
-  return ids.length ? awardAchievements({ npub, achievementIds: ids, progressionEvidence: snapshot }) : [];
+  return ids.length ? awardAchievements({ npub, achievementIds: ids, progressionEvidence: snapshot, notify }) : [];
 };
 
 export const awardTutorLevelAchievements = async ({ npub, level }) => {

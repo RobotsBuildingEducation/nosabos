@@ -13,7 +13,8 @@ function hashString(value) {
 }
 
 /**
- * Pick a stable 4-6 card target for one learner's daily quest.
+ * The introductory quest always asks for five cards. Later quests use a
+ * stable 4-6 card target for one learner's daily quest.
  *
  * Four, five, and six are equally likely. Including the learner, language, and
  * local day keeps the target fresh while ensuring it does not change after a
@@ -23,7 +24,9 @@ export function getDailyQuestFlashcardTarget({
   userKey = "",
   langKey = "",
   dayKey = "",
+  isFirstSession = false,
 } = {}) {
+  if (isFirstSession) return DAILY_QUEST_FLASHCARD_TARGET_DEFAULT;
   const bucket =
     hashString(`review|${userKey}|${langKey}|${dayKey}`) % 3;
   return DAILY_QUEST_FLASHCARD_TARGET_MIN + bucket;

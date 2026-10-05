@@ -47,6 +47,7 @@ import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
 import { simplemodel } from "../firebaseResources/firebaseResources";
 import { translations } from "../utils/translation";
 import { WaveBar } from "./WaveBar";
+import { getFlashcardReviewPreviewCount } from "../utils/flashcardActivity.js";
 import useNotesStore from "../hooks/useNotesStore";
 import { generateNoteContent, buildNoteObject } from "../utils/noteGeneration";
 import { captureCompanionMemory } from "../utils/companionMemory";
@@ -262,6 +263,7 @@ export default function FlashcardPractice({
   const [textAnswer, setTextAnswer] = useState("");
   const [showResult, setShowResult] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
+  const [dailyReviewPreview, setDailyReviewPreview] = useState(null);
   const [recognizedText, setRecognizedText] = useState("");
   const [xpAwarded, setXpAwarded] = useState(0);
   const [isGrading, setIsGrading] = useState(false);
@@ -352,13 +354,16 @@ export default function FlashcardPractice({
   const updatedTotalXp = currentLanguageXp + xpAwarded;
   const xpLevelNumber = Math.floor(updatedTotalXp / 100) + 1;
   const nextLevelProgressPct = updatedTotalXp % 100;
-  const dailyDoneToday = Math.min(Number(dailyReviewed) || 0, dailyTarget || 0);
+  const dailyDoneToday = getFlashcardReviewPreviewCount(
+    dailyReviewed,
+    showResult && isCorrect && assessmentMode === "ai" &&
+      dailyReviewPreview?.cardId === card.id
+      ? dailyReviewPreview.countBeforeAnswer
+      : null,
+  );
   const dailyProgressPct =
     dailyTarget > 0
-      ? Math.min(
-          100,
-          Math.round(((Number(dailyReviewed) || 0) / dailyTarget) * 100),
-        )
+      ? Math.round((dailyDoneToday / dailyTarget) * 100)
       : 0;
   const effectiveCardLanguage = getEffectiveCardLanguage(supportLang);
   const cardPromptTextProps = useMemo(
@@ -598,6 +603,10 @@ export default function FlashcardPractice({
       }
 
       setIsCorrect(isYes);
+      setDailyReviewPreview(isYes && !card.isGoal && !card.isRepair ? {
+        cardId: card.id,
+        countBeforeAnswer: Math.max(0, Number(dailyReviewed) || 0),
+      } : null);
       setXpAwarded(isYes ? xp : 0);
       setAiSuggestedRating(isYes ? mapXpToReviewOutcome(xp) : "again");
       setAssessmentMode("ai");
@@ -1825,7 +1834,9 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
                                     isLightTheme ? APP_TEXT_PRIMARY : "white"
                                   }
                                 >
-                                  {dailyDoneToday}/{dailyTarget}
+                                  {dailyDoneToday > dailyTarget
+                                    ? `${dailyProgressPct}%`
+                                    : `${dailyDoneToday}/${dailyTarget}`}
                                 </Text>
                               </HStack>
                               <WaveBar

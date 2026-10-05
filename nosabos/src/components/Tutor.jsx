@@ -8,8 +8,8 @@ import {
 } from "../utils/realtimeSessionControls.js";
 import useGoalFocusStore from "../hooks/useGoalFocusStore";
 import { awardTutorLevelAchievements } from "../utils/achievements.js";
-import { previewAchievementUnlock } from "../achievements/unlockStore.js";
-import { achievementText } from "../achievements/copy.js";
+import { tutorLevelFromCompletions } from "../achievements/proficiencyCompletion.js";
+import { isContentUnlockedByPlacement } from "../utils/proficiencyPlacement.js";
 import {
   currentGoalFocus,
   evaluateGoalAttempt,
@@ -1954,7 +1954,10 @@ function findTutorLessonById(units, lessonId) {
   return null;
 }
 
-function isTutorLessonUnlocked(units, progressLessons, unitIndex, lessonIndex) {
+function isTutorLessonUnlocked(units, progressLessons, unitIndex, lessonIndex, placementLevel = null) {
+  const currentUnit = units[unitIndex];
+  if (isContentUnlockedByPlacement(placementLevel,
+    currentUnit?.lessons?.[lessonIndex]?.cefrLevel || currentUnit?.cefrLevel)) return true;
   if (lessonIndex === 0) {
     if (unitIndex === 0) return true;
     const previousUnit = units[unitIndex - 1];
@@ -1972,7 +1975,7 @@ function isTutorLessonUnlocked(units, progressLessons, unitIndex, lessonIndex) {
   );
 }
 
-function isTutorLessonUnlockedById(units, progressLessons, lessonId) {
+function isTutorLessonUnlockedById(units, progressLessons, lessonId, placementLevel = null) {
   for (let unitIndex = 0; unitIndex < (units || []).length; unitIndex += 1) {
     const unit = units[unitIndex];
     for (
@@ -1986,15 +1989,18 @@ function isTutorLessonUnlockedById(units, progressLessons, lessonId) {
         progressLessons,
         unitIndex,
         lessonIndex,
+        placementLevel,
       );
     }
   }
   return false;
 }
 
-function findLatestTutorUnlockedLesson(units, progressLessons) {
-  for (let unitIndex = 0; unitIndex < (units || []).length; unitIndex += 1) {
-    const unit = units[unitIndex];
+function findLatestTutorUnlockedLesson(units, progressLessons, placementLevel = null) {
+  const orderedUnits = [...(units || [])].sort((a, b) =>
+    Number(b.cefrLevel === placementLevel) - Number(a.cefrLevel === placementLevel));
+  for (const unit of orderedUnits) {
+    const unitIndex = units.indexOf(unit);
     for (
       let lessonIndex = 0;
       lessonIndex < (unit?.lessons?.length || 0);
@@ -2007,7 +2013,7 @@ function findLatestTutorUnlockedLesson(units, progressLessons) {
       }
       if (
         progress?.status !== SKILL_STATUS.COMPLETED &&
-        isTutorLessonUnlocked(units, progressLessons, unitIndex, lessonIndex)
+        isTutorLessonUnlocked(units, progressLessons, unitIndex, lessonIndex, placementLevel)
       ) {
         return { lesson, unit, status: SKILL_STATUS.AVAILABLE };
       }
@@ -3645,6 +3651,7 @@ const TutorPathUnit = React.memo(function TutorPathUnit({
   selectedLessonId,
   selectedLessonEarnedXp,
   isTestUnlocked,
+  isPlacementUnlocked = false,
   onLessonSelect,
 }) {
   const unitRef = useRef(null);
@@ -3769,6 +3776,7 @@ const TutorPathUnit = React.memo(function TutorPathUnit({
             ) {
               const previousCompleted =
                 isTestUnlocked ||
+                isPlacementUnlocked ||
                 (lessonIndex === 0
                   ? unitIndex === 0 ||
                     previousUnitLastLessonStatus === SKILL_STATUS.COMPLETED
@@ -3891,6 +3899,7 @@ export default function Tutor({
 
   // User id
   const user = useUserStore((s) => s.user);
+  const tutorPlacementLevel = user?.proficiencyPlacements?.[targetLang] || null;
   const currentNpub = activeNpub?.trim?.() || strongNpub(user);
   const loadedUserSettingsKeyRef = useRef("");
 
@@ -4574,19 +4583,15 @@ export default function Tutor({
   const activeTutorLevelProgress =
     tutorLevelCompletionStatus[activeTutorLevel]?.progress || 0;
 
-  // Tutor-earned unlock: the level after the highest contiguous run of fully
-  // completed tutor levels (same walk App uses for currentLessonLevel). It is
+  // Tutor-earned unlock: the level after the highest fully completed tutor
+  // level, including learners who placed above the beginner levels. It is
   // persisted to progress.tutorUnlockedLevels[lang] so surfaces App owns —
   // the phonics generation ceiling and maxProficiencyLevel — can count
   // tutor-only progress.
-  const tutorEarnedLevel = useMemo(() => {
-    let unlocked = TUTOR_CEFR_LEVELS[0];
-    for (let i = 0; i < TUTOR_CEFR_LEVELS.length - 1; i++) {
-      if (!tutorLevelCompletionStatus[TUTOR_CEFR_LEVELS[i]]?.isComplete) break;
-      unlocked = TUTOR_CEFR_LEVELS[i + 1];
-    }
-    return unlocked;
-  }, [tutorLevelCompletionStatus]);
+  const tutorEarnedLevel = useMemo(
+    () => tutorLevelFromCompletions(tutorLevelCompletionStatus),
+    [tutorLevelCompletionStatus],
+  );
 
   const storedTutorUnlockedLevel =
     user?.progress?.tutorUnlockedLevels?.[getTutorStorageLang(targetLang)];
@@ -4701,6 +4706,7 @@ export default function Tutor({
           tutorPathUnits,
           progressLessons,
           storedLesson.lesson.id,
+          tutorPlacementLevel,
         )
       : false;
     const storedLessonIsUsable =
@@ -4716,7 +4722,7 @@ export default function Tutor({
               ? SKILL_STATUS.IN_PROGRESS
               : SKILL_STATUS.AVAILABLE,
         }
-      : findLatestTutorUnlockedLesson(tutorPathUnits, progressLessons);
+      : findLatestTutorUnlockedLesson(tutorPathUnits, progressLessons, tutorPlacementLevel);
 
     setActiveTutorLevel((current) =>
       resolveTutorPathLevel({
@@ -4812,6 +4818,7 @@ export default function Tutor({
     xp,
     tutorRepairRestoreTick,
     isTutorProgressLoading,
+    tutorPlacementLevel,
   ]);
 
   // Hand the surface back to the regular lesson once an ephemeral repair
@@ -11469,15 +11476,6 @@ export default function Tutor({
                   {uiText("app_mode_path", "Lessons")}
                 </Button>
                 <HStack spacing={2}>
-                  <Button
-                    size="xs"
-                    variant="outline"
-                    colorScheme="yellow"
-                    borderRadius="full"
-                    onClick={() => previewAchievementUnlock("nosabos")}
-                  >
-                    {achievementText("testUnlock", uiLang)}
-                  </Button>
                   <IconButton
                     ref={chatLogButtonRef}
                     icon={<FaRegCommentDots size={14} />}
@@ -11981,6 +11979,7 @@ export default function Tutor({
                                     : 0
                                 }
                                 isTestUnlocked={isTutorTestUnlockActive()}
+                                isPlacementUnlocked={isContentUnlockedByPlacement(tutorPlacementLevel, unit.cefrLevel)}
                                 onLessonSelect={handleTutorLessonPreview}
                               />
                             );
