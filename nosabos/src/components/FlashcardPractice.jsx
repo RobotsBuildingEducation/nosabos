@@ -1,3 +1,4 @@
+import { getSpeechPracticeErrorFeedback } from "../utils/speechPracticeFeedback.js";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import {
@@ -46,6 +47,7 @@ import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
 import { simplemodel } from "../firebaseResources/firebaseResources";
 import { translations } from "../utils/translation";
 import { WaveBar } from "./WaveBar";
+import { getFlashcardReviewPreviewCount } from "../utils/flashcardActivity.js";
 import useNotesStore from "../hooks/useNotesStore";
 import { generateNoteContent, buildNoteObject } from "../utils/noteGeneration";
 import { captureCompanionMemory } from "../utils/companionMemory";
@@ -61,6 +63,7 @@ import {
   SOFT_STOP_BUTTON_GLOW,
   SOFT_STOP_BUTTON_HOVER_BG,
 } from "../utils/softStopButton";
+import VoiceWaveIcon from "./VoiceWaveIcon";
 import { submitActionSound, deliciousSound, selectSound, nextButtonSound } from "../constants/sounds";
 import AnimatedEllipsis from "./AnimatedEllipsis";
 import { useThemeStore } from "../useThemeStore";
@@ -260,6 +263,7 @@ export default function FlashcardPractice({
   const [textAnswer, setTextAnswer] = useState("");
   const [showResult, setShowResult] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
+  const [dailyReviewPreview, setDailyReviewPreview] = useState(null);
   const [recognizedText, setRecognizedText] = useState("");
   const [xpAwarded, setXpAwarded] = useState(0);
   const [isGrading, setIsGrading] = useState(false);
@@ -350,13 +354,16 @@ export default function FlashcardPractice({
   const updatedTotalXp = currentLanguageXp + xpAwarded;
   const xpLevelNumber = Math.floor(updatedTotalXp / 100) + 1;
   const nextLevelProgressPct = updatedTotalXp % 100;
-  const dailyDoneToday = Math.min(Number(dailyReviewed) || 0, dailyTarget || 0);
+  const dailyDoneToday = getFlashcardReviewPreviewCount(
+    dailyReviewed,
+    showResult && isCorrect && assessmentMode === "ai" &&
+      dailyReviewPreview?.cardId === card.id
+      ? dailyReviewPreview.countBeforeAnswer
+      : null,
+  );
   const dailyProgressPct =
     dailyTarget > 0
-      ? Math.min(
-          100,
-          Math.round(((Number(dailyReviewed) || 0) / dailyTarget) * 100),
-        )
+      ? Math.round((dailyDoneToday / dailyTarget) * 100)
       : 0;
   const effectiveCardLanguage = getEffectiveCardLanguage(supportLang);
   const cardPromptTextProps = useMemo(
@@ -543,6 +550,8 @@ export default function FlashcardPractice({
     stopRecording,
     isRecording,
     isConnecting,
+    isEvaluating,
+    stream,
     supportsSpeech,
   } = useSpeechPractice({
     targetText: "answer", // Placeholder - we use AI grading instead of strict matching
@@ -550,9 +559,7 @@ export default function FlashcardPractice({
     onResult: ({ recognizedText, error }) => {
       if (error) {
         toast({
-          title: getTranslation("flashcard_eval_error_title"),
-          description: getTranslation("flashcard_eval_error_desc"),
-          status: "error",
+          ...getSpeechPracticeErrorFeedback(error, getTranslation),
           duration: 2500,
         });
         return;
@@ -596,6 +603,10 @@ export default function FlashcardPractice({
       }
 
       setIsCorrect(isYes);
+      setDailyReviewPreview(isYes && !card.isGoal && !card.isRepair ? {
+        cardId: card.id,
+        countBeforeAnswer: Math.max(0, Number(dailyReviewed) || 0),
+      } : null);
       setXpAwarded(isYes ? xp : 0);
       setAiSuggestedRating(isYes ? mapXpToReviewOutcome(xp) : "again");
       setAssessmentMode("ai");
@@ -849,6 +860,8 @@ export default function FlashcardPractice({
           status: "error",
           duration: 3200,
         });
+      } else {
+        toast({ ...getSpeechPracticeErrorFeedback(err, getTranslation), duration: 3200 });
       }
     }
   };
@@ -1334,58 +1347,44 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
                         <Button
                           w="100%"
                           size="lg"
-                          colorScheme={
-                            isRecording
-                              ? undefined
-                              : isConnecting
-                                ? "yellow"
-                                : "teal"
-                          }
+                          colorScheme={isConnecting ? "yellow" : "teal"}
                           bg={
-                            isRecording
-                              ? SOFT_STOP_BUTTON_BG
-                              : isLightTheme && !isConnecting
-                                ? "#56a89b"
-                                : undefined
-                          }
-                          color={
-                            isRecording || (isLightTheme && !isConnecting)
-                              ? "white"
+                            isLightTheme && !isConnecting
+                              ? "#56a89b"
                               : undefined
                           }
-                          boxShadow={
-                            isRecording ? SOFT_STOP_BUTTON_GLOW : undefined
+                          color={
+                            isLightTheme && !isConnecting
+                              ? "white"
+                              : undefined
                           }
                           leftIcon={
                             isConnecting ? (
                               <Spinner size="xs" thickness="3px" />
-                            ) : isRecording ? (
-                              <RiStopCircleLine size={20} />
-                            ) : (
+                            ) : !isRecording ? (
                               <RiMicLine size={20} />
-                            )
+                            ) : undefined
                           }
                           onClick={handleRecord}
-                          isDisabled={!supportsSpeech || isConnecting}
+                          isLoading={isEvaluating}
+                          isDisabled={!supportsSpeech || isConnecting || isEvaluating}
                           _hover={{
                             transform: "translateY(-2px)",
-                            boxShadow: isRecording
-                              ? SOFT_STOP_BUTTON_GLOW
-                              : isLightTheme
-                                ? "0 6px 14px rgba(86, 168, 155, 0.18)"
-                                : `0 8px 20px ${cefrColor.primary}40`,
-                            ...(isRecording
-                              ? { bg: SOFT_STOP_BUTTON_HOVER_BG }
-                              : {}),
+                            boxShadow: isLightTheme
+                              ? "0 6px 14px rgba(86, 168, 155, 0.18)"
+                              : `0 8px 20px ${cefrColor.primary}40`,
                           }}
                           padding={9}
                           _active={{ transform: "translateY(0)" }}
+                          aria-label={getTranslation("flashcard_record_answer")}
                         >
-                          {isConnecting
-                            ? getTranslation("vocab_connecting")
-                            : isRecording
-                              ? getTranslation("flashcard_stop_recording")
-                              : getTranslation("flashcard_record_answer")}
+                          {isConnecting ? (
+                            getTranslation("vocab_connecting")
+                          ) : isRecording ? (
+                            <VoiceWaveIcon stream={stream} size={24} color="currentColor" />
+                          ) : (
+                            getTranslation("flashcard_record_answer")
+                          )}
                         </Button>
 
                         {/* Recognized speech text */}
@@ -1835,7 +1834,9 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
                                     isLightTheme ? APP_TEXT_PRIMARY : "white"
                                   }
                                 >
-                                  {dailyDoneToday}/{dailyTarget}
+                                  {dailyDoneToday > dailyTarget
+                                    ? `${dailyProgressPct}%`
+                                    : `${dailyDoneToday}/${dailyTarget}`}
                                 </Text>
                               </HStack>
                               <WaveBar

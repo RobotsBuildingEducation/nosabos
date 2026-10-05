@@ -501,7 +501,7 @@ export const TRANSLATION_AR_STATIC = {
   vocab_quiz_not_passed: "ما نجحتش في الاختبار",
   vocab_quiz_score_passed: "{correct} صح • المطلوب {needed}",
   vocab_quiz_score_failed: "{correct} صح • محتاج {needed} علشان تنجح",
-  vocab_back_to_skill_tree: "ارجع لشجرة المهارات",
+  vocab_back_to_skill_tree: "ارجع إلى الدروس",
   vocab_mc_instruction: "اختار الإجابة الصح",
   vocab_ma_instruction: "اختار كل الإجابات الصح",
   vocab_match_instruction: "طابق الكلمات",

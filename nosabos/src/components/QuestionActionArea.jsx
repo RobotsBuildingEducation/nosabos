@@ -1,7 +1,11 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Box, VStack } from "@chakra-ui/react";
+import { Box, Button, VStack } from "@chakra-ui/react";
 import useQuestionActionStore from "../hooks/useQuestionActionStore";
+import { useAchievementUnlock } from "../achievements/useAchievementUnlock.js";
+import AchievementFeedback from "../achievements/AchievementFeedback.jsx";
+import { achievementText } from "../achievements/copy.js";
+import ActivityActionRow from "./ActivityActionRow.jsx";
 import useActionBarDimensions from "../hooks/useActionBarDimensions";
 import { APP_ACTION_BAR_RADIUS, APP_SQUIRCLE_SHAPE } from "../theme";
 import GlassContainer from "./GlassContainer";
@@ -75,9 +79,10 @@ export default function QuestionActionArea({
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
   const reduceMotion = useReducedMotion();
+  const { unlock, dismiss, language } = useAchievementUnlock();
   const responseMotion = useAnimationControls();
   const feedbackState =
-    feedback === true
+    unlock ? "achievement" : feedback === true
       ? "correct"
       : feedback === false
         ? "incorrect"
@@ -400,9 +405,16 @@ export default function QuestionActionArea({
                           }
                           feedback={feedback}
                           reduceMotion={reduceMotion || !shown}
-                          actions={actions}
+                          actions={unlock ? (
+                            <ActivityActionRow tone="achievement" primary={
+                              <Button key="achievement-continue" onClick={dismiss}>
+                                {achievementText("continue", language)}
+                              </Button>
+                            } />
+                          ) : actions}
                         >
-                          {children}
+                          {unlock && <AchievementFeedback unlock={unlock} language={language} onDismiss={dismiss} />}
+                          {children && <Box display={unlock ? "none" : undefined}>{children}</Box>}
                         </ActionAreaContent>
                       </AnimatePresence>
                     </MotionBox>

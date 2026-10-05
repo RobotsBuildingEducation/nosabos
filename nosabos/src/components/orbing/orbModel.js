@@ -45,6 +45,10 @@ export const ORB_PALETTES = [
   { id: "lilac", name: "Lilac", swatch: "#b59ae8", colors: ["#7253c4", "#c3a2f6", "#f6e8ff"] },
   { id: "peach", name: "Peach", swatch: "#f3ad81", colors: ["#e97438", "#ffbb82", "#fff3de"] },
   { id: "pearl", name: "Pearl", swatch: "#e0dfd9", colors: ["#aaa9a3", "#e8e7df", "#ffffff"] },
+  { id: "gold", name: "Solar gold", swatch: "#f6c445", colors: ["#c67d0a", "#f6c445", "#fff6d6"] },
+  { id: "rose", name: "Ruby rose", swatch: "#fb7185", colors: ["#b91c1c", "#fb7185", "#ffe4e6"] },
+  { id: "emerald", name: "Emerald", swatch: "#34d399", colors: ["#047857", "#34d399", "#ecfdf5"] },
+  { id: "obsidian", name: "Obsidian", swatch: "#6366f1", colors: ["#1e1b4b", "#6366f1", "#e0e7ff"] },
 ];
 
 export const REACTION_DURATION = { boop: 1.4, wave: 2.3, bounce: 2.2, spin: 2.4, celebrate: 3.4 };

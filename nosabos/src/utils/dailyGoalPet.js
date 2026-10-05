@@ -100,7 +100,7 @@ export function countMissedDailyGoalWindows(data = {}, now = new Date()) {
   }
 
   const reached = new Set(
-    Array.isArray(data?.completedGoalDates) ? data.completedGoalDates : [],
+    [...(Array.isArray(data?.completedGoalDates) ? data.completedGoalDates : []), ...(Array.isArray(data?.dailyGoalPetReachedDates) ? data.dailyGoalPetReachedDates : [])],
   );
   if (typeof data?.lastGoalDayKey === "string" && data.lastGoalDayKey) {
     reached.add(data.lastGoalDayKey);
@@ -134,7 +134,27 @@ export function buildDailyGoalResetFields(
   // Everything up to yesterday is now reflected in health; today stays open.
   const lastAccountedDay = dayKeyFromIndex(dayIndexFromDate(now) - 1);
 
+  // Only credit days whose start at full health was observed. Old accounts do
+  // not gain retroactive healthy days from a current 100% reading.
+  const todayKey = dayKeyFromIndex(dayIndexFromDate(now));
+  const trackedIndex = dayIndexFromKey(data.dailyGoalPetTrackedDay);
+  const healthyDates = new Set(Array.isArray(data.dailyGoalPetHealthyDates) ? data.dailyGoalPetHealthyDates : []);
+  if (Number.isFinite(trackedIndex) && trackedIndex < dayIndexFromDate(now) &&
+      data.dailyGoalPetStartedFull === true && currentHealth === 100) {
+    const reached = new Set([...(Array.isArray(data.completedGoalDates) ? data.completedGoalDates : []), ...(Array.isArray(data.dailyGoalPetReachedDates) ? data.dailyGoalPetReachedDates : [])]);
+    if (data.lastGoalDayKey) reached.add(data.lastGoalDayKey);
+    // Stop at the first missed day: later recoveries cannot prove all-day health.
+    for (let index = trackedIndex; index < dayIndexFromDate(now); index += 1) {
+      const day = dayKeyFromIndex(index);
+      if (!reached.has(day)) break;
+      healthyDates.add(day);
+    }
+  }
+  const sameDay = data.dailyGoalPetTrackedDay === todayKey;
   return {
+    dailyGoalPetTrackedDay: todayKey,
+    dailyGoalPetStartedFull: sameDay ? data.dailyGoalPetStartedFull === true && currentHealth === 100 && nextHealth === 100 : nextHealth === 100,
+    dailyGoalPetHealthyDates: [...healthyDates].sort(),
     ...(resetWindow
       ? {
           dailyXp: 0,

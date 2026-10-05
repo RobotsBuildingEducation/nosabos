@@ -1,3 +1,4 @@
+import { awardProgressionAchievements, pubkeyFromNpub } from "../utils/achievements.js";
 // src/hooks/useCashuWallet.js
 // NIP-60 (Cashu Wallets) and NIP-61 (Nutzaps) implementation
 // Uses @nostr-dev-kit/ndk-wallet for Cashu operations
@@ -465,6 +466,7 @@ export function useCashuWallet() {
   // Send sats to another npub via NIP-61 nutzap
   const send = useCallback(
     async (recipientNpub, amount, comment = "") => {
+      const ownerNpub = localStorage.getItem("local_npub");
       if (!cashuWalletRef.current || !ndkRef.current || !signerRef.current) {
         setError("Wallet not initialized");
         return false;
@@ -557,7 +559,12 @@ export function useCashuWallet() {
         });
 
         await nutzapEvent.sign(signer);
-        await nutzapEvent.publish();
+        const acknowledged = await nutzapEvent.publish();
+        if (acknowledged?.size > 0 && pubkeyFromNpub(ownerNpub) === nutzapEvent.pubkey && nutzapEvent.pubkey !== recipientHex.toLowerCase()) {
+          void awardProgressionAchievements({ npub: ownerNpub, source: "nosabos", events: [{
+            metric: "spent_sats", id: nutzapEvent.id, amount, status: "confirmed", purpose: "tip", sender: nutzapEvent.pubkey, recipient: recipientHex,
+          }] }).catch(error => console.warn("Spend achievement:", error));
+        }
 
         console.log("[useCashuWallet] Nutzap published!");
 

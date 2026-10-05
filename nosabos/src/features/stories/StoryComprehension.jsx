@@ -1,3 +1,4 @@
+import { getSpeechPracticeErrorFeedback } from "../../utils/speechPracticeFeedback.js";
 import { getStoryDifficulty } from "./storyPrompts";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Avatar, Badge, Box, Button, Center, Flex, HStack, Icon, IconButton, SimpleGrid, Spinner, Text, VisuallyHidden, VStack } from "@chakra-ui/react";
@@ -37,6 +38,7 @@ import FeedbackRail from "../../components/FeedbackRail";
 import { t } from "../../utils/translation";
 import { useSoundSettings } from "../../hooks/useSoundSettings";
 import { useSpeechPractice } from "../../hooks/useSpeechPractice";
+import VoiceWaveIcon from "../../components/VoiceWaveIcon";
 import { speechReasonTips } from "../../utils/speechEvaluation";
 import { normalizeSupportLanguage } from "../../constants/languages";
 import { selectSound, submitActionSound, completeSound, clickSound, nextButtonSound } from "../../constants/sounds";
@@ -213,14 +215,14 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
   }), [targetLang, getPlayer, mode]);
 
   const awaitingSpeech = playback === "awaiting_speech";
-  const { startRecording, stopRecording, cancelRecording, isRecording, isConnecting } = useSpeech({
+  const { startRecording, stopRecording, cancelRecording, isRecording, isConnecting, isEvaluating, stream } = useSpeech({
     targetText: awaitingSpeech ? currentTurn?.target : "",
     transcriptionHint: awaitingSpeech ? currentTurn?.target : "",
     targetLang,
     onResult: ({ evaluation, error }) => {
       if (!mounted.current || !currentTurn || speechTurnRef.current !== currentTurn) return;
       if (error || !evaluation) {
-        setSpeechError(copy.recordingError);
+        setSpeechError(error ? getSpeechPracticeErrorFeedback(error, (key) => t(effectiveLang, key)).description : copy.recordingError);
         return;
       }
       speechTurnRef.current = null;
@@ -1100,11 +1102,11 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
       actions={
         result !== null || speechResult !== null ? null : (
           <ActivityActionRow
-            tone={isStopAction ? "stop" : "primary"}
+            tone={awaitingSpeech ? "speak" : "primary"}
             primary={
               <Button
-                colorScheme={isStopAction ? "reddit" : "purple"}
-                isLoading={saving || (!questionVisible && (playback === "loading" || playback === "playing" || isConnecting))}
+                colorScheme="purple"
+                isLoading={saving || isEvaluating || (!questionVisible && (playback === "loading" || playback === "playing" || isConnecting))}
                 loadingText={
                   isConnecting
                     ? copy.connectingMic
@@ -1118,17 +1120,25 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
                   (questionVisible && !canCheck) ||
                   (!questionVisible && (playback === "loading" || playback === "playing"))
                 }
-                leftIcon={!questionVisible ? (awaitingSpeech ? (isRecording ? <FaStop /> : <FiMic />) : <FiPlay />) : undefined}
+                leftIcon={!questionVisible ? (awaitingSpeech ? (!isRecording ? <FiMic /> : undefined) : <FiPlay />) : undefined}
                 onClick={questionVisible ? check : awaitingSpeech ? recordLine : togglePlayback}
                 aria-label={
-                  awaitingSpeech && isRecording
-                    ? "Stop recording"
-                    : !questionVisible && !awaitingSpeech
+                  !questionVisible && !awaitingSpeech
                     ? (playback === "playing" ? "Playing..." : copy.play)
-                    : undefined
+                    : copy.record
                 }
               >
-                {questionVisible ? copy.check : awaitingSpeech ? (isRecording ? copy.stopRecording : copy.record) : copy.play}
+                {questionVisible ? (
+                  copy.check
+                ) : awaitingSpeech ? (
+                  isRecording ? (
+                    <VoiceWaveIcon stream={stream} size={20} color="currentColor" />
+                  ) : (
+                    copy.record
+                  )
+                ) : (
+                  copy.play
+                )}
               </Button>
             }
           >

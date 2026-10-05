@@ -52,6 +52,8 @@ body {
   --question-chip-border: rgba(196, 181, 253, 0.4);
   --question-success-accent: #4ade80;
   --question-success-bg: rgba(74, 222, 128, 0.14);
+  --question-achievement-accent: #fbbf24;
+  --question-achievement-bg: rgba(251, 191, 36, 0.14);
   --question-error-accent: #f87171;
   --question-error-bg: rgba(248, 113, 113, 0.14);
   --question-assistant-bg: rgba(8, 47, 73, 0.48);
@@ -131,6 +133,8 @@ body {
   --question-chip-border: rgba(124, 58, 237, 0.26);
   --question-success-accent: #16a34a;
   --question-success-bg: rgba(22, 163, 74, 0.1);
+  --question-achievement-accent: #b7791f;
+  --question-achievement-bg: rgba(217, 158, 35, 0.1);
   --question-error-accent: #dc2626;
   --question-error-bg: rgba(220, 38, 38, 0.1);
   --question-assistant-bg: rgba(247, 251, 255, 0.96);
@@ -529,6 +533,11 @@ html[data-scrollbar-gap="true"] {
   --activity-feedback-tint: var(--question-success-bg);
 }
 
+[data-question-action-area][data-question-feedback="achievement"] {
+  --activity-feedback-accent: var(--question-achievement-accent);
+  --activity-feedback-tint: var(--question-achievement-bg);
+}
+
 [data-question-action-area][data-question-feedback="incorrect"] {
   --activity-feedback-accent: var(--question-error-accent);
   --activity-feedback-tint: var(--question-error-bg);
@@ -544,6 +553,7 @@ html[data-scrollbar-gap="true"] {
 }
 
 [data-question-action-area][data-question-feedback="correct"] .bottombar-glass,
+[data-question-action-area][data-question-feedback="achievement"] .bottombar-glass,
 [data-question-action-area][data-question-feedback="incorrect"] .bottombar-glass,
 [data-question-action-area][data-question-feedback="assistant"] .bottombar-glass {
   background: linear-gradient(135deg, var(--activity-feedback-tint), var(--activity-feedback-tint)), var(--app-glass-bg);

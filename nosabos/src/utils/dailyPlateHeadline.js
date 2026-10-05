@@ -111,7 +111,7 @@ export function getPlateTaskSummary(courses = [], user = {}, targetLang = "es", 
         topic = typeof titleVal === "object" ? titleVal?.en || Object.values(titleVal)[0] || "" : titleVal || "";
       }
       if (!topic) {
-        topic = "Skill tree lesson";
+        topic = "Lesson";
       }
     } else if (course.kind === "speak") {
       topic = "Tutor conversation practice";

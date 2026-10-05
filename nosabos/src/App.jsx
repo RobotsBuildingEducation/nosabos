@@ -1,3 +1,8 @@
+import usePiyaliAchievements from "./hooks/usePiyaliAchievements.js";
+import useAccountSnapshot from "./hooks/useAccountSnapshot.js";
+import { awardPiyaliFlashcardProgress } from "./utils/piyaliFlashcardAchievements.js";
+import AchievementUnlockFallback from "./components/AchievementUnlockFallback.jsx";
+import { awardProgressionAchievements } from "./utils/achievements.js";
 import GoalLessonCompletion from "./components/GoalLessonCompletion";
 import {
   getGoalPreparationXp,
@@ -189,6 +194,7 @@ import { resolveSubscriptionAccess } from "./components/subscriptionAccessModel"
 import { useNostrWalletStore } from "./hooks/useNostrWalletStore";
 import { LuKey } from "react-icons/lu";
 import AlphabetBootcamp from "./components/AlphabetBootcamp";
+import { getAuthoredPhonicsFocusCards } from "./data/phonics/index.js";
 
 import NotesDrawer from "./components/NotesDrawer";
 import JourneyMilestoneGate from "./components/JourneyMilestoneGate";
@@ -1372,6 +1378,7 @@ function TopBar({
   onPatreonCancelReplacement,
   openSubscriptionTab = false,
   onSubscriptionSurfaceOpen,
+  onOpenProficiencyModal,
 }) {
   const playSliderTick = useSoundSettings((s) => s.playSliderTick);
   const toast = useToast();
@@ -2056,7 +2063,7 @@ function TopBar({
                     overflow="hidden"
                     textOverflow="ellipsis"
                   >
-                    {dailyGoalLabel}:
+                    {dailyGoalLabel}
                   </Text>
                   <Box
                     w={{ base: "72px", sm: "96px", md: "120px" }}
@@ -2665,20 +2672,20 @@ function TopBar({
                           }}
                           onClick={() => {
                             closeSettings();
-                            navigate("/proficiency");
+                            onOpenProficiencyModal?.();
                           }}
                           mt={4}
                         >
                           {uiCopy(appLanguage, {
-                            en: "Take proficiency proficiency test",
-                            es: "Realizar prueba de nivel",
-                            pt: "Fazer teste de nível",
-                            it: "Fai il test di livello",
-                            fr: "Passer le test de niveau",
-                            ja: "レベルテストを受ける",
-                            hi: "प्रवीणता परीक्षण दें",
-                            ar: "إجراء اختبار المستوى",
-                            zh: "参加水平测试",
+                            en: "Change proficiency level",
+                            es: "Cambiar nivel de competencia",
+                            pt: "Alterar nível de proficiência",
+                            it: "Modifica livello di competenza",
+                            fr: "Modifier le niveau de compétence",
+                            ja: "習熟度レベルを変更",
+                            hi: "प्रवीणता स्तर बदलें",
+                            ar: "تغيير مستوى الكفاءة",
+                            zh: "更改语言水平",
                           })}
                         </Button>
 
@@ -3382,6 +3389,7 @@ export default function App({ onBootReady } = {}) {
     return normalizeSupportLanguage(stored, DEFAULT_SUPPORT_LANGUAGE);
   });
   // Guards stale Firestore snapshots from reverting an in-flight language change.
+  usePiyaliAchievements(user, resolvedTargetLang, activeNpub, appLanguage);
   const pendingLangRef = useRef(null);
   const pendingLangTimeoutRef = useRef(null);
   const onSupportLangChange = useCallback(
@@ -4118,9 +4126,8 @@ export default function App({ onBootReady } = {}) {
   // Every load starts on the Daily Quest home ("plate") — the last-used mode
   // intentionally does not survive a refresh/return. The one exception is the
   // one-shot "pathModeHandoff" key, written by flows on other routes that need
-  // to land somewhere specific on remount (the proficiency test queues
-  // "tutor"); it's consumed here so it can't leak into later loads. Invalid
-  // values are sanitized to "plate" by the validation effect below.
+  // to land somewhere specific on remount; it's consumed here so it can't leak
+  // into later loads. Invalid values are sanitized to "plate" by the validation effect below.
   const [pathMode, setPathMode] = useState(() => {
     if (typeof window !== "undefined") {
       try {
@@ -5031,6 +5038,8 @@ export default function App({ onBootReady } = {}) {
   const [timerModalImmediateBody, setTimerModalImmediateBody] = useState(false);
   const [timeUpOpen, setTimeUpOpen] = useState(false);
   const [hasTimer, setHasTimer] = useState(false);
+  const timerOwnerRef = useRef(null);
+  const timerSessionIdRef = useRef(null);
   const timerIntervalRef = useRef(null);
   const timerHydratedRef = useRef(false);
   const sessionTimerStorageKey = useMemo(
@@ -5043,6 +5052,12 @@ export default function App({ onBootReady } = {}) {
   const appOnboardingChainOpen = proficiencyTestOpen || gettingStartedOpen;
 
   useEffect(() => {
+    if (timeUpOpen && timerOwnerRef.current === activeNpub && timerSessionIdRef.current && timerDurationSeconds > 0) {
+      void awardProgressionAchievements({ npub: activeNpub, source: "nosabos", events: [{ metric: "session_timers", id: timerSessionIdRef.current }] }).catch(error => console.warn("Timer achievement:", error));
+    }
+  }, [timeUpOpen, timerDurationSeconds, activeNpub]);
+
+  useEffect(() => {
     if (timeUpOpen) {
       playSound(sparkleSound);
     }
@@ -5050,6 +5065,8 @@ export default function App({ onBootReady } = {}) {
 
   useEffect(() => {
     timerHydratedRef.current = false;
+    timerSessionIdRef.current = null;
+    timerOwnerRef.current = activeNpub;
 
     if (typeof window === "undefined") {
       timerHydratedRef.current = true;
@@ -5071,6 +5088,7 @@ export default function App({ onBootReady } = {}) {
       }
 
       const stored = JSON.parse(raw);
+      timerSessionIdRef.current = stored.sessionId || null;
       const storedMinutes = String(stored?.minutes || "10");
       const storedDuration = Number(stored?.durationSeconds);
       const storedRemaining = Number(stored?.remainingSeconds);
@@ -5125,7 +5143,7 @@ export default function App({ onBootReady } = {}) {
     } finally {
       timerHydratedRef.current = true;
     }
-  }, [sessionTimerStorageKey]);
+  }, [sessionTimerStorageKey, activeNpub]);
 
   useEffect(() => {
     if (!timerHydratedRef.current || typeof window === "undefined") return;
@@ -5136,6 +5154,7 @@ export default function App({ onBootReady } = {}) {
       window.sessionStorage.setItem(
         sessionTimerStorageKey,
         JSON.stringify({
+          sessionId: timerSessionIdRef.current,
           minutes: timerMinutes,
           remainingSeconds: timerPaused ? getRemainingSeconds() : null,
           durationSeconds: timerDurationSeconds,
@@ -5204,6 +5223,7 @@ export default function App({ onBootReady } = {}) {
       clearInterval(timerIntervalRef.current);
       timerIntervalRef.current = null;
     }
+    timerSessionIdRef.current = null;
     setTimerActive(false);
     setTimerPaused(false);
     setRemainingSeconds(null);
@@ -5232,6 +5252,8 @@ export default function App({ onBootReady } = {}) {
 
       runAfterNextPaint(() => {
         handleResetTimer();
+        timerOwnerRef.current = activeNpub;
+        timerSessionIdRef.current = globalThis.crypto.randomUUID();
         const seconds = parsedMinutes * 60;
         const endsAt = Date.now() + seconds * 1000;
         setTimerDurationSeconds(seconds);
@@ -5243,7 +5265,7 @@ export default function App({ onBootReady } = {}) {
         setHasTimer(true);
       });
     },
-    [handleResetTimer, runAfterNextPaint, setTimerModalOpen, timerMinutes],
+    [activeNpub, handleResetTimer, runAfterNextPaint, setTimerModalOpen, timerMinutes],
   );
 
   const handleCloseTimeUp = useCallback(() => {
@@ -6260,6 +6282,10 @@ export default function App({ onBootReady } = {}) {
         const activityLanguageKey = String(
           resolvedTargetLang || "es",
         ).toLowerCase();
+
+        await awardPiyaliFlashcardProgress({ npub, language: activityLanguageKey,
+          cards: [{ ...card, ...reviewPatch }],
+        });
 
         await awardXp(npub, xpAmount, resolvedTargetLang);
 
@@ -7532,15 +7558,17 @@ export default function App({ onBootReady } = {}) {
     user?.identity,
   ]);
 
-  // ✅ Listen to XP changes; random tab adds toast + auto-pick next
+  // Keep one listener per account; use current UI state for XP side effects.
   useEffect(() => {
-    if (!activeNpub) return;
-    const ref = doc(database, "users", activeNpub);
-    const unsub = onSnapshot(ref, (snap) => {
+    prevXpRef.current = null;
+  }, [activeNpub]);
+  useAccountSnapshot(
+    activeNpub,
+    (snap) => {
       const data = snap.exists() ? snap.data() : {};
       const newXp = Number(data?.xp || 0);
       const latestUser = useUserStore.getState()?.user || {};
-      const existingProgress = latestUser?.progress || user?.progress || {};
+      const existingProgress = latestUser?.progress || {};
       const rawProgress = data?.progress || { totalXp: newXp };
 
       // The user document's progress field may contain stale languageLessons/
@@ -7708,24 +7736,8 @@ export default function App({ onBootReady } = {}) {
 
         maybePostNostrProgress({ totalXp: newXp });
       }
-    });
-    return () => unsub();
-  }, [
-    activeNpub,
-    currentTab,
-    t,
-    toast,
-    appLanguage,
-    hasSpendableBalance,
-    sendOneSatToNpub,
-    pickRandomFeature,
-    patchUser,
-    queueCompanionUnlocks,
-    maybePostNostrProgress,
-    viewMode,
-    activeLesson,
-    resolvedTargetLang,
-  ]);
+    },
+  );
 
   const RandomHeader = (
     <Box
@@ -8630,6 +8642,11 @@ export default function App({ onBootReady } = {}) {
       });
       setActiveLessonLevel(level);
       setActiveFlashcardLevel(level);
+      try {
+        const langKey = String(lang || "es").toLowerCase();
+        window.localStorage.setItem(`tutorPathLevel:${langKey}`, level);
+        window.localStorage.removeItem(`tutorPathLesson:${langKey}`);
+      } catch {}
       setProficiencyTestOpen(false);
     },
     [normalizedTargetLang, patchUser, resolveNpub],
@@ -9233,6 +9250,7 @@ export default function App({ onBootReady } = {}) {
               units,
               userProgress?.lessons || {},
               hasCompletedSkillTreeTutorial,
+              user?.proficiencyPlacements?.[resolvedTargetLang],
             ),
           );
     if (lessonAvailable) kinds.push("learn");
@@ -9247,6 +9265,7 @@ export default function App({ onBootReady } = {}) {
     userProgress?.lessons,
     hasCompletedSkillTreeTutorial,
     resolvedTargetLang,
+    user?.proficiencyPlacements?.[resolvedTargetLang],
   ]);
 
   // Stable per-day language/day keys (independent of the elected kinds), used
@@ -9282,15 +9301,12 @@ export default function App({ onBootReady } = {}) {
     currentCEFRLevel ||
     "Pre-A1";
 
-  // Phonics deck generation bounds. Placement seeds the bootcamp's own deck
-  // ladder (the way it pre-unlocks levels elsewhere); the ceiling is built
-  // from UNLOCKED levels only — never display/active browse state, so viewing
-  // a B2 tab can't inflate generated phonics difficulty. Placement can be the
-  // literal string "skipped", which clampCefrLevel filters out.
+  // Start the authored curriculum at placement, or the highest unlocked
+  // course level. Browsing a different skill-tree tab does not change this.
   const phonicsPlacementLevel = clampCefrLevel(
     user?.proficiencyPlacements?.[resolvedTargetLang],
   );
-  const phonicsCourseCeilingLevel =
+  const phonicsCourseLevel =
     maxCefrLevel(
       currentLessonLevel,
       currentFlashcardLevel,
@@ -9636,6 +9652,12 @@ export default function App({ onBootReady } = {}) {
     [handleReturnToSkillTree, viewMode],
   );
 
+  const handlePhonicsFocusUnavailable = useCallback((focus) => {
+    if (focus.blueprint) useGoalFocusStore.getState().setFocus({ ...focus, surface: "tutor" });
+    else useRepairFocusStore.getState().setFocus({ ...focus, surface: "tutor" });
+    goToSkillTreeMode("tutor");
+  }, [goToSkillTreeMode]);
+
   // Route a course to its surface — that's it. The user engages each surface
   // themselves (press connect in the Tutor, tap a lesson, start a card), so
   // the quest never auto-starts a session or picks the activity for them.
@@ -9664,7 +9686,8 @@ export default function App({ onBootReady } = {}) {
           const mode = nextGoalMode(bucket, blueprint);
           if (!mode) return;
           const routedBlueprint = { ...blueprint, mode };
-          const surface = GOAL_SURFACES[mode];
+          const surface = mode === "phonics" && !getAuthoredPhonicsFocusCards({ targetLang: resolvedTargetLang, supportLang: appLanguage, blueprint: routedBlueprint }).length
+            ? "tutor" : GOAL_SURFACES[mode];
           useGoalFocusStore.getState().setFocus({
             npub: activeNpub,
             targetLang: resolvedTargetLang,
@@ -9692,7 +9715,8 @@ export default function App({ onBootReady } = {}) {
         const stepsDone = plateSnapshot.byKind?.repair?.count || 0;
         const step = getNextRepairStep(repairPlanToday, stepsDone);
         if (step) {
-          const repairSurface = REPAIR_MODE_TO_SURFACE[step.mode];
+          const repairSurface = step.mode === "phonics" && !getAuthoredPhonicsFocusCards({ targetLang: resolvedTargetLang, supportLang: appLanguage, plan: step.plan }).length
+            ? "tutor" : REPAIR_MODE_TO_SURFACE[step.mode];
           if (repairSurface) {
             useRepairFocusStore.getState().setFocus({
               plan: step.plan,
@@ -10593,6 +10617,7 @@ export default function App({ onBootReady } = {}) {
 
   return (
     <Box minH="100dvh" bg="var(--app-page-bg)" color="gray.50" width="100%">
+      <AchievementUnlockFallback />
       <AnimatedBackground />
       {!isGameFullScreen && (
         <TopBar
@@ -10656,6 +10681,7 @@ export default function App({ onBootReady } = {}) {
           onPatreonCancelReplacement={handlePatreonDrawerCancelReplacement}
           openSubscriptionTab={subscriptionDrawerRequested}
           onSubscriptionSurfaceOpen={handlePatreonSubscriptionSurfaceOpen}
+          onOpenProficiencyModal={() => setProficiencyTestOpen(true)}
         />
       )}
 
@@ -10852,9 +10878,9 @@ export default function App({ onBootReady } = {}) {
               targetLang={resolvedTargetLang}
               npub={activeNpub}
               languageXp={userProgress?.totalXp || 0}
-              cefrLevel={repairLessonCefrLevel}
+              cefrLevel={phonicsCourseLevel}
               placementLevel={phonicsPlacementLevel}
-              courseCeilingLevel={phonicsCourseCeilingLevel}
+              onFocusedPracticeUnavailable={handlePhonicsFocusUnavailable}
               pauseMs={user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS}
             />
           ) : (
@@ -10884,6 +10910,7 @@ export default function App({ onBootReady } = {}) {
                 currentLessonLevel={currentLessonLevel}
                 currentFlashcardLevel={currentFlashcardLevel}
                 tutorUnlockedLevel={tutorUnlockedLevel}
+                placementLevel={user?.proficiencyPlacements?.[resolvedTargetLang] || null}
                 onLessonLevelChange={handleLessonLevelChange}
                 onFlashcardLevelChange={handleFlashcardLevelChange}
                 lessonLevelCompletionStatus={lessonLevelCompletionStatus}
@@ -10997,6 +11024,7 @@ export default function App({ onBootReady } = {}) {
                       <TabPanel key="realtime" px={0} py={{ base: 0, md: 2 }}>
                         <RealTimeTest
                           key={`realtime-${lessonModuleNonce}`}
+                          isActive={currentTab === "realtime"}
                           auth={auth}
                           activeNpub={activeNpub}
                           activeNsec={activeNsec}
@@ -11180,6 +11208,7 @@ export default function App({ onBootReady } = {}) {
         appChainOpen={appOnboardingChainOpen}
         onStartAtLevel={handleProficiencyStartAtLevel}
         onTakeTest={handleProficiencyTakeTest}
+        onClose={() => setProficiencyTestOpen(false)}
         lang={appLanguage}
         targetLangLabel={
           t[`language_${resolvedTargetLang}`] ||
@@ -12695,7 +12724,7 @@ function BottomActionBar({
 
   const questionMenuSlot = useQuestionActionStore((state) => state.menuSlot);
   const showFullNavigation = isFullNavigationSkillTreeMode(viewMode, pathMode);
-  const activityMenu = Boolean(questionMenuSlot) && !showFullNavigation;
+  const activityMenu = Boolean(questionMenuSlot);
 
   const renderActivityMenu = (placement = "top-start") => (
     <ActivityMenu

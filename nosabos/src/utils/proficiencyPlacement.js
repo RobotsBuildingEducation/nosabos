@@ -23,3 +23,11 @@ export function isHigherProficiencyPlacement(candidate, current) {
   const currentIndex = CEFR_PLACEMENT_LEVELS.indexOf(current);
   return candidateIndex >= 0 && candidateIndex > currentIndex;
 }
+
+// Placement grants access, never completion credit. Keep the beginner path's
+// sequential introduction and ignore skipped/invalid placement values.
+export function isContentUnlockedByPlacement(placement, contentLevel) {
+  const placementIndex = CEFR_PLACEMENT_LEVELS.indexOf(placement);
+  const contentIndex = CEFR_PLACEMENT_LEVELS.indexOf(contentLevel);
+  return placementIndex > 0 && contentIndex >= 0 && contentIndex <= placementIndex;
+}

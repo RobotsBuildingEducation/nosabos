@@ -318,6 +318,10 @@ export async function awardXp(
         updatedAt: now.toISOString(),
         progress: nextProgress,
         dailyGoalPetHealth: nextPetHealth,
+        ...(reached ? {
+          dailyGoalPetReachedDates: [...new Set([...(Array.isArray(data.dailyGoalPetReachedDates) ? data.dailyGoalPetReachedDates : []), todayKey])].sort().slice(-400),
+          dailyGoalPetStartedFull: (base.dailyGoalPetStartedFull ?? data.dailyGoalPetStartedFull) === true && currentPetHealth === 100 && nextPetHealth === 100,
+        } : {}),
         dailyXpRecent: nextDailyXpRecent,
         ...(idempotencyKey ? {
           xpAwardReceipts: {

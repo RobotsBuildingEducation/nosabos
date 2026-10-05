@@ -45,7 +45,7 @@ export const LANDING_PAGE_DE_STATIC = {
   feature_grammar: "Grammatikbuch",
   feature_grammar_desc:
     "Schnelle Regelreferenzen, Konzeptübungen und adaptive Wiederholungen stärken dein Fundament.",
-  feature_skilltree: "Skill-Tree",
+  feature_skilltree: "Lektionen",
   feature_skilltree_desc:
     "Strukturierte Lernpfade bauen deine Fähigkeiten Schritt für Schritt mit klarem Fortschritt auf.",
   feature_flashcards: "Wortschatz",
@@ -57,9 +57,24 @@ export const LANDING_PAGE_DE_STATIC = {
   feature_notes: "Notizen erstellen",
   feature_notes_desc:
     "Erstelle umfassende Lernnotizen aus deinen Lektionen, um sie später zu wiederholen.",
-  feature_immersion: "Immersion & Punktzahl",
+  feature_immersion: "Immersion",
   feature_immersion_desc:
-    "Erledige Aufgaben außerhalb der App, um in die Sprache einzutauchen und sie zu üben.",
+    "Erledige Aufgaben außerhalb der App, um im Alltag in die Sprache einzutauchen und sie zu üben.",
+  feature_score: "Score",
+  feature_score_desc:
+    "Ein adaptives Bewertungssystem, das deine tatsächliche Leistung bei jeder Antwort erfasst und die Aufgabenschwierigkeit dynamisch anpasst.",
+  feature_elo: "Score",
+  feature_elo_desc:
+    "Ein adaptives Bewertungssystem, das deine tatsächliche Leistung bei jeder Antwort erfasst und die Aufgabenschwierigkeit dynamisch anpasst.",
+  feature_achievements: "Plattformübergreifende Erfolge",
+  feature_achievements_desc:
+    "Verdiene verifizierte Abschluss-Auszeichnungen und Meilenstein-Abzeichen, die nahtlos über alle Geräte synchronisiert werden.",
+  feature_teams: "Lernteams",
+  feature_teams_desc:
+    "Erstelle Lerngruppen mit Freunden, um tägliche Ziele, Serien, Begleiter-Level und Fortschritte in Echtzeit zu teilen.",
+  feature_global_feed: "Globaler Feed",
+  feature_global_feed_desc:
+    "Entdecke Notizen, Lernupdates und Tipps von Lernenden weltweit im dezentralen Netzwerk.",
   feature_assistant: "Persönlicher Assistent",
   feature_assistant_desc:
     "Erhalte persönliche Anleitung und Empfehlungen, wenn du Hilfe brauchst.",

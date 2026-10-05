@@ -23,6 +23,26 @@ test("self assessment covers two pages and uses the strongest selected range", (
     estimateSelfReportedPlacement(["basic_conversations", "nuance_precision"]),
     { level: "C1", rating: 81, range: "C1–C2" },
   );
+  assert.deepEqual(
+    estimateSelfReportedPlacement(["grammar_struggle"]),
+    { level: "A1", rating: 18, range: "A1" },
+  );
+  assert.deepEqual(
+    estimateSelfReportedPlacement(["understands_more", "grammar_struggle"]),
+    { level: "Pre-A1", rating: 3, range: "Pre-A1" },
+  );
+  assert.deepEqual(
+    estimateSelfReportedPlacement(["common_words", "grammar_struggle"]),
+    { level: "A1", rating: 18, range: "A1" },
+  );
+  assert.deepEqual(
+    estimateSelfReportedPlacement(["basic_conversations", "grammar_struggle"]),
+    { level: "A2", rating: 32, range: "A2" },
+  );
+  assert.deepEqual(
+    estimateSelfReportedPlacement(["stories_opinions", "grammar_struggle"]),
+    { level: "B1", rating: 53, range: "B1–B2" },
+  );
 });
 
 test("placement seeds Score and self report context without erasing graded history", () => {

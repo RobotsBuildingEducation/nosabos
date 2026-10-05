@@ -54,8 +54,8 @@ const BUTTON_EXPLANATIONS = [
     icon: ArrowBackIcon,
     label: { en: "Back Button", es: "Botón Atrás", it: "Tasto Indietro", fr: "Bouton retour", de: "Zurück-Taste", ja: "戻るボタン", hi: "वापस बटन", ar: "زر الرجوع", zh: "返回按钮" },
     description: {
-      en: "Returns you to the skill tree to choose another lesson",
-      es: "Te regresa al árbol de habilidades para elegir otra lección",
+      en: "Returns you to lessons to choose another lesson",
+      es: "Te regresa a las lecciones para elegir otra lección",
       it: "Ti riporta all'albero delle abilità per scegliere un'altra lezione",
       fr: "Te ramene a l'arbre de competences pour choisir une autre lecon",
       de: "Bringt dich zum Lernpfad zurück, damit du eine andere Lektion wählen kannst",

@@ -17,6 +17,7 @@ import { WaveBar } from "./WaveBar";
 import PlatePetPanel from "./PlatePetPanel";
 import PlateScoreJourney from "./PlateScoreJourney";
 import PlateActivityHeatmap from "./PlateActivityHeatmap";
+import AchievementCelebrationModal from "./AchievementCelebrationModal.jsx";
 import useSoundSettings from "../hooks/useSoundSettings";
 import { useThemeStore } from "../useThemeStore";
 import { APP_DAILY_QUEST_RADIUS, APP_SQUIRCLE_SHAPE } from "../theme";
@@ -153,6 +154,8 @@ export default function DailyPlateHome({
 
   const [now, setNow] = useState(() => new Date());
   const [isResettingPlate, setIsResettingPlate] = useState(false);
+  const [isAchievementModalOpen, setIsAchievementModalOpen] = useState(false);
+
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 60_000);
     return () => clearInterval(id);
@@ -815,6 +818,7 @@ export default function DailyPlateHome({
               fillHeight
               onCustomizePet={onCustomizePet}
               onViewActivity={() => setShowActivity(true)}
+              onViewAchievements={() => setIsAchievementModalOpen(true)}
               questBubble={
                 showBubble
                   ? {
@@ -851,7 +855,8 @@ export default function DailyPlateHome({
               dailyXpHistory={dailyXpHistory}
               currentDailyXp={dailyXp}
               currentGoalXp={dailyGoalXp}
-              onSeeCompanion={() => setShowActivity(false)}
+              onViewCompanion={() => setShowActivity(false)}
+              onViewAchievements={() => setIsAchievementModalOpen(true)}
             />
           </motion.div>
         </Box>
@@ -878,6 +883,14 @@ export default function DailyPlateHome({
           </Button>
         ) : null}
         */}
+        {/* Achievement Celebration Modal */}
+        <AchievementCelebrationModal
+          isOpen={isAchievementModalOpen}
+          onClose={() => setIsAchievementModalOpen(false)}
+          npub={user?.local_npub || user?.npub || user?.id}
+          appSource="nosabos"
+          language={appLanguage}
+        />
       </VStack>
     </Box>
   );

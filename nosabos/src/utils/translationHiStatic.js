@@ -464,7 +464,7 @@ export const TRANSLATION_HI_STATIC = {
   vocab_quiz_not_passed: "क्विज़ पास नहीं हुई",
   vocab_quiz_score_passed: "{correct} सही • आवश्यक {needed}",
   vocab_quiz_score_failed: "{correct} सही • पास करने के लिए {needed} चाहिए",
-  vocab_back_to_skill_tree: "स्किल ट्री पर लौटें",
+  vocab_back_to_skill_tree: "पाठों पर लौटें",
   vocab_mc_instruction: "सही उत्तर चुनें",
   vocab_ma_instruction: "सभी सही उत्तर चुनें",
   vocab_match_instruction: "शब्दों का मिलान करें",

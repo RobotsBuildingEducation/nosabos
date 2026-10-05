@@ -1,4 +1,15 @@
+import {
+  canEnableRealtimeInput,
+  snapshotRealtimeMessages,
+  buildRealtimeResumeContext,
+  captureRealtimeSpeech,
+  resumeRealtimeSpeech,
+  closeRealtimeTransport,
+} from "../utils/realtimeSessionControls.js";
 import useGoalFocusStore from "../hooks/useGoalFocusStore";
+import { awardTutorLevelAchievements } from "../utils/achievements.js";
+import { tutorLevelFromCompletions } from "../achievements/proficiencyCompletion.js";
+import { isContentUnlockedByPlacement } from "../utils/proficiencyPlacement.js";
 import {
   currentGoalFocus,
   evaluateGoalAttempt,
@@ -53,7 +64,15 @@ import {
 } from "@chakra-ui/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { layoutWithLines, prepareWithSegments } from "@chenglou/pretext";
-import { FaMicrophone, FaStop, FaRegCommentDots } from "react-icons/fa";
+import {
+  FaMicrophone,
+  FaMicrophoneSlash,
+  FaPause,
+  FaPlay,
+  FaStop,
+  FaRegCommentDots,
+} from "react-icons/fa";
+import { ImPhoneHangUp } from "react-icons/im";
 import { MdOutlineTranslate } from "react-icons/md";
 import { LuChartColumnIncreasing } from "react-icons/lu";
 import {
@@ -91,7 +110,9 @@ import { logEvent } from "firebase/analytics";
 
 import useUserStore from "../hooks/useUserStore";
 import VoiceOrb from "./VoiceOrbNext";
+import { voiceCallControlStyle } from "../utils/voiceCallControlStyle.js";
 import TutorViewportEdgeGlow from "./TutorViewportEdgeGlow";
+import { useTutorVoiceLevel } from "../hooks/useTutorVoiceLevel.js";
 import AnimatedEllipsis from "./AnimatedEllipsis";
 import {
   CHAT_LOG_HIGHLIGHT_DURATION_MS,
@@ -361,7 +382,7 @@ function buildTutorTurnDetection(pauseMs) {
 const RESPONSES_URL = getResponsesUrl();
 const TRANSLATE_MODEL =
   import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-6-luna";
-const AUTO_DISCONNECT_MS = 15000;
+const AUTO_DISCONNECT_MS = 30000;
 const ARCHIVE_GLYPH_DURATION_MS = 680;
 const ARCHIVE_GLYPH_DURATION_VARIANCE_MS = 150;
 const ARCHIVE_ANIMATION_BUFFER_MS = 180;
@@ -1933,7 +1954,10 @@ function findTutorLessonById(units, lessonId) {
   return null;
 }
 
-function isTutorLessonUnlocked(units, progressLessons, unitIndex, lessonIndex) {
+function isTutorLessonUnlocked(units, progressLessons, unitIndex, lessonIndex, placementLevel = null) {
+  const currentUnit = units[unitIndex];
+  if (isContentUnlockedByPlacement(placementLevel,
+    currentUnit?.lessons?.[lessonIndex]?.cefrLevel || currentUnit?.cefrLevel)) return true;
   if (lessonIndex === 0) {
     if (unitIndex === 0) return true;
     const previousUnit = units[unitIndex - 1];
@@ -1951,7 +1975,7 @@ function isTutorLessonUnlocked(units, progressLessons, unitIndex, lessonIndex) {
   );
 }
 
-function isTutorLessonUnlockedById(units, progressLessons, lessonId) {
+function isTutorLessonUnlockedById(units, progressLessons, lessonId, placementLevel = null) {
   for (let unitIndex = 0; unitIndex < (units || []).length; unitIndex += 1) {
     const unit = units[unitIndex];
     for (
@@ -1965,15 +1989,18 @@ function isTutorLessonUnlockedById(units, progressLessons, lessonId) {
         progressLessons,
         unitIndex,
         lessonIndex,
+        placementLevel,
       );
     }
   }
   return false;
 }
 
-function findLatestTutorUnlockedLesson(units, progressLessons) {
-  for (let unitIndex = 0; unitIndex < (units || []).length; unitIndex += 1) {
-    const unit = units[unitIndex];
+function findLatestTutorUnlockedLesson(units, progressLessons, placementLevel = null) {
+  const orderedUnits = [...(units || [])].sort((a, b) =>
+    Number(b.cefrLevel === placementLevel) - Number(a.cefrLevel === placementLevel));
+  for (const unit of orderedUnits) {
+    const unitIndex = units.indexOf(unit);
     for (
       let lessonIndex = 0;
       lessonIndex < (unit?.lessons?.length || 0);
@@ -1986,7 +2013,7 @@ function findLatestTutorUnlockedLesson(units, progressLessons) {
       }
       if (
         progress?.status !== SKILL_STATUS.COMPLETED &&
-        isTutorLessonUnlocked(units, progressLessons, unitIndex, lessonIndex)
+        isTutorLessonUnlocked(units, progressLessons, unitIndex, lessonIndex, placementLevel)
       ) {
         return { lesson, unit, status: SKILL_STATUS.AVAILABLE };
       }
@@ -3624,6 +3651,7 @@ const TutorPathUnit = React.memo(function TutorPathUnit({
   selectedLessonId,
   selectedLessonEarnedXp,
   isTestUnlocked,
+  isPlacementUnlocked = false,
   onLessonSelect,
 }) {
   const unitRef = useRef(null);
@@ -3748,6 +3776,7 @@ const TutorPathUnit = React.memo(function TutorPathUnit({
             ) {
               const previousCompleted =
                 isTestUnlocked ||
+                isPlacementUnlocked ||
                 (lessonIndex === 0
                   ? unitIndex === 0 ||
                     previousUnitLastLessonStatus === SKILL_STATUS.COMPLETED
@@ -3870,6 +3899,7 @@ export default function Tutor({
 
   // User id
   const user = useUserStore((s) => s.user);
+  const tutorPlacementLevel = user?.proficiencyPlacements?.[targetLang] || null;
   const currentNpub = activeNpub?.trim?.() || strongNpub(user);
   const loadedUserSettingsKeyRef = useRef("");
 
@@ -3953,6 +3983,8 @@ export default function Tutor({
     if (
       realtimeProviderRef.current !== "openai" ||
       !aliveRef.current ||
+      isMutedRef.current ||
+      isPausedRef.current ||
       assistantInputLockedRef.current ||
       dcRef.current?.readyState !== "open"
     ) {
@@ -3981,6 +4013,17 @@ export default function Tutor({
 
   // Connection/UI state
   const [status, setStatus] = useState("disconnected");
+  const [isMuted, setIsMuted] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const isMutedRef = useRef(false);
+  const isPausedRef = useRef(false);
+  const pausedMessagesRef = useRef([]);
+  const pausedSpeechRef = useRef(null);
+  const connectionEpochRef = useRef(0);
+  const micSenderRef = useRef(null);
+  const connectionTransitionRef = useRef(false);
+
+
   const [orbFeedback, setOrbFeedback] = useState(null);
   const [err, setErr] = useState("");
   const [uiState, setUiStateState] = useState("idle");
@@ -4540,22 +4583,24 @@ export default function Tutor({
   const activeTutorLevelProgress =
     tutorLevelCompletionStatus[activeTutorLevel]?.progress || 0;
 
-  // Tutor-earned unlock: the level after the highest contiguous run of fully
-  // completed tutor levels (same walk App uses for currentLessonLevel). It is
+  // Tutor-earned unlock: the level after the highest fully completed tutor
+  // level, including learners who placed above the beginner levels. It is
   // persisted to progress.tutorUnlockedLevels[lang] so surfaces App owns —
   // the phonics generation ceiling and maxProficiencyLevel — can count
   // tutor-only progress.
-  const tutorEarnedLevel = useMemo(() => {
-    let unlocked = TUTOR_CEFR_LEVELS[0];
-    for (let i = 0; i < TUTOR_CEFR_LEVELS.length - 1; i++) {
-      if (!tutorLevelCompletionStatus[TUTOR_CEFR_LEVELS[i]]?.isComplete) break;
-      unlocked = TUTOR_CEFR_LEVELS[i + 1];
-    }
-    return unlocked;
-  }, [tutorLevelCompletionStatus]);
+  const tutorEarnedLevel = useMemo(
+    () => tutorLevelFromCompletions(tutorLevelCompletionStatus),
+    [tutorLevelCompletionStatus],
+  );
 
   const storedTutorUnlockedLevel =
     user?.progress?.tutorUnlockedLevels?.[getTutorStorageLang(targetLang)];
+
+  useEffect(() => {
+    if (!currentNpub || isTutorPathLoading || isTutorProgressLoading || !tutorPathUnits.length) return;
+    void awardTutorLevelAchievements({ npub: currentNpub, level: tutorEarnedLevel })
+      .catch(error => console.warn("Tutor achievement save failed:", error));
+  }, [currentNpub, isTutorPathLoading, isTutorProgressLoading, tutorPathUnits, tutorEarnedLevel]);
 
   useEffect(() => {
     if (!currentNpub) return;
@@ -4661,6 +4706,7 @@ export default function Tutor({
           tutorPathUnits,
           progressLessons,
           storedLesson.lesson.id,
+          tutorPlacementLevel,
         )
       : false;
     const storedLessonIsUsable =
@@ -4676,7 +4722,7 @@ export default function Tutor({
               ? SKILL_STATUS.IN_PROGRESS
               : SKILL_STATUS.AVAILABLE,
         }
-      : findLatestTutorUnlockedLesson(tutorPathUnits, progressLessons);
+      : findLatestTutorUnlockedLesson(tutorPathUnits, progressLessons, tutorPlacementLevel);
 
     setActiveTutorLevel((current) =>
       resolveTutorPathLevel({
@@ -4772,6 +4818,7 @@ export default function Tutor({
     xp,
     tutorRepairRestoreTick,
     isTutorProgressLoading,
+    tutorPlacementLevel,
   ]);
 
   // Hand the surface back to the regular lesson once an ephemeral repair
@@ -5482,6 +5529,15 @@ export default function Tutor({
       ? liveUiState
       : "idle";
   const effectiveRobotState = isVisualTestSpeaking ? "speaking" : liveUiState;
+  const tutorVoiceLevelRef = useTutorVoiceLevel({
+    enabled: isActive && status === "connected" && !isPaused,
+    state: edgeGlowState,
+    microphoneEnabled: !isMuted,
+    micAnalyserRef,
+    micFloatBufRef,
+    tutorAnalyserRef: analyserRef,
+    tutorFloatBufRef: floatBufRef,
+  });
   const [displayRobotState, setDisplayRobotState] = useState(effectiveRobotState);
   const [previousRobotState, setPreviousRobotState] = useState(null);
   const [isRobotTransitioning, setIsRobotTransitioning] = useState(false);
@@ -6475,16 +6531,29 @@ export default function Tutor({
   /* ---------------------------
      WebRTC Start
   --------------------------- */
-  async function start() {
+  async function start({ resume = false } = {}) {
+    if (connectionTransitionRef.current) return;
+    connectionTransitionRef.current = true;
+    const connectionEpoch = ++connectionEpochRef.current;
+    const resumeMuted = resume && isMutedRef.current;
+    const resumeSpeech = resume && !!pausedSpeechRef.current;
+    if (!resume) {
+      pausedMessagesRef.current = [];
+      pausedSpeechRef.current = null;
+    }
     playSound(submitActionSound);
-    // A Start press always creates a fresh visible realtime session. Preserve
+    // A fresh Start clears the visible transcript; Resume keeps it. Preserve
     // the prior transcript only as private same-lesson continuity context so
     // the tutor can initiate intelligently instead of leaving a stale bubble
     // on screen and waiting for the learner to speak.
-    startFreshTutorConversationSession();
+    if (!resume) startFreshTutorConversationSession();
     clearAutoStopTimer();
+    isMutedRef.current = resumeMuted;
+    isPausedRef.current = false;
+    setIsMuted(resumeMuted);
+    setIsPaused(false);
     clearTutorKickoffTimer();
-    tutorKickoffSentRef.current = hasStartedTutorLessonConversation();
+    tutorKickoffSentRef.current = resume || hasStartedTutorLessonConversation();
     tutorKickoffRetryCountRef.current = 0;
     tutorWelcomePendingReplyRef.current = false;
     tutorWelcomeRidSetRef.current.clear();
@@ -6494,7 +6563,8 @@ export default function Tutor({
     setMood("thoughtful");
     try {
       await ensureSelectedTutorLessonStarted();
-      assistantInputLockedRef.current = false;
+      if (connectionEpoch !== connectionEpochRef.current) return;
+      assistantInputLockedRef.current = resumeSpeech;
       // Hint BOTH the learner's target language and their support (UI) language to
       // Gemini's input transcription. Native-audio transcription only takes hints,
       // not a hard lock, so it can still drift to a phonetically close language — the
@@ -6530,6 +6600,7 @@ export default function Tutor({
         micAnalyser,
         micFloatBuffer,
       }) => {
+        if (connectionEpoch !== connectionEpochRef.current) return;
         if (audioContext) audioCtxRef.current = audioContext;
         if (analyser && floatBuffer) {
           analyserRef.current = analyser;
@@ -6560,6 +6631,7 @@ export default function Tutor({
         realtimeProvider === "openai"
           ? await createOpenAIRealtimeBridge({
               audioElement: audioRef.current,
+              inputAudioEnabled: !resumeMuted && !resumeSpeech,
               // Session instructions are the compact policy, same as the
               // per-response prefix — NOT the Gemini-tuned pile. Responses
               // normally override them anyway, but anything that inherits the
@@ -6577,12 +6649,18 @@ export default function Tutor({
                 : null,
               inputTranscriptionKeywords:
                 getCurrentTutorTranscriptionKeywords(),
-              onEvent: handleRealtimeEvent,
-              onError: (message) => setErr((prev) => prev || message),
+              onEvent: (event) => {
+                if (connectionEpoch !== connectionEpochRef.current || isPausedRef.current) return;
+                return handleRealtimeEvent(event);
+              },
+              onError: (message) => {
+                if (connectionEpoch === connectionEpochRef.current) setErr((prev) => prev || message);
+              },
               onAudioGraph: handleTutorAudioGraph,
             })
           : await createGeminiLiveRealtimeBridge({
               audioElement: audioRef.current,
+              inputAudioEnabled: !resumeMuted && !resumeSpeech,
               initialInstructions: buildLanguageInstructions(),
               responseInstructionsSuffix:
                 buildTutorResponseInstructionsSuffix(),
@@ -6591,10 +6669,19 @@ export default function Tutor({
                 ? inputLanguageCodes
                 : null,
               tools: TUTOR_TOOL_GRADING_ENABLED ? [TUTOR_LIVE_TOOLS] : undefined,
-              onEvent: handleRealtimeEvent,
-              onError: (message) => setErr((prev) => prev || message),
+              onEvent: (event) => {
+                if (connectionEpoch !== connectionEpochRef.current || isPausedRef.current) return;
+                return handleRealtimeEvent(event);
+              },
+              onError: (message) => {
+                if (connectionEpoch === connectionEpochRef.current) setErr((prev) => prev || message);
+              },
               onAudioGraph: handleTutorAudioGraph,
             });
+      if (connectionEpoch !== connectionEpochRef.current) {
+        await bridge.close();
+        return;
+      }
       dcRef.current = bridge;
       pcRef.current = bridge;
       localRef.current = bridge.mediaStream;
@@ -6604,24 +6691,37 @@ export default function Tutor({
 
       setStatus("connected");
       aliveRef.current = true;
+      setLocalMicEnabled(true);
       tutorSessionReadyRef.current = true;
       setUiState("idle");
       applyLanguagePolicyNow();
+      if (resumeSpeech) resumePausedSpeech(connectionEpoch);
       scheduleAutoStop();
     } catch (e) {
+      if (connectionEpoch !== connectionEpochRef.current) return;
       console.error("Tutor realtime connection failed:", e);
       clearAutoStopTimer();
       clearTutorKickoffTimer();
       tutorSessionReadyRef.current = false;
-      setStatus("disconnected");
+      await stop({ preservePause: resume });
       setUiState("idle");
       micAnalyserRef.current = null;
       micFloatBufRef.current = null;
       setErr(e?.message || String(e));
+    } finally {
+      connectionTransitionRef.current = false;
     }
   }
 
-  async function stop() {
+  async function stop({ preservePause = false } = {}) {
+    const stopEpoch = ++connectionEpochRef.current;
+    connectionTransitionRef.current = true;
+    aliveRef.current = false;
+    setStatus(preservePause ? "pausing" : "disconnecting");
+    if (!preservePause) isMutedRef.current = false;
+    isPausedRef.current = preservePause;
+    setIsMuted(isMutedRef.current);
+    setIsPaused(preservePause);
     // Snapshot the last finalized turn in the background. This intentionally
     // does not await Firestore, so stopping audio remains immediate.
     queueTutorConversationDraftSave(
@@ -6641,7 +6741,7 @@ export default function Tutor({
     assistantInputLockedRef.current = false;
     assistantSpeakingRef.current = false;
     pendingUserAudioCommitRef.current = false;
-    setLocalMicEnabled(true);
+    setLocalMicEnabled(false);
     try {
       if (dcRef.current?.readyState === "open") {
         dcRef.current.send(
@@ -6684,14 +6784,14 @@ export default function Tutor({
       pcRef.current?.getReceivers?.().forEach((r) => r.track && r.track.stop());
     } catch {}
 
-    try {
-      dcRef.current?.close();
-    } catch {}
+    const closingTransport = closeRealtimeTransport({
+      channel: dcRef.current,
+      connection: pcRef.current,
+      stream: localRef.current,
+    });
     dcRef.current = null;
-    try {
-      pcRef.current?.close();
-    } catch {}
     pcRef.current = null;
+    micSenderRef.current = null;
 
     try {
       audioCtxRef.current?.close?.();
@@ -6732,16 +6832,40 @@ export default function Tutor({
       } catch {}
     });
 
-    setStatus("disconnected");
+    await closingTransport;
+    if (stopEpoch !== connectionEpochRef.current) return;
+    connectionTransitionRef.current = false;
+    if (!preservePause) {
+      pausedMessagesRef.current = [];
+      pausedSpeechRef.current = null;
+    }
+    setStatus(preservePause ? "paused" : "disconnected");
     setUiState("idle");
     setMood("neutral");
 
     // A repair skip mid-conversation deferred its lesson restore to here so
     // the session wasn't yanked out from under the learner.
-    if (pendingTutorRepairRestoreRef.current) {
+    if (!preservePause && pendingTutorRepairRestoreRef.current) {
       restoreTutorLessonAfterRepair();
     }
   }
+
+  const stopRef = useRef(stop);
+  useEffect(() => {
+    stopRef.current = stop;
+  }, [stop]);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && aliveRef.current) {
+        stopRef.current?.();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
 
   /* ---------------------------
      Language instructions with proficiency level
@@ -6759,7 +6883,7 @@ export default function Tutor({
     return `${goalInstructions(goal.blueprint, goal.supportLang)}\nCurrent ability context (use this for difficulty and support if the daily blueprint is older): ${JSON.stringify(generationPerformanceContextFor(useUserStore.getState().user, goal.targetLang || targetLangRef.current, { curriculumCefrLevel: goal.blueprint.curriculumCefrLevel }))}`;
   }
 
-  function buildLanguageInstructions() {
+  function buildLanguageInstructionsBase() {
     const goal = currentGoalFocus("tutor");
     if (goal) return liveGoalInstructions(goal);
     const persona = String((voicePersonaRef.current ?? "").slice(0, 240));
@@ -7123,7 +7247,14 @@ export default function Tutor({
       .join("\n");
   }
 
-  function buildOpenAIResponseInstructionsPrefix() {
+  function buildLanguageInstructions() {
+    return [
+      buildLanguageInstructionsBase(),
+      buildRealtimeResumeContext(pausedMessagesRef.current),
+    ].filter(Boolean).join("\n\n");
+  }
+
+  function buildOpenAIResponseInstructionsPrefixBase() {
     const goal = currentGoalFocus("tutor");
     if (goal) return liveGoalInstructions(goal);
     const tLang = targetLangRef.current || targetLang || "es";
@@ -7159,6 +7290,13 @@ export default function Tutor({
       sameLanguage: supportCode === tLang,
       persona: String((voicePersonaRef.current ?? "").slice(0, 240)),
     });
+  }
+
+  function buildOpenAIResponseInstructionsPrefix() {
+    return [
+      buildOpenAIResponseInstructionsPrefixBase(),
+      buildRealtimeResumeContext(pausedMessagesRef.current),
+    ].filter(Boolean).join("\n\n");
   }
 
   // Persistent response-local requirements for BOTH realtime providers.
@@ -8098,11 +8236,19 @@ export default function Tutor({
   }
 
   function buildTurnDetectionConfig() {
-    if (assistantInputLockedRef.current) return null;
+    if (isMutedRef.current || isPausedRef.current || assistantInputLockedRef.current) {
+      return null;
+    }
     return buildEnabledTurnDetectionConfig();
   }
 
   function setLocalMicEnabled(enabled) {
+    enabled = canEnableRealtimeInput({
+      enabled,
+      muted: isMutedRef.current,
+      paused: isPausedRef.current,
+      locked: assistantInputLockedRef.current,
+    });
     // Route mic state through the Gemini bridge so "muted" also means no
     // billable input-audio stream.
     try {
@@ -8113,6 +8259,17 @@ export default function Tutor({
         track.enabled = enabled;
       });
     } catch {}
+    // Remember the microphone sender even while detached. A recvonly audio
+    // transceiver also has a null sender; attaching to it would duplicate input.
+    const micTrack = localRef.current?.getAudioTracks?.()[0];
+    const sender = micSenderRef.current || pcRef.current?.getSenders?.()
+      .find((candidate) => micTrack && candidate.track === micTrack);
+    if (sender) {
+      micSenderRef.current = sender;
+      try {
+        sender.replaceTrack(enabled ? micTrack : null).catch(() => {});
+      } catch { /* the connection may already be closed */ }
+    }
   }
 
   // Prevent background sounds from barging in while the assistant is speaking.
@@ -8173,7 +8330,9 @@ export default function Tutor({
     const shouldPlayListeningCue = assistantSpeakingRef.current;
     assistantSpeakingRef.current = false;
     enableVAD();
-    resumeListeningWithAutoStop({ playCue: shouldPlayListeningCue });
+    if (!isPausedRef.current) {
+      resumeListeningWithAutoStop({ playCue: shouldPlayListeningCue });
+    }
   }
 
   function scheduleAssistantUnlockAfterQuiet() {
@@ -8563,13 +8722,7 @@ export default function Tutor({
 
   /** Disable VAD and detach mic track so the user cannot interrupt AI speech. */
   function disableVAD() {
-    if (pcRef.current) {
-      pcRef.current.getSenders().forEach((s) => {
-        if (s.track?.kind === "audio") {
-          s.replaceTrack(null).catch(() => {});
-        }
-      });
-    }
+    setLocalMicEnabled(false);
     if (!dcRef.current || dcRef.current.readyState !== "open") return;
     try {
       dcRef.current.send(
@@ -8583,14 +8736,8 @@ export default function Tutor({
 
   /** Re-enable server VAD and reattach mic track after AI finishes speaking. */
   function enableVAD() {
-    const micTrack = localRef.current?.getAudioTracks()?.[0];
-    if (pcRef.current && micTrack) {
-      pcRef.current.getSenders().forEach((s) => {
-        if (!s.track || s.track?.kind === "audio") {
-          s.replaceTrack(micTrack).catch(() => {});
-        }
-      });
-    }
+    if (isPausedRef.current || isMutedRef.current || assistantInputLockedRef.current) return;
+    setLocalMicEnabled(true);
     if (!dcRef.current || dcRef.current.readyState !== "open") return;
     try {
       dcRef.current.send(
@@ -8865,11 +9012,85 @@ export default function Tutor({
   }
 
   function scheduleAutoStop() {
+    if (isPausedRef.current || !aliveRef.current || assistantInputLockedRef.current) return;
     clearAutoStopTimer();
     autoStopTimerRef.current = setTimeout(() => {
       if (!aliveRef.current) return;
       stop();
     }, AUTO_DISCONNECT_MS);
+  }
+
+  function toggleMute() {
+    if (status !== "connected" || isPausedRef.current) return;
+    const nextMuted = !isMutedRef.current;
+    isMutedRef.current = nextMuted;
+    setIsMuted(nextMuted);
+    setLocalMicEnabled(!nextMuted);
+    if (dcRef.current?.readyState === "open") {
+      try {
+        dcRef.current.send(JSON.stringify({ type: "input_audio_buffer.clear" }));
+        dcRef.current.send(JSON.stringify({
+          type: "session.update",
+          session: { turn_detection: buildTurnDetectionConfig() },
+        }));
+      } catch { /* connection is closing */ }
+    }
+    if (!nextMuted) enableVAD();
+  }
+
+  function resumePausedSpeech(connectionEpoch) {
+    if (connectionEpoch !== connectionEpochRef.current || isPausedRef.current) return;
+    clearAutoStopTimer();
+    setAssistantInputLocked(true);
+    setUiState("speaking");
+    try {
+      resumeRealtimeSpeech({
+        channel: dcRef.current,
+        speech: pausedSpeechRef.current,
+        freshReply: true,
+        instructions: realtimeProviderRef.current === "openai" ? buildOpenAIResponseInstructionsPrefix() : buildLanguageInstructions(),
+        onComplete: () => {
+          if (connectionEpoch !== connectionEpochRef.current || isPausedRef.current) return;
+          pausedSpeechRef.current = null;
+          finishAssistantOutput();
+        },
+      });
+    } catch (error) {
+      setErr(error?.message || "Could not resume speech. Please pause and try Resume again.");
+      setAssistantInputLocked(false);
+      enableVAD();
+      setUiState("listening");
+      scheduleAutoStop();
+    }
+  }
+
+  async function togglePause() {
+    if (connectionTransitionRef.current) return;
+    if (isPausedRef.current) {
+      await start({ resume: true });
+      return;
+    }
+    if (status !== "connected") return;
+    // Freeze streamed text locally before closing; learning state stays mounted.
+    const snapshot = snapshotRealtimeMessages(messagesRef.current, streamBuffersRef.current);
+    pausedSpeechRef.current = captureRealtimeSpeech({
+      channel: dcRef.current,
+      messages: snapshot,
+      pending: assistantInputLockedRef.current || !isIdleRef.current,
+    });
+    pausedMessagesRef.current = snapshot;
+    messagesRef.current = snapshot;
+    setMessages(snapshot);
+    streamBuffersRef.current.clear();
+    isPausedRef.current = true;
+    setIsPaused(true);
+    setLocalMicEnabled(false);
+    connectionTransitionRef.current = true;
+    try {
+      await stop({ preservePause: true });
+    } finally {
+      connectionTransitionRef.current = false;
+    }
   }
 
   function clearTutorKickoffTimer() {
@@ -9984,6 +10205,8 @@ export default function Tutor({
      Realtime event handler
   --------------------------- */
   async function handleRealtimeEvent(evt) {
+    const eventEpoch = connectionEpochRef.current;
+    if (isPausedRef.current) return;
     let data;
     try {
       data = JSON.parse(evt.data);
@@ -10156,13 +10379,14 @@ export default function Tutor({
     }
 
     if (
+      t === "input_audio_buffer.speech_started" ||
       t === "input_audio_buffer.local_speech_started" ||
       t === "input_audio_buffer.local_speech_active"
     ) {
-      // Gemini may need a moment to recognize/transcribe a short answer. Keep
+      // Gemini and OpenAI may need a moment to recognize/transcribe a short answer. Keep
       // the independent Tutor inactivity timeout from closing a healthy live
       // session while microphone activity is still arriving.
-      scheduleAutoStop();
+      clearAutoStopTimer();
       return;
     }
 
@@ -10402,6 +10626,7 @@ export default function Tutor({
           directPhraseAnswer: false,
           acceptedPhrases: regularAcceptedPhrases,
         });
+      if (eventEpoch !== connectionEpochRef.current || isPausedRef.current) return;
         if (!aliveRef.current) return;
         if (currentLesson.id !== selectedTutorLessonRef.current?.id) return;
         if (!turnSuccess.successful && turnSuccess.quizAnswered && turnSuccess.confidence >= 0.55) {
@@ -10474,6 +10699,7 @@ export default function Tutor({
           directPhraseAnswer,
           acceptedPhrases: regularAcceptedPhrases,
         });
+      if (eventEpoch !== connectionEpochRef.current || isPausedRef.current) return;
         if (!aliveRef.current) return;
         if (currentLesson?.id !== selectedTutorLessonRef.current?.id) return;
         turnVerdict = resolveTutorTurnVerdict({
@@ -10520,6 +10746,7 @@ export default function Tutor({
           regularPhraseMatch: regularTurnAccepted,
           acceptedPhrases: regularAcceptedPhrases,
         });
+      if (eventEpoch !== connectionEpochRef.current || isPausedRef.current) return;
         if (!aliveRef.current) return;
         if (currentLesson?.id !== selectedTutorLessonRef.current?.id) return;
         if (turnSuccess.objectiveAdvanced === true) {
@@ -10553,6 +10780,7 @@ export default function Tutor({
           directPhraseAnswer,
           acceptedPhrases: regularAcceptedPhrases,
         });
+      if (eventEpoch !== connectionEpochRef.current || isPausedRef.current) return;
         if (!aliveRef.current) return;
         if (currentLesson?.id !== selectedTutorLessonRef.current?.id) return;
         const progressResult = applySuccessfulTutorTurnProgress({
@@ -11210,13 +11438,10 @@ export default function Tutor({
         </Portal>
       ) : null}
       <TutorViewportEdgeGlow
-        enabled={isActive && status === "connected"}
+        enabled={isActive && status === "connected" && !isPaused && !tutorGameLaunch}
         state={edgeGlowState}
         isLightTheme={isLightTheme}
-        analyserRef={micAnalyserRef}
-        floatBufRef={micFloatBufRef}
-        tutorAnalyserRef={analyserRef}
-        tutorFloatBufRef={floatBufRef}
+        audioLevelRef={tutorVoiceLevelRef}
       />
       <Box color="gray.100" position="relative" pb={4}>
         {/* Header area: lesson agenda separated from robot. No repair-focus
@@ -11359,6 +11584,7 @@ export default function Tutor({
                     callActive={status === "connected"}
                     feedback={orbFeedback}
                     state={previousOrbState}
+                    audioLevelRef={status === "connected" ? tutorVoiceLevelRef : undefined}
                     theme={isLightTheme ? "light" : "dark"}
                     size={voiceOrbSize}
                   />
@@ -11370,19 +11596,33 @@ export default function Tutor({
                   callActive={status === "connected"}
                   feedback={orbFeedback}
                   state={displayOrbState}
+                  audioLevelRef={status === "connected" ? tutorVoiceLevelRef : undefined}
                   theme={isLightTheme ? "light" : "dark"}
                   size={voiceOrbSize}
                 />
               </Box>
             </Box>
-            {status === "connected" && uiStateLabel(liveUiState, uiLang) && (
+            {(status === "connected" || isPaused) && (isPaused || isMuted) ? (
+              <Badge
+                colorScheme={isPaused ? "yellow" : "red"}
+                variant="subtle"
+                rounded="full"
+                px={2.5}
+                py={0.5}
+                fontSize="xs"
+                textTransform="uppercase"
+                letterSpacing="wider"
+              >
+                {isPaused ? "Paused" : "Muted"}
+              </Badge>
+            ) : status === "connected" && uiStateLabel(liveUiState, uiLang) ? (
               <Text
                 fontSize="xs"
                 color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
               >
                 {uiStateLabel(liveUiState, uiLang)}
               </Text>
-            )}
+            ) : null}
           </VStack>
         </VStack>
 
@@ -11458,41 +11698,92 @@ export default function Tutor({
           </VStack>
         </Box>
 
-        {/* Bottom dock - Connect button only */}
+        {/* Bottom dock - Controls */}
         <QuestionActionArea
           actions={
             <ActivityActionRow
-              tone={status === "connected" ? "stop" : "speak"}
+              tone="speak"
               primary={
-                <Button
-                  key={status === "connected" ? "end" : "start"}
-                  onClick={(e) => {
-                    e.currentTarget?.blur?.();
-                    if (status === "connected") {
-                      stop();
-                    } else {
+                (status === "connected" || isPaused) ? (
+                  <HStack
+                    data-call-controls=""
+                    spacing={3}
+                    justify="center"
+                    align="center"
+                    w="full"
+                  >
+                    {/* Mute Button (Icon only) */}
+                    <IconButton
+                      icon={
+                        isMuted ? (
+                          <FaMicrophoneSlash size={18} />
+                        ) : (
+                          <FaMicrophone size={18} />
+                        )
+                      }
+                      aria-label={isMuted ? "Unmute microphone" : "Mute microphone"}
+                      onClick={toggleMute}
+                      isDisabled={isPaused || status !== "connected"}
+                      h="40px"
+                      flex="1 1 0"
+                      maxW="88px"
+                      borderRadius="18px"
+                      {...voiceCallControlStyle(isMuted)}
+                    />
+
+                    {/* Pause Button (Icon only) */}
+                    <IconButton
+                      icon={isPaused ? <FaPlay size={16} /> : <FaPause size={16} />}
+                      aria-label={isPaused ? "Resume tutor" : "Pause tutor"}
+                      onClick={togglePause}
+                      isDisabled={status !== "connected" && status !== "paused"}
+                      h="40px"
+                      flex="1 1 0"
+                      maxW="88px"
+                      borderRadius="18px"
+                      {...voiceCallControlStyle(isPaused)}
+                    />
+
+                    {/* End Button (Icon only) */}
+                    <IconButton
+                      icon={<ImPhoneHangUp size={18} />}
+                      aria-label="End tutor session"
+                      onClick={stop}
+                      h="40px"
+                      flex="1 1 0"
+                      maxW="88px"
+                      borderRadius="18px"
+                      variant="solid"
+                      bg={SOFT_STOP_BUTTON_BG || "red.500"}
+                      color="white"
+                      boxShadow="none"
+                      _hover={{
+                        bg: SOFT_STOP_BUTTON_HOVER_BG || "red.600",
+                      }}
+                      _active={{ transform: "scale(0.96)" }}
+                      transition="all 0.15s ease"
+                    />
+                  </HStack>
+                ) : (
+                  <Button
+                    key="start"
+                    isDisabled={status === "connecting" || status === "disconnecting"}
+                    onClick={(e) => {
+                      e.currentTarget?.blur?.();
                       start();
-                    }
-                  }}
-                  size="lg"
-                  height="48px"
-                  px={4}
-                  rounded="full"
-                  textShadow={isLightTheme ? "none" : "0 0 16px rgba(0,0,0,0.9)"}
-                >
-                  {status === "connected" ? (
-                    <>
-                      <FaStop /> &nbsp; {uiText("ra_btn_end", "End")}
-                    </>
-                  ) : (
-                    <>
-                      <FaMicrophone /> &nbsp;{" "}
-                      {status === "connecting"
-                        ? uiText("ra_btn_starting", "Starting...")
-                        : uiText("ra_btn_start", "Start")}
-                    </>
-                  )}
-                </Button>
+                    }}
+                    size="lg"
+                    height="48px"
+                    px={4}
+                    rounded="full"
+                    textShadow={isLightTheme ? "none" : "0 0 16px rgba(0,0,0,0.9)"}
+                  >
+                    <FaMicrophone /> &nbsp;{" "}
+                    {status === "connecting"
+                      ? uiText("ra_btn_starting", "Starting...")
+                      : uiText("ra_btn_start", "Start")}
+                  </Button>
+                )
               }
             ></ActivityActionRow>
           }
@@ -11688,6 +11979,7 @@ export default function Tutor({
                                     : 0
                                 }
                                 isTestUnlocked={isTutorTestUnlockActive()}
+                                isPlacementUnlocked={isContentUnlockedByPlacement(tutorPlacementLevel, unit.cefrLevel)}
                                 onLessonSelect={handleTutorLessonPreview}
                               />
                             );

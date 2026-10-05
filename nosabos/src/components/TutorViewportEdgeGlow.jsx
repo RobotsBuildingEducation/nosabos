@@ -1,7 +1,110 @@
 import React, { memo, useEffect, useRef } from "react";
-import { Portal, Box } from "@chakra-ui/react";
+import { Portal } from "@chakra-ui/react";
+import { ORB_PALETTES } from "./orbing/orbModel.js";
+import TutorAmbientShader from "./TutorAmbientShader.jsx";
+
+const rgbChannels = (hex) => hex.match(/[\da-f]{2}/gi).map((channel) => parseInt(channel, 16)).join(", ");
 
 const SPEECH_GLOW_CSS = `
+.tutor-ambient,
+.tutor-viewport-frame {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+.tutor-ambient {
+  z-index: 0;
+  overflow: hidden;
+  opacity: 0;
+  --wash-strength: 0.60;
+  transition: opacity 1100ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.tutor-ambient.is-light {
+  --wash-strength: 0.44;
+}
+.tutor-ambient[data-visible="true"]:has([data-presentation-ready="true"]) {
+  opacity: 1;
+}
+.tutor-ambient-field {
+  position: absolute;
+  inset: 0;
+  transform: translateY(-6%) scale(1.06);
+  transition: transform 1400ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.tutor-ambient[data-visible="true"] .tutor-ambient-field {
+  transform: translateY(0) scale(1);
+}
+.tutor-ambient-canvas,
+.tutor-ambient-fallback {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.tutor-ambient-canvas { opacity: 0; transition: opacity 420ms ease; }
+.tutor-ambient-field[data-shader-ready="true"] .tutor-ambient-canvas { opacity: 1; }
+.tutor-ambient-field[data-shader-ready="true"] .tutor-ambient-fallback { opacity: 0; }
+.tutor-ambient-field[data-shader-ready="true"] .tutor-ambient-colors { animation-play-state: paused; }
+.tutor-ambient-fallback {
+  opacity: 1;
+  transition: opacity 420ms ease;
+  mask-image: linear-gradient(to bottom, black 0%, black 8%, rgba(0, 0, 0, 0.72) 30%, transparent 60%);
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 8%, rgba(0, 0, 0, 0.72) 30%, transparent 60%);
+}
+.tutor-ambient-colors {
+  position: absolute;
+  inset: -15%;
+  background:
+    radial-gradient(ellipse 70% 62% at 82% 12%, rgba(var(--wash-blue-rgb), var(--wash-strength)) 0%, transparent 76%),
+    radial-gradient(ellipse 65% 76% at 12% 22%, rgba(var(--wash-teal-rgb), calc(var(--wash-strength) * 0.9)) 0%, transparent 74%),
+    radial-gradient(ellipse 58% 46% at 48% 5%, rgba(var(--orb-mid-rgb), calc(var(--wash-strength) * 0.65)) 0%, transparent 78%);
+  filter: blur(36px);
+  animation: tutorColorDrift 4.25s ease-in-out infinite alternate;
+}
+.tutor-ambient-colors-secondary {
+  opacity: 0.44;
+  background:
+    radial-gradient(ellipse 70% 55% at 25% 8%, rgba(var(--wash-blue-rgb), var(--wash-strength)) 0%, transparent 74%),
+    radial-gradient(ellipse 66% 62% at 78% 36%, rgba(var(--wash-teal-rgb), var(--wash-strength)) 0%, transparent 76%);
+  animation: tutorColorDriftSecondary 6s ease-in-out infinite alternate;
+}
+.tutor-ambient.is-light .tutor-ambient-colors {
+  filter: blur(36px) brightness(1.30);
+}
+.tutor-ambient-grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.065;
+  mix-blend-mode: soft-light;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='192' height='192'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' opacity='.8' filter='url(%23grain)'/%3E%3C/svg%3E");
+}
+.tutor-ambient[data-visible="false"] .tutor-ambient-colors {
+  animation-play-state: paused;
+}
+.tutor-viewport-frame {
+  z-index: 1399;
+  overflow: hidden;
+  opacity: 0;
+  transform: scale(1.012);
+  filter: blur(3px);
+  transition: opacity 750ms ease, transform 1100ms cubic-bezier(0.22, 1, 0.36, 1), filter 900ms ease;
+}
+.tutor-viewport-frame[data-visible="true"] {
+  opacity: 1;
+  transform: scale(1);
+  filter: blur(0);
+}
+.tutor-viewport-frame[data-visible="false"] .speech-glow * {
+  animation-play-state: paused;
+}
+@keyframes tutorColorDrift {
+  from { transform: translate(-3%, -2%) scale(1.02) rotate(-2deg); }
+  to { transform: translate(4%, 3%) scale(1.08) rotate(3deg); }
+}
+@keyframes tutorColorDriftSecondary {
+  from { transform: translate(4%, 2%) scale(1.06) rotate(3deg); }
+  to { transform: translate(-4%, -3%) scale(1.02) rotate(-3deg); }
+}
 .speech-glow,
 .speech-glow * {
   pointer-events: none;
@@ -10,7 +113,7 @@ const SPEECH_GLOW_CSS = `
   position: absolute;
   inset: 0;
   overflow: hidden;
-  --edge-size: 4px;
+  --edge-size: 3.6px;
   --speech: 0;
   --rim-blur: 1.6px;
   --halo-spread: 3px;
@@ -27,8 +130,14 @@ const SPEECH_GLOW_CSS = `
   opacity: 0.44;
 }
 .speech-glow.is-light {
-  --ink: 1.55;
-  filter: saturate(calc(1.5 + var(--speech) * 0.15)) contrast(1.12);
+  --edge-size: 2.88px;
+  --halo-spread: 2.88px;
+  --rim-blur: 0.6px;
+  --hotspot-size: 4.32px;
+  --hotspot-width: 32.4px;
+  --hotspot-blur: 1.62px;
+  --ink: 2.2;
+  filter: saturate(calc(1.8 + var(--speech) * 0.2)) contrast(1.15);
 }
 .speech-glow.is-light.is-tutor {
   opacity: 0.8;
@@ -39,11 +148,43 @@ const SPEECH_GLOW_CSS = `
 .speech-glow.is-light .spill {
   mix-blend-mode: normal;
 }
+.speech-glow.is-light .edge-top,
+.speech-glow.is-light .edge-bottom,
+.speech-glow.is-light .edge-left,
+.speech-glow.is-light .edge-right {
+  transform: none;
+}
+.speech-glow.is-light .edge-top {
+  height: var(--edge-size);
+  background: linear-gradient(90deg, rgba(var(--orb-deep-rgb), 0.95) 0%, rgba(var(--orb-mid-rgb), 1) 20%, rgba(var(--orb-deep-rgb), 1) 50%, rgba(var(--orb-mid-rgb), 1) 80%, rgba(var(--orb-deep-rgb), 0.95) 100%);
+  box-shadow: 0 calc(0.72px + var(--speech) * 1.08px) calc(2.16px + var(--speech) * 2.16px) rgba(var(--orb-deep-rgb), 0.40);
+}
+.speech-glow.is-light .edge-bottom {
+  height: var(--edge-size);
+  background: linear-gradient(90deg, rgba(var(--orb-deep-rgb), 0.95) 0%, rgba(var(--orb-mid-rgb), 1) 20%, rgba(var(--orb-deep-rgb), 1) 50%, rgba(var(--orb-mid-rgb), 1) 80%, rgba(var(--orb-deep-rgb), 0.95) 100%);
+  box-shadow: 0 calc(-0.72px - var(--speech) * 1.08px) calc(2.16px + var(--speech) * 2.16px) rgba(var(--orb-deep-rgb), 0.40);
+}
+.speech-glow.is-light .edge-left {
+  width: var(--edge-size);
+  background: linear-gradient(180deg, rgba(var(--orb-deep-rgb), 0.95) 0%, rgba(var(--orb-mid-rgb), 1) 20%, rgba(var(--orb-deep-rgb), 1) 50%, rgba(var(--orb-mid-rgb), 1) 80%, rgba(var(--orb-deep-rgb), 0.95) 100%);
+  box-shadow: calc(0.72px + var(--speech) * 1.08px) 0 calc(2.16px + var(--speech) * 2.16px) rgba(var(--orb-deep-rgb), 0.40);
+}
+.speech-glow.is-light .edge-right {
+  width: var(--edge-size);
+  background: linear-gradient(180deg, rgba(var(--orb-deep-rgb), 0.95) 0%, rgba(var(--orb-mid-rgb), 1) 20%, rgba(var(--orb-deep-rgb), 1) 50%, rgba(var(--orb-mid-rgb), 1) 80%, rgba(var(--orb-deep-rgb), 0.95) 100%);
+  box-shadow: calc(-0.72px - var(--speech) * 1.08px) 0 calc(2.16px + var(--speech) * 2.16px) rgba(var(--orb-deep-rgb), 0.40);
+}
 .speech-glow.is-light .halo {
-  box-shadow: inset 0 var(--halo-spread) calc(var(--halo-spread) * 1.1) rgba(95, 211, 255, 0.32), inset 0 calc(var(--halo-spread) * -1) calc(var(--halo-spread) * 1.1) rgba(112, 111, 255, 0.28), inset var(--halo-spread) 0 calc(var(--halo-spread) * 1.1) rgba(79, 182, 255, 0.24), inset calc(var(--halo-spread) * -1) 0 calc(var(--halo-spread) * 1.1) rgba(79, 182, 255, 0.24);
+  box-shadow: inset 0 var(--halo-spread) calc(var(--halo-spread) * 1.5) rgba(var(--orb-deep-rgb), 0.38), inset 0 calc(var(--halo-spread) * -1) calc(var(--halo-spread) * 1.5) rgba(var(--orb-deep-rgb), 0.35), inset var(--halo-spread) 0 calc(var(--halo-spread) * 1.5) rgba(var(--orb-deep-rgb), 0.32), inset calc(var(--halo-spread) * -1) 0 calc(var(--halo-spread) * 1.5) rgba(var(--orb-deep-rgb), 0.32);
 }
 .speech-glow.is-light .spill {
-  box-shadow: inset 0 var(--halo-spread) calc(var(--halo-spread) * 1.15) rgba(88, 217, 255, 0.22), inset 0 calc(var(--halo-spread) * -1.1) calc(var(--halo-spread) * 1.2) rgba(120, 108, 255, 0.24), inset var(--halo-spread) 0 calc(var(--halo-spread) * 1.15) rgba(79, 178, 255, 0.18), inset calc(var(--halo-spread) * -1) 0 calc(var(--halo-spread) * 1.15) rgba(79, 178, 255, 0.18);
+  box-shadow: inset 0 calc(var(--halo-spread) * 1.5) calc(var(--halo-spread) * 2.2) rgba(var(--orb-mid-rgb), 0.28), inset 0 calc(var(--halo-spread) * -1.5) calc(var(--halo-spread) * 2.2) rgba(var(--orb-deep-rgb), 0.28), inset calc(var(--halo-spread) * 1.5) 0 calc(var(--halo-spread) * 2.2) rgba(var(--orb-mid-rgb), 0.24), inset calc(var(--halo-spread) * -1.5) 0 calc(var(--halo-spread) * 2.2) rgba(var(--orb-mid-rgb), 0.24);
+}
+.speech-glow.is-light .hotspot-1,
+.speech-glow.is-light .hotspot-2,
+.speech-glow.is-light .hotspot-3,
+.speech-glow.is-light .hotspot-4 {
+  background: rgba(var(--orb-deep-rgb), 0.85);
 }
 .edge {
   position: absolute;
@@ -56,9 +197,9 @@ const SPEECH_GLOW_CSS = `
   left: 0;
   right: 0;
   height: var(--edge-size);
-  background: linear-gradient(90deg, rgba(120, 115, 255, 0.78) 0%, rgba(83, 138, 255, 0.92) 16%, rgba(74, 190, 255, 1) 38%, rgba(99, 239, 233, 1) 58%, rgba(79, 194, 255, 0.96) 76%, rgba(160, 104, 255, 0.76) 100%);
+  background: linear-gradient(90deg, rgba(var(--orb-deep-rgb), 0.78) 0%, rgba(var(--orb-mid-rgb), 0.92) 16%, rgba(var(--orb-mid-rgb), 1) 38%, rgba(var(--orb-light-rgb), 1) 58%, rgba(var(--orb-mid-rgb), 0.96) 76%, rgba(var(--orb-deep-rgb), 0.76) 100%);
   filter: blur(var(--rim-blur));
-  box-shadow: 0 calc(1.5px + var(--speech) * 2.4px) calc(2px + var(--speech) * 3px) rgba(110, 220, 255, min(1, calc((0.35 + var(--speech) * 0.3) * var(--ink))));
+  box-shadow: 0 calc(1.5px + var(--speech) * 2.4px) calc(2px + var(--speech) * 3px) rgba(var(--orb-mid-rgb), min(1, calc((0.35 + var(--speech) * 0.3) * var(--ink))));
   transform: translateY(-2px);
   animation: topGlow var(--speed) ease-in-out infinite alternate;
 }
@@ -67,9 +208,9 @@ const SPEECH_GLOW_CSS = `
   left: 0;
   right: 0;
   height: var(--edge-size);
-  background: linear-gradient(90deg, rgba(88, 209, 255, 0.74) 0%, rgba(86, 145, 255, 0.94) 18%, rgba(109, 118, 255, 1) 42%, rgba(96, 132, 255, 0.92) 65%, rgba(74, 205, 255, 0.88) 86%, rgba(120, 116, 255, 0.68) 100%);
+  background: linear-gradient(90deg, rgba(var(--orb-mid-rgb), 0.74) 0%, rgba(var(--orb-deep-rgb), 0.94) 18%, rgba(var(--orb-mid-rgb), 1) 42%, rgba(var(--orb-light-rgb), 0.92) 65%, rgba(var(--orb-mid-rgb), 0.88) 86%, rgba(var(--orb-deep-rgb), 0.68) 100%);
   filter: blur(var(--rim-blur));
-  box-shadow: 0 calc(-1.5px - var(--speech) * 2.4px) calc(2px + var(--speech) * 3px) rgba(130, 140, 255, min(1, calc((0.32 + var(--speech) * 0.28) * var(--ink))));
+  box-shadow: 0 calc(-1.5px - var(--speech) * 2.4px) calc(2px + var(--speech) * 3px) rgba(var(--orb-mid-rgb), min(1, calc((0.32 + var(--speech) * 0.28) * var(--ink))));
   transform: translateY(2px);
   animation: bottomGlow calc(var(--speed) * 1.06) ease-in-out infinite alternate;
 }
@@ -78,9 +219,9 @@ const SPEECH_GLOW_CSS = `
   bottom: 0;
   left: 0;
   width: var(--edge-size);
-  background: linear-gradient(180deg, rgba(96, 237, 229, 0.78) 0%, rgba(72, 196, 255, 0.96) 26%, rgba(69, 132, 255, 1) 52%, rgba(96, 112, 255, 0.9) 76%, rgba(132, 110, 255, 0.7) 100%);
+  background: linear-gradient(180deg, rgba(var(--orb-light-rgb), 0.78) 0%, rgba(var(--orb-mid-rgb), 0.96) 26%, rgba(var(--orb-deep-rgb), 1) 52%, rgba(var(--orb-mid-rgb), 0.9) 76%, rgba(var(--orb-deep-rgb), 0.7) 100%);
   filter: blur(var(--rim-blur));
-  box-shadow: calc(1.5px + var(--speech) * 2px) 0 calc(2px + var(--speech) * 2.4px) rgba(90, 190, 255, min(1, calc((0.3 + var(--speech) * 0.28) * var(--ink))));
+  box-shadow: calc(1.5px + var(--speech) * 2px) 0 calc(2px + var(--speech) * 2.4px) rgba(var(--orb-mid-rgb), min(1, calc((0.3 + var(--speech) * 0.28) * var(--ink))));
   transform: translateX(-2px);
   animation: leftGlow calc(var(--speed) * 0.95) ease-in-out infinite alternate;
 }
@@ -89,22 +230,22 @@ const SPEECH_GLOW_CSS = `
   bottom: 0;
   right: 0;
   width: var(--edge-size);
-  background: linear-gradient(180deg, rgba(92, 236, 226, 0.76) 0%, rgba(76, 196, 255, 0.95) 28%, rgba(69, 132, 255, 1) 52%, rgba(98, 113, 255, 0.9) 78%, rgba(132, 112, 255, 0.72) 100%);
+  background: linear-gradient(180deg, rgba(var(--orb-light-rgb), 0.76) 0%, rgba(var(--orb-mid-rgb), 0.95) 28%, rgba(var(--orb-deep-rgb), 1) 52%, rgba(var(--orb-mid-rgb), 0.9) 78%, rgba(var(--orb-deep-rgb), 0.72) 100%);
   filter: blur(var(--rim-blur));
-  box-shadow: calc(-1.5px - var(--speech) * 2px) 0 calc(2px + var(--speech) * 2.4px) rgba(90, 190, 255, min(1, calc((0.3 + var(--speech) * 0.28) * var(--ink))));
+  box-shadow: calc(-1.5px - var(--speech) * 2px) 0 calc(2px + var(--speech) * 2.4px) rgba(var(--orb-mid-rgb), min(1, calc((0.3 + var(--speech) * 0.28) * var(--ink))));
   transform: translateX(2px);
   animation: rightGlow calc(var(--speed) * 1.03) ease-in-out infinite alternate;
 }
 .halo {
   position: absolute;
   inset: 0;
-  box-shadow: inset 0 var(--halo-spread) calc(var(--halo-spread) * 1.1) rgba(95, 211, 255, 0.16), inset 0 calc(var(--halo-spread) * -1) calc(var(--halo-spread) * 1.1) rgba(112, 111, 255, 0.14), inset var(--halo-spread) 0 calc(var(--halo-spread) * 1.1) rgba(79, 182, 255, 0.12), inset calc(var(--halo-spread) * -1) 0 calc(var(--halo-spread) * 1.1) rgba(79, 182, 255, 0.12);
+  box-shadow: inset 0 var(--halo-spread) calc(var(--halo-spread) * 1.1) rgba(var(--orb-mid-rgb), 0.16), inset 0 calc(var(--halo-spread) * -1) calc(var(--halo-spread) * 1.1) rgba(var(--orb-deep-rgb), 0.14), inset var(--halo-spread) 0 calc(var(--halo-spread) * 1.1) rgba(var(--orb-mid-rgb), 0.12), inset calc(var(--halo-spread) * -1) 0 calc(var(--halo-spread) * 1.1) rgba(var(--orb-mid-rgb), 0.12);
   animation: haloBreath 2.8s ease-in-out infinite alternate;
 }
 .spill {
   position: absolute;
   inset: 0;
-  box-shadow: inset 0 var(--halo-spread) calc(var(--halo-spread) * 1.15) rgba(88, 217, 255, 0.14), inset 0 calc(var(--halo-spread) * -1.1) calc(var(--halo-spread) * 1.2) rgba(120, 108, 255, 0.16), inset var(--halo-spread) 0 calc(var(--halo-spread) * 1.15) rgba(79, 178, 255, 0.12), inset calc(var(--halo-spread) * -1) 0 calc(var(--halo-spread) * 1.15) rgba(79, 178, 255, 0.12);
+  box-shadow: inset 0 var(--halo-spread) calc(var(--halo-spread) * 1.15) rgba(var(--orb-mid-rgb), 0.14), inset 0 calc(var(--halo-spread) * -1.1) calc(var(--halo-spread) * 1.2) rgba(var(--orb-deep-rgb), 0.16), inset var(--halo-spread) 0 calc(var(--halo-spread) * 1.15) rgba(var(--orb-mid-rgb), 0.12), inset calc(var(--halo-spread) * -1) 0 calc(var(--halo-spread) * 1.15) rgba(var(--orb-mid-rgb), 0.12);
   animation: spillBreath 2.7s ease-in-out infinite alternate;
 }
 .hotspot {
@@ -118,7 +259,7 @@ const SPEECH_GLOW_CSS = `
   left: 14%;
   width: var(--hotspot-width);
   height: var(--hotspot-size);
-  background: rgba(95, 225, 255, 0.95);
+  background: rgba(var(--orb-light-rgb), 0.95);
   animation: hotspotA 4.6s ease-in-out infinite alternate;
 }
 .hotspot-2 {
@@ -126,7 +267,7 @@ const SPEECH_GLOW_CSS = `
   left: 48%;
   width: calc(var(--hotspot-width) * 1.05);
   height: var(--hotspot-size);
-  background: rgba(74, 157, 255, 0.92);
+  background: rgba(var(--orb-mid-rgb), 0.92);
   animation: hotspotB 5.4s ease-in-out infinite alternate;
 }
 .hotspot-3 {
@@ -134,7 +275,7 @@ const SPEECH_GLOW_CSS = `
   left: 24%;
   width: calc(var(--hotspot-width) * 0.95);
   height: var(--hotspot-size);
-  background: rgba(113, 112, 255, 0.86);
+  background: rgba(var(--orb-mid-rgb), 0.86);
   animation: hotspotB 5.2s ease-in-out infinite alternate-reverse;
 }
 .hotspot-4 {
@@ -142,7 +283,7 @@ const SPEECH_GLOW_CSS = `
   right: 20%;
   width: var(--hotspot-width);
   height: var(--hotspot-size);
-  background: rgba(125, 101, 255, 0.82);
+  background: rgba(var(--orb-deep-rgb), 0.82);
   animation: hotspotA 5.1s ease-in-out infinite alternate-reverse;
 }
 @keyframes topGlow {
@@ -178,56 +319,40 @@ const SPEECH_GLOW_CSS = `
   to { transform: translateX(-12px) scaleX(1.06); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .speech-glow, .speech-glow * {
+  .tutor-ambient, .tutor-ambient *, .tutor-viewport-frame, .speech-glow, .speech-glow * {
     animation: none !important;
+    transition: none !important;
   }
 }
 `;
 
 /**
- * Tutor viewport edge treatment.
- * User turn: voice-reactive perimeter glow.
- * Tutor turn: hard border that thickens and brightens with their voice.
- * Renders only while a conversation is active.
+ * Learner turn: voice-reactive perimeter. Tutor turn: drifting color and grain.
+ * Keep both layers mounted so turn changes can blend and reverse mid-transition.
+ * Pages with an opaque backdrop can place the aura inside their content layer.
  */
 function TutorViewportEdgeGlow({
   enabled = true,
   state = "idle",
   isLightTheme = false,
-  analyserRef = null,
-  floatBufRef = null,
-  tutorAnalyserRef = null,
-  tutorFloatBufRef = null,
+  audioLevelRef = null,
+  ambientInPlace = false,
 }) {
   const containerRef = useRef(null);
   const isUserTurn = state === "listening";
+  const orbPalette = ORB_PALETTES.find(({ id }) => id === (isLightTheme ? "mint" : "blue"));
+  const paletteStyle = {
+    "--orb-deep-rgb": rgbChannels(orbPalette.colors[0]),
+    "--orb-mid-rgb": rgbChannels(orbPalette.colors[1]),
+    "--orb-light-rgb": rgbChannels(orbPalette.colors[2]),
+    "--wash-blue-rgb": isLightTheme ? "92, 170, 225" : "37, 114, 224",
+    "--wash-teal-rgb": isLightTheme ? rgbChannels(orbPalette.colors[0]) : "0, 151, 149",
+  };
 
   useEffect(() => {
     if (!enabled || !isUserTurn) return;
 
     let rafId;
-    let smoothedLevel = 0;
-
-    let freqBuf = null;
-    const readLevel = (analyser) => {
-      if (!analyser) return 0;
-      try {
-        if (analyser.context?.state === "suspended") {
-          analyser.context.resume?.();
-        }
-        const bins = analyser.frequencyBinCount || 128;
-        if (!freqBuf || freqBuf.length < bins) freqBuf = new Uint8Array(bins);
-        analyser.getByteFrequencyData(freqBuf);
-        let sum = 0;
-        const n = Math.min(freqBuf.length, 40);
-        for (let i = 0; i < n; i++) sum += freqBuf[i];
-        const avg = sum / n / 255;
-        if (avg <= 0.015) return 0;
-        return Math.min(1, Math.pow((avg - 0.015) / 0.2, 0.5));
-      } catch {
-        return 0;
-      }
-    };
 
     const updateGlow = () => {
       const node = containerRef.current;
@@ -236,37 +361,23 @@ function TutorViewportEdgeGlow({
         return;
       }
 
-      let targetLevel = isUserTurn
-        ? readLevel(analyserRef?.current)
-        : readLevel(tutorAnalyserRef?.current);
-      const attack = isUserTurn ? 0.72 : 0.58;
-      const decay = isUserTurn ? 0.2 : 0.16;
-      const coef = targetLevel > smoothedLevel ? attack : decay;
-      smoothedLevel = smoothedLevel + (targetLevel - smoothedLevel) * coef;
-
-      const reach = isUserTurn ? smoothedLevel : smoothedLevel * 0.76;
-      const edgeSize = 2.6 + reach * 1.1;
-      const rimBlur = 0.9 + reach * 0.4;
-      const haloSpread = 1.6 + reach * 1.2;
-      const hotspotSize = 4 + reach * 0.8;
-      const hotspotWidth = 42 + reach * 5;
-      node.style.opacity = smoothedLevel > 0.06 ? "1" : "0";
+      const reach = Math.min(1, Math.max(0, audioLevelRef?.current || 0));
+      const edgeSize = isLightTheme ? 2.88 + reach * 1.44 : 3.6 + reach * 1.1;
+      const rimBlur = isLightTheme ? 0.6 + reach * 0.288 : 0.9 + reach * 0.4;
+      const haloSpread = isLightTheme ? 2.88 + reach * 1.44 : 1.6 + reach * 1.2;
+      const hotspotSize = isLightTheme ? 4.32 + reach * 1.08 : 4 + reach * 0.8;
+      const hotspotWidth = isLightTheme ? 32.4 + reach * 7.2 : 42 + reach * 5;
+      const hotspotBlur = isLightTheme ? 1.62 + reach * 0.54 : 2.8 + reach * 1.0;
       node.style.setProperty("--speech", reach.toFixed(3));
       node.style.setProperty("--edge-size", `${edgeSize.toFixed(1)}px`);
       node.style.setProperty("--rim-blur", `${rimBlur.toFixed(1)}px`);
       node.style.setProperty("--halo-spread", `${haloSpread.toFixed(1)}px`);
       node.style.setProperty("--hotspot-size", `${hotspotSize.toFixed(1)}px`);
       node.style.setProperty("--hotspot-width", `${hotspotWidth.toFixed(1)}px`);
-      node.style.setProperty("--hotspot-blur", `${(2.8 + reach * 1).toFixed(1)}px`);
-      if (isUserTurn) {
-        const baseOpacity = isLightTheme ? 1 : 0.56;
-        const glowOpacity = Math.min(1, baseOpacity + smoothedLevel * (isLightTheme ? 0 : 0.44));
-        node.style.setProperty("--glow-opacity", glowOpacity.toFixed(3));
-      } else {
-        const baseOpacity = isLightTheme ? 0.84 : 0.28;
-        const glowOpacity = Math.min(1, baseOpacity + smoothedLevel * (isLightTheme ? 0.16 : 0.64));
-        node.style.setProperty("--glow-opacity", glowOpacity.toFixed(3));
-      }
+      node.style.setProperty("--hotspot-blur", `${hotspotBlur.toFixed(1)}px`);
+      const baseOpacity = isLightTheme ? 1 : 0.56;
+      const glowOpacity = Math.min(1, baseOpacity + reach * (isLightTheme ? 0 : 0.44));
+      node.style.setProperty("--glow-opacity", glowOpacity.toFixed(3));
 
       rafId = requestAnimationFrame(updateGlow);
     };
@@ -279,89 +390,52 @@ function TutorViewportEdgeGlow({
     enabled,
     isUserTurn,
     isLightTheme,
-    analyserRef,
-    floatBufRef,
-    tutorAnalyserRef,
-    tutorFloatBufRef,
+    audioLevelRef,
   ]);
 
-  if (!enabled || !isUserTurn) return null;
+  const ambient = (
+    <div
+      className={`tutor-ambient${isLightTheme ? " is-light" : ""}`}
+      data-visible={enabled && state === "speaking"}
+      aria-hidden="true"
+      style={paletteStyle}
+    >
+      <TutorAmbientShader prepare={enabled} visible={enabled && state === "speaking"} isLightTheme={isLightTheme} audioLevelRef={audioLevelRef} />
+    </div>
+  );
 
   return (
-    <Portal>
-      <style>{SPEECH_GLOW_CSS}</style>
-      <Box
-        aria-hidden="true"
-        pointerEvents="none"
-        position="fixed"
-        inset={0}
-        zIndex={1399}
-        overflow="visible"
-        opacity={1}
-        transition="opacity 380ms ease"
-        style={{ cornerShape: "superellipse(2)" }}
-        sx={{
-          "--window-radius":
-            "max(16px, env(safe-area-inset-top, 0px), env(safe-area-inset-right, 0px), env(safe-area-inset-bottom, 0px), env(safe-area-inset-left, 0px))",
-          "--glow-depth": "8px",
-          "--glow-brightness": isLightTheme ? "1.1" : "1.08",
-          "--glow-saturation": isLightTheme ? "1.4" : "1.3",
-          "--edge-glow-angle": "0deg",
-          "--tutor-border-width": "4px",
-          "--tutor-border-bright": "1",
-          "--glow-opacity": isLightTheme ? "1" : "0.8",
-          "&, & *": { pointerEvents: "none" },
-          "--breathe-duration": "1.6s",
-
-          "@keyframes tutorAmbientBreathe": {
-            "0%, 100%": {
-              filter:
-                "blur(4px) saturate(var(--glow-saturation)) brightness(var(--glow-brightness))",
-              opacity: isLightTheme ? 0.78 : 0.68,
-            },
-            "50%": {
-              filter:
-                "blur(6px) saturate(calc(var(--glow-saturation) + 0.12)) brightness(calc(var(--glow-brightness) + 0.06))",
-              opacity: isLightTheme ? 0.92 : 0.86,
-            },
-          },
-
-          "@keyframes tutorBloomBreathe": {
-            "0%, 100%": {
-              opacity: isLightTheme ? 0.62 : 0.52,
-            },
-            "50%": {
-              opacity: isLightTheme ? 0.84 : 0.74,
-            },
-          },
-
-          "@media (prefers-reduced-motion: reduce)": {
-            "&, & *": {
-              animation: "none !important",
-              transition: "none !important",
-            },
-          },
-        }}
-      >
+    <>
+      {ambientInPlace && ambient}
+      <Portal>
+        <style>{SPEECH_GLOW_CSS}</style>
+        {!ambientInPlace && ambient}
         <div
-          ref={containerRef}
-          className={`speech-glow${isLightTheme ? " is-light" : ""}`}
+          className="tutor-viewport-frame"
+          data-visible={enabled && isUserTurn}
           aria-hidden="true"
+          style={paletteStyle}
         >
-          <div className="edge edge-top" />
-          <div className="edge edge-bottom" />
-          <div className="edge edge-left" />
-          <div className="edge edge-right" />
-          <div className="halo" />
-          <div className="spill" />
-          <div className="hotspot hotspot-1" />
-          <div className="hotspot hotspot-2" />
-          <div className="hotspot hotspot-3" />
-          <div className="hotspot hotspot-4" />
-        </div>
+          <div
+            ref={containerRef}
+            className={`speech-glow${isLightTheme ? " is-light" : ""}`}
+            aria-hidden="true"
+          >
+            <div className="edge edge-top" />
+            <div className="edge edge-bottom" />
+            <div className="edge edge-left" />
+            <div className="edge edge-right" />
+            <div className="halo" />
+            <div className="spill" />
+            <div className="hotspot hotspot-1" />
+            <div className="hotspot hotspot-2" />
+            <div className="hotspot hotspot-3" />
+            <div className="hotspot hotspot-4" />
+          </div>
 
-      </Box>
-    </Portal>
+        </div>
+      </Portal>
+    </>
   );
 }
 

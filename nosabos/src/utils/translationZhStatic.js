@@ -512,7 +512,7 @@ export const TRANSLATION_ZH_STATIC = {
   vocab_quiz_not_passed: "测验未通过",
   vocab_quiz_score_passed: "答对 {correct} 题 • 需要 {needed}",
   vocab_quiz_score_failed: "答对 {correct} 题 • 通过需要 {needed}",
-  vocab_back_to_skill_tree: "返回技能树",
+  vocab_back_to_skill_tree: "返回课程",
   vocab_mc_instruction: "选择正确答案",
   vocab_ma_instruction: "选择所有正确答案",
   vocab_match_instruction: "匹配词语",

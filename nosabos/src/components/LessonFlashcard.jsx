@@ -1,3 +1,4 @@
+import { getSpeechPracticeErrorFeedback } from "../utils/speechPracticeFeedback.js";
 import ActivityActionRow from "./ActivityActionRow";
 // components/LessonFlashcard.jsx
 // Inline flashcard question UI for Vocabulary/Grammar modules.
@@ -52,6 +53,7 @@ import {
   SOFT_STOP_BUTTON_BG,
   SOFT_STOP_BUTTON_HOVER_BG,
 } from "../utils/softStopButton";
+import VoiceWaveIcon from "./VoiceWaveIcon";
 import { submitActionSound } from "../constants/sounds";
 import RandomCharacter from "./RandomCharacter";
 import AnimatedEllipsis from "./AnimatedEllipsis";
@@ -663,13 +665,15 @@ export default function LessonFlashcard({
     stopRecording,
     isRecording,
     isConnecting,
+    isEvaluating,
+    stream,
     supportsSpeech,
   } = useSpeechPractice({
     targetText: "answer",
     targetLang,
     onResult: ({ recognizedText: rt, error }) => {
       if (error) {
-        toast({ title: t("speech_error"), status: "error", duration: 2500 });
+        toast({ ...getSpeechPracticeErrorFeedback(error, t), duration: 2500 });
         return;
       }
       const text = rt || "";
@@ -1240,37 +1244,25 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                     <Button
                       w="100%"
                       size="md"
-                      colorScheme={
-                        isRecording
-                          ? undefined
-                          : isConnecting
-                            ? "yellow"
-                            : "teal"
-                      }
-                      bg={isRecording ? SOFT_STOP_BUTTON_BG : undefined}
-                      color={isRecording ? "white" : undefined}
+                      colorScheme={isConnecting ? "yellow" : "teal"}
                       leftIcon={
                         isConnecting ? (
                           <Spinner size="xs" thickness="2px" color="currentColor" />
-                        ) : isRecording ? (
-                          <RiStopCircleLine size={16} />
-                        ) : (
+                        ) : !isRecording ? (
                           <RiMicLine size={16} />
-                        )
+                        ) : undefined
                       }
                       onClick={handleRecord}
-                      isDisabled={!supportsSpeech || isConnecting}
-                      _hover={
-                        isRecording
-                          ? { bg: SOFT_STOP_BUTTON_HOVER_BG }
-                          : undefined
-                      }
+                      isLoading={isEvaluating}
+                      isDisabled={!supportsSpeech || isConnecting || isEvaluating}
                     >
-                      {isConnecting
-                        ? t("connecting")
-                        : isRecording
-                          ? t("stop_recording")
-                          : t("record")}
+                      {isConnecting ? (
+                        t("connecting")
+                      ) : isRecording ? (
+                        <VoiceWaveIcon stream={stream} size={20} color="currentColor" />
+                      ) : (
+                        t("record")
+                      )}
                     </Button>
 
                     {/* Recognized speech text */}

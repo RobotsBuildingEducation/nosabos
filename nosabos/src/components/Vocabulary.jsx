@@ -1,3 +1,4 @@
+import { getSpeechPracticeErrorFeedback } from "../utils/speechPracticeFeedback.js";
 import { focusedLessonPrompt } from "../utils/learningIntelligenceModel";
 import ActivityActionRow from "./ActivityActionRow";
 // components/Vocabulary.jsx
@@ -54,6 +55,7 @@ import {
   SOFT_STOP_BUTTON_EDGE,
   SOFT_STOP_BUTTON_HOVER_BG,
 } from "../utils/softStopButton";
+import VoiceWaveIcon from "./VoiceWaveIcon";
 import {
   callResponses,
   DEFAULT_RESPONSES_MODEL,
@@ -4385,9 +4387,7 @@ Return JSON ONLY:
       if (!sTarget) return;
       if (error) {
         toast({
-          title: t("flashcard_eval_error_title"),
-          description: t("flashcard_eval_error_desc"),
-          status: "error",
+          ...getSpeechPracticeErrorFeedback(error, t),
           duration: 2500,
         });
         return;
@@ -4483,6 +4483,8 @@ Return JSON ONLY:
     stopRecording: stopSpeakRecording,
     isRecording: isSpeakRecording,
     isConnecting: isSpeakConnecting,
+    isEvaluating: isSpeakEvaluating,
+    stream: speakStream,
     supportsSpeech: supportsSpeak,
   } = useSpeechPractice({
     targetText: sTarget,
@@ -6297,28 +6299,20 @@ Return JSON ONLY:
               actions={
                 !isAssistantOpen && !isJudgingSpeech && (!showNextButton) && (
                   <ActivityActionRow
-                    tone={isSpeakRecording ? "stop" : "speak"}
+                    tone="speak"
                     primary={
                       <Button
-                        key={isSpeakRecording ? "stop" : "speak"}
-                        colorScheme={
-                          isSpeakRecording ? undefined : isSpeakConnecting ? "yellow" : "teal"
-                        }
-                        bg={isSpeakRecording ? SOFT_STOP_BUTTON_BG : undefined}
-                        color={isSpeakRecording ? "white" : undefined}
-                        boxShadow={
-                          isSpeakRecording ? `0px 4px 0px ${SOFT_STOP_BUTTON_EDGE}` : undefined
-                        }
+                        key={isSpeakRecording ? "listening" : "speak"}
+                        colorScheme={isSpeakConnecting ? "yellow" : "teal"}
+                        isLoading={isSpeakEvaluating || isJudgingSpeech}
                         px={{ base: 7, md: 12 }}
                         py={{ base: 3, md: 4 }}
                         leftIcon={
                           isSpeakConnecting ? (
                             <Spinner size="sm" thickness="2px" color="currentColor" />
-                          ) : isSpeakRecording ? (
-                            <RiStopCircleLine />
-                          ) : (
+                          ) : !isSpeakRecording ? (
                             <PiMicrophoneStageDuotone />
-                          )
+                          ) : undefined
                         }
                         onClick={async () => {
                           if (isSpeakRecording) {
@@ -6366,31 +6360,27 @@ Return JSON ONLY:
                           }
                         }}
                         isDisabled={
-                          !supportsSpeak || loadingQSpeak || !sTarget || isSpeakConnecting
-                        }
-                        _hover={
-                          isSpeakRecording ? { bg: SOFT_STOP_BUTTON_HOVER_BG } : undefined
+                          !supportsSpeak ||
+                          loadingQSpeak ||
+                          !sTarget ||
+                          isSpeakConnecting ||
+                          isSpeakEvaluating
                         }
                       >
-                        {isSpeakConnecting
-                          ? t("vocab_connecting")
-                          : isSpeakRecording
-                          ? t("vocab_speak_stop") ||
-                            (userLanguage === "pt"
-                              ? "Parar"
-                              : userLanguage === "ar"
-                              ? "إيقاف"
-                              : userLanguage === "es"
-                              ? "Detener"
-                              : "Stop")
-                          : t("vocab_speak_record") ||
-                            (userLanguage === "pt"
-                              ? "Gravar"
-                              : userLanguage === "ar"
-                              ? "سجّل"
-                              : userLanguage === "es"
-                              ? "Grabar"
-                              : "Record")}
+                        {isSpeakConnecting ? (
+                          t("vocab_connecting")
+                        ) : isSpeakRecording ? (
+                          <VoiceWaveIcon stream={speakStream} size={22} color="currentColor" />
+                        ) : (
+                          t("vocab_speak_record") ||
+                          (userLanguage === "pt"
+                            ? "Gravar"
+                            : userLanguage === "ar"
+                            ? "سجّل"
+                            : userLanguage === "es"
+                            ? "Grabar"
+                            : "Record")
+                        )}
                       </Button>
                     }
                   >

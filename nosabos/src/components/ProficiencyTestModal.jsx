@@ -5,6 +5,7 @@ import {
   HStack,
   Modal,
   ModalBody,
+  ModalCloseButton,
   ModalContent,
   ModalOverlay,
   Text,
@@ -27,6 +28,7 @@ export default function ProficiencyTestModal({
   isOpen,
   onStartAtLevel,
   onTakeTest,
+  onClose,
   lang = "en",
   targetLangLabel = "",
   useSharedBackdrop = false,
@@ -103,11 +105,11 @@ export default function ProficiencyTestModal({
   return (
     <Modal
       isOpen={isOpen}
-      onClose={() => {}}
+      onClose={onClose || (() => {})}
       isCentered
       size="lg"
-      closeOnOverlayClick={false}
-      closeOnEsc={false}
+      closeOnOverlayClick={Boolean(onClose)}
+      closeOnEsc={Boolean(onClose)}
       motionPreset="none"
       returnFocusOnClose={false}
     >
@@ -134,7 +136,19 @@ export default function ProficiencyTestModal({
           flexShrink={0}
           px={{ base: 4, md: 6 }}
           py={{ base: 3, md: 4 }}
+          position="relative"
         >
+          {Boolean(onClose) && (
+            <ModalCloseButton
+              color="white"
+              _hover={{ bg: "whiteAlpha.200" }}
+              position="absolute"
+              right={3}
+              top={3}
+              zIndex={3}
+              onClick={onClose}
+            />
+          )}
           <VStack spacing={1.5}>
             <Box
               as="img"

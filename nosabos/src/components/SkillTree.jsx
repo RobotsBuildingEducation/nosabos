@@ -42,6 +42,7 @@ import {
   LuSparkles,
 } from "react-icons/lu";
 import CEFRLevelNavigator from "./CEFRLevelNavigator";
+import CourseProgressHeader from "./CourseProgressHeader";
 import { useThemeStore } from "../useThemeStore";
 import { APP_SQUIRCLE_SHAPE } from "../theme";
 import { isMasterUnlockActive } from "../utils/masterUnlock";
@@ -249,6 +250,7 @@ import { getLessonProgressPercent } from "../utils/lessonProgress";
 import { createUnitRenderProgressSelector } from "../utils/skillTreeRenderProgress";
 import FlashcardSkillTree from "./FlashcardSkillTree";
 import { CEFR_LEVELS } from "../data/flashcards/common";
+import { isContentUnlockedByPlacement } from "../utils/proficiencyPlacement.js";
 import { MdOutlineDescription } from "react-icons/md";
 import { FaMicrophone } from "react-icons/fa";
 import { TbLanguage } from "react-icons/tb";
@@ -1318,6 +1320,7 @@ const UnitSection = React.memo(function UnitSection({
   latestUnlockedLessonId,
   latestUnlockedRef,
   isTutorialComplete = true,
+  isPlacementUnlocked = false,
   animateEntrance = false,
 }) {
   const themeMode = useThemeStore((s) => s.themeMode);
@@ -1562,7 +1565,7 @@ const UnitSection = React.memo(function UnitSection({
                     ?.status === SKILL_STATUS.COMPLETED;
               }
 
-              if (isTestUnlocked || isPreviousLessonCompleted) {
+              if (isTestUnlocked || isPlacementUnlocked || isPreviousLessonCompleted) {
                 status = SKILL_STATUS.AVAILABLE;
               }
             }
@@ -2589,6 +2592,7 @@ export default function SkillTree({
   currentLessonLevel = "Pre-A1", // User's current progress level in lesson mode
   currentFlashcardLevel = "Pre-A1", // User's current progress level in flashcard mode
   tutorUnlockedLevel = null, // Level earned by completing tutor lessons (persisted by Tutor)
+  placementLevel = null,
   onLessonLevelChange, // Callback when user navigates to different level in lesson mode
   onFlashcardLevelChange, // Callback when user navigates to different level in flashcard mode
   lessonLevelCompletionStatus = {}, // Status of all levels in lesson mode
@@ -2681,8 +2685,6 @@ export default function SkillTree({
   const isConversationStyleMode =
     pathMode === "conversations" || pathMode === "tutor" || pathMode === "plate";
   const totalXp = Math.max(0, Number(userProgress?.totalXp) || 0);
-  const nextXpLevelProgressPct = totalXp % 100;
-  const nextXpLevel = Math.floor(totalXp / 100) + 2;
 
   const levelsKey = Array.isArray(levels) ? levels.join("|") : "";
   const requestedUnitsKey = `${showMultipleLevels ? "multi" : "single"}:${targetLang}:${
@@ -2883,7 +2885,7 @@ export default function SkillTree({
   // Find the latest unlocked lesson (first AVAILABLE or IN_PROGRESS lesson)
   const latestUnlockedLessonId = useMemo(() => {
     // If tutorial not complete, no lesson is available
-    if (!isTutorialComplete) return null;
+    if (!isTutorialComplete && !isContentUnlockedByPlacement(placementLevel, effectiveActiveLevel)) return null;
 
     for (let unitIndex = 0; unitIndex < visibleUnits.length; unitIndex++) {
       const unit = visibleUnits[unitIndex];
@@ -2923,14 +2925,14 @@ export default function SkillTree({
                 ?.status === SKILL_STATUS.COMPLETED;
           }
 
-          if (isPreviousCompleted) {
+          if (isPreviousCompleted || isContentUnlockedByPlacement(placementLevel, unit.cefrLevel || effectiveActiveLevel)) {
             return lesson.id;
           }
         }
       }
     }
     return null;
-  }, [visibleUnits, userProgress, isTutorialComplete]);
+  }, [visibleUnits, userProgress, isTutorialComplete, placementLevel, effectiveActiveLevel]);
 
   // Wait for the selected level's units before scrolling from the daily quest.
   useEffect(() => {
@@ -2986,6 +2988,7 @@ export default function SkillTree({
                     }
                     latestUnlockedRef={latestUnlockedRef}
                     isTutorialComplete={isTutorialComplete}
+                    isPlacementUnlocked={isContentUnlockedByPlacement(placementLevel, unit.cefrLevel || effectiveActiveLevel)}
                     animateEntrance={index < 2}
                   />
                 );
@@ -3010,6 +3013,7 @@ export default function SkillTree({
     isLessonProgressReady,
     isTutorialComplete,
     latestUnlockedLessonId,
+    placementLevel,
     latestUnlockedRef,
     renderLoadedUnitsKey,
     requestedUnitsKey,
@@ -3105,79 +3109,10 @@ export default function SkillTree({
           />
         )}
 
-        {/* Minimal Progress Header - hidden in conversation-style modes */}
+        {/* Shared course progress header */}
         {!isConversationStyleMode && (
-          <Box mb={4} display="flex" justifyContent={"center"}>
-            <HStack
-              justify="space-between"
-              bg="var(--app-glass-bg-soft)"
-              backdropFilter="blur(10px)"
-              px={6}
-              py={2}
-              borderRadius="8px"
-              style={{ cornerShape: APP_SQUIRCLE_SHAPE }}
-              border="1px solid"
-              borderColor="var(--app-border)"
-              boxShadow="var(--app-shadow-soft)"
-              w="100%"
-              maxW="600px"
-            >
-              <HStack spacing={3}>
-                <VStack spacing={0} align="start">
-                  {" "}
-                  <Text
-                    fontSize="sm"
-                    fontWeight="black"
-                    color="var(--app-text-primary)"
-                    lineHeight="1"
-                  >
-                    {totalXp} XP
-                  </Text>
-                  <Text fontSize="xs" color="gray.400" fontWeight="medium">
-                    {getTranslation("skill_tree_next_level_progress", {
-                      percent: nextXpLevelProgressPct,
-                      level: nextXpLevel,
-                    })}
-                  </Text>
-                </VStack>
-              </HStack>
-
-              {/* CEFR Level Progress Bar */}
-              {(() => {
-                const progress =
-                  pathMode === "path"
-                    ? getAllLessonProgress(userProgress, targetLang)
-                    : getAllFlashcardProgress(userProgress, targetLang);
-                const currentLevelProgress = progress[effectiveActiveLevel];
-                return (
-                  <VStack spacing={1} align="end" minW="200px">
-                    <HStack spacing={2}>
-                      <Text
-                        fontSize="xs"
-                        fontWeight="semibold"
-                        color="var(--app-text-primary)"
-                      >
-                        {effectiveActiveLevel}
-                      </Text>
-                      <Text fontSize="xs" fontWeight="bold" color="blue.300">
-                        {currentLevelProgress.percentage}%
-                      </Text>
-                    </HStack>
-                    <Box w="full">
-                      <WaveBar
-                        value={currentLevelProgress.percentage}
-                        height={12}
-                        start="#4aa8ff"
-                        end="#75f8ffff"
-                        bg="rgba(255,255,255,0.05)"
-                        border="rgba(255,255,255,0.1)"
-                      />
-                    </Box>
-                  </VStack>
-                );
-              })()}
-            </HStack>
-          </Box>
+          <CourseProgressHeader totalXp={totalXp} activeLevel={effectiveActiveLevel} supportLang={supportLang}
+            percentage={(pathMode === "path" ? getAllLessonProgress(userProgress, targetLang) : getAllFlashcardProgress(userProgress, targetLang))[effectiveActiveLevel].percentage} />
         )}
 
         {/* Desktop keeps these modes mounted for fast switching. On iOS WebKit,
@@ -3205,6 +3140,7 @@ export default function SkillTree({
                   targetLang={targetLang}
                   supportLang={supportLang}
                   activeCEFRLevel={effectiveActiveLevel}
+                  placementLevel={placementLevel}
                   pauseMs={pauseMs}
                   isActive={isModeVisible("flashcards")}
                   isProgressReady={isFlashcardProgressReady}

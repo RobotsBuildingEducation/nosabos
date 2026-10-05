@@ -10,7 +10,7 @@ export const SELF_ASSESSMENT_OPTIONS = Object.freeze([
   { id: "basic_conversations", level: "A2", rating: 32, range: "A2", label: "I can have basic conversations" },
   { id: "read_write", level: "B1", rating: 53, range: "B1–B2", label: "I can comfortably read and write" },
   { id: "stories_opinions", level: "B1", rating: 53, range: "B1–B2", label: "I can tell stories and express my opinions" },
-  { id: "grammar_struggle", level: "B1", rating: 53, range: "B1–B2", label: "I struggle with grammar" },
+  { id: "grammar_struggle", level: "A1", rating: 18, range: "A1", modifier: true, label: "I struggle with grammar" },
   { id: "complex_topics", level: "B2", rating: 67, range: "B2–C1", label: "I can discuss complex topics in detail" },
   { id: "professional_use", level: "B2", rating: 67, range: "B2–C1", label: "I use {language} professionally or academically" },
   { id: "nuance_precision", level: "C1", rating: 81, range: "C1–C2", label: "I can express myself naturally, with nuance and precision" },
@@ -18,8 +18,11 @@ export const SELF_ASSESSMENT_OPTIONS = Object.freeze([
 
 export function estimateSelfReportedPlacement(selectedIds) {
   const selected = new Set(Array.isArray(selectedIds) ? selectedIds : []);
-  const strongest = SELF_ASSESSMENT_OPTIONS
-    .filter((option) => selected.has(option.id))
+  const options = SELF_ASSESSMENT_OPTIONS.filter((option) => selected.has(option.id));
+  if (options.length === 0) return null;
+  const milestones = options.filter((option) => !option.modifier);
+  const candidatePool = milestones.length > 0 ? milestones : options;
+  const strongest = candidatePool
     .reduce((best, option) => option.rating > (best?.rating || 0) ? option : best, null);
   if (!strongest) return null;
   return { level: strongest.level, rating: strongest.rating, range: strongest.range };

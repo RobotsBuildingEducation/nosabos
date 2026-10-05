@@ -1,3 +1,4 @@
+import { getSpeechPracticeErrorFeedback } from "../utils/speechPracticeFeedback.js";
 import ActivityActionRow from "./ActivityActionRow";
 import React, {
   useCallback,
@@ -36,6 +37,7 @@ import useUserStore from "../hooks/useUserStore";
 import useSoundSettings from "../hooks/useSoundSettings";
 import useNotesStore from "../hooks/useNotesStore";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
+import VoiceWaveIcon from "./VoiceWaveIcon";
 import FeedbackRail from "./FeedbackRail";
 import QuestionActionArea from "./QuestionActionArea";
 import { useDndContext } from "@dnd-kit/core";
@@ -292,14 +294,16 @@ function SpeechAnswerButton({
   onClick,
   isRecording = false,
   isConnecting = false,
+  isEvaluating = false,
   isSupported = false,
   isDisabled = false,
   labels = {},
+  stream = null,
 }) {
   const label = isConnecting
     ? labels.connecting || "Connecting…"
     : isRecording
-      ? labels.stop || "Stop recording"
+      ? labels.recording || "Listening…"
       : labels.record || "Record answer";
 
   return (
@@ -308,10 +312,10 @@ function SpeechAnswerButton({
       aria-label={label}
       title={label}
       icon={
-        isConnecting ? (
+        isConnecting || isEvaluating ? (
           <Spinner size="xs" thickness="2px" color="currentColor" />
         ) : isRecording ? (
-          <FaStop size={16} />
+          <VoiceWaveIcon stream={stream} size={18} color="currentColor" />
         ) : (
           <FaMicrophone size={18} />
         )
@@ -321,20 +325,13 @@ function SpeechAnswerButton({
       minH="54px"
       flexShrink={0}
       rounded="xl"
-      colorScheme={isRecording ? undefined : "teal"}
+      colorScheme="teal"
       variant={isRecording ? "solid" : "outline"}
       onClick={onClick}
-      isDisabled={isDisabled || isConnecting || !isSupported}
+      isDisabled={isDisabled || isConnecting || isEvaluating || !isSupported}
       {...getQuestionToolButtonProps({
-        active: isRecording || isConnecting,
+        active: isRecording || isConnecting || isEvaluating,
       })}
-      bg={isRecording ? SOFT_STOP_BUTTON_BG : undefined}
-      color={isRecording ? "white" : undefined}
-      _hover={
-        isRecording
-          ? { bg: SOFT_STOP_BUTTON_HOVER_BG }
-          : undefined
-      }
       style={questionSquircleStyle}
     />
   );
@@ -1738,6 +1735,7 @@ function SentenceShapeshifter({
   onToggleSpeech,
   isSpeechRecording = false,
   isSpeechConnecting = false,
+  speechStream = null,
   supportsSpeech = false,
   speechLabels,
   keyboardLabels,
@@ -1854,6 +1852,8 @@ function SentenceShapeshifter({
             onClick={onToggleSpeech}
             isRecording={isSpeechRecording}
             isConnecting={isSpeechConnecting}
+            isEvaluating={isSpeechEvaluating}
+            stream={speechStream}
             isSupported={supportsSpeech}
             isDisabled={locked || submitting}
             labels={speechLabels}
@@ -2655,6 +2655,7 @@ function ThreeClueMystery({
   onToggleSpeech,
   isSpeechRecording = false,
   isSpeechConnecting = false,
+  speechStream = null,
   supportsSpeech = false,
   speechLabels,
   keyboardLabels,
@@ -2795,6 +2796,8 @@ function ThreeClueMystery({
             onClick={onToggleSpeech}
             isRecording={isSpeechRecording}
             isConnecting={isSpeechConnecting}
+            isEvaluating={isSpeechEvaluating}
+            stream={speechStream}
             isSupported={supportsSpeech}
             isDisabled={locked || submitting}
             labels={speechLabels}
@@ -2962,6 +2965,7 @@ function ThreeWordChallenge({
   onToggleSpeech,
   isSpeechRecording = false,
   isSpeechConnecting = false,
+  speechStream = null,
   supportsSpeech = false,
   speechLabels,
   keyboardLabels,
@@ -3048,6 +3052,8 @@ function ThreeWordChallenge({
             onClick={onToggleSpeech}
             isRecording={isSpeechRecording}
             isConnecting={isSpeechConnecting}
+            isEvaluating={isSpeechEvaluating}
+            stream={speechStream}
             isSupported={supportsSpeech}
             isDisabled={locked || submitting}
             labels={speechLabels}
@@ -3552,11 +3558,7 @@ export default function DelightQuestionLab({
       if (error) {
         pendingSpeechSubmissionRef.current = null;
         toast({
-          title: t("flashcard_eval_error_title") || "Speech error",
-          description:
-            t("flashcard_eval_error_desc") ||
-            "Please check microphone access and try again.",
-          status: "error",
+          ...getSpeechPracticeErrorFeedback(error, t),
           duration: 2800,
         });
         return;
@@ -3566,7 +3568,7 @@ export default function DelightQuestionLab({
       if (!transcript) {
         pendingSpeechSubmissionRef.current = null;
         toast({
-          title: t("flashcard_eval_error_title") || "Speech not detected",
+          ...getSpeechPracticeErrorFeedback({ code: "no-speech" }, t),
           status: "warning",
           duration: 2200,
         });
@@ -3584,6 +3586,8 @@ export default function DelightQuestionLab({
     cancelRecording: cancelSpeechRecording,
     isRecording: isSpeechRecording,
     isConnecting: isSpeechConnecting,
+    isEvaluating: isSpeechEvaluating,
+    stream: speechStream,
     supportsSpeech,
   } = useSpeechPractice({
     targetText: speechTargetText,
@@ -4808,7 +4812,7 @@ export default function DelightQuestionLab({
               {passed
                 ? detectiveCopy.continue
                 : t("vocab_back_to_skill_tree") === "vocab_back_to_skill_tree"
-                  ? "Back to skill tree"
+                  ? "Back to lessons"
                   : t("vocab_back_to_skill_tree")}
             </Button>
           </VStack>
@@ -5104,6 +5108,7 @@ export default function DelightQuestionLab({
                   onToggleSpeech={handleToggleSpeech}
                   isSpeechRecording={isSpeechRecording}
                   isSpeechConnecting={isSpeechConnecting}
+                  speechStream={speechStream}
                   supportsSpeech={supportsSpeech}
                   speechLabels={speechLabels}
                   keyboardLabels={keyboardLabels}
@@ -5166,6 +5171,7 @@ export default function DelightQuestionLab({
                   onToggleSpeech={handleToggleSpeech}
                   isSpeechRecording={isSpeechRecording}
                   isSpeechConnecting={isSpeechConnecting}
+                  speechStream={speechStream}
                   supportsSpeech={supportsSpeech}
                   speechLabels={speechLabels}
                   keyboardLabels={keyboardLabels}
@@ -5215,6 +5221,7 @@ export default function DelightQuestionLab({
                   onToggleSpeech={handleToggleSpeech}
                   isSpeechRecording={isSpeechRecording}
                   isSpeechConnecting={isSpeechConnecting}
+                  speechStream={speechStream}
                   supportsSpeech={supportsSpeech}
                   speechLabels={speechLabels}
                   keyboardLabels={keyboardLabels}

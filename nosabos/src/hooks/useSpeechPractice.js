@@ -109,6 +109,8 @@ export function useSpeechPractice({
   const sessionVersionRef = useRef(0);
   const [isRecording, setIsRecording] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [isEvaluating, setIsEvaluating] = useState(false);
+  const [stream, setStream] = useState(null);
 
   // Check if we have the realtime URL configured
   const supportsSpeech = useMemo(() => {
@@ -151,14 +153,35 @@ export function useSpeechPractice({
     evalRef.current.timeoutId = null;
     evalRef.current.silenceTimeoutId = null;
     evalRef.current.connectionTimeoutId = null;
+    evalRef.current.finishRecording = null;
+    evalRef.current.scheduleFinish = null;
+    evalRef.current.userStopped = false;
+    evalRef.current.ready = false;
     evalRef.current.inProgress = false;
     evalRef.current.speechDone = false;
     transcriptRef.current = "";
+    setStream(null);
     setIsRecording(false);
     setIsConnecting(false);
+    setIsEvaluating(false);
   }, []);
 
   useEffect(() => cleanup, [cleanup]);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (
+        document.hidden &&
+        (isRecording || isConnecting || localStreamRef.current || pcRef.current)
+      ) {
+        cleanup();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [cleanup, isRecording, isConnecting]);
 
   const report = useCallback(
     async ({ recognizedText = "", confidence = 0, audioMetrics, method }) => {
@@ -236,6 +259,9 @@ export function useSpeechPractice({
       return;
     }
     localStreamRef.current = localStream;
+    // Do not send capture or display an active waveform until the channel
+    // opens. SDP acceptance alone does not mean the recorder is ready.
+    localStream.getAudioTracks().forEach((track) => { track.enabled = false; });
 
     try {
       const pc = new RTCPeerConnection();
@@ -262,6 +288,15 @@ export function useSpeechPractice({
       let hasDetectedSpeech = false;
       let waitingForTurnEnd = false;
       let speechStartedAt = 0;
+      const failRecording = (code, message) => {
+        if (!isCurrentSession()) return;
+        cleanup();
+        onResult?.({
+          evaluation: null, recognizedText: "", confidence: 0,
+          audioMetrics: null, method: "realtime-whisper",
+          error: makeError(code, message),
+        });
+      };
 
       const scheduleFinish = (
         preferredDelayMs,
@@ -288,6 +323,7 @@ export function useSpeechPractice({
         if (!evalRef.current.inProgress || evalRef.current.speechDone) return;
         evalRef.current.speechDone = true;
         waitingForTurnEnd = false;
+        setIsEvaluating(true);
 
         if (evalRef.current.timeoutId) clearTimeout(evalRef.current.timeoutId);
         if (evalRef.current.silenceTimeoutId)
@@ -296,6 +332,10 @@ export function useSpeechPractice({
           clearTimeout(evalRef.current.connectionTimeoutId);
 
         const finalTranscript = transcriptRef.current.trim();
+        if (!finalTranscript) {
+          failRecording("no-speech", "No speech was captured. Try recording again after the microphone is ready.");
+          return;
+        }
 
         // Report result
         await report({
@@ -305,8 +345,11 @@ export function useSpeechPractice({
           method: "realtime-whisper",
         });
 
-        cleanup();
+        if (isCurrentSession()) cleanup();
       };
+
+      evalRef.current.finishRecording = finishRecording;
+      evalRef.current.scheduleFinish = scheduleFinish;
 
       dc.onopen = () => {
         if (!isCurrentSession()) return;
@@ -320,6 +363,18 @@ export function useSpeechPractice({
             session: realtimeSession,
           })
         );
+        if (evalRef.current.connectionTimeoutId) clearTimeout(evalRef.current.connectionTimeoutId);
+        evalRef.current.connectionTimeoutId = null;
+        evalRef.current.ready = true;
+        localStream.getAudioTracks().forEach((track) => { track.enabled = true; });
+        setStream(localStream);
+        setIsConnecting(false);
+        setIsRecording(true);
+        // Bound total capture separately from connection setup. Speaking must
+        // not be cut off by the former ten-second connection deadline.
+        evalRef.current.timeoutId = setTimeout(() => {
+          if (isCurrentSession()) finishRecording();
+        }, Math.max(30000, timeoutMs));
       };
 
       dc.onmessage = (evt) => {
@@ -350,7 +405,9 @@ export function useSpeechPractice({
                 finishRecording();
               }, timeoutMs);
 
-              if (waitingForTurnEnd) {
+              if (evalRef.current.userStopped) {
+                scheduleFinish(80);
+              } else if (waitingForTurnEnd) {
                 scheduleFinish(Math.min(speechStopDelayMs, 180));
               }
             }
@@ -412,20 +469,13 @@ export function useSpeechPractice({
               return;
             }
 
-            // Don't fail completely on errors, just report what we have
-            if (hasDetectedSpeech) {
+            // Empty commits from an older/default provider configuration do
+            // not mean the learner's connection failed.
+            if (msg.error?.code === "input_audio_buffer_commit_empty") return;
+            if (transcriptRef.current.trim()) {
               finishRecording();
             } else {
-              evalRef.current.speechDone = false;
-              cleanup();
-              onResult?.({
-                evaluation: null,
-                recognizedText: "",
-                confidence: 0,
-                audioMetrics: null,
-                method: "realtime-whisper",
-                error: new Error(msg.error?.message || "Realtime API error"),
-              });
+              failRecording("realtime-error", msg.error?.message || "Speech service error");
             }
           }
 
@@ -440,16 +490,7 @@ export function useSpeechPractice({
               "Realtime transcription failed";
             console.error("Realtime transcription failed:", message);
             if (!transcriptRef.current.trim()) {
-              evalRef.current.speechDone = false;
-              cleanup();
-              onResult?.({
-                evaluation: null,
-                recognizedText: "",
-                confidence: 0,
-                audioMetrics: null,
-                method: "realtime-whisper",
-                error: new Error(message),
-              });
+              failRecording("transcription-failed", message);
             }
           }
         } catch (e) {
@@ -458,7 +499,9 @@ export function useSpeechPractice({
       };
 
       dc.onerror = (err) => {
+        if (!isCurrentSession()) return;
         console.error("Data channel error:", err);
+        failRecording("connection-failed", "The voice connection failed.");
       };
 
       dc.onclose = () => {
@@ -466,20 +509,15 @@ export function useSpeechPractice({
         if (evalRef.current.inProgress && !evalRef.current.speechDone) {
           // Connection closed unexpectedly
           const finalTranscript = transcriptRef.current.trim();
-          if (finalTranscript) {
-            evalRef.current.speechDone = true;
-            report({
-              recognizedText: finalTranscript,
-              confidence: 0.9,
-              audioMetrics: null,
-              method: "realtime-whisper",
-            });
-          }
-          cleanup();
+          if (finalTranscript) finishRecording();
+          else failRecording("connection-closed", "The voice connection closed before a transcript was received.");
         }
       };
 
       // Create and send offer
+      evalRef.current.connectionTimeoutId = setTimeout(() => {
+        failRecording("connection-timeout", "The microphone could not connect to the speech service.");
+      }, maxConnectionMs);
       const offer = await pc.createOffer();
       if (!isCurrentSession()) return;
       await pc.setLocalDescription(offer);
@@ -526,15 +564,7 @@ export function useSpeechPractice({
       await pc.setRemoteDescription({ type: "answer", sdp: answerSdp });
       if (!isCurrentSession()) return;
 
-      // Connection established - stop showing connecting spinner, start showing recording
-      setIsConnecting(false);
-      setIsRecording(true);
-
-      evalRef.current.connectionTimeoutId = setTimeout(() => {
-        if (evalRef.current.inProgress && !evalRef.current.speechDone) {
-          finishRecording();
-        }
-      }, maxConnectionMs);
+      // The data channel's onopen callback starts capture, not SDP completion.
     } catch (err) {
       if (!isCurrentSession()) return;
       cleanup();
@@ -558,21 +588,38 @@ export function useSpeechPractice({
   ]);
 
   const stopRecording = useCallback(() => {
-    if (!evalRef.current.inProgress) return;
+    if (!evalRef.current.inProgress || evalRef.current.speechDone) return;
+    if (!evalRef.current.ready) {
+      // Stopping during setup is cancellation, not a failed evaluation.
+      cleanup();
+      return;
+    }
 
-    const finalTranscript = transcriptRef.current.trim();
-    evalRef.current.speechDone = true;
+    const currentTranscript = transcriptRef.current.trim();
+    if (currentTranscript) {
+      evalRef.current.finishRecording?.();
+      return;
+    }
 
-    // Report whatever we have
-    report({
-      recognizedText: finalTranscript,
-      confidence: finalTranscript ? 0.9 : 0,
-      audioMetrics: null,
-      method: "realtime-whisper",
-    });
+    evalRef.current.userStopped = true;
+    setIsEvaluating(true);
+    setIsRecording(false);
+    setStream(null);
 
-    cleanup();
-  }, [report, cleanup]);
+    try {
+      // Keep sending silence until server VAD commits and transcription
+      // finishes. Stopping the track here can remove that trailing silence.
+      localStreamRef.current?.getTracks()?.forEach((track) => { track.enabled = false; });
+    } catch {}
+
+    if (evalRef.current.scheduleFinish) {
+      evalRef.current.scheduleFinish(1200, { waitForTranscript: true });
+    } else if (evalRef.current.finishRecording) {
+      evalRef.current.finishRecording();
+    } else {
+      cleanup();
+    }
+  }, [cleanup]);
 
   return {
     startRecording,
@@ -580,6 +627,8 @@ export function useSpeechPractice({
     cancelRecording: cleanup,
     isRecording,
     isConnecting,
+    isEvaluating,
+    stream,
     supportsSpeech,
   };
 }

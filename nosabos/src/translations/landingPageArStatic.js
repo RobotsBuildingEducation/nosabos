@@ -45,7 +45,7 @@ export const LANDING_PAGE_AR_STATIC = {
   feature_grammar: "كتاب القواعد",
   feature_grammar_desc:
     "مراجع سريعة وتمارين مفاهيم ومراجعات تكيفية تقوّي الأساسيات.",
-  feature_skilltree: "شجرة المهارات",
+  feature_skilltree: "الدروس",
   feature_skilltree_desc:
     "مسارات منظمة تبني مهاراتك خطوة بخطوة مع رؤية واضحة للتقدم.",
   feature_flashcards: "المفردات",
@@ -57,9 +57,24 @@ export const LANDING_PAGE_AR_STATIC = {
   feature_notes: "إنشاء ملاحظات",
   feature_notes_desc:
     "أنشئ ملاحظات مذاكرة شاملة من دروسك علشان تراجعها بعدين.",
-  feature_immersion: "الانغماس والنقاط",
+  feature_immersion: "الانغماس",
   feature_immersion_desc:
     "نفّذ مهام خارج التطبيق علشان تمارس اللغة في الحياة الواقعية.",
+  feature_score: "النقاط",
+  feature_score_desc:
+    "نظام تقييم متكيف يقيس مستواك الحقيقي مع كل إجابة ويضبط صعوبة الأسئلة تلقائيًا.",
+  feature_elo: "النقاط",
+  feature_elo_desc:
+    "نظام تقييم متكيف يقيس مستواك الحقيقي مع كل إجابة ويضبط صعوبة الأسئلة تلقائيًا.",
+  feature_achievements: "إنجازات متعددة المنصات",
+  feature_achievements_desc:
+    "احصل على أوسمة وجوائز إنجاز موثقة تتزامن بسلاسة عبر جميع أجهزتك.",
+  feature_teams: "فِرق التعلم",
+  feature_teams_desc:
+    "أنشئ مجموعات دراسية مع الأصدقاء لمشاركة الأهداف اليومية والحلقات المتتالية وتطور المرافق والتقدم في الوقت الفعلي.",
+  feature_global_feed: "الموجز العام",
+  feature_global_feed_desc:
+    "استكشف الملاحظات والنصائح والإنجازات التي يشاركها المتعلمون حول العالم عبر الشبكة اللامركزية.",
   feature_assistant: "مساعد شخصي",
   feature_assistant_desc:
     "خد إرشاد وتوصيات شخصية وقت ما تحتاج مساعدة.",

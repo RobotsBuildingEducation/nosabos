@@ -8,6 +8,7 @@ import {
   writeAccountScopedJson,
 } from "./dailyQuestState";
 import { getLocalDayKey } from "./flashcardReview";
+import { getAuthoredPhonicsFocusCards, PHONICS_VERSION, PHONICS_LEVELS, getAuthoredPhonicsDeck } from "../data/phonics/index.js";
 
 function goalPromptData(blueprint) {
   const data = { ...blueprint };
@@ -16,6 +17,7 @@ function goalPromptData(blueprint) {
 }
 
 export function practiceArtifactKey(focus, mode) {
+  if (mode === "phonics") mode = `phonics-${PHONICS_VERSION}`;
   return `${focus.targetLang}_${
     focus.blueprint?.dayKey || focus.plan?.dayKey || getLocalDayKey(new Date())
   }_${mode}_${focus.blueprint?.goalId || `repair-s${focus.stepIndex || 0}`}`;
@@ -23,7 +25,7 @@ export function practiceArtifactKey(focus, mode) {
 const artifactField = (focus, mode) =>
   `practice_${mode}_${
     focus.blueprint ? "goal" : `repair${focus.stepIndex || 0}`
-  }`;
+  }${mode === "phonics" ? `_${PHONICS_VERSION}` : ""}`;
 export async function practiceArtifact(focus, mode, create) {
   const key = practiceArtifactKey(focus, mode);
   const local = readAccountScopedJson(`astra:${key}`, focus.npub);
@@ -149,90 +151,26 @@ export async function resetFocusedPracticeArtifacts(npub, targetLang) {
 }
 
 export async function getFocusedPhonicsDeck(focus, alphabet = []) {
-  return practiceArtifact(focus, "phonics", async () => {
-    const item = focus.plan?.items?.[0];
-    const captured =
-      item?.sourceContext?.card ||
-      alphabet.find((c) => c.id === item?.sourceContext);
-    const original =
-      captured?.practiceWord ||
-      item?.originalAnswer ||
-      item?.expectedAnswer ||
-      captured?.letter ||
-      focus.blueprint?.targetLanguage?.[0];
-    // A Goal phonics blueprint lacking a sound is rerouted to Tutor by its planner.
-    if (!original) return [];
-    let entries = [];
-    try {
-      const raw = await callResponses({
-        input: `Create ${
-          focus.blueprint ? "exactly 2" : "3-5"
-        } focused phonics items in actual language and writing system ${
-          focus.targetLang
-        }, explanations in ${
-          focus.supportLang
-        }. Live ability context: ${JSON.stringify(generationPerformanceContextFor(useUserStore.getState().user, focus.targetLang))}. Original captured card: ${JSON.stringify(
-          captured || {},
-        )}. Required original word/sound: ${JSON.stringify(original)}. ${
-          focus.blueprint
-            ? `Goal: ${JSON.stringify(
-                goalPromptData(focus.blueprint),
-              )}. CEFR scaffolds; needed language may stretch.`
-            : `Repair CEFR ${item?.cefrLevel || "Pre-A1"}; stay level-aware.`
-        } First item original; then valid language-specific minimal pair OR close contrast; third a transfer word with the same sound in another context; optional natural phrase. Never invent English-style contrasts in another language. Preserve IPA/phoneme metadata when known. JSON array only: [{word,grapheme,phoneme,tip,meaning,role:"original|contrast|transfer|phrase"}].`,
-      });
-      const parsed = JSON.parse(
-        String(raw).slice(
-          String(raw).indexOf("["),
-          String(raw).lastIndexOf("]") + 1,
-        ),
-      );
-      if (Array.isArray(parsed))
-        entries = parsed
-          .filter((e) => typeof e?.word === "string" && e.word.trim())
-          .slice(1, focus.blueprint ? 2 : 5);
-    } catch {
-      /* captured card is the deterministic floor */
-    }
-    const first = {
-      word: original,
-      grapheme: captured?.letter || original,
-      phoneme: captured?.phoneme || "",
-      tip: item?.summary || "",
-      meaning: "",
-      role: "original",
-    };
-    const selected = [
-      first,
-      ...(entries.length
-        ? entries
-        : focus.blueprint
-          ? [{ ...first, role: "transfer", tip: first.tip }]
-          : []),
-    ].slice(0, focus.blueprint ? 2 : 5);
-    return selected.map((e, i) => ({
-      ...(i === 0 ? captured || {} : {}),
-      id: `focused-${practiceArtifactKey(focus, "phonics")}-${i}`,
-      letter: String(e.grapheme || e.word).slice(0, 160),
-      tts: String(e.word).slice(0, 160),
-      practiceWord: String(e.word).slice(0, 160),
-      practiceWordMeaning: {
-        [focus.supportLang]: String(e.meaning || "").slice(0, 180),
-      },
-      phoneme: String(e.phoneme || "").slice(0, 80),
-      sound: String(e.phoneme || e.grapheme || "").slice(0, 80),
-      tip: String(e.tip || "").slice(0, 180),
-      practiceRole: ["original", "contrast", "transfer", "phrase"].includes(
-        e.role,
-      )
-        ? e.role
-        : "contrast",
-      type: "sound",
-      isGoal: Boolean(focus.blueprint),
-      isRepair: !focus.blueprint,
-      cefrLevel: focus.blueprint?.cefrLevel || item?.cefrLevel || "Pre-A1",
-    }));
-  });
+  const localizedFocus = { ...focus, supportLang: alphabet[0]?.supportLanguage || focus.supportLang };
+  const selected = getAuthoredPhonicsFocusCards(localizedFocus);
+  if (!selected.length) return { cards: [], outcomes: {}, requiresTutor: true };
+  const cards = selected.map((card, index) => ({
+    ...card,
+    authoredId: card.id,
+    id: "focused-" + practiceArtifactKey(focus, "phonics") + "-" + index,
+    practiceRole: index === 0 ? "original" : index === (focus.blueprint ? 1 : 2) ? "transfer" : "contrast",
+    isGoal: Boolean(focus.blueprint),
+    isRepair: !focus.blueprint,
+  }));
+  const artifact = await practiceArtifact(focus, "phonics", async () => cards);
+  // Changing support language keeps outcomes but never reuses saved copy from
+  // the previous support language. Only canonical authored text is displayed.
+  const byId = new Map(PHONICS_LEVELS.flatMap(level => getAuthoredPhonicsDeck(focus.targetLang, localizedFocus.supportLang, level)).map(card => [card.id, card]));
+  return { ...artifact, cards: artifact.cards.flatMap(saved => {
+    const source = byId.get(saved.authoredId);
+    return source ? [{ ...source, authoredId: source.id, id: saved.id,
+      practiceRole: saved.practiceRole, isGoal: Boolean(focus.blueprint), isRepair: !focus.blueprint }] : [];
+  }) };
 }
 
 export async function getGoalFlashcards(focus) {

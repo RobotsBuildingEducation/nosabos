@@ -1,0 +1,23 @@
+export default {
+  "Pre-A1": {
+    copy: {
+      en: ["Polish letters, accented consonants and digraphs.", "Distinguish the three sibilant families: s, sz and ś. Hear nasal vowels in context and keep consonant clusters free of extra vowels."],
+      es: ["Letras polacas, consonantes con signos y dígrafos.", "Distingue las tres familias sibilantes: s, sz y ś. Escucha las vocales nasales en contexto y no añadas vocales a los grupos consonánticos."],
+      pt: ["Letras polonesas, consoantes acentuadas e dígrafos.", "Distinga as três famílias sibilantes: s, sz e ś. Ouça vogais nasais no contexto e não acrescente vogais aos grupos consonantais."],
+      it: ["Lettere polacche, consonanti con segni e digrammi.", "Distingui le tre famiglie sibilanti: s, sz e ś. Ascolta le vocali nasali nel contesto e non aggiungere vocali ai gruppi consonantici."],
+      fr: ["Lettres polonaises, consonnes marquées et digrammes.", "Distingue les trois familles sifflantes : s, sz et ś. Écoute les voyelles nasales en contexte sans ajouter de voyelles aux groupes consonantiques."],
+      de: ["Polnische Buchstaben, Konsonanten mit Zeichen und Gruppen.", "Unterscheide s, sz und ś. Höre Nasalvokale im Kontext und füge in Konsonantengruppen keine Vokale ein."],
+      ja: ["ポーランド語の文字・補助記号・二文字の音。", "s・sz・ś の三系統を区別します。鼻母音を文脈で聞き、子音連続に余分な母音を挟みません。"],
+      hi: ["पोलिश अक्षर, चिह्नित व्यंजन और संयुक्त अक्षर।", "s, sz और ś के तीन वर्ग अलग करें। संदर्भ में नासिक्य स्वर सुनें और व्यंजन-समूह में अतिरिक्त स्वर न जोड़ें।"],
+      ar: ["الحروف البولندية والصوامت ذات العلامات والثنائيات.", "ميّز عائلات الصفير الثلاث s وsz وś. اسمع الحركات الأنفية في السياق ولا تضف حركات بين الصوامت."],
+      zh: ["波兰语字母、带符号辅音与双字母。", "区分 s、sz、ś 三组咝音。在语境中听鼻元音，不在辅音群中插入元音。"],
+    },
+    drills: [["A a","auto"],["Ą ą","wąż"],["B b","but"],["C c","co"],["Ć ć","ćma"],["D d","dom"],["E e","echo"],["Ę ę","ręka"],["F f","fala"],["G g","góra"],["H h","herbata"],["I i","igła"],["J j","jabłko"],["K k","kot"],["L l","las"],["Ł ł","łódź"],["M m","mama"],["N n","noc"],["Ń ń","koń"],["O o","oko"],["Ó ó","ból"],["P p","pies"],["R r","ryba"],["S s","sok"],["Ś ś","świt"],["T t","tak"],["U u","ulica"],["W w","woda"],["Y y","my"],["Z z","zamek"],["Ź ź","źle"],["Ż ż","żaba"],["SZ sz","szkoła"],["CZ cz","czas"],["RZ rz","rzeka"],["CH ch","chleb"],["DZ dz","dzwon"],["DŹ dź","dźwięk"],["DŻ dż","dżem"],["SI si","siano"],["CI ci","ciasto"],["ZI zi","ziemia"],["NI ni","niebo"]],
+  },
+  A1: ["być","bić","my","mi","wy","witam","syn","siny","dym","dinozaur","życie","zima","szybko","siwy","ty","tiara","rynek","riksza","pływać","pić","łyżka","liczba","laska","łaska","lata","łata"],
+  A2: ["cena","czapka","cichy","ciekawy","cukier","czarny","ciężki","ćwiczyć","córka","czoło","ciasto","czysty","zima","żona","źródło","zielony","żółty","zegar","ziarno","dzwonek","dźwięczny","dżinsy","dzień","dziesięć"],
+  B1: ["proszę","prosić","wąż","węże","ząb","zęby","mąż","męża","kąt","kąty","ręce","ręka","pięć","pięty","będę","będzie","książka","książki","pieniądze","pieniędzy","ciągle","ciąg","dąb","dęby"],
+  B2: ["chleb","chleba","sad","sady","nóż","noże","wóz","wozy","śnieg","śniegu","próg","progi","ząb","zęby","rzecz","rzeczy","wszystko","wstrząs","przestrzeń","szczegół","sprzęt","skrzydło","przyszłość","wdzięczność"],
+  C1: ["przedsiębiorstwo","przestrzeń","szczególnie","szczęście","chrząszcz","wstrząs","względny","wszystko","bezwzględny","bezsprzecznie","strzelec","strzał","sprzęt","skrzydło","przyzwyczajenie","zmartwychwstanie","odpowiedzialność","prawdopodobieństwo","rzeczywistość","współpraca","doświadczenie","przekształcenie","rozstrzygnięcie","wykształcenie"],
+  C2: ["Chociaż brzmi to prosto, wymaga uwagi.","Nie jestem całkowicie przekonany.","Gdybym wiedział wcześniej, poczekałbym.","Niezależnie od tego, musimy działać.","To nie wynik, lecz sposób budzi wątpliwości.","Niemniej jednak sprawa pozostaje otwarta.","Chciałbym doprecyzować jedną rzecz.","Z tego, co wiem, nic nie potwierdzono.","W takich okolicznościach jest to zrozumiałe.","Nie chciałbym zostać źle zrozumiany.","Przede wszystkim musimy sprawdzić fakty.","W gruncie rzeczy mamy podobne zdanie.","Ostatecznie wszystko zależy od interpretacji.","W świetle tych informacji należy poczekać.","Czy naprawdę uważa pan to za konieczne?","Nie wykluczam takiej możliwości.","Tym bardziej warto zachować ostrożność.","Pomimo pozornej prostoty, to skomplikowane.","Pozwolę sobie zauważyć istotną różnicę.","W związku z tym proponuję inne rozwiązanie.","To byłoby przedwczesne stwierdzenie.","Biorąc to pod uwagę, zmieńmy podejście.","Z perspektywy czasu wygląda to inaczej.","Bez względu na rezultat pozostajemy odpowiedzialni."],
+};

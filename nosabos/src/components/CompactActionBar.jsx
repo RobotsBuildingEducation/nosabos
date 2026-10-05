@@ -6,13 +6,17 @@ import { APP_ACTION_BAR_RADIUS, APP_SQUIRCLE_SHAPE } from "../theme";
 import { useThemeStore } from "../useThemeStore";
 import useActionBarDimensions from "../hooks/useActionBarDimensions";
 import GlassContainer from "./GlassContainer";
+import useQuestionActionStore from "../hooks/useQuestionActionStore";
 
 const MotionBox = motion.create(Box);
 
 export default function CompactActionBar({ children, dir = "ltr" }) {
   const isLightTheme = useThemeStore((s) => s.themeMode === "light");
   const reduceMotion = useReducedMotion();
-  const dimensions = useActionBarDimensions({ active: true, reduceMotion });
+  const activityOwnsBar = useQuestionActionStore((state) => state.ownerId !== null);
+  // The compact bar can stay mounted beneath a temporary feedback rail. Take
+  // back the shared dimensions when that rail releases ownership.
+  const dimensions = useActionBarDimensions({ active: !activityOwnsBar, reduceMotion });
 
   return typeof document !== "undefined"
     ? createPortal(
@@ -30,6 +34,8 @@ export default function CompactActionBar({ children, dir = "ltr" }) {
           paddingLeft={2}
           paddingRight={2}
           pointerEvents="none"
+          visibility={activityOwnsBar ? "hidden" : "visible"}
+          aria-hidden={activityOwnsBar}
           dir={dir}
           display="flex"
           justifyContent="center"

@@ -2,6 +2,15 @@ import React, { Children } from "react";
 import { Box, Flex } from "@chakra-ui/react";
 
 const TONE_PALETTES = {
+  achievement: {
+    bg: "#a97916",
+    hoverBg: "#906512",
+    activeBg: "#805810",
+    focusBg: "#a97916",
+    focusOutline: "#b7791f",
+    shadow: "0 4px 0 #785411",
+    activeShadow: "0 2px 0 #785411",
+  },
   purple: {
     bg: "purple.500",
     hoverBg: "purple.600",
@@ -175,7 +184,7 @@ export default function ActivityActionRow({
         flex="1 1 0"
         minW={0}
         sx={{
-          "& button": {
+          "& > button, &:not(:has([data-call-controls])) button": {
             width: "100%",
             maxWidth: "none",
             padding: "0 12px",
@@ -191,29 +200,54 @@ export default function ActivityActionRow({
             transitionTimingFunction: "ease",
             animation: "none",
           },
-          "& button:hover:not(:disabled)": {
+          "& > button:hover:not(:disabled), &:not(:has([data-call-controls])) button:hover:not(:disabled)": {
             background: palette.hoverBg,
             transform: "translateY(0)",
             boxShadow: `${palette.shadow} !important`,
           },
-          "& button:focus, & button[data-focus]": {
+          "& > button:focus, & > button[data-focus], &:not(:has([data-call-controls])) button:focus, &:not(:has([data-call-controls])) button[data-focus]": {
+            ...(palette.focusBg ? { background: palette.focusBg } : {}),
             transform: "translateY(0)",
             boxShadow: `${palette.shadow} !important`,
           },
-          "& button:focus-visible": {
-            outline: "2px solid var(--question-tool-accent-strong)",
+          "& > button:focus-visible, &:not(:has([data-call-controls])) button:focus-visible": {
+            outline: `2px solid ${palette.focusOutline || "var(--question-tool-accent-strong)"}`,
             outlineOffset: "3px",
             transform: "translateY(0)",
             boxShadow: `${palette.shadow} !important`,
           },
-          "& button:active:not(:disabled), & button[data-active]:not(:disabled)": {
+          "& > button:active:not(:disabled), & > button[data-active]:not(:disabled), &:not(:has([data-call-controls])) button:active:not(:disabled), &:not(:has([data-call-controls])) button[data-active]:not(:disabled)": {
+            ...(palette.activeBg ? { background: palette.activeBg } : {}),
             transform: "translateY(4px)",
             boxShadow: "none !important",
           },
-          "& button:disabled": {
+          "& > button:disabled, &:not(:has([data-call-controls])) button:disabled": {
             opacity: 0.55,
             boxShadow: "none !important",
             transform: "none",
+          },
+          "[data-call-controls]": {
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: "100%",
+            gap: "8px",
+          },
+          "[data-call-controls] button": {
+            height: "40px",
+            minHeight: "40px",
+            maxHeight: "40px",
+            borderRadius: "18px",
+            boxShadow: "none !important",
+            transform: "none",
+            border: "none",
+          },
+          "[data-call-controls] button[data-call-control]:focus-visible": {
+            outline: "2px solid var(--app-text-secondary)",
+            outlineOffset: "2px",
+          },
+          "[data-call-controls] button:active:not(:disabled)": {
+            transform: "scale(0.96) !important",
           },
         }}
       >

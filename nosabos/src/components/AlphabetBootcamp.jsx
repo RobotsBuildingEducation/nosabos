@@ -1,6 +1,10 @@
+import { t } from "../utils/translation";
+import { getSpeechPracticeErrorFeedback } from "../utils/speechPracticeFeedback.js";
+import { createPhonicsCompletionObserver } from "../achievements/phonicsProgress.js";
+import { awardProgressionAchievements } from "../utils/achievements.js";
 import useGoalFocusStore from "../hooks/useGoalFocusStore";
 import useUserStore from "../hooks/useUserStore";
-import { practiceLevelForElo, generationPerformanceContextFor, scoreForUser, questionWorthForUser } from "../utils/performanceEloModel";
+import { questionWorthForUser } from "../utils/performanceEloModel";
 import { assessGeneratedQuestionWorth } from "../utils/questionDifficultyAssessment";
 import { currentGoalFocus, recordGoalAttempt } from "../utils/learningIntelligence";
 import { getFocusedPhonicsDeck, savePracticeOutcome } from "../utils/focusedPracticeDecks";
@@ -30,52 +34,7 @@ import {
   Spinner,
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
-import { RUSSIAN_ALPHABET } from "../data/russianAlphabet";
-import { JAPANESE_ALPHABET } from "../data/japaneseAlphabet";
-import { ENGLISH_ALPHABET } from "../data/englishAlphabet";
-import { SPANISH_ALPHABET } from "../data/spanishAlphabet";
-import { PORTUGUESE_ALPHABET } from "../data/portugueseAlphabet";
-import { FRENCH_ALPHABET } from "../data/frenchAlphabet";
-import { ITALIAN_ALPHABET } from "../data/italianAlphabet";
-import { DUTCH_ALPHABET } from "../data/dutchAlphabet";
-import { GERMAN_ALPHABET } from "../data/germanAlphabet";
-import { NAHUATL_ALPHABET } from "../data/nahuatlAlphabet";
-import { GREEK_ALPHABET } from "../data/greekAlphabet";
-import { POLISH_ALPHABET } from "../data/polishAlphabet";
-import { IRISH_ALPHABET } from "../data/irishAlphabet";
-import { YUCATEC_MAYA_ALPHABET } from "../data/yucatecMayaAlphabet";
-import {
-  translateAlphabetMeaningToArabic,
-  withArabicAlphabetSupport,
-} from "../data/alphabetArabicLocalizer";
-import {
-  translateAlphabetMeaningToItalian,
-  withItalianAlphabetSupport,
-} from "../data/alphabetItalianLocalizer";
-import {
-  translateAlphabetMeaningToFrench,
-  withFrenchAlphabetSupport,
-} from "../data/alphabetFrenchLocalizer";
-import {
-  translateAlphabetMeaningToPortuguese,
-  withPortugueseAlphabetSupport,
-} from "../data/alphabetPortugueseLocalizer";
-import {
-  translateAlphabetMeaningToJapanese,
-  withJapaneseAlphabetSupport,
-} from "../data/alphabetJapaneseLocalizer";
-import {
-  translateAlphabetMeaningToHindi,
-  withHindiAlphabetSupport,
-} from "../data/alphabetHindiLocalizer";
-import {
-  translateAlphabetMeaningToChinese,
-  withChineseAlphabetSupport,
-} from "../data/alphabetChineseLocalizer";
-import {
-  translateAlphabetMeaningToGerman,
-  withGermanAlphabetSupport,
-} from "../data/alphabetGermanLocalizer";
+import { getAuthoredPhonicsDeck, partitionPhonicsProgress, PHONICS_CONTROLS, PHONICS_LEVELS, PHONICS_TARGET_NAMES } from "../data/phonics/index.js";
 import { FiVolume2 } from "react-icons/fi";
 import { FaMicrophone, FaStop } from "react-icons/fa";
 import {
@@ -102,23 +61,32 @@ import {
   SOFT_STOP_BUTTON_BG,
   SOFT_STOP_BUTTON_HOVER_BG,
 } from "../utils/softStopButton";
+import VoiceWaveIcon from "./VoiceWaveIcon";
 import { WaveBar } from "./WaveBar";
 import {
   collection,
   doc,
   getDoc,
   getDocs,
-  limit,
+  increment,
+  onSnapshot,
   query,
   serverTimestamp,
   setDoc,
   where,
+  writeBatch,
 } from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
 import useSoundSettings from "../hooks/useSoundSettings";
 import { selectSound, submitActionSound, nextButtonSound } from "../constants/sounds";
 import VoiceOrb from "./VoiceOrbNext";
-import XpProgressHeader from "./XpProgressHeader";
+import CEFRLevelNavigator from "./CEFRLevelNavigator";
+import CourseProgressHeader from "./CourseProgressHeader";
+import PhonicsCardStack from "./PhonicsCardStack";
+import { getPhonicsCourseProgress, canAccessPhonicsLevel, resolvePhonicsLevel } from "../utils/phonicsCourseProgress.js";
+import { generateSupplementalPhonicsDeck } from "../utils/phonicsDeckGeneration.js";
+import { restoreSupplementalPhonics, supplementalPhonicsRecord, supplementalPhonicsEvents, SUPPLEMENTAL_PHONICS_VERSION } from "../utils/supplementalPhonics.js";
+import { isMasterUnlockActive } from "../utils/masterUnlock";
 import RandomCharacter from "./RandomCharacter";
 import { useThemeStore } from "../useThemeStore";
 import {
@@ -127,10 +95,6 @@ import {
   LANGUAGE_PROMPT_LABELS,
   normalizeSupportLanguage,
 } from "../constants/languages";
-import {
-  getPhonicsBand,
-  getPhonicsGenerationLevel,
-} from "../utils/phonicsLevel";
 import { APP_SQUIRCLE_SHAPE } from "../theme";
 
 const MotionBox = motion(Box);
@@ -144,388 +108,6 @@ const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
 const APP_TEXT_MUTED = "var(--app-text-muted)";
 const APP_SHADOW = "var(--app-shadow-soft)";
 const APP_SQUIRCLE_STYLE = { cornerShape: APP_SQUIRCLE_SHAPE };
-
-// Language name and script mapping for all supported languages
-const LANGUAGE_NAMES = {
-  ru: "Russian",
-  ja: "Japanese",
-  en: "English",
-  es: "Spanish",
-  pt: "Portuguese",
-  fr: "French",
-  it: "Italian",
-  nl: "Dutch",
-  de: "German",
-  nah: "Nahuatl",
-  el: "Greek",
-  pl: "Polish",
-  ga: "Irish",
-  yua: "Yucatec Maya",
-};
-
-const LANGUAGE_NAMES_EN = {
-  ru: "Russian",
-  ja: "Japanese",
-  en: "English",
-  es: "Spanish",
-  pt: "Portuguese",
-  fr: "French",
-  it: "Italian",
-  nl: "Dutch",
-  de: "German",
-  nah: "Nahuatl",
-  el: "Greek",
-  pl: "Polish",
-  ga: "Irish",
-  yua: "Yucatec Maya",
-};
-
-const LANGUAGE_NAMES_ES = {
-  ru: "Ruso",
-  ja: "Japonés",
-  en: "Inglés",
-  es: "Español",
-  pt: "Portugués",
-  fr: "Francés",
-  it: "Italiano",
-  nl: "Neerlandés",
-  de: "Alemán",
-  nah: "Náhuatl",
-  el: "Griego",
-  pl: "Polaco",
-  ga: "Irlandés",
-  yua: "Maya yucateco",
-};
-
-const LANGUAGE_NAMES_IT = {
-  ru: "Russo",
-  ja: "Giapponese",
-  en: "Inglese",
-  es: "Spagnolo",
-  pt: "Portoghese",
-  fr: "Francese",
-  it: "Italiano",
-  nl: "Neerlandese",
-  de: "Tedesco",
-  nah: "Nahuatl",
-  el: "Greco",
-  pl: "Polacco",
-  ga: "Irlandese",
-  yua: "Maya yucateco",
-};
-
-const LANGUAGE_NAMES_PT = {
-  ru: "Russo",
-  ja: "Japonês",
-  en: "Inglês",
-  es: "Espanhol",
-  pt: "Português",
-  fr: "Francês",
-  it: "Italiano",
-  nl: "Holandês",
-  de: "Alemão",
-  nah: "Náuatle",
-  el: "Grego",
-  pl: "Polonês",
-  ga: "Irlandês",
-  yua: "Maia iucateque",
-};
-
-const LANGUAGE_NAMES_FR = {
-  ru: "Russe",
-  ja: "Japonais",
-  en: "Anglais",
-  es: "Espagnol",
-  pt: "Portugais",
-  fr: "Francais",
-  it: "Italien",
-  nl: "Neerlandais",
-  de: "Allemand",
-  nah: "Nahuatl",
-  el: "Grec",
-  pl: "Polonais",
-  ga: "Irlandais",
-  yua: "Maya yucateque",
-};
-
-const LANGUAGE_NAMES_JA = {
-  ru: "ロシア語",
-  ja: "日本語",
-  en: "英語",
-  es: "スペイン語",
-  pt: "ポルトガル語",
-  fr: "フランス語",
-  it: "イタリア語",
-  nl: "オランダ語",
-  de: "ドイツ語",
-  nah: "ナワトル語",
-  el: "ギリシャ語",
-  pl: "ポーランド語",
-  ga: "アイルランド語",
-  yua: "ユカテコ・マヤ語",
-};
-
-const LANGUAGE_NAMES_HI = {
-  ru: "रूसी",
-  ja: "जापानी",
-  en: "अंग्रेज़ी",
-  es: "स्पेनिश",
-  pt: "पुर्तगाली",
-  fr: "फ़्रेंच",
-  it: "इतालवी",
-  nl: "डच",
-  de: "जर्मन",
-  nah: "नाहुआत्ल",
-  el: "ग्रीक",
-  pl: "पोलिश",
-  ga: "आयरिश",
-  yua: "युकातेक माया",
-};
-
-const LANGUAGE_NAMES_AR = {
-  ru: "الروسية",
-  ja: "اليابانية",
-  en: "الإنجليزية",
-  es: "الإسبانية",
-  pt: "البرتغالية",
-  fr: "الفرنسية",
-  it: "الإيطالية",
-  nl: "الهولندية",
-  de: "الألمانية",
-  nah: "الناواتل",
-  el: "اليونانية",
-  pl: "البولندية",
-  ga: "الأيرلندية",
-  yua: "المايا اليوكاتيكية",
-};
-
-const LANGUAGE_NAMES_ZH = {
-  ru: "俄语",
-  ja: "日语",
-  en: "英语",
-  es: "西班牙语",
-  pt: "葡萄牙语",
-  fr: "法语",
-  it: "意大利语",
-  nl: "荷兰语",
-  de: "德语",
-  nah: "纳瓦特尔语",
-  el: "希腊语",
-  pl: "波兰语",
-  ga: "爱尔兰语",
-  yua: "尤卡坦玛雅语",
-};
-
-const LANGUAGE_NAMES_DE = {
-  ru: "Russisch",
-  ja: "Japanisch",
-  en: "Englisch",
-  es: "Spanisch",
-  pt: "Portugiesisch",
-  fr: "Französisch",
-  it: "Italienisch",
-  nl: "Niederländisch",
-  de: "Deutsch",
-  nah: "Nahuatl",
-  el: "Griechisch",
-  pl: "Polnisch",
-  ga: "Irisch",
-  yua: "Yucatec-Maya",
-};
-
-const LANGUAGE_NAMES_BY_UI = {
-  en: LANGUAGE_NAMES_EN,
-  es: LANGUAGE_NAMES_ES,
-  pt: LANGUAGE_NAMES_PT,
-  it: LANGUAGE_NAMES_IT,
-  fr: LANGUAGE_NAMES_FR,
-  de: LANGUAGE_NAMES_DE,
-  ja: LANGUAGE_NAMES_JA,
-  hi: LANGUAGE_NAMES_HI,
-  ar: LANGUAGE_NAMES_AR,
-  zh: LANGUAGE_NAMES_ZH,
-};
-
-const LANGUAGE_SCRIPTS = {
-  ru: "Cyrillic",
-  ja: "hiragana or katakana",
-  en: "Latin alphabet",
-  es: "Latin alphabet",
-  pt: "Latin alphabet",
-  fr: "Latin alphabet",
-  it: "Latin alphabet",
-  nl: "Latin alphabet",
-  de: "Latin alphabet",
-  nah: "Latin alphabet",
-  el: "Greek alphabet",
-  pl: "Latin alphabet",
-  ga: "Latin alphabet",
-  yua: "Latin alphabet",
-};
-
-const LANGUAGE_SCRIPTS_IT = {
-  ru: "alfabeto cirillico",
-  ja: "hiragana o katakana",
-  en: "alfabeto latino",
-  es: "alfabeto latino",
-  pt: "alfabeto latino",
-  fr: "alfabeto latino",
-  it: "alfabeto latino",
-  nl: "alfabeto latino",
-  de: "alfabeto latino",
-  nah: "alfabeto latino",
-  el: "alfabeto greco",
-  pl: "alfabeto latino",
-  ga: "alfabeto latino",
-  yua: "alfabeto latino",
-};
-
-const LANGUAGE_SCRIPTS_PT = {
-  ru: "alfabeto cirílico",
-  ja: "hiragana ou katakana",
-  en: "alfabeto latino",
-  es: "alfabeto latino",
-  pt: "alfabeto latino",
-  fr: "alfabeto latino",
-  it: "alfabeto latino",
-  nl: "alfabeto latino",
-  de: "alfabeto latino",
-  nah: "alfabeto latino",
-  el: "alfabeto grego",
-  pl: "alfabeto latino",
-  ga: "alfabeto latino",
-  yua: "alfabeto latino",
-};
-
-const LANGUAGE_SCRIPTS_FR = {
-  ru: "alphabet cyrillique",
-  ja: "hiragana ou katakana",
-  en: "alphabet latin",
-  es: "alphabet latin",
-  pt: "alphabet latin",
-  fr: "alphabet latin",
-  it: "alphabet latin",
-  nl: "alphabet latin",
-  de: "alphabet latin",
-  nah: "alphabet latin",
-  el: "alphabet grec",
-  pl: "alphabet latin",
-  ga: "alphabet latin",
-  yua: "alphabet latin",
-};
-
-const LANGUAGE_SCRIPTS_JA = {
-  ru: "キリル文字",
-  ja: "ひらがなまたはカタカナ",
-  en: "ラテン文字",
-  es: "ラテン文字",
-  pt: "ラテン文字",
-  fr: "ラテン文字",
-  it: "ラテン文字",
-  nl: "ラテン文字",
-  de: "ラテン文字",
-  nah: "ラテン文字",
-  el: "ギリシャ文字",
-  pl: "ラテン文字",
-  ga: "ラテン文字",
-  yua: "ラテン文字",
-};
-
-const LANGUAGE_SCRIPTS_HI = {
-  ru: "सिरिलिक लिपि",
-  ja: "हिरागाना या काताकाना",
-  en: "लैटिन वर्णमाला",
-  es: "लैटिन वर्णमाला",
-  pt: "लैटिन वर्णमाला",
-  fr: "लैटिन वर्णमाला",
-  it: "लैटिन वर्णमाला",
-  nl: "लैटिन वर्णमाला",
-  de: "लैटिन वर्णमाला",
-  nah: "लैटिन वर्णमाला",
-  el: "ग्रीक वर्णमाला",
-  pl: "लैटिन वर्णमाला",
-  ga: "लैटिन वर्णमाला",
-  yua: "लैटिन वर्णमाला",
-};
-
-const LANGUAGE_SCRIPTS_AR = {
-  ru: "الأبجدية السيريلية",
-  ja: "الهيراجانا أو الكاتاكانا",
-  en: "الأبجدية اللاتينية",
-  es: "الأبجدية اللاتينية",
-  pt: "الأبجدية اللاتينية",
-  fr: "الأبجدية اللاتينية",
-  it: "الأبجدية اللاتينية",
-  nl: "الأبجدية اللاتينية",
-  de: "الأبجدية اللاتينية",
-  nah: "الأبجدية اللاتينية",
-  el: "الأبجدية اليونانية",
-  pl: "الأبجدية اللاتينية",
-  ga: "الأبجدية اللاتينية",
-  yua: "الأبجدية اللاتينية",
-};
-
-const LANGUAGE_SCRIPTS_ZH = {
-  ru: "西里尔字母",
-  ja: "平假名或片假名",
-  en: "拉丁字母",
-  es: "拉丁字母",
-  pt: "拉丁字母",
-  fr: "拉丁字母",
-  it: "拉丁字母",
-  nl: "拉丁字母",
-  de: "拉丁字母",
-  nah: "拉丁字母",
-  el: "希腊字母",
-  pl: "拉丁字母",
-  ga: "拉丁字母",
-  yua: "拉丁字母",
-};
-
-const LANGUAGE_SCRIPTS_DE = {
-  ru: "kyrillisches Alphabet",
-  ja: "Hiragana oder Katakana",
-  en: "lateinisches Alphabet",
-  es: "lateinisches Alphabet",
-  pt: "lateinisches Alphabet",
-  fr: "lateinisches Alphabet",
-  it: "lateinisches Alphabet",
-  nl: "lateinisches Alphabet",
-  de: "lateinisches Alphabet",
-  nah: "lateinisches Alphabet",
-  el: "griechisches Alphabet",
-  pl: "lateinisches Alphabet",
-  ga: "lateinisches Alphabet",
-  yua: "lateinisches Alphabet",
-};
-
-const LANGUAGE_SCRIPTS_BY_UI = {
-  en: LANGUAGE_SCRIPTS,
-  es: {
-    ru: "alfabeto cirílico",
-    ja: "hiragana o katakana",
-    en: "alfabeto latino",
-    es: "alfabeto latino",
-    pt: "alfabeto latino",
-    fr: "alfabeto latino",
-    it: "alfabeto latino",
-    nl: "alfabeto latino",
-    de: "alfabeto latino",
-    nah: "alfabeto latino",
-    el: "alfabeto griego",
-    pl: "alfabeto latino",
-    ga: "alfabeto latino",
-    yua: "alfabeto latino",
-  },
-  pt: LANGUAGE_SCRIPTS_PT,
-  it: LANGUAGE_SCRIPTS_IT,
-  fr: LANGUAGE_SCRIPTS_FR,
-  de: LANGUAGE_SCRIPTS_DE,
-  ja: LANGUAGE_SCRIPTS_JA,
-  hi: LANGUAGE_SCRIPTS_HI,
-  ar: LANGUAGE_SCRIPTS_AR,
-  zh: LANGUAGE_SCRIPTS_ZH,
-};
 
 const ALPHABET_UI_TEXT = {
   en: {
@@ -565,7 +147,7 @@ const ALPHABET_UI_TEXT = {
     complete: "Congratulations! You've completed the alphabet.",
     deckComplete: "Deck cleared! Generate a new one to keep going.",
     generateDeckError: "Couldn't generate a new deck. Please try again.",
-    startSkillTree: "Start skill tree",
+    startSkillTree: "Start lessons",
     newRound: "New round",
     collection: "Collection",
     loadError: "We couldn't load the alphabet. Please try again.",
@@ -605,7 +187,7 @@ const ALPHABET_UI_TEXT = {
     note:
       "Después de esto, cambia al modo Ruta en el menú para explorar las lecciones.",
     complete: "¡Felicidades! Has completado el alfabeto.",
-    startSkillTree: "Iniciar árbol de habilidades",
+    startSkillTree: "Iniciar lecciones",
     newRound: "Nueva ronda",
     collection: "Colección",
     loadError: "No pudimos cargar el alfabeto. Intenta nuevamente.",
@@ -998,16 +580,7 @@ const uiText = (lang, key, params = {}) => {
   );
 };
 
-const getLanguageName = (code, uiLang) =>
-  LANGUAGE_NAMES_BY_UI[uiLang]?.[code] ||
-  LANGUAGE_NAMES_EN[code] ||
-  LANGUAGE_NAMES[code] ||
-  "Language";
-
-const getScriptName = (code, uiLang) =>
-  LANGUAGE_SCRIPTS_BY_UI[uiLang]?.[code] ||
-  LANGUAGE_SCRIPTS[code] ||
-  "native script";
+const getLanguageName = (code, uiLang) => PHONICS_TARGET_NAMES[uiLang]?.[code] || "";
 
 const LOCALIZED_FIELD_SUFFIX = {
   en: "",
@@ -1025,32 +598,14 @@ const LOCALIZED_FIELD_SUFFIX = {
 const getLocalizedLetterField = (letter, uiLang, baseKey) => {
   if (!letter || !baseKey) return "";
   const normalizedLang = normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE);
+  if (letter.authored || letter.curriculumVersion === SUPPLEMENTAL_PHONICS_VERSION) return letter.supportLanguage === normalizedLang ? (letter[baseKey] || "") : "";
   const suffix = LOCALIZED_FIELD_SUFFIX[normalizedLang];
   const fieldName = suffix ? `${baseKey}${suffix}` : baseKey;
   const value = letter[fieldName];
   return typeof value === "string" ? value.trim() : "";
 };
 
-const getMeaningText = (meaning, uiLang) => {
-  if (!meaning || typeof meaning !== "object") return "";
-  const normalizedLang = normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE);
-  if (normalizedLang === "en") {
-    return (
-      meaning.en ||
-      meaning.es ||
-      meaning.ar ||
-      meaning.hi ||
-      meaning.pt ||
-      meaning.it ||
-      meaning.fr ||
-      meaning.de ||
-      meaning.ja ||
-      meaning.zh ||
-      ""
-    );
-  }
-  return meaning[normalizedLang] || "";
-};
+const getMeaningText = (meaning, uiLang) => meaning?.[normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE)] || "";
 
 const getLetterName = (letter, uiLang) => {
   const localizedName = getLocalizedLetterField(letter, uiLang, "name");
@@ -1076,65 +631,11 @@ const getLetterSound = (letter, uiLang) =>
 const getLetterTip = (letter, uiLang) =>
   getLocalizedLetterField(letter, uiLang, "tip");
 
-const normalizeMeaning = (meaning) => {
-  if (!meaning) {
-    return {
-      en: "",
-      es: "",
-      pt: "",
-      it: "",
-      fr: "",
-      de: "",
-      ja: "",
-      hi: "",
-      ar: "",
-      zh: "",
-    };
-  }
-  if (typeof meaning === "string") {
-    const source = String(meaning || "").trim();
-    return {
-      en: source,
-      es: "",
-      pt: translateAlphabetMeaningToPortuguese(source) || "",
-      it: translateAlphabetMeaningToItalian(source) || "",
-      fr: translateAlphabetMeaningToFrench(source) || "",
-      de: translateAlphabetMeaningToGerman(source) || "",
-      ja: translateAlphabetMeaningToJapanese(source) || "",
-      hi: translateAlphabetMeaningToHindi(source) || "",
-      ar: translateAlphabetMeaningToArabic(source) || "",
-      zh: translateAlphabetMeaningToChinese(source) || "",
-    };
-  }
-
-  const en =
-    meaning.en ||
-    meaning.es ||
-    meaning.ar ||
-    meaning.hi ||
-    meaning.pt ||
-    meaning.it ||
-    meaning.fr ||
-    meaning.de ||
-    meaning.ja ||
-    meaning.zh ||
-    "";
-  const es = meaning.es || "";
-  const pt = meaning.pt || translateAlphabetMeaningToPortuguese(meaning) || "";
-  const it = meaning.it || translateAlphabetMeaningToItalian(meaning) || "";
-  const fr = meaning.fr || translateAlphabetMeaningToFrench(meaning) || "";
-  const de = meaning.de || translateAlphabetMeaningToGerman(meaning) || "";
-  const ja = meaning.ja || translateAlphabetMeaningToJapanese(meaning) || "";
-  const hi = meaning.hi || translateAlphabetMeaningToHindi(meaning) || "";
-  const ar = meaning.ar || translateAlphabetMeaningToArabic(meaning) || "";
-  const zh = meaning.zh || translateAlphabetMeaningToChinese(meaning) || "";
-
-  return { en, es, pt, it, fr, de, ja, hi, ar, zh };
-};
+const normalizeMeaning = (meaning) => meaning && typeof meaning === "object" ? { ...meaning } : {};
 
 // Build AI grading prompt for alphabet practice
-function buildAlphabetJudgePrompt({ practiceWord, userAnswer, targetLang, phoneme = "" }) {
-  const langName = LANGUAGE_NAMES[targetLang] || "the target";
+function buildAlphabetJudgePrompt({ practiceWord, userAnswer, targetLang, phoneme = "", cefrLevel = "Pre-A1" }) {
+  const langName = LANGUAGE_PROMPT_LABELS[targetLang] || "the target";
 
   return `
 Judge if the user correctly pronounced a ${langName} word.
@@ -1146,7 +647,8 @@ User's pronunciation (transcribed): ${userAnswer}
 Policy:
 - Say YES if the transcription matches or is phonetically very close to the target word.
 - Allow minor transcription errors since speech recognition may not be perfect for ${langName}.
-- The user is a beginner, so be lenient with small pronunciation mistakes.
+- Practice level: ${cefrLevel}. Assess recognizable speech; do not demand a native accent.
+- A transcript cannot prove pitch, tone, stress or rhythm. Do not claim to have measured those features.
 - If completely wrong or incomprehensible, say NO.
 
 Reply with ONE of these formats:
@@ -1184,9 +686,6 @@ async function saveAlphabetProgress(
     const snap = await getDoc(alphabetProgressRef);
     const existingProgress = snap.exists() ? snap.data() : null;
 
-    const attempts = (existingProgress?.attempts || 0) + 1;
-    const correctCount =
-      (existingProgress?.correctCount || 0) + (wasCorrect ? 1 : 0);
     const lastWords = existingProgress?.practicedWords || [];
 
     // Keep track of last 10 practiced words
@@ -1201,8 +700,8 @@ async function saveAlphabetProgress(
         {
           letterId,
           targetLang,
-          attempts,
-          correctCount,
+          attempts: increment(1),
+          correctCount: increment(wasCorrect ? 1 : 0),
           practicedWords: updatedWords,
           lastAttemptAt: serverTimestamp(),
           lastWord: practiceWord,
@@ -1231,7 +730,6 @@ async function saveAlphabetPracticeWord(
   letterId,
   practiceWord,
   practiceWordMeaning,
-  correctCount,
 ) {
   if (!npub) return;
 
@@ -1244,7 +742,7 @@ async function saveAlphabetPracticeWord(
         targetLang,
         currentWord: practiceWord,
         currentMeaning: practiceWordMeaning ?? null,
-        correctCount: correctCount ?? 0,
+        // Word selection must never overwrite another device's completion.
         updatedAt: serverTimestamp(),
       },
       { merge: true },
@@ -1254,193 +752,15 @@ async function saveAlphabetPracticeWord(
   }
 }
 
-// Number of brand-new phonics cards generated per "New round".
-const NEW_DECK_SIZE = 6;
-
-// Localized display fields a generated phonics card can carry, mirroring the
-// base alphabet entries (name / sound / tip, with per-language suffixes).
-const GEN_DISPLAY_BASES = ["name", "sound", "tip"];
-const GEN_DISPLAY_SUFFIXES = [
-  "",
-  "Es",
-  "Pt",
-  "It",
-  "Fr",
-  "De",
-  "Ja",
-  "Hi",
-  "Ar",
-  "Zh",
-];
-
-// Copy just the present localized display fields off a card (for saving) or off
-// a Firestore doc (for reloading) so the same shape round-trips both ways.
-function pickGeneratedDisplayFields(source) {
-  const out = {};
-  GEN_DISPLAY_BASES.forEach((base) => {
-    GEN_DISPLAY_SUFFIXES.forEach((suffix) => {
-      const key = `${base}${suffix}`;
-      const value = source?.[key];
-      if (typeof value === "string" && value) out[key] = value;
-    });
-  });
-  return out;
-}
-
-// Turn a raw generated unit into a card shaped like a base alphabet entry, with
-// the pronunciation guide + tip in BOTH English (base keys) and the learner's
-// support language (suffixed keys), so the card reveals the same details.
-// cefrLevel is the level the card was generated AT — a miss on this card years
-// of progress later still tags the companion memory with the card's own level.
-function buildGeneratedCard(unit, uiLang, id, cefrLevel = null) {
-  const lang = normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE);
-  const suffix = LOCALIZED_FIELD_SUFFIX[lang] || "";
-  const card = {
-    id,
-    letter: unit.grapheme,
-    type: "sound",
-    generated: true,
-    cefrLevel,
-    name: unit.name || "",
-    sound: unit.soundEn || "",
-    tip: unit.tipEn || "",
-    // Tap-to-hear plays a real word demonstrating the sound (like base cards).
-    tts: unit.exampleWord || "",
-    practiceWord: unit.exampleWord || "",
-    practiceWordMeaning: normalizeMeaning({
-      en: unit.meaningEn || "",
-      [lang]: unit.meaningLoc || unit.meaningEn || "",
-    }),
-  };
-  if (suffix) {
-    if (unit.soundLoc || unit.soundEn) {
-      card[`sound${suffix}`] = unit.soundLoc || unit.soundEn;
-    }
-    if (unit.tipLoc || unit.tipEn) {
-      card[`tip${suffix}`] = unit.tipLoc || unit.tipEn;
-    }
-  }
-  return card;
-}
-
-// What each phonics band asks the model for. The band comes from the derived
-// phonics generation level (deck ladder + placement, capped by unlocked course
-// levels), so difficulty rises with real progress, not with browsed UI levels.
-const PHONICS_BAND_GUIDANCE = {
-  foundation:
-    "Stay foundational: digraphs, very common syllables, and simple high-frequency sounds. Example words must be short, everyday words a beginner already recognizes.",
-  intermediate:
-    "Go intermediate: consonant blends and clusters, stress/accent patterns, and common spelling-to-sound exceptions. Example words should be everyday vocabulary an intermediate learner knows.",
-  advanced:
-    "Go advanced: minimal pairs, reduced or fast-speech sounds, regional pronunciation variants, and subtle spelling-to-sound patterns that still trip up advanced learners. Example words may be less common.",
-};
-
-// Generate a fresh batch of NEW phonics units (digraphs, blends, syllables,
-// less-common sounds) that go beyond the base alphabet. Guidance comes back in
-// English + the learner's support language so cards read in the right language.
-async function generateNewPhonicsUnits(
-  targetLang,
-  uiLang,
-  existingGraphemes = [],
-  count = NEW_DECK_SIZE,
-  cefrLevel = "Pre-A1",
-) {
-  const lang = normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE);
-  const languageName =
-    LANGUAGE_PROMPT_LABELS[targetLang] ||
-    LANGUAGE_NAMES[targetLang] ||
-    "the target language";
-  const scriptName = getScriptName(targetLang, uiLang);
-  const supportName =
-    LANGUAGE_PROMPT_LABELS[lang] || LANGUAGE_FALLBACK_LABELS[lang] || "English";
-  const avoid = existingGraphemes.filter(Boolean).slice(0, 200).join(", ");
-  const band = getPhonicsBand(cefrLevel);
-  const bandGuidance =
-    PHONICS_BAND_GUIDANCE[band] || PHONICS_BAND_GUIDANCE.foundation;
-  const prompt = `You are creating phonics flashcards for a learner.
-- Target language being learned: ${languageName} (written in ${scriptName}).
-- The learner's OWN language, used for ALL explanations: ${supportName}.
-- The learner's CEFR level: ${cefrLevel}.
-- Live performance memory: ${JSON.stringify(generationPerformanceContextFor(useUserStore.getState().user, targetLang, { curriculumCefrLevel: cefrLevel }))}. Adapt the new sound patterns and support to this evidence.
-
-Generate ${count} NEW ${languageName} phonics units that go BEYOND the basic alphabet, tuned to that level. ${bandGuidance}
-Avoid these already-covered units: ${avoid || "(none)"}.
-
-For each unit:
-- "grapheme": the sound/letters written in ${scriptName} (${languageName}).
-- "exampleWord": a common ${languageName} word that uses it, written in ${scriptName}.
-- "name": a very short English label.
-- "sound_en", "tip_en", "meaning_en": written in English.
-- "sound_loc", "tip_loc", "meaning_loc": written in ${supportName}. These three explanations MUST be in ${supportName}, NOT in ${languageName}.
-
-Respond ONLY with a JSON array of exactly ${count} objects in this exact shape:
-[{"grapheme":"...","name":"...","sound_en":"...","sound_loc":"...","tip_en":"...","tip_loc":"...","exampleWord":"...","meaning_en":"...","meaning_loc":"..."}]
-- Keep each grapheme short.
-- Do not repeat any avoided unit and do not duplicate within the list.
-- No extra text.`;
-
-  try {
-    const raw = await callResponses({
-      model: DEFAULT_RESPONSES_MODEL,
-      input: prompt,
-    });
-    const match = raw.match(/\[[\s\S]*\]/);
-    const parsed = JSON.parse(match ? match[0] : raw);
-    if (!Array.isArray(parsed)) return [];
-    const seen = new Set();
-    return parsed
-      .map((u) => ({
-        grapheme: String(u?.grapheme || "").trim(),
-        name: String(u?.name || "").trim(),
-        soundEn: String(u?.sound_en || u?.sound || "").trim(),
-        soundLoc: String(u?.sound_loc || u?.sound_en || u?.sound || "").trim(),
-        tipEn: String(u?.tip_en || u?.tip || "").trim(),
-        tipLoc: String(u?.tip_loc || u?.tip_en || u?.tip || "").trim(),
-        exampleWord: String(u?.exampleWord || u?.word || "").trim(),
-        meaningEn: String(u?.meaning_en || u?.meaning || "").trim(),
-        meaningLoc: String(
-          u?.meaning_loc || u?.meaning_en || u?.meaning || "",
-        ).trim(),
-      }))
-      .filter((u) => {
-        if (!u.grapheme) return false;
-        const key = u.grapheme.toLowerCase();
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
-  } catch (error) {
-    console.error("Failed to generate phonics units:", error);
-    return [];
-  }
-}
-
-// Persist a generated phonics unit's definition so the growing collection
-// survives reloads. Shares the alphabetPractice subcollection with letters;
-// merge keeps any later practice progress intact.
-async function saveGeneratedPhonicsUnit(npub, targetLang, card) {
-  if (!npub || !card?.id) return;
-  try {
-    await setDoc(
-      doc(database, "users", npub, "alphabetPractice", `${targetLang}_${card.id}`),
-      {
-        letterId: card.id,
-        targetLang,
-        generated: true,
-        cefrLevel: card.cefrLevel || null,
-        grapheme: card.letter || "",
-        ...pickGeneratedDisplayFields(card),
-        tts: card.tts || null,
-        currentWord: card.practiceWord || null,
-        currentMeaning: card.practiceWordMeaning ?? null,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      },
-      { merge: true },
-    );
-  } catch (error) {
-    console.error("Error saving generated phonics unit:", error);
-  }
+async function saveSupplementalPhonicsDeck(npub, cards) {
+  if (!npub) return;
+  const batch = writeBatch(database);
+  for (const card of cards) batch.set(
+    doc(database, "users", npub, "alphabetPractice", card.targetLang + "_" + card.id),
+    { ...supplementalPhonicsRecord(card), createdAt: serverTimestamp(), updatedAt: serverTimestamp() },
+    { merge: true },
+  );
+  await batch.commit();
 }
 
 const getPracticeLetterMarker = (letter) => {
@@ -1480,6 +800,7 @@ const getHighlightedWordParts = (word, marker) => {
 
 function LetterCard({
   dockActions = false,
+  stackCount = 1,
   playSound = () => {},
   letter,
   onPlay,
@@ -1591,6 +912,8 @@ function LetterCard({
     stopRecording,
     isRecording,
     isConnecting,
+    isEvaluating,
+    stream,
     supportsSpeech,
   } = useSpeechPractice({
     targetText: practiceWord || "placeholder",
@@ -1599,9 +922,7 @@ function LetterCard({
     onResult: ({ recognizedText: text, error }) => {
       if (error) {
         toast({
-          title: uiText(uiLang, "recordingErrorTitle"),
-          description: uiText(uiLang, "recordingErrorDescription"),
-          status: "error",
+          ...getSpeechPracticeErrorFeedback(error, (key) => t(uiLang, key)),
           duration: 2500,
         });
         return;
@@ -1625,6 +946,7 @@ function LetterCard({
           practiceWord,
           phoneme: letter?.phoneme || "",
           userAnswer: answer,
+          cefrLevel: letter.cefrLevel || cefrLevel,
           targetLang,
         }),
       });
@@ -1711,9 +1033,6 @@ function LetterCard({
         }
       }
 
-      // Calculate new correctCount (since setCorrectCount is async)
-      const newCorrectCount = isYes ? correctCount + 1 : correctCount;
-
       // Save progress regardless of result
       await saveAlphabetProgress(
         npub,
@@ -1729,7 +1048,6 @@ function LetterCard({
         letter.id,
         nextPracticeWord,
         nextPracticeMeaning,
-        newCorrectCount,
       );
     } catch (error) {
       console.error("AI grading error:", error);
@@ -1750,12 +1068,11 @@ function LetterCard({
     setIsFlipped(true);
     setShowResult(false);
 
-    // Completed/collected letters may not have a practice word loaded yet —
-    // generate one on demand so Practice always has something to say.
+    // Reload the fixed practice word if a collected card has no word state.
     if (!practiceWord && !isGeneratingWord) {
       setIsGeneratingWord(true);
       try {
-        const generated = await generateNewPracticeWord("");
+        const generated = await getAuthoredPracticeWord("");
         if (generated?.word) {
           const meaning = normalizeMeaning(generated.meaning);
           setPracticeWord(generated.word);
@@ -1767,11 +1084,10 @@ function LetterCard({
             letter.id,
             generated.word,
             meaning,
-            correctCount,
           );
         }
       } catch (error) {
-        console.error("Failed to generate practice word on demand:", error);
+        console.error("Failed to load authored practice word:", error);
       } finally {
         setIsGeneratingWord(false);
       }
@@ -1824,7 +1140,7 @@ function LetterCard({
     wordPlaybackRequestRef.current += 1;
     try {
       wordPlayerRef.current?.audio?.pause?.();
-    } catch {}
+    } catch { /* Audio may already have been released. */ }
     wordPlayerRef.current?.cleanup?.();
     wordPlayerRef.current = null;
     setIsPlayingWord(false);
@@ -1913,13 +1229,13 @@ function LetterCard({
       return;
     }
 
-    // Repeat practice from collection: generate the next practice word
+    // Repeat the authored card from the collection.
     await handleNextWord();
   };
 
   const handleNextWord = async () => {
     playSound(nextButtonSound);
-    const generated = await generateNewPracticeWord(practiceWord);
+    const generated = await getAuthoredPracticeWord(practiceWord);
     if (!generated?.word) {
       toast({
         title: uiText(uiLang, "generateWordErrorTitle"),
@@ -1940,75 +1256,14 @@ function LetterCard({
       letter.id,
       nextPracticeWord,
       nextPracticeMeaning,
-      correctCount,
     );
     setShowResult(false);
     setIsCorrect(false);
   };
 
-  const generateNewPracticeWord = useCallback(
-    async (currentWord) => {
-      const languageName = LANGUAGE_NAMES[targetLang] || "the target language";
-      const scriptName = getScriptName(targetLang, uiLang);
-      const letterNameForPrompt = getLetterName(letter, uiLang) || letter.name || letter.letter;
-      const avoidClause = currentWord
-        ? `\n- Do NOT use the word "${currentWord}" - generate a DIFFERENT word.`
-        : "";
-      // Match word difficulty to the card's own generation band: base
-      // alphabet cards (no cefrLevel) stay beginner-friendly, generated
-      // cards keep the difficulty they were created at.
-      const wordBand = getPhonicsBand(letter?.cefrLevel || "Pre-A1");
-      const difficultyClause =
-        wordBand === "advanced"
-          ? "The word may be less common — pick vocabulary that exercises an advanced learner's pronunciation."
-          : wordBand === "intermediate"
-            ? "Keep the word common but not trivial — everyday vocabulary an intermediate learner should know."
-            : "Keep the word simple (2-4 syllables) and common.";
-      const prompt = `Generate one ${languageName} practice word that starts with the ${languageName} letter/syllable "${letter.letter}" (${letterNameForPrompt}). Respond ONLY with JSON in this shape:
-{"word":"<${languageName} word in native script>","meaning_en":"<short english meaning>","meaning_es":"<short spanish meaning>","meaning_it":"<short italian meaning>","meaning_fr":"<short french meaning>","meaning_ja":"<short Japanese meaning>","meaning_hi":"<short Hindi meaning>","meaning_ar":"<short Egyptian Arabic meaning>","meaning_zh":"<short Mandarin Chinese meaning>"}
-- Use ${scriptName}.
-- ${difficultyClause}${avoidClause}
-- Do not add any extra text.`;
-
-      try {
-        const raw = await callResponses({
-          model: DEFAULT_RESPONSES_MODEL,
-          input: prompt,
-        });
-        const jsonMatch = raw.match(/\{[\s\S]*\}/);
-        const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
-        const word = String(parsed.word || "").trim();
-        const meaning = normalizeMeaning({
-          en: parsed.meaning_en || parsed.meaning || "",
-          es: parsed.meaning_es || parsed.meaning || "",
-          it: parsed.meaning_it || parsed.meaning || "",
-          fr: parsed.meaning_fr || parsed.meaning || "",
-          ja: parsed.meaning_ja || parsed.meaning || "",
-          hi: parsed.meaning_hi || parsed.meaning || "",
-          ar: parsed.meaning_ar || parsed.meaning || "",
-          zh: parsed.meaning_zh || parsed.meaning || "",
-        });
-
-        if (!word) return null;
-
-        return { word, meaning };
-      } catch (error) {
-        console.error("Failed to generate practice word:", error);
-        return null;
-      }
-    },
-    [
-      letter.letter,
-      letter.name,
-      letter.nameAr,
-      letter.nameHi,
-      letter.nameJa,
-      letter.nameZh,
-      letter.cefrLevel,
-      targetLang,
-      uiLang,
-    ],
-  );
+  const getAuthoredPracticeWord = useCallback(async () => ({
+    word: letter.practiceWord, meaning: letter.practiceWordMeaning,
+  }), [letter.practiceWord, letter.practiceWordMeaning]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -2021,14 +1276,14 @@ function LetterCard({
     <Box
       position="relative"
       w="100%"
-      minH={{ base: "320px", md: "340px" }}
       sx={{ perspective: "1000px" }}
     >
+      <PhonicsCardStack count={stackCount}>
       <MotionBox
         w="100%"
         h="100%"
         display="grid"
-        gridTemplateColumns="1fr"
+        gridTemplateColumns="minmax(0, 1fr)"
         style={{ transformStyle: "preserve-3d" }}
         animate={{ rotateY: isFlipped ? 180 : 0 }}
         transition={{ duration: 0.5, ease: "easeInOut" }}
@@ -2037,6 +1292,7 @@ function LetterCard({
         <VStack
           gridArea="1 / 1"
           w="100%"
+          minW={0}
           h="100%"
           align="center"
           justify="center"
@@ -2108,8 +1364,8 @@ function LetterCard({
 
           <VStack spacing={3} align="center" textAlign="center" w="100%">
             <Flex align="center" justify="center" w="100%" gap={3} minH="48px">
-              <VStack spacing={1} align="center">
-                <Text fontSize="2xl" fontWeight="bold">
+              <VStack spacing={1} align="center" minW={0}>
+                <Text fontSize="2xl" fontWeight="bold" overflowWrap="anywhere">
                   {letter.letter}
                 </Text>
                 {displayName ? (
@@ -2121,6 +1377,7 @@ function LetterCard({
               {onPlay && (
                 <Flex
                   as="button"
+                  flexShrink={0}
                   aria-label={uiText(uiLang, "playSound")}
                   align="center"
                   justify="center"
@@ -2159,6 +1416,7 @@ function LetterCard({
         <VStack
           gridArea="1 / 1"
           w="100%"
+          minW={0}
           h="100%"
           align="center"
           justify="center"
@@ -2210,12 +1468,13 @@ function LetterCard({
           {isGeneratingWord && !practiceWord ? (
             <Spinner size="md" color="teal.400" my={2} />
           ) : (
-            <HStack spacing={2} align="center">
-              <Text fontSize="2xl" fontWeight="black" color={APP_TEXT_PRIMARY}>
+            <HStack spacing={2} align="center" justify="center" w="full">
+              <Text fontSize="2xl" fontWeight="black" color={APP_TEXT_PRIMARY} minW={0} overflowWrap="anywhere" textAlign="center">
                 {highlightedPracticeWord.map((part, index) => (
                   <Text
                     key={`${part.text}-${index}`}
                     as="span"
+                    overflowWrap="anywhere"
                     color={part.highlight ? "green.500" : APP_TEXT_PRIMARY}
                   >
                     {part.text}
@@ -2224,6 +1483,7 @@ function LetterCard({
               </Text>
               <IconButton
                 aria-label={uiText(uiLang, "playWord")}
+                flexShrink={0}
                 icon={isLoadingTts ? <Spinner size="xs" /> : <FiVolume2 />}
                 size="sm"
                 variant="ghost"
@@ -2247,12 +1507,11 @@ function LetterCard({
           {isGrading ? (
             <VStack spacing={2} py={2}>
               <VoiceOrb
-                state={
-                  ["idle", "listening", "speaking"][
-                    Math.floor(Math.random() * 3)
-                  ]
-                }
-                size={32}
+                variant="tutor"
+                state="thinking"
+                size={52}
+                force3D
+                showShadow={false}
               />
               <Text fontSize="xs" color={APP_TEXT_SECONDARY}>
                 {uiText(uiLang, "grading")}
@@ -2285,7 +1544,7 @@ function LetterCard({
                         onClick={handleNext}
                         _hover={{ bg: "green.400" }}
                       >
-                        {uiText(uiLang, onCardCollected ? "next" : "nextWord")}
+                        {onCardCollected ? uiText(uiLang, "next") : PHONICS_CONTROLS[uiLang].repeat}
                       </Button>
                     )}
                   </>
@@ -2321,33 +1580,28 @@ function LetterCard({
                 {!useDock && (
                   <Button
                     size="md"
-                    colorScheme={
-                      isRecording ? undefined : isConnecting ? "yellow" : "teal"
-                    }
-                    bg={isRecording ? SOFT_STOP_BUTTON_BG : undefined}
-                    boxShadow={isRecording ? "0px 4px 0px #e03767" : undefined}
-                    color={isRecording ? "white" : undefined}
+                    colorScheme={isConnecting ? "yellow" : "teal"}
                     leftIcon={
                       isConnecting ? (
                         <Spinner size="xs" />
-                      ) : isRecording ? (
-                        <FaStop />
-                      ) : (
+                      ) : !isRecording ? (
                         <FaMicrophone />
-                      )
+                      ) : undefined
                     }
                     onClick={handleRecord}
-                    isDisabled={!supportsSpeech || isConnecting}
+                    isDisabled={!supportsSpeech || isConnecting || isEvaluating}
+                    isLoading={isEvaluating}
                     _hover={{
                       transform: "scale(1.02)",
-                      ...(isRecording ? { bg: SOFT_STOP_BUTTON_HOVER_BG } : {}),
                     }}
                   >
-                    {isConnecting
-                      ? uiText(uiLang, "connecting")
-                      : isRecording
-                      ? uiText(uiLang, "stop")
-                      : uiText(uiLang, "record")}
+                    {isConnecting ? (
+                      uiText(uiLang, "connecting")
+                    ) : isRecording ? (
+                      <VoiceWaveIcon stream={stream} size={18} color="currentColor" />
+                    ) : (
+                      uiText(uiLang, "record")
+                    )}
                   </Button>
                 )}
               </>
@@ -2355,6 +1609,7 @@ function LetterCard({
           )}
         </VStack>
       </MotionBox>
+      </PhonicsCardStack>
 
       {useDock && (
         <QuestionActionArea
@@ -2362,9 +1617,7 @@ function LetterCard({
           actions={
             <ActivityActionRow
               tone={
-                isRecording
-                  ? "stop"
-                  : showResult && isCorrect
+                showResult && isCorrect
                   ? "success"
                   : isPracticeMode && !showResult
                   ? "speak"
@@ -2372,18 +1625,19 @@ function LetterCard({
               }
               primary={
                 <Button
-                  key={isRecording ? "stop" : "record"}
-                  colorScheme={isRecording ? "pink" : "teal"}
-                  isLoading={isGeneratingWord || isGrading || isConnecting}
+                  key={isPracticeMode && isRecording ? "listening" : "record"}
+                  colorScheme="teal"
+                  isLoading={isGeneratingWord || isGrading || isConnecting || isEvaluating}
                   isDisabled={
                     isGeneratingWord ||
                     isGrading ||
                     isConnecting ||
+                    isEvaluating ||
                     (isPracticeMode && !supportsSpeech)
                   }
                   leftIcon={
-                    isPracticeMode && !showResult ? (
-                      isRecording ? <FaStop /> : <FaMicrophone />
+                    isPracticeMode && !showResult && !isRecording ? (
+                      <FaMicrophone />
                     ) : undefined
                   }
                   onClick={
@@ -2404,11 +1658,13 @@ function LetterCard({
                       : uiText(uiLang, "practice")
                     : showResult
                     ? isCorrect
-                      ? uiText(uiLang, onCardCollected ? "next" : "nextWord")
+                      ? (onCardCollected ? uiText(uiLang, "next") : PHONICS_CONTROLS[uiLang].repeat)
                       : uiText(uiLang, "tryAgain")
-                    : isRecording
-                    ? uiText(uiLang, "stop")
-                    : uiText(uiLang, "record")}
+                    : isRecording ? (
+                        <VoiceWaveIcon stream={stream} size={20} color="currentColor" />
+                      ) : (
+                        uiText(uiLang, "record")
+                      )}
                 </Button>
               }
             >
@@ -2443,217 +1699,122 @@ function LetterCard({
   );
 }
 
-const withLocalizedAlphabetSupport = (letters) =>
-  withChineseAlphabetSupport(
-    withArabicAlphabetSupport(
-      withHindiAlphabetSupport(
-        withJapaneseAlphabetSupport(
-          withFrenchAlphabetSupport(
-            withGermanAlphabetSupport(
-              withItalianAlphabetSupport(withPortugueseAlphabetSupport(letters)),
-            ),
-          ),
-        ),
-      ),
-    ),
-  );
-
-const LANGUAGE_ALPHABETS = {
-  ru: withLocalizedAlphabetSupport(RUSSIAN_ALPHABET),
-  ja: withLocalizedAlphabetSupport(JAPANESE_ALPHABET),
-  en: withLocalizedAlphabetSupport(ENGLISH_ALPHABET),
-  es: withLocalizedAlphabetSupport(SPANISH_ALPHABET),
-  pt: withLocalizedAlphabetSupport(PORTUGUESE_ALPHABET),
-  fr: withLocalizedAlphabetSupport(FRENCH_ALPHABET),
-  it: withLocalizedAlphabetSupport(ITALIAN_ALPHABET),
-  nl: withLocalizedAlphabetSupport(DUTCH_ALPHABET),
-  de: withLocalizedAlphabetSupport(GERMAN_ALPHABET),
-  nah: withLocalizedAlphabetSupport(NAHUATL_ALPHABET),
-  el: withLocalizedAlphabetSupport(GREEK_ALPHABET),
-  pl: withLocalizedAlphabetSupport(POLISH_ALPHABET),
-  ga: withLocalizedAlphabetSupport(IRISH_ALPHABET),
-  yua: withLocalizedAlphabetSupport(YUCATEC_MAYA_ALPHABET),
-};
-
-// Fisher-Yates shuffle
-function shuffleArray(arr) {
-  const shuffled = [...arr];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
-}
-
-// Routed repair (deep-seed): when the Daily Quest sends a phonics repair here,
-// move the exact weak letter/sound card (matched by the id captured at
-// mistake-time, see captureCompanionMemory's sourceContext above) to the front
-// of the deck so the very first card practiced IS the repair, instead of a
-// random one. No match (e.g. the card was a generated round that's since
-// expired) → deck order is left untouched, a safe no-op.
-function reorderDeckForRepairFocus(cards) {
-  const focus = currentRepairFocus();
-  if (focus?.surface !== "alphabet") return cards;
-  const targetIds = new Set(
-    (focus.plan?.items || []).map((it) => it.sourceContext).filter(Boolean),
-  );
-  if (!targetIds.size) return cards;
-  const matched = cards.filter((c) => targetIds.has(c.id));
-  if (!matched.length) return cards;
-  const rest = cards.filter((c) => !targetIds.has(c.id));
-  return [...matched, ...rest];
-}
-
 export default function AlphabetBootcamp({
   appLanguage = "en",
   targetLang,
   npub,
-  languageXp = 0,
-  // Learner-context level used to tag companion-memory captures on BASE
-  // alphabet cards (generated cards carry their own generation level).
   cefrLevel = "Pre-A1",
-  // Bounds for generated-deck difficulty: placement seeds the deck ladder,
-  // the ceiling (highest UNLOCKED lesson/flashcard level) caps it.
   placementLevel = null,
-  courseCeilingLevel = null,
+  onFocusedPracticeUnavailable,
   pauseMs = 2000,
 }) {
   const uiLang = normalizeSupportLanguage(appLanguage, DEFAULT_SUPPORT_LANGUAGE);
   const isLightTheme = useThemeStore((s) => s.themeMode) === "light";
-  const alphabet = LANGUAGE_ALPHABETS[targetLang] || RUSSIAN_ALPHABET;
+  const playSound = useSoundSettings((s) => s.playSound);
+  const accountScope = [npub || "guest", targetLang].join(":");
+  const [courseProgressState, setCourseProgressState] = useState({ scope: null, counts: {} });
+  const courseCounts = courseProgressState.scope === accountScope ? courseProgressState.counts : {};
+  const curriculumCards = useMemo(() => PHONICS_LEVELS.flatMap(level => getAuthoredPhonicsDeck(targetLang, uiLang, level)), [targetLang, uiLang]);
+  const courseProgress = getPhonicsCourseProgress({ cards: curriculumCards, counts: courseCounts, placementLevel, courseLevel: cefrLevel });
+  const initialLevel = courseProgress.entryLevel;
+  const scope = [accountScope, initialLevel].join(":");
+  const [levelSelection, setLevelSelection] = useState(null);
+  const masterUnlocked = isMasterUnlockActive(npub);
+  const activeLevel = resolvePhonicsLevel(levelSelection?.scope === scope ? levelSelection.level : courseProgress.unlockedLevel, courseProgress.unlockedLevel, masterUnlocked);
+  const alphabet = useMemo(() => getAuthoredPhonicsDeck(targetLang, uiLang, activeLevel), [targetLang, uiLang, activeLevel]);
+  const knownCountsRef = useRef({ scope: null, counts: {} });
+  const rememberCourseCounts = useCallback((counts) => {
+    const known = knownCountsRef.current.scope === accountScope ? knownCountsRef.current.counts : {};
+    for (const [id, count] of Object.entries(counts)) known[id] = Math.max(known[id] || 0, count);
+    knownCountsRef.current = { scope: accountScope, counts: known };
+    setCourseProgressState(previous => {
+      const merged = previous.scope === accountScope ? { ...previous.counts } : {};
+      for (const [id, count] of Object.entries(counts)) merged[id] = Math.max(merged[id] || 0, count);
+      return { scope: accountScope, counts: merged };
+    });
+  }, [accountScope]);
+  const handleLevelChange = useCallback((level) => {
+    if (!canAccessPhonicsLevel(level, courseProgress.unlockedLevel, masterUnlocked)) return;
+    playSound(selectSound);
+    setLevelSelection({ scope, level });
+  }, [courseProgress.unlockedLevel, masterUnlocked, scope, playSound]);
+  const controls = PHONICS_CONTROLS[uiLang];
   const repairFocus = useRepairFocusStore(s => s.focus);
   const goalFocus = useGoalFocusStore(s => s.focus);
-  const focusedPractice = currentGoalFocus("alphabet") || (repairFocus?.surface === "alphabet" && repairFocus.targetLang === targetLang && repairFocus.npub === npub ? repairFocus : null);
+  const activeGoal = goalFocus ? currentGoalFocus("alphabet") : null;
+  const focusedPractice = (activeGoal?.targetLang === targetLang && activeGoal?.npub === npub ? activeGoal : null) || (repairFocus?.surface === "alphabet" && repairFocus.targetLang === targetLang && repairFocus.npub === npub ? repairFocus : null);
   const playerRef = useRef(null);
   const playbackRequestRef = useRef(0);
-  const playSound = useSoundSettings((s) => s.playSound);
   const [playingId, setPlayingId] = useState(null);
   const [loadingId, setLoadingId] = useState(null);
-  const [currentXp, setCurrentXp] = useState(languageXp);
-  const [savedPracticeWords, setSavedPracticeWords] = useState({});
+  const localCompletionRef = useRef({});
+  const completionScopeRef = useRef(null);
   const [savedCorrectCounts, setSavedCorrectCounts] = useState({});
 
   // Deck-based state
   const [deck, setDeck] = useState([]);
   const [collectedLetters, setCollectedLetters] = useState([]);
   const [isInitialized, setIsInitialized] = useState(false);
-  // Generated phonics units beyond the base alphabet (persisted to Firestore),
-  // plus a flag shown while a fresh deck is being generated.
-  const [generatedCards, setGeneratedCards] = useState([]);
+  const [generatedState, setGeneratedState] = useState({ scope: null, cards: [] });
+  const generationScope = [accountScope, uiLang, activeLevel].join(":");
+  const generatedCards = useMemo(() => generatedState.scope === generationScope ? generatedState.cards : [], [generatedState, generationScope]);
+  const generatedRecordsRef = useRef({ scope: null, records: [] });
+  const generationScopeRef = useRef(generationScope);
+  generationScopeRef.current = generationScope;
+  const generationRequestRef = useRef(0);
   const [isGeneratingDeck, setIsGeneratingDeck] = useState(false);
   const toast = useToast();
-
-  // Update currentXp when languageXp prop changes
   useEffect(() => {
-    setCurrentXp(languageXp);
-  }, [languageXp]);
+    setIsGeneratingDeck(false);
+    return () => { generationRequestRef.current += 1; };
+  }, [generationScope]);
+  const handleNextLevel = useCallback(() => {
+    const index = PHONICS_LEVELS.indexOf(activeLevel);
+    if (index < PHONICS_LEVELS.length - 1) {
+      handleLevelChange(PHONICS_LEVELS[index + 1]);
+    }
+  }, [activeLevel, handleLevelChange]);
 
-  const handleXpAwarded = (xp) => {
-    setCurrentXp((prev) => prev + xp);
-  };
-
-  // Generate an entirely new deck of fresh phonics units (digraphs, blends,
-  // syllables, less-common sounds) beyond what's already been seen. Completed
-  // cards are never touched — the collection only grows — and the new units are
-  // persisted so they survive reloads.
   const handleNewRound = useCallback(async () => {
-    if (isGeneratingDeck) return;
+    if (isGeneratingDeck || !isInitialized || focusedPractice || deck.length || collectedLetters.length < alphabet.length) return;
+    const request = ++generationRequestRef.current;
     playSound(selectSound);
     setIsGeneratingDeck(true);
     try {
-      const existing = [...alphabet, ...generatedCards]
-        .map((c) => c.letter)
-        .filter(Boolean);
-      // A new round is only reachable once every card is collected, so at this
-      // moment generatedCards holds exactly the finished decks — count them to
-      // climb the phonics ladder (round, not floor, tolerates short decks when
-      // the model returned fewer than NEW_DECK_SIZE valid units).
-      const completedDeckCount = Math.round(
-        generatedCards.length / NEW_DECK_SIZE,
-      );
-      const ladderLevel = getPhonicsGenerationLevel({
-        completedDeckCount,
-        placementLevel,
-        courseCeilingLevel,
+      const savedRounds = generatedRecordsRef.current.scope === accountScope ? generatedRecordsRef.current.records : [];
+      const newCards = await generateSupplementalPhonicsDeck({
+        target: targetLang, support: uiLang, level: activeLevel,
+        batchId: Date.now() * 1000 + Math.floor(Math.random() * 1000),
+        existingWords: [...new Set([
+          ...[...curriculumCards, ...generatedCards].map(card => card.practiceWord),
+          ...savedRounds.map(record => record.currentWord).filter(word => typeof word === "string" && word.trim()),
+        ])],
       });
-      const storedRating = Number(useUserStore.getState().user?.learningIntelligence?.[targetLang]?.elo?.rating);
-      const generationLevel = Number.isFinite(storedRating)
-        ? practiceLevelForElo(scoreForUser(useUserStore.getState().user, targetLang))
-        : ladderLevel;
-      const units = await generateNewPhonicsUnits(
-        targetLang,
-        uiLang,
-        existing,
-        NEW_DECK_SIZE,
-        generationLevel,
-      );
-      if (!units.length) {
-        toast({
-          title: uiText(uiLang, "generateDeckError"),
-          status: "error",
-          duration: 3000,
-        });
-        return;
-      }
-      const stamp = Date.now();
-      const newCards = units.map((u, i) =>
-        buildGeneratedCard(u, uiLang, `gen_${stamp}_${i}`, generationLevel),
-      );
-      await Promise.all(
-        newCards.map((c) => saveGeneratedPhonicsUnit(npub, targetLang, c)),
-      );
-      setGeneratedCards((prev) => [...prev, ...newCards]);
-      setSavedPracticeWords((prev) => {
-        const next = { ...prev };
-        newCards.forEach((c) => {
-          if (c.practiceWord) {
-            next[c.id] = {
-              word: c.practiceWord,
-              meaning: c.practiceWordMeaning,
-            };
-          }
-        });
-        return next;
-      });
-      // New deck = the freshly generated units; the collection is left intact.
-      setDeck((prev) => [...prev, ...shuffleArray(newCards)]);
-      if (typeof window !== "undefined") {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }
+      if (request !== generationRequestRef.current || generationScopeRef.current !== generationScope) return;
+      await saveSupplementalPhonicsDeck(npub, newCards);
+      if (request !== generationRequestRef.current || generationScopeRef.current !== generationScope) return;
+      const records = generatedRecordsRef.current.scope === accountScope ? generatedRecordsRef.current.records : [];
+      generatedRecordsRef.current = { scope: accountScope, records: [...records, ...newCards.map(supplementalPhonicsRecord)] };
+      setGeneratedState({ scope: generationScope, cards: [...generatedCards, ...newCards] });
+      setDeck(newCards);
     } catch (error) {
-      console.error("Failed to generate a new phonics deck:", error);
-      toast({
-        title: uiText(uiLang, "generateDeckError"),
-        status: "error",
-        duration: 3000,
-      });
+      console.warn("New phonics deck unavailable:", error);
+      if (request === generationRequestRef.current && generationScopeRef.current === generationScope) toast({ title: uiText(uiLang, "generateDeckError"), status: "error", duration: 4000 });
     } finally {
-      setIsGeneratingDeck(false);
+      if (request === generationRequestRef.current) setIsGeneratingDeck(false);
     }
-  }, [
-    alphabet,
-    courseCeilingLevel,
-    generatedCards,
-    isGeneratingDeck,
-    npub,
-    placementLevel,
-    playSound,
-    targetLang,
-    toast,
-    uiLang,
-  ]);
+  }, [isGeneratingDeck, isInitialized, focusedPractice, deck.length, collectedLetters.length, alphabet.length, playSound, targetLang, uiLang, activeLevel, curriculumCards, generatedCards, generationScope, accountScope, npub, toast]);
 
   const targetLanguage = getLanguageName(targetLang, uiLang);
   const headline = uiText(uiLang, "alphabetHeadline", {
     language: targetLanguage,
   });
-  const subhead = uiText(uiLang, "alphabetSubhead", {
-    language: targetLanguage,
-  });
-  const note = uiText(uiLang, "note");
+  const subhead = controls.subhead;
   const hasLetters = Array.isArray(alphabet) && alphabet.length;
-  // Total known cards = base alphabet + every generated phonics unit so far.
-  const totalCards = (alphabet?.length || 0) + generatedCards.length;
+  // One selected, explicitly authored collection.
+  const totalCards = focusedPractice ? deck.length + collectedLetters.length : alphabet.length + generatedCards.length;
+  const displayCompleted = [...alphabet, ...generatedCards].filter(card => Number.isSafeInteger(courseCounts[card.id]) && courseCounts[card.id] > 0).length;
+  const displayPercentage = totalCards ? Math.round(displayCompleted / totalCards * 100) : 0;
   const isComplete =
     hasLetters &&
     isInitialized &&
@@ -2661,26 +1822,39 @@ export default function AlphabetBootcamp({
     totalCards > 0 &&
     collectedLetters.length >= totalCards;
 
-  // XP progress calculations
-  const xpLevelNumber = Math.floor(currentXp / 100) + 1;
-  const nextLevelProgressPct = currentXp % 100;
-
-  const handlePracticeWordUpdated = useCallback((letterId, word, meaning) => {
-    setSavedPracticeWords((prev) => ({
-      ...prev,
-      [letterId]: { word, meaning: normalizeMeaning(meaning) },
-    }));
-  }, []);
+  useEffect(() => {
+    if (!npub || !isInitialized || focusedPractice) return;
+    let observedRecords = [];
+    const observer = createPhonicsCompletionObserver({ language: targetLang, baseCards: curriculumCards,
+      onProgress: proof => {
+        void awardProgressionAchievements({ npub, source: "nosabos", ...proof, events: [...proof.events, ...supplementalPhonicsEvents(targetLang, observedRecords)] })
+          .catch(error => console.warn("Phonics achievements:", error));
+      },
+    });
+    const stop = onSnapshot(
+      query(collection(database, "users", npub, "alphabetPractice"), where("targetLang", "==", targetLang)),
+      { includeMetadataChanges: true }, snapshot => {
+        observedRecords = snapshot.docs.map(document => document.data());
+        rememberCourseCounts(partitionPhonicsProgress(curriculumCards, observedRecords).counts);
+        observer.receive(snapshot);
+      },
+      error => console.warn("Phonics achievements:", error),
+    );
+    return () => { observer.dispose(); stop(); };
+  }, [npub, targetLang, isInitialized, focusedPractice, curriculumCards, rememberCourseCounts]);
 
   // When a card is successfully practiced, move it from deck to collection
   const handleCardCollected = useCallback((letterId) => {
+    setLevelSelection(previous => previous?.scope === scope ? previous : { scope, level: activeLevel });
+    localCompletionRef.current[letterId] = 1;
+    rememberCourseCounts({ [letterId]: 1 });
     setDeck((prevDeck) => {
       const cardIndex = prevDeck.findIndex((l) => l.id === letterId);
       if (cardIndex === -1) return prevDeck; // Already removed
 
       const card = prevDeck[cardIndex];
       // Add to collection
-      setCollectedLetters((prev) => [...prev, card]);
+      setCollectedLetters((prev) => prev.some(item => item.id === card.id) ? prev : [...prev, card]);
 
       // Remove from deck
       return prevDeck.filter((l) => l.id !== letterId);
@@ -2691,13 +1865,13 @@ export default function AlphabetBootcamp({
       ...prev,
       [letterId]: (prev[letterId] || 0) + 1,
     }));
-  }, []);
+  }, [rememberCourseCounts, scope, activeLevel]);
 
   const stopLetterPlayback = useCallback(() => {
     playbackRequestRef.current += 1;
     try {
       playerRef.current?.audio?.pause?.();
-    } catch {}
+    } catch { /* Audio may already have been released. */ }
     playerRef.current?.cleanup?.();
     playerRef.current = null;
     setPlayingId(null);
@@ -2775,125 +1949,66 @@ export default function AlphabetBootcamp({
   );
 
   useEffect(() => {
-    setSavedPracticeWords({});
-    setSavedCorrectCounts({});
-    setGeneratedCards([]);
-    setIsInitialized(false);
-
-    if (!npub) {
-      // No user - initialize deck with all letters shuffled
-      const shuffled = shuffleArray(alphabet);
-      setDeck(shuffled);
-      setCollectedLetters([]);
-      setIsInitialized(true);
-      return;
+    const completionScope = [npub || "guest", targetLang].join(":");
+    if (completionScopeRef.current !== completionScope) {
+      completionScopeRef.current = completionScope;
+      localCompletionRef.current = {};
     }
+    setSavedCorrectCounts({});
+    setDeck([]);
+    setCollectedLetters([]);
+    setIsInitialized(false);
     let cancelled = false;
-    const fallbackTimer = setTimeout(() => {
-      if (cancelled || focusedPractice) return;
-      setDeck((currentDeck) =>
-        currentDeck.length ? currentDeck : shuffleArray(alphabet),
-      );
-      setCollectedLetters((currentLetters) => currentLetters || []);
+    const apply = (cards, documents, initializeLevel = true) => {
+      if (cancelled) return;
+      const known = knownCountsRef.current.scope === accountScope ? knownCountsRef.current.counts : {};
+      const optimistic = Object.entries({ ...known, ...localCompletionRef.current }).map(([letterId, correctCount]) => ({ letterId, correctCount, targetLang }));
+      const cachedRecords = generatedRecordsRef.current.scope === accountScope ? generatedRecordsRef.current.records : [];
+      const records = [...documents, ...cachedRecords];
+      const extras = restoreSupplementalPhonics(targetLang, uiLang, activeLevel, records);
+      generatedRecordsRef.current = { scope: accountScope, records: [...new Map(records.filter(record => record.generated === true).map(record => [record.letterId, record])).values()] };
+      setGeneratedState({ scope: generationScope, cards: extras });
+      const progress = partitionPhonicsProgress([...cards, ...extras], [...records, ...optimistic]);
+      setSavedCorrectCounts(progress.counts);
+      rememberCourseCounts(progress.counts);
+      const loadedCourse = getPhonicsCourseProgress({ cards: curriculumCards, counts: progress.counts, placementLevel, courseLevel: cefrLevel });
+      if (initializeLevel) setLevelSelection(previous => previous?.scope === scope ? previous : { scope, level: loadedCourse.unlockedLevel });
+      setDeck(progress.remaining);
+      setCollectedLetters(progress.collected);
       setIsInitialized(true);
-    }, 2500);
-
-    const loadProgress = async () => {
+    };
+    // Never substitute ordinary cards for a focused objective while its
+    // captured outcomes load. Ordinary authored cards remain usable offline.
+    const fallback = focusedPractice ? null : setTimeout(() => apply(alphabet, [], false), 2500);
+    const load = async () => {
       try {
         if (focusedPractice) {
           const artifact = await getFocusedPhonicsDeck(focusedPractice, alphabet);
-          if (!cancelled) {
-            clearTimeout(fallbackTimer);
-            setDeck(artifact.cards.filter(c => !artifact.outcomes[c.id]?.success));
-            setCollectedLetters(artifact.cards.filter(c => artifact.outcomes[c.id]?.success));
-            setIsInitialized(true);
+          if (cancelled) return;
+          clearTimeout(fallback);
+          if (artifact.requiresTutor) {
+            onFocusedPracticeUnavailable?.(focusedPractice);
+            return;
           }
+          setDeck(artifact.cards.filter(card => !artifact.outcomes[card.id]?.success));
+          setCollectedLetters(artifact.cards.filter(card => artifact.outcomes[card.id]?.success));
+          setIsInitialized(true);
           return;
         }
-        // Load practice words and correctCounts from subcollection
-        const snapshot = await getDocs(
-          query(
-            collection(database, "users", npub, "alphabetPractice"),
-            where("targetLang", "==", targetLang),
-            limit(250),
-          ),
-        );
-
-        const mapped = {};
-        const correctCounts = {};
-        const collectedIds = new Set();
-        const loadedGenerated = [];
-
-        snapshot.forEach((docSnap) => {
-          const data = docSnap.data();
-          if (data?.letterId) {
-            if (data?.currentWord) {
-              mapped[data.letterId] = {
-                word: data.currentWord,
-                meaning: normalizeMeaning(data.currentMeaning),
-              };
-            }
-            if (data?.correctCount) {
-              correctCounts[data.letterId] = data.correctCount;
-              // Cards with at least 1 correct are "collected"
-              if (data.correctCount >= 1) {
-                collectedIds.add(data.letterId);
-              }
-            }
-            // Rebuild generated phonics units (beyond the base alphabet) so the
-            // grown collection + any unfinished deck survive reloads, keeping
-            // their localized pronunciation guide + tip.
-            if (data.generated) {
-              loadedGenerated.push({
-                id: data.letterId,
-                letter: data.grapheme || "",
-                tts: data.tts || "",
-                type: "sound",
-                generated: true,
-                cefrLevel: data.cefrLevel || null,
-                ...pickGeneratedDisplayFields(data),
-              });
-            }
-          }
-        });
-
-        if (!cancelled) {
-          clearTimeout(fallbackTimer);
-          setSavedPracticeWords(mapped);
-          setSavedCorrectCounts(correctCounts);
-          setGeneratedCards(loadedGenerated);
-
-          // Deck = every known card (alphabet + generated) not yet collected;
-          // the collection keeps everything cleared so far.
-          const allCards = [...alphabet, ...loadedGenerated];
-          const uncollected = allCards.filter((c) => !collectedIds.has(c.id));
-          const collected = allCards.filter((c) => collectedIds.has(c.id));
-
-          setDeck(reorderDeckForRepairFocus(shuffleArray(uncollected)));
-          setCollectedLetters(collected);
-          setIsInitialized(true);
-        }
+        if (!npub) { clearTimeout(fallback); apply(alphabet, []); return; }
+        const snapshot = await getDocs(query(collection(database, "users", npub, "alphabetPractice"), where("targetLang", "==", targetLang)));
+        clearTimeout(fallback);
+        apply(alphabet, snapshot.docs.map(item => item.data()));
       } catch (error) {
-        console.error("Failed to load alphabet progress:", error);
-        if (!cancelled) {
-          clearTimeout(fallbackTimer);
-          setSavedPracticeWords({});
-          setSavedCorrectCounts({});
-          // Fallback: all letters in deck
-          setDeck(reorderDeckForRepairFocus(shuffleArray(alphabet)));
-          setCollectedLetters([]);
-          setIsInitialized(true);
-        }
+        console.warn("Phonics progress unavailable:", error);
+        clearTimeout(fallback);
+        if (focusedPractice) onFocusedPracticeUnavailable?.(focusedPractice);
+        else apply(alphabet, []);
       }
     };
-
-    loadProgress();
-
-    return () => {
-      cancelled = true;
-      clearTimeout(fallbackTimer);
-    };
-  }, [npub, targetLang, alphabet, repairFocus, goalFocus, focusedPractice]);
+    void load();
+    return () => { cancelled = true; clearTimeout(fallback); };
+  }, [npub, targetLang, alphabet, focusedPractice, onFocusedPracticeUnavailable, curriculumCards, placementLevel, cefrLevel, scope, rememberCourseCounts, accountScope, generationScope, uiLang, activeLevel]);
 
   useEffect(() => {
     return () => {
@@ -2910,35 +2025,31 @@ export default function AlphabetBootcamp({
       px={6}
       pt={{ base: 5, md: 6 }}
     >
-      <Heading
-        size="md"
-        color={APP_TEXT_PRIMARY}
-        zIndex={10}
-        textAlign={"center"}
-      >
-        {headline}
-      </Heading>
-      <Text
-        color={APP_TEXT_SECONDARY}
-        zIndex={10}
-        textAlign="center"
-        mt="-4"
-        fontSize="sm"
-      >
-        {subhead}
-      </Text>
-      {/* <Alert status="info" borderRadius="lg" bg="blue.900" color="white">
-        <AlertIcon />
-        {note}
-      </Alert> */}
+      {focusedPractice ? (
+        <>
+          <Heading size="md" color={APP_TEXT_PRIMARY} zIndex={10} textAlign="center">{headline}</Heading>
+          <Text color={APP_TEXT_SECONDARY} zIndex={10} textAlign="center" mt="-4" fontSize="sm">{subhead}</Text>
+        </>
+      ) : (
+        <Box w="100%" zIndex={10}>
+          <CEFRLevelNavigator currentLevel={courseProgress.unlockedLevel} activeCEFRLevel={activeLevel}
+            onLevelChange={handleLevelChange} levelProgress={courseProgress.levels[activeLevel].percentage}
+            supportLang={uiLang} levelCompletionStatus={courseProgress.levels} masterUnlocked={masterUnlocked} showCompletionBadge={false} />
+          <CourseProgressHeader activeLevel={activeLevel}
+            progressCount={{ completed: displayCompleted, total: totalCards, label: uiText(uiLang, "progress") }}
+            showLevelProgress={false} progressStart="#fbbf24" progressEnd="#f59e0b"
+            percentage={displayPercentage} supportLang={uiLang} />
+        </Box>
+      )}
 
       {!isInitialized ? (
         <Flex align="center" justify="center" py={12}>
           <VoiceOrb
-            state={
-              ["idle", "listening", "speaking"][Math.floor(Math.random() * 3)]
-            }
-            size={48}
+            variant="tutor"
+            state="thinking"
+            size={52}
+            force3D
+            showShadow={false}
           />
         </Flex>
       ) : hasLetters ? (
@@ -2947,7 +2058,7 @@ export default function AlphabetBootcamp({
           {deck.length > 0 ? (
             <VStack spacing={4} w="100%">
               {/* Progress bar showing completion */}
-              <Box w="100%" maxW="400px" mx="auto">
+              {focusedPractice && <Box w="100%" maxW="400px" mx="auto">
                 <HStack justify="space-between" mb={1}>
                   <Text fontSize="xs" color={APP_TEXT_SECONDARY}>
                     {uiText(uiLang, "progress")}
@@ -2966,33 +2077,30 @@ export default function AlphabetBootcamp({
                   start="#fbbf24"
                   end="#f59e0b"
                 />
-              </Box>
+              </Box>}
 
-              {/* Deck visual - stacked cards with top card active */}
+              {/* The card owns its stack so action-dock spacing cannot detach it. */}
               <Box position="relative" w="100%" maxW="400px" mx="auto">
                 {/* Top card (current card to practice) */}
                 <Box position="relative" zIndex={20}>
                   <LetterCard
                     playSound={playSound}
-                    key={deck[0].id}
+                    key={`${deck[0].id}:${uiLang}:${npub || "guest"}`}
                     dockActions
+                    stackCount={deck.length}
                     letter={deck[0]}
                     appLanguage={appLanguage}
                     targetLang={targetLang}
                     npub={npub}
-                    cefrLevel={cefrLevel}
+                    cefrLevel={activeLevel}
                     pauseMs={pauseMs}
-                    onXpAwarded={handleXpAwarded}
                     initialPracticeWord={
-                      savedPracticeWords[deck[0].id]?.word ||
                       deck[0].practiceWord
                     }
                     initialPracticeWordMeaning={
-                      savedPracticeWords[deck[0].id]?.meaning ||
                       deck[0].practiceWordMeaning
                     }
                     initialCorrectCount={savedCorrectCounts[deck[0].id] || 0}
-                    onPracticeWordUpdated={handlePracticeWordUpdated}
                     onCardCollected={handleCardCollected}
                     isPlaying={playingId === deck[0].id}
                     isLoading={loadingId === deck[0].id}
@@ -3000,27 +2108,6 @@ export default function AlphabetBootcamp({
                   />
                 </Box>
 
-                {/* Deck thickness indicator - stacked edges below */}
-                {deck.length > 1 && (
-                  <Box
-                    position="relative"
-                    zIndex={1}
-                    mt={{ base: "-60px", md: "-102px" }}
-                    mx="1px"
-                  >
-                    {[...Array(Math.min(deck.length - 1, 8))].map((_, i) => (
-                      <Box
-                        key={i}
-                        h="4px"
-                        bg={i % 2 === 0 ? "gray.600" : "gray.700"}
-                        borderBottomRadius={
-                          i === Math.min(deck.length - 2, 7) ? "lg" : "none"
-                        }
-                        mx={`${i * 1}px`}
-                      />
-                    ))}
-                  </Box>
-                )}
               </Box>
             </VStack>
           ) : (
@@ -3043,46 +2130,18 @@ export default function AlphabetBootcamp({
                     fontWeight="bold"
                     textAlign="center"
                   >
-                    {uiText(
-                      uiLang,
-                      generatedCards.length > 0 ? "deckComplete" : "complete",
-                    )}
+                    {controls.complete}
                   </Text>
-                  {isComplete && (
-                    <Box w="100%" pt={2}>
-                      <XpProgressHeader
-                        levelText={`${uiText(uiLang, "level")} ${xpLevelNumber}`}
-                        xpText={`XP ${currentXp}`}
-                        progressPct={nextLevelProgressPct}
-                        xpBadgeProps={{
-                          colorScheme: "teal",
-                          fontSize: "10px",
-                        }}
-                      />
-                    </Box>
-                  )}
                 </VStack>
               </Flex>
-              {isComplete && (
-                <VStack spacing={3}>
-                  <QuestionActionArea
-                    actions={
-                      <ActivityActionRow
-                        primary={
-                          <Button
-                            variant="outline"
-                            colorScheme="teal"
-                            size="lg"
-                            leftIcon={<RiRefreshLine />}
-                            onClick={handleNewRound}
-                            isLoading={isGeneratingDeck}
-                          >
-                            {uiText(uiLang, "newRound")}
-                          </Button>
-                        }
-                      />
-                    }
-                  />
+              {isComplete && !focusedPractice && (
+                <VStack spacing={3} w="full">
+                  <Button w="full" variant="outline" colorScheme="teal" size="lg"
+                    leftIcon={<RiRefreshLine />} onClick={handleNewRound} isLoading={isGeneratingDeck}
+                    spinner={<VoiceOrb variant="tutor" state="thinking" size={32} force3D showShadow={false} />}>
+                    {uiText(uiLang, "newRound")}
+                  </Button>
+                  {activeLevel !== "C2" && <Button variant="ghost" onClick={handleNextLevel} isDisabled={isGeneratingDeck}>{controls.next}</Button>}
                 </VStack>
               )}
             </VStack>
@@ -3105,24 +2164,21 @@ export default function AlphabetBootcamp({
               >
                 {collectedLetters.map((item) => (
                   <LetterCard
-                    key={item.id}
+                    key={`${item.id}:${uiLang}:${npub || "guest"}`}
                     playSound={playSound}
                     letter={item}
                     appLanguage={appLanguage}
                     targetLang={targetLang}
                     npub={npub}
-                    cefrLevel={cefrLevel}
+                    cefrLevel={activeLevel}
                     pauseMs={pauseMs}
-                    onXpAwarded={handleXpAwarded}
                     initialPracticeWord={
-                      savedPracticeWords[item.id]?.word || item.practiceWord
+                      item.practiceWord
                     }
                     initialPracticeWordMeaning={
-                      savedPracticeWords[item.id]?.meaning ||
                       item.practiceWordMeaning
                     }
                     initialCorrectCount={savedCorrectCounts[item.id] || 0}
-                    onPracticeWordUpdated={handlePracticeWordUpdated}
                     isPlaying={playingId === item.id}
                     isLoading={loadingId === item.id}
                     onPlay={handlePlayLetterAudio}

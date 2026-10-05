@@ -1,0 +1,29 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Orb motion studies</title>
+<style>body{background:#121a24;color:#e6edeb;font:14px system-ui;margin:20px}h1{font-size:20px;margin:0 0 6px}p{color:#a9b9b6;line-height:1.5}button,select{background:#283b3f;color:#e6edeb;border:1px solid #526764;border-radius:8px;padding:10px;margin:0 8px 12px 0}#orbs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}.card{background:#1b2532;border:1px solid #2a3943;border-radius:18px;text-align:center;padding:8px}.orb{width:100%;height:170px}canvas{width:100%;height:100%;display:block}.label{margin:0 0 8px;font-size:13px}.description{font-size:11px;line-height:1.4;color:#a9b9b6;margin:0 6px 10px}@media(max-width:700px){#orbs{grid-template-columns:repeat(2,minmax(0,1fr))}}</style></head>
+<body><h1>20 independent motion studies</h1><p>Original orb body · still poses · each surface generates its own moving colors.</p><button id="motion">Pause motion</button><button id="group">Show studies 11–20</button><select id="palette" aria-label="Study palettes"><option value="individual">Individual palettes</option><option value="ocean">Same ocean palette</option><option value="mint">Same mint palette</option></select><p id="status"></p><div id="orbs"></div>
+<script type="module">
+import { createOrbScene } from '/src/components/orbing/createOrbScene.js';
+import { PLAYGROUND_FLOW, PLAYGROUND_PALETTES, PLAYGROUND_EXPRESSIONS, resolvePlaygroundMood } from '/src/achievements/orbPresets.js';
+const studies=[['Ice floes','Plates drift apart; fissures widen and heal.'],['Radar','A rotating beam paints echoes and a fading wake.'],['Circuits','Charges travel along tracks and fill their cells.'],['Color columns','Independent columns pump pigment upward.'],['Silk','Rolling folds carry color through a fine weave.'],['Interference','Moving sources create crossing wavefronts.'],['Aurora','Curtains billow at three separate depths.'],['Plasma','Forked filaments carry traveling charges.'],['Blossom','Petals unfurl around a breathing center.'],['Crystal','Facets refract traveling bands of light.'],['Infinity','Figure-eight bands exchange color at crossings.'],['Rain','Falling beads leave long colored wakes.'],['Embers','Hot plumes rise, stretch and cool.'],['Nebula','Cloud volumes pass behind twinkling dust.'],['Pulse','Paired impulses diffuse outward from a trace.'],['Kaleidoscope','Mirrored chambers turn and prisms slide.'],['Tides','Water layers rise and fall with foamy crests.'],['Weaving','Ribbons exchange which passes over the other.'],['Mosaic','Color packets move between fixed pixels.'],['Corona','Convection churns beneath tongues of light.']];
+let group=0,paused=false,palette='individual',scenes=[];
+function show(){
+  scenes.forEach(scene=>scene.dispose());scenes=[];
+  document.querySelector('#orbs').replaceChildren();
+  Object.keys(PLAYGROUND_FLOW).slice(group*10,group*10+10).forEach((state,i)=>{
+    const n=group*10+i, card=document.createElement('div');card.className='card';
+    const host=document.createElement('div');host.className='orb';
+    const label=document.createElement('h2');label.className='label';label.textContent=`${String(n+1).padStart(2,'0')} · ${studies[n][0]}`;
+    const description=document.createElement('p');description.className='description';description.textContent=studies[n][1];
+    card.append(host,label,description);document.querySelector('#orbs').append(card);
+    const options={state,mood:'content',palette:palette==='individual'?PLAYGROUND_PALETTES[n].id:palette,palettes:PLAYGROUND_PALETTES,orbFlow:PLAYGROUND_FLOW,expressions:PLAYGROUND_EXPRESSIONS,resolveOrbMood:resolvePlaygroundMood,energy:0,voiceLevel:0,interactive:false,followPointer:false,dark:true,sharedRenderer:true,showShadow:true,reducedMotion:paused};
+    const scene=createOrbScene(host,options,e=>{label.textContent=`Failed: ${e}`;});
+    scenes.push({dispose:()=>scene.dispose(),update:next=>scene.update({...options,...next})});
+  });status();
+}
+function status(){document.querySelector('#status').textContent=`Studies ${group?11:1}–${group?20:10} · ${paused?'reduced motion':'moving'}`;}
+document.querySelector('#motion').onclick=()=>{paused=!paused;scenes.forEach(scene=>scene.update({reducedMotion:paused}));document.querySelector('#motion').textContent=paused?'Resume motion':'Pause motion';status();};
+document.querySelector('#group').onclick=()=>{group=1-group;document.querySelector('#group').textContent=group?'Show studies 1–10':'Show studies 11–20';show();};
+document.querySelector('#palette').onchange=e=>{palette=e.target.value;show();};
+show();
+</script></body></html>

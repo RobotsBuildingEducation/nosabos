@@ -13,7 +13,8 @@
     "tts:test": "npm --prefix cloudflare-tts-proxy test && node --test src/utils/tts.test.js src/utils/ttsCacheAudio.test.js",
     "generate:skill-tree-splits": "node scripts/generateSplitSkillTreeModules.mjs",
     "audit:curriculum": "node scripts/auditLessonCurriculum.mjs",
-    "test": "node --test src/**/*.test.js src/features/citizenship/*.test.js src/features/stories/*.test.js",
+    "test": "node --test src/**/*.test.js src/data/phonics/*.test.js src/features/citizenship/*.test.js src/features/stories/*.test.js",
+    "test:phonics": "node --test src/data/phonics/*.test.js src/utils/phonicsCourseProgress.test.js src/utils/focusedPracticeDecks.test.js src/achievements/phonicsProgress.test.js src/utils/placementContentAccess.test.js src/utils/supplementalPhonics.test.js",
     "lint": "eslint .",
     "preview": "vite preview"
   },

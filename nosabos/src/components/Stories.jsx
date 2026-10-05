@@ -1,3 +1,4 @@
+import { getSpeechPracticeErrorFeedback } from "../utils/speechPracticeFeedback.js";
 import { focusedLessonPrompt } from "../utils/learningIntelligenceModel";
 import ActivityActionRow from "./ActivityActionRow";
 import QuestionActionArea from "./QuestionActionArea";
@@ -74,6 +75,7 @@ import { getUserProficiencyLevel } from "../utils/cefrProgress";
 import { speechReasonTips } from "../utils/speechEvaluation";
 import { SpeakSuccessCard } from "./SpeakSuccessCard";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
+import VoiceWaveIcon from "./VoiceWaveIcon";
 import StoryLoadingScreen from "../features/stories/StoryLoadingScreen";
 import RandomCharacter from "./RandomCharacter";
 import useSoundSettings from "../hooks/useSoundSettings";
@@ -1393,9 +1395,7 @@ function SpeakingStoryMode({
 
       if (error) {
         toast({
-          title: t(effectiveLang, "story_audio_eval_error_title"),
-          description: t(effectiveLang, "story_audio_eval_error_desc"),
-          status: "error",
+          ...getSpeechPracticeErrorFeedback(error, (key) => t(effectiveLang, key)),
           duration: 2500,
           position: "top",
         });
@@ -1533,6 +1533,8 @@ function SpeakingStoryMode({
     stopRecording: stopSpeakRecording,
     isRecording: isSpeakRecording,
     isConnecting: isSpeakConnecting,
+    isEvaluating: isSpeakEvaluating,
+    stream: speakStream,
     supportsSpeech: supportsSpeak,
   } = useSpeechPractice({
     targetText: currentSentence?.tgt || "",
@@ -1543,6 +1545,7 @@ function SpeakingStoryMode({
 
   const isRecording = isSpeakRecording;
   const isConnecting = isSpeakConnecting;
+  const isEvaluating = isSpeakEvaluating;
 
   const handleTestSubmit = useCallback(
     (isCorrect = true) => {
@@ -2121,60 +2124,51 @@ function SpeakingStoryMode({
                 isEvaluatingAnswer || lastFeedback?.ok ? null : (
                   <ActivityActionRow
                     tone={
-                      isRecording
-                        ? "stop"
-                        : lastFeedback && !lastFeedback.ok
+                      lastFeedback && !lastFeedback.ok
                         ? "danger"
                         : "speak"
                     }
                     primary={
                       <Button
-                        key={isRecording ? "stop" : "record"}
+                        key={isRecording ? "listening" : "record"}
                         onClick={handleRecordPress}
                         size="lg"
                         height="60px"
                         px={8}
                         rounded="full"
                         bg={
-                          isRecording
-                            ? SOFT_STOP_BUTTON_BG
-                            : isConnecting
+                          isConnecting
                             ? "linear-gradient(135deg, #eab308 0%, #ca8a04 100%)"
                             : STORY_PRIMARY_BUTTON_BG
                         }
                         boxShadow={
-                          isRecording
-                            ? `0px 4px 0px ${SOFT_STOP_BUTTON_EDGE}`
-                            : isConnecting
+                          isConnecting
                             ? "0px 4px 0px #eab308"
                             : `0px 4px 0px ${STORY_PRIMARY_BUTTON_EDGE}`
                         }
                         color="white"
                         fontWeight="600"
                         fontSize="lg"
+                        isLoading={isEvaluating || isConnecting}
                         leftIcon={
-                          isConnecting ? null : isRecording ? (
-                            <FaStop />
-                          ) : (
+                          isConnecting ? null : !isRecording ? (
                             <FaMicrophone />
-                          )
+                          ) : undefined
                         }
-                        isDisabled={!supportsSpeak || !currentSentence?.tgt || isConnecting}
+                        isDisabled={!supportsSpeak || !currentSentence?.tgt || isConnecting || isEvaluating}
                         _hover={{
-                          bg: isRecording
-                            ? SOFT_STOP_BUTTON_HOVER_BG
-                            : isConnecting
+                          bg: isConnecting
                             ? "linear-gradient(135deg, #ca8a04 0%, #a16207 100%)"
                             : STORY_PRIMARY_BUTTON_HOVER_BG,
                           transform: "translateY(-2px)",
                         }}
                         _active={{ transform: "translateY(0)" }}
-                        aria-label={isRecording ? "Stop recording" : undefined}
+                        aria-label={copy.record || uiText.record}
                       >
                         {isConnecting
                           ? (copy.connectingMic || "Connecting")
                           : isRecording
-                          ? (copy.stopRecording || "Stop")
+                          ? <VoiceWaveIcon stream={speakStream} size={22} color="currentColor" />
                           : (copy.record || uiText.record)}
                       </Button>
                     }

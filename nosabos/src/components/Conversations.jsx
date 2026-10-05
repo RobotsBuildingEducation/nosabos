@@ -1,3 +1,11 @@
+import {
+  canEnableRealtimeInput,
+  snapshotRealtimeMessages,
+  buildRealtimeResumeContext,
+  captureRealtimeSpeech,
+  resumeRealtimeSpeech,
+  closeRealtimeTransport,
+} from "../utils/realtimeSessionControls.js";
 import ActivityActionRow from "./ActivityActionRow";
 import QuestionActionArea from "./QuestionActionArea";
 // components/Conversations.jsx
@@ -32,11 +40,15 @@ import {
 import { layoutWithLines, prepareWithSegments } from "@chenglou/pretext";
 import {
   FaMicrophone,
+  FaMicrophoneSlash,
+  FaPause,
+  FaPlay,
   FaStop,
   FaCheckCircle,
   FaDice,
   FaRegCommentDots,
 } from "react-icons/fa";
+import { ImPhoneHangUp } from "react-icons/im";
 import { MdOutlineTranslate } from "react-icons/md";
 import { FiSettings } from "react-icons/fi";
 import { RiVolumeUpLine } from "react-icons/ri";
@@ -53,6 +65,9 @@ import { logEvent } from "firebase/analytics";
 
 import useUserStore from "../hooks/useUserStore";
 import VoiceOrb from "./VoiceOrbNext";
+import { voiceCallControlStyle } from "../utils/voiceCallControlStyle.js";
+import TutorViewportEdgeGlow from "./TutorViewportEdgeGlow.jsx";
+import { useTutorVoiceLevel } from "../hooks/useTutorVoiceLevel.js";
 import RandomCharacter from "./RandomCharacter";
 import AnimatedEllipsis from "./AnimatedEllipsis";
 import {
@@ -69,6 +84,8 @@ import {
 } from "../utils/supportTranslation";
 import { getBidiTextProps, mergeBidiSx } from "../utils/bidiText";
 import { awardXp } from "../utils/utils";
+import { awardProgressionAchievements } from "../utils/achievements.js";
+import { conversationCompletionEvent } from "../achievements/conversationProgress.js";
 import { recordPlateActivity } from "../utils/dailyPlate";
 import { getLanguageXp } from "../utils/progressTracking";
 import {
@@ -127,7 +144,7 @@ const REALTIME_URL = getRealtimeUrl(REALTIME_MODEL);
 const RESPONSES_URL = getResponsesUrl();
 const TRANSLATE_MODEL =
   import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-6-luna";
-const AUTO_DISCONNECT_MS = 15000;
+const AUTO_DISCONNECT_MS = 30000;
 const ARCHIVE_GLYPH_DURATION_MS = 680;
 
 const CONVERSATION_SUMMARY_COPY = {
@@ -1091,6 +1108,8 @@ export default function Conversations({
   const audioCtxRef = useRef(null);
   const analyserRef = useRef(null);
   const floatBufRef = useRef(null);
+  const micAnalyserRef = useRef(null);
+  const micFloatBufRef = useRef(null);
   const captureOutRef = useRef(null);
   const audioGraphReadyRef = useRef(false);
 
@@ -1115,6 +1134,17 @@ export default function Conversations({
 
   // Connection/UI state
   const [status, setStatus] = useState("disconnected");
+  const [isMuted, setIsMuted] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const isMutedRef = useRef(false);
+  const isPausedRef = useRef(false);
+  const pausedMessagesRef = useRef([]);
+  const pausedSpeechRef = useRef(null);
+  const connectionEpochRef = useRef(0);
+  const micSenderRef = useRef(null);
+  const connectionTransitionRef = useRef(false);
+
+
   const [err, setErr] = useState("");
   const [uiState, setUiState] = useState("idle");
   const [volume] = useState(0);
@@ -1313,6 +1343,8 @@ export default function Conversations({
   }));
   const currentGoalRef = useRef(currentGoal);
   currentGoalRef.current = currentGoal;
+  const achievementOwnerRef = useRef(null);
+  achievementOwnerRef.current = { npub: currentNpub, language: targetLang };
 
   // Keep the live session's instructions in sync with the active goal so the
   // AI steers toward it instead of asking competing follow-up questions.
@@ -1614,6 +1646,16 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
   const [displayRobotState, setDisplayRobotState] = useState(liveUiState);
   const [previousRobotState, setPreviousRobotState] = useState(null);
   const [isRobotTransitioning, setIsRobotTransitioning] = useState(false);
+  const voiceVisualsEnabled = isActive && status === "connected" && !isPaused;
+  const voiceLevelRef = useTutorVoiceLevel({
+    enabled: voiceVisualsEnabled,
+    state: liveUiState,
+    microphoneEnabled: !isMuted,
+    micAnalyserRef,
+    micFloatBufRef,
+    tutorAnalyserRef: analyserRef,
+    tutorFloatBufRef: floatBufRef,
+  });
   const displayOrbState = getRealtimeOrbVisualState(displayRobotState);
   const previousOrbState = getRealtimeOrbVisualState(previousRobotState);
 
@@ -2028,13 +2070,28 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
   /* ---------------------------
      WebRTC Start
   --------------------------- */
-  async function start() {
+  async function start({ resume = false } = {}) {
+    if (connectionTransitionRef.current) return;
+    connectionTransitionRef.current = true;
+    const connectionEpoch = ++connectionEpochRef.current;
+    const resumeMuted = resume && isMutedRef.current;
+    const resumeSpeech = resume && !!pausedSpeechRef.current;
+    if (!resume) {
+      pausedMessagesRef.current = [];
+      pausedSpeechRef.current = null;
+    }
     playSound(submitActionSound);
     closeSummary();
-    setSessionXp(0);
-    setSessionTurns(0);
-    setGoalsCompleted(0);
+    if (!resume) {
+      setSessionXp(0);
+      setSessionTurns(0);
+      setGoalsCompleted(0);
+    }
     clearAutoStopTimer();
+    isMutedRef.current = resumeMuted;
+    isPausedRef.current = false;
+    setIsMuted(resumeMuted);
+    setIsPaused(false);
     setErr("");
     setStatus("connecting");
     setUiState("thinking");
@@ -2052,8 +2109,13 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
         // Best-effort; getUserMedia will surface real failures.
       }
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      if (connectionEpoch !== connectionEpochRef.current) {
+        stream.getTracks().forEach((track) => track.stop());
+
+        return;
+      }
       localRef.current = stream;
-      assistantInputLockedRef.current = false;
+      assistantInputLockedRef.current = resumeSpeech;
       manualResponseRequestedRef.current = false;
       setLocalMicEnabled(true);
 
@@ -2061,6 +2123,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       pcRef.current = pc;
 
       pc.ontrack = (e) => {
+        if (connectionEpoch !== connectionEpochRef.current) return;
         if (!audioRef.current) return;
         audioRef.current.srcObject = e.streams[0];
         audioRef.current.play().catch(() => {});
@@ -2071,13 +2134,21 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
           audioCtxRef.current = ctx;
           const src = ctx.createMediaStreamSource(e.streams[0]);
           const analyser = ctx.createAnalyser();
-          analyser.fftSize = 256;
+          analyser.fftSize = 2048;
           src.connect(analyser);
           analyserRef.current = analyser;
-          floatBufRef.current = new Float32Array(analyser.frequencyBinCount);
+          floatBufRef.current = new Float32Array(analyser.fftSize);
           const dest = ctx.createMediaStreamDestination();
           src.connect(dest);
           captureOutRef.current = dest;
+          // Analyse the microphone without routing it to the speakers.
+          const micSource = ctx.createMediaStreamSource(localRef.current);
+          const micAnalyser = ctx.createAnalyser();
+          micAnalyser.fftSize = 2048;
+          micSource.connect(micAnalyser);
+          micAnalyserRef.current = micAnalyser;
+          micFloatBufRef.current = new Float32Array(micAnalyser.fftSize);
+          void ctx.resume().catch(() => {});
           audioGraphReadyRef.current = true;
         }
       };
@@ -2088,10 +2159,19 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       dcRef.current = dc;
 
       dc.onopen = () => {
-        setTimeout(() => applyLanguagePolicyNow(), 60);
+        if (connectionEpoch !== connectionEpochRef.current) return;
+        setTimeout(() => {
+          if (connectionEpoch === connectionEpochRef.current && !isPausedRef.current) {
+            applyLanguagePolicyNow();
+            if (resumeSpeech) resumePausedSpeech(connectionEpoch);
+          }
+        }, 60);
       };
 
-      dc.onmessage = (evt) => handleRealtimeEventRef.current?.(evt);
+      dc.onmessage = (event) => {
+        if (connectionEpoch !== connectionEpochRef.current || isPausedRef.current) return;
+        return handleRealtimeEventRef.current?.(event);
+      };
 
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
@@ -2102,26 +2182,39 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       });
       const answer = await resp.text();
       if (!resp.ok) throw new Error(`SDP exchange failed: HTTP ${resp.status}`);
+      if (connectionEpoch !== connectionEpochRef.current) { pc.close(); return; }
       await pc.setRemoteDescription({ type: "answer", sdp: answer });
+      if (connectionEpoch !== connectionEpochRef.current) { pc.close(); return; }
 
       setStatus("connected");
       aliveRef.current = true;
-      setUiState("idle");
+      setLocalMicEnabled(true);
+      setUiState(resumeSpeech ? "thinking" : "idle");
       scheduleAutoStop();
     } catch (e) {
+      if (connectionEpoch !== connectionEpochRef.current) return;
       clearAutoStopTimer();
-      setStatus("disconnected");
+      await stop({ preservePause: resume });
       setUiState("idle");
       setErr(e?.message || String(e));
+    } finally {
+      connectionTransitionRef.current = false;
     }
   }
 
-  async function stop() {
-    clearAutoStopTimer();
+  async function stop({ preservePause = false } = {}) {
+    const stopEpoch = ++connectionEpochRef.current;
+    connectionTransitionRef.current = true;
     aliveRef.current = false;
+    setStatus(preservePause ? "pausing" : "disconnecting");
+    if (!preservePause) isMutedRef.current = false;
+    isPausedRef.current = preservePause;
+    setIsMuted(isMutedRef.current);
+    setIsPaused(preservePause);
+    clearAutoStopTimer();
     assistantInputLockedRef.current = false;
     manualResponseRequestedRef.current = false;
-    setLocalMicEnabled(true);
+    setLocalMicEnabled(false);
     try {
       if (dcRef.current?.readyState === "open") {
         dcRef.current.send(
@@ -2164,14 +2257,14 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       pcRef.current?.getReceivers?.().forEach((r) => r.track && r.track.stop());
     } catch {}
 
-    try {
-      dcRef.current?.close();
-    } catch {}
+    const closingTransport = closeRealtimeTransport({
+      channel: dcRef.current,
+      connection: pcRef.current,
+      stream: localRef.current,
+    });
     dcRef.current = null;
-    try {
-      pcRef.current?.close();
-    } catch {}
     pcRef.current = null;
+    micSenderRef.current = null;
 
     try {
       audioCtxRef.current?.close?.();
@@ -2179,6 +2272,8 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     audioCtxRef.current = null;
     analyserRef.current = null;
     floatBufRef.current = null;
+    micAnalyserRef.current = null;
+    micFloatBufRef.current = null;
     captureOutRef.current = null;
     audioGraphReadyRef.current = false;
 
@@ -2204,10 +2299,34 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       } catch {}
     });
 
-    setStatus("disconnected");
+    await closingTransport;
+    if (stopEpoch !== connectionEpochRef.current) return;
+    connectionTransitionRef.current = false;
+    if (!preservePause) {
+      pausedMessagesRef.current = [];
+      pausedSpeechRef.current = null;
+    }
+    setStatus(preservePause ? "paused" : "disconnected");
     setUiState("idle");
     setMood("neutral");
   }
+
+  const stopRef = useRef(stop);
+  useEffect(() => {
+    stopRef.current = stop;
+  }, [stop]);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && aliveRef.current) {
+        stopRef.current?.();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
 
   async function handleEndConversation() {
     await stop();
@@ -2217,7 +2336,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
   /* ---------------------------
      Language instructions with proficiency level
   --------------------------- */
-  function buildLanguageInstructions() {
+  function buildLanguageInstructionsBase() {
     const tLang = targetLangRef.current;
     const personaPolicy = buildVoicePersonaPolicy(
       voicePersonaRef.current,
@@ -2344,8 +2463,17 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       .join(" ");
   }
 
+  function buildLanguageInstructions() {
+    return [
+      buildLanguageInstructionsBase(),
+      buildRealtimeResumeContext(pausedMessagesRef.current),
+    ].filter(Boolean).join("\n\n");
+  }
+
   function buildTurnDetectionConfig() {
-    if (assistantInputLockedRef.current) return null;
+    if (isMutedRef.current || isPausedRef.current || assistantInputLockedRef.current) {
+      return null;
+    }
     return buildConversationTurnDetection(pauseMsRef.current);
   }
 
@@ -2382,11 +2510,28 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
   }
 
   function setLocalMicEnabled(enabled) {
+    enabled = canEnableRealtimeInput({
+      enabled,
+      muted: isMutedRef.current,
+      paused: isPausedRef.current,
+      locked: assistantInputLockedRef.current,
+    });
     try {
       localRef.current?.getAudioTracks?.().forEach((track) => {
         track.enabled = enabled;
       });
     } catch {}
+    // Remember the microphone sender even while detached. A recvonly audio
+    // transceiver also has a null sender; attaching to it would duplicate input.
+    const micTrack = localRef.current?.getAudioTracks?.()[0];
+    const sender = micSenderRef.current || pcRef.current?.getSenders?.()
+      .find((candidate) => micTrack && candidate.track === micTrack);
+    if (sender) {
+      micSenderRef.current = sender;
+      try {
+        sender.replaceTrack(enabled ? micTrack : null).catch(() => {});
+      } catch { /* the connection may already be closed */ }
+    }
   }
 
   // Prevent background sounds from barging in while the assistant is speaking.
@@ -2469,13 +2614,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
 
   /** Disable VAD and detach mic track so the user cannot interrupt AI speech. */
   function disableVAD() {
-    if (pcRef.current) {
-      pcRef.current.getSenders().forEach((s) => {
-        if (s.track?.kind === "audio") {
-          s.replaceTrack(null).catch(() => {});
-        }
-      });
-    }
+    setLocalMicEnabled(false);
     if (!dcRef.current || dcRef.current.readyState !== "open") return;
     try {
       dcRef.current.send(JSON.stringify({ type: "input_audio_buffer.clear" }));
@@ -2490,14 +2629,8 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
 
   /** Re-enable server VAD and reattach mic track after AI finishes speaking. */
   function enableVAD() {
-    const micTrack = localRef.current?.getAudioTracks()?.[0];
-    if (pcRef.current && micTrack) {
-      pcRef.current.getSenders().forEach((s) => {
-        if (!s.track || s.track?.kind === "audio") {
-          s.replaceTrack(micTrack).catch(() => {});
-        }
-      });
-    }
+    if (isPausedRef.current || isMutedRef.current || assistantInputLockedRef.current) return;
+    setLocalMicEnabled(true);
     if (!dcRef.current || dcRef.current.readyState !== "open") return;
     try {
       dcRef.current.send(
@@ -2523,11 +2656,87 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
   }
 
   function scheduleAutoStop() {
+    if (isPausedRef.current || !aliveRef.current || assistantInputLockedRef.current) return;
     clearAutoStopTimer();
     autoStopTimerRef.current = setTimeout(() => {
       if (!aliveRef.current) return;
       stop();
     }, AUTO_DISCONNECT_MS);
+  }
+
+  function toggleMute() {
+    if (status !== "connected" || isPausedRef.current) return;
+    const nextMuted = !isMutedRef.current;
+    isMutedRef.current = nextMuted;
+    setIsMuted(nextMuted);
+    setLocalMicEnabled(!nextMuted);
+    if (dcRef.current?.readyState === "open") {
+      try {
+        dcRef.current.send(JSON.stringify({ type: "input_audio_buffer.clear" }));
+        dcRef.current.send(JSON.stringify({
+          type: "session.update",
+          session: buildRealtimeVadSession(buildTurnDetectionConfig()),
+        }));
+      } catch { /* connection is closing */ }
+    }
+    if (!nextMuted) enableVAD();
+  }
+
+  function resumePausedSpeech(connectionEpoch) {
+    if (connectionEpoch !== connectionEpochRef.current || isPausedRef.current) return;
+    clearAutoStopTimer();
+    setAssistantInputLocked(true);
+    setUiState("speaking");
+    try {
+      resumeRealtimeSpeech({
+        channel: dcRef.current,
+        speech: pausedSpeechRef.current,
+        instructions: buildLanguageInstructions(),
+        onComplete: () => {
+          if (connectionEpoch !== connectionEpochRef.current || isPausedRef.current) return;
+          pausedSpeechRef.current = null;
+          setAssistantInputLocked(false);
+          enableVAD();
+          setUiState("listening");
+          scheduleAutoStop();
+        },
+      });
+    } catch (error) {
+      setErr(error?.message || "Could not resume speech. Please pause and try Resume again.");
+      setAssistantInputLocked(false);
+      enableVAD();
+      setUiState("listening");
+      scheduleAutoStop();
+    }
+  }
+
+  async function togglePause() {
+    if (connectionTransitionRef.current) return;
+    if (isPausedRef.current) {
+      await start({ resume: true });
+      return;
+    }
+    if (status !== "connected") return;
+    // Freeze streamed text locally before closing; learning state stays mounted.
+    const snapshot = snapshotRealtimeMessages(messagesRef.current, streamBuffersRef.current);
+    pausedSpeechRef.current = captureRealtimeSpeech({
+      channel: dcRef.current,
+      messages: snapshot,
+      pending: assistantInputLockedRef.current || !isIdleRef.current,
+    });
+    pausedMessagesRef.current = snapshot;
+    messagesRef.current = snapshot;
+    setMessages(snapshot);
+    streamBuffersRef.current.clear();
+    isPausedRef.current = true;
+    setIsPaused(true);
+    setLocalMicEnabled(false);
+    connectionTransitionRef.current = true;
+    try {
+      await stop({ preservePause: true });
+    } finally {
+      connectionTransitionRef.current = false;
+    }
   }
 
   /* ---------------------------
@@ -2539,6 +2748,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
   // the verdict ("skipped" = no verdict: nothing gradable or check not run).
   async function evaluateGoalCompletion(userMessage, aiResponse) {
     const goal = currentGoalRef.current;
+    const achievementOwner = { ...achievementOwnerRef.current };
     if (goal.completed || goalCheckPendingRef.current) return "skipped";
     if (!userMessage || userMessage.length < 3) return "skipped";
 
@@ -2648,6 +2858,11 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "...", "goa
         return "skipped";
       }
       if (parsed?.completed) {
+        if (parsed.completed === true && achievementOwner.npub === achievementOwnerRef.current.npub && achievementOwner.language === achievementOwnerRef.current.language) {
+          const event = conversationCompletionEvent({ goal, language: tLang, completed: true });
+          if (event) void awardProgressionAchievements({ npub: achievementOwner.npub, source: "nosabos", events: [event] })
+            .catch(error => console.warn("Conversation achievement:", error));
+        }
         setOrbFeedback((previous) => ({ id: (previous?.id || 0) + 1, result: "correct" }));
         void recordGradedOutcome({ npub: currentNpub, targetLang: tLang,
           success: true, questionLevel: goal.questionLevel, worth: goal.worth,
@@ -3139,6 +3354,7 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
   }
 
   async function handleRealtimeEvent(evt) {
+    if (isPausedRef.current) return;
     if (!aliveRef.current) return;
     let data;
     try {
@@ -3153,7 +3369,12 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
       return;
     }
 
-    if (t === "input_audio_buffer.speech_started") {
+    if (
+      t === "input_audio_buffer.speech_started" ||
+      t === "input_audio_buffer.local_speech_started" ||
+      t === "input_audio_buffer.local_speech_active"
+    ) {
+      clearAutoStopTimer();
       manualResponseRequestedRef.current = false;
       responseStartTimeRef.current = null;
       return;
@@ -3162,6 +3383,7 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
     // Server VAD still owns speech boundaries, but response creation is
     // manual so the current personality can be attached to this exact turn.
     if (t === "input_audio_buffer.speech_stopped") {
+      clearAutoStopTimer();
       setLocalMicEnabled(false);
       setUiState("thinking");
       setMood("thoughtful");
@@ -3169,6 +3391,7 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
     }
 
     if (t === "input_audio_buffer.committed") {
+      clearAutoStopTimer();
       requestConversationResponse();
       return;
     }
@@ -3181,9 +3404,11 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
       manualResponseRequestedRef.current = false;
       enableVAD();
       setAssistantInputLocked(false);
-      setUiState(status === "connected" ? "listening" : "idle");
-      setMood("neutral");
-      if (aliveRef.current) scheduleAutoStop();
+      if (!isPausedRef.current) {
+        setUiState(status === "connected" ? "listening" : "idle");
+        setMood("neutral");
+        if (aliveRef.current) scheduleAutoStop();
+      }
       return;
     }
 
@@ -3558,6 +3783,12 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
   --------------------------- */
   return (
     <>
+      <TutorViewportEdgeGlow
+        enabled={voiceVisualsEnabled}
+        state={liveUiState}
+        isLightTheme={isLightTheme}
+        audioLevelRef={voiceLevelRef}
+      />
       <Box
         color="gray.100"
         position="relative"
@@ -3842,6 +4073,7 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
                     variant="tutor"
                     callActive={status === "connected"}
                     feedback={orbFeedback}
+                    audioLevelRef={voiceLevelRef}
                     state={previousOrbState}
                     theme={isLightTheme ? "light" : "dark"}
                     size={voiceOrbSize}
@@ -3853,20 +4085,34 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
                   variant="tutor"
                   callActive={status === "connected"}
                   feedback={orbFeedback}
+                  audioLevelRef={voiceLevelRef}
                   state={displayOrbState}
                   theme={isLightTheme ? "light" : "dark"}
                   size={voiceOrbSize}
                 />
               </Box>
             </Box>
-            {status === "connected" && uiStateLabel(liveUiState, uiLang) && (
+            {(status === "connected" || isPaused) && (isPaused || isMuted) ? (
+              <Badge
+                colorScheme={isPaused ? "yellow" : "red"}
+                variant="subtle"
+                rounded="full"
+                px={2.5}
+                py={0.5}
+                fontSize="xs"
+                textTransform="uppercase"
+                letterSpacing="wider"
+              >
+                {isPaused ? "Paused" : "Muted"}
+              </Badge>
+            ) : status === "connected" && uiStateLabel(liveUiState, uiLang) ? (
               <Text
                 fontSize="xs"
                 color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
               >
                 {uiStateLabel(liveUiState, uiLang)}
               </Text>
-            )}
+            ) : null}
           </VStack>
         </VStack>
 
@@ -3937,41 +4183,92 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
           </VStack>
         </Box>
 
-        {/* Bottom dock - Connect button only */}
+        {/* Bottom dock - Controls */}
         <QuestionActionArea
           actions={
             <ActivityActionRow
-              tone={status === "connected" ? "stop" : "speak"}
+              tone="speak"
               primary={
-                <Button
-                  key={status === "connected" ? "end" : "start"}
-                  onClick={(e) => {
-                    e.currentTarget?.blur?.();
-                    if (status === "connected") {
-                      handleEndConversation();
-                    } else {
+                (status === "connected" || isPaused) ? (
+                  <HStack
+                    data-call-controls=""
+                    spacing={3}
+                    justify="center"
+                    align="center"
+                    w="full"
+                  >
+                    {/* Mute Button (Icon only) */}
+                    <IconButton
+                      icon={
+                        isMuted ? (
+                          <FaMicrophoneSlash size={18} />
+                        ) : (
+                          <FaMicrophone size={18} />
+                        )
+                      }
+                      aria-label={isMuted ? "Unmute microphone" : "Mute microphone"}
+                      onClick={toggleMute}
+                      isDisabled={isPaused || status !== "connected"}
+                      h="40px"
+                      flex="1 1 0"
+                      maxW="88px"
+                      borderRadius="18px"
+                      {...voiceCallControlStyle(isMuted)}
+                    />
+
+                    {/* Pause Button (Icon only) */}
+                    <IconButton
+                      icon={isPaused ? <FaPlay size={16} /> : <FaPause size={16} />}
+                      aria-label={isPaused ? "Resume conversation" : "Pause conversation"}
+                      onClick={togglePause}
+                      isDisabled={status !== "connected" && status !== "paused"}
+                      h="40px"
+                      flex="1 1 0"
+                      maxW="88px"
+                      borderRadius="18px"
+                      {...voiceCallControlStyle(isPaused)}
+                    />
+
+                    {/* End Button (Icon only) */}
+                    <IconButton
+                      icon={<ImPhoneHangUp size={18} />}
+                      aria-label="End conversation"
+                      onClick={handleEndConversation}
+                      h="40px"
+                      flex="1 1 0"
+                      maxW="88px"
+                      borderRadius="18px"
+                      variant="solid"
+                      bg={SOFT_STOP_BUTTON_BG || "red.500"}
+                      color="white"
+                      boxShadow="none"
+                      _hover={{
+                        bg: SOFT_STOP_BUTTON_HOVER_BG || "red.600",
+                      }}
+                      _active={{ transform: "scale(0.96)" }}
+                      transition="all 0.15s ease"
+                    />
+                  </HStack>
+                ) : (
+                  <Button
+                    key="start"
+                    isDisabled={status === "connecting" || status === "disconnecting"}
+                    onClick={(e) => {
+                      e.currentTarget?.blur?.();
                       start();
-                    }
-                  }}
-                  size="lg"
-                  height="48px"
-                  px={4}
-                  rounded="full"
-                  textShadow={isLightTheme ? "none" : "0 0 16px rgba(0,0,0,0.9)"}
-                >
-                  {status === "connected" ? (
-                    <>
-                      <FaStop /> &nbsp; {uiText("ra_btn_end", "End")}
-                    </>
-                  ) : (
-                    <>
-                      <FaMicrophone /> &nbsp;{" "}
-                      {status === "connecting"
-                        ? uiText("ra_btn_starting", "Starting...")
-                        : uiText("ra_btn_start", "Start")}
-                    </>
-                  )}
-                </Button>
+                    }}
+                    size="lg"
+                    height="48px"
+                    px={4}
+                    rounded="full"
+                    textShadow={isLightTheme ? "none" : "0 0 16px rgba(0,0,0,0.9)"}
+                  >
+                    <FaMicrophone /> &nbsp;{" "}
+                    {status === "connecting"
+                      ? uiText("ra_btn_starting", "Starting...")
+                      : uiText("ra_btn_start", "Start")}
+                  </Button>
+                )
               }
             ></ActivityActionRow>
           }

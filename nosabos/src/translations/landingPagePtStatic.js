@@ -45,7 +45,7 @@ export const LANDING_PAGE_PT_STATIC = {
   feature_grammar: "Gramática",
   feature_grammar_desc:
     "Referências rápidas de regras, exercícios de conceitos e revisões adaptativas.",
-  feature_skilltree: "Árvore de habilidades",
+  feature_skilltree: "Lições",
   feature_skilltree_desc:
     "Trilhas estruturadas que desenvolvem suas habilidades passo a passo com progresso claro.",
   feature_flashcards: "Vocabulário",
@@ -57,9 +57,24 @@ export const LANDING_PAGE_PT_STATIC = {
   feature_notes: "Gerar notas",
   feature_notes_desc:
     "Crie notas de estudo completas a partir das suas lições para revisar depois.",
-  feature_immersion: "Imersão e pontuação",
+  feature_immersion: "Imersão",
   feature_immersion_desc:
-    "Complete tarefas fora do app para mergulhar no idioma e praticar de verdade.",
+    "Complete tarefas fora do app para mergulhar no idioma e praticar no dia a dia.",
+  feature_score: "Pontuação",
+  feature_score_desc:
+    "Um modelo de classificação adaptativo que mede seu domínio real a cada resposta e ajusta a dificuldade dinamicamente.",
+  feature_elo: "Pontuação",
+  feature_elo_desc:
+    "Um modelo de classificação adaptativo que mede seu domínio real a cada resposta e ajusta a dificuldade dinamicamente.",
+  feature_achievements: "Conquistas Multiplataforma",
+  feature_achievements_desc:
+    "Conquiste emblemas e marcos de conclusão verificados que sincronizam perfeitamente entre dispositivos.",
+  feature_teams: "Equipes de Aprendizagem",
+  feature_teams_desc:
+    "Crie grupos de estudo com amigos para acompanhar metas diárias, sequências, evolução do companheiro e progresso em tempo real.",
+  feature_global_feed: "Feed Global",
+  feature_global_feed_desc:
+    "Descubra anotações, marcos e dicas compartilhados por estudantes do mundo todo na rede descentralizada.",
   feature_assistant: "Assistente pessoal",
   feature_assistant_desc:
     "Receba orientação e recomendações personalizadas quando precisar de ajuda.",

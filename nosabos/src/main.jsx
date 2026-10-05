@@ -251,7 +251,14 @@ createRoot(document.getElementById("root")).render(
               }
             />
             <Route path="/proficiency" element={<ProficiencyContainer />} />
-            <Route path="/orbing" element={<OrbingPlayground />} />
+            <Route
+              path="/orbing"
+              element={
+                <AppLoadBoundary>
+                  <OrbingPlayground />
+                </AppLoadBoundary>
+              }
+            />
             <Route
               path="/links"
               element={
