@@ -1,5 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import LandingPageSections from "./LandingPageSections";
+import PrivacyPolicyFooter from "./PrivacyPolicy";
+import { landingPageRefreshCopy } from "./landingPageRefreshCopy";
 import {
   FaComments,
   FaBookOpen,
@@ -15,7 +18,7 @@ import {
   FaVolumeUp,
   FaGamepad,
   FaMicrophone,
-  FaBrain,
+  FaBookmark,
   FaCalendarCheck,
   FaPaw,
   FaRoute,
@@ -52,7 +55,6 @@ import {
   APP_SQUIRCLE_SHAPE as LANDING_SQUIRCLE_SHAPE,
 } from "../theme";
 import {
-  getPracticeLanguageOptions,
   getSupportLanguageOptions,
   normalizeSupportLanguage,
 } from "../constants/languages";
@@ -108,9 +110,6 @@ const theme = {
     container: "clamp(20px, 5vw, 80px)",
   },
 };
-
-const COMPACT_SECTION_PADDING = "clamp(48px, 7vw, 88px) 24px";
-const COMPACT_HEADING_MARGIN = "clamp(32px, 5vw, 44px)";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TRANSLATIONS
@@ -1585,203 +1584,6 @@ const Input = ({
 );
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// SECTION LABEL
-// ═══════════════════════════════════════════════════════════════════════════════
-
-const SectionLabel = ({ children }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true }}
-    style={{
-      display: "inline-flex",
-      alignItems: "center",
-      gap: "12px",
-      marginBottom: "16px",
-    }}
-  >
-    <span
-      style={{
-        width: "40px",
-        height: "1px",
-        background: `linear-gradient(90deg, transparent, ${theme.colors.accent.primary})`,
-      }}
-    />
-    <span
-      style={{
-        fontFamily: theme.fonts.mono,
-        fontSize: "0.75rem",
-        fontWeight: 500,
-        letterSpacing: "0.15em",
-        color: theme.colors.accent.primary,
-        textTransform: "uppercase",
-      }}
-    >
-      {children}
-    </span>
-    <span
-      style={{
-        width: "40px",
-        height: "1px",
-        background: `linear-gradient(90deg, ${theme.colors.accent.primary}, transparent)`,
-      }}
-    />
-  </motion.div>
-);
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// FEATURE CARD
-// ═══════════════════════════════════════════════════════════════════════════════
-
-const FeatureCard = ({ icon, title, description }) => (
-  <div
-    style={{
-      padding: "clamp(16px, 3vw, 32px)",
-      background: theme.colors.bg.elevated,
-      borderRadius: "clamp(12px, 2vw, 24px)",
-      cornerShape: LANDING_SQUIRCLE_SHAPE,
-      border: `1px solid ${theme.colors.border.subtle}`,
-      position: "relative",
-      overflow: "hidden",
-    }}
-  >
-    {/* Gradient accent */}
-    <div
-      style={{
-        position: "absolute",
-        top: 0,
-        left: 0,
-        right: 0,
-        height: "3px",
-        background: `linear-gradient(90deg, ${theme.colors.accent.primary}, ${theme.colors.accent.secondary})`,
-        opacity: 0.8,
-      }}
-    />
-
-    {/* Icon */}
-    <div
-      style={{
-        width: "clamp(40px, 5vw, 56px)",
-        height: "clamp(40px, 5vw, 56px)",
-        borderRadius: "clamp(10px, 1.5vw, 16px)",
-        cornerShape: LANDING_SQUIRCLE_SHAPE,
-        background: theme.colors.bg.glow,
-        border: `1px solid ${theme.colors.border.accent}`,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        marginBottom: "clamp(10px, 2vw, 20px)",
-        fontSize: "clamp(18px, 2vw, 24px)",
-      }}
-    >
-      {icon}
-    </div>
-
-    <h3
-      style={{
-        fontFamily: theme.fonts.display,
-        fontSize: "clamp(0.9rem, 1.5vw, 1.25rem)",
-        fontWeight: 600,
-        color: theme.colors.text.primary,
-        marginBottom: "clamp(6px, 1vw, 12px)",
-      }}
-    >
-      {title}
-    </h3>
-
-    <p
-      style={{
-        fontFamily: theme.fonts.body,
-        fontSize: "clamp(0.8rem, 1.2vw, 0.95rem)",
-        color: theme.colors.text.secondary,
-        lineHeight: 1.7,
-      }}
-    >
-      {description}
-    </p>
-  </div>
-);
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// FAQ ITEM
-// ═══════════════════════════════════════════════════════════════════════════════
-
-const FAQItem = ({ question, answer, isOpen, onClick, index }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true }}
-    transition={{ delay: index * 0.1 }}
-    style={{
-      borderBottom: `1px solid ${theme.colors.border.subtle}`,
-      borderRadius: "24px",
-      cornerShape: LANDING_SQUIRCLE_SHAPE,
-      overflow: "hidden",
-    }}
-  >
-    <motion.button
-      onClick={onClick}
-      style={{
-        width: "100%",
-        padding: "24px 0",
-        background: "transparent",
-        border: "none",
-        borderRadius: LANDING_BUTTON_RADIUS,
-        cornerShape: LANDING_SQUIRCLE_SHAPE,
-        cursor: "pointer",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        textAlign: "left",
-      }}
-    >
-      <span
-        style={{
-          fontFamily: theme.fonts.display,
-          fontSize: "1.125rem",
-          fontWeight: 500,
-          color: theme.colors.text.primary,
-        }}
-      >
-        {question}
-      </span>
-      <motion.span
-        animate={{ rotate: isOpen ? 45 : 0 }}
-        style={{
-          fontSize: "1.5rem",
-          color: theme.colors.accent.primary,
-          fontWeight: 300,
-        }}
-      >
-        +
-      </motion.span>
-    </motion.button>
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          initial={{ height: 0, opacity: 0 }}
-          animate={{ height: "auto", opacity: 1 }}
-          exit={{ height: 0, opacity: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          <p
-            style={{
-              paddingBottom: "24px",
-              fontFamily: theme.fonts.body,
-              fontSize: "1rem",
-              color: theme.colors.text.secondary,
-              lineHeight: 1.7,
-            }}
-          >
-            {answer}
-          </p>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  </motion.div>
-);
-
-// ═══════════════════════════════════════════════════════════════════════════════
 // SIGN IN VIEW
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -2017,7 +1819,6 @@ const LandingPage = ({ onAuthenticated }) => {
   const [view, setView] = useState("landing");
   const [displayName, setDisplayName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
-  const [openFAQ, setOpenFAQ] = useState(null);
   const [hasExtension, setHasExtension] = useState(false);
   const [showHeaderActions, setShowHeaderActions] = useState(false);
   const [isHeaderScrolled, setIsHeaderScrolled] = useState(false);
@@ -2151,7 +1952,7 @@ const LandingPage = ({ onAuthenticated }) => {
       desc: copy.feature_tutor_desc,
     },
     {
-      icon: <FaBrain />,
+      icon: <FaBookmark />,
       title: copy.feature_memory,
       desc: copy.feature_memory_desc,
     },
@@ -2269,8 +2070,6 @@ const LandingPage = ({ onAuthenticated }) => {
     { q: copy.faq_q4, a: copy.faq_a4 },
   ];
 
-  const values = [copy.value_1, copy.value_2, copy.value_3, copy.value_4];
-
   const handleThemeModeChange = useCallback(
     (nextMode) => {
       if (nextMode === themeMode) return;
@@ -2379,7 +2178,7 @@ const LandingPage = ({ onAuthenticated }) => {
               lineHeight: 1.6,
             }}
           >
-            {copy.hero_subtitle}
+            {(landingPageRefreshCopy[lang] || landingPageRefreshCopy.en).heroSubtitle}
           </motion.p>
 
           {/* CTA Form */}
@@ -2440,507 +2239,45 @@ const LandingPage = ({ onAuthenticated }) => {
         </div>
       </section>
 
-      {/* Languages Section */}
-      <section
-        style={{
-          padding: `${theme.spacing.section} 24px clamp(44px, 6vw, 72px)`,
-          position: "relative",
-          zIndex: 10,
-        }}
-      >
-        <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: "48px" }}>
-            <SectionLabel>{copy.languages_label}</SectionLabel>
-            <motion.h2
-              initial={{ opacity: 0, y: 15 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "50px" }}
-              transition={{ duration: 0.25 }}
-              style={{
-                fontFamily: theme.fonts.display,
-                fontSize: "clamp(2rem, 5vw, 3rem)",
-                fontWeight: 600,
-                lineHeight: 1.2,
-              }}
-            >
-              {copy.languages_title}
-              <br />
-              <span style={{ color: theme.colors.accent.primary }}>
-                {copy.languages_title_accent}
-              </span>
-            </motion.h2>
-          </div>
-
-          <div
+      <LandingPageSections copy={copy} lang={lang} features={features} faqs={faqs}>
+        <Input
+          value={displayName}
+          onChange={(e) => setDisplayName(e.target.value)}
+          placeholder={copy.placeholder_name}
+        />
+        {hasSecretKeyInDisplayName && (
+          <p
+            role="alert"
             style={{
-              display: "grid",
-              gridTemplateColumns:
-                "repeat(auto-fill, minmax(min(140px, 45%), 1fr))",
-              gap: "16px",
-              justifyItems: "center",
-            }}
-          >
-            {getPracticeLanguageOptions({
-              ui: translations[lang] || translations.en,
-              uiLang: lang,
-              includeTierTagInLabel: false,
-            }).map((langOption, i) => (
-              <motion.div
-                key={langOption.value}
-                initial={{ opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "50px" }}
-                transition={{ duration: 0.2, delay: i * 0.02 }}
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: "20px 16px",
-                  borderRadius: "16px",
-                  cornerShape: LANDING_SQUIRCLE_SHAPE,
-                  background: theme.colors.bg.elevated,
-                  border: `1px solid ${theme.colors.border.subtle}`,
-                  width: "100%",
-                  minHeight: "120px",
-                }}
-              >
-                <div style={{ fontSize: "32px", lineHeight: 1 }}>
-                  {langOption.flag}
-                </div>
-                <span
-                  style={{
-                    fontFamily: theme.fonts.body,
-                    fontSize: "0.85rem",
-                    fontWeight: 500,
-                    color: theme.colors.text.primary,
-                    textAlign: "center",
-                  }}
-                >
-                  {langOption.label}
-                </span>
-                <span
-                  style={{
-                    fontFamily: theme.fonts.mono,
-                    fontSize: "0.6rem",
-                    fontWeight: 600,
-                    letterSpacing: "0.1em",
-                    textTransform: "uppercase",
-                    visibility:
-                      langOption.alpha || langOption.beta
-                        ? "visible"
-                        : "hidden",
-                    color: langOption.alpha
-                      ? theme.colors.accent.warm
-                      : theme.colors.accent.tertiary,
-                    background: langOption.alpha
-                      ? "rgba(249, 115, 22, 0.12)"
-                      : "rgba(167, 139, 250, 0.12)",
-                    padding: "2px 8px",
-                    borderRadius: "6px",
-                    cornerShape: LANDING_SQUIRCLE_SHAPE,
-                  }}
-                >
-                  {langOption.alpha
-                    ? copy.languages_alpha
-                    : copy.languages_beta}
-                </span>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section
-        style={{
-          padding: COMPACT_SECTION_PADDING,
-          position: "relative",
-          zIndex: 10,
-        }}
-      >
-        <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-          <div
-            style={{
+              color: "#f87171",
+              fontFamily: theme.fonts.body,
+              fontSize: "0.875rem",
+              lineHeight: 1.5,
+              margin: 0,
               textAlign: "center",
-              marginBottom: COMPACT_HEADING_MARGIN,
             }}
           >
-            <SectionLabel>{copy.features_label}</SectionLabel>
-            <motion.h2
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              style={{
-                fontFamily: theme.fonts.display,
-                fontSize: "clamp(2rem, 5vw, 3rem)",
-                fontWeight: 600,
-                lineHeight: 1.2,
-              }}
-            >
-              {copy.features_title}
-              <br />
-              <span style={{ color: theme.colors.accent.primary }}>
-                {copy.features_title_accent}
-              </span>
-            </motion.h2>
-          </div>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns:
-                "repeat(auto-fit, minmax(min(280px, 45%), 1fr))",
-              gap: "clamp(12px, 2vw, 24px)",
-            }}
-          >
-            {features.map((f, i) => (
-              <FeatureCard
-                key={i}
-                icon={f.icon}
-                title={f.title}
-                description={f.desc}
-              />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Value Props Section */}
-      <section
-        style={{
-          padding: COMPACT_SECTION_PADDING,
-          position: "relative",
-          zIndex: 10,
-        }}
-      >
-        <div style={{ maxWidth: "900px", margin: "0 auto" }}>
-          <div
-            style={{
-              textAlign: "center",
-              marginBottom: COMPACT_HEADING_MARGIN,
-            }}
-          >
-            <SectionLabel>{copy.value_label}</SectionLabel>
-            <motion.h2
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              style={{
-                fontFamily: theme.fonts.display,
-                fontSize: "clamp(2rem, 5vw, 3rem)",
-                fontWeight: 600,
-                lineHeight: 1.2,
-              }}
-            >
-              {copy.value_title}
-              <br />
-              <span style={{ color: theme.colors.accent.primary }}>
-                {copy.value_title_accent}
-              </span>
-            </motion.h2>
-          </div>
-
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "24px" }}
-          >
-            {values.map((v, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, x: i % 2 === 0 ? -40 : 40 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "20px",
-                  padding: "24px 32px",
-                  background: theme.colors.bg.elevated,
-                  backdropFilter: "blur(20px)",
-                  borderRadius: "16px",
-                  cornerShape: LANDING_SQUIRCLE_SHAPE,
-                  border: `1px solid ${theme.colors.border.subtle}`,
-                }}
-              >
-                <div
-                  style={{
-                    width: "48px",
-                    height: "48px",
-                    borderRadius: "12px",
-                    cornerShape: LANDING_SQUIRCLE_SHAPE,
-                    background: theme.colors.accent.primary,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                    color: "white",
-                    textShadow: "0px 1px 1px black",
-                    fontWeight: 700,
-                    fontSize: "1.25rem",
-                  }}
-                >
-                  {i + 1}
-                </div>
-                <p
-                  style={{
-                    fontFamily: theme.fonts.body,
-                    fontSize: "1.1rem",
-                    color: theme.colors.text.primary,
-                    lineHeight: 1.5,
-                  }}
-                >
-                  {v}
-                </p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Scholarship Section */}
-      <section
-        style={{
-          padding: "clamp(36px, 6vw, 56px) 24px",
-          position: "relative",
-          zIndex: 10,
-        }}
-      >
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          style={{
-            maxWidth: "900px",
-            margin: "0 auto",
-            padding: "32px",
-            borderRadius: "32px",
-            cornerShape: LANDING_SQUIRCLE_SHAPE,
-            border: `1px solid rgba(249, 115, 22, 0.2)`,
-            textAlign: "center",
-            position: "relative",
-            overflow: "hidden",
-          }}
+            {copy.create_secret_key_detected_prefix}
+            <strong>{copy.create_secret_key_detected_action}</strong>
+            {copy.create_secret_key_detected_suffix}
+          </p>
+        )}
+        <Button
+          onClick={handleCreate}
+          loading={isCreating}
+          disabled={
+            displayName.trim().length < 2 || hasSecretKeyInDisplayName
+          }
+          fullWidth
+          size="lg"
         >
-          {/* Bitcoin decoration */}
-          <div
-            style={{
-              position: "absolute",
-              top: "20px",
-              right: "40px",
-              fontSize: "80px",
-              opacity: 0.1,
-            }}
-          >
-            ₿
-          </div>
-
-          <SectionLabel>{copy.scholarship_label}</SectionLabel>
-
-          <h2
-            style={{
-              fontFamily: theme.fonts.display,
-              fontSize: "clamp(1.75rem, 4vw, 2.5rem)",
-              fontWeight: 600,
-              lineHeight: 1.2,
-              marginBottom: "24px",
-            }}
-          >
-            {copy.scholarship_title}{" "}
-            <span style={{ color: "#f97316" }}>
-              {copy.scholarship_title_accent}
-            </span>
-          </h2>
-
-          <p
-            style={{
-              fontFamily: theme.fonts.body,
-              fontSize: "1.125rem",
-              color: theme.colors.text.secondary,
-              maxWidth: "600px",
-              margin: "0 auto 16px",
-              lineHeight: 1.7,
-            }}
-          >
-            {copy.scholarship_desc}
-          </p>
-
-          <p
-            style={{
-              fontFamily: theme.fonts.body,
-              fontSize: "1.05rem",
-              color: theme.colors.text.secondary,
-              maxWidth: "640px",
-              margin: "0 auto",
-              lineHeight: 1.7,
-            }}
-          >
-            {copy.scholarship_note}
-          </p>
-        </motion.div>
-      </section>
-
-      {/* FAQ Section */}
-      {/* <section
-        style={{
-          padding: `${theme.spacing.section} 24px`,
-          position: "relative",
-          zIndex: 10,
-        }}
-      >
-        <div style={{ maxWidth: "700px", margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: "64px" }}>
-            <SectionLabel>{copy.faq_label}</SectionLabel>
-            <motion.h2
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              style={{
-                fontFamily: theme.fonts.display,
-                fontSize: "clamp(2rem, 5vw, 3rem)",
-                fontWeight: 600,
-              }}
-            >
-              {copy.faq_title}
-            </motion.h2>
-          </div>
-
-          <div>
-            {faqs.map((faq, i) => (
-              <FAQItem
-                key={i}
-                question={faq.q}
-                answer={faq.a}
-                isOpen={openFAQ === i}
-                onClick={() => setOpenFAQ(openFAQ === i ? null : i)}
-                index={i}
-              />
-            ))}
-          </div>
-        </div>
-      </section> */}
-
-      {/* Final CTA */}
-      <section
-        style={{
-          padding: COMPACT_SECTION_PADDING,
-          position: "relative",
-          zIndex: 10,
-        }}
-      >
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          style={{
-            maxWidth: "700px",
-            margin: "0 auto",
-            textAlign: "center",
-            padding: "clamp(48px, 7vw, 64px) clamp(24px, 5vw, 48px)",
-            background: theme.colors.bg.elevated,
-            backdropFilter: "blur(40px)",
-            borderRadius: "32px",
-            cornerShape: LANDING_SQUIRCLE_SHAPE,
-            border: `1px solid ${theme.colors.border.subtle}`,
-            position: "relative",
-            overflow: "hidden",
-          }}
-        >
-          {/* Glow effect */}
-          <div
-            style={{
-              position: "absolute",
-              top: "-50%",
-              left: "-50%",
-              width: "200%",
-              height: "200%",
-              background: `radial-gradient(circle at center, rgba(20, 184, 166, 0.1) 0%, transparent 50%)`,
-              pointerEvents: "none",
-            }}
-          />
-
-          <h2
-            style={{
-              fontFamily: theme.fonts.display,
-              fontSize: "clamp(1.75rem, 4vw, 2.5rem)",
-              fontWeight: 600,
-              lineHeight: 1.2,
-              marginBottom: "16px",
-              position: "relative",
-            }}
-          >
-            {copy.cta_final_title}
-            {copy.cta_final_accent ? (
-              <>
-                <br />
-                <span style={{ color: theme.colors.accent.primary }}>
-                  {copy.cta_final_accent}
-                </span>
-              </>
-            ) : null}
-          </h2>
-
-          <p
-            style={{
-              fontFamily: theme.fonts.body,
-              fontSize: "1.125rem",
-              color: theme.colors.text.secondary,
-              marginBottom: "40px",
-              position: "relative",
-            }}
-          >
-            {copy.cta_final_subtitle}
-          </p>
-
-          <div
-            style={{
-              maxWidth: "400px",
-              margin: "0 auto",
-              display: "flex",
-              flexDirection: "column",
-              gap: "16px",
-              position: "relative",
-            }}
-          >
-            <Input
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              placeholder={copy.placeholder_name}
-            />
-            {hasSecretKeyInDisplayName && (
-              <p
-                role="alert"
-                style={{
-                  color: "#f87171",
-                  fontFamily: theme.fonts.body,
-                  fontSize: "0.875rem",
-                  lineHeight: 1.5,
-                  margin: 0,
-                  textAlign: "center",
-                }}
-              >
-                {copy.create_secret_key_detected_prefix}
-                <strong>{copy.create_secret_key_detected_action}</strong>
-                {copy.create_secret_key_detected_suffix}
-              </p>
-            )}
-            <Button
-              onClick={handleCreate}
-              loading={isCreating}
-              disabled={
-                displayName.trim().length < 2 || hasSecretKeyInDisplayName
-              }
-              fullWidth
-              size="lg"
-            >
-              {copy.cta_start} →
-            </Button>
-            <Button variant="secondary" onClick={openSignInView} fullWidth>
-              {copy.cta_signin}
-            </Button>
-          </div>
-        </motion.div>
-      </section>
+          {copy.cta_start} →
+        </Button>
+        <Button variant="secondary" onClick={openSignInView} fullWidth>
+          {copy.cta_signin}
+        </Button>
+      </LandingPageSections>
+      <PrivacyPolicyFooter language={lang} isLightTheme={themeMode === "light"} />
     </>
   );
 };

@@ -293,6 +293,13 @@ export function isSpanishBrowserLanguage() {
   }
 }
 
+/** Keep the landing postcard and tutor demo on the same regional default. */
+export function getDefaultLandingPracticeLanguage(uiLanguage) {
+  return uiLanguage === 'es' || isSpanishTimezone() || isSpanishBrowserLanguage()
+    ? 'en'
+    : 'es';
+}
+
 export function isItalianBrowserLanguage() {
   try {
     const languages = navigator.languages?.length
