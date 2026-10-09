@@ -672,22 +672,24 @@
   gap: 70px;
   margin-top: 100px;
   padding: 58px;
+  border: 1px solid var(--lp-line);
   border-radius: 28px;
-  color: #f6f8e9;
-  background: #183e35;
+  color: var(--lp-ink);
+  background: var(--lp-surface);
+  box-shadow: 0 16px 35px -30px #253b3440;
   overflow: hidden;
 }
 .lp-journey-heading {
   position: relative;
 }
 .lp-journey .lp-eyebrow {
-  color: #abd8bd;
+  color: var(--lp-green);
 }
 .lp-journey h2 {
   font-size: clamp(2rem, 3.6vw, 2.9rem);
 }
 .lp-journey p {
-  color: #c4d6ca;
+  color: var(--lp-muted);
 }
 .lp-journey-heading > p {
   margin-top: 20px;
@@ -706,15 +708,15 @@
   place-items: center;
   width: 33px;
   height: 33px;
-  border: 1px solid #accabb55;
+  border: 1px solid var(--lp-line);
   border-radius: 50%;
   font-size: 0.63rem;
-  color: #c4d6ca;
+  color: var(--lp-muted);
 }
 .lp-journey-levels > span:first-child {
-  background: #bfe0b5;
-  border-color: #bfe0b5;
-  color: #183e35;
+  background: var(--lp-mint);
+  border-color: color-mix(in srgb, var(--lp-green) 25%, var(--lp-line));
+  color: var(--lp-green);
 }
 .lp-journey-sprout {
   position: absolute;
@@ -722,8 +724,8 @@
   height: 160px;
   bottom: -82px;
   right: -25px;
-  color: #a1c4a1;
-  opacity: 0.15;
+  color: var(--lp-green);
+  opacity: 0.09;
   transform: rotate(-17deg);
 }
 .lp-values > div {
@@ -731,7 +733,7 @@
   align-items: flex-start;
   gap: 22px;
   padding: 20px 0;
-  border-bottom: 1px solid #c4d6ca25;
+  border-bottom: 1px solid var(--lp-line);
 }
 .lp-values > div:first-child {
   padding-top: 0;
@@ -741,7 +743,7 @@
   padding-bottom: 0;
 }
 .lp-values > div > span {
-  color: #abd8bd;
+  color: var(--lp-green);
   font-size: 0.64rem;
   font-weight: 700;
   padding-top: 4px;
