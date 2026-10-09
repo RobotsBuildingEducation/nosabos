@@ -45,6 +45,7 @@ import { getAssetUrl } from "../utils/proxyEndpoints";
 
 import VoiceOrb from "./VoiceOrbNext";
 import MangaLinksExperience from "./MangaLinksExperience";
+import PrivacyPolicyFooter from "./PrivacyPolicy";
 
 import CitizenshipIcon from "./CitizenshipIcon/CitizenshipIcon";
 import { useDecentralizedIdentity } from "../hooks/useDecentralizedIdentity";
@@ -4882,6 +4883,8 @@ export default function LinksPage() {
           }
         }}
       />
+
+      <PrivacyPolicyFooter language={language} isLightTheme={isLightTheme} />
 
       {/* Robots Building Education Modal */}
       <Modal

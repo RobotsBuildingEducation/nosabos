@@ -6,6 +6,7 @@ import React, {
   useState,
 } from "react";
 import ReactMarkdown from "react-markdown";
+import PrivacyPolicyFooter, { PrivacyPolicyModal } from "./PrivacyPolicy";
 import remarkGfm from "remark-gfm";
 import { FaAddressCard, FaInstagram } from "react-icons/fa";
 import { HiOutlineDocumentCheck } from "react-icons/hi2";
@@ -4745,18 +4746,6 @@ Object.assign(ZH_TEXT, {
 });
 
 const PRIVACY_POLICY_TITLE = "Privacy policy";
-const PRIVACY_POLICY_COPY = [
-  "Saved data is only used for your account experience, so you can return, edit answers, and stay organized across devices. It is never sold or shared.",
-  "Your identity stays private. We have no way of identifying you.",
-  "You are given keys instead of creating a personal account, and we do not save your secret key. Only you can access your information with your key.",
-  "If you lose your secret key, you lose access to your account. We cannot recover it for you.",
-];
-const [
-  PRIVACY_POLICY_SAVED_DATA,
-  PRIVACY_POLICY_IDENTITY_PRIVATE,
-  PRIVACY_POLICY_KEYS,
-  PRIVACY_POLICY_KEY_LOSS,
-] = PRIVACY_POLICY_COPY;
 const CONSULATE_FINDER_TITLE = "Find nearest Mexican consulate";
 const CONSULATE_FINDER_DESCRIPTION =
   "Use your ZIP code, city, or state to quickly find nearby Mexican consulates.";
@@ -4784,14 +4773,6 @@ Object.assign(ES_TEXT, {
   "Creating your key failed. You can still paste an existing key.":
     "No se pudo crear tu clave. Aún puedes pegar una clave existente.",
   [PRIVACY_POLICY_TITLE]: "Política de privacidad",
-  [PRIVACY_POLICY_SAVED_DATA]:
-    "Los datos guardados solo se usan para tu experiencia de cuenta, para que puedas volver, editar respuestas y mantenerte organizado/a en todos tus dispositivos. Nunca se venden ni se comparten.",
-  [PRIVACY_POLICY_IDENTITY_PRIVATE]:
-    "Tu identidad se mantiene privada. No tenemos forma de identificarte.",
-  [PRIVACY_POLICY_KEYS]:
-    "Recibes claves en lugar de crear una cuenta personal, y no guardamos tu clave secreta. Solo tú puedes acceder a tu información con tu clave.",
-  [PRIVACY_POLICY_KEY_LOSS]:
-    "Si pierdes tu clave secreta, pierdes acceso a tu cuenta. No podemos recuperarla por ti.",
   [CONSULATE_FINDER_TITLE]: "Encuentra el consulado mexicano más cercano",
   [CONSULATE_FINDER_DESCRIPTION]:
     "Usa tu código postal, ciudad o estado para encontrar rápidamente consulados mexicanos cercanos.",
@@ -4820,14 +4801,6 @@ Object.assign(PT_TEXT, {
   "Creating your key failed. You can still paste an existing key.":
     "Não foi possível criar sua chave. Você ainda pode colar uma chave existente.",
   [PRIVACY_POLICY_TITLE]: "Política de privacidade",
-  [PRIVACY_POLICY_SAVED_DATA]:
-    "Os dados salvos são usados apenas para a experiência da sua conta, para que você possa voltar, editar respostas e se organizar em todos os dispositivos. Eles nunca são vendidos nem compartilhados.",
-  [PRIVACY_POLICY_IDENTITY_PRIVATE]:
-    "Sua identidade permanece privada. Não temos como identificar você.",
-  [PRIVACY_POLICY_KEYS]:
-    "Você recebe chaves em vez de criar uma conta pessoal, e não salvamos sua chave secreta. Só você pode acessar suas informações com sua chave.",
-  [PRIVACY_POLICY_KEY_LOSS]:
-    "Se você perder sua chave secreta, perderá o acesso à sua conta. Não podemos recuperá-la para você.",
   [CONSULATE_FINDER_TITLE]: "Encontre o consulado mexicano mais próximo",
   [CONSULATE_FINDER_DESCRIPTION]:
     "Use seu CEP, cidade ou estado para encontrar rapidamente consulados mexicanos próximos.",
@@ -4856,14 +4829,6 @@ Object.assign(IT_TEXT, {
   "Creating your key failed. You can still paste an existing key.":
     "Creazione della chiave non riuscita. Puoi comunque incollare una chiave esistente.",
   [PRIVACY_POLICY_TITLE]: "Informativa sulla privacy",
-  [PRIVACY_POLICY_SAVED_DATA]:
-    "I dati salvati vengono usati solo per l'esperienza del tuo account, così puoi tornare, modificare le risposte e restare organizzato su tutti i dispositivi. Non vengono mai venduti né condivisi.",
-  [PRIVACY_POLICY_IDENTITY_PRIVATE]:
-    "La tua identità resta privata. Non abbiamo modo di identificarti.",
-  [PRIVACY_POLICY_KEYS]:
-    "Ti vengono fornite chiavi invece di creare un account personale, e non salviamo la tua chiave segreta. Solo tu puoi accedere alle tue informazioni con la tua chiave.",
-  [PRIVACY_POLICY_KEY_LOSS]:
-    "Se perdi la chiave segreta, perdi l'accesso al tuo account. Non possiamo recuperarla per te.",
   [CONSULATE_FINDER_TITLE]: "Trova il consolato messicano più vicino",
   [CONSULATE_FINDER_DESCRIPTION]:
     "Usa CAP, città o stato per trovare rapidamente i consolati messicani vicini.",
@@ -4892,14 +4857,6 @@ Object.assign(FR_TEXT, {
   "Creating your key failed. You can still paste an existing key.":
     "La création de votre clé a échoué. Vous pouvez toujours coller une clé existante.",
   [PRIVACY_POLICY_TITLE]: "Politique de confidentialité",
-  [PRIVACY_POLICY_SAVED_DATA]:
-    "Les données enregistrées servent uniquement à l'expérience de votre compte, afin que vous puissiez revenir, modifier vos réponses et rester organisé sur tous vos appareils. Elles ne sont jamais vendues ni partagées.",
-  [PRIVACY_POLICY_IDENTITY_PRIVATE]:
-    "Votre identité reste privée. Nous n'avons aucun moyen de vous identifier.",
-  [PRIVACY_POLICY_KEYS]:
-    "Vous recevez des clés au lieu de créer un compte personnel, et nous n'enregistrons pas votre clé secrète. Vous seul pouvez accéder à vos informations avec votre clé.",
-  [PRIVACY_POLICY_KEY_LOSS]:
-    "Si vous perdez votre clé secrète, vous perdez l'accès à votre compte. Nous ne pouvons pas la récupérer pour vous.",
   [CONSULATE_FINDER_TITLE]: "Trouvez le consulat mexicain le plus proche",
   [CONSULATE_FINDER_DESCRIPTION]:
     "Utilisez votre code postal, votre ville ou votre État pour trouver rapidement les consulats mexicains proches.",
@@ -4928,14 +4885,6 @@ Object.assign(JA_TEXT, {
   "Creating your key failed. You can still paste an existing key.":
     "キーを作成できませんでした。既存のキーを貼り付けることはできます。",
   [PRIVACY_POLICY_TITLE]: "プライバシーポリシー",
-  [PRIVACY_POLICY_SAVED_DATA]:
-    "保存されたデータはアカウント体験のためだけに使われます。戻って回答を編集したり、複数のデバイスで整理して使ったりできます。販売や共有はされません。",
-  [PRIVACY_POLICY_IDENTITY_PRIVATE]:
-    "あなたの身元は非公開のままです。こちらがあなたを特定する方法はありません。",
-  [PRIVACY_POLICY_KEYS]:
-    "個人アカウントを作成する代わりにキーが渡されます。こちらでは秘密鍵を保存しません。あなたのキーを使えるのはあなただけなので、情報にアクセスできるのもあなただけです。",
-  [PRIVACY_POLICY_KEY_LOSS]:
-    "秘密鍵を失うと、アカウントにアクセスできなくなります。こちらでは復元できません。",
   [CONSULATE_FINDER_TITLE]: "最寄りのメキシコ領事館を探す",
   [CONSULATE_FINDER_DESCRIPTION]:
     "郵便番号、市区町村、または州を使って、近くのメキシコ領事館をすばやく探せます。",
@@ -4964,14 +4913,6 @@ Object.assign(HI_TEXT, {
   "Creating your key failed. You can still paste an existing key.":
     "आपकी कुंजी नहीं बन सकी। आप फिर भी मौजूदा कुंजी चिपका सकते हैं।",
   [PRIVACY_POLICY_TITLE]: "गोपनीयता नीति",
-  [PRIVACY_POLICY_SAVED_DATA]:
-    "सेव किया गया डेटा केवल आपके खाते के अनुभव के लिए उपयोग होता है, ताकि आप वापस आ सकें, उत्तर संपादित कर सकें, और सभी डिवाइस पर व्यवस्थित रह सकें। इसे कभी बेचा या साझा नहीं किया जाता।",
-  [PRIVACY_POLICY_IDENTITY_PRIVATE]:
-    "आपकी पहचान निजी रहती है। हमारे पास आपको पहचानने का कोई तरीका नहीं है।",
-  [PRIVACY_POLICY_KEYS]:
-    "व्यक्तिगत खाता बनाने के बजाय आपको कुंजियाँ दी जाती हैं, और हम आपकी गुप्त कुंजी सेव नहीं करते। केवल आप अपनी कुंजी से अपनी जानकारी तक पहुँच सकते हैं।",
-  [PRIVACY_POLICY_KEY_LOSS]:
-    "अगर आप अपनी गुप्त कुंजी खो देते हैं, तो आपके खाते तक पहुँच चली जाती है। हम इसे आपके लिए वापस नहीं ला सकते।",
   [CONSULATE_FINDER_TITLE]: "निकटतम मैक्सिकन वाणिज्य दूतावास खोजें",
   [CONSULATE_FINDER_DESCRIPTION]:
     "अपने ZIP कोड, शहर या राज्य से पास के मैक्सिकन वाणिज्य दूतावास जल्दी खोजें।",
@@ -4999,14 +4940,6 @@ Object.assign(AR_TEXT, {
   "Creating your key failed. You can still paste an existing key.":
     "تعذر إنشاء مفتاحك. ما زال بإمكانك لصق مفتاح موجود.",
   [PRIVACY_POLICY_TITLE]: "سياسة الخصوصية",
-  [PRIVACY_POLICY_SAVED_DATA]:
-    "البيانات المحفوظة تُستخدم فقط لتجربة حسابك، حتى تتمكن من الرجوع وتعديل الإجابات والبقاء منظما عبر الأجهزة. لا يتم بيعها أو مشاركتها أبدا.",
-  [PRIVACY_POLICY_IDENTITY_PRIVATE]:
-    "تظل هويتك خاصة. لا توجد لدينا طريقة للتعرف عليك.",
-  [PRIVACY_POLICY_KEYS]:
-    "تحصل على مفاتيح بدلا من إنشاء حساب شخصي، ولا نحفظ مفتاحك السري. أنت وحدك تستطيع الوصول إلى معلوماتك باستخدام مفتاحك.",
-  [PRIVACY_POLICY_KEY_LOSS]:
-    "إذا فقدت مفتاحك السري، فستفقد الوصول إلى حسابك. لا يمكننا استرجاعه لك.",
   [CONSULATE_FINDER_TITLE]: "ابحث عن أقرب قنصلية مكسيكية",
   [CONSULATE_FINDER_DESCRIPTION]:
     "استخدم الرمز البريدي أو المدينة أو الولاية للعثور بسرعة على القنصليات المكسيكية القريبة.",
@@ -5035,13 +4968,6 @@ Object.assign(ZH_TEXT, {
   "Creating your key failed. You can still paste an existing key.":
     "密钥创建失败。你仍然可以粘贴已有密钥。",
   [PRIVACY_POLICY_TITLE]: "隐私政策",
-  [PRIVACY_POLICY_SAVED_DATA]:
-    "保存的数据只用于你的账户体验，让你可以返回、编辑答案，并在不同设备上保持有序。它绝不会被出售或分享。",
-  [PRIVACY_POLICY_IDENTITY_PRIVATE]: "你的身份保持私密。我们无法识别你的身份。",
-  [PRIVACY_POLICY_KEYS]:
-    "你会获得密钥，而不是创建个人账户；我们也不会保存你的密钥。只有你可以用自己的密钥访问你的信息。",
-  [PRIVACY_POLICY_KEY_LOSS]:
-    "如果你丢失密钥，就会失去账户访问权限。我们无法为你恢复。",
   [CONSULATE_FINDER_TITLE]: "查找最近的墨西哥领事馆",
   [CONSULATE_FINDER_DESCRIPTION]:
     "使用邮编、城市或州，快速查找附近的墨西哥领事馆。",
@@ -5278,14 +5204,6 @@ const DE_TEXT = {
   "Creating your key failed. You can still paste an existing key.":
     "Schlüsselerstellung fehlgeschlagen. Du kannst weiterhin einen vorhandenen Schlüssel einfügen.",
   [PRIVACY_POLICY_TITLE]: "Datenschutzrichtlinie",
-  [PRIVACY_POLICY_SAVED_DATA]:
-    "Gespeicherte Daten werden nur für dein Kontoerlebnis verwendet, damit du zurückkehren, Antworten bearbeiten und geräteübergreifend organisiert bleiben kannst. Sie werden nie verkauft oder geteilt.",
-  [PRIVACY_POLICY_IDENTITY_PRIVATE]:
-    "Deine Identität bleibt privat. Wir haben keine Möglichkeit, dich zu identifizieren.",
-  [PRIVACY_POLICY_KEYS]:
-    "Statt eines persönlichen Kontos erhältst du Schlüssel; deinen geheimen Schlüssel speichern wir nicht. Nur du kannst mit deinem Schlüssel auf deine Informationen zugreifen.",
-  [PRIVACY_POLICY_KEY_LOSS]:
-    "Wenn du deinen geheimen Schlüssel verlierst, verlierst du den Zugriff auf dein Konto. Wir können ihn nicht wiederherstellen.",
   [CONSULATE_FINDER_TITLE]: "Nächstes mexikanisches Konsulat finden",
   [CONSULATE_FINDER_DESCRIPTION]:
     "Nutze PLZ, Stadt oder Bundesstaat, um schnell nahe mexikanische Konsulate zu finden.",
@@ -8562,6 +8480,19 @@ const CitizenshipIntro = ({
   isSigningIn,
   hasAccountKey,
 }) => {
+  const accountIntro = {
+    en: "Your account key will be created when you select Next. You can read the privacy policy below first.",
+    es: "Tu clave de cuenta se creará cuando selecciones Siguiente. Primero puedes leer la política de privacidad de abajo.",
+    pt: "Sua chave de conta será criada ao selecionar Próximo. Você pode ler a política de privacidade abaixo primeiro.",
+    it: "La chiave del tuo account verrà creata quando selezioni Avanti. Puoi prima leggere l’informativa sulla privacy qui sotto.",
+    fr: "La clé de votre compte sera créée lorsque vous sélectionnerez Suivant. Vous pouvez d’abord lire la politique de confidentialité ci-dessous.",
+    de: "Dein Kontoschlüssel wird erstellt, wenn du Weiter auswählst. Du kannst zuerst die Datenschutzerklärung unten lesen.",
+    ja: "「次へ」を選ぶとアカウントキーが作成されます。その前に下のプライバシーポリシーを読めます。",
+    hi: "अगला चुनने पर आपकी खाता कुंजी बनाई जाएगी। पहले आप नीचे दी गई गोपनीयता नीति पढ़ सकते हैं।",
+    ar: "سيتم إنشاء مفتاح حسابك عند اختيار التالي. يمكنك أولاً قراءة سياسة الخصوصية أدناه.",
+    zh: "选择“下一步”时将创建你的账户密钥。你可以先阅读下方的隐私政策。",
+  };
+  const accountIntroText = accountIntro[language] || accountIntro.en;
   const [showSignIn, setShowSignIn] = useState(false);
   const [secretInput, setSecretInput] = useState("");
 
@@ -8607,12 +8538,14 @@ const CitizenshipIntro = ({
                 language,
               )}
             </Text>
-            <Text color="var(--app-text-muted)" fontSize="sm">
-              {translateText(
-                "Before you start, save your secret key somewhere safe. It is how you access your account and return to your citizenship answers later. We cannot recover it for you.",
-                language,
-              )}
-            </Text>
+            {hasAccountKey ? (
+              <Text color="var(--app-text-muted)" fontSize="sm">
+                {translateText(
+                  "Before you start, save your secret key somewhere safe. It is how you access your account and return to your citizenship answers later. We cannot recover it for you.",
+                  language,
+                )}
+              </Text>
+            ) : null}
           </Stack>
         </Box>
 
@@ -8638,10 +8571,7 @@ const CitizenshipIntro = ({
                 )
               : hasAccountKey
                 ? translateText("This account is ready.", language)
-                : translateText(
-                    "Creating your key failed. You can still paste an existing key.",
-                    language,
-                  )}
+                : accountIntroText}
           </Text>
         </Box>
 
@@ -8662,7 +8592,7 @@ const CitizenshipIntro = ({
               onSubmitSound?.();
               onCopySecretKey();
             }}
-            isDisabled={isPreparingAccount}
+            isDisabled={isPreparingAccount || !hasAccountKey}
             _hover={{ bg: "var(--app-surface-muted)" }}
             _active={{ boxShadow: "none", transform: "none" }}
           >
@@ -8796,45 +8726,6 @@ const CitizenshipIntro = ({
             </Flex>
           </Stack>
         ) : null}
-
-        <Accordion allowToggle>
-          <AccordionItem
-            {...CITIZENSHIP_INSET_SQUIRCLE_PROPS}
-            border="1px solid"
-            borderColor="var(--app-border)"
-            overflow="hidden"
-          >
-            <AccordionButton
-              {...CITIZENSHIP_ACCORDION_FOCUS_PROPS}
-              onClick={onSelectSound}
-              _hover={{ bg: "var(--app-surface-muted)" }}
-            >
-              <HStack flex="1" textAlign="start" spacing={2}>
-                <Icon as={ShieldCheck} boxSize="16px" color="#0f766e" />
-                <Text fontWeight="700" color="var(--app-text-primary)">
-                  {translateText(PRIVACY_POLICY_TITLE, language)}
-                </Text>
-              </HStack>
-              <AccordionIcon />
-            </AccordionButton>
-            <AccordionPanel
-              bg="var(--app-surface-elevated)"
-              borderTop="1px solid var(--app-border)"
-            >
-              <Stack
-                spacing={3}
-                fontSize="sm"
-                color="var(--app-text-secondary)"
-              >
-                {PRIVACY_POLICY_COPY.map((paragraph) => (
-                  <Text key={paragraph}>
-                    {translateText(paragraph, language)}
-                  </Text>
-                ))}
-              </Stack>
-            </AccordionPanel>
-          </AccordionItem>
-        </Accordion>
       </Stack>
     </Box>
   );
@@ -12138,7 +12029,6 @@ export default function CitizenshipGuide() {
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
-  const hasTriggeredKeygenRef = useRef(false);
   const accountCreationPromiseRef = useRef(null);
   const hasLoadedProgressRef = useRef(false);
   const editReturnViewRef = useRef("results");
@@ -12284,32 +12174,6 @@ export default function CitizenshipGuide() {
       setIsPreparingAccount(false);
     }
   }, [auth, generateNostrKeys]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const hasStoredKeys = Boolean(getStoredNpub()) && Boolean(getStoredNsec());
-    if (hasStoredKeys || hasTriggeredKeygenRef.current) return;
-
-    hasTriggeredKeygenRef.current = true;
-    let cancelled = false;
-    ensureCitizenshipAccount().catch((error) => {
-      if (cancelled) return;
-      console.warn("Failed to prepare citizenship account:", error);
-      toast({
-        title: translateText(
-          "Creating your key failed. You can still paste an existing key.",
-          pageLanguage,
-        ),
-        status: "warning",
-        duration: 3400,
-        isClosable: true,
-      });
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [ensureCitizenshipAccount, pageLanguage, toast]);
 
   useEffect(() => {
     initLanguage();
@@ -13670,6 +13534,7 @@ export default function CitizenshipGuide() {
           ) : null}
         </Stack>
       </Container>
+      <PrivacyPolicyFooter language={pageLanguage} isLightTheme={isLightTheme} />
       <Modal
         isOpen={isFeedbackOpen}
         onClose={() => setIsFeedbackOpen(false)}
@@ -13804,39 +13669,12 @@ export default function CitizenshipGuide() {
           </ModalFooter>
         </ModalContent>
       </Modal>
-      <Modal
+      <PrivacyPolicyModal
         isOpen={isPrivacyOpen}
         onClose={() => setIsPrivacyOpen(false)}
-        isCentered
-        motionPreset="none"
-      >
-        <ModalOverlay motionProps={nativeOverlayMotionProps} bg="var(--app-overlay)" />
-        <ModalContent
-          style={CITIZENSHIP_SQUIRCLE_STYLE}
-          motionProps={nativeModalMotionProps}
-          bg="var(--app-surface)"
-          color="var(--app-text-primary)"
-          border="4px solid"
-          borderColor="#0f766e"
-        >
-          <ModalHeader>
-            <HStack spacing={2}>
-              <Icon as={ShieldCheck} color="#0f766e" />
-              <Text>{translateText(PRIVACY_POLICY_TITLE, pageLanguage)}</Text>
-            </HStack>
-          </ModalHeader>
-          <ModalCloseButton />
-          <ModalBody pb={5}>
-            <Stack spacing={4} fontSize="sm" color="var(--app-text-secondary)">
-              {PRIVACY_POLICY_COPY.map((paragraph) => (
-                <Text key={paragraph}>
-                  {translateText(paragraph, pageLanguage)}
-                </Text>
-              ))}
-            </Stack>
-          </ModalBody>
-        </ModalContent>
-      </Modal>
+        language={pageLanguage}
+        isLightTheme={isLightTheme}
+      />
     </Box>
   );
 }

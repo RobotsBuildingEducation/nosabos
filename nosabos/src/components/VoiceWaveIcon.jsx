@@ -58,6 +58,7 @@ export default function VoiceWaveIcon({
   ];
 
   useEffect(() => {
+    const bars = barRefs.current;
     const hasLiveSource = !!(stream || audioLevelRef);
     if (!hasLiveSource) {
       // Clear any inline styles so default CSS animation runs
@@ -86,7 +87,7 @@ export default function VoiceWaveIcon({
           sourceNode = ctx.createMediaStreamSource(stream);
           sourceNode.connect(analyserNode);
           freqData = new Uint8Array(analyserNode.frequencyBinCount);
-        } catch (e) {
+        } catch {
           analyserNode = null;
           sourceNode = null;
         }
@@ -101,7 +102,7 @@ export default function VoiceWaveIcon({
     const updateFrame = () => {
       if (isDisposed) return;
 
-      const activeBarCount = Math.min(barCount, 4);
+      const activeBarCount = barCount;
 
       if (analyserNode && freqData) {
         analyserNode.getByteFrequencyData(freqData);
@@ -109,7 +110,7 @@ export default function VoiceWaveIcon({
         const maxLevel = 175;
 
         for (let i = 0; i < activeBarCount; i++) {
-          const bucket = FREQ_BUCKETS[i] || FREQ_BUCKETS[0];
+          const bucket = FREQ_BUCKETS[i % FREQ_BUCKETS.length];
           let sum = 0;
           let count = 0;
           for (let b = bucket.start; b <= bucket.end && b < freqData.length; b++) {
@@ -141,7 +142,7 @@ export default function VoiceWaveIcon({
       } else if (audioLevelRef) {
         const rawLvl = Math.min(1, Math.max(0, audioLevelRef.current || 0));
         for (let i = 0; i < activeBarCount; i++) {
-          const weight = LEVEL_WEIGHTS[i] || 1;
+          const weight = LEVEL_WEIGHTS[i % LEVEL_WEIGHTS.length];
           const target = Math.min(1, rawLvl * weight);
           const prev = smoothRef.current[i] || 0;
           const current =
@@ -171,11 +172,11 @@ export default function VoiceWaveIcon({
       if (animId) cancelAnimationFrame(animId);
       try {
         sourceNode?.disconnect();
-      } catch {}
+      } catch { /* The stream may already have disconnected. */ }
       try {
         analyserNode?.disconnect();
-      } catch {}
-      barRefs.current.forEach((el) => {
+      } catch { /* The audio graph may already have closed. */ }
+      bars.forEach((el) => {
         if (!el) return;
         el.style.animation = "";
         el.style.transform = "";
@@ -194,33 +195,36 @@ export default function VoiceWaveIcon({
       aria-hidden="true"
       {...props}
     >
-      {defaultBars.slice(0, barCount).map((bar, i) => (
-        <Box
-          key={i}
-          ref={(el) => {
-            barRefs.current[i] = el;
-          }}
-          w={`${barWidth}px`}
-          h={`${Math.round(numSize * bar.scale)}px`}
-          borderRadius="full"
-          bg={color}
-          sx={{
-            transformOrigin: "center",
-            willChange: "transform, opacity",
-            animation: `voiceWavePulse 0.75s ease-in-out ${bar.delay}s infinite alternate`,
-            "@keyframes voiceWavePulse": {
-              "0%": {
-                transform: "scaleY(0.35)",
-                opacity: 0.65,
+      {Array.from({ length: barCount }, (_, i) => {
+        const bar = defaultBars[i % defaultBars.length];
+        return (
+          <Box
+            key={i}
+            ref={(el) => {
+              barRefs.current[i] = el;
+            }}
+            w={`${barWidth}px`}
+            h={`${Math.round(numSize * bar.scale)}px`}
+            borderRadius="full"
+            bg={color}
+            sx={{
+              transformOrigin: "center",
+              willChange: "transform, opacity",
+              animation: `voiceWavePulse 0.75s ease-in-out ${bar.delay}s infinite alternate`,
+              "@keyframes voiceWavePulse": {
+                "0%": {
+                  transform: "scaleY(0.35)",
+                  opacity: 0.65,
+                },
+                "100%": {
+                  transform: "scaleY(1.3)",
+                  opacity: 1,
+                },
               },
-              "100%": {
-                transform: "scaleY(1.3)",
-                opacity: 1,
-              },
-            },
-          }}
-        />
-      ))}
+            }}
+          />
+        );
+      })}
     </HStack>
   );
 }

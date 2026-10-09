@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Landing tutor browser regression</title>
+<h1>Landing tutor five-turn regression</h1>
+<p id="result">Running…</p>
+<script type="module">
+import { LandingTutorDemoSession } from '/src/utils/landingTutorDemo.js';
+let options;
+let closed = false;
+const session = new LandingTutorDemoSession({
+  createBridge: async input => {
+    options = input;
+    return { send() {}, setInputAudioEnabled() {}, close: async () => { closed = true; } };
+  },
+});
+try {
+  await session.start();
+  if (session.state.status !== 'thinking') throw new Error('Startup failed');
+  await options.onEvent({ data: JSON.stringify({ type: 'response.done', response_id: 'intro' }) });
+  if (session.state.status !== 'listening') throw new Error('Listening failed');
+  const event = async payload => options.onEvent({ data: JSON.stringify(payload) });
+  await event({ type: 'conversation.item.input_audio_transcription.completed', transcript: 'hola' });
+  await event({ type: 'response.done', response_id: 'feedback' });
+  if (session.run.turn !== 3) throw new Error('Word 2 did not start automatically');
+  await event({ type: 'response.done', response_id: 'word2' });
+  await event({ type: 'conversation.item.input_audio_transcription.completed', transcript: 'gracias' });
+  await event({ type: 'response.done', response_id: 'review1' });
+  await event({ type: 'conversation.item.input_audio_transcription.completed', transcript: 'hola' });
+  await event({ type: 'response.done', response_id: 'review2' });
+  if (closed || session.state.status !== 'listening') throw new Error('Final exercise was cut off');
+  await event({ type: 'conversation.item.input_audio_transcription.completed', transcript: 'gracias' });
+  await event({ type: 'response.done', response_id: 'final-feedback' });
+  if (!closed || !options.signal.aborted || session.state.status !== 'ended') throw new Error('Cleanup failed');
+  document.querySelector('#result').textContent = 'PASS — native browser startup, five lesson turns, final review, and cleanup.';
+} catch (error) {
+  session.dispose();
+  document.querySelector('#result').textContent = 'FAIL — ' + error.message;
+}
+</script>
+</html>

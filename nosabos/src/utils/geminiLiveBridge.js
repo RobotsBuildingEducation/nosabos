@@ -279,6 +279,7 @@ async function getGeminiLiveAI() {
 }
 
 async function connectLiveSession({
+  signal = null,
   voice = DEFAULT_GEMINI_LIVE_VOICE,
   includeTranscriptions = true,
   inputLanguageCodes = null,
@@ -286,6 +287,7 @@ async function connectLiveSession({
   systemInstruction = null,
 } = {}) {
   const ai = await getGeminiLiveAI();
+  signal?.throwIfAborted();
   const configs = [
     buildLiveGenerationConfig({
       includeTranscriptions,
@@ -315,6 +317,7 @@ async function connectLiveSession({
   let firstError = null;
 
   for (const config of configs) {
+    signal?.throwIfAborted();
     try {
       const liveModel = getLiveGenerativeModel(ai, {
         model: GEMINI_LIVE_MODEL,
@@ -322,8 +325,14 @@ async function connectLiveSession({
         ...(systemInstruction ? { systemInstruction } : {}),
         ...(Array.isArray(tools) && tools.length ? { tools } : {}),
       });
-      return await liveModel.connect();
+      const session = await liveModel.connect();
+      if (signal?.aborted) {
+        await session.close();
+        signal.throwIfAborted();
+      }
+      return session;
     } catch (error) {
+      signal?.throwIfAborted();
       firstError ||= error;
     }
   }
@@ -488,6 +497,8 @@ export async function createGeminiLiveVoicePreviewPlayer({
 }
 
 export async function createGeminiLiveRealtimeBridge({
+  signal = null,
+  audioContext = null,
   audioElement = null,
   inputAudioEnabled = true,
   initialInstructions = "",
@@ -511,6 +522,15 @@ export async function createGeminiLiveRealtimeBridge({
     onAudioGraph,
     onError,
   });
+  bridge.signal = signal;
+  bridge.audioContext = audioContext;
+  const abort = () => { void bridge.close(); };
+  if (signal?.aborted) {
+    await bridge.close();
+    throw new DOMException("Connection canceled.", "AbortError");
+  }
+  signal?.addEventListener("abort", abort, { once: true });
+  bridge.abortCleanup = () => signal?.removeEventListener("abort", abort);
   try {
     await bridge.connect();
   } catch (error) {
@@ -600,8 +620,14 @@ class GeminiLiveRealtimeBridge {
       throw new Error("Microphone access is not supported in this browser.");
     }
 
-    this.session = await this.connectLiveSession();
+    const session = await this.connectLiveSession();
+    if (this.closed) {
+      await session.close();
+      throw new DOMException("Connection canceled.", "AbortError");
+    }
+    this.session = session;
     await this.setupAudio();
+    if (this.closed) throw new DOMException("Connection canceled.", "AbortError");
     this.readyState = "open";
     // Billing visibility: which model/backend this session bills against.
     console.info(
@@ -634,6 +660,7 @@ class GeminiLiveRealtimeBridge {
       .join("\n\n");
 
     return connectLiveSession({
+      signal: this.signal,
       voice: this.voice,
       includeTranscriptions: true,
       inputLanguageCodes: this.inputLanguageCodes,
@@ -644,9 +671,10 @@ class GeminiLiveRealtimeBridge {
 
   async setupAudio() {
     const Ctx = window.AudioContext || window.webkitAudioContext;
-    const ctx = new Ctx();
-    if (ctx.state === "suspended") await ctx.resume();
+    const ctx = this.audioContext || new Ctx();
     this.audioContext = ctx;
+    if (ctx.state === "suspended") await ctx.resume();
+    if (this.closed) throw new DOMException("Connection canceled.", "AbortError");
     // Must precede getUserMedia: a "playback" audioSession (set by the TTS
     // unlock) makes mobile Safari throw "AudioSession category not compatible
     // with audio capture". "play-and-talk" allows mic + speaker.
@@ -658,13 +686,18 @@ class GeminiLiveRealtimeBridge {
     } catch {
       // Best-effort; getUserMedia will surface real failures.
     }
-    this.mediaStream = await navigator.mediaDevices.getUserMedia({
+    const mediaStream = await navigator.mediaDevices.getUserMedia({
       audio: {
         echoCancellation: INPUT_ECHO_CANCELLATION,
         noiseSuppression: INPUT_NOISE_SUPPRESSION,
         autoGainControl: INPUT_AUTO_GAIN_CONTROL,
       },
     });
+    if (this.closed) {
+      mediaStream.getTracks().forEach((track) => track.stop());
+      throw new DOMException("Connection canceled.", "AbortError");
+    }
+    this.mediaStream = mediaStream;
     this.applyInputAudioEnabled();
 
     const workletBlob = new Blob([AUDIO_WORKLET_SOURCE], {
@@ -676,6 +709,7 @@ class GeminiLiveRealtimeBridge {
     } finally {
       URL.revokeObjectURL(workletUrl);
     }
+    if (this.closed) throw new DOMException("Connection canceled.", "AbortError");
 
     this.micSource = ctx.createMediaStreamSource(this.mediaStream);
     this.workletNode = new AudioWorkletNode(ctx, AUDIO_WORKLET_NAME, {
@@ -894,6 +928,7 @@ class GeminiLiveRealtimeBridge {
         if (this.closed) break;
         await this.handleServerMessage(message);
       }
+      if (!this.closed && !this.resettingSession) await this.emit({ type: "session.closed" });
     } catch (error) {
       if (!this.closed && !this.resettingSession) this.handleError(error);
     }
@@ -1540,6 +1575,7 @@ class GeminiLiveRealtimeBridge {
   async close() {
     if (this.closed) return;
     this.closed = true;
+    this.abortCleanup?.();
     this.readyState = "closed";
     if (this.responseTimer) {
       clearTimeout(this.responseTimer);
