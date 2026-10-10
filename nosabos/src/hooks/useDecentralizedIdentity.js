@@ -3,24 +3,17 @@ import { useState, useEffect, useCallback } from "react";
 import { Buffer } from "buffer";
 import { bech32 } from "bech32";
 
-import NDK, {
-  NDKPrivateKeySigner,
-  NDKNip07Signer,
-  NDKKind,
-  NDKEvent,
-} from "@nostr-dev-kit/ndk";
+let NDK, NDKPrivateKeySigner, NDKNip07Signer, NDKKind, NDKEvent, ndk;
+let sdkPromise;
+async function loadIdentitySdk() {
+  sdkPromise ||= import("@nostr-dev-kit/ndk").then(module => {
+    ({ default: NDK, NDKPrivateKeySigner, NDKNip07Signer, NDKKind, NDKEvent } = module);
+    ndk = new NDK({ explicitRelayUrls: ["wss://relay.ditto.pub", "wss://relay.primal.net", "wss://nos.lol"] });
+  }).catch(error => { sdkPromise = null; throw error; });
+  await sdkPromise;
+}
 
-const ndk = new NDK({
-  explicitRelayUrls: [
-    "wss://relay.ditto.pub",
-    "wss://relay.primal.net",
-    "wss://nos.lol",
-  ],
-});
-
-console.log("ndk created:", ndk);
-
-export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
+export const useDecentralizedIdentity = (initialNpub, initialNsec, { autoConnect = true } = {}) => {
   const [isConnected, setIsConnected] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
   const [nostrPubKey, setNostrPubKey] = useState(initialNpub || "");
@@ -42,6 +35,7 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
 
     const initializeConnection = async () => {
       try {
+        await loadIdentitySdk();
         await ndk.connect();
         setIsConnected(true);
 
@@ -74,10 +68,11 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
       }
     };
 
-    initializeConnection();
-  }, []);
+    if (autoConnect) initializeConnection();
+  }, [autoConnect]);
 
   const generateNostrKeys = async (userDisplayName = null) => {
+    await loadIdentitySdk();
     console.log("[GENERATE_KEYS] Generating NEW nostr keys...");
     const privateKeySigner = NDKPrivateKeySigner.generate();
 
@@ -153,6 +148,7 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
 
   const connectToNostr = useCallback(
     async (npubRef = null, nsecRef = null) => {
+      await loadIdentitySdk();
       const defaultNsec = import.meta.env.VITE_GLOBAL_NOSTR_NSEC;
       const defaultNpub =
         "npub1mgt5c7qh6dm9rg57mrp89rqtzn64958nj5w9g2d2h9dng27hmp0sww7u2v";
@@ -224,6 +220,7 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
 
   const auth = async (nsec) => {
     try {
+      await loadIdentitySdk();
       console.log(
         "[AUTH] Starting auth with nsec:",
         nsec?.substring(0, 20) + "...",
@@ -272,6 +269,8 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
 
   // Helper to ensure the signer is ready (initializes NIP-07 signer if needed)
   const ensureSigner = async () => {
+    await loadIdentitySdk();
+    await ndk.connect();
     if (ndk.signer) return ndk.signer;
 
     if (isNip07Mode() && isNip07Available()) {
@@ -303,6 +302,7 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
 
   const authWithExtension = async () => {
     try {
+      await loadIdentitySdk();
       if (!isNip07Available()) {
         throw new Error(
           "No Nostr extension found. Please install a NIP-07 compatible extension like nos2x or Alby.",
@@ -335,7 +335,7 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
 
   const postNostrContent = async (
     content,
-    kind = NDKKind.Text,
+    kind = 1, // Nostr text-note kind; the SDK is loaded when publishing.
     npubRef = null,
     nsecRef = null,
     tags = [],
@@ -390,6 +390,7 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
     awardeeNpub = localStorage.getItem("local_npub"), // The public key of the user being awarded
     ownerNsec = import.meta.env.VITE_SECRET_KEY, // Your private key to sign the event
   ) => {
+    await loadIdentitySdk();
     if (!awardeeNpub) {
       console.error("Awardee public key is required to award the badge.");
       return;

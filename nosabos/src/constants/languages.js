@@ -1,3 +1,5 @@
+import { LANGUAGE_DETAILS, LANGUAGE_FALLBACK_LABELS, LANGUAGE_LOCALES } from "./languagesData.js";
+export { LANGUAGE_FALLBACK_LABELS, LANGUAGE_LOCALES } from "./languagesData.js";
 import {
   brazilianFlag,
   chineseFlag,
@@ -20,26 +22,6 @@ import { SUPPORT_LANGUAGE_CODES as CANONICAL_SUPPORT_LANGUAGE_CODES } from "./su
 export const DEFAULT_SUPPORT_LANGUAGE = "en";
 export const DEFAULT_TARGET_LANGUAGE = "es";
 
-export const LANGUAGE_FALLBACK_LABELS = {
-  ar: "Egyptian Arabic",
-  zh: "Mandarin Chinese",
-  en: "English",
-  es: "Spanish",
-  pt: "Portuguese",
-  fr: "French",
-  it: "Italian",
-  hi: "Hindi",
-  nl: "Dutch",
-  nah: "Eastern Huasteca Nahuatl",
-  ja: "Japanese (日本語)",
-  ru: "Russian",
-  de: "German",
-  el: "Greek",
-  pl: "Polish",
-  ga: "Irish",
-  yua: "Yucatec Maya",
-};
-
 export const LANGUAGE_PROMPT_LABELS = {
   ar: "Egyptian Arabic (العربية المصرية)",
   zh: "Mandarin Chinese (普通话中文)",
@@ -60,140 +42,27 @@ export const LANGUAGE_PROMPT_LABELS = {
   ja: "Japanese (日本語)",
 };
 
-const LANGUAGE_META = [
-  {
-    value: "ar",
-    languageKey: "language_ar",
-    practiceKey: "onboarding_practice_ar",
-    tier: "stable",
-    supportTier: "stable",
-    practiceEnabled: false,
-    flag: egyptianFlag,
-  },
-  {
-    value: "nl",
-    languageKey: "language_nl",
-    practiceKey: "onboarding_practice_nl",
-    tier: "stable",
-    flag: netherlandsFlag,
-  },
-  {
-    value: "en",
-    languageKey: "language_en",
-    practiceKey: "onboarding_practice_en",
-    tier: "stable",
-    flag: usaFlag,
-  },
-  {
-    value: "fr",
-    languageKey: "language_fr",
-    practiceKey: "onboarding_practice_fr",
-    tier: "stable",
-    flag: frenchFlag,
-  },
-  {
-    value: "de",
-    languageKey: "language_de",
-    practiceKey: "onboarding_practice_de",
-    tier: "stable",
-    flag: germanFlag,
-  },
-  {
-    value: "it",
-    languageKey: "language_it",
-    practiceKey: "onboarding_practice_it",
-    tier: "stable",
-    flag: italianFlag,
-  },
-  {
-    value: "hi",
-    languageKey: "language_hi",
-    practiceKey: "onboarding_practice_hi",
-    tier: "stable",
-    supportTier: "stable",
-    practiceEnabled: false,
-    flag: indianFlag,
-  },
-  {
-    value: "zh",
-    languageKey: "language_zh",
-    practiceKey: "onboarding_practice_zh",
-    tier: "stable",
-    supportTier: "stable",
-    practiceEnabled: false,
-    flag: chineseFlag,
-  },
-  {
-    value: "pt",
-    languageKey: "language_pt",
-    practiceKey: "onboarding_practice_pt",
-    tier: "stable",
-    flag: brazilianFlag,
-  },
-  {
-    value: "es",
-    languageKey: "language_es",
-    practiceKey: "onboarding_practice_es",
-    tier: "stable",
-    flag: mexicanFlag,
-  },
-  {
-    value: "nah",
-    languageKey: "language_nah",
-    practiceKey: "onboarding_practice_nah",
-    tier: "alpha",
-    // Temporarily hidden from practice-language selectors. Keep the language
-    // registered so existing user data and the underlying implementation work.
-    selectorHidden: true,
-    flag: mexicanFlag,
-  },
-  {
-    value: "yua",
-    languageKey: "language_yua",
-    practiceKey: "onboarding_practice_yua",
-    tier: "alpha",
-    // Temporarily hidden from practice-language selectors. Keep the language
-    // registered so existing user data and the underlying implementation work.
-    selectorHidden: true,
-    flag: mexicanFlag,
-  },
-  {
-    value: "el",
-    languageKey: "language_el",
-    practiceKey: "onboarding_practice_el",
-    tier: "beta",
-    flag: greekFlag,
-  },
-  {
-    value: "ja",
-    languageKey: "language_ja",
-    practiceKey: "onboarding_practice_ja",
-    tier: "beta",
-    supportTier: "stable",
-    flag: japaneseFlag,
-  },
-  {
-    value: "ru",
-    languageKey: "language_ru",
-    practiceKey: "onboarding_practice_ru",
-    tier: "beta",
-    flag: russianFlag,
-  },
-  {
-    value: "pl",
-    languageKey: "language_pl",
-    practiceKey: "onboarding_practice_pl",
-    tier: "beta",
-    flag: polishFlag,
-  },
-  {
-    value: "ga",
-    languageKey: "language_ga",
-    practiceKey: "onboarding_practice_ga",
-    tier: "beta",
-    flag: irishFlag,
-  },
-];
+const LANGUAGE_FLAGS = {
+  ar: egyptianFlag,
+  nl: netherlandsFlag,
+  en: usaFlag,
+  fr: frenchFlag,
+  de: germanFlag,
+  it: italianFlag,
+  hi: indianFlag,
+  zh: chineseFlag,
+  pt: brazilianFlag,
+  es: mexicanFlag,
+  nah: mexicanFlag,
+  yua: mexicanFlag,
+  el: greekFlag,
+  ja: japaneseFlag,
+  ru: russianFlag,
+  pl: polishFlag,
+  ga: irishFlag,
+};
+
+const LANGUAGE_META = LANGUAGE_DETAILS.map(item => ({ ...item, flag: LANGUAGE_FLAGS[item.value] }));
 
 const TIER_ORDER = { stable: 0, alpha: 1, beta: 2 };
 const SUPPORTED_LANGUAGE_CODES_SET = new Set(
@@ -207,25 +76,6 @@ const SUPPORT_LANGUAGE_CODES_BASE = [...CANONICAL_SUPPORT_LANGUAGE_CODES];
 const SUPPORT_LANGUAGE_CODES_SET = new Set(SUPPORT_LANGUAGE_CODES_BASE);
 export const RTL_LANGUAGE_CODES = ["ar"];
 
-export const LANGUAGE_LOCALES = {
-  ar: "ar-EG",
-  zh: "zh-CN",
-  en: "en-US",
-  es: "es-MX",
-  pt: "pt-BR",
-  fr: "fr-FR",
-  it: "it-IT",
-  hi: "hi-IN",
-  nl: "nl-NL",
-  nah: "es-MX",
-  ja: "ja-JP",
-  ru: "ru-RU",
-  de: "de-DE",
-  el: "el-GR",
-  pl: "pl-PL",
-  ga: "ga-IE",
-  yua: "es-MX",
-};
 
 const SORT_LOCALES = {
   ar: "ar",

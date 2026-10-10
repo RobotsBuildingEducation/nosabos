@@ -4,6 +4,8 @@ import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import { visualizer } from "rollup-plugin-visualizer";
+import { publicSeoPlugin } from "./scripts/publicSeoPlugin.mjs";
+import { PUBLIC_WORKBOX_OPTIONS } from "./scripts/pwaConfig.mjs";
 
 function pwaVersionMetadataPlugin({ buildId, builtAt }) {
   const versionPayload = JSON.stringify(
@@ -39,7 +41,7 @@ function pwaVersionMetadataPlugin({ buildId, builtAt }) {
 }
 
 // https://vite.dev/config/
-export default defineConfig(({ mode, command }) => {
+export default defineConfig(({ mode, command, isSsrBuild }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const projectId = env.VITE_FIREBASE_PROJECT_ID;
 
@@ -52,6 +54,8 @@ export default defineConfig(({ mode, command }) => {
   const builtAt = new Date().toISOString();
 
   return {
+    build: { manifest: !isSsrBuild },
+    ssr: { noExternal: ["noisejs"] },
     define: {
       __APP_BUILD_ID__: JSON.stringify(buildId),
       __APP_BUILT_AT__: JSON.stringify(builtAt),
@@ -74,14 +78,13 @@ export default defineConfig(({ mode, command }) => {
     },
     plugins: [
       react(),
+      ...(!isSsrBuild ? [publicSeoPlugin()] : []),
       pwaVersionMetadataPlugin({ buildId, builtAt }),
-      VitePWA({
+      ...(!isSsrBuild ? [VitePWA({
+        // The app update coordinator registers on sign-in/existing installs.
+        injectRegister: null,
         workbox: {
-          maximumFileSizeToCacheInBytes: 10000000,
-          // OAuth, API navigations, and version metadata must always reach
-          // Firebase Hosting / network directly rather than the index.html fallback.
-          navigateFallbackDenylist: [/^\/api(?:\/|$)/, /^\/version\.json$/],
-          globIgnores: ["**/version.json"],
+          ...PUBLIC_WORKBOX_OPTIONS,
         },
         manifest: {
           name: "Piyali",
@@ -97,13 +100,19 @@ export default defineConfig(({ mode, command }) => {
 
           icons: [
             {
-              src: "https://res.cloudinary.com/dtkeyccga/image/upload/v1790678646/logos_512_x_512_px_15_aokgri.png",
+              src: "https://res.cloudinary.com/dtkeyccga/image/upload/c_scale,w_192/f_png/q_auto/v1790678646/logos_512_x_512_px_15_aokgri.png",
+              sizes: "192x192",
+              type: "image/png",
+              purpose: "any",
+            },
+            {
+              src: "https://res.cloudinary.com/dtkeyccga/image/upload/c_scale,w_512/f_png/q_auto/v1790678646/logos_512_x_512_px_15_aokgri.png",
               sizes: "512x512",
               type: "image/png",
               purpose: "any",
             },
             {
-              src: "https://res.cloudinary.com/dtkeyccga/image/upload/v1790678646/logos_512_x_512_px_15_aokgri.png",
+              src: "https://res.cloudinary.com/dtkeyccga/image/upload/c_scale,w_512/f_png/q_auto/v1790678646/logos_512_x_512_px_15_aokgri.png",
               sizes: "512x512",
               type: "image/png",
               purpose: "maskable",
@@ -116,14 +125,14 @@ export default defineConfig(({ mode, command }) => {
         devOptions: {
           enabled: true,
         },
-      }),
-      visualizer({
+      })] : []),
+      ...(!isSsrBuild ? [visualizer({
         filename: "stats.html",
-        open: true,
+        open: false,
         template: "treemap",
         gzipSize: true,
         brotliSize: true,
-      }),
+      })] : []),
     ],
   };
 });

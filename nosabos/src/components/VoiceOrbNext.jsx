@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { PublicRenderContext } from "../seo/PublicRenderContext.js";
 import { useThemeStore } from "../useThemeStore";
-import VoiceOrb3D from "./VoiceOrb3D.jsx";
+const VoiceOrb3D = lazy(() => import("./VoiceOrb3D.jsx"));
 import { randomDisplayOrb, randomTutorFeedback, REACTION_DURATION, REACTION_SETTLE_DURATION, TUTOR_DEFAULT_MOODS } from "./orbing/orbModel.js";
 import "./voiceOrbNext.css";
 
@@ -15,20 +16,39 @@ function MiniOrb({ state, palette, mood, reaction }) {
 }
 
 /** Display orbs choose their own personality; tutor orbs follow the live voice state. */
-export default function VoiceOrbNext({ state = "idle", theme, palette, size = 75, centered = true, variant = "display", excludeThinking = false, callActive = true, feedback = null, force3D = false, showShadow = true, audioLevelRef, sharedRenderer, maxDpr }) {
+export default function VoiceOrbNext({ state = "idle", theme, palette, size = 75, centered = true, variant = "display", excludeThinking = false, callActive = true, feedback = null, force3D = false, defer3D = false, showShadow = true, audioLevelRef, sharedRenderer, maxDpr }) {
+  const publicLocale = useContext(PublicRenderContext);
   const themeMode = useThemeStore((store) => store.themeMode);
   const dark = (theme || themeMode) !== "light";
   const resolvedPalette = palette || (dark ? "blue" : "mint");
   const isDisplay = variant === "display";
-  const useMini = size < 64 && !force3D;
-  const [personality, setPersonality] = useState(() => randomDisplayOrb(Math.random, { excludeThinking }));
+  const hostRef = useRef(null);
+  const [interactiveReady, setInteractiveReady] = useState(false);
+  const useMini = (size < 64 && !force3D) || (defer3D && !interactiveReady);
+  const [personality, setPersonality] = useState(() => randomDisplayOrb(publicLocale ? () => 0.42 : Math.random, { excludeThinking }));
   const [reaction, setReaction] = useState(() => ({ id: 1, kind: personality.reaction }));
-  const [defaultTutorMood] = useState(() => TUTOR_DEFAULT_MOODS[Math.floor(Math.random() * TUTOR_DEFAULT_MOODS.length)]);
+  const [defaultTutorMood] = useState(() => TUTOR_DEFAULT_MOODS[Math.floor((publicLocale ? 0.42 : Math.random()) * TUTOR_DEFAULT_MOODS.length)]);
   const [tutorFeedback, setTutorFeedback] = useState(null);
   const reactionId = useRef(1);
   const voiceState = isDisplay ? (excludeThinking && personality.state === "thinking" ? "idle" : personality.state) : (callActive && ["idle", "listening", "thinking", "speaking"].includes(state) ? state : "idle");
   const mood = isDisplay ? personality.mood : tutorFeedback?.mood || (callActive ? defaultTutorMood : "sleepy");
   const currentReaction = isDisplay ? reaction : tutorFeedback?.reaction;
+
+  useEffect(() => {
+    if (!defer3D || interactiveReady) return undefined;
+    if (typeof IntersectionObserver === "undefined") {
+      setInteractiveReady(true);
+      return undefined;
+    }
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setInteractiveReady(true);
+        observer.disconnect();
+      }
+    }, { rootMargin: "120px" });
+    observer.observe(hostRef.current);
+    return () => observer.disconnect();
+  }, [defer3D, interactiveReady]);
 
   useEffect(() => {
     if (!isDisplay) return undefined;
@@ -59,11 +79,13 @@ export default function VoiceOrbNext({ state = "idle", theme, palette, size = 75
   }, [isDisplay, feedback?.id, feedback?.result]);
 
   const boop = useCallback(() => {
+    setInteractiveReady(true);
     if (isDisplay) setReaction({ id: ++reactionId.current, kind: "boop" });
   }, [isDisplay]);
 
   return (
     <span
+      ref={hostRef}
       className={`voice-orb-next${isDisplay ? " is-interactive" : ""}`}
       style={{ width: size, height: size, margin: centered ? "0 auto" : 0 }}
       role={isDisplay ? (useMini ? "button" : undefined) : "img"}
@@ -75,6 +97,7 @@ export default function VoiceOrbNext({ state = "idle", theme, palette, size = 75
       } : undefined}
     >
       {useMini ? <MiniOrb state={voiceState} palette={resolvedPalette} mood={mood} reaction={currentReaction} /> : (
+        <Suspense fallback={<MiniOrb state={voiceState} palette={resolvedPalette} mood={mood} reaction={currentReaction} />}>
         <VoiceOrb3D
           state={voiceState}
           audioLevelRef={audioLevelRef}
@@ -88,10 +111,11 @@ export default function VoiceOrbNext({ state = "idle", theme, palette, size = 75
           reaction={currentReaction}
           compact
           showShadow={showShadow}
-          sharedRenderer={sharedRenderer}
-          maxDpr={maxDpr}
+          sharedRenderer={sharedRenderer ?? Boolean(publicLocale)}
+          maxDpr={maxDpr ?? (publicLocale ? 1 : undefined)}
           fallback={<MiniOrb state={voiceState} palette={resolvedPalette} mood={mood} reaction={currentReaction} />}
         />
+        </Suspense>
       )}
     </span>
   );

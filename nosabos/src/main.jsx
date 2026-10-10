@@ -7,7 +7,9 @@ import {
   useRef,
   useState,
 } from "react";
-import { createRoot } from "react-dom/client";
+import { createRoot, hydrateRoot } from "react-dom/client";
+import { CacheProvider } from "@emotion/react";
+import createCache from "@emotion/cache";
 import "./index.css";
 // Self-hosted DM Sans (the landing-page hero font) — bundled by Vite so it
 // renders reliably without an external request. Used by the companion's
@@ -16,12 +18,22 @@ import "@fontsource/dm-sans/400.css";
 import "@fontsource/dm-sans/700.css";
 import "./useThemeStore";
 import { ChakraProvider } from "@chakra-ui/react";
-import { BrowserRouter as Router, Route, Routes, Outlet } from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes, Outlet, useParams, useLocation } from "react-router-dom";
 import { theme } from "./theme";
-import LandingPage from "./components/LandingPage.jsx";
-import VoiceOrb from "./components/VoiceOrbNext.jsx";
 import AppLoadBoundary from "./components/AppLoadBoundary.jsx";
 import { initAppUpdateCoordinator } from "./pwa/appUpdateCoordinator";
+import PublicSeo from "./components/PublicSeo.jsx";
+import PublicLanguageLinks from "./components/PublicLanguageLinks.jsx";
+import PublicNotFound from "./components/PublicNotFound.jsx";
+import { SUPPORT_LANGUAGE_CODES } from "./constants/supportLanguages.js";
+import { resolvePublicRoute } from "./seo/publicRoutes.js";
+import { PublicRenderContext } from "./seo/PublicRenderContext.js";
+import useLanguage from "./hooks/useLanguage.js";
+
+if (typeof window !== "undefined") {
+  const initialPublicRoute = resolvePublicRoute(window.location.pathname);
+  if (initialPublicRoute.localized) localStorage.setItem("appLanguage", initialPublicRoute.locale);
+}
 
 // Keep the one-time cache-busting recovery parameter out of the visible URL
 // once the fresh application entry point has loaded.
@@ -33,9 +45,8 @@ if (typeof window !== "undefined") {
   }
 }
 
-// Initialize the update coordinator singleton before route mounting
-initAppUpdateCoordinator();
-
+const LandingPage = lazy(() => import("./components/LandingPage.jsx"));
+const LearningLanguagePage = lazy(() => import("./components/LearningLanguagePage.jsx"));
 const App = lazy(() => import("./App.jsx"));
 const LinksPage = lazy(() => import("./components/LinksPage.jsx"));
 const LegacyLinksPage = lazy(() => import("./components/LegacyLinksPage.jsx"));
@@ -59,20 +70,14 @@ const hasStoredKey = () => {
   return Boolean(secret && secret.trim());
 };
 
-const LOADING_ORB_STATES = ["idle", "listening", "speaking"];
-
-function getRandomLoadingOrbState() {
-  return LOADING_ORB_STATES[
-    Math.floor(Math.random() * LOADING_ORB_STATES.length)
-  ];
-}
+// Keep first-time public visits from downloading the entire offline app.
+// Signed-in learners and existing installations still receive update checks.
+if (typeof navigator !== "undefined" && (hasStoredKey() || navigator.serviceWorker?.controller)) initAppUpdateCoordinator();
 
 function RouteFallback() {
-  const orbState = useMemo(getRandomLoadingOrbState, []);
-
   return (
     <div className="route-fallback" aria-label="Loading">
-      <VoiceOrb state={orbState} size={88} useWorker maxDpr={1} excludeThinking={window.location.pathname === "/links"} />
+      <span className="route-loading-orb" aria-hidden="true" />
     </div>
   );
 }
@@ -87,8 +92,6 @@ function BootReadyBoundary({ children }) {
 }
 
 function BootOverlay({ visible }) {
-  const orbState = useMemo(getRandomLoadingOrbState, []);
-
   return (
     <div
       className={`route-fallback boot-overlay ${
@@ -97,7 +100,7 @@ function BootOverlay({ visible }) {
       aria-label="Loading"
       aria-hidden={!visible}
     >
-      <VoiceOrb state={orbState} size={88} useWorker maxDpr={1} excludeThinking={window.location.pathname === "/links"} />
+      <span className="route-loading-orb" aria-hidden="true" />
     </div>
   );
 }
@@ -131,6 +134,7 @@ function AppContainer() {
   }, []);
 
   const handleAuthenticated = useCallback(() => {
+    initAppUpdateCoordinator();
     clearBootHideTimers();
     setBootOverlayMounted(true);
     setBootOverlayVisible(true);
@@ -204,6 +208,7 @@ function ProficiencyContainer() {
   const [isAuthenticated, setIsAuthenticated] = useState(hasStoredKey);
 
   const handleAuthenticated = useCallback(() => {
+    initAppUpdateCoordinator();
     setIsAuthenticated(true);
   }, []);
 
@@ -230,12 +235,44 @@ function ProficiencyContainer() {
   );
 }
 
-createRoot(document.getElementById("root")).render(
+function LocalizedPublicLayout() {
+  const { locale } = useParams();
+  return SUPPORT_LANGUAGE_CODES.includes(locale) ? <Outlet /> : <PublicNotFound />;
+}
+
+function LearningPageContainer() {
+  const { pathname } = useLocation();
+  return resolvePublicRoute(pathname).target ? <LearningLanguagePage /> : <PublicNotFound />;
+}
+
+function PublicReadySignal() {
+  useEffect(() => {
+    document.documentElement.dataset.publicReady = "true";
+    // Replay early edits after React finishes its effects, so a subsequent
+    // language navigation receives the state from the preceding input edit.
+    queueMicrotask(() => document.dispatchEvent(new Event("piyali:public-ready")));
+  }, []);
+  return null;
+}
+
+export function PublicApp({ RouterComponent = Router, routerProps = {}, publicLocale = null }) {
+  const RouterView = RouterComponent;
+  const styleCache = useMemo(() => createCache({ key: "css" }), []);
+  return <CacheProvider value={styleCache}><PublicRenderContext.Provider value={publicLocale}>
   <ChakraProvider theme={theme}>
     <div className="app-shell">
-      <Router>
+      <RouterView {...routerProps}>
+        <PublicSeo />
         <Suspense fallback={<RouteFallback />}>
           <Routes>
+            <Route path="/learn/:target" element={<LearningPageContainer />} />
+            <Route path="/:locale" element={<LocalizedPublicLayout />}>
+              <Route index element={<AppContainer />} />
+              <Route path="links" element={<LinksPage />} />
+              <Route path="citizenship" element={<CitizenshipGuide />} />
+              <Route path="learn/:target" element={<LearningPageContainer />} />
+              <Route path="*" element={<PublicNotFound />} />
+            </Route>
             <Route element={<AppContainer />}>
               <Route path="/" element={null} />
               <Route path="/onboarding" element={null} />
@@ -291,9 +328,29 @@ createRoot(document.getElementById("root")).render(
                 </BootReadyBoundary>
               }
             />
+            <Route path="*" element={<PublicNotFound />} />
           </Routes>
+          <PublicReadySignal />
         </Suspense>
-      </Router>
+        <PublicLanguageLinks />
+      </RouterView>
     </div>
-  </ChakraProvider>,
-);
+  </ChakraProvider>
+  </PublicRenderContext.Provider></CacheProvider>;
+}
+
+if (typeof document !== "undefined") {
+  const root = document.getElementById("root");
+  const locale = document.documentElement.lang.split("-")[0];
+  const storedLanguage = localStorage.getItem("appLanguage");
+  const snapshotMatches = document.documentElement.dataset.publicPath === (window.location.pathname.replace(/\/$/, "") || "/");
+  const canHydrate = document.documentElement.dataset.prerendered === "true" && snapshotMatches && !hasStoredKey()
+    && (!storedLanguage || storedLanguage === locale)
+    && localStorage.getItem("themeMode") !== "dark";
+  const app = <PublicApp publicLocale={canHydrate ? locale : null} />;
+  if (canHydrate) {
+    useLanguage.getState().setLanguage(locale, { navigate: false });
+    hydrateRoot(root, app);
+  }
+  else createRoot(root).render(app);
+}

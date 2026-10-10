@@ -59,7 +59,7 @@ if (
   self.FIREBASE_APPCHECK_DEBUG_TOKEN =
     configuredDebugToken && String(configuredDebugToken).trim()
       ? String(configuredDebugToken).trim()
-      : true;
+      : self.FIREBASE_APPCHECK_DEBUG_TOKEN || true;
 }
 
 export const appCheck = !shouldInitializeAppCheck

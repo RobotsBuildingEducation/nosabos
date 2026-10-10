@@ -6,6 +6,7 @@ import {
   DEFAULT_SUPPORT_LANGUAGE,
   isSupportedSupportLanguage,
   normalizeSupportLanguage,
+  isSupportedPracticeLanguage,
 } from "../constants/languages";
 
 /**
@@ -294,10 +295,12 @@ export function isSpanishBrowserLanguage() {
 }
 
 /** Keep the landing postcard and tutor demo on the same regional default. */
-export function getDefaultLandingPracticeLanguage(uiLanguage) {
-  return uiLanguage === 'es' || isSpanishTimezone() || isSpanishBrowserLanguage()
-    ? 'en'
-    : 'es';
+export function getDefaultLandingPracticeLanguage(uiLanguage, { ignoreQuery = false } = {}) {
+  if (!ignoreQuery && typeof window !== "undefined") {
+    const requested = new URLSearchParams(window.location.search).get("practice");
+    if (requested && isSupportedPracticeLanguage(requested)) return requested;
+  }
+  return uiLanguage === 'es' ? 'en' : 'es';
 }
 
 export function isItalianBrowserLanguage() {

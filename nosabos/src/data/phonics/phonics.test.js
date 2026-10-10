@@ -110,7 +110,7 @@ test('the fixed and focused curriculum use authored lookup independently of opti
   const focused = fs.readFileSync(new URL('../../utils/focusedPracticeDecks.js', import.meta.url), 'utf8').split('export async function getFocusedPhonicsDeck')[1].split('export async function getGoalFlashcards')[0];
   assert.match(focused, /getAuthoredPhonicsFocusCards/);
   assert.doesNotMatch(focused, /callResponses|item\?\.summary/);
-  const languages = fs.readFileSync(new URL('../../constants/languages.js', import.meta.url), 'utf8');
+  const languages = fs.readFileSync(new URL('../../constants/languagesData.js', import.meta.url), 'utf8');
   for (const code of ['ar','hi','zh']) assert.match(languages, new RegExp('value: "' + code + '"[^}]*practiceEnabled: false'));
 });
 

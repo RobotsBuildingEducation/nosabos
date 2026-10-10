@@ -1,12 +1,17 @@
-import {
-  collection,
+let collection,
   deleteField,
   doc,
   getDoc,
   getDocs,
   setDoc,
-  writeBatch,
-} from "firebase/firestore";
+  writeBatch;
+let firestorePromise;
+async function loadFirestore() {
+  firestorePromise ||= import("firebase/firestore").then(module => {
+    ({ collection, deleteField, doc, getDoc, getDocs, setDoc, writeBatch } = module);
+  }).catch(error => { firestorePromise = null; throw error; });
+  await firestorePromise;
+}
 
 export const CITIZENSHIP_REMOTE_SCHEMA_VERSION = 1;
 
@@ -68,6 +73,7 @@ export const sortRemoteChatMessages = (messages = []) =>
   });
 
 export const readCitizenshipRemoteBundle = async (database, userId) => {
+  await loadFirestore();
   const refs = getRemoteRefs(database, userId);
   const [userSnapshot, progressSnapshot, chatSnapshot] = await Promise.all([
     getDoc(refs.user),
@@ -103,6 +109,7 @@ export const writeCitizenshipProgressDocument = async (
   userId,
   progress,
 ) => {
+  await loadFirestore();
   const refs = getRemoteRefs(database, userId);
   await setDoc(
     refs.progress,
@@ -119,6 +126,7 @@ export const writeCitizenshipChatDocuments = async (
   userId,
   assistantChat,
 ) => {
+  await loadFirestore();
   const refs = getRemoteRefs(database, userId);
   const existingMessages = await getDocs(refs.messages);
   const nextMessages = Array.isArray(assistantChat?.messages)
@@ -170,6 +178,7 @@ export const writeCitizenshipChatDocuments = async (
 };
 
 export const clearCitizenshipChatDocuments = async (database, userId) => {
+  await loadFirestore();
   const refs = getRemoteRefs(database, userId);
   const existingMessages = await getDocs(refs.messages);
   const batch = writeBatch(database);
@@ -181,6 +190,7 @@ export const clearCitizenshipChatDocuments = async (database, userId) => {
 };
 
 export const markCitizenshipOnboarded = async (database, userId) => {
+  await loadFirestore();
   const { user } = getRemoteRefs(database, userId);
   await setDoc(user, { onboardedCitizenship: true }, { merge: true });
 };
@@ -189,6 +199,7 @@ export const removeLegacyCitizenshipProgressMap = async (
   database,
   userId,
 ) => {
+  await loadFirestore();
   const { user } = getRemoteRefs(database, userId);
   await setDoc(
     user,

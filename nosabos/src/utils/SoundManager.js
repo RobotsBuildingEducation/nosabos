@@ -4,8 +4,11 @@
  * Uses Tone.js to generate all sounds programmatically.
  * Based on Vibecraft's audio system.
  */
+import { takePublicAudioContext } from "./publicAudioContext.js";
 
-import * as Tone from "tone";
+// Public pages can import sound settings without downloading the synthesizer.
+let Tone;
+let tonePromise;
 
 // Volume Levels (dB)
 const VOL = Object.freeze({
@@ -48,7 +51,20 @@ class SoundManager {
   }
 
   async _doInit() {
+    // Resume a native context in the gesture itself; awaiting an import first
+    // would lose the transient user activation on mobile Safari.
+    const AudioContext = globalThis.AudioContext || globalThis.webkitAudioContext;
+    const unlockedContext = !Tone ? takePublicAudioContext() || (AudioContext ? new AudioContext() : null) : null;
+    if (unlockedContext) void unlockedContext.resume().catch(() => {});
     try {
+      if (!Tone) {
+        tonePromise ||= import("tone").catch(error => { tonePromise = null; throw error; });
+        Tone = await tonePromise;
+      }
+      if (unlockedContext) {
+        if (Tone.getContext().state !== "running") Tone.setContext(new Tone.Context(unlockedContext));
+        else void unlockedContext.close().catch(() => {});
+      }
       await Tone.start();
 
       await this.ensureContextRunning();
@@ -57,6 +73,7 @@ class SoundManager {
       this.initialized = true;
       console.log("[SoundManager] Audio initialized");
     } catch (err) {
+      if (unlockedContext) void unlockedContext.close().catch(() => {});
       console.error("[SoundManager] Failed to initialize:", err);
       this.initPromise = null; // Allow retry on failure
       throw err;
@@ -64,6 +81,7 @@ class SoundManager {
   }
 
   async ensureContextRunning() {
+    if (!Tone) return false;
     try {
       const state = Tone.context.state;
       if (state !== "running") {

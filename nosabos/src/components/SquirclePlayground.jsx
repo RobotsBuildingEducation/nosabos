@@ -3,10 +3,6 @@ import {
   Box,
   Flex,
   Heading,
-  Slider,
-  SliderFilledTrack,
-  SliderThumb,
-  SliderTrack,
   Text,
   VStack,
 } from "@chakra-ui/react";
@@ -35,29 +31,21 @@ function SquircleControl({ label, value, min, max, step, unit, precision, onChan
         <Text color="#24324a" fontSize="sm" fontWeight="700">
           {label}
         </Text>
-        <Text color="#5c6f8f" fontSize="sm" fontVariantNumeric="tabular-nums">
+        <Text color="#5c6f8f" fontSize="sm" sx={{ fontVariantNumeric: "tabular-nums" }}>
           {displayValue}
           {unit}
         </Text>
       </Flex>
-      <Slider
+      <input
+        type="range"
         aria-label={`${label} slider`}
         min={min}
         max={max}
         step={step}
         value={value}
-        onChange={onChange}
-      >
-        <SliderTrack bg="#dbe4f0" h="8px" borderRadius="999px">
-          <SliderFilledTrack bg="#2f80ed" />
-        </SliderTrack>
-        <SliderThumb
-          boxSize={5}
-          border="2px solid"
-          borderColor="#ffffff"
-          boxShadow="0 6px 16px rgba(47, 128, 237, 0.28)"
-        />
-      </Slider>
+        onChange={event => onChange(Number(event.target.value))}
+        style={{ width: "100%", accentColor: "#2f80ed", cursor: "pointer" }}
+      />
     </Box>
   );
 }
@@ -121,12 +109,12 @@ export default function SquirclePlayground() {
             p={{ base: 5, md: 6 }}
             spacing={6}
           >
-            {CONTROL_CONFIG.map((control) => (
+            {CONTROL_CONFIG.map(({ key, ...control }) => (
               <SquircleControl
-                key={control.key}
+                key={key}
                 {...control}
-                value={settings[control.key]}
-                onChange={updateSetting(control.key)}
+                value={settings[key]}
+                onChange={updateSetting(key)}
               />
             ))}
           </VStack>
@@ -158,7 +146,7 @@ export default function SquirclePlayground() {
               <Text color="#24324a" fontSize="lg" fontWeight="800">
                 Card
               </Text>
-              <Text color="#6a7b96" fontSize="sm" fontVariantNumeric="tabular-nums">
+              <Text color="#6a7b96" fontSize="sm" sx={{ fontVariantNumeric: "tabular-nums" }}>
                 {settings.width} x {settings.height} / {settings.radius}px /{" "}
                 superellipse({settings.superellipse.toFixed(2)})
               </Text>

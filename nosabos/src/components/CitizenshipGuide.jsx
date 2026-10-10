@@ -5,6 +5,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { PUBLIC_PAGE_COPY } from "../seo/publicRoutes.js";
 import ReactMarkdown from "react-markdown";
 import PrivacyPolicyFooter, { PrivacyPolicyModal } from "./PrivacyPolicy";
 import remarkGfm from "remark-gfm";
@@ -90,10 +91,7 @@ import {
   normalizeSupportLanguage,
 } from "../constants/languages";
 import { linksPageTranslations } from "../translations/linksPage";
-import {
-  citizenshipAssistantModel,
-  database,
-} from "../firebaseResources/firebaseResources";
+const loadCitizenshipResources = () => import("../firebaseResources/firebaseResources");
 import useSoundSettings from "../hooks/useSoundSettings";
 import { selectSound, submitActionSound } from "../constants/sounds";
 import { useThemeStore } from "../useThemeStore";
@@ -575,6 +573,7 @@ const persistCitizenshipProgress = async (
   const npub = getStoredNpub();
   if (!npub) return;
 
+  const { database } = await loadCitizenshipResources();
   await writeCitizenshipProgressDocument(database, npub, progress);
   if (markOnboarded) {
     await markCitizenshipOnboarded(database, npub);
@@ -8528,6 +8527,9 @@ const CitizenshipIntro = ({
           <Icon as={HiOutlineDocumentCheck} boxSize="24px" />
         </Box>
         <Box>
+          <Heading as="h1" fontSize={{ base: "2xl", md: "3xl" }} mb={4}>
+            {(PUBLIC_PAGE_COPY[language] || PUBLIC_PAGE_COPY.en).citizenship}
+          </Heading>
           <Stack spacing={3}>
             <Text
               color="var(--app-text-secondary)"
@@ -11649,6 +11651,7 @@ const CitizenshipAssistantDrawer = ({
       setIsGenerating(true);
 
       try {
+        const { citizenshipAssistantModel } = await loadCitizenshipResources();
         if (!citizenshipAssistantModel) {
           throw new Error("citizenship-assistant-unavailable");
         }
@@ -11987,6 +11990,7 @@ export default function CitizenshipGuide() {
   const { generateNostrKeys, auth } = useDecentralizedIdentity(
     accountKeys.npub,
     accountKeys.nsec,
+    { autoConnect: false },
   );
   const [initialCitizenshipState] = useState(getInitialCitizenshipState);
   const [answers, setAnswers] = useState(initialCitizenshipState.answers);
@@ -12190,6 +12194,7 @@ export default function CitizenshipGuide() {
 
       hasLoadedProgressRef.current = false;
       try {
+        const { database } = await loadCitizenshipResources();
         const remoteBundle = await readCitizenshipRemoteBundle(database, npub);
         if (cancelled) return;
 
@@ -12406,7 +12411,8 @@ export default function CitizenshipGuide() {
     }
 
     lastPersistedAssistantChatUpdatedAtRef.current = savedChat.updatedAt;
-    writeCitizenshipChatDocuments(database, npub, savedChat).catch((error) => {
+    loadCitizenshipResources().then(({ database }) =>
+      writeCitizenshipChatDocuments(database, npub, savedChat)).catch((error) => {
       if (
         lastPersistedAssistantChatUpdatedAtRef.current === savedChat.updatedAt
       ) {

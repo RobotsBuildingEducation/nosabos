@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState, useMemo } from "react";
+import { PublicRenderContext } from "../seo/PublicRenderContext.js";
+import React, { useEffect, useRef, useState, useMemo, useContext } from "react";
 import {
   Accordion,
   AccordionButton as ChakraAccordionButton,
@@ -49,14 +50,11 @@ import PrivacyPolicyFooter from "./PrivacyPolicy";
 
 import CitizenshipIcon from "./CitizenshipIcon/CitizenshipIcon";
 import { useDecentralizedIdentity } from "../hooks/useDecentralizedIdentity";
-import { NDKKind } from "@nostr-dev-kit/ndk";
 import { Buffer } from "buffer";
 import { bech32 } from "bech32";
 import RandomCharacter from "./RandomCharacter";
-import { logEvent } from "firebase/analytics";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { analytics, database } from "../firebaseResources/firebaseResources";
-import useNostrWalletStore from "../hooks/useNostrWalletStore";
+import { readPublicUserPreferences, savePublicUserPreferences, trackPublicEvent } from "../utils/publicPageResources.js";
+import useNostrWalletStore from "../hooks/usePublicWalletStore";
 import { IdentityCard } from "./IdentityCard";
 import useLanguage from "../hooks/useLanguage";
 import {
@@ -3975,8 +3973,9 @@ function ProjectShowcase({
 }
 
 export default function LinksPage() {
+  const publicLocale = useContext(PublicRenderContext);
   const { generateNostrKeys, auth, postNostrContent, connectToNostr } =
-    useDecentralizedIdentity();
+    useDecentralizedIdentity(undefined, undefined, { autoConnect: false });
   const themeMode = useThemeStore((s) => s.themeMode);
   const syncThemeMode = useThemeStore((s) => s.syncThemeMode);
   const isLightTheme = themeMode === "light";
@@ -4000,13 +3999,14 @@ export default function LinksPage() {
   const [profilePictureUrlInput, setProfilePictureUrlInput] = useState("");
   const [randomCharacterKey] = useState(() => {
     const heroCharacters = ["24", "30", "31"];
-    return heroCharacters[Math.floor(Math.random() * heroCharacters.length)];
+    return heroCharacters[Math.floor((publicLocale ? 0 : Math.random()) * heroCharacters.length)];
   });
-  const [noSabosOrbState] = useState(pickRandomVoiceOrbState);
+  const [noSabosOrbState] = useState(() => publicLocale ? "idle" : pickRandomVoiceOrbState());
   const [hasCopiedRbeSecretKey, setHasCopiedRbeSecretKey] = useState(false);
 
   // Music state - default off, saved to document & localStorage
   const [isMusicPlaying, setIsMusicPlaying] = useState(() => {
+    if (typeof localStorage === "undefined") return false;
     const saved = localStorage.getItem("links_music_enabled");
     return saved !== null ? saved === "true" : false;
   });
@@ -4064,7 +4064,7 @@ export default function LinksPage() {
   useEffect(() => {
     const storedNpub = localStorage.getItem("local_npub");
     if (storedNpub) {
-      getDoc(doc(database, "users", storedNpub))
+      readPublicUserPreferences(storedNpub)
         .then((snap) => {
           if (snap.exists()) {
             const data = snap.data();
@@ -4318,7 +4318,7 @@ export default function LinksPage() {
     const storedNpub = localStorage.getItem("local_npub");
     if (storedNpub) {
       try {
-        await updateDoc(doc(database, "users", storedNpub), {
+        await savePublicUserPreferences(storedNpub, {
           musicEnabled: nextState,
           linksMusicEnabled: nextState,
         });
@@ -4422,7 +4422,7 @@ export default function LinksPage() {
           alignItems="center"
           justifyContent="center"
         >
-          <VoiceOrb state={noSabosOrbState} excludeThinking sharedRenderer />
+          <VoiceOrb defer3D state={noSabosOrbState} excludeThinking sharedRenderer />
         </Box>
       ),
       launchAppText: translations.launchApp,
@@ -4449,7 +4449,7 @@ export default function LinksPage() {
           w={{ base: "110px", md: "120px" }}
           h={{ base: "110px", md: "120px" }}
         >
-          <VoiceOrb state="idle" size={108} palette="peach" excludeThinking sharedRenderer />
+          <VoiceOrb defer3D state="idle" size={108} palette="peach" excludeThinking sharedRenderer />
         </Box>
       ),
       launchAppText: translations.launchApp,
@@ -4580,7 +4580,7 @@ export default function LinksPage() {
         // Also persist to user document in Firestore
         const storedNpub = localStorage.getItem("local_npub");
         if (storedNpub) {
-          await updateDoc(doc(database, "users", storedNpub), {
+          await savePublicUserPreferences(storedNpub, {
             displayName: usernameInput.trim(),
           });
         }
@@ -4670,7 +4670,7 @@ export default function LinksPage() {
       const hexNpub = Buffer.from(bech32.fromWords(npubWords)).toString("hex");
 
       const filter = {
-        kinds: [NDKKind.Metadata],
+        kinds: [0],
         authors: [hexNpub],
         limit: 1,
       };
@@ -4848,7 +4848,7 @@ export default function LinksPage() {
         onSocialClick={(platform, url) => {
           handleSelectSound();
           if (!isLocalhost()) {
-            logEvent(analytics, "links_social_click", { platform });
+            trackPublicEvent("links_social_click", { platform });
           }
           window.open(url, "_blank", "noopener,noreferrer");
         }}
@@ -4877,7 +4877,7 @@ export default function LinksPage() {
         onLaunchSound={handleSubmitActionSound}
         onLaunchEvent={(link) => {
           if (!isLocalhost() && !link.onLaunch) {
-            logEvent(analytics, "links_launch_app", {
+            trackPublicEvent("links_launch_app", {
               app: link.analyticsName,
             });
           }
@@ -5015,7 +5015,7 @@ export default function LinksPage() {
                   onClick={() => {
                     handleSubmitActionSound();
                     if (!isLocalhost()) {
-                      logEvent(analytics, "links_launch_app", {
+                      trackPublicEvent("links_launch_app", {
                         app: "robots_building_education",
                       });
                     }
@@ -5241,7 +5241,7 @@ export default function LinksPage() {
                   if (isSaving) return;
                   handleSubmitActionSound();
                   if (!isLocalhost()) {
-                    logEvent(analytics, "links_save_profile");
+                    trackPublicEvent("links_save_profile");
                   }
                   handleSaveProfile();
                 }}
@@ -5536,6 +5536,7 @@ export default function LinksPage() {
                 {walletHydrating && !cashuWallet && (
                   <HStack py={2}>
                     <VoiceOrb
+                      defer3D
                       excludeThinking
                       state={
                         ["idle", "listening", "speaking"][

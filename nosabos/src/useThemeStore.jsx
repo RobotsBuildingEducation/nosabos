@@ -1,6 +1,12 @@
 import { create } from "zustand";
-import { doc, updateDoc } from "firebase/firestore";
-import { database } from "./firebaseResources/firebaseResources";
+
+async function persistTheme(npub, values) {
+  const [{ doc, updateDoc }, { database }] = await Promise.all([
+    import("firebase/firestore"),
+    import("./firebaseResources/firebaseResources"),
+  ]);
+  await updateDoc(doc(database, "users", npub), values);
+}
 
 export const normalizeThemeMode = (mode) =>
   mode === "dark" ? "dark" : "light";
@@ -85,8 +91,7 @@ export const useThemeStore = create((set) => ({
         : null;
     if (npub) {
       try {
-        const userDoc = doc(database, "users", npub);
-        await updateDoc(userDoc, { themeColor: color });
+        await persistTheme(npub, { themeColor: color });
       } catch (e) {
         console.error("Failed to update theme", e);
       }
@@ -105,8 +110,7 @@ export const useThemeStore = create((set) => ({
         : null;
     if (npub) {
       try {
-        const userDoc = doc(database, "users", npub);
-        await updateDoc(userDoc, { themeMode: normalized });
+        await persistTheme(npub, { themeMode: normalized });
       } catch (e) {
         console.error("Failed to update theme mode", e);
       }

@@ -6,6 +6,7 @@ import {
   normalizeSupportLanguage,
 } from "../constants/languages";
 import { syncDocumentLanguage } from "../utils/documentLanguage";
+import { localizedPath, resolvePublicRoute } from "../seo/publicRoutes.js";
 
 // Spanish-speaking timezone identifiers
 const spanishTimezones = [
@@ -165,7 +166,7 @@ const getStoredLanguage = () => {
     if (isSupportedSupportLanguage(stored)) {
       return normalizeSupportLanguage(stored);
     }
-  } catch {}
+  } catch { /* Storage can be unavailable in private browsing. */ }
   return null;
 };
 
@@ -175,7 +176,7 @@ const setStoredLanguage = (lang) => {
     if (isSupportedSupportLanguage(lang)) {
       localStorage.setItem("appLanguage", normalizeSupportLanguage(lang));
     }
-  } catch {}
+  } catch { /* Storage can be unavailable in private browsing. */ }
 };
 
 // Create the language store (no persist middleware - we handle it manually for sync writes)
@@ -211,7 +212,7 @@ const useLanguage = create((set, get) => ({
   },
 
   // Set language explicitly (user preference)
-  setLanguage: (lang) => {
+  setLanguage: (lang, { navigate = true } = {}) => {
     const nextLang = normalizeSupportLanguage(
       lang,
       get().language || DEFAULT_SUPPORT_LANGUAGE,
@@ -219,6 +220,17 @@ const useLanguage = create((set, get) => ({
     setStoredLanguage(nextLang); // Write immediately
     syncDocumentLanguage(nextLang);
     set({ language: nextLang });
+    if (navigate && typeof window !== "undefined") {
+      const route = resolvePublicRoute(window.location.pathname);
+      const signedInHome = route.path === "/" && localStorage.getItem("local_nsec");
+      if (route.indexable && !signedInHome) {
+        const nextPath = localizedPath(window.location.pathname, nextLang);
+        if (nextPath !== window.location.pathname) {
+          window.history.pushState(null, "", nextPath + window.location.search + window.location.hash);
+          window.dispatchEvent(new PopStateEvent("popstate"));
+        }
+      }
+    }
   },
 
   // Cycle through supported app languages

@@ -1,4 +1,5 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useContext, useEffect, useId, useRef, useState } from "react";
+import { PublicRenderContext } from "../seo/PublicRenderContext.js";
 import { Button, HStack, Menu, MenuButton, MenuItemOption, MenuList, MenuOptionGroup, Portal } from "@chakra-ui/react";
 import { ChevronDown, Mic, Square } from "lucide-react";
 import VoiceOrb from "./VoiceOrbNext";
@@ -8,13 +9,18 @@ import { useTutorVoiceLevel } from "../hooks/useTutorVoiceLevel";
 import { LANDING_TUTOR_SAMPLES, LandingTutorDemoSession } from "../utils/landingTutorDemo";
 import { getDefaultLandingPracticeLanguage } from "../utils/languageDetection";
 import { landingTutorDemoCopy } from "./landingTutorDemoCopy";
+import { takePublicAudioContext } from "../utils/publicAudioContext.js";
 
 const INITIAL_STATE = { status: "idle", tutorText: "", learnerText: "", error: "" };
 const ACTIVE_STATES = new Set(["connecting", "thinking", "speaking", "listening"]);
 
 export default function LandingTutorDemo({ copy, lang, visible = true }) {
+  const publicLocale = useContext(PublicRenderContext);
   const [targetLanguage, setTargetLanguage] = useState(() =>
-    getDefaultLandingPracticeLanguage(lang));
+    getDefaultLandingPracticeLanguage(lang, { ignoreQuery: Boolean(publicLocale) }));
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).has("practice")) setTargetLanguage(getDefaultLandingPracticeLanguage(lang));
+  }, [lang]);
   const [session, setSession] = useState(INITIAL_STATE);
   const controllerRef = useRef(null);
   const containerRef = useRef(null);
@@ -60,7 +66,7 @@ export default function LandingTutorDemo({ copy, lang, visible = true }) {
         // handshake consume mobile browsers' transient user activation.
         const Ctx = window.AudioContext || window.webkitAudioContext;
         if (!Ctx) throw new Error("Web Audio is unavailable.");
-        const audioContext = new Ctx();
+        const audioContext = takePublicAudioContext() || new Ctx();
         void audioContext.resume().catch(() => {});
         const closeEarly = () => { void audioContext.close().catch(() => {}); };
         options.signal.addEventListener("abort", closeEarly, { once: true });
@@ -133,7 +139,7 @@ export default function LandingTutorDemo({ copy, lang, visible = true }) {
         {showSample ? sample[0] : session.tutorText || words.emptyTutor}
       </div>
       <div className="lp-speak-orb">
-        <VoiceOrb size={116} sharedRenderer maxDpr={1} variant={active ? "tutor" : "display"}
+        <VoiceOrb size={116} sharedRenderer maxDpr={1} defer3D={!active} variant={active ? "tutor" : "display"}
           state={orbState} callActive={active} audioLevelRef={audioLevelRef} />
       </div>
       <div className="lp-demo-voice" aria-hidden="true">

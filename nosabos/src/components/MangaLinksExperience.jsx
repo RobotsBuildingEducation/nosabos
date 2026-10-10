@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef } from "react";
+import "@fontsource/gaegu/latin-700.css";
 import {
   Box,
   Button,
@@ -21,31 +22,6 @@ const toolbarEntrance = keyframes`
   100% { opacity: 1; translate: 0 0; scale: 1; rotate: 0deg; }
 `;
 
-const heroPanelEntrance = keyframes`
-  0% {
-    opacity: 0;
-    translate: -9% 2%;
-    scale: 0.94;
-    rotate: -1.2deg;
-    clip-path: polygon(0 0, 4% 0, 0 100%, 0 100%);
-  }
-  46% {
-    opacity: 1;
-    translate: 1.4% -0.6%;
-    scale: 1.018;
-    rotate: 0.35deg;
-    clip-path: polygon(0 0, 100% 0, 94% 100%, 0 100%);
-  }
-  72% { translate: -0.45% 0.2%; scale: 0.994; rotate: -0.12deg; }
-  100% {
-    opacity: 1;
-    translate: 0 0;
-    scale: 1;
-    rotate: 0deg;
-    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
-  }
-`;
-
 const impactFlash = keyframes`
   0%, 18% { opacity: 0; translate: -135% 0; }
   38% { opacity: 0.72; }
@@ -53,52 +29,10 @@ const impactFlash = keyframes`
   100% { opacity: 0; translate: 135% 0; }
 `;
 
-const sfxEntrance = keyframes`
-  0% { opacity: 0; scale: 2.25; rotate: -18deg; filter: blur(7px); }
-  50% { opacity: 0.72; scale: 0.88; rotate: 3deg; filter: blur(0); }
-  72% { scale: 1.08; rotate: -1.5deg; }
-  100% { opacity: 1; scale: 1; rotate: 0deg; filter: blur(0); }
-`;
-
-const portraitEntrance = keyframes`
-  0% { opacity: 0; translate: 0 34%; scale: 0.72; rotate: -6deg; }
-  54% { opacity: 1; translate: 0 -4%; scale: 1.075; rotate: 2deg; }
-  72% { translate: 0 2%; scale: 0.975; rotate: -0.8deg; }
-  86% { translate: 0 -1%; scale: 1.018; rotate: 0.35deg; }
-  100% { opacity: 1; translate: 0 0; scale: 1; rotate: 0deg; }
-`;
-
 const portraitIdle = keyframes`
   0%, 100% { translate: 0 0; rotate: 0deg; }
   48% { translate: 0 -7px; rotate: 0.7deg; }
   54% { translate: 0 -7px; rotate: -0.35deg; }
-`;
-
-const bubbleEntrance = keyframes`
-  0% { opacity: 0; translate: 0 54px; scale: 0.56; rotate: -7deg; }
-  56% { opacity: 1; translate: 0 -9px; scale: 1.075; rotate: 1.8deg; }
-  76% { translate: 0 4px; scale: 0.975; rotate: -0.7deg; }
-  100% { opacity: 1; translate: 0 0; scale: 1; rotate: 0deg; }
-`;
-
-const sidePanelEntrance = keyframes`
-  0% { opacity: 0; translate: 82px 0; scale: 0.93; rotate: 2.5deg; }
-  62% { opacity: 1; translate: -8px 0; scale: 1.025; rotate: -0.7deg; }
-  82% { translate: 3px 0; scale: 0.99; rotate: 0.25deg; }
-  100% { opacity: 1; translate: 0 0; scale: 1; rotate: 0deg; }
-`;
-
-const focusBlockEntrance = keyframes`
-  0% { opacity: 0; translate: 58px 0; filter: contrast(1.8); }
-  66% { opacity: 1; translate: -5px 0; filter: contrast(1.2); }
-  100% { opacity: 1; translate: 0 0; filter: contrast(1); }
-`;
-
-const sloganEntrance = keyframes`
-  0% { opacity: 0; translate: 72px 72px; scale: 0.84; rotate: 5deg; }
-  60% { opacity: 1; translate: -7px -6px; scale: 1.045; rotate: -1.2deg; }
-  82% { translate: 3px 2px; scale: 0.985; rotate: 0.35deg; }
-  100% { opacity: 1; translate: 0 0; scale: 1; rotate: 0deg; }
 `;
 
 const ruleEntrance = keyframes`
@@ -205,33 +139,6 @@ const reducedHeroMotion = {
   },
 };
 
-function useReveal(threshold = 0.14) {
-  const ref = useRef(null);
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const node = ref.current;
-    if (!node) return undefined;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setVisible(true);
-      return undefined;
-    }
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          observer.disconnect();
-        }
-      },
-      { threshold, rootMargin: "0px 0px -7%" },
-    );
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [threshold]);
-
-  return [ref, visible];
-}
-
 function Screentone({ ink, opacity = 0.12, size = "14px" }) {
   return (
     <Box
@@ -296,6 +203,7 @@ function Portrait({ randomCharacterKey, close = false }) {
         notSoRandomCharacter={randomCharacterKey}
         width="190px"
         containerHeight={240}
+        speed="0s"
       />
     </Box>
   );
@@ -790,7 +698,6 @@ function MangaCover({
           bg={panel}
           border="4px solid"
           borderColor={ink}
-          animation={`${heroPanelEntrance} 980ms cubic-bezier(.16,.84,.22,1) 80ms both`}
           willChange="transform, opacity, clip-path"
           sx={reducedHeroMotion}
         >
@@ -841,7 +748,6 @@ function MangaCover({
               w={{ base: "88%", md: "auto" }}
               display="flex"
               justifyContent={{ base: "center", md: "flex-start" }}
-              animation={`${sfxEntrance} 760ms cubic-bezier(.18,.9,.24,1.22) 260ms both`}
               willChange="transform, opacity, filter"
               sx={{
                 "@media screen and (min-height: 740px) and (max-width: 767px)": {
@@ -889,7 +795,7 @@ function MangaCover({
               justifyContent="center"
               pt={{ base: "34%", sm: "28%", md: "22%" }}
               filter={isLightTheme ? "none" : "saturate(0.84) contrast(1.05)"}
-              animation={`${portraitEntrance} 940ms cubic-bezier(.16,.86,.25,1.16) 360ms both, ${portraitIdle} 4.8s ease-in-out 1.7s infinite`}
+              animation={`${portraitIdle} 4.8s ease-in-out infinite`}
               willChange="transform, opacity"
               sx={reducedHeroMotion}
             >
@@ -920,7 +826,6 @@ function MangaCover({
               }
               px={{ base: 3, md: 5 }}
               py={{ base: 3, md: 3.5 }}
-              animation={`${bubbleEntrance} 760ms cubic-bezier(.17,.88,.26,1.2) 720ms both`}
               willChange="transform, opacity"
               sx={{
                 "@media screen and (min-height: 740px) and (max-width: 767px)": {
@@ -1032,7 +937,6 @@ function MangaCover({
             borderColor={ink}
             display="flex"
             flexDirection="column"
-            animation={`${sidePanelEntrance} 820ms cubic-bezier(.16,.86,.24,1.15) 400ms both`}
             willChange="transform, opacity"
             sx={reducedHeroMotion}
           >
@@ -1053,9 +957,6 @@ function MangaCover({
                 color={index === 0 ? paper : ink}
                 borderBottom={index === focusAreas.length - 1 ? "0" : "3px solid"}
                 borderColor={ink}
-                animation={`${focusBlockEntrance} 520ms cubic-bezier(.2,.82,.24,1) ${
-                  570 + index * 95
-                }ms both`}
                 willChange="transform, opacity, filter"
                 sx={reducedHeroMotion}
               >
@@ -1098,7 +999,6 @@ function MangaCover({
             py={{ base: 4, md: 5 }}
             position="relative"
             overflow="hidden"
-            animation={`${sloganEntrance} 780ms cubic-bezier(.16,.88,.24,1.16) 760ms both`}
             willChange="transform, opacity"
             sx={reducedHeroMotion}
           >
@@ -1172,7 +1072,9 @@ function MangaChapter({
   onLaunchSound,
   onLaunchEvent,
 }) {
-  const [sectionRef, visible] = useReveal();
+  const sectionRef = useRef(null);
+  // Keep the stories readable in the initial HTML and with JavaScript disabled.
+  const visible = true;
   const ink = isLightTheme ? "#17171a" : "#f5f0e8";
   const paper = isLightTheme ? "#fffcf4" : "#0c0c0f";
   const panel = "#151519";

@@ -71,7 +71,7 @@ export default function OrbingPlayground() {
   const [paused, setPaused] = useState(false);
   const [reaction, setReaction] = useState(null);
   const [playingTour, setPlayingTour] = useState(false);
-  const [reducedMotion, setReducedMotion] = useState(() => window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  const [reducedMotion, setReducedMotion] = useState(() => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   const [message, setMessage] = useState("");
   const reactionCounter = useRef(0);
   const mic = useOrbMicrophone();

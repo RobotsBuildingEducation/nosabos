@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { useThemeStore } from "../useThemeStore";
 import { useReducedMotion } from "framer-motion";
 import {
@@ -20,7 +20,8 @@ import LandingLanguageAtlas from "./LandingLanguageAtlas";
 import LandingEthosSection from "./LandingEthosSection";
 import { getLandingEthosCopy } from "./landingEthosCopy";
 import LandingTutorDemo from "./LandingTutorDemo";
-import CompanionRewardDance from "./CompanionRewardDance";
+import DeferredVisual from "./DeferredVisual";
+const CompanionRewardDance = lazy(() => import("./CompanionRewardDance"));
 import { getCustomizeModalCopy } from "./companionCustomizeCopy";
 import { PET_TYPES } from "../utils/petTypes";
 import { landingPageRefreshCopy, landingSectionLabel } from "./landingPageRefreshCopy";
@@ -150,10 +151,10 @@ function CompanionCarousel({ copy, words, lang }) {
           <ChevronLeft size={19} />
         </button>
         <div key={type} className="lp-companion-character" aria-hidden="true">
-          <CompanionRewardDance
+          <DeferredVisual><Suspense fallback={null}><CompanionRewardDance
             petType={type}
             prefersReducedMotion={prefersReducedMotion}
-          />
+          /></Suspense></DeferredVisual>
         </div>
         <button
           type="button"

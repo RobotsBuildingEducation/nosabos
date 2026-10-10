@@ -386,8 +386,10 @@ export const CloudCanvas = ({
   outlineColor = "#000",
   outlineWidth = 0,
   printStatement = "",
+  animateOnHover = false,
 }) => {
   const canvasRef = useRef(null);
+  const [hovering, setHovering] = useState(false);
   const themeColor = useThemeStore((state) => state.themeColor);
   let requestId;
 
@@ -554,10 +556,11 @@ export const CloudCanvas = ({
       const context = canvas.getContext("2d");
       canvas.width = 100;
       canvas.height = 100;
-      animate(context);
+      if (animateOnHover && !hovering) draw(context);
+      else animate(context);
       return () => cancelAnimationFrame(requestId);
     }
-  }, [hasAnimation, alternativeSpeed, outlineColor, outlineWidth, themeColor]);
+  }, [hasAnimation, alternativeSpeed, outlineColor, outlineWidth, themeColor, animateOnHover, hovering]);
 
   return (
     <FadeInComponent speed={hasInitialFade ? "1s" : "0s"}>
@@ -575,6 +578,8 @@ export const CloudCanvas = ({
         {hasAnimation && (
           <div>
             <canvas
+              onPointerEnter={event => { if (animateOnHover && event.pointerType === "mouse") setHovering(true); }}
+              onPointerLeave={() => { if (animateOnHover) setHovering(false); }}
               style={{
                 borderRadius: "50%", // circular appearance
               }}

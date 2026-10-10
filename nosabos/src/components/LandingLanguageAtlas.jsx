@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useContext, useEffect, useState } from "react";
+import { PublicRenderContext } from "../seo/PublicRenderContext.js";
 import { Send } from "lucide-react";
 import { getPracticeLanguageOptions } from "../constants/languages";
 import { getDefaultLandingPracticeLanguage } from "../utils/languageDetection";
@@ -9,6 +10,7 @@ import {
 } from "./landingLanguageAtlasCopy";
 import "./landingLanguageAtlas.css";
 import { LANDING_GLOBE_GEOMETRY } from "./landingGlobeGeometry";
+import { localizedPath } from "../seo/publicRoutes.js";
 
 function GreetingGlobe() {
   return (
@@ -79,8 +81,12 @@ function GreetingGlobe() {
 }
 
 export default function LandingLanguageAtlas({ copy, lang }) {
-  const [postcards] = useState(createLanguagePostcards);
-  const [selectedCode, setSelectedCode] = useState(() => getDefaultLandingPracticeLanguage(lang));
+  const publicLocale = useContext(PublicRenderContext);
+  const [postcards] = useState(() => createLanguagePostcards(publicLocale ? () => 0.42 : Math.random));
+  const [selectedCode, setSelectedCode] = useState(() => getDefaultLandingPracticeLanguage(lang, { ignoreQuery: Boolean(publicLocale) }));
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).has("practice")) setSelectedCode(getDefaultLandingPracticeLanguage(lang));
+  }, [lang]);
   const words = languageAtlasCopy[lang] || languageAtlasCopy.en;
   const languages = getPracticeLanguageOptions({
     ui: copy,
@@ -104,6 +110,9 @@ export default function LandingLanguageAtlas({ copy, lang }) {
         <div className="lp-atlas-editorial">
           <h2 id="lp-languages-title">{words.title}</h2>
           <p className="lp-atlas-intro">{words.intro}</p>
+          <nav className="lp-learning-guides" aria-label={copy.languages_label}>
+            {languages.map(language => <a key={language.value} href={localizedPath(`/learn/${language.value}`, lang)}>{language.label}</a>)}
+          </nav>
           <div
             className="lp-atlas-postcard"
             id="lp-atlas-postcard"

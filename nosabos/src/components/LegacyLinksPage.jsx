@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState, useMemo } from "react";
+import { PublicRenderContext } from "../seo/PublicRenderContext.js";
+import React, { lazy, Suspense, useEffect, useRef, useState, useMemo, useContext } from "react";
 import {
   Accordion,
   AccordionButton as ChakraAccordionButton,
@@ -42,20 +43,16 @@ import { RiMoonClearFill } from "react-icons/ri";
 import useSoundSettings from "../hooks/useSoundSettings";
 import { selectSound, submitActionSound } from "../constants/sounds";
 
-import { RoleCanvas } from "./RoleCanvas/RoleCanvas";
+import DeferredVisual from "./DeferredVisual.jsx";
 import VoiceOrb from "./VoiceOrbNext";
 
-import { CloudCanvas } from "./CloudCanvas/CloudCanvas";
 import CitizenshipIcon from "./CitizenshipIcon/CitizenshipIcon";
 import { useDecentralizedIdentity } from "../hooks/useDecentralizedIdentity";
-import { NDKKind } from "@nostr-dev-kit/ndk";
 import { Buffer } from "buffer";
 import { bech32 } from "bech32";
 import RandomCharacter from "./RandomCharacter";
-import { logEvent } from "firebase/analytics";
-import { doc, updateDoc } from "firebase/firestore";
-import { analytics, database } from "../firebaseResources/firebaseResources";
-import useNostrWalletStore from "../hooks/useNostrWalletStore";
+import { savePublicUserPreferences, trackPublicEvent } from "../utils/publicPageResources.js";
+import useNostrWalletStore from "../hooks/usePublicWalletStore";
 import { IdentityCard } from "./IdentityCard";
 import useLanguage from "../hooks/useLanguage";
 import {
@@ -64,7 +61,8 @@ import {
 } from "../constants/languages";
 import { syncDocumentLanguage } from "../utils/documentLanguage";
 
-import AnimatedLogo from "./AnimatedLogo/AnimatedLogo";
+const RoleCanvas = lazy(() => import("./RoleCanvas/RoleCanvas").then(module => ({ default: module.RoleCanvas })));
+const CloudCanvas = lazy(() => import("./CloudCanvas/CloudCanvas").then(module => ({ default: module.CloudCanvas })));
 import { linksPageTranslations } from "../translations/linksPage";
 import { useThemeStore } from "../useThemeStore";
 import { APP_BUTTON_RADIUS, APP_SQUIRCLE_SHAPE } from "../theme";
@@ -581,17 +579,22 @@ function PixelStar({
       bg={color}
       boxShadow={`0 0 ${size * 2}px ${color}`}
       animation={`${starMove} ${duration}s linear infinite, ${pixelFlicker} 2s steps(2) infinite`}
-      animationDelay={`${delay}s`}
       pointerEvents="none"
       sx={{
         imageRendering: "pixelated",
+        animationDelay: `${delay}s`,
       }}
     />
   );
 }
 
 function RetroStarfield({ isLightTheme = false }) {
+  const publicLocale = useContext(PublicRenderContext);
   const stars = useMemo(() => {
+    let seed = 42;
+    const random = publicLocale
+      ? () => ((seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 4294967296)
+      : Math.random;
     const starArray = [];
     // Neon 80s colors
     const colors = isLightTheme
@@ -607,23 +610,23 @@ function RetroStarfield({ isLightTheme = false }) {
 
     for (let i = 0; i < 30; i++) {
       // Random direction for each star
-      const angle = Math.random() * Math.PI * 2;
-      const distance = 80 + Math.random() * 40; // How far it travels
+      const angle = random() * Math.PI * 2;
+      const distance = 80 + random() * 40; // How far it travels
 
       starArray.push({
         id: i,
-        size: Math.random() < 0.3 ? 4 : Math.random() < 0.6 ? 3 : 2,
-        startX: `${Math.random() * 100}%`,
-        startY: `${Math.random() * 100}%`,
-        delay: Math.random() * 20,
-        duration: 25 + Math.random() * 20, // Slower: 25-45 seconds
-        color: colors[Math.floor(Math.random() * colors.length)],
-        dirX: Math.cos(angle) * distance,
-        dirY: Math.sin(angle) * distance,
+        size: random() < 0.3 ? 4 : random() < 0.6 ? 3 : 2,
+        startX: `${random() * 100}%`,
+        startY: `${random() * 100}%`,
+        delay: random() * 20,
+        duration: 25 + random() * 20, // Slower: 25-45 seconds
+        color: colors[Math.floor(random() * colors.length)],
+        dirX: Number((Math.cos(angle) * distance).toFixed(4)),
+        dirY: Number((Math.sin(angle) * distance).toFixed(4)),
       });
     }
     return starArray;
-  }, [isLightTheme]);
+  }, [isLightTheme, publicLocale]);
 
   return (
     <Box
@@ -870,8 +873,9 @@ function LinkCard({
 }
 
 export default function LinksPage() {
+  const publicLocale = useContext(PublicRenderContext);
   const { generateNostrKeys, auth, postNostrContent, connectToNostr } =
-    useDecentralizedIdentity();
+    useDecentralizedIdentity(undefined, undefined, { autoConnect: false });
   const themeMode = useThemeStore((s) => s.themeMode);
   const syncThemeMode = useThemeStore((s) => s.syncThemeMode);
   const isLightTheme = themeMode === "light";
@@ -892,9 +896,9 @@ export default function LinksPage() {
   const [profilePicture, setProfilePicture] = useState("");
   const [profilePictureUrlInput, setProfilePictureUrlInput] = useState("");
   const [randomCharacterKey] = useState(
-    () => Math.floor(Math.random() * 21) + 20,
+    () => publicLocale ? "24" : Math.floor(Math.random() * 21) + 20,
   ); // Random between 20-40
-  const [noSabosOrbState] = useState(pickRandomVoiceOrbState);
+  const [noSabosOrbState] = useState(() => publicLocale ? "idle" : pickRandomVoiceOrbState());
   const [roleIndex, setRoleIndex] = useState(0);
   const [hasCopiedRbeSecretKey, setHasCopiedRbeSecretKey] = useState(false);
 
@@ -1160,7 +1164,7 @@ export default function LinksPage() {
           alignItems="center"
           justifyContent="center"
         >
-          <VoiceOrb state={noSabosOrbState} />
+          <VoiceOrb defer3D state={noSabosOrbState} />
         </Box>
       ),
       launchAppText: translations.launchApp,
@@ -1181,7 +1185,7 @@ export default function LinksPage() {
           transform="scale(0.75)"
           transformOrigin="center"
         >
-          <CloudCanvas />
+          <DeferredVisual width={120} height={120}><Suspense fallback={null}><CloudCanvas animateOnHover /></Suspense></DeferredVisual>
         </Box>
       ),
       launchAppText: translations.launchApp,
@@ -1235,12 +1239,12 @@ export default function LinksPage() {
           alignItems="center"
           justifyContent="center"
         >
-          <RoleCanvas
+          <DeferredVisual width={90} height={90}><Suspense fallback={null}><RoleCanvas
             role={roleCycle[roleIndex]}
             width={90}
             height={90}
             transparent={true}
-          />
+          /></Suspense></DeferredVisual>
         </Box>
       ),
       launchAppText: translations.subscribe,
@@ -1305,7 +1309,7 @@ export default function LinksPage() {
         // Also persist to user document in Firestore
         const storedNpub = localStorage.getItem("local_npub");
         if (storedNpub) {
-          await updateDoc(doc(database, "users", storedNpub), {
+          await savePublicUserPreferences(storedNpub, {
             displayName: usernameInput.trim(),
           });
         }
@@ -1395,7 +1399,7 @@ export default function LinksPage() {
       const hexNpub = Buffer.from(bech32.fromWords(npubWords)).toString("hex");
 
       const filter = {
-        kinds: [NDKKind.Metadata],
+        kinds: [0],
         authors: [hexNpub],
         limit: 1,
       };
@@ -1582,7 +1586,7 @@ export default function LinksPage() {
                 onClick={() => {
                   handleSelectSound();
                   if (!isLocalhost()) {
-                    logEvent(analytics, "links_social_click", {
+                    trackPublicEvent("links_social_click", {
                       platform: "instagram",
                     });
                   }
@@ -1610,7 +1614,7 @@ export default function LinksPage() {
                 onClick={() => {
                   handleSelectSound();
                   if (!isLocalhost()) {
-                    logEvent(analytics, "links_social_click", {
+                    trackPublicEvent("links_social_click", {
                       platform: "linkedin",
                     });
                   }
@@ -1638,7 +1642,7 @@ export default function LinksPage() {
                 onClick={() => {
                   handleSelectSound();
                   if (!isLocalhost()) {
-                    logEvent(analytics, "links_social_click", {
+                    trackPublicEvent("links_social_click", {
                       platform: "patreon",
                     });
                   }
@@ -1756,7 +1760,7 @@ export default function LinksPage() {
               onLaunchSound={handleSubmitActionSound}
               onLaunchEvent={() => {
                 if (!isLocalhost() && !link.onLaunch) {
-                  logEvent(analytics, "links_launch_app", {
+                  trackPublicEvent("links_launch_app", {
                     app: link.analyticsName,
                   });
                 }
@@ -1855,7 +1859,7 @@ export default function LinksPage() {
                   onClick={() => {
                     handleSubmitActionSound();
                     if (!isLocalhost()) {
-                      logEvent(analytics, "links_launch_app", {
+                      trackPublicEvent("links_launch_app", {
                         app: "robots_building_education",
                       });
                     }
@@ -2006,7 +2010,7 @@ export default function LinksPage() {
                 onClick={() => {
                   handleSubmitActionSound();
                   if (!isLocalhost()) {
-                    logEvent(analytics, "links_save_profile");
+                    trackPublicEvent("links_save_profile");
                   }
                   handleSaveProfile();
                 }}
@@ -2176,6 +2180,7 @@ export default function LinksPage() {
                 {walletHydrating && !cashuWallet && (
                   <HStack py={2}>
                     <VoiceOrb
+                      defer3D
                       state={
                         ["idle", "listening", "speaking"][
                           Math.floor(Math.random() * 3)

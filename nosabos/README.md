@@ -14,7 +14,7 @@ Contact me on Patreon if you have any problems setting this up.
 
 `node -v`
 
-Node version 20+ is required.
+Node version 22.19+ is required for the full toolchain, including Lighthouse.
 
 ### Backend services
 
@@ -31,6 +31,16 @@ Node version 20+ is required.
 
 1. `npm run build`
 2. `firebase deploy`
+
+The production build also renders public HTML, localized metadata, a sitemap,
+and the final offline manifest. Run `npm run check:public` before deploying.
+See [Performance and SEO](docs/performance-seo.md) for audit commands and coverage.
+
+### To preview performance and SEO changes
+
+Run `npm run build`, then `npm run preview:public` in the checkout containing
+your changes. Open `http://127.0.0.1:4173/` and run Lighthouse there. The Vite
+development server on port 5173 does not serve the production HTML or bundles.
 
 ### To deploy firebase functions
 
