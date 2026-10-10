@@ -147,10 +147,29 @@ export function PrivacyPolicyLink({ language = "en", isLightTheme }) {
   );
 }
 
-export default function PrivacyPolicyFooter({ language = "en", isLightTheme }) {
+export function LinksPageLink() {
+  return (
+    <Link
+      href="https://piyali.app/links"
+      display="inline-flex"
+      alignItems="center"
+      fontSize="inherit"
+      color="inherit"
+      textDecoration="underline"
+      textUnderlineOffset="3px"
+      minH="44px"
+      px={2}
+    >
+      Links
+    </Link>
+  );
+}
+
+export default function PrivacyPolicyFooter({ language = "en", isLightTheme, includeLinks = false }) {
   return (
     <Box as="footer" position="relative" zIndex={1} textAlign="center" px={4} py={5} fontSize="sm" color="inherit">
       <PrivacyPolicyLink language={language} isLightTheme={isLightTheme} />
+      {includeLinks && <LinksPageLink />}
     </Box>
   );
 }

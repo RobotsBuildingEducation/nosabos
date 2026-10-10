@@ -204,7 +204,7 @@ const translations = {
       "Explore quest-driven worlds, talk to NPCs, and collect items—all in your target language—to review vocabulary from your lessons.",
     feature_proficiency_test: "Proficiency Test",
     feature_proficiency_test_desc:
-      "Have a 10-exchange voice conversation with AI that adapts in real time to place you at your exact CEFR level.",
+      "Have a 10-exchange voice conversation with intelligence that adapts in real time to place you at your exact CEFR level.",
     feature_phonics: "Phonics",
     feature_phonics_desc:
       "Practice words and sounds with our Alphabet bootcamp mode to master pronunciation from the ground up.",
@@ -213,7 +213,7 @@ const translations = {
     value_title: "Learning That",
     value_title_accent: "Actually Works",
     value_1:
-      "AI that adapts in real-time—conversations, exercises, and feedback adjust to your exact level",
+      "Intelligence that adapts in real-time—conversations, exercises, and feedback adjust to your exact level",
     value_2:
       "Six practice modes for every learning style: speaking, reading, writing, listening, grammar, and vocabulary",
     value_3:
@@ -368,7 +368,7 @@ const translations = {
       "Explora mundos con misiones, habla con NPCs y recolecta objetos—todo en tu idioma objetivo—para repasar el vocabulario de tus lecciones.",
     feature_proficiency_test: "Prueba de Nivel",
     feature_proficiency_test_desc:
-      "Mantén una conversación de voz de 10 intercambios con IA que se adapta en tiempo real para ubicarte en tu nivel CEFR exacto.",
+      "Mantén una conversación de voz de 10 intercambios con inteligencia que se adapta en tiempo real para ubicarte en tu nivel CEFR exacto.",
     feature_phonics: "Fonética",
     feature_phonics_desc:
       "Practica palabras y sonidos con nuestro modo de Alfabeto para dominar la pronunciación desde cero.",
@@ -376,7 +376,7 @@ const translations = {
     value_title: "Aprendizaje que",
     value_title_accent: "Realmente Funciona",
     value_1:
-      "IA que se adapta en tiempo real—conversaciones, ejercicios y retroalimentación ajustados a tu nivel exacto",
+      "Inteligencia que se adapta en tiempo real—conversaciones, ejercicios y retroalimentación ajustados a tu nivel exacto",
     value_2:
       "Seis modos de práctica para cada estilo de aprendizaje: hablar, leer, escribir, escuchar, gramática y vocabulario",
     value_3:
@@ -530,7 +530,7 @@ const translations = {
       "Esplora mondi con missioni, parla con PNG e raccogli oggetti — tutto nella tua lingua target — per ripassare il vocabolario delle lezioni.",
     feature_proficiency_test: "Test di Livello",
     feature_proficiency_test_desc:
-      "Sostieni una conversazione vocale di 10 scambi con un'IA che si adatta in tempo reale per collocarti al tuo livello CEFR esatto.",
+      "Sostieni una conversazione vocale di 10 scambi con un'intelligenza che si adatta in tempo reale per collocarti al tuo livello CEFR esatto.",
     feature_phonics: "Fonetica",
     feature_phonics_desc:
       "Pratica parole e suoni con la modalità Alfabeto per padroneggiare la pronuncia dalle basi.",
@@ -538,7 +538,7 @@ const translations = {
     value_title: "Apprendimento che",
     value_title_accent: "Funziona Davvero",
     value_1:
-      "IA che si adatta in tempo reale — conversazioni, esercizi e feedback adeguati al tuo livello esatto",
+      "Intelligenza che si adatta in tempo reale — conversazioni, esercizi e feedback adeguati al tuo livello esatto",
     value_2:
       "Sei modalità di pratica per ogni stile: parlato, lettura, scrittura, ascolto, grammatica e vocabolario",
     value_3:
@@ -715,7 +715,7 @@ translations.fr = {
     "Explore des mondes a quetes, parle a des PNJ et collecte des objets dans ta langue cible pour reviser le vocabulaire.",
   feature_proficiency_test: "Test de Niveau",
   feature_proficiency_test_desc:
-    "Passe une conversation vocale de 10 echanges avec une IA qui s'adapte en temps reel pour te placer au bon niveau CEFR.",
+    "Passe une conversation vocale de 10 echanges avec une intelligence qui s'adapte en temps reel pour te placer au bon niveau CEFR.",
   feature_phonics: "Phonetique",
   feature_phonics_desc:
     "Pratique les sons et les mots avec le mode Alphabet pour maitriser la prononciation depuis les bases.",
@@ -723,7 +723,7 @@ translations.fr = {
   value_title: "Un apprentissage qui",
   value_title_accent: "Fonctionne Vraiment",
   value_1:
-    "Une IA qui s'adapte en temps reel - conversations, exercices et retours ajustes a ton niveau exact",
+    "Une intelligence qui s'adapte en temps reel - conversations, exercices et retours ajustes a ton niveau exact",
   value_2:
     "Six modes de pratique pour tous les styles : parler, lire, ecrire, ecouter, grammaire et vocabulaire",
   value_3:
@@ -872,7 +872,7 @@ translations.ja = {
     "クエスト型の世界を探索し、NPCと話し、アイテムを集めながら、学習中の言語でレッスン語彙を復習します。",
   feature_proficiency_test: "レベル判定テスト",
   feature_proficiency_test_desc:
-    "AIとの10往復の音声会話で、リアルタイムに適応しながらあなたのCEFRレベルを正確に判定します。",
+    "知能との10往復の音声会話で、リアルタイムに適応しながらあなたのCEFRレベルを正確に判定します。",
   feature_phonics: "フォニックス",
   feature_phonics_desc:
     "アルファベット・ブートキャンプで単語と音を練習し、発音を基礎から身につけます。",
@@ -880,7 +880,7 @@ translations.ja = {
   value_title: "練習を",
   value_title_accent: "実際の成長へ",
   value_1:
-    "リアルタイムに適応するAI。会話、練習、フィードバックがあなたの今のレベルに合わせて変化します。",
+    "リアルタイムに適応する知能。会話、練習、フィードバックがあなたの今のレベルに合わせて変化します。",
   value_2:
     "話す、読む、書く、聞く、文法、語彙の6つの練習モードで、学び方に合わせて学べます。",
   value_3:
@@ -2277,7 +2277,7 @@ const LandingPage = ({ onAuthenticated }) => {
           {copy.cta_signin}
         </Button>
       </LandingPageSections>
-      <PrivacyPolicyFooter language={lang} isLightTheme={themeMode === "light"} />
+      <PrivacyPolicyFooter language={lang} isLightTheme={themeMode === "light"} includeLinks />
     </>
   );
 };

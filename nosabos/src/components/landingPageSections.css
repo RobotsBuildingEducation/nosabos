@@ -666,92 +666,6 @@
 .lp-toolkit-grid p {
   font-size: 0.75rem;
 }
-.lp-refresh .lp-journey {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 70px;
-  margin-top: 100px;
-  padding: 58px;
-  border: 1px solid var(--lp-line);
-  border-radius: 28px;
-  color: var(--lp-ink);
-  background: var(--lp-surface);
-  box-shadow: 0 16px 35px -30px #253b3440;
-  overflow: hidden;
-}
-.lp-journey-heading {
-  position: relative;
-}
-.lp-journey .lp-eyebrow {
-  color: var(--lp-green);
-}
-.lp-journey h2 {
-  font-size: clamp(2rem, 3.6vw, 2.9rem);
-}
-.lp-journey p {
-  color: var(--lp-muted);
-}
-.lp-journey-heading > p {
-  margin-top: 20px;
-  font-size: 0.86rem;
-  max-width: 300px;
-}
-.lp-journey-levels {
-  display: flex;
-  gap: 7px;
-  margin-top: 33px;
-  position: relative;
-  z-index: 1;
-}
-.lp-journey-levels > span {
-  display: grid;
-  place-items: center;
-  width: 33px;
-  height: 33px;
-  border: 1px solid var(--lp-line);
-  border-radius: 50%;
-  font-size: 0.63rem;
-  color: var(--lp-muted);
-}
-.lp-journey-levels > span:first-child {
-  background: var(--lp-mint);
-  border-color: color-mix(in srgb, var(--lp-green) 25%, var(--lp-line));
-  color: var(--lp-green);
-}
-.lp-journey-sprout {
-  position: absolute;
-  width: 160px;
-  height: 160px;
-  bottom: -82px;
-  right: -25px;
-  color: var(--lp-green);
-  opacity: 0.09;
-  transform: rotate(-17deg);
-}
-.lp-values > div {
-  display: flex;
-  align-items: flex-start;
-  gap: 22px;
-  padding: 20px 0;
-  border-bottom: 1px solid var(--lp-line);
-}
-.lp-values > div:first-child {
-  padding-top: 0;
-}
-.lp-values > div:last-child {
-  border-bottom: 0;
-  padding-bottom: 0;
-}
-.lp-values > div > span {
-  color: var(--lp-green);
-  font-size: 0.64rem;
-  font-weight: 700;
-  padding-top: 4px;
-}
-.lp-values p {
-  font-size: 0.83rem;
-  line-height: 1.65;
-}
 .lp-refresh .lp-mission {
   display: grid;
   grid-template-columns: 0.85fr 1.15fr;
@@ -869,10 +783,6 @@
 @media (max-width: 950px) {
   .lp-showcase-copy {
     padding: 32px;
-  }
-  .lp-refresh .lp-journey {
-    gap: 40px;
-    padding: 42px;
   }
   .lp-refresh .lp-mission {
     gap: 40px;
@@ -1010,28 +920,6 @@
     grid-template-columns: 1fr;
     gap: 23px;
   }
-  .lp-refresh .lp-journey {
-    grid-template-columns: 1fr;
-    gap: 38px;
-    margin-top: 58px;
-    padding: 32px 28px;
-    border-radius: 22px;
-  }
-  .lp-journey-heading > p {
-    max-width: none;
-  }
-  .lp-journey-sprout {
-    right: 0;
-    bottom: -25px;
-    width: 110px;
-    height: 110px;
-  }
-  .lp-values > div {
-    gap: 19px;
-  }
-  .lp-values p {
-    font-size: 0.81rem;
-  }
   .lp-refresh .lp-mission {
     grid-template-columns: 1fr;
     gap: 18px;
@@ -1085,4 +973,67 @@
     transition: none !important;
     scroll-behavior: auto;
   }
+}
+
+.lp-refresh .lp-ethos {
+  margin-top: 100px;
+  padding-block: 12px 0;
+}
+.lp-ethos-heading { margin-bottom: 40px; }
+.lp-ethos-principle {
+  display: grid;
+  grid-template-columns: 216px minmax(200px, 0.85fr) minmax(0, 1.65fr);
+  align-items: start;
+  gap: 36px;
+  padding-block: 38px;
+  border-top: 1px solid var(--lp-line);
+}
+.lp-ethos-art {
+  display: block;
+  width: 216px;
+  height: auto;
+  aspect-ratio: 8 / 7;
+  object-fit: contain;
+}
+.lp-ethos-principle h3 {
+  padding-top: 14px;
+  font-size: clamp(1.3rem, 2vw, 1.7rem);
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+  font-weight: 500;
+}
+.lp-ethos-description { padding-top: 12px; }
+.lp-ethos-description .lp-ethos-lead {
+  color: var(--lp-ink);
+  font-size: 1rem;
+  margin-bottom: 12px;
+}
+@media (max-width: 1000px) {
+  .lp-ethos-principle {
+    grid-template-columns: 168px minmax(170px, 0.85fr) minmax(0, 1.65fr);
+    column-gap: 25px;
+  }
+  .lp-ethos-art { width: 168px; }
+}
+@media (max-width: 760px) {
+  .lp-refresh .lp-ethos { margin-top: 60px; }
+  .lp-ethos-heading { margin-bottom: 30px; }
+  .lp-ethos-principle {
+    grid-template-columns: 128px minmax(0, 1fr);
+    column-gap: 20px;
+    row-gap: 16px;
+    padding-block: 28px;
+  }
+  .lp-ethos-art { width: 128px; }
+  .lp-ethos-principle h3 {
+    padding-top: 0;
+    align-self: center;
+    font-size: 22px;
+  }
+  .lp-ethos-description { grid-column: 1 / -1; padding-top: 0; }
+}
+
+:root[data-theme-mode="dark"] .lp-ethos-art {
+  background: #fcf6e8;
+  border-radius: 6px;
 }

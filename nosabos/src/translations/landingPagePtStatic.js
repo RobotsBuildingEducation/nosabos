@@ -86,7 +86,7 @@ export const LANDING_PAGE_PT_STATIC = {
     "Explore mundos com missões, fale com NPCs e colete itens no idioma que está praticando para revisar o vocabulário das suas lições.",
   feature_proficiency_test: "Teste de nível",
   feature_proficiency_test_desc:
-    "Faça uma conversa por voz de 10 trocas com uma IA que se adapta em tempo real para colocar você no nível CEFR certo.",
+    "Faça uma conversa por voz de 10 trocas com uma inteligência que se adapta em tempo real para colocar você no nível CEFR certo.",
   feature_phonics: "Fonética",
   feature_phonics_desc:
     "Pratique palavras e sons com o modo Alfabeto para construir a pronúncia desde a base.",
@@ -94,7 +94,7 @@ export const LANDING_PAGE_PT_STATIC = {
   value_title: "Aprendizagem que",
   value_title_accent: "funciona de verdade",
   value_1:
-    "IA que se adapta em tempo real. Conversas, exercícios e feedback se ajustam ao seu nível exato.",
+    "Inteligência que se adapta em tempo real. Conversas, exercícios e feedback se ajustam ao seu nível exato.",
   value_2:
     "Seis modos de prática para diferentes estilos de aprendizagem: fala, leitura, escrita, escuta, gramática e vocabulário.",
   value_3:

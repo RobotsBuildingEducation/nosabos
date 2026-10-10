@@ -86,7 +86,7 @@ export const LANDING_PAGE_DE_STATIC = {
     "Erkunde Quest-Welten, sprich mit NPCs und sammle Gegenstände in deiner Zielsprache, um Lektionswortschatz zu wiederholen.",
   feature_proficiency_test: "Einstufungstest",
   feature_proficiency_test_desc:
-    "Führe ein 10-Wechsel-Sprachgespräch mit KI, das sich in Echtzeit anpasst und dein genaues CEFR-Niveau bestimmt.",
+    "Führe ein 10-Wechsel-Sprachgespräch mit Intelligenz, die sich in Echtzeit anpasst und dein genaues CEFR-Niveau bestimmt.",
   feature_phonics: "Phonetik",
   feature_phonics_desc:
     "Übe Wörter und Laute im Alphabet-Bootcamp und baue Aussprache von Grund auf auf.",
@@ -94,7 +94,7 @@ export const LANDING_PAGE_DE_STATIC = {
   value_title: "Lernen, das",
   value_title_accent: "wirklich funktioniert",
   value_1:
-    "KI, die sich in Echtzeit anpasst: Gespräche, Übungen und Feedback passen zu deinem Niveau",
+    "Intelligenz, die sich in Echtzeit anpasst: Gespräche, Übungen und Feedback passen zu deinem Niveau",
   value_2:
     "Sechs Übungsmodi für jeden Lernstil: Sprechen, Lesen, Schreiben, Hören, Grammatik und Wortschatz",
   value_3:

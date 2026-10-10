@@ -14,11 +14,12 @@ import {
   GraduationCap,
   Heart,
   MessageCircle,
-  Sprout,
   Users,
   Wallet,
 } from "lucide-react";
 import LandingLanguageAtlas from "./LandingLanguageAtlas";
+import LandingEthosSection from "./LandingEthosSection";
+import { getLandingEthosCopy } from "./landingEthosCopy";
 import LandingTutorDemo from "./LandingTutorDemo";
 import CompanionRewardDance from "./CompanionRewardDance";
 import { getCustomizeModalCopy } from "./companionCustomizeCopy";
@@ -28,7 +29,6 @@ import { landingCapabilityCopy } from "./landingCapabilityCopy";
 import { LANDING_PROFICIENCY_LEVELS, LANDING_PROFICIENCY_STATS } from "./landingProficiencyStats";
 import "./landingPageSections.css";
 
-const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 function ProficiencyPreview({ words, lang }) {
   const numbers = new Intl.NumberFormat(lang);
   return (
@@ -282,10 +282,8 @@ export default function LandingPageSections({
       detail: words.proficiencyDetail,
     },
   ];
-  const formatBenefit = (benefit) => benefit.replace(/\{(\w+)\}/g,
-    (_, key) => new Intl.NumberFormat(lang).format(LANDING_PROFICIENCY_STATS[key]));
-  const values = [copy.value_1, formatBenefit(words.practiceModesBenefit), formatBenefit(words.curriculumBenefit), copy.value_4];
-  const visibleFaqs = [...faqs.slice(0, 2), { q: words.costQuestion, a: words.costAnswer }];
+  const ethos = getLandingEthosCopy(lang);
+  const visibleFaqs = [faqs[0], { q: ethos.bitcoinQuestion, a: ethos.bitcoinAnswer }, { q: words.costQuestion, a: words.costAnswer }];
   const cards = [
     { id: "companion", title: copy.feature_companion, desc: words.companionDesc, icon: <Heart size={18} /> },
     { id: "connected", title: words.connectedTitle, desc: words.connectedDesc, icon: <Users size={18} /> },
@@ -411,34 +409,7 @@ export default function LandingPageSections({
         </details>
       </section>
 
-      <section
-        className="lp-section lp-journey"
-        aria-labelledby="lp-journey-title"
-      >
-        <div className="lp-journey-heading">
-          <span className="lp-eyebrow">{landingSectionLabel(copy.value_label, lang)}</span>
-          <h2 id="lp-journey-title">{words.journey}</h2>
-          <p>{words.journeyNote}</p>
-          <div className="lp-journey-levels" dir="ltr" aria-hidden="true">
-            {LEVELS.map((level) => (
-              <span key={level}>{level}</span>
-            ))}
-          </div>
-          <Sprout
-            className="lp-journey-sprout"
-            aria-hidden="true"
-            strokeWidth={1}
-          />
-        </div>
-        <div className="lp-values">
-          {values.map((value, i) => (
-            <div key={value}>
-              <span>0{i + 1}</span>
-              <p>{value}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+      <LandingEthosSection lang={lang} />
 
       <section
         className="lp-section lp-mission"

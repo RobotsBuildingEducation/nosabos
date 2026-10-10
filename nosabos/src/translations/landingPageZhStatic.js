@@ -82,7 +82,7 @@ export const LANDING_PAGE_ZH_STATIC = {
     "探索任务驱动的世界、与 NPC 对话、收集物品，用目标语言复习课程词汇。",
   feature_proficiency_test: "水平测试",
   feature_proficiency_test_desc:
-    "与 AI 进行 10 轮语音对话，实时适应并判断你的 CEFR 水平。",
+    "与智能进行 10 轮语音对话，实时适应并判断你的 CEFR 水平。",
   feature_phonics: "语音基础",
   feature_phonics_desc:
     "用字母训练营练习单词和发音，从基础掌握准确发音。",
@@ -90,7 +90,7 @@ export const LANDING_PAGE_ZH_STATIC = {
   value_title: "真正有效的",
   value_title_accent: "语言学习",
   value_1:
-    "实时自适应 AI：对话、练习和反馈会根据你的实际水平调整",
+    "实时自适应智能：对话、练习和反馈会根据你的实际水平调整",
   value_2:
     "六种练习模式适合不同学习风格：口语、阅读、写作、听力、语法和词汇",
   value_3:
