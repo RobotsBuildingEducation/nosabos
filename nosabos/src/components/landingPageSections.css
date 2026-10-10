@@ -680,9 +680,13 @@
   width: 100%;
   margin: auto;
 }
-.lp-mission-art > svg {
+.lp-mission-art > img {
+  display: block;
   width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
 }
+
 .lp-mission h2 {
   font-size: clamp(1.8rem, 3.4vw, 2.65rem);
   margin-bottom: 24px;
@@ -926,7 +930,7 @@
     padding: 45px 8px;
   }
   .lp-mission-art {
-    max-width: 210px;
+    max-width: 280px;
   }
   .lp-mission h2 {
     font-size: 2rem;
@@ -1031,9 +1035,4 @@
     font-size: 22px;
   }
   .lp-ethos-description { grid-column: 1 / -1; padding-top: 0; }
-}
-
-:root[data-theme-mode="dark"] .lp-ethos-art {
-  background: #fcf6e8;
-  border-radius: 6px;
 }

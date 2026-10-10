@@ -1,3 +1,4 @@
+import { useThemeStore } from "../useThemeStore";
 import { getLandingEthosCopy } from "./landingEthosCopy";
 
 const ARTWORK = [
@@ -7,6 +8,8 @@ const ARTWORK = [
 ];
 
 export default function LandingEthosSection({ lang }) {
+  const themeMode = useThemeStore((s) => s.themeMode);
+  const artworkSuffix = themeMode === "dark" ? "-dark" : "";
   const copy = getLandingEthosCopy(lang);
   return (
     <section className="lp-section lp-ethos" aria-labelledby="lp-ethos-title">
@@ -19,7 +22,7 @@ export default function LandingEthosSection({ lang }) {
           <article className="lp-ethos-principle" key={principle.title}>
             <img
               className="lp-ethos-art"
-              src={`/images/ethos/${ARTWORK[index]}.svg`}
+              src={`/images/ethos/${ARTWORK[index]}${artworkSuffix}.svg`}
               alt=""
               width="320"
               height="280"
