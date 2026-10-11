@@ -1735,6 +1735,7 @@ function SentenceShapeshifter({
   onToggleSpeech,
   isSpeechRecording = false,
   isSpeechConnecting = false,
+  isSpeechEvaluating = false,
   speechStream = null,
   supportsSpeech = false,
   speechLabels,
@@ -2655,6 +2656,7 @@ function ThreeClueMystery({
   onToggleSpeech,
   isSpeechRecording = false,
   isSpeechConnecting = false,
+  isSpeechEvaluating = false,
   speechStream = null,
   supportsSpeech = false,
   speechLabels,
@@ -2965,6 +2967,7 @@ function ThreeWordChallenge({
   onToggleSpeech,
   isSpeechRecording = false,
   isSpeechConnecting = false,
+  isSpeechEvaluating = false,
   speechStream = null,
   supportsSpeech = false,
   speechLabels,
@@ -5108,6 +5111,7 @@ export default function DelightQuestionLab({
                   onToggleSpeech={handleToggleSpeech}
                   isSpeechRecording={isSpeechRecording}
                   isSpeechConnecting={isSpeechConnecting}
+                  isSpeechEvaluating={isSpeechEvaluating}
                   speechStream={speechStream}
                   supportsSpeech={supportsSpeech}
                   speechLabels={speechLabels}
@@ -5171,6 +5175,7 @@ export default function DelightQuestionLab({
                   onToggleSpeech={handleToggleSpeech}
                   isSpeechRecording={isSpeechRecording}
                   isSpeechConnecting={isSpeechConnecting}
+                  isSpeechEvaluating={isSpeechEvaluating}
                   speechStream={speechStream}
                   supportsSpeech={supportsSpeech}
                   speechLabels={speechLabels}
@@ -5221,6 +5226,7 @@ export default function DelightQuestionLab({
                   onToggleSpeech={handleToggleSpeech}
                   isSpeechRecording={isSpeechRecording}
                   isSpeechConnecting={isSpeechConnecting}
+                  isSpeechEvaluating={isSpeechEvaluating}
                   speechStream={speechStream}
                   supportsSpeech={supportsSpeech}
                   speechLabels={speechLabels}
