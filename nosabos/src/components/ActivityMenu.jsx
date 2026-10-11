@@ -1004,7 +1004,14 @@ export default function ActivityMenu({
   };
 
   return (
-    <Box position="relative" w="44px" h="44px">
+    <Box
+      position="relative"
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+      w="44px"
+      h="44px"
+    >
       {decoration}
       <Menu
         autoSelect={false}
@@ -1024,11 +1031,24 @@ export default function ActivityMenu({
           <>
             <MenuButton
               as={IconButton}
-              icon={triggerIcon || <PiDotsNineBold size={22} color="var(--app-text-primary)" />}
+              icon={
+                // Keep the icon out of inline text layout: the trigger can be
+                // a nested icon/badge wrapper as well as a bare SVG.
+                <Box
+                  as="span"
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                  lineHeight={0}
+                  sx={{ "& svg": { display: "block", flexShrink: 0 } }}
+                >
+                  {triggerIcon || <PiDotsNineBold size={22} color="var(--app-text-primary)" />}
+                </Box>
+              }
               aria-label={label}
               {...triggerProps}
               variant="unstyled"
-              display="inline-flex"
+              display="flex"
               alignItems="center"
               justifyContent="center"
               w="44px"

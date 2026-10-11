@@ -7,6 +7,7 @@ import { createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
 import { ChakraProvider, Box, Button, Input, Select } from "@chakra-ui/react";
 import { HamburgerIcon } from "@chakra-ui/icons";
+import { PiDotsNineBold } from "react-icons/pi";
 import { theme } from "../../src/theme";
 import "../../src/index.css";
 import ActivityActionRow from "../../src/components/ActivityActionRow";
@@ -30,6 +31,11 @@ function Menu() {
         label="Activity menu"
         modesLabel="Modes"
         backLabel="Back"
+        triggerIcon={
+          <Box position="relative" display="inline-flex" overflow="visible">
+            <PiDotsNineBold size={22} />
+          </Box>
+        }
         items={[
           {
             id: "notes",
@@ -182,6 +188,17 @@ function checkRow(primaryLabel, secondary = true) {
   ];
   const menuBounds = menu.getBoundingClientRect();
   const center = menuBounds.top + menuBounds.height / 2;
+  const menuIcon = menu.querySelector("svg");
+  const iconBounds = menuIcon.getBBox();
+  const iconTransform = menuIcon.getScreenCTM();
+  const iconCenter = new DOMPoint(
+    iconBounds.x + iconBounds.width / 2,
+    iconBounds.y + iconBounds.height / 2,
+  ).matrixTransform(iconTransform).y;
+  assert(
+    Math.abs(iconCenter - center) < 0.5,
+    "The painted menu dots must be centered, including nested icon wrappers",
+  );
   for (const button of buttons) {
     const b = button.getBoundingClientRect();
     assert(

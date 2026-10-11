@@ -30,7 +30,7 @@ function ActionAreaContent({ children, actions, feedback, reduceMotion }) {
       initial={false}
       animate={{ opacity: 1, y: 0 }}
       position={isPresent ? "relative" : "absolute"}
-      bottom={isPresent ? undefined : "16px"}
+      bottom={isPresent ? undefined : "12px"}
       insetInline={isPresent ? undefined : { base: 3, md: 6 }}
       pointerEvents={isPresent ? undefined : "none"}
       style={isPresent ? undefined : { clipPath: "inset(0 0 52px 0)" }}
@@ -386,8 +386,9 @@ export default function QuestionActionArea({
                       left="50%"
                       width={layout?.width ?? "calc(min(100vw, 480px) - 16px)"}
                       px={{ base: 3, md: 6 }}
-                      pt={2}
-                      pb={4}
+                      // Equal padding centers the 40px action row on the
+                      // 44px menu trigger, including expanded feedback states.
+                      py={3}
                       borderRadius={APP_ACTION_BAR_RADIUS}
                       style={{ cornerShape: APP_SQUIRCLE_SHAPE, x: "-50%" }}
                       color="var(--app-text-primary)"
