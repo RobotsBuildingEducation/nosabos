@@ -4,7 +4,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { appCheckFetch } from "../firebaseResources/firebaseResources";
 import { evaluateAttemptStrict } from "../utils/speechEvaluation";
-import { createSpeechTranscriptBuffer } from "../utils/speechTranscriptBuffer";
 
 const BCP47_TO_WHISPER = {
   ar: "ar",
@@ -90,9 +89,6 @@ export function useSpeechPractice({
   targetLang = "es",
   transcriptionHint = "",
   onResult,
-  onTranscript,
-  continuous = false,
-  evaluate = true,
   timeoutMs = 15000,
   maxConnectionMs = 10000,
   vadSilenceDurationMs = null,
@@ -132,20 +128,20 @@ export function useSpeechPractice({
     // Close data channel
     try {
       dcRef.current?.close?.();
-    } catch { /* The channel may already be closed. */ }
+    } catch {}
     dcRef.current = null;
 
     // Close peer connection
     try {
       pcRef.current?.close?.();
-    } catch { /* The peer connection may already be closed. */ }
+    } catch {}
     pcRef.current = null;
 
     // Stop local media stream
     try {
       const tracks = localStreamRef.current?.getTracks?.();
       tracks?.forEach((t) => t.stop());
-    } catch { /* Capture may already have released its tracks. */ }
+    } catch {}
     localStreamRef.current = null;
 
     // Clear timeouts
@@ -161,7 +157,6 @@ export function useSpeechPractice({
     evalRef.current.scheduleFinish = null;
     evalRef.current.userStopped = false;
     evalRef.current.ready = false;
-    evalRef.current.pendingTranscription = false;
     evalRef.current.inProgress = false;
     evalRef.current.speechDone = false;
     transcriptRef.current = "";
@@ -191,13 +186,13 @@ export function useSpeechPractice({
   const report = useCallback(
     async ({ recognizedText = "", confidence = 0, audioMetrics, method }) => {
       if (!targetText) return;
-      const evaluation = evaluate ? evaluateAttemptStrict({
+      const evaluation = evaluateAttemptStrict({
         recognizedText,
         confidence,
         audioMetrics,
         targetSentence: targetText,
         lang: targetLang,
-      }) : null;
+      });
       onResult?.({
         evaluation,
         recognizedText,
@@ -206,7 +201,7 @@ export function useSpeechPractice({
         method,
       });
     },
-    [onResult, targetLang, targetText, evaluate]
+    [onResult, targetLang, targetText]
   );
 
   const startRecording = useCallback(async () => {
@@ -293,8 +288,6 @@ export function useSpeechPractice({
       let hasDetectedSpeech = false;
       let waitingForTurnEnd = false;
       let speechStartedAt = 0;
-      const transcripts = createSpeechTranscriptBuffer();
-      const pendingItems = new Set();
       const failRecording = (code, message) => {
         if (!isCurrentSession()) return;
         cleanup();
@@ -315,7 +308,7 @@ export function useSpeechPractice({
 
         const transcriptReady = !!transcriptRef.current.trim();
         const delayMs =
-          waitForTranscript && (!transcriptReady || evalRef.current.pendingTranscription)
+          waitForTranscript && !transcriptReady
             ? Math.max(preferredDelayMs, TRANSCRIPT_GRACE_MS)
             : preferredDelayMs;
 
@@ -390,24 +383,6 @@ export function useSpeechPractice({
           const msg = JSON.parse(evt.data);
           const msgType = msg?.type || "";
 
-          if (continuous && msgType === "input_audio_buffer.committed") {
-            transcripts.commit(msg.item_id, msg.previous_item_id);
-            if (msg.item_id) pendingItems.delete("legacy");
-            if (!transcripts.isComplete(msg.item_id)) {
-              pendingItems.add(msg.item_id || "legacy");
-            }
-            evalRef.current.pendingTranscription = pendingItems.size > 0;
-          }
-
-          if (continuous && (
-            msgType === "conversation.item.input_audio_transcription.delta" ||
-            msgType === "input_audio_transcription.delta"
-          ) && typeof msg.delta === "string") {
-            transcripts.delta(msg.item_id, msg.delta, msg.event_id);
-            transcriptRef.current = transcripts.text();
-            onTranscript?.(transcriptRef.current);
-          }
-
           // Handle input audio transcription completed (both event type variants)
           if (
             (msgType ===
@@ -418,15 +393,7 @@ export function useSpeechPractice({
             const transcript = (msg.transcript || "").trim();
             if (transcript) {
               hasDetectedSpeech = true;
-              if (continuous) {
-                transcripts.complete(msg.item_id, transcript);
-                pendingItems.delete(msg.item_id || "legacy");
-                evalRef.current.pendingTranscription = pendingItems.size > 0;
-                transcriptRef.current = transcripts.text();
-              } else {
-                transcriptRef.current = transcript;
-              }
-              onTranscript?.(transcriptRef.current);
+              transcriptRef.current = transcript;
 
               // Reset silence timeout when we receive speech
               if (evalRef.current.silenceTimeoutId) {
@@ -439,9 +406,7 @@ export function useSpeechPractice({
               }, timeoutMs);
 
               if (evalRef.current.userStopped) {
-                scheduleFinish(evalRef.current.pendingTranscription ? 1200 : 80, {
-                  waitForTranscript: evalRef.current.pendingTranscription,
-                });
+                scheduleFinish(80);
               } else if (waitingForTurnEnd) {
                 scheduleFinish(Math.min(speechStopDelayMs, 180));
               }
@@ -451,18 +416,11 @@ export function useSpeechPractice({
           // Handle speech started
           if (msgType === "input_audio_buffer.speech_started") {
             hasDetectedSpeech = true;
-            if (continuous) {
-              pendingItems.add(msg.item_id || "legacy");
-              evalRef.current.pendingTranscription = true;
-            }
             waitingForTurnEnd = false;
             speechStartedAt = Date.now();
             if (evalRef.current.silenceTimeoutId) {
               clearTimeout(evalRef.current.silenceTimeoutId);
               evalRef.current.silenceTimeoutId = null;
-            }
-            if (evalRef.current.userStopped) {
-              scheduleFinish(1200, { waitForTranscript: true });
             }
           }
 
@@ -472,14 +430,6 @@ export function useSpeechPractice({
               ? Date.now() - speechStartedAt
               : MIN_SPEECH_TURN_MS;
             speechStartedAt = 0;
-            if (continuous) {
-              // Reading a paragraph spans multiple speech turns. A sentence
-              // pause commits transcription but does not end the recording.
-              if (evalRef.current.userStopped) {
-                scheduleFinish(1200, { waitForTranscript: true });
-              }
-              return;
-            }
             if (
               speechDurationMs < MIN_SPEECH_TURN_MS &&
               !transcriptRef.current.trim()
@@ -501,7 +451,6 @@ export function useSpeechPractice({
           // have a transcript.
           if (
             msgType === "response.done" &&
-            !continuous &&
             transcriptRef.current.trim()
           ) {
             waitingForTurnEnd = true;
@@ -635,8 +584,6 @@ export function useSpeechPractice({
     responseDoneDelayMs,
     transcriptionHint,
     onResult,
-    onTranscript,
-    continuous,
     cleanup,
   ]);
 
@@ -649,7 +596,7 @@ export function useSpeechPractice({
     }
 
     const currentTranscript = transcriptRef.current.trim();
-    if (currentTranscript && !continuous) {
+    if (currentTranscript) {
       evalRef.current.finishRecording?.();
       return;
     }
@@ -663,7 +610,7 @@ export function useSpeechPractice({
       // Keep sending silence until server VAD commits and transcription
       // finishes. Stopping the track here can remove that trailing silence.
       localStreamRef.current?.getTracks()?.forEach((track) => { track.enabled = false; });
-    } catch { /* The microphone may already have stopped. */ }
+    } catch {}
 
     if (evalRef.current.scheduleFinish) {
       evalRef.current.scheduleFinish(1200, { waitForTranscript: true });
@@ -672,7 +619,7 @@ export function useSpeechPractice({
     } else {
       cleanup();
     }
-  }, [cleanup, continuous]);
+  }, [cleanup]);
 
   return {
     startRecording,

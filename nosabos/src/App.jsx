@@ -1383,9 +1383,9 @@ function TopBar({
   const playSliderTick = useSoundSettings((s) => s.playSliderTick);
   const toast = useToast();
   const navigate = useNavigate();
-  const { isUpdateReady, uiState, errorMessage, applyUpdate, dismissUpdate } =
+  const { isUpdateReady, uiState, errorMessage, applyUpdate } =
     useAppUpdate();
-  const showUpdateBar = Boolean(isUpdateReady && uiState !== "deferred");
+  const showUpdateBar = Boolean(isUpdateReady);
   const t = translations[appLanguage] || translations.en;
   const isRtlApp = getLanguageDirection(appLanguage) === "rtl";
   const themeMode = useThemeStore((s) => s.themeMode);
@@ -1992,7 +1992,6 @@ function TopBar({
             <AppUpdateTopBar
               language={appLanguage}
               isApplying={uiState === "applying"}
-              onLater={dismissUpdate}
               onUpdate={async () => {
                 const ok = await applyUpdate();
                 if (!ok && errorMessage) {

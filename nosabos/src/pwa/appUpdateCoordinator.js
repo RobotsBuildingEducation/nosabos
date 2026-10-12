@@ -26,7 +26,6 @@ import {
 
 const COALESCE_INTERVAL_MS = 30 * 1000; // 30 seconds
 const PERIODIC_CHECK_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes while visible
-const DEFERRAL_DURATION_MS = 30 * 60 * 1000; // 30 minutes deferral when user presses Later
 const METADATA_FETCH_TIMEOUT_MS = 10 * 1000; // 10 seconds
 const ACTIVATION_TIMEOUT_MS = 10 * 1000; // 10 seconds
 const MAX_AUTO_RELOAD_ATTEMPTS = 2;
@@ -35,8 +34,6 @@ const DEV_SW_CLEANUP_KEY = "nosabos_dev_sw_cleanup_reload";
 export const STORAGE_KEYS = {
   RELOAD_TARGET: "nosabos_update_reload_target",
   ATTEMPT_COUNT: "nosabos_update_reload_attempts",
-  DEFERRED_BUILD: "nosabos_update_deferred_build",
-  DEFERRED_AT: "nosabos_update_deferred_at",
 };
 
 // Check if running in browser
@@ -71,7 +68,7 @@ export class AppUpdateCoordinator {
       targetBuildId: null,
       discoveryStatus: "idle", // 'idle' | 'checking' | 'different_detected' | 'check_failed'
       workerStatus: "unregistered", // 'unregistered' | 'installing' | 'waiting' | 'activating' | 'activated' | 'failed'
-      uiState: "idle", // 'idle' | 'ready' | 'deferred' | 'applying' | 'error'
+      uiState: "idle", // 'idle' | 'ready' | 'applying' | 'error'
       isModalOpen: false,
       isUpdateReady: false,
       errorMessage: null,
@@ -144,8 +141,8 @@ export class AppUpdateCoordinator {
     // Listen to safety changes
     subscribeSafety(({ safe }) => {
       this.setState({ isProtected: !safe });
-      // If we became safe and an update is ready and not deferred, ready the banner
-      if (safe && this.state.isUpdateReady && !this.isDeferred() && this.state.uiState !== "ready") {
+      // If we became safe and an update is ready, ready the banner
+      if (safe && this.state.isUpdateReady && this.state.uiState !== "ready") {
         this.setState({ uiState: "ready" });
       }
     });
@@ -235,7 +232,6 @@ export class AppUpdateCoordinator {
           // Success: The newly booted build matches the target!
           this.storage.removeItem(STORAGE_KEYS.RELOAD_TARGET);
           this.storage.removeItem(STORAGE_KEYS.ATTEMPT_COUNT);
-          this.storage.removeItem(STORAGE_KEYS.DEFERRED_BUILD);
           console.info(`[PWA Update] Verified update to build ${this.runningBuildId}`);
         } else {
           // Mismatch: Still running old build after reload attempt
@@ -316,12 +312,6 @@ export class AppUpdateCoordinator {
       targetBuildId: this.state.advertisedBuildId || "updated-build",
     });
 
-    // Check if user previously deferred this build during current session
-    if (this.isDeferred()) {
-      this.setState({ uiState: "deferred", isModalOpen: false });
-      return;
-    }
-
     // Safe automatic application check:
     // Cold start / idle return, no user interaction, no protected work
     const isSafe = isUpdateSafe();
@@ -338,51 +328,10 @@ export class AppUpdateCoordinator {
     });
   }
 
-  clearDeferral() {
-    if (this.storage) {
-      try {
-        this.storage.removeItem(STORAGE_KEYS.DEFERRED_BUILD);
-        this.storage.removeItem(STORAGE_KEYS.DEFERRED_AT);
-      } catch (e) {
-        console.warn("[PWA Update] Could not clear deferral:", e);
-      }
-    }
-    if (this.state.uiState === "deferred") {
-      this.setState({ uiState: "ready" });
-    }
-  }
-
-  isDeferred() {
-    if (!this.storage) return false;
-    try {
-      const deferredBuild = this.storage.getItem(STORAGE_KEYS.DEFERRED_BUILD);
-      const target = this.state.targetBuildId || this.state.advertisedBuildId;
-      if (!deferredBuild || !target || deferredBuild !== target) {
-        return false;
-      }
-      const deferredAtStr = this.storage.getItem(STORAGE_KEYS.DEFERRED_AT);
-      if (!deferredAtStr) return false;
-      const deferredAt = parseInt(deferredAtStr, 10);
-      const now = Date.now();
-      if (now - deferredAt >= DEFERRAL_DURATION_MS) {
-        // 30 minutes expired: clear deferral and restore ready
-        this.clearDeferral();
-        return false;
-      }
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
   handleVisibilityChange() {
     if (!this.document) return;
     if (this.document.visibilityState === "visible") {
       this.startPeriodicCheck();
-      // Option B: Gentle reminder on return — clear deferral so top banner reappears
-      if (this.state.uiState === "deferred") {
-        this.clearDeferral();
-      }
       // Reconcile waiting worker if one installed while page was in background
       if (this.registration?.waiting && !this.state.isUpdateReady) {
         this.handleWorkerWaiting({ sw: this.registration.waiting });
@@ -394,10 +343,6 @@ export class AppUpdateCoordinator {
   }
 
   handlePageShow() {
-    // Option B: Gentle reminder on return — clear deferral so top banner reappears
-    if (this.state.uiState === "deferred") {
-      this.clearDeferral();
-    }
     if (this.registration?.waiting && !this.state.isUpdateReady) {
       this.handleWorkerWaiting({ sw: this.registration.waiting });
     }
@@ -418,10 +363,6 @@ export class AppUpdateCoordinator {
     this.stopPeriodicCheck();
     this.periodicTimer = setInterval(() => {
       if (this.document?.visibilityState === "visible") {
-        // If 30-minute deferral has expired while staying in app, clear deferral
-        if (this.state.uiState === "deferred" && !this.isDeferred()) {
-          this.clearDeferral();
-        }
         this.checkForUpdate({ reason: "periodic" }).catch(() => {});
       }
     }, PERIODIC_CHECK_INTERVAL_MS);
@@ -643,28 +584,6 @@ export class AppUpdateCoordinator {
   }
 
   /**
-   * User pressed "Later": dismiss modal and suppress automatic reopening for this build this session.
-   */
-  dismissUpdate() {
-    const target = this.state.targetBuildId || this.state.advertisedBuildId;
-    const now = Date.now();
-    if (this.storage) {
-      try {
-        this.storage.setItem(STORAGE_KEYS.DEFERRED_BUILD, target || "current");
-        this.storage.setItem(STORAGE_KEYS.DEFERRED_AT, String(now));
-      } catch (e) {
-        console.warn("[PWA Update] Could not record deferred build:", e);
-      }
-    }
-
-    this.setState({
-      uiState: "deferred",
-      isModalOpen: false,
-      errorMessage: null,
-    });
-  }
-
-  /**
    * User pressed "Try again" after recoverable failure.
    */
   async retryUpdate() {
@@ -674,14 +593,6 @@ export class AppUpdateCoordinator {
       retryCount: this.state.retryCount + 1,
     });
     return this.applyUpdate({ automatic: false });
-  }
-
-  openModal() {
-    // Modal removed in favor of top navigation banner
-  }
-
-  closeModal() {
-    this.dismissUpdate();
   }
 
   destroy() {

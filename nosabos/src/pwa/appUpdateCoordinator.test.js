@@ -144,51 +144,35 @@ test("checkForUpdate coalesces calls within 30 seconds", async () => {
   assert.equal(fetchCount, 2, "force: true bypasses throttle");
 });
 
-test("dismissUpdate defers update and supports Option B return reminder and 30m expiration", () => {
-  const storage = createMockStorage();
-  const mockDocument = { visibilityState: "visible" };
+test("waiting updates ignore legacy deferrals and stay ready across foreground checks", () => {
+  const storage = createMockStorage({
+    nosabos_update_deferred_build: "build-v2",
+    nosabos_update_deferred_at: String(Date.now()),
+  });
   const coordinator = new AppUpdateCoordinator({
     runningBuildId: "build-v1",
     storage,
-    document: mockDocument,
+    document: { visibilityState: "visible" },
   });
 
   coordinator.setState({
     advertisedBuildId: "build-v2",
-    targetBuildId: "build-v2",
-    isUpdateReady: true,
-    uiState: "ready",
+    hasUserInteracted: true,
   });
 
-  coordinator.dismissUpdate();
-
-  assert.equal(storage.getItem(STORAGE_KEYS.DEFERRED_BUILD), "build-v2");
-  assert.ok(storage.getItem(STORAGE_KEYS.DEFERRED_AT));
-  const state = coordinator.getState();
-  assert.equal(state.uiState, "deferred");
-  assert.equal(coordinator.isDeferred(), true);
-
-  // When worker reports waiting while still deferred, it stays deferred
-  coordinator.handleWorkerWaiting({});
-  assert.equal(coordinator.getState().uiState, "deferred");
-
-  // Option B: when user leaves and returns (visibilitychange), deferral clears and ready state is restored
-  coordinator.handleVisibilityChange();
-  assert.equal(coordinator.getState().uiState, "ready");
-  assert.equal(coordinator.isDeferred(), false);
-
-  // Re-defer to test 30m expiration
-  coordinator.dismissUpdate();
-  assert.equal(coordinator.isDeferred(), true);
-
-  // Simulate 31 minutes later
-  const originalDateNow = Date.now;
   try {
-    Date.now = () => originalDateNow() + 31 * 60 * 1000;
-    assert.equal(coordinator.isDeferred(), false);
+    coordinator.handleWorkerWaiting();
+    assert.equal(coordinator.getState().isUpdateReady, true);
+    assert.equal(coordinator.getState().uiState, "ready");
+
+    coordinator.handleVisibilityChange();
+    assert.equal(coordinator.getState().isUpdateReady, true);
+    assert.equal(coordinator.getState().uiState, "ready");
+
+    coordinator.handlePageShow();
+    assert.equal(coordinator.getState().isUpdateReady, true);
     assert.equal(coordinator.getState().uiState, "ready");
   } finally {
-    Date.now = originalDateNow;
     coordinator.destroy();
   }
 });

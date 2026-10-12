@@ -38,7 +38,7 @@ import { doc, onSnapshot } from "firebase/firestore";
 import { MdKeyboard, MdMenuBook } from "react-icons/md";
 import { FiArrowRight, FiHelpCircle } from "react-icons/fi";
 import useUserStore from "../hooks/useUserStore";
-import { useSpeechPractice } from "../hooks/useSpeechPractice";
+import { createReadingSpeechRecorder } from "../utils/readingSpeechRecorder";
 import { getSpeechPracticeErrorFeedback } from "../utils/speechPracticeFeedback";
 import { WaveBar } from "./WaveBar";
 import VirtualKeyboard from "./VirtualKeyboard";
@@ -1047,7 +1047,10 @@ export default function History({
   const [speechFeedback, setSpeechFeedback] = useState(null);
   const [isGradingSpeech, setIsGradingSpeech] = useState(false);
   const [speechSubmitted, setSpeechSubmitted] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [isSpeechFinalizing, setIsSpeechFinalizing] = useState(false);
   const [speechRecordingError, setSpeechRecordingError] = useState(null);
+  const speechRecRef = useRef(null);
   const [lineTranslationsByLecture, setLineTranslationsByLecture] = useState(
     {},
   );
@@ -1065,26 +1068,70 @@ export default function History({
     }
   }, []);
 
-  async function startListening() {
+  // Browser SpeechRecognition support
+  const hasSpeechRecognition =
+    typeof window !== "undefined" &&
+    !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+
+  function startListening() {
+    const SpeechRec =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRec) return;
     stopSpeech();
+    speechRecRef.current?.dispose();
     setSpeechTranscript("");
     setSpeechRecordingError(null);
+    // SpeechRecognition also captures mic audio — ensure the audio session
+    // allows capture, otherwise mobile Safari rejects it under "playback".
     try {
-      await startRecording();
-    } catch (error) {
-      setSpeechRecordingError(getSpeechPracticeErrorFeedback(error, t));
+      if (typeof navigator !== "undefined" && navigator.audioSession &&
+          navigator.audioSession.type !== "play-and-talk") {
+        navigator.audioSession.type = "play-and-talk";
+      }
+    } catch {
+      // Best-effort; recognition will surface real failures.
     }
+    const recorder = createReadingSpeechRecorder({
+      Recognition: SpeechRec,
+      singleUtterance: /Android/i.test(navigator.userAgent || ""),
+      onTranscript: setSpeechTranscript,
+      onState: (state) => {
+        setIsListening(state === "listening");
+        setIsSpeechFinalizing(state === "stopping");
+      },
+      onError: (error) => setSpeechRecordingError(getSpeechPracticeErrorFeedback(error, t)),
+    });
+    speechRecRef.current = recorder;
+    recorder.start(BCP47[targetLang]?.tts || "es-MX");
   }
 
   function stopListening() {
-    stopRecording();
+    speechRecRef.current?.stop();
+  }
+
+  function cancelListening() {
+    speechRecRef.current?.cancel();
+    speechRecRef.current = null;
   }
 
   function startOverSpeech() {
-    cancelRecording();
+    cancelListening();
     setSpeechTranscript("");
     setSpeechRecordingError(null);
   }
+
+  useEffect(() => {
+    const cancelHiddenCapture = () => { if (document.hidden) cancelListening(); };
+    document.addEventListener("visibilitychange", cancelHiddenCapture);
+    return () => {
+      document.removeEventListener("visibilitychange", cancelHiddenCapture);
+      speechRecRef.current?.dispose();
+    };
+  }, []);
+
+  useEffect(() => {
+    cancelListening();
+  }, [targetLang]);
 
 
   async function translateLectureLines() {
@@ -1231,30 +1278,6 @@ export default function History({
     () => splitIntoSentences(viewLecture?.target || ""),
     [viewLecture?.target],
   );
-  const {
-    startRecording,
-    stopRecording,
-    cancelRecording,
-    isRecording: isListening,
-    isConnecting: isSpeechConnecting,
-    isEvaluating: isSpeechFinalizing,
-    supportsSpeech: supportsReadingSpeech,
-  } = useSpeechPractice({
-    targetText: viewLecture?.target || "",
-    targetLang,
-    continuous: true,
-    evaluate: false,
-    timeoutMs: 180000,
-    vadSilenceDurationMs: 1200,
-    onTranscript: setSpeechTranscript,
-    onResult: ({ recognizedText, error }) => {
-      if (error) {
-        setSpeechRecordingError(getSpeechPracticeErrorFeedback(error, t));
-      } else {
-        setSpeechTranscript(recognizedText || "");
-      }
-    },
-  });
   const lineTranslations = viewLecture?.id
     ? lineTranslationsByLecture[viewLecture.id] || []
     : [];
@@ -1336,7 +1359,7 @@ export default function History({
     const xpReason = "Immediate random 5–8 XP award.";
 
     const chosenReviewFormat =
-      supportsReadingSpeech && Math.random() < 0.5 ? "speech" : "question";
+      hasSpeechRecognition && Math.random() < 0.5 ? "speech" : "question";
 
     const payload = {
       title: cleanTitle,
@@ -1534,7 +1557,7 @@ export default function History({
         xpAward: getRandomHistoryXp(),
         xpReason: "Immediate random 5–8 XP award.",
         reviewFormat:
-          supportsReadingSpeech && Math.random() < 0.5 ? "speech" : "question",
+          hasSpeechRecognition && Math.random() < 0.5 ? "speech" : "question",
         reviewQuestion: normalizeReviewQuestion(
           bundledReviewQuestion,
           plannedReviewQuestionType,
@@ -1845,7 +1868,7 @@ export default function History({
     if (!speechTranscript.trim() || isGradingSpeech) return;
     playSound(submitActionSound);
     setIsGradingSpeech(true);
-    cancelRecording();
+    cancelListening();
 
     const originalText = viewLecture?.target || "";
     const langName = LANG_NAME(targetLang);
@@ -1946,7 +1969,7 @@ Return ONLY valid JSON:
     setSpeechFeedback(null);
     setSpeechSubmitted(false);
     setSpeechRecordingError(null);
-    cancelRecording();
+    cancelListening();
   }, [activeId]); // eslint-disable-line
 
   // Randomize modality (speech or question) when a lecture is ready.
@@ -1959,7 +1982,7 @@ Return ONLY valid JSON:
     ) {
       const chosen =
         activeLecture?.reviewFormat ||
-        (supportsReadingSpeech && Math.random() < 0.5 ? "speech" : "question");
+        (hasSpeechRecognition && Math.random() < 0.5 ? "speech" : "question");
       setReviewFormat(chosen);
       if (!activeLecture?.reviewFormat && activeLecture?.id) {
         setLectures((prev) =>
@@ -1974,7 +1997,7 @@ Return ONLY valid JSON:
     activeLecture?.reviewFormat,
     activeLecture?.target,
     draftLecture,
-    supportsReadingSpeech,
+    hasSpeechRecognition,
     isGenerating,
     reviewFormat,
   ]); // eslint-disable-line
@@ -2715,8 +2738,8 @@ Return ONLY valid JSON:
                   ) : reviewFormat === "speech" ? (
                     <Button
                       colorScheme={isListening ? "pink" : "teal"}
-                      isLoading={isGradingSpeech || isSpeechConnecting || isSpeechFinalizing}
-                      isDisabled={!supportsReadingSpeech || isGradingSpeech || isSpeechConnecting || isSpeechFinalizing}
+                      isLoading={isGradingSpeech || isSpeechFinalizing}
+                      isDisabled={!hasSpeechRecognition || isGradingSpeech || isSpeechFinalizing}
                       leftIcon={
                         !isListening && !speechTranscript.trim() ? (
                           <FaMicrophone />
@@ -2788,7 +2811,7 @@ Return ONLY valid JSON:
                 reviewFormat === "speech" &&
                 !speechSubmitted &&
                 speechTranscript &&
-                !isListening && !isSpeechConnecting && !isSpeechFinalizing && (
+                !isListening && !isSpeechFinalizing && (
                   <Button
                     variant="ghost"
                     onClick={() => {

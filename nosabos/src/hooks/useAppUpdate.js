@@ -27,23 +27,8 @@ export default function useAppUpdate() {
     [],
   );
 
-  const dismissUpdate = useCallback(
-    () => appUpdateCoordinator.dismissUpdate(),
-    [],
-  );
-
   const retryUpdate = useCallback(
     () => appUpdateCoordinator.retryUpdate(),
-    [],
-  );
-
-  const openModal = useCallback(
-    () => appUpdateCoordinator.openModal(),
-    [],
-  );
-
-  const closeModal = useCallback(
-    () => appUpdateCoordinator.closeModal(),
     [],
   );
 
@@ -51,9 +36,6 @@ export default function useAppUpdate() {
     ...state,
     checkForUpdate,
     applyUpdate,
-    dismissUpdate,
     retryUpdate,
-    openModal,
-    closeModal,
   };
 }

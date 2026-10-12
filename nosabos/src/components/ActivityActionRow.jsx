@@ -141,7 +141,9 @@ export default function ActivityActionRow({
           margin: 0,
           borderRadius: "18px",
           whiteSpace: "normal",
-          overflowWrap: "anywhere",
+          textWrap: "balance",
+          overflowWrap: "normal",
+          wordBreak: "normal",
           lineHeight: "1.15",
           textShadow: "none",
         },
@@ -157,12 +159,11 @@ export default function ActivityActionRow({
           gap={1}
           align="center"
           flex="0 1 auto"
-          minW={0}
-          maxW="48%"
+          minW="min-content"
           sx={{
             "& > button": {
               flex: "0 1 auto",
-              minWidth: "44px",
+              minWidth: "min-content",
               padding: "0 8px",
               fontSize: "14px",
               fontWeight: 600,
@@ -181,8 +182,8 @@ export default function ActivityActionRow({
       )}
       <Box
         data-activity-primary=""
-        flex="1 1 0"
-        minW={0}
+        flex="1 1 40%"
+        minW="min-content"
         sx={{
           "& > button, &:not(:has([data-call-controls])) button": {
             width: "100%",
