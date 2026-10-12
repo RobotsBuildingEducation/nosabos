@@ -13,6 +13,18 @@ export const ACTIVITY_MENU_COPY = {
     ar: "الإعدادات",
     zh: "设置",
   },
+  teams: {
+    en: "Teams",
+    es: "Equipos",
+    pt: "Equipes",
+    it: "Squadre",
+    fr: "Équipes",
+    de: "Teams",
+    ja: "チーム",
+    hi: "टीमें",
+    ar: "الفرق",
+    zh: "团队",
+  },
   immersion: {
     en: "Immersion & Score",
     es: "Inmersión y puntuación",
@@ -125,6 +137,12 @@ export function getActivityMenuLabels(rawLang, t = {}) {
     settings = ACTIVITY_MENU_COPY.settings[lang];
   }
 
+  // Teams: some support languages still inherit the English drawer title.
+  let teams = t?.teams_drawer_title || ACTIVITY_MENU_COPY.teams[lang];
+  if (lang !== "en" && teams === "Teams") {
+    teams = ACTIVITY_MENU_COPY.teams[lang];
+  }
+
   // Immersion & Score
   let immersion =
     t?.real_world_tasks_title || ACTIVITY_MENU_COPY.immersion[lang];
@@ -161,6 +179,7 @@ export function getActivityMenuLabels(rawLang, t = {}) {
 
   return {
     settings,
+    teams,
     immersion,
     assistant,
     memory,

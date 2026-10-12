@@ -2767,7 +2767,7 @@ translations.it = {
   timer_times_up_no_duration: "Bel lavoro nel chiudere il timer.",
   timer_times_up_close: "Chiudi",
   timer_times_up_restart: "Avvia un altro timer",
-  teams_drawer_title: "Team",
+  teams_drawer_title: "Squadre",
   teams_tab_feed: "Feed globale",
   teams_tab_create: "Crea team",
   teams_tab_view: "I tuoi team",

@@ -11,6 +11,7 @@ import { SUPPORT_LANGUAGE_CODES } from "../constants/supportLanguages.js";
 test("ACTIVITY_MENU_COPY defines all required menu keys for every support language", () => {
   const expectedKeys = [
     "settings",
+    "teams",
     "immersion",
     "assistant",
     "memory",
@@ -36,6 +37,7 @@ test("getActivityMenuLabels returns fully localized labels for French without En
   // Simulating translations.fr which previously lacked app_settings_aria and inherited 'Settings'
   const mockFrTranslations = {
     app_settings_aria: "Settings", // English inheritance bug
+    teams_drawer_title: "Teams", // English inheritance bug
     app_help_chat: "Assistant",
     real_world_tasks_title: "Immersion et score",
     app_notes: "Mémoire",
@@ -44,6 +46,7 @@ test("getActivityMenuLabels returns fully localized labels for French without En
 
   const labels = getActivityMenuLabels("fr", mockFrTranslations);
   assert.equal(labels.settings, "Paramètres");
+  assert.equal(labels.teams, "Équipes");
   assert.equal(labels.immersion, "Immersion et score");
   assert.equal(labels.assistant, "Assistant");
   assert.equal(labels.memory, "Mémoire");

@@ -12578,9 +12578,7 @@ function BottomActionBar({
   );
   const settingsLabel = menuLabels.settings;
   const helpChatLabel = helpLabel || menuLabels.assistant;
-  // Use a short explicit menu label; this shortcut opens Teams, while the
-  // similarly named Immersion & Score copy belongs to the old score modal.
-  const teamsLabel = "Teams";
+  const teamsLabel = menuLabels.teams;
   const notesLabel = menuLabels.memory;
   const modeMenuLabel = menuLabels.mode;
   const backLabel = menuLabels.back;
