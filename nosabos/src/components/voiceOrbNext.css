@@ -14,8 +14,12 @@
   cursor: default;
   touch-action: auto;
   pointer-events: none;
+  opacity: 0;
+  transition: opacity 240ms ease-out;
 }
-.voice-orb-next.is-interactive .voice-orb-3d { cursor: pointer; pointer-events: auto; touch-action: pan-y; }
+.voice-orb-next .voice-orb-3d.is-ready,
+.voice-orb-next .voice-orb-3d.is-fallback { opacity: 1; }
+.voice-orb-next.is-interactive .voice-orb-3d:is(.is-ready, .is-fallback) { cursor: pointer; pointer-events: auto; touch-action: pan-y; }
 .voice-orb-next.is-interactive { cursor: pointer; }
 .voice-orb-next.is-interactive:focus-visible,
 .voice-orb-next.is-interactive .voice-orb-3d:focus-visible { outline: 2px solid #328c77; outline-offset: 2px; border-radius: 50%; }
@@ -180,6 +184,7 @@
 @keyframes voice-orb-next-spin { from { transform: rotateY(0); } to { transform: rotateY(360deg); } }
 @keyframes voice-orb-next-boop { 0%, 100% { transform: scale(1); } 25% { transform: scale(1.12, .85); } 55% { transform: scale(.95, 1.05); } }
 @media (prefers-reduced-motion: reduce) {
+  .voice-orb-next .voice-orb-3d { transition: none; }
   .voice-orb-next-mini,
   .voice-orb-next-pigment, .voice-orb-next-wash { animation: none; }
 }

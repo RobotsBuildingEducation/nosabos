@@ -3,24 +3,25 @@ import { useState, useEffect, useCallback } from "react";
 import { Buffer } from "buffer";
 import { bech32 } from "bech32";
 
-import NDK, {
-  NDKPrivateKeySigner,
-  NDKNip07Signer,
-  NDKKind,
-  NDKEvent,
-} from "@nostr-dev-kit/ndk";
+// Nostr signing and relay code is loaded only when a caller needs it.
+let NDK, NDKPrivateKeySigner, NDKNip07Signer, NDKKind, NDKEvent;
+let ndk = null;
+let runtimePromise = null;
+function loadIdentityRuntime() {
+  runtimePromise ||= import("@nostr-dev-kit/ndk").then((runtime) => {
+    NDK = runtime.default;
+    ({ NDKPrivateKeySigner, NDKNip07Signer, NDKKind, NDKEvent } = runtime);
+    ndk = new NDK({
+      explicitRelayUrls: ["wss://relay.ditto.pub", "wss://relay.primal.net", "wss://nos.lol"],
+    });
+  }).catch((error) => {
+    runtimePromise = null;
+    throw error;
+  });
+  return runtimePromise;
+}
 
-const ndk = new NDK({
-  explicitRelayUrls: [
-    "wss://relay.ditto.pub",
-    "wss://relay.primal.net",
-    "wss://nos.lol",
-  ],
-});
-
-console.log("ndk created:", ndk);
-
-export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
+export const useDecentralizedIdentity = (initialNpub, initialNsec, { autoConnect = true } = {}) => {
   const [isConnected, setIsConnected] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
   const [nostrPubKey, setNostrPubKey] = useState(initialNpub || "");
@@ -40,8 +41,11 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
       setNostrPrivKey(storedNsec);
     }
 
+    if (!autoConnect) return;
+
     const initializeConnection = async () => {
       try {
+        await loadIdentityRuntime();
         await ndk.connect();
         setIsConnected(true);
 
@@ -75,9 +79,19 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
     };
 
     initializeConnection();
-  }, []);
+  }, [autoConnect]);
 
-  const generateNostrKeys = async (userDisplayName = null) => {
+  const generateNostrKeys = async (userDisplayName = null, { publishRegistration = true, reuseExisting = false } = {}) => {
+    await loadIdentityRuntime();
+    if (reuseExisting) {
+      const nsec = localStorage.getItem("local_nsec");
+      const npub = localStorage.getItem("local_npub");
+      if (nsec && npub) {
+        setNostrPrivKey(nsec === "nip07" ? "" : nsec);
+        setNostrPubKey(npub);
+        return { npub, nsec };
+      }
+    }
     console.log("[GENERATE_KEYS] Generating NEW nostr keys...");
     const privateKeySigner = NDKPrivateKeySigner.generate();
 
@@ -94,7 +108,7 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
     setNostrPrivKey(encodedNsec);
     setNostrPubKey(publicKey);
 
-    if (!localStorage.getItem("local_nsec")) {
+    if (publishRegistration && !localStorage.getItem("local_nsec")) {
       //Creating profile... 2/4
       // setLoadingMessage("createAccount.isCreatingProfile");
 
@@ -140,7 +154,6 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
       //   encodedNsec
       // );
     }
-    console.log("encodednsec", encodedNsec);
     localStorage.setItem("local_nsec", encodedNsec);
     localStorage.setItem("local_npub", publicKey);
     localStorage.setItem("uniqueId", publicKey);
@@ -153,6 +166,7 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
 
   const connectToNostr = useCallback(
     async (npubRef = null, nsecRef = null) => {
+      await loadIdentityRuntime();
       const defaultNsec = import.meta.env.VITE_GLOBAL_NOSTR_NSEC;
       const defaultNpub =
         "npub1mgt5c7qh6dm9rg57mrp89rqtzn64958nj5w9g2d2h9dng27hmp0sww7u2v";
@@ -224,6 +238,7 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
 
   const auth = async (nsec) => {
     try {
+      await loadIdentityRuntime();
       console.log(
         "[AUTH] Starting auth with nsec:",
         nsec?.substring(0, 20) + "...",
@@ -272,6 +287,7 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
 
   // Helper to ensure the signer is ready (initializes NIP-07 signer if needed)
   const ensureSigner = async () => {
+      await loadIdentityRuntime();
     if (ndk.signer) return ndk.signer;
 
     if (isNip07Mode() && isNip07Available()) {
@@ -303,6 +319,7 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
 
   const authWithExtension = async () => {
     try {
+      await loadIdentityRuntime();
       if (!isNip07Available()) {
         throw new Error(
           "No Nostr extension found. Please install a NIP-07 compatible extension like nos2x or Alby.",
@@ -335,12 +352,13 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
 
   const postNostrContent = async (
     content,
-    kind = NDKKind.Text,
+    kind = 1,
     npubRef = null,
     nsecRef = null,
     tags = [],
   ) => {
     try {
+      await loadIdentityRuntime();
       // If a nsecRef is provided and it's a valid nsec, login with it
       if (nsecRef && nsecRef.startsWith("nsec")) {
         const loginResult = await auth(nsecRef);
@@ -364,6 +382,7 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
       });
 
       await event.sign(ndk.signer);
+      await ndk.connect();
       const relays = await event.publish();
 
       if (relays.size > 0) {
@@ -390,6 +409,7 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
     awardeeNpub = localStorage.getItem("local_npub"), // The public key of the user being awarded
     ownerNsec = import.meta.env.VITE_SECRET_KEY, // Your private key to sign the event
   ) => {
+      await loadIdentityRuntime();
     if (!awardeeNpub) {
       console.error("Awardee public key is required to award the badge.");
       return;
@@ -451,6 +471,7 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
 
   const getBadgeData = async (addy) => {
     try {
+      await loadIdentityRuntime();
       // Connect to Nostr
       const connection = await connectToNostr();
       if (!connection) return [];
@@ -499,6 +520,7 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
   };
   const getUserBadges = async (npub = localStorage.getItem("local_npub")) => {
     try {
+      await loadIdentityRuntime();
       const connection = await connectToNostr();
       if (!connection) return [];
 
@@ -585,6 +607,7 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
     npub = localStorage.getItem("local_npub"),
   ) => {
     try {
+      await loadIdentityRuntime();
       const connection = await connectToNostr();
       if (!connection) return [];
 
@@ -627,6 +650,7 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
   const getGlobalNotesWithProfilesByHashtag = useCallback(
     async (hashtag = "LearnWithNostr") => {
       try {
+      await loadIdentityRuntime();
         const connection = await connectToNostr();
         if (!connection) return [];
 

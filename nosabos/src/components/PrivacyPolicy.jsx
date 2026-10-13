@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { lazy, Suspense, useRef } from "react";
 import {
   Box,
   Button,
@@ -13,8 +13,7 @@ import {
   useColorMode,
   useDisclosure,
 } from "@chakra-ui/react";
-import ReactMarkdown from "react-markdown";
-import policy from "../../docs/privacy-policy-draft.md?raw";
+const PrivacyPolicyContent = lazy(() => import("./PrivacyPolicyContent"));
 
 const COPY = {
   en: { title: "Privacy policy", close: "Close" },
@@ -84,18 +83,11 @@ export function PrivacyPolicyModal({
               "& a": { color: colors.link, textDecoration: "underline" },
             }}
           >
-            <ReactMarkdown
-              components={{
-                h1: () => null,
-                a: ({ href, children }) => (
-                  <Link href={href} isExternal={!href?.startsWith("mailto:")}>
-                    {children}
-                  </Link>
-                ),
-              }}
-            >
-              {policy}
-            </ReactMarkdown>
+            {isOpen && (
+              <Suspense fallback={null}>
+                <PrivacyPolicyContent linkColor={colors.link} />
+              </Suspense>
+            )}
           </Box>
         </ModalBody>
         <ModalFooter color={colors.text}>

@@ -15,10 +15,9 @@ import "./index.css";
 import "@fontsource/dm-sans/400.css";
 import "@fontsource/dm-sans/700.css";
 import "./useThemeStore";
-import { ChakraProvider } from "@chakra-ui/react";
+import { ChakraProvider, Spinner } from "@chakra-ui/react";
 import { BrowserRouter as Router, Route, Routes, Outlet } from "react-router-dom";
 import { theme } from "./theme";
-import LandingPage from "./components/LandingPage.jsx";
 import VoiceOrb from "./components/VoiceOrbNext.jsx";
 import AppLoadBoundary from "./components/AppLoadBoundary.jsx";
 import { initAppUpdateCoordinator } from "./pwa/appUpdateCoordinator";
@@ -33,9 +32,19 @@ if (typeof window !== "undefined") {
   }
 }
 
-// Initialize the update coordinator singleton before route mounting
-initAppUpdateCoordinator();
+// Public visitors don't need the app update lifecycle yet. Existing
+// installations still receive checks and migrate to the minimal shell cache.
+const isFirstPublicVisit =
+  !navigator.serviceWorker?.controller &&
+  (window.location.pathname === "/links" ||
+    ((["/", "/onboarding", "/subscribe"].includes(window.location.pathname) ||
+      window.location.pathname.startsWith("/onboarding/")) &&
+      !localStorage.getItem("local_nsec")));
+if (import.meta.env.DEV || !isFirstPublicVisit) {
+  initAppUpdateCoordinator();
+}
 
+const LandingPage = lazy(() => import("./components/LandingPage.jsx"));
 const App = lazy(() => import("./App.jsx"));
 const LinksPage = lazy(() => import("./components/LinksPage.jsx"));
 const LegacyLinksPage = lazy(() => import("./components/LegacyLinksPage.jsx"));
@@ -68,11 +77,9 @@ function getRandomLoadingOrbState() {
 }
 
 function RouteFallback() {
-  const orbState = useMemo(getRandomLoadingOrbState, []);
-
   return (
-    <div className="route-fallback" aria-label="Loading">
-      <VoiceOrb state={orbState} size={88} useWorker maxDpr={1} excludeThinking={window.location.pathname === "/links"} />
+    <div className="route-fallback" role="status" aria-label="Loading">
+      <Spinner size="lg" thickness="2px" opacity={0.5} aria-hidden="true" />
     </div>
   );
 }
@@ -131,6 +138,7 @@ function AppContainer() {
   }, []);
 
   const handleAuthenticated = useCallback(() => {
+    initAppUpdateCoordinator();
     clearBootHideTimers();
     setBootOverlayMounted(true);
     setBootOverlayVisible(true);
@@ -164,6 +172,7 @@ function AppContainer() {
 
   useEffect(() => {
     if (!isAuthenticated) return;
+    initAppUpdateCoordinator();
     clearBootHideTimers();
     setBootOverlayMounted(true);
     setBootOverlayVisible(true);
@@ -204,6 +213,7 @@ function ProficiencyContainer() {
   const [isAuthenticated, setIsAuthenticated] = useState(hasStoredKey);
 
   const handleAuthenticated = useCallback(() => {
+    initAppUpdateCoordinator();
     setIsAuthenticated(true);
   }, []);
 

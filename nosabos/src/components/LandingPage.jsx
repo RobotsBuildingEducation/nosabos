@@ -46,8 +46,7 @@ import AnimatedBackground from "./AnimatedBackground";
 import { MdSupportAgent } from "react-icons/md";
 import { detectUserLanguage } from "../utils/languageDetection";
 import { useDecentralizedIdentity } from "../hooks/useDecentralizedIdentity";
-import useSoundSettings from "../hooks/useSoundSettings";
-import * as Tone from "tone";
+import { playPublicSound, warmupPublicAudio } from "../utils/publicAudio";
 import { useThemeStore } from "../useThemeStore";
 import { getThemeModeToggleProps } from "../utils/themeModeToggleStyle";
 import {
@@ -1591,7 +1590,7 @@ const SignInView = ({ copy, onBack, onSignIn, onExtension, hasExtension }) => {
   const [secretKey, setSecretKey] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const playSound = useSoundSettings((s) => s.playSound);
+  const playSound = playPublicSound;
 
   const resolveSignInError = useCallback(
     (err) => {
@@ -1771,9 +1770,9 @@ const SignInView = ({ copy, onBack, onSignIn, onExtension, hasExtension }) => {
 
 const LandingPage = ({ onAuthenticated }) => {
   const { generateNostrKeys, auth, authWithExtension, isNip07Available } =
-    useDecentralizedIdentity();
-  const playSound = useSoundSettings((s) => s.playSound);
-  const warmupAudio = useSoundSettings((s) => s.warmupAudio);
+    useDecentralizedIdentity(undefined, undefined, { autoConnect: false });
+  const playSound = playPublicSound;
+  const warmupAudio = warmupPublicAudio;
   const themeMode = useThemeStore((s) => s.themeMode);
   const syncThemeMode = useThemeStore((s) => s.syncThemeMode);
 
@@ -1783,8 +1782,7 @@ const LandingPage = ({ onAuthenticated }) => {
   // never ran here because LandingPage renders before <App /> mounts.
   useEffect(() => {
     const handleFirstInteraction = () => {
-      // Tone.start() synchronously inside the gesture (required on iOS/mobile).
-      Tone.start();
+      // Unlock native audio synchronously before loading the audio runtime.
       warmupAudio();
       document.removeEventListener("pointerdown", handleFirstInteraction);
       document.removeEventListener("keydown", handleFirstInteraction);

@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useThemeStore } from "../useThemeStore";
-import VoiceOrb3D from "./VoiceOrb3D.jsx";
+const VoiceOrb3D = lazy(() => import("./VoiceOrb3D.jsx"));
 import { randomDisplayOrb, randomTutorFeedback, REACTION_DURATION, REACTION_SETTLE_DURATION, TUTOR_DEFAULT_MOODS } from "./orbing/orbModel.js";
 import "./voiceOrbNext.css";
 
@@ -21,6 +21,8 @@ export default function VoiceOrbNext({ state = "idle", theme, palette, size = 75
   const resolvedPalette = palette || (dark ? "blue" : "mint");
   const isDisplay = variant === "display";
   const useMini = size < 64 && !force3D;
+  const hostRef = useRef(null);
+  const [hasEnteredViewport, setHasEnteredViewport] = useState(false);
   const [personality, setPersonality] = useState(() => randomDisplayOrb(Math.random, { excludeThinking }));
   const [reaction, setReaction] = useState(() => ({ id: 1, kind: personality.reaction }));
   const [defaultTutorMood] = useState(() => TUTOR_DEFAULT_MOODS[Math.floor(Math.random() * TUTOR_DEFAULT_MOODS.length)]);
@@ -29,6 +31,22 @@ export default function VoiceOrbNext({ state = "idle", theme, palette, size = 75
   const voiceState = isDisplay ? (excludeThinking && personality.state === "thinking" ? "idle" : personality.state) : (callActive && ["idle", "listening", "thinking", "speaking"].includes(state) ? state : "idle");
   const mood = isDisplay ? personality.mood : tutorFeedback?.mood || (callActive ? defaultTutorMood : "sleepy");
   const currentReaction = isDisplay ? reaction : tutorFeedback?.reaction;
+
+  useEffect(() => {
+    if (useMini || hasEnteredViewport) return;
+    if (typeof IntersectionObserver === "undefined") {
+      setHasEnteredViewport(true);
+      return;
+    }
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) {
+        setHasEnteredViewport(true);
+        observer.disconnect();
+      }
+    }, { rootMargin: "120px" });
+    if (hostRef.current) observer.observe(hostRef.current);
+    return () => observer.disconnect();
+  }, [useMini, hasEnteredViewport]);
 
   useEffect(() => {
     if (!isDisplay) return undefined;
@@ -64,6 +82,7 @@ export default function VoiceOrbNext({ state = "idle", theme, palette, size = 75
 
   return (
     <span
+      ref={hostRef}
       className={`voice-orb-next${isDisplay ? " is-interactive" : ""}`}
       style={{ width: size, height: size, margin: centered ? "0 auto" : 0 }}
       role={isDisplay ? (useMini ? "button" : undefined) : "img"}
@@ -74,24 +93,26 @@ export default function VoiceOrbNext({ state = "idle", theme, palette, size = 75
         if (event.key === "Enter" || event.key === " ") { event.preventDefault(); boop(); }
       } : undefined}
     >
-      {useMini ? <MiniOrb state={voiceState} palette={resolvedPalette} mood={mood} reaction={currentReaction} /> : (
-        <VoiceOrb3D
-          state={voiceState}
-          audioLevelRef={audioLevelRef}
-          mood={mood}
-          palette={resolvedPalette}
-          dark={dark}
-          energy={isDisplay ? 1.5 : 0.7}
-          followPointer={false}
-          interactive={isDisplay}
-          onInteract={isDisplay ? boop : undefined}
-          reaction={currentReaction}
-          compact
-          showShadow={showShadow}
-          sharedRenderer={sharedRenderer}
-          maxDpr={maxDpr}
-          fallback={<MiniOrb state={voiceState} palette={resolvedPalette} mood={mood} reaction={currentReaction} />}
-        />
+      {useMini ? <MiniOrb state={voiceState} palette={resolvedPalette} mood={mood} reaction={currentReaction} /> : hasEnteredViewport && (
+        <Suspense fallback={null}>
+          <VoiceOrb3D
+            state={voiceState}
+            audioLevelRef={audioLevelRef}
+            mood={mood}
+            palette={resolvedPalette}
+            dark={dark}
+            energy={isDisplay ? 1.5 : 0.7}
+            followPointer={false}
+            interactive={isDisplay}
+            onInteract={isDisplay ? boop : undefined}
+            reaction={currentReaction}
+            compact
+            showShadow={showShadow}
+            sharedRenderer={sharedRenderer}
+            maxDpr={maxDpr}
+            fallback={<MiniOrb state={voiceState} palette={resolvedPalette} mood={mood} reaction={currentReaction} />}
+          />
+        </Suspense>
       )}
     </span>
   );

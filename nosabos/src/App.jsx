@@ -9,6 +9,7 @@ import {
   isGoalLessonReady,
 } from "./utils/lessonProgress";
 import { resetFocusedPracticeArtifacts } from "./utils/focusedPracticeDecks";
+import { loadRPGGameComponent, scheduleLearningStartup } from "./utils/learningStartup.js";
 import LearningGoalSettings from "./components/LearningGoalSettings";
 import useGoalFocusStore from "./hooks/useGoalFocusStore";
 import {
@@ -485,19 +486,7 @@ function PracticeCompletionDetails({ details, appLanguage }) {
 // before viewMode switches, so the lesson modal's mini-map loader stays on
 // screen until the game can paint directly — no Suspense fallback commits in
 // between. The cached promise resets on failure so a later attempt can retry.
-let rpgGameComponentPromise = null;
 const LoadingMiniGame = lazy(() => import("./components/LoadingMiniGame.jsx"));
-function loadRPGGameComponent() {
-  if (!rpgGameComponentPromise) {
-    rpgGameComponentPromise = import("./components/RPGGame/GameRouter.jsx")
-      .then((mod) => mod.default)
-      .catch((error) => {
-        rpgGameComponentPromise = null;
-        throw error;
-      });
-  }
-  return rpgGameComponentPromise;
-}
 
 async function warmUpcomingGameReview(lesson, targetLang, supportLang = "en") {
   try {
@@ -8393,6 +8382,19 @@ export default function App({ onBootReady } = {}) {
   })
     ? currentLessonLevel
     : null;
+
+  // Returning learners get the same focused preparation as onboarding. Keep
+  // the next lesson ready without downloading other languages or every level.
+  const canPrepareLearningStartup = !isLoadingApp && Boolean(user) &&
+    !needsOnboarding && !isSubscriptionRoute && !needsSubscriptionPasscode;
+  useEffect(() => {
+    if (!canPrepareLearningStartup) return;
+    return scheduleLearningStartup({
+      targetLang: resolvedTargetLang,
+      level: currentLessonLevel,
+      includeIntro: Boolean(introTutorialLevel),
+    });
+  }, [canPrepareLearningStartup, resolvedTargetLang, currentLessonLevel, introTutorialLevel]);
 
   const handleRealWorldRewardClaimed = useCallback(async () => {
     const npub = resolveNpub();

@@ -76,8 +76,13 @@ export default defineConfig(({ mode, command }) => {
       react(),
       pwaVersionMetadataPlugin({ buildId, builtAt }),
       VitePWA({
+        // Keep the update lifecycle, but cache only the tiny versioned shell.
+        // Course/game preparation is selected by the learner inside the app.
+        injectRegister: false,
+        includeManifestIcons: false,
         workbox: {
-          maximumFileSizeToCacheInBytes: 10000000,
+          globPatterns: ["index.html"],
+          cleanupOutdatedCaches: true,
           // OAuth, API navigations, and version metadata must always reach
           // Firebase Hosting / network directly rather than the index.html fallback.
           navigateFallbackDenylist: [/^\/api(?:\/|$)/, /^\/version\.json$/],
@@ -119,7 +124,7 @@ export default defineConfig(({ mode, command }) => {
       }),
       visualizer({
         filename: "stats.html",
-        open: true,
+        open: false,
         template: "treemap",
         gzipSize: true,
         brotliSize: true,

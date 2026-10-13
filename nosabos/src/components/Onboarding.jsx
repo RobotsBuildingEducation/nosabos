@@ -1,6 +1,7 @@
 import { LearningGoalField } from "./LearningGoalSettings";
 import { goalOnboardingCopy } from "../utils/learningGoalCopy";
 import { astraGoalsEnabled } from "../utils/learningIntelligence";
+import { scheduleLearningStartup } from "../utils/learningStartup.js";
 // src/components/Onboarding.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -172,6 +173,7 @@ export default function Onboarding({
     themeMode,
   } = defaults;
   const [targetLang, setTargetLang] = useState(defaults.targetLang);
+  useEffect(() => scheduleLearningStartup({ targetLang, level, includeIntro: true }), [targetLang, level]);
   const goalsEnabled = astraGoalsEnabled();
   const stepCopy = goalOnboardingCopy(supportLang);
   const stepHeadingRef = useRef(null);

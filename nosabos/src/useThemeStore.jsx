@@ -1,6 +1,4 @@
 import { create } from "zustand";
-import { doc, updateDoc } from "firebase/firestore";
-import { database } from "./firebaseResources/firebaseResources";
 
 export const normalizeThemeMode = (mode) =>
   mode === "dark" ? "dark" : "light";
@@ -85,6 +83,10 @@ export const useThemeStore = create((set) => ({
         : null;
     if (npub) {
       try {
+        const [{ doc, updateDoc }, { database }] = await Promise.all([
+          import("firebase/firestore"),
+          import("./firebaseResources/firebaseResources"),
+        ]);
         const userDoc = doc(database, "users", npub);
         await updateDoc(userDoc, { themeColor: color });
       } catch (e) {
@@ -105,6 +107,10 @@ export const useThemeStore = create((set) => ({
         : null;
     if (npub) {
       try {
+        const [{ doc, updateDoc }, { database }] = await Promise.all([
+          import("firebase/firestore"),
+          import("./firebaseResources/firebaseResources"),
+        ]);
         const userDoc = doc(database, "users", npub);
         await updateDoc(userDoc, { themeMode: normalized });
       } catch (e) {

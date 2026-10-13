@@ -117,7 +117,7 @@ function getEnvironmentTexture(renderer) {
 
 // This scene owns every GPU resource and event listener it creates. Options can
 // change without rebuilding the renderer, textures, geometry, or environment.
-export function createOrbScene(host, initialOptions, onFailure) {
+export function createOrbScene(host, initialOptions, onFailure, onReady) {
   let options = initialOptions;
   const sharedRenderer = initialOptions?.sharedRenderer ? acquireSharedOrbRenderer() : null;
   const renderer = sharedRenderer?.renderer || new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "low-power" });
@@ -288,6 +288,7 @@ export function createOrbScene(host, initialOptions, onFailure) {
   const raycaster = new THREE.Raycaster();
   let frame = 0;
   let disposed = false;
+  let hasRendered = false;
   let cachedColorKey = "";
   let cachedColors = [];
   let inView = true;
@@ -520,6 +521,11 @@ export function createOrbScene(host, initialOptions, onFailure) {
     }
     if (sharedRenderer) sharedRenderer.render(scene, camera, renderWidth, renderHeight);
     else renderer.render(scene, camera);
+    // Reveal only after the frame reaches this orb's canvas, including shared copies.
+    if (!hasRendered) {
+      hasRendered = true;
+      onReady?.();
+    }
   }
   function resume() {
     if (!disposed && !document.hidden && inView && !frame) {

@@ -17,6 +17,7 @@ export default function VoiceOrb3D({
   const hostRef = useRef(null);
   const sceneRef = useRef(null);
   const optionsRef = useRef(null);
+  const [ready, setReady] = useState(false);
   const [unavailable, setUnavailable] = useState(false);
 
   useEffect(() => {
@@ -37,7 +38,7 @@ export default function VoiceOrb3D({
       setUnavailable(true);
     };
     try {
-      scene = createOrbScene(hostRef.current, optionsRef.current, fail);
+      scene = createOrbScene(hostRef.current, optionsRef.current, fail, () => setReady(true));
       sceneRef.current = scene;
     } catch {
       fail();
@@ -56,11 +57,11 @@ export default function VoiceOrb3D({
   return (
     <span
       ref={hostRef}
-      className={`voice-orb-3d${unavailable ? " is-fallback" : ""}`}
-      role={interactive ? "button" : undefined}
-      tabIndex={interactive ? 0 : undefined}
+      className={`voice-orb-3d${ready ? " is-ready" : ""}${unavailable ? " is-fallback" : ""}`}
+      role={interactive && (ready || unavailable) ? "button" : undefined}
+      tabIndex={interactive && (ready || unavailable) ? 0 : undefined}
       aria-label={interactive ? "Pet the orb. Drag to turn it, or press Enter for a loving reaction." : undefined}
-      aria-hidden={interactive ? undefined : true}
+      aria-hidden={interactive && (ready || unavailable) ? undefined : true}
       onKeyDown={(event) => {
         if (interactive && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); onInteract?.("boop"); }
       }}

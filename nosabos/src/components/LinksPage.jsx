@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useMemo } from "react";
+import React, { lazy, Suspense, useEffect, useRef, useState, useMemo } from "react";
 import {
   Accordion,
   AccordionButton as ChakraAccordionButton,
@@ -39,7 +39,7 @@ import { SiCashapp, SiPatreon } from "react-icons/si";
 import { FaKey, FaInstagram, FaLinkedinIn } from "react-icons/fa";
 import { LuPencilLine, LuSun, LuMusic } from "react-icons/lu";
 import { RiMoonClearFill } from "react-icons/ri";
-import useSoundSettings from "../hooks/useSoundSettings";
+import { playPublicSound } from "../utils/publicAudio";
 import { selectSound, submitActionSound } from "../constants/sounds";
 import { getAssetUrl } from "../utils/proxyEndpoints";
 
@@ -49,15 +49,12 @@ import PrivacyPolicyFooter from "./PrivacyPolicy";
 
 import CitizenshipIcon from "./CitizenshipIcon/CitizenshipIcon";
 import { useDecentralizedIdentity } from "../hooks/useDecentralizedIdentity";
-import { NDKKind } from "@nostr-dev-kit/ndk";
 import { Buffer } from "buffer";
 import { bech32 } from "bech32";
 import RandomCharacter from "./RandomCharacter";
-import { logEvent } from "firebase/analytics";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { analytics, database } from "../firebaseResources/firebaseResources";
-import useNostrWalletStore from "../hooks/useNostrWalletStore";
-import { IdentityCard } from "./IdentityCard";
+import { readPublicUser, updatePublicUser, logPublicEvent } from "../utils/publicAccountPersistence";
+import usePublicWallet from "../hooks/usePublicWallet";
+const IdentityCard = lazy(() => import("./IdentityCard").then((module) => ({ default: module.IdentityCard })));
 import useLanguage from "../hooks/useLanguage";
 import {
   getLanguageDirection,
@@ -3975,8 +3972,18 @@ function ProjectShowcase({
 }
 
 export default function LinksPage() {
+  useEffect(() => {
+    // These display fonts are used only by /links. Fetch them after the page
+    // can paint, rather than blocking every public route's HTML response.
+    if (document.getElementById("links-display-fonts")) return;
+    const stylesheet = document.createElement("link");
+    stylesheet.id = "links-display-fonts";
+    stylesheet.rel = "stylesheet";
+    stylesheet.href = "https://fonts.googleapis.com/css2?family=Comic+Neue:ital,wght@0,700;1,700&family=Gaegu:wght@700&family=Patrick+Hand&display=swap";
+    document.head.appendChild(stylesheet);
+  }, []);
   const { generateNostrKeys, auth, postNostrContent, connectToNostr } =
-    useDecentralizedIdentity();
+    useDecentralizedIdentity(undefined, undefined, { autoConnect: false });
   const themeMode = useThemeStore((s) => s.themeMode);
   const syncThemeMode = useThemeStore((s) => s.syncThemeMode);
   const isLightTheme = themeMode === "light";
@@ -4064,7 +4071,7 @@ export default function LinksPage() {
   useEffect(() => {
     const storedNpub = localStorage.getItem("local_npub");
     if (storedNpub) {
-      getDoc(doc(database, "users", storedNpub))
+      readPublicUser(storedNpub)
         .then((snap) => {
           if (snap.exists()) {
             const data = snap.data();
@@ -4087,7 +4094,9 @@ export default function LinksPage() {
 
   // Manage Audio instance & Autoplay on render
   useEffect(() => {
-    const audio = new Audio(getAssetUrl("audio/awalk.mp3"));
+    const audio = new Audio();
+    audio.preload = "none";
+    audio.src = getAssetUrl("audio/awalk.mp3");
     audio.loop = true;
     audio.volume = 0.35;
     audioRef.current = audio;
@@ -4129,17 +4138,12 @@ export default function LinksPage() {
   const [noWalletFound, setNoWalletFound] = useState(false);
   const [nsecForWallet, setNsecForWallet] = useState("");
 
-  // Wallet store selectors
-  const cashuWallet = useNostrWalletStore((s) => s.cashuWallet);
-  const walletBalance = useNostrWalletStore((s) => s.walletBalance);
-  const createNewWallet = useNostrWalletStore((s) => s.createNewWallet);
-  const initiateDeposit = useNostrWalletStore((s) => s.initiateDeposit);
-  const invoice = useNostrWalletStore((s) => s.invoice);
-  const isCreatingWallet = useNostrWalletStore((s) => s.isCreatingWallet);
-  const walletInit = useNostrWalletStore((s) => s.init);
-  const initWallet = useNostrWalletStore((s) => s.initWallet);
-
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const {
+    cashuWallet, walletBalance, createNewWallet, initiateDeposit, invoice,
+    isCreatingWallet, init: walletInit, initWallet,
+  } = usePublicWallet(isOpen);
+
   const {
     isOpen: isRbeOpen,
     onOpen: onRbeOpen,
@@ -4151,7 +4155,7 @@ export default function LinksPage() {
     onClose: onAboutClose,
   } = useDisclosure();
   const toast = useToast();
-  const playSound = useSoundSettings((s) => s.playSound);
+  const playSound = playPublicSound;
   const primaryAccent = isLightTheme ? "#0f766e" : "#00ffff";
   const secondaryAccent = isLightTheme ? "#c026d3" : "#ff00ff";
   const linkAccent = isLightTheme ? "#1d4ed8" : "#4da3ff";
@@ -4220,7 +4224,14 @@ export default function LinksPage() {
     [isLightTheme, modalBg, modalBorderColor],
   );
 
-  const hasTriggeredKeygen = useRef(false);
+  const keyGenerationRef = useRef(null);
+  const generateKeysRef = useRef(generateNostrKeys);
+  useEffect(() => {
+    generateKeysRef.current = generateNostrKeys;
+  }, [generateNostrKeys]);
+  const [isGeneratingKeys, setIsGeneratingKeys] = useState(() =>
+    !localStorage.getItem("local_nsec") || !localStorage.getItem("local_npub"),
+  );
 
   // Detect if user is logged in via NIP-07 extension
   const isNip07Mode =
@@ -4233,8 +4244,10 @@ export default function LinksPage() {
     return Number.isFinite(numeric) ? numeric : 0;
   }, [walletBalance]);
 
-  // Hydrate wallet on mount
+  // Hydrate only when its profile panel is opened and keys are ready.
   useEffect(() => {
+    if (!isOpen || isGeneratingKeys) return;
+    setWalletHydrating(true);
     let alive = true;
     (async () => {
       try {
@@ -4254,7 +4267,7 @@ export default function LinksPage() {
     return () => {
       alive = false;
     };
-  }, [walletInit, initWallet]);
+  }, [walletInit, initWallet, isOpen, isGeneratingKeys]);
 
   // Initialize language based on timezone detection
   useEffect(() => {
@@ -4318,7 +4331,7 @@ export default function LinksPage() {
     const storedNpub = localStorage.getItem("local_npub");
     if (storedNpub) {
       try {
-        await updateDoc(doc(database, "users", storedNpub), {
+        await updatePublicUser(storedNpub, {
           musicEnabled: nextState,
           linksMusicEnabled: nextState,
         });
@@ -4580,7 +4593,7 @@ export default function LinksPage() {
         // Also persist to user document in Firestore
         const storedNpub = localStorage.getItem("local_npub");
         if (storedNpub) {
-          await updateDoc(doc(database, "users", storedNpub), {
+          await updatePublicUser(storedNpub, {
             displayName: usernameInput.trim(),
           });
         }
@@ -4670,7 +4683,7 @@ export default function LinksPage() {
       const hexNpub = Buffer.from(bech32.fromWords(npubWords)).toString("hex");
 
       const filter = {
-        kinds: [NDKKind.Metadata],
+        kinds: [0],
         authors: [hexNpub],
         limit: 1,
       };
@@ -4769,7 +4782,8 @@ export default function LinksPage() {
     }
   };
 
-  // Background Nostr key generation (no UI)
+  // Restore automatic identity creation after loading and painting the page.
+  // Opening an account panel sooner starts the same work immediately.
   useEffect(() => {
     if (typeof window === "undefined") return;
     const hasStoredKeys =
@@ -4777,32 +4791,78 @@ export default function LinksPage() {
       Boolean(localStorage.getItem("local_npub"));
 
     if (hasStoredKeys) {
+      setIsGeneratingKeys(false);
       return;
     }
 
-    if (hasTriggeredKeygen.current) {
-      return;
-    }
-
-    hasTriggeredKeygen.current = true;
     let isMounted = true;
-    const createInstantKeys = async () => {
-      try {
-        const defaultDisplayName = "";
-        await generateNostrKeys(defaultDisplayName);
-        if (!isMounted) return;
-        localStorage.setItem("displayName", defaultDisplayName);
-      } catch (error) {
-        console.error("Failed to generate instant Nostr keys:", error);
+    let firstFrame;
+    let secondFrame;
+    let idleCallback;
+    let timer;
+    let paintObserver;
+    const ensureKeys = async () => {
+      if (!isMounted) return;
+      setIsGeneratingKeys(true);
+      // Background initialization and quick panel reopens share one promise.
+      if (!keyGenerationRef.current) {
+        keyGenerationRef.current = (async () => {
+          try {
+            await generateKeysRef.current("", { publishRegistration: false, reuseExisting: true });
+          } catch (error) {
+            keyGenerationRef.current = null;
+            console.error("Failed to generate instant Nostr keys:", error);
+          }
+        })();
+      }
+      await keyGenerationRef.current;
+      if (isMounted) setIsGeneratingKeys(false);
+    };
+    const scheduleWhenPainted = () => {
+      firstFrame = window.requestAnimationFrame(() => {
+        secondFrame = window.requestAnimationFrame(() => {
+          if (typeof window.requestIdleCallback === "function") {
+            idleCallback = window.requestIdleCallback(() => void ensureKeys(), { timeout: 3000 });
+          } else {
+            timer = window.setTimeout(() => void ensureKeys(), 1000);
+          }
+        });
+      });
+    };
+    const scheduleKeys = () => {
+      const canObservePaint = typeof PerformanceObserver !== "undefined" &&
+        PerformanceObserver.supportedEntryTypes?.includes("paint");
+      const hasPainted = performance.getEntriesByType("paint")
+        .some((entry) => entry.name === "first-contentful-paint");
+      if (canObservePaint && !hasPainted) {
+        paintObserver = new PerformanceObserver((entries) => {
+          if (!entries.getEntries().some((entry) => entry.name === "first-contentful-paint")) return;
+          paintObserver.disconnect();
+          scheduleWhenPainted();
+        });
+        paintObserver.observe({ type: "paint", buffered: true });
+      } else {
+        // Browsers without paint timing still get two frames before idle work.
+        scheduleWhenPainted();
       }
     };
-
-    createInstantKeys();
-
+    if (isOpen || isRbeOpen || keyGenerationRef.current) {
+      void ensureKeys();
+    } else if (document.readyState === "complete") {
+      scheduleKeys();
+    } else {
+      window.addEventListener("load", scheduleKeys, { once: true });
+    }
     return () => {
       isMounted = false;
+      window.removeEventListener("load", scheduleKeys);
+      paintObserver?.disconnect();
+      window.cancelAnimationFrame(firstFrame);
+      window.cancelAnimationFrame(secondFrame);
+      if (idleCallback !== undefined) window.cancelIdleCallback?.(idleCallback);
+      window.clearTimeout(timer);
     };
-  }, [generateNostrKeys]);
+  }, [isOpen, isRbeOpen]);
 
   return (
     <Box
@@ -4848,7 +4908,7 @@ export default function LinksPage() {
         onSocialClick={(platform, url) => {
           handleSelectSound();
           if (!isLocalhost()) {
-            logEvent(analytics, "links_social_click", { platform });
+            logPublicEvent("links_social_click", { platform });
           }
           window.open(url, "_blank", "noopener,noreferrer");
         }}
@@ -4877,7 +4937,7 @@ export default function LinksPage() {
         onLaunchSound={handleSubmitActionSound}
         onLaunchEvent={(link) => {
           if (!isLocalhost() && !link.onLaunch) {
-            logEvent(analytics, "links_launch_app", {
+            logPublicEvent("links_launch_app", {
               app: link.analyticsName,
             });
           }
@@ -5015,7 +5075,7 @@ export default function LinksPage() {
                   onClick={() => {
                     handleSubmitActionSound();
                     if (!isLocalhost()) {
-                      logEvent(analytics, "links_launch_app", {
+                      logPublicEvent("links_launch_app", {
                         app: "robots_building_education",
                       });
                     }
@@ -5026,6 +5086,8 @@ export default function LinksPage() {
                 </ChakraButton>
               ) : (
                 <ChakraButton
+                  isLoading={isGeneratingKeys}
+                  isDisabled={isGeneratingKeys}
                   onClick={async () => {
                     handleSelectSound();
                     const copied = await handleCopySecretKey({
@@ -5241,7 +5303,7 @@ export default function LinksPage() {
                   if (isSaving) return;
                   handleSubmitActionSound();
                   if (!isLocalhost()) {
-                    logEvent(analytics, "links_save_profile");
+                    logPublicEvent("links_save_profile");
                   }
                   handleSaveProfile();
                 }}
@@ -5674,7 +5736,7 @@ export default function LinksPage() {
                 {/* Wallet exists, balance > 0 → show card */}
                 {cashuWallet && totalBalance > 0 && (
                   <Box>
-                    <IdentityCard
+                    <Suspense fallback={null}><IdentityCard
                       number={cashuWallet.walletId}
                       name={
                         <div>
@@ -5689,7 +5751,7 @@ export default function LinksPage() {
                       animateOnChange={false}
                       realValue={cashuWallet.walletId}
                       totalBalance={totalBalance || 0}
-                    />
+                    /></Suspense>
                   </Box>
                 )}
 
@@ -5702,7 +5764,7 @@ export default function LinksPage() {
                         flexDirection="column"
                         alignItems="center"
                       >
-                        <IdentityCard
+                        <Suspense fallback={null}><IdentityCard
                           number={cashuWallet.walletId}
                           name={
                             <div>
@@ -5717,7 +5779,7 @@ export default function LinksPage() {
                           animateOnChange={false}
                           realValue={cashuWallet.walletId}
                           totalBalance={totalBalance || 0}
-                        />
+                        /></Suspense>
                         <Box
                           as="button"
                           type="button"
