@@ -46,6 +46,7 @@ const SquirclePlayground = lazy(
 const OrbingPlayground = lazy(
   () => import("./components/orbing/OrbingPlayground.jsx"),
 );
+const Gamer = lazy(() => import("./components/Gamer/Gamer.jsx"));
 const CitizenshipGuide = lazy(
   () => import("./components/CitizenshipGuide.jsx"),
 );
@@ -251,6 +252,14 @@ createRoot(document.getElementById("root")).render(
               }
             />
             <Route path="/proficiency" element={<ProficiencyContainer />} />
+            <Route
+              path="/gamer"
+              element={
+                <AppLoadBoundary>
+                  <Gamer />
+                </AppLoadBoundary>
+              }
+            />
             <Route
               path="/orbing"
               element={
