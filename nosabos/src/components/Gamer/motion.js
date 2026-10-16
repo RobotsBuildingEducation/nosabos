@@ -33,9 +33,9 @@ export function createMotionState() {
 export function advanceMotion(state, { dt, distance = 0, speed = 0, scale = 1, time = 0,
   turnRate = 0, lookYaw = 0, greeting = 0, animal = false, reducedMotion = false }) {
   if (dt <= 0) return;
-  const targetRun = animal ? 0 : smooth((speed - 0.85) / 2.95);
-  const cadenceRun = damp(state.run, targetRun, 8, dt / 2);
-  state.run = damp(state.run, targetRun, 8, dt);
+  const targetRun = animal ? 0 : smooth((speed - 1.35) / 1.15);
+  const cadenceRun = damp(state.run, targetRun, 10, dt / 2);
+  state.run = damp(state.run, targetRun, 10, dt);
   state.weight = damp(state.weight, clamp(speed / 0.6, 0, 1), speed > 0.05 ? 13 : 17, dt);
   state.turn = damp(state.turn, clamp(turnRate, -4, 4), 7, dt);
   state.look = damp(state.look, clamp(lookYaw, -0.65, 0.65), 5, dt);
@@ -53,7 +53,7 @@ export function advanceMotion(state, { dt, distance = 0, speed = 0, scale = 1, t
   const common = { phase: state.phase, weight: w, run: state.run, turn: state.turn,
     look: state.look - state.turn * w * 0.015, idle, greeting: state.greet, secondary: state.secondary };
   if (!animal) {
-    const human = sampleHumanLocomotion(state.phase, state.run, w, reducedMotion ? 0 : time);
+    const human = sampleHumanLocomotion(state.phase, state.run, w, reducedMotion ? 0 : time, reducedMotion ? 0 : state.turn);
     return { ...common, human, bodyY: human.root[1] };
   }
 

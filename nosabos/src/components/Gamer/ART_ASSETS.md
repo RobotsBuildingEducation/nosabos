@@ -8,8 +8,12 @@ textures at runtime; foliage retains the generated transparency.
   meadow, earth, bark, wood, plaster, clay shingles, canopy, and paving.
 - `public/images/gamer/painted-foliage.png`: transparent bough, fern, grass, and
   flower cutouts used on layered, fixed 3D vegetation cards.
-- `public/images/gamer/anime-faces.png`: four facial-feature tiles applied to
-  curved patches on sculpted 3D heads.
+- `public/images/gamer/anime-faces.png`: four facial-feature tiles UV-mapped
+  directly onto continuous sculpted 3D heads.
+
+The village sign is drawn with Canvas at runtime in `artAssets.js`. Sky, clouds,
+water, head geometry and additional architectural details are authored in code;
+the original PNG paintings remain unchanged.
 
 Character design references are the existing `src/sprites/NPC_sprites.png` and
 `src/sprites/tutor/main_character_tutor_transparent.webp`. These source files were

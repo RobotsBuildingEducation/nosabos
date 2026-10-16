@@ -42,7 +42,8 @@ export function createHumanSpine(root, body, { arms, head, lowerParts, neckParts
       geometry.setAttribute("skinWeight", new THREE.Float32BufferAttribute(weights, 4));
       const skin = new THREE.SkinnedMesh(geometry, item.material);
       skin.name = item.name || "spine-skinned-garment";
-      skin.castShadow = skin.receiveShadow = true;
+      skin.castShadow = true;
+      skin.receiveShadow = false;
       // The bind-pose bounds must not cull a leaning shoulder or scarf.
       skin.frustumCulled = false;
       body.add(skin);
