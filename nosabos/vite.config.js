@@ -1,9 +1,54 @@
 import crypto from "node:crypto";
 import process from "node:process";
+import { readFileSync } from "node:fs";
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import { visualizer } from "rollup-plugin-visualizer";
+import { classifyLoadingResource } from "./src/pwa/loadingActivityCopy.js";
+import { buildLoadingProgressPlans } from "./src/pwa/loadingProgressPlan.js";
+import { buildDevLoadingProgressPlan } from "./src/pwa/devLoadingProgressPlan.js";
+import { deferStartupStyles } from "./src/pwa/startupStyles.js";
+
+function startupResourceTrackerPlugin() {
+  let base = "/";
+  return {
+    name: "startup-resource-tracker",
+    configResolved(config) { base = config.base; },
+    configureServer(server) {
+      const plans = new Map();
+      server.watcher.on("change", () => plans.clear());
+      server.middlewares.use(async (req, res, next) => {
+        const url = new URL(req.url || "/", "http://vite.local");
+        if (url.pathname !== `${base}__piyali-loading-plan`) return next();
+        const pageKey = url.searchParams.get("page") || "landing";
+        try {
+          if (!plans.has(pageKey)) plans.set(pageKey, buildDevLoadingProgressPlan(server, pageKey, base));
+          const plan = await plans.get(pageKey);
+          res.setHeader("Content-Type", "application/json");
+          res.setHeader("Cache-Control", "no-store");
+          res.end(JSON.stringify(plan));
+        } catch (error) {
+          plans.delete(pageKey);
+          server.config.logger.error(`Could not prepare loading plan: ${error.message}`);
+          res.statusCode = 503;
+          res.end("Loading plan unavailable");
+        }
+      });
+    },
+    transformIndexHtml: {
+      order: "post",
+      handler(html, context) {
+        const plans = context.bundle ? buildLoadingProgressPlans(context.bundle, base) : null;
+        const source = readFileSync(new URL("./src/pwa/startupResourceTracker.js", import.meta.url), "utf8")
+          .replace("/* loading-activity-classifier */ (() => null)", `(${classifyLoadingResource.toString()})`)
+          .replace("/* loading-progress-plan */ null", JSON.stringify(plans))
+          .replace("/* loading-development-plan-url */ null", JSON.stringify(context.server ? `${base}__piyali-loading-plan` : null));
+        return deferStartupStyles(html).replace("<!-- startup-resource-tracker -->", `<script>${source}</script>`);
+      },
+    },
+  };
+}
 
 function pwaVersionMetadataPlugin({ buildId, builtAt }) {
   const versionPayload = JSON.stringify(
@@ -74,6 +119,7 @@ export default defineConfig(({ mode, command }) => {
     },
     plugins: [
       react(),
+      startupResourceTrackerPlugin(),
       pwaVersionMetadataPlugin({ buildId, builtAt }),
       VitePWA({
         workbox: {

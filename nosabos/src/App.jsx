@@ -31,6 +31,7 @@ import React, {
   lazy,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -163,7 +164,8 @@ import useSoundSettings, {
 
 import GrammarBook from "./components/GrammarBook";
 import Onboarding from "./components/Onboarding";
-import VoiceOrb from "./components/VoiceOrbNext";
+import LoadingProgress from "./components/LoadingProgress.jsx";
+import { getBootLoadingStage } from "./utils/bootLoadingStage.js";
 import RealTimeTest from "./components/RealTimeTest";
 import BottomDrawerDragHandle from "./components/BottomDrawerDragHandle";
 import VoicePreferenceField from "./components/VoicePreferenceField";
@@ -619,7 +621,6 @@ const CEFR_LEVELS = new Set(["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"]);
 const ONBOARDING_TOTAL_STEPS = 1;
 
 const DEFAULT_VOICE_PAUSE_MS = 1200;
-const LOADING_ORB_STATES = ["idle", "listening", "speaking"];
 
 // Repair routing: which surface each repair-step mode opens. Only modes
 // whose surface is wired for repair (seeding + completion) belong here;
@@ -650,30 +651,6 @@ function hasVisibleChakraModalSurface() {
       element.getAttribute("aria-hidden") !== "true"
     );
   });
-}
-
-function getRandomLoadingOrbState() {
-  return LOADING_ORB_STATES[
-    Math.floor(Math.random() * LOADING_ORB_STATES.length)
-  ];
-}
-
-function LoadingOrbFallback({ minH = "420px", bg }) {
-  const orbState = useMemo(getRandomLoadingOrbState, []);
-
-  return (
-    <Flex
-      minH={minH}
-      bg={bg}
-      display="flex"
-      flexDirection="column"
-      alignItems="center"
-      justifyContent="center"
-      p={6}
-    >
-      <VoiceOrb state={orbState} size={88} />
-    </Flex>
-  );
 }
 
 // Quiet placeholder for the rare paths that reach the game view before the
@@ -10452,11 +10429,26 @@ export default function App({ onBootReady } = {}) {
       isResolved: patreonStatusResolved,
       isChecking: isCheckingPatreon,
     });
-  const isBootLoading =
-    isLoadingApp ||
-    !user ||
-    shouldHoldForInitialSkillTree ||
-    isResolvingSubscription;
+  const bootLoadingStage = getBootLoadingStage({
+    isLoadingApp,
+    hasUser: Boolean(user),
+    shouldHoldForInitialSkillTree,
+    isResolvingSubscription,
+  });
+  const isBootLoading = bootLoadingStage !== null;
+  const isProfileReady = !isLoadingApp && Boolean(user);
+
+  useLayoutEffect(() => {
+    const tracker = window.__piyaliStartupResources;
+    tracker?.beginPage("app");
+    tracker?.completeCode("app");
+    tracker?.setStep("profile", isProfileReady);
+    tracker?.setStep("access", isProfileReady && !isResolvingSubscription);
+    tracker?.setStep("lessons", isProfileReady && !shouldHoldForInitialSkillTree);
+    if (isBootLoading) tracker?.setStep("page", false);
+    onBootReady?.(!isBootLoading);
+  }, [isProfileReady, isResolvingSubscription, shouldHoldForInitialSkillTree, isBootLoading, onBootReady]);
+
 
   useEffect(() => {
     if (hasCompletedInitialSkillTreeBoot) return;
@@ -10469,11 +10461,6 @@ export default function App({ onBootReady } = {}) {
     user,
     shouldHoldForInitialSkillTree,
   ]);
-
-  useEffect(() => {
-    if (isBootLoading) return;
-    onBootReady?.();
-  }, [isBootLoading, onBootReady]);
 
   useEffect(() => {
     if (
@@ -10495,7 +10482,7 @@ export default function App({ onBootReady } = {}) {
   ]);
 
   if (isBootLoading) {
-    return <LoadingOrbFallback minH="100vh" bg="gray.900" />;
+    return <LoadingProgress stage={bootLoadingStage} targetLanguageLabel={getLanguageLabel(resolvedTargetLang)} />;
   }
 
   const onboardingInitialDraft = {

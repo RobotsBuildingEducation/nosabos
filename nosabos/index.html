@@ -3,6 +3,85 @@
 
 <head>
   <meta charset="UTF-8" />
+  <!-- Match useThemeStore's saved mode before CSS or application downloads. -->
+  <script>
+    (() => {
+      let mode = "light";
+      try {
+        if (localStorage.getItem("themeMode") === "dark") mode = "dark";
+      } catch { /* Keep the app's default when browser storage is unavailable. */ }
+      document.documentElement.dataset.themeMode = mode;
+      document.documentElement.style.colorScheme = mode;
+    })();
+  </script>
+  <!-- Inline so the loader can paint before the application CSS/JS arrives. -->
+  <style>
+    /* First-paint fallbacks match the app palette in src/index.css. */
+    :root {
+      --startup-page-bg: #f7f1e7;
+      --startup-text-primary: #2f261d;
+      --startup-text-muted: #8d7a67;
+      --startup-wave-track: rgba(255, 255, 255, 0.8);
+      --startup-wave-border: rgba(96, 77, 56, 0.16);
+      background: var(--app-page-bg, var(--startup-page-bg));
+    }
+    /* Keep Chakra's initial browser scheme aligned with the saved app mode. */
+    :root[data-theme-mode="light"] { color-scheme: light !important; }
+    :root[data-theme-mode="dark"] {
+      color-scheme: dark !important;
+      --startup-page-bg: #0b1220;
+      --startup-text-primary: #e5e7eb;
+      --startup-text-muted: #a3b4c9;
+      --startup-wave-track: rgba(148, 163, 184, 0.16);
+      --startup-wave-border: rgba(148, 163, 184, 0.2);
+    }
+    body { margin: 0; background: var(--app-page-bg, var(--startup-page-bg)); color: var(--app-text-primary, var(--startup-text-primary)); }
+    .startup-loading {
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      box-sizing: border-box;
+      background: var(--app-page-bg, var(--startup-page-bg));
+      color: var(--app-text-primary, var(--startup-text-primary));
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    .startup-loading__card { width: min(100%, 340px); }
+    .startup-loading__brand {
+      margin: 0 0 20px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      color: var(--app-text-muted, var(--startup-text-muted));
+    }
+    .startup-loading__title { margin: 0 0 12px; font-size: 26px; font-weight: 600; line-height: 1.25; }
+    .startup-loading__status { margin: 0 0 20px; min-height: 44px; font-size: 15px; line-height: 1.5; }
+    /* Match WaveBar without waiting for React or its animation library. */
+    .startup-loading__track { position: relative; box-sizing: border-box; height: 15px; overflow: hidden; border: 1px solid var(--app-border, var(--startup-wave-border)); border-radius: 9999px; background: var(--startup-wave-track); }
+    .startup-loading__fill { position: absolute; top: 0; left: 0; bottom: 0; display: block; width: 0; transition: width 180ms ease; }
+    .startup-loading__fill svg { display: block; width: 100%; height: 100%; }
+    .startup-loading__wave { animation: startup-loading-wave 10s ease-in-out infinite; }
+    @keyframes startup-loading-wave {
+      0%, 100% { transform: translateX(-10px); }
+      50% { transform: translateX(0); }
+    }
+    .startup-loading__track[data-ready="true"] .startup-loading__fill { transition: none; }
+    .startup-loading__completion { position: fixed; inset: 0; z-index: 2000; overflow-y: auto; }
+    .startup-loading__percentage { margin: 10px 0 0; color: var(--app-text-muted, var(--startup-text-muted)); font-size: 13px; text-align: end; font-variant-numeric: tabular-nums; }
+    .startup-loading__retry { margin-top: 16px; padding: 12px 20px; border: 0; border-radius: 12px; background: #0d9488; color: #fff; font: inherit; cursor: pointer; }
+    .startup-loading__detail { margin: 16px 0 0; color: var(--app-text-muted, var(--startup-text-muted)); font-size: 13px; line-height: 1.5; }
+    .startup-loading__detail:empty { display: none; }
+    .startup-loading__resources { list-style: none; margin: 24px 0 0; padding: 0; min-height: 184px; }
+    .startup-loading__activity { display: flex; align-items: baseline; gap: 12px; padding: 9px 0; color: var(--app-text-muted, var(--startup-text-muted)); font-size: 14px; line-height: 1.5; }
+    .startup-loading__activity[data-state="loading"] { color: var(--app-text-primary, var(--startup-text-primary)); }
+    .startup-loading__activity-indicator { flex: 0 0 16px; text-align: center; color: #0d9488; font-weight: 600; }
+    .startup-loading__activity[data-state="failed"] .startup-loading__activity-indicator { color: #b45309; }
+    @media (prefers-reduced-motion: reduce) {
+      .startup-loading__fill { transition: none; }
+      .startup-loading__wave { animation: none; }
+    }
+  </style>
   <link rel="icon" type="image/svg+xml" href="/logo.png" />
 
   <meta name="description" content="Piyali |Your Personal Language Tutor.">
@@ -33,13 +112,42 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
     href="https://fonts.googleapis.com/css2?family=Comic+Neue:ital,wght@0,700;1,700&family=Gaegu:wght@700&family=Patrick+Hand&display=swap"
-    rel="stylesheet">
+    rel="stylesheet" media="print" onload="this.media='all'">
   <title>Piyali | Your Personal Language Tutor.</title>
 </head>
 
 <body>
-  <div id="root"></div>
+  <div id="root">
+    <div class="startup-loading">
+      <div class="startup-loading__card" data-startup-initial aria-busy="true">
+        <p class="startup-loading__brand">PIYALI</p>
+        <h1 class="startup-loading__title">Opening Piyali</h1>
+        <p class="startup-loading__status" role="status">Preparing your learning space…</p>
+        <div class="startup-loading__track" role="progressbar" aria-label="Getting your learning space ready" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <span class="startup-loading__fill">
+            <svg viewBox="0 0 120 30" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+              <defs>
+                <linearGradient id="startup-wave-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#43e97b" />
+                  <stop offset="100%" stop-color="#38f9d7" />
+                </linearGradient>
+              </defs>
+              <rect width="120" height="30" fill="url(#startup-wave-gradient)" opacity="0.9" />
+              <g class="startup-loading__wave" opacity="0.18">
+                <path d="M0,18 C10,14 20,22 30,18 S50,14 60,18 S80,22 90,18 S110,14 120,18 L120,30 L0,30 Z" fill="#fff" />
+              </g>
+            </svg>
+          </span>
+        </div>
+        <p class="startup-loading__percentage">0% ready</p>
+        <button class="startup-loading__retry" type="button" hidden>Try again</button>
+        <ol class="startup-loading__resources" aria-label="Preparing your experience" aria-live="off"></ol>
+        <noscript>Please enable JavaScript to open Piyali.</noscript>
+      </div>
+    </div>
+  </div>
   <script type="module" src="/src/main.jsx"></script>
+  <!-- startup-resource-tracker -->
 </body>
 
 </html>
