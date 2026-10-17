@@ -1,3 +1,4 @@
+import { usePreparedLessonQuestion } from "../features/lessonPreparation/PreparedLessonContext";
 import { getSpeechPracticeErrorFeedback } from "../utils/speechPracticeFeedback.js";
 import { focusedLessonPrompt } from "../utils/learningIntelligenceModel";
 import ActivityActionRow from "./ActivityActionRow";
@@ -48,7 +49,6 @@ import ReactMarkdown from "react-markdown";
 import { awardXp } from "../utils/utils";
 import { recordGradedOutcome } from "../utils/learningIntelligence";
 import { eloForUser, practiceLevelForElo, generationPerformanceContextFor, questionWorthForUser } from "../utils/performanceEloModel";
-import { assessGeneratedQuestionWorth } from "../utils/questionDifficultyAssessment";
 import { getLanguageXp } from "../utils/progressTracking";
 import {
   SOFT_STOP_BUTTON_BG,
@@ -281,18 +281,19 @@ const strongNpub = (user) =>
     ""
   ).trim();
 
-function useSharedProgress() {
+function useSharedProgress(preparation = null) {
   const user = useUserStore((s) => s.user);
   const npub = strongNpub(user);
   const [xp, setXp] = useState(0);
-  const [progress, setProgress] = useState({
+  const [progress, setProgress] = useState(() => ({
     level: "beginner",
     targetLang: "es",
     supportLang: "en",
     showTranslations: true,
-  });
+    ...(preparation ? { ...preparation.user?.progress, targetLang: preparation.targetLang, supportLang: preparation.supportLang } : {}),
+  }));
   // ✅ ready flag so we know when user settings have been loaded once
-  const [ready, setReady] = useState(false);
+  const [ready, setReady] = useState(Boolean(preparation));
 
   useEffect(() => {
     if (!npub) {
@@ -1057,6 +1058,7 @@ function VocabularyLegacy({
   const t = useT(userLanguage);
   const toast = useToast();
   const user = useUserStore((s) => s.user);
+  const preparedQuestion = usePreparedLessonQuestion("vocabulary", lesson);
   const playSound = useSoundSettings((s) => s.playSound);
 
   useEffect(() => {
@@ -1142,7 +1144,7 @@ function VocabularyLegacy({
     quizCurrentQuestionAttempted,
   ]);
 
-  const { progress, npub, ready } = useSharedProgress();
+  const { progress, npub, ready } = useSharedProgress(preparedQuestion.ticket?.context);
 
   const lessonXpGoal = lesson?.xpReward || 0;
   const normalizedLessonEarnedXp = Math.max(
@@ -1178,9 +1180,9 @@ function VocabularyLegacy({
     lesson?.cefrLevel ||
     lessonContent?.cefrLevel ||
     (lesson?.id ? extractCEFRLevel(lesson.id) : "A1");
-  const cefrLevel = isFinalQuiz || lessonContent?.topic === "tutorial" || lessonContent?.tutorialPracticeLevel || lessonContent?.isGoal || lessonContent?.isRepair
+  const cefrLevel = preparedQuestion.ticket?.options.cefrLevel || (isFinalQuiz || lessonContent?.topic === "tutorial" || lessonContent?.tutorialPracticeLevel || lessonContent?.isGoal || lessonContent?.isRepair
     ? curriculumCefrLevel
-    : practiceLevelForElo(eloForUser(user, targetLang));
+    : practiceLevelForElo(eloForUser(user, targetLang)));
 
   // Debug: Log lesson content to verify it's passed correctly
   console.log("[Vocabulary Component] lessonContent:", lessonContent);
@@ -1247,6 +1249,7 @@ function VocabularyLegacy({
   const [delightVariantId, setDelightVariantId] = useState(
     DELIGHT_VARIANT_IDS[0],
   );
+  const [delightGeneration, setDelightGeneration] = useState(0);
   // ✅ always randomize (no manual lock controls in the UI)
   const lockedType = null;
 
@@ -1524,6 +1527,7 @@ function VocabularyLegacy({
     const maxAllowedWrong =
       quizConfig.questionsRequired - quizConfig.passingScore; // 10 - 8 = 2
     if (newWrongAnswers > maxAllowedWrong) {
+      preparedQuestion.finishQuiz();
       setQuizCompleted(true);
       setQuizPassed(false);
       setShowQuizFailureModal(true);
@@ -1532,6 +1536,7 @@ function VocabularyLegacy({
 
     // Check for success: user has reached passing score
     if (newCorrectAnswers >= quizConfig.passingScore) {
+      preparedQuestion.finishQuiz();
       setQuizCompleted(true);
       setQuizPassed(true);
       setShowQuizSuccessModal(true);
@@ -1541,6 +1546,7 @@ function VocabularyLegacy({
     // Check if all questions answered (normal completion)
     if (newQuestionsAnswered >= quizConfig.questionsRequired) {
       const passed = newCorrectAnswers >= quizConfig.passingScore;
+      preparedQuestion.finishQuiz();
       setQuizCompleted(true);
       setQuizPassed(passed);
 
@@ -1979,6 +1985,7 @@ Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Ant
   }
 
   function handleRetryQuiz() {
+    preparedQuestion.restartQuiz();
     // Reset all quiz state
     resetQuizState();
     // Start a new question
@@ -2190,7 +2197,7 @@ Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Ant
     const signature = JSON.stringify({ mode, item, cefrLevel, targetLang });
     if (assessedQuestionSignatureRef.current === signature) return;
     assessedQuestionSignatureRef.current = signature;
-    const pending = assessGeneratedQuestionWorth({
+    const pending = preparedQuestion.assess({
       user: useUserStore.getState().user, targetLang, questionLevel: cefrLevel,
       question: item, mode: `vocabulary:${mode}`,
     });
@@ -2202,7 +2209,7 @@ Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Ant
     loadingQMA, qMA, choicesMA, answersMA, hMA, loadingQSpeak, sPrompt, sTarget,
     sHint, loadingMG, mStem, mLeft, mRight, mHint, loadingTQ, tSentence,
     tWordBank, tCorrectWords, tHint, loadingFC, fcConcept, fcAnswer,
-    cefrLevel, targetLang]);
+    cefrLevel, targetLang, preparedQuestion]);
 
   /* ---------------------------
      GENERATOR DISPATCH
@@ -2271,6 +2278,7 @@ Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Ant
   }
 
   function generateDelight(variantId) {
+    setDelightGeneration((generation) => generation + 1);
     stopModuleTTS();
     setMode("delight");
     setDelightVariantId(
@@ -2302,6 +2310,8 @@ Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Ant
   }
 
   function generateRandom() {
+    const preparedType = preparedQuestion.options?.exerciseType;
+    if (preparedType) return generatorFor(preparedType)();
     const pick = drawType();
     // do NOT lock when randomizing
     setMode(pick);
@@ -2600,11 +2610,11 @@ Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Ant
     let gotSomething = false;
 
     try {
-      if (!simplemodel) throw new Error("gemini-unavailable");
+      if (!simplemodel && !preparedQuestion.options) throw new Error("gemini-unavailable");
 
-      const resp = await generateContentStreamWithTimeout(questionModel, {
+      const resp = await preparedQuestion.stream(() => generateContentStreamWithTimeout(questionModel, {
         contents: [{ role: "user", parts: [{ text: prompt }] }],
-      });
+      }), "fill");
 
       let buffer = "";
       for await (const chunk of resp.stream) {
@@ -2666,6 +2676,8 @@ Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Ant
 
       if (!gotSomething) throw new Error("no-fill");
     } catch {
+      preparedQuestion.discard();
+      if (preparedQuestion.cancelled) return;
       // Fallback (non-stream)
       const text = await settleProviderWithin(
         callResponses({
@@ -2841,11 +2853,11 @@ Return EXACTLY:
     let tempChoices = [];
 
     try {
-      if (!simplemodel) throw new Error("gemini-unavailable");
+      if (!simplemodel && !preparedQuestion.options) throw new Error("gemini-unavailable");
 
-      const resp = await generateContentStreamWithTimeout(questionModel, {
+      const resp = await preparedQuestion.stream(() => generateContentStreamWithTimeout(questionModel, {
         contents: [{ role: "user", parts: [{ text: prompt }] }],
-      });
+      }), "mc");
 
       let buffer = "";
       for await (const chunk of resp.stream) {
@@ -2982,6 +2994,8 @@ Return EXACTLY:
         throw new Error("incomplete-mc");
       }
     } catch {
+      preparedQuestion.discard();
+      if (preparedQuestion.cancelled) return;
       // Fallback (non-stream)
       const text = await settleProviderWithin(
         callResponses({
@@ -3207,11 +3221,11 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
     let tempChoices = [];
 
     try {
-      if (!simplemodel) throw new Error("gemini-unavailable");
+      if (!simplemodel && !preparedQuestion.options) throw new Error("gemini-unavailable");
 
-      const resp = await generateContentStreamWithTimeout(questionModel, {
+      const resp = await preparedQuestion.stream(() => generateContentStreamWithTimeout(questionModel, {
         contents: [{ role: "user", parts: [{ text: prompt }] }],
-      });
+      }), "ma");
 
       let buffer = "";
       for await (const chunk of resp.stream) {
@@ -3352,6 +3366,8 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
         throw new Error("incomplete-ma");
       }
     } catch {
+      preparedQuestion.discard();
+      if (preparedQuestion.cancelled) return;
       // Fallback (non-stream)
       const text = await settleProviderWithin(
         callResponses({
@@ -3496,7 +3512,9 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
   async function generateSpeak() {
     try {
       stopSpeakRecording();
-    } catch {}
+    } catch {
+      preparedQuestion.discard();
+      if (preparedQuestion.cancelled) return;}
     setMode("speak");
     setLoadingQSpeak(true);
     setLastOk(null);
@@ -3517,11 +3535,11 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
     let got = false;
 
     try {
-      if (!simplemodel) throw new Error("gemini-unavailable");
+      if (!simplemodel && !preparedQuestion.options) throw new Error("gemini-unavailable");
 
-      const resp = await generateContentStreamWithTimeout(questionModel, {
+      const resp = await preparedQuestion.stream(() => generateContentStreamWithTimeout(questionModel, {
         contents: [{ role: "user", parts: [{ text: prompt }] }],
-      });
+      }), "speak");
 
       let buffer = "";
       for await (const chunk of resp.stream) {
@@ -3583,6 +3601,8 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
 
       if (!got) throw new Error("no-speak");
     } catch {
+      preparedQuestion.discard();
+      if (preparedQuestion.cancelled) return;
       const text = await settleProviderWithin(
         callResponses({
           model: MODEL,
@@ -3780,9 +3800,9 @@ Return JSON ONLY:
 
     try {
       let question = null;
-      if (simplemodel) {
+      if (simplemodel || preparedQuestion.options) {
         try {
-          const resp = await generateContentWithTimeout(questionModel, {
+          const resp = await preparedQuestion.response(() => generateContentWithTimeout(questionModel, {
             contents: [{ role: "user", parts: [{ text: prompt }] }],
             generationConfig: {
               thinkingConfig: { thinkingBudget: 0 },
@@ -3791,7 +3811,7 @@ Return JSON ONLY:
                 VOCABULARY_MATCH_RESPONSE_SCHEMA,
               ),
             },
-          });
+          }), "match");
           const finalText =
             (typeof resp?.response?.text === "function"
               ? resp.response.text()
@@ -3801,6 +3821,8 @@ Return JSON ONLY:
             lessonContent,
           });
         } catch (error) {
+      preparedQuestion.discard();
+      if (preparedQuestion.cancelled) return;
           if (import.meta.env.DEV) {
             console.warn(
               "Gemini match question failed; trying OpenAI:",
@@ -3836,6 +3858,8 @@ Return JSON ONLY:
       setMSlots(Array(question.left.length).fill(null));
       setMBank(shuffle([...Array(question.right.length)].map((_, i) => i)));
     } catch (error) {
+      preparedQuestion.discard();
+      if (preparedQuestion.cancelled) return;
       if (import.meta.env.DEV) {
         console.warn("Match question failed after both providers:", error);
       }
@@ -3858,21 +3882,24 @@ Return JSON ONLY:
 
     const repeatVariant = useRepeatUI;
     const supportCode = resolveSupportLang(supportLang, userLanguage);
-    const isListening = repeatVariant && Math.random() < 0.5; // listening vs translation exercise
+    const queuedTranslation = preparedQuestion.options?.exerciseType === (repeatVariant ? "repeat" : "translate")
+      ? preparedQuestion.options : null;
+    const isListening = queuedTranslation?.exerciseType === (repeatVariant ? "repeat" : "translate")
+      ? queuedTranslation.isListening : repeatVariant && Math.random() < 0.5; // listening vs translation exercise
 
-    const chosenRepeatMode = repeatVariant
+    const chosenRepeatMode = queuedTranslation?.repeatMode ?? (repeatVariant
       ? isListening
         ? "listening-target"
         : Math.random() < 0.5
           ? "target-tts-support-bank"
           : "support-tts-target-bank"
-      : null;
+      : null);
 
     setTranslateUIVariant(repeatVariant ? "repeat" : "standard");
     setTranslateVariant(isListening ? "listening" : "translation");
     setRepeatMode(chosenRepeatMode || "target-tts-support-bank");
 
-    const direction = repeatVariant
+    const direction = queuedTranslation?.direction ?? (repeatVariant
       ? isListening
         ? "support-to-target"
         : chosenRepeatMode === "target-tts-support-bank"
@@ -3880,7 +3907,7 @@ Return JSON ONLY:
           : "support-to-target"
       : Math.random() < 0.5
         ? "target-to-support"
-        : "support-to-target";
+        : "support-to-target");
 
     setQuestionTTsLang(
       repeatVariant
@@ -3918,10 +3945,10 @@ Return JSON ONLY:
     let tempDistractors = [];
 
     try {
-      if (!simplemodel) throw new Error("gemini-unavailable");
-      const resp = await generateContentStreamWithTimeout(questionModel, {
+      if (!simplemodel && !preparedQuestion.options) throw new Error("gemini-unavailable");
+      const resp = await preparedQuestion.stream(() => generateContentStreamWithTimeout(questionModel, {
         contents: [{ role: "user", parts: [{ text: prompt }] }],
-      });
+      }), repeatVariant ? "repeat" : "translate");
 
       let buffer = "";
       for await (const chunk of resp.stream) {
@@ -4030,6 +4057,8 @@ Return JSON ONLY:
       const allWords = [...tempCorrectWords, ...distractors];
       setTWordBank(shuffle(allWords));
     } catch {
+      preparedQuestion.discard();
+      if (preparedQuestion.cancelled) return;
       // Fallback defaults based on direction
       const isTargetToSupport = direction === "target-to-support";
       if (targetLang === "es") {
@@ -4114,11 +4143,11 @@ Return JSON ONLY:
     });
 
     try {
-      if (!simplemodel) throw new Error("gemini-unavailable");
+      if (!simplemodel && !preparedQuestion.options) throw new Error("gemini-unavailable");
 
-      const resp = await generateContentStreamWithTimeout(questionModel, {
+      const resp = await preparedQuestion.stream(() => generateContentStreamWithTimeout(questionModel, {
         contents: [{ role: "user", parts: [{ text: prompt }] }],
-      });
+      }), "flashcard");
 
       let buffer = "";
       let parsed = false;
@@ -4147,11 +4176,15 @@ Return JSON ONLY:
             setFcAnswer(String(obj.answer));
             parsed = true;
           }
-        } catch {}
+        } catch {
+      preparedQuestion.discard();
+      if (preparedQuestion.cancelled) return;}
       }
 
       if (!parsed) throw new Error("no-flashcard-parse");
     } catch (err) {
+      preparedQuestion.discard();
+      if (preparedQuestion.cancelled) return;
       console.error("Flashcard generation error:", err);
       // Fallback
       try {
@@ -4174,6 +4207,8 @@ Return JSON ONLY:
           }
         }
       } catch {
+      preparedQuestion.discard();
+      if (preparedQuestion.cancelled) return;
         setFcConcept("hello");
         setFcAnswer("hola");
       }
@@ -4873,7 +4908,9 @@ Return JSON ONLY:
     if (autoInitRef.current) return;
     if (!ready) return; // ✅ wait for user progress to load
     autoInitRef.current = true;
-    generateRandom();
+    const plannedType = preparedQuestion.ticket?.options.exerciseType;
+    if (plannedType) generatorFor(plannedType)();
+    else generateRandom();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready]);
 
@@ -5466,6 +5503,7 @@ Return JSON ONLY:
 
         {mode === "delight" ? (
           <DelightQuestionLab
+            key={`${delightVariantId}:${delightGeneration}`}
             embedded
             moduleType="vocabulary"
             variantId={delightVariantId}
@@ -7220,4 +7258,21 @@ Return JSON ONLY:
 
 export default function Vocabulary(props) {
   return <VocabularyLegacy {...props} />;
+}
+
+// Reuse the production prompt builders without mounting the exercise or running
+// its audio/reward effects. Parsing still uses the same foreground generator.
+// Shared with background preparation; this export does not mount the renderer.
+// eslint-disable-next-line react-refresh/only-export-components
+export function buildLessonPreparationRecipe(context, options) {
+  const { targetLang, supportLang, user, lessonContent } = context;
+  const args = { ...options, targetLang, supportLang, lessonContent,
+    showTranslations: user?.progress?.showTranslations ?? true,
+    appUILang: supportLang, recentGood: context.recentQuestions || [] };
+  const builders = {fill: buildFillVocabStreamPrompt, mc: buildMCVocabStreamPrompt, ma: buildMAVocabStreamPrompt, speak: buildSpeakVocabStreamPrompt, match: buildMatchVocabStreamPrompt, translate: buildVocabTranslateStreamPrompt, repeat: buildVocabTranslateStreamPrompt};
+  const prompt = options.exerciseType === "flashcard"
+    ? buildLessonFlashcardPrompt({ ...args, moduleType: "vocabulary", collectedConcepts: [] })
+    : builders[options.exerciseType]?.(args);
+  if (!prompt) throw new Error("Unsupported prepared exercise");
+  return { prompt, questionLevel: options.cefrLevel, responseSchema: options.exerciseType === "match" ? VOCABULARY_MATCH_RESPONSE_SCHEMA : null };
 }

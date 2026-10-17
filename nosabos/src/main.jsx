@@ -16,7 +16,6 @@ import "./useThemeStore";
 import { ChakraProvider } from "@chakra-ui/react";
 import { BrowserRouter as Router, Route, Routes, Outlet, useLocation } from "react-router-dom";
 import { theme } from "./theme";
-import LandingPage from "./components/LandingPage.jsx";
 import LoadingProgress from "./components/LoadingProgress.jsx";
 import BootReadyBoundary from "./components/BootReadyBoundary.jsx";
 import AppLoadBoundary from "./components/AppLoadBoundary.jsx";
@@ -43,6 +42,7 @@ function lazyPage(key, load) {
 }
 
 const App = lazyPage("app", () => import("./App.jsx"));
+const LandingPage = lazyPage("landing", () => import("./components/LandingPage.jsx"));
 const LinksPage = lazyPage("links", () => import("./components/LinksPage.jsx"));
 const LegacyLinksPage = lazyPage("legacy-links", () => import("./components/LegacyLinksPage.jsx"));
 const ProficiencyTest = lazyPage("proficiency", () => import("./components/ProficiencyTest.jsx"));

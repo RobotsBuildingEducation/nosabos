@@ -1,3 +1,6 @@
+import useUserStore from "../hooks/useUserStore";
+import { prepareSkillTreeLesson, preparationContext } from "../features/lessonPreparation/runtime";
+import { lessonPreparationScope } from "../features/lessonPreparation/session";
 import useGoalFocusStore from "../hooks/useGoalFocusStore";
 import React, {
   Suspense,
@@ -1764,7 +1767,7 @@ const UnitSection = React.memo(function UnitSection({
  */
 export { GAME_LOADING_MESSAGES };
 
-function LessonDetailModal({
+export function LessonDetailModal({
   isOpen,
   onClose,
   lesson,
@@ -1772,6 +1775,7 @@ function LessonDetailModal({
   onStartLesson,
   supportLang,
   targetLang,
+  activeNpub,
 }) {
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
@@ -1783,6 +1787,23 @@ function LessonDetailModal({
   const isDesktop = useBreakpointValue({ base: false, md: true }) ?? false;
   const modalContentRef = useRef(null);
   const generationTokenRef = useRef(0);
+  const preparationRef = useRef(null);
+  const preparationUser = useUserStore((state) => state.user);
+  const prepareContext = preparationContext({ lesson: lesson && unit
+    ? { ...lesson, gameReviewContext: buildGameReviewContext({ lesson, unit, targetLang }) } : lesson, account: activeNpub, targetLang, supportLang, user: preparationUser });
+  const prepareScope = lessonPreparationScope(prepareContext);
+  useEffect(() => {
+    if (!isOpen || !lesson || lesson.isGame) return;
+    const session = prepareSkillTreeLesson(prepareContext);
+    preparationRef.current = session;
+    return () => {
+      if (!session.started) session.dispose();
+      if (preparationRef.current === session) preparationRef.current = null;
+    };
+    // The scope includes the lesson, languages, account and generation settings.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, prepareScope]);
+
   const isTransitioningToLesson = gameLoading || lessonLoading;
   const blockModalClose = useCallback(() => undefined, []);
   const resolvedSupportLang = normalizeSupportLanguage(supportLang);
@@ -1864,7 +1885,7 @@ function LessonDetailModal({
     setLessonLoading(true);
 
     try {
-      const didStartLesson = await onStartLesson?.(lessonWithReviewContext);
+      const didStartLesson = await onStartLesson?.(lessonWithReviewContext, null, preparationRef.current);
       if (!didStartLesson) {
         setLessonLoading(false);
       }
@@ -2811,10 +2832,10 @@ export default function SkillTree({
   );
 
   const handleStartLesson = useCallback(
-    async (lesson, preGeneratedScenario) => {
+    async (lesson, preGeneratedScenario, preparationSession) => {
       playSound("lessonStart");
       if (onStartLesson) {
-        const startResult = await onStartLesson(lesson, preGeneratedScenario);
+        const startResult = await onStartLesson(lesson, preGeneratedScenario, preparationSession);
         if (startResult !== false) {
           // Clear the modal payload in the store once the lesson view is
           // taking over. Without this, the store still holds
@@ -3240,6 +3261,7 @@ export default function SkillTree({
             useModalStore for isOpen + lesson + unit, so toggling the modal
             doesn't re-render the whole SkillTree component. */}
         <LessonDetailModalGate
+          activeNpub={activeNpub}
           onStartLesson={handleStartLesson}
           supportLang={supportLang}
           targetLang={targetLang}
@@ -3256,7 +3278,7 @@ export default function SkillTree({
 // Lazy-mounts the modal subtree until first open — keeps the heavy
 // LessonDetailModal hooks/effects out of every SkillTree render until
 // they're actually needed.
-function LessonDetailModalGate({ onStartLesson, supportLang, targetLang }) {
+function LessonDetailModalGate({ onStartLesson, supportLang, targetLang, activeNpub }) {
   const isOpen = useModalStore((s) => s.lessonDetailOpen);
   const lesson = useModalStore((s) => s.selectedLesson);
   const unit = useModalStore((s) => s.selectedUnit);
@@ -3266,6 +3288,7 @@ function LessonDetailModalGate({ onStartLesson, supportLang, targetLang }) {
   if (!hasEverOpened.current) return null;
   return (
     <LessonDetailModal
+      activeNpub={activeNpub}
       isOpen={isOpen}
       onClose={onClose}
       lesson={lesson}

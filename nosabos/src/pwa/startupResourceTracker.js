@@ -64,7 +64,7 @@
     return loadingPlans?.pages[key] || {
       resources: [],
       steps: key === "app" ? ["shell", "code", "profile", "access", "lessons", "page"]
-        : key === "landing" ? ["shell", "page"] : ["shell", "code", "page"],
+        : ["shell", "code", "page"],
     };
   }
   function getProgress() {
@@ -343,6 +343,19 @@
   const initialPage = ["links", "legacy-links", "orbing", "squircle", "citizenship", "patreon-return"].includes(segment)
     ? segment : segment === "proficiency" ? (authenticated ? "proficiency" : "landing")
       : authenticated ? "app" : "landing";
+  // Discover the active public route alongside the shell, rather than waiting
+  // for React to request it. Other routes stay outside the initial download.
+  if (!developmentPlanURL && ["landing", "links"].includes(initialPage)) {
+    const shell = new Set(loadingPlans?.shell || []);
+    for (const href of loadingPlans?.pages[initialPage]?.resources || []) {
+      if (shell.has(href) || !href.endsWith(".js")) continue;
+      const link = document.createElement("link");
+      link.rel = "modulepreload";
+      link.crossOrigin = "";
+      link.href = href;
+      document.head.appendChild(link);
+    }
+  }
   beginPage(initialPage);
   start();
 })();

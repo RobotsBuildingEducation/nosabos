@@ -1,3 +1,4 @@
+import { usePreparedLessonQuestion } from "../features/lessonPreparation/PreparedLessonContext";
 import { getSpeechPracticeErrorFeedback } from "../utils/speechPracticeFeedback.js";
 import { focusedLessonPrompt } from "../utils/learningIntelligenceModel";
 import ActivityActionRow from "./ActivityActionRow";
@@ -70,7 +71,6 @@ import {
 } from "../utils/tts";
 import { extractCEFRLevel } from "../utils/cefrUtils";
 import { eloForUser, practiceLevelForElo, generationPerformanceContextFor, questionWorthForUser } from "../utils/performanceEloModel";
-import { assessGeneratedQuestionWorths } from "../utils/questionDifficultyAssessment";
 import { getUserProficiencyLevel } from "../utils/cefrProgress";
 import { speechReasonTips } from "../utils/speechEvaluation";
 import { SpeakSuccessCard } from "./SpeakSuccessCard";
@@ -291,18 +291,19 @@ const getAppUILang = () => {
 /* ================================
    Shared Progress (global XP + settings)
 =================================== */
-function useSharedProgress(activeNpub = "") {
+function useSharedProgress(activeNpub = "", preparation = null) {
   const user = useUserStore((s) => s.user);
   const npub = activeNpub?.trim?.() || strongNpub(user);
   const [xp, setXp] = useState(0);
-  const [progress, setProgress] = useState({
+  const [progress, setProgress] = useState(() => ({
     level: "beginner",
     targetLang: "es",
     supportLang: "en", // 'en' | 'es' | 'bilingual'
-  });
+    ...(preparation ? { ...preparation.user?.progress, targetLang: preparation.targetLang, supportLang: preparation.supportLang } : {}),
+  }));
 
   // ✅ NEW: track when we've loaded progress at least once
-  const [progressReady, setProgressReady] = useState(false);
+  const [progressReady, setProgressReady] = useState(Boolean(preparation));
 
   useEffect(() => {
     // If we don't have an npub, just mark as ready and keep defaults
@@ -446,6 +447,7 @@ function useUIText(uiLang, level) {
 =================================== */
 export default function StoryMode(props) {
   const user = useUserStore((s) => s.user);
+  const preparedQuestion = usePreparedLessonQuestion("stories", props.lesson);
   const pinnedMode =
     props.lessonContent?.topic === "tutorial"
       ? "speaking"
@@ -455,7 +457,7 @@ export default function StoryMode(props) {
       : null;
 
   const [activeMode, setActiveMode] = useState(() =>
-    pinnedMode || chooseStoryMode(props.lessonContent),
+    preparedQuestion.ticket?.options.storyMode || pinnedMode || chooseStoryMode(props.lessonContent),
   );
   const [cycle, setCycle] = useState(0);
 
@@ -506,7 +508,8 @@ function StoryActivity(props) {
 }
 
 function StoryComprehensionSettings(props) {
-  const { progress, npub, progressReady } = useSharedProgress(props.activeNpub);
+  const preparedQuestion = usePreparedLessonQuestion("stories", props.lesson);
+  const { progress, npub, progressReady } = useSharedProgress(props.activeNpub, preparedQuestion.ticket?.context);
   const uiLang = getAppUILang();
   const { targetLang, supportLang } = resolveStoryLanguages({
     targetLang: props.targetLang,
@@ -549,6 +552,7 @@ function SpeakingStoryMode({
   const navigate = useNavigate();
   const toast = useToast();
   const user = useUserStore((s) => s.user);
+  const preparedQuestion = usePreparedLessonQuestion("stories", lesson);
   const playSound = useSoundSettings((s) => s.playSound);
 
   useEffect(() => {
@@ -556,7 +560,7 @@ function SpeakingStoryMode({
   }, []);
 
   // Shared settings + XP
-  const { progress, npub, progressReady } = useSharedProgress(activeNpub);
+  const { progress, npub, progressReady } = useSharedProgress(activeNpub, preparedQuestion.ticket?.context);
 
   const uiLang = getAppUILang();
   const { targetLang, supportLang } = resolveStoryLanguages({
@@ -574,9 +578,9 @@ function SpeakingStoryMode({
     (lesson?.id
       ? extractCEFRLevel(lesson.id)
       : getUserProficiencyLevel(progress, targetLang));
-  const cefrLevel = lesson?.isTutorial || lesson?.isFinalQuiz || lessonContent?.isGoal || lessonContent?.isRepair
+  const cefrLevel = preparedQuestion.ticket?.options.cefrLevel || (lesson?.isTutorial || lesson?.isFinalQuiz || lessonContent?.isGoal || lessonContent?.isRepair
     ? curriculumCefrLevel
-    : practiceLevelForElo(eloForUser(user, targetLang));
+    : practiceLevelForElo(eloForUser(user, targetLang)));
 
   // APP/UI copy and support translations follow the resolved support language.
   const effectiveLang = normalizeSupportLanguage(supportLang || uiLang, "en");
@@ -870,7 +874,7 @@ function SpeakingStoryMode({
     rewardedSentenceKeysRef.current.clear();
     try {
       usageStatsRef.current.storyGenerations++;
-      const plan = createStoryPlan({ lessonContent, lessonId: lesson?.id, npub, targetLang, mode: "practice" });
+      const plan = (await preparedQuestion.ticket?.promise)?.storyPlan || createStoryPlan({ lessonContent, lessonId: lesson?.id, npub, targetLang, mode: "practice" });
       const prompt = buildSpeakingStoryPrompt({
         targetName: LLM_LANG_NAME(targetLang), targetLang,
         difficulty: getStoryDifficulty(cefrLevel, { includeTranslations: false }),
@@ -934,10 +938,10 @@ function SpeakingStoryMode({
       };
 
       try {
-        const streamResp = await storyModel.generateContentStream({
+        const streamResp = await preparedQuestion.stream(() => storyModel.generateContentStream({
           contents: [{ role: "user", parts: [{ text: prompt }] }],
           generationConfig: { temperature: 0.7 },
-        });
+        }));
 
         for await (const chunk of streamResp.stream) {
           if (isCancelled()) return;
@@ -967,7 +971,7 @@ function SpeakingStoryMode({
             questionLevel: cefrLevel,
             worth,
           };
-          finalStory.sentenceWorths = await assessGeneratedQuestionWorths({
+          finalStory.sentenceWorths = await preparedQuestion.assessMany({
             user: useUserStore.getState().user, targetLang, questionLevel: cefrLevel,
             questions: finalStory.sentences.map((sentence) => ({
               sentence: sentence.tgt, task: "Understand and pronounce this sentence",
@@ -981,6 +985,8 @@ function SpeakingStoryMode({
           return;
         }
       } catch (streamErr) {
+        if (preparedQuestion.cancelled) return;
+        preparedQuestion.discard();
         console.warn("[Stories] Direct streaming failed in practice, falling back to batch generator", streamErr);
       }
 
@@ -996,7 +1002,7 @@ function SpeakingStoryMode({
         });
         if (isCancelled() || !story) return;
         recordStoryHistory(plan, { title: "Practice", target: story.fullStory.tgt });
-        const sentenceWorths = await assessGeneratedQuestionWorths({
+        const sentenceWorths = await preparedQuestion.assessMany({
           user: useUserStore.getState().user, targetLang, questionLevel: cefrLevel,
           questions: story.sentences.map((sentence) => ({
             sentence: sentence.tgt, task: "Understand and pronounce this sentence",
@@ -1023,7 +1029,7 @@ function SpeakingStoryMode({
         isStreamingRef.current = false;
       }
     }
-  }, [lessonContent, lesson?.id, npub, cefrLevel, targetLang, stopAllAudio]);
+  }, [lessonContent, lesson?.id, npub, cefrLevel, targetLang, stopAllAudio, preparedQuestion]);
 
   // Auto-generate story on mount if lessonContent is provided
   // Auto-generate story on mount if lessonContent is provided
@@ -2234,4 +2240,26 @@ function SpeakingStoryMode({
       </Box>
     </Box>
   );
+}
+
+// Shared with background preparation; this export does not mount the renderer.
+// eslint-disable-next-line react-refresh/only-export-components
+export async function buildLessonPreparationRecipe(context, options) {
+  if (options.storyMode !== "speaking") {
+    const { buildLessonPreparationRecipe } = await import("../features/stories/StoryComprehension");
+    return buildLessonPreparationRecipe(context, options);
+  }
+  const { lesson, lessonContent, account, targetLang, targetName, user } = context;
+      const plan = createStoryPlan({ lessonContent, lessonId: lesson?.id, npub: account, targetLang, mode: "practice" });
+      const prompt = buildSpeakingStoryPrompt({
+        targetName: targetName, targetLang,
+        difficulty: getStoryDifficulty(options.cefrLevel, { includeTranslations: false }),
+        isTutorial: plan.isTutorial,
+        tutorialPracticeLevel: lessonContent?.tutorialPracticeLevel,
+        scenarioDirective: plan.isTutorial && !lessonContent?.tutorialPracticeLevel ? "Tutorial: a tiny greeting encounter only." : plan.objective,
+        curriculumContext: [focusedLessonPrompt(lessonContent),
+          `Live performance memory: ${JSON.stringify(generationPerformanceContextFor(user, targetLang, { curriculumCefrLevel: options.curriculumCefrLevel }))}. Adapt sentence complexity and support while keeping the story's topic and characters.`,
+          buildStoryDiversityPrompt(plan)].filter(Boolean).join("\n"),
+      });
+  return { prompt, generationConfig: { temperature: 0.7 }, metadata: { storyPlan: plan, speakingStory: true } };
 }

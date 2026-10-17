@@ -1,7 +1,7 @@
 // A fixed dependency list for each route, taken from Vite's actual output graph.
 // Optional media and background PWA caching don't gate opening the page.
 export const LOADING_PAGE_COMPONENTS = {
-  landing: null,
+  landing: "/src/components/LandingPage.jsx",
   app: "/src/App.jsx",
   links: "/src/components/LinksPage.jsx",
   "legacy-links": "/src/components/LegacyLinksPage.jsx",
@@ -14,7 +14,7 @@ export const LOADING_PAGE_COMPONENTS = {
 
 export function loadingStepsFor(key) {
   return key === "app" ? ["shell", "code", "profile", "access", "lessons", "page"]
-    : key === "landing" ? ["shell", "page"] : ["shell", "code", "page"];
+    : ["shell", "code", "page"];
 }
 
 export function buildLoadingProgressPlans(bundle, base = "/") {

@@ -307,7 +307,6 @@ function MangaToolbar({
   accent,
   languageControl,
   themeControl,
-  musicControl,
   onSocialClick,
 }) {
   const socialItems = [
@@ -386,7 +385,6 @@ function MangaToolbar({
       ))}
       {languageControl}
       {themeControl}
-      {/* {musicControl} */}
     </HStack>
   );
 }
@@ -1627,7 +1625,6 @@ export default function MangaLinksExperience({
   onSocialClick,
   languageControl,
   themeControl,
-  musicControl,
   onLaunchSound,
   onLaunchEvent,
 }) {
@@ -1643,7 +1640,6 @@ export default function MangaLinksExperience({
         accent={accent}
         languageControl={languageControl}
         themeControl={themeControl}
-        musicControl={musicControl}
         onSocialClick={onSocialClick}
       />
       <MangaCover

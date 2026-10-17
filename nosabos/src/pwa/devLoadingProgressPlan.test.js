@@ -33,7 +33,7 @@ test("development graph respects a configured base path and rejects unknown page
   const requested = [];
   const server = { async transformRequest(url) { requested.push(url); return { code: "" }; } };
   const plan = await buildDevLoadingProgressPlan(server, "landing", "/piyali/");
-  assert.deepEqual(requested, ["/piyali/src/main.jsx"]);
-  assert.deepEqual(plan.pages.landing.resources, ["/piyali/src/main.jsx"]);
+  assert.deepEqual(requested, ["/piyali/src/main.jsx", "/piyali/src/components/LandingPage.jsx"]);
+  assert.deepEqual(plan.pages.landing.resources, ["/piyali/src/main.jsx", "/piyali/src/components/LandingPage.jsx"]);
   await assert.rejects(buildDevLoadingProgressPlan(server, "../../private"), /Unknown loading page/);
 });

@@ -10,6 +10,7 @@ const source = readFileSync(new URL("./startupResourceTracker.js", import.meta.u
 
 function browserHarness(urls = [], { plans = null, authenticated = false, pathname = "/links", fetchPlan, styles = [] } = {}) {
   const timers = new Set();
+  const preloads = [];
   const events = new Map();
   const scripts = urls.map((src) => ({ src, matches: () => true }));
   let deliver;
@@ -27,7 +28,8 @@ function browserHarness(urls = [], { plans = null, authenticated = false, pathna
     location: { href: `https://piyali.app${pathname}`, origin: "https://piyali.app", pathname },
     localStorage: { getItem: () => authenticated ? "test_nsec" : null },
     document: {
-      head: {},
+      head: { appendChild: (link) => preloads.push(link) },
+      createElement: () => ({}),
       querySelector: () => ({ isConnected: true, querySelector: () => null }),
       querySelectorAll: (selector) => selector === "link[data-startup-stylesheet]" ? styles : scripts,
       getElementById: () => null,
@@ -46,6 +48,7 @@ function browserHarness(urls = [], { plans = null, authenticated = false, pathna
     flush() { const work = [...timers]; timers.clear(); work.forEach((fn) => fn()); },
     snapshot: () => window.__piyaliStartupResources.getSnapshot(),
     api: window.__piyaliStartupResources,
+    preloads,
   };
 }
 
@@ -230,6 +233,47 @@ test("fixed planned work advances on completion, ignores background work, and wa
   tracker.api.completeCode("links");
   tracker.flush();
   assert.equal(tracker.snapshot().progress.percentage, 83);
+  assert.equal(tracker.snapshot().progress.ready, false);
+  tracker.api.setStep("page");
+  tracker.flush();
+  assert.equal(tracker.snapshot().progress.percentage, 100);
+  assert.equal(tracker.snapshot().progress.ready, true);
+});
+
+test("the first public route preloads only its required modules while the shell downloads", () => {
+  const plans = {
+    shell: ["/assets/main.js"],
+    pages: {
+      landing: { resources: ["/assets/main.js", "/assets/landing.js", "/assets/landing.css"], steps: ["shell", "code", "page"] },
+      links: { resources: ["/assets/main.js", "/assets/links.js"], steps: ["shell", "code", "page"] },
+      app: { resources: ["/assets/main.js", "/assets/app.js"], steps: ["shell", "code", "page"] },
+    },
+  };
+  const landing = browserHarness([], { plans, pathname: "/" });
+  assert.deepEqual(landing.preloads.map((link) => link.href), ["/assets/landing.js"]);
+  assert.equal(landing.preloads[0].rel, "modulepreload");
+  assert.equal(landing.preloads[0].crossOrigin, "");
+  const links = browserHarness([], { plans });
+  assert.deepEqual(links.preloads.map((link) => link.href), ["/assets/links.js"]);
+  const authenticated = browserHarness([], { plans, pathname: "/", authenticated: true });
+  assert.equal(authenticated.preloads.length, 0);
+  const development = browserHarness([], { plans, fetchPlan: async () => ({ ok: false }) });
+  assert.equal(development.preloads.length, 0);
+});
+
+test("the lazy landing page stays incomplete until its route code and stylesheet finish", () => {
+  const plans = {
+    shell: ["/assets/main.js"],
+    pages: { landing: { resources: ["/assets/main.js", "/assets/landing.js", "/assets/landing.css"], steps: ["shell", "code", "page"] } },
+  };
+  const tracker = browserHarness([], { plans, pathname: "/" });
+  tracker.api.completeShell();
+  tracker.flush();
+  assert.equal(tracker.snapshot().progress.percentage, 33);
+  assert.equal(tracker.snapshot().progress.ready, false);
+  tracker.deliver([resource("/assets/landing.js"), resource("/assets/landing.css")]);
+  tracker.api.completeCode("landing");
+  tracker.flush();
   assert.equal(tracker.snapshot().progress.ready, false);
   tracker.api.setStep("page");
   tracker.flush();
