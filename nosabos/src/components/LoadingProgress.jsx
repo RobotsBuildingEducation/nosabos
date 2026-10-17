@@ -13,7 +13,7 @@ const STAGES = {
 };
 
 // Completion of the route's declared downloads and preparation, not elapsed time.
-export default function LoadingProgress({ stage = "code", pageLabel = "Piyali", targetLanguageLabel }) {
+export default function LoadingProgress({ stage = "code", targetLanguageLabel }) {
   const stageLabel = STAGES[stage] || STAGES.code;
   const label = stage === "path" && targetLanguageLabel ? `Preparing your ${targetLanguageLabel} lessons…` : stageLabel;
   const [takingLonger, setTakingLonger] = useState(false);
@@ -43,7 +43,7 @@ export default function LoadingProgress({ stage = "code", pageLabel = "Piyali", 
     <div className="startup-loading">
       <div className="startup-loading__card" aria-busy="true">
         <p className="startup-loading__brand">PIYALI</p>
-        <h1 className="startup-loading__title">Opening {pageLabel}</h1>
+        <h1 className="startup-loading__title">Opening Piyali</h1>
         <p className="startup-loading__status" role="status">{status}</p>
         <div
           className="startup-loading__progress"

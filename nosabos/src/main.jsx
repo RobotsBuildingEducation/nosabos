@@ -14,7 +14,7 @@ import "@fontsource/dm-sans/400.css";
 import "@fontsource/dm-sans/700.css";
 import "./useThemeStore";
 import { ChakraProvider } from "@chakra-ui/react";
-import { BrowserRouter as Router, Route, Routes, Outlet, useLocation } from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes, Outlet } from "react-router-dom";
 import { theme } from "./theme";
 import LoadingProgress from "./components/LoadingProgress.jsx";
 import BootReadyBoundary from "./components/BootReadyBoundary.jsx";
@@ -56,17 +56,6 @@ const hasStoredKey = () => {
   const secret = localStorage.getItem("local_nsec");
   return Boolean(secret && secret.trim());
 };
-
-function RouteFallback() {
-  const { pathname } = useLocation();
-  const pageLabel = {
-    "/links": "your links",
-    "/legacy-links": "your links",
-    "/proficiency": "your proficiency test",
-    "/citizenship": "the citizenship guide",
-  }[pathname] || "Piyali";
-  return <LoadingProgress pageLabel={pageLabel} />;
-}
 
 function AppContainer() {
   const [isAuthenticated, setIsAuthenticated] = useState(hasStoredKey);
@@ -132,7 +121,7 @@ function ProficiencyContainer() {
   }
 
   return (
-    <Suspense fallback={<RouteFallback />}>
+    <Suspense fallback={<LoadingProgress />}>
       <BootReadyBoundary pageKey="proficiency">
         <ProficiencyTest />
       </BootReadyBoundary>
@@ -150,7 +139,7 @@ Promise.resolve(window.__piyaliStartupResources?.whenStylesReady()).then(() => {
       <div className="app-shell">
         <Router>
           <AppLoadBoundary>
-            <Suspense fallback={<RouteFallback />}>
+            <Suspense fallback={<LoadingProgress />}>
               <Routes>
                 <Route element={<AppContainer />}>
                   <Route path="/" element={null} />
