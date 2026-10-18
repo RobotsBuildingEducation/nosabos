@@ -1,3 +1,5 @@
+import { preparePublicPageCopy } from "./features/publicCopy/startup";
+import { loadFirebaseBackend } from "./firebaseResources/loadBackend.js";
 import {
   Suspense,
   lazy,
@@ -34,7 +36,9 @@ if (typeof window !== "undefined") {
 function lazyPage(key, load) {
   return lazy(() => {
     window.__piyaliStartupResources?.beginPage(key);
-    return load().then((module) => {
+    // Only the public landing/links pages postpone backend startup.
+    const preparation = ["landing", "links"].includes(key) ? preparePublicPageCopy(key) : loadFirebaseBackend();
+    return Promise.all([load(), preparation]).then(([module]) => {
       window.__piyaliStartupResources?.completeCode(key);
       return module;
     });

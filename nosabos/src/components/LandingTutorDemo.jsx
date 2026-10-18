@@ -7,7 +7,7 @@ import { getPracticeLanguageOptions, LANGUAGE_LOCALES } from "../constants/langu
 import { useTutorVoiceLevel } from "../hooks/useTutorVoiceLevel";
 import { LANDING_TUTOR_SAMPLES, LandingTutorDemoSession } from "../utils/landingTutorDemo";
 import { getDefaultLandingPracticeLanguage } from "../utils/languageDetection";
-import { landingTutorDemoCopy } from "./landingTutorDemoCopy";
+import { readPublicPageCopy } from "../features/publicCopy/index.js";
 
 const INITIAL_STATE = { status: "idle", tutorText: "", learnerText: "", error: "" };
 const ACTIVE_STATES = new Set(["connecting", "thinking", "speaking", "listening"]);
@@ -23,7 +23,7 @@ export default function LandingTutorDemo({ copy, lang, visible = true }) {
   const tutorAnalyserRef = useRef(null);
   const tutorFloatBufRef = useRef(null);
   const languageLabelId = useId();
-  const words = landingTutorDemoCopy[lang] || landingTutorDemoCopy.en;
+  const words = readPublicPageCopy("landing", lang).tutor;
   const active = visible && ACTIVE_STATES.has(session.status);
   const languages = getPracticeLanguageOptions({ ui: copy, uiLang: lang });
   const selectedLanguage = languages.find((language) => language.value === targetLanguage);
@@ -133,7 +133,7 @@ export default function LandingTutorDemo({ copy, lang, visible = true }) {
         {showSample ? sample[0] : session.tutorText || words.emptyTutor}
       </div>
       <div className="lp-speak-orb">
-        <VoiceOrb size={116} sharedRenderer maxDpr={1} variant={active ? "tutor" : "display"}
+        <VoiceOrb defer3D size={116} sharedRenderer maxDpr={1} variant={active ? "tutor" : "display"}
           state={orbState} callActive={active} audioLevelRef={audioLevelRef} />
       </div>
       <div className="lp-demo-voice" aria-hidden="true">

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useThemeStore } from "../useThemeStore";
-import VoiceOrb3D from "./VoiceOrb3D.jsx";
+import DeferredVoiceOrb3D from "./DeferredVoiceOrb3D.jsx";
 import { randomDisplayOrb, randomTutorFeedback, REACTION_DURATION, REACTION_SETTLE_DURATION, TUTOR_DEFAULT_MOODS } from "./orbing/orbModel.js";
 import "./voiceOrbNext.css";
 
@@ -15,7 +15,7 @@ function MiniOrb({ state, palette, mood, reaction }) {
 }
 
 /** Display orbs choose their own personality; tutor orbs follow the live voice state. */
-export default function VoiceOrbNext({ state = "idle", theme, palette, size = 75, centered = true, variant = "display", excludeThinking = false, callActive = true, feedback = null, force3D = false, showShadow = true, audioLevelRef, sharedRenderer, maxDpr }) {
+export default function VoiceOrbNext({ state = "idle", theme, palette, size = 75, centered = true, variant = "display", excludeThinking = false, callActive = true, feedback = null, force3D = false, showShadow = true, audioLevelRef, sharedRenderer, maxDpr, defer3D = false }) {
   const themeMode = useThemeStore((store) => store.themeMode);
   const dark = (theme || themeMode) !== "light";
   const resolvedPalette = palette || (dark ? "blue" : "mint");
@@ -75,7 +75,8 @@ export default function VoiceOrbNext({ state = "idle", theme, palette, size = 75
       } : undefined}
     >
       {useMini ? <MiniOrb state={voiceState} palette={resolvedPalette} mood={mood} reaction={currentReaction} /> : (
-        <VoiceOrb3D
+        <DeferredVoiceOrb3D
+          deferUntilPageReady={defer3D}
           state={voiceState}
           audioLevelRef={audioLevelRef}
           mood={mood}

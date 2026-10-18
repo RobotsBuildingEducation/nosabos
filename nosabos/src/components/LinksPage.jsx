@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState, useMemo } from "react";
+import { loadPublicPageCopy, readPublicPageCopy } from "../features/publicCopy/index.js";
+import React, { lazy, Suspense, useEffect, useRef, useState, useMemo } from "react";
 import {
   Accordion,
   AccordionButton as ChakraAccordionButton,
@@ -47,16 +48,11 @@ import MangaLinksExperience from "./MangaLinksExperience";
 import PrivacyPolicyFooter from "./PrivacyPolicy";
 
 import CitizenshipIcon from "./CitizenshipIcon/CitizenshipIcon";
-import { useDecentralizedIdentity } from "../hooks/useDecentralizedIdentity";
-import { NDKKind } from "@nostr-dev-kit/ndk";
-import { Buffer } from "buffer";
-import { bech32 } from "bech32";
+import { usePublicIdentity } from "../features/publicStartup/usePublicIdentity.jsx";
+import { usePublicWallet } from "../features/publicStartup/usePublicWallet.js";
+import { afterPublicPaint } from "../features/publicStartup/afterPublicPaint.js";
+import { recordPublicEvent, updatePublicUser } from "../features/publicStartup/firebase.js";
 import RandomCharacter from "./RandomCharacter";
-import { logEvent } from "firebase/analytics";
-import { doc, updateDoc } from "firebase/firestore";
-import { analytics, database } from "../firebaseResources/firebaseResources";
-import useNostrWalletStore from "../hooks/useNostrWalletStore";
-import { IdentityCard } from "./IdentityCard";
 import useLanguage from "../hooks/useLanguage";
 import {
   getLanguageDirection,
@@ -64,7 +60,6 @@ import {
 } from "../constants/languages";
 import { syncDocumentLanguage } from "../utils/documentLanguage";
 
-import { linksPageTranslations } from "../translations/linksPage";
 import { useThemeStore } from "../useThemeStore";
 import { APP_BUTTON_RADIUS, APP_SQUIRCLE_SHAPE } from "../theme";
 import {
@@ -72,6 +67,8 @@ import {
   nativeOverlayMotionProps,
 } from "../utils/modalMotion";
 import { getThemeModeToggleProps } from "../utils/themeModeToggleStyle";
+
+const IdentityCard = lazy(() => import("./IdentityCard").then((module) => ({ default: module.IdentityCard })));
 
 // Helper to check if running on localhost
 const isLocalhost = () =>
@@ -211,215 +208,6 @@ const VOICE_ORB_STATES = ["idle", "listening", "speaking"];
 
 const pickRandomVoiceOrbState = () =>
   VOICE_ORB_STATES[Math.floor(Math.random() * VOICE_ORB_STATES.length)];
-
-const HERO_COPY = {
-  en: {
-    eyebrow: "SHEILFER'S LITTLE UNIVERSE",
-    titleLead: "Create scholarships",
-    titleAccent: "with learning.",
-    body: "Learning here does more than build skills. With decentralized identity and opt-in features, the steps you take to make progress can send a little to someone you choose—turning everyday learning into scholarships.",
-    focusAreas: [
-      "LANGUAGE TUTOR",
-      "CODING\nTUTOR",
-      "DUAL CITIZENSHIP PLANNER",
-      "INVESTING & BUSINESS",
-    ],
-    chapterVerbs: ["LEARN", "BUILD", "PLAN", "INVEST"],
-    productLabel: "PRODUCT",
-    scholarshipSlogan: "CREATE\nSCHOLARSHIPS\nWITH LEARNING.",
-    explore: "Explore the universe",
-    workLabel: "Selected creations",
-    workTitle: "Choose your next story.",
-    workBody:
-      "Four playful tools, each with its own color, character, and energy.",
-  },
-  es: {
-    eyebrow: "EL PEQUEÑO UNIVERSO DE SHEILFER",
-    titleLead: "Crea becas",
-    titleAccent: "aprendiendo.",
-    body: "Aprender aquí va más allá de desarrollar habilidades. Con identidad descentralizada y funciones opcionales, cada paso que das puede destinar una pequeña aportación a quien tú elijas y convertir el aprendizaje cotidiano en becas.",
-    focusAreas: [
-      "TUTOR DE IDIOMAS",
-      "TUTOR DE\nPROGRAMACIÓN",
-      "PLANIFICADOR DE\nDOBLE CIUDADANÍA",
-      "INVERSIÓN Y\nNEGOCIOS",
-    ],
-    chapterVerbs: ["APRENDE", "CONSTRUYE", "PLANEA", "INVIERTE"],
-    productLabel: "PRODUCTO",
-    scholarshipSlogan: "CREA BECAS\nAPRENDIENDO.",
-    explore: "Explorar el universo",
-    workLabel: "Creaciones seleccionadas",
-    workTitle: "Cuatro ideas. Cuatro mundos.",
-    workBody:
-      "Cada proyecto nace de un problema real y se convierte en su propia experiencia divertida.",
-  },
-  pt: {
-    eyebrow: "O PEQUENO UNIVERSO DE SHEILFER",
-    titleLead: "Crie bolsas de estudo",
-    titleAccent: "aprendendo.",
-    body: "Aprender aqui vai além de desenvolver habilidades. Com identidade descentralizada e recursos opcionais, cada passo do seu progresso pode destinar uma pequena contribuição a quem você escolher, transformando o aprendizado do dia a dia em bolsas de estudo.",
-    focusAreas: [
-      "TUTOR DE IDIOMAS",
-      "TUTOR DE\nPROGRAMAÇÃO",
-      "PLANEJADOR DE\nDUPLA CIDADANIA",
-      "INVESTIMENTOS E\nNEGÓCIOS",
-    ],
-    chapterVerbs: ["APRENDA", "CONSTRUA", "PLANEJE", "INVISTA"],
-    productLabel: "PRODUTO",
-    scholarshipSlogan: "CRIE BOLSAS\nAO APRENDER.",
-    explore: "Explorar o universo",
-    workLabel: "Criações selecionadas",
-    workTitle: "Quatro ideias. Quatro mundos.",
-    workBody:
-      "Cada projeto começa com um problema real e cresce como uma experiência única e divertida.",
-  },
-  it: {
-    eyebrow: "IL PICCOLO UNIVERSO DI SHEILFER",
-    titleLead: "Crea borse di studio",
-    titleAccent: "imparando.",
-    body: "Qui imparare significa molto più che acquisire competenze. Con un’identità decentralizzata e funzioni facoltative, ogni passo avanti può destinare un piccolo contributo a una persona scelta da te, trasformando l’apprendimento quotidiano in borse di studio.",
-    focusAreas: [
-      "TUTOR DI LINGUE",
-      "TUTOR DI\nPROGRAMMAZIONE",
-      "PLANNER PER LA\nDOPPIA CITTADINANZA",
-      "INVESTIMENTI E\nBUSINESS",
-    ],
-    chapterVerbs: ["IMPARA", "COSTRUISCI", "PIANIFICA", "INVESTI"],
-    productLabel: "PRODOTTO",
-    scholarshipSlogan: "CREA BORSE\nIMPARANDO.",
-    explore: "Esplora l'universo",
-    workLabel: "Creazioni selezionate",
-    workTitle: "Quattro idee. Quattro mondi.",
-    workBody:
-      "Ogni progetto nasce da un problema reale e cresce in un'esperienza tutta sua.",
-  },
-  fr: {
-    eyebrow: "LE PETIT UNIVERS DE SHEILFER",
-    titleLead: "Crée des bourses",
-    titleAccent: "en apprenant.",
-    body: "Ici, apprendre va au-delà de l’acquisition de compétences. Grâce à une identité décentralisée et à des fonctionnalités facultatives, chaque progrès peut verser une petite contribution à la personne de ton choix, transformant ainsi l’apprentissage quotidien en bourses d’études.",
-    focusAreas: [
-      "TUTEUR DE LANGUES",
-      "TUTEUR DE\nPROGRAMMATION",
-      "PLANIFICATEUR DE\nDOUBLE NATIONALITÉ",
-      "INVESTISSEMENT ET\nAFFAIRES",
-    ],
-    chapterVerbs: ["APPRENDS", "CONSTRUIS", "PLANIFIE", "INVESTIS"],
-    productLabel: "PRODUIT",
-    scholarshipSlogan: "CRÉE DES BOURSES\nEN APPRENANT.",
-    explore: "Explorer l'univers",
-    workLabel: "Créations choisies",
-    workTitle: "Quatre idées. Quatre mondes.",
-    workBody:
-      "Chaque projet part d'un vrai problème et devient une expérience ludique à part entière.",
-  },
-  de: {
-    eyebrow: "SHEILFERS KLEINES UNIVERSUM",
-    titleLead: "Mit Lernen",
-    titleAccent: "Stipendien schaffen.",
-    body: "Hier geht Lernen über den Aufbau von Fähigkeiten hinaus. Mit dezentraler Identität und optionalen Funktionen kann jeder Lernfortschritt einen kleinen Beitrag an eine Person deiner Wahl senden und so alltägliches Lernen in Stipendien verwandeln.",
-    focusAreas: [
-      "SPRACHTUTOR",
-      "PROGRAMMIER-\nTUTOR",
-      "PLANER FÜR DOPPELTE\nSTAATSBÜRGERSCHAFT",
-      "INVESTIEREN &\nBUSINESS",
-    ],
-    chapterVerbs: ["LERNEN", "BAUEN", "PLANEN", "INVESTIEREN"],
-    productLabel: "PRODUKT",
-    scholarshipSlogan: "MIT LERNEN\nSTIPENDIEN SCHAFFEN.",
-    explore: "Universum entdecken",
-    workLabel: "Ausgewählte Kreationen",
-    workTitle: "Vier Ideen. Vier Welten.",
-    workBody:
-      "Jedes Projekt beginnt mit einem echten Problem und wächst zu einem eigenen Erlebnis.",
-  },
-  ja: {
-    eyebrow: "SHEILFERの小さな宇宙",
-    titleLead: "学びで",
-    titleAccent: "奨学金をつくる。",
-    body: "ここでの学びは、スキルを身につけるだけではありません。分散型IDと任意で使える機能を通じて、一歩前進するたびに、あなたが選んだ相手へ少額を届けられます。日々の学びが奨学金につながります。",
-    focusAreas: [
-      "語学チューター",
-      "プログラミング\nチューター",
-      "二重国籍\nプランナー",
-      "投資とビジネス",
-    ],
-    chapterVerbs: ["学ぶ", "作る", "計画する", "投資する"],
-    productLabel: "プロダクト",
-    scholarshipSlogan: "学びで\n奨学金を\nつくる。",
-    explore: "宇宙を探索する",
-    workLabel: "選ばれた作品",
-    workTitle: "4つのアイデア。4つの世界。",
-    workBody:
-      "それぞれのプロジェクトは現実の課題から始まり、独自の楽しい体験へと育ちます。",
-  },
-  hi: {
-    eyebrow: "शेल्फ़र का छोटा ब्रह्मांड",
-    titleLead: "सीखते हुए",
-    titleAccent: "छात्रवृत्तियाँ बनाएँ।",
-    body: "यहाँ सीखना सिर्फ़ कौशल विकसित करने तक सीमित नहीं है। विकेंद्रीकृत पहचान और वैकल्पिक सुविधाओं की मदद से, आपकी प्रगति का हर कदम आपके चुने हुए व्यक्ति तक छोटी-सी राशि पहुँचा सकता है—यानी रोज़मर्रा की सीख छात्रवृत्तियों में बदल सकती है।",
-    focusAreas: [
-      "भाषा शिक्षक",
-      "कोडिंग शिक्षक",
-      "दोहरी नागरिकता\nयोजनाकार",
-      "निवेश और व्यवसाय",
-    ],
-    chapterVerbs: ["सीखें", "बनाएँ", "योजना बनाएँ", "निवेश करें"],
-    productLabel: "उत्पाद",
-    scholarshipSlogan: "सीखते हुए\nछात्रवृत्तियाँ\nबनाएँ।",
-    explore: "ब्रह्मांड देखें",
-    workLabel: "चुनिंदा रचनाएँ",
-    workTitle: "चार विचार। चार संसार।",
-    workBody:
-      "हर परियोजना एक वास्तविक समस्या से शुरू होकर अपने अनोखे अनुभव में बदलती है।",
-  },
-  ar: {
-    eyebrow: "عالم شيلفر الصغير",
-    titleLead: "اعمل منح دراسية",
-    titleAccent: "بالتعلّم.",
-    body: "التعلّم هنا مش بس لبناء المهارات. بالهوية اللامركزية والميزات الاختيارية، كل خطوة بتتقدمها ممكن تبعت مساهمة صغيرة لشخص إنت تختاره—وبكده يتحول التعلّم اليومي لمنح دراسية.",
-    focusAreas: [
-      "مدرّس لغات",
-      "مدرّس برمجة",
-      "مخطط الجنسية\nالمزدوجة",
-      "الاستثمار والأعمال",
-    ],
-    chapterVerbs: ["تعلّم", "ابنِ", "خطّط", "استثمر"],
-    productLabel: "المنتج",
-    scholarshipSlogan: "اعمل منح\nدراسية بالتعلّم.",
-    explore: "استكشف العالم",
-    workLabel: "إبداعات مختارة",
-    workTitle: "أربع أفكار. أربعة عوالم.",
-    workBody: "يبدأ كل مشروع بمشكلة حقيقية وينمو ليصبح تجربة مرحة خاصة به.",
-  },
-  zh: {
-    eyebrow: "SHEILFER的小宇宙",
-    titleLead: "边学边",
-    titleAccent: "创造奖学金。",
-    body: "在这里，学习不只是掌握技能。借助去中心化身份和自愿开启的功能，你每前进一步，都可以向自己选择的人送出一笔小额支持，让日常学习转化为奖学金。",
-    focusAreas: ["语言导师", "编程导师", "双重国籍规划", "投资与商业"],
-    chapterVerbs: ["学习", "构建", "规划", "投资"],
-    productLabel: "产品",
-    scholarshipSlogan: "边学边\n创造奖学金。",
-    explore: "探索这个宇宙",
-    workLabel: "精选作品",
-    workTitle: "四个想法。四个世界。",
-    workBody: "每个项目都从真实问题出发，成长为独具个性的有趣体验。",
-  },
-};
-
-const PROFILE_HERO_COPY = {
-  en: { editProfile: "Edit profile", friend: "friend!" },
-  es: { editProfile: "Editar perfil", friend: "¡amigo!" },
-  pt: { editProfile: "Editar perfil", friend: "amigo!" },
-  it: { editProfile: "Modifica profilo", friend: "amico!" },
-  fr: { editProfile: "Modifier le profil", friend: "mon ami !" },
-  de: { editProfile: "Profil bearbeiten", friend: "Freund!" },
-  ja: { editProfile: "プロフィールを編集", friend: "友だち！" },
-  hi: { editProfile: "प्रोफ़ाइल बदलें", friend: "दोस्त!" },
-  ar: { editProfile: "تعديل الملف", friend: "يا صديقي!" },
-  zh: { editProfile: "编辑个人资料", friend: "朋友！" },
-};
 
 const APP_PAGE_BG = "var(--app-page-bg)";
 const APP_SURFACE = "var(--app-surface)";
@@ -3915,19 +3703,27 @@ function ProjectShowcase({
 }
 
 export default function LinksPage() {
-  const { generateNostrKeys, auth, postNostrContent, connectToNostr } =
-    useDecentralizedIdentity();
+  const { generateNostrKeys, auth, postNostrContent, connectToNostr, identityRuntime } =
+    usePublicIdentity();
   const themeMode = useThemeStore((s) => s.themeMode);
   const syncThemeMode = useThemeStore((s) => s.syncThemeMode);
   const isLightTheme = themeMode === "light";
 
   // Language state
-  const { language, initLanguage, setLanguage, t } = useLanguage();
-  const translations = t(linksPageTranslations);
-  const activeLanguage = language || "en";
-  const heroCopy = HERO_COPY[activeLanguage] || HERO_COPY.en;
-  const profileHeroCopy =
-    PROFILE_HERO_COPY[activeLanguage] || PROFILE_HERO_COPY.en;
+  const { language, initLanguage, setLanguage: commitLanguage } = useLanguage();
+  const activeLanguage = language || initLanguage();
+  const { copy: translations, hero: heroCopy, profileHero: profileHeroCopy } = readPublicPageCopy("links", activeLanguage);
+  const languageRequest = useRef(0);
+  const setLanguage = async (nextLanguage) => {
+    const request = ++languageRequest.current;
+    try {
+      await loadPublicPageCopy("links", nextLanguage);
+      if (request === languageRequest.current) commitLanguage(nextLanguage);
+    } catch {
+      if (request === languageRequest.current) toast({ title: "Couldn’t load that language. Please try again.", status: "error" });
+    }
+  };
+  useEffect(() => () => { languageRequest.current += 1; }, []);
   const pageDirection = getLanguageDirection(activeLanguage);
   const isRtl = pageDirection === "rtl";
   const directionalTextAlign = isRtl ? "right" : "left";
@@ -3951,14 +3747,8 @@ export default function LinksPage() {
   const [nsecForWallet, setNsecForWallet] = useState("");
 
   // Wallet store selectors
-  const cashuWallet = useNostrWalletStore((s) => s.cashuWallet);
-  const walletBalance = useNostrWalletStore((s) => s.walletBalance);
-  const createNewWallet = useNostrWalletStore((s) => s.createNewWallet);
-  const initiateDeposit = useNostrWalletStore((s) => s.initiateDeposit);
-  const invoice = useNostrWalletStore((s) => s.invoice);
-  const isCreatingWallet = useNostrWalletStore((s) => s.isCreatingWallet);
-  const walletInit = useNostrWalletStore((s) => s.init);
-  const initWallet = useNostrWalletStore((s) => s.initWallet);
+  const { cashuWallet, walletBalance, createNewWallet, initiateDeposit, invoice,
+    isCreatingWallet, init: walletInit, initWallet } = usePublicWallet();
 
   const { isOpen, onOpen, onClose } = useDisclosure();
   const {
@@ -4041,8 +3831,6 @@ export default function LinksPage() {
     [isLightTheme, modalBg, modalBorderColor],
   );
 
-  const hasTriggeredKeygen = useRef(false);
-
   // Detect if user is logged in via NIP-07 extension
   const isNip07Mode =
     typeof window !== "undefined" &&
@@ -4054,11 +3842,13 @@ export default function LinksPage() {
     return Number.isFinite(numeric) ? numeric : 0;
   }, [walletBalance]);
 
-  // Hydrate wallet on mount
+  // Prepare identity and then hydrate the wallet after the public page paints.
   useEffect(() => {
     let alive = true;
-    (async () => {
+    const cancel = afterPublicPaint(() => { void (async () => {
       try {
+        await generateNostrKeys("");
+        if (!alive) return;
         const connected = await walletInit();
         if (connected) {
           const wallet = await initWallet();
@@ -4071,11 +3861,12 @@ export default function LinksPage() {
       } finally {
         if (alive) setWalletHydrating(false);
       }
-    })();
+    })(); });
     return () => {
       alive = false;
+      cancel();
     };
-  }, [walletInit, initWallet]);
+  }, [generateNostrKeys, walletInit, initWallet]);
 
   // Initialize language based on timezone detection
   useEffect(() => {
@@ -4217,7 +4008,7 @@ export default function LinksPage() {
           alignItems="center"
           justifyContent="center"
         >
-          <VoiceOrb state={noSabosOrbState} excludeThinking sharedRenderer />
+          <VoiceOrb defer3D state={noSabosOrbState} excludeThinking sharedRenderer />
         </Box>
       ),
       launchAppText: translations.launchApp,
@@ -4244,7 +4035,7 @@ export default function LinksPage() {
           w={{ base: "110px", md: "120px" }}
           h={{ base: "110px", md: "120px" }}
         >
-          <VoiceOrb state="idle" size={108} palette="peach" excludeThinking sharedRenderer />
+          <VoiceOrb defer3D state="idle" size={108} palette="peach" excludeThinking sharedRenderer />
         </Box>
       ),
       launchAppText: translations.launchApp,
@@ -4375,7 +4166,7 @@ export default function LinksPage() {
         // Also persist to user document in Firestore
         const storedNpub = localStorage.getItem("local_npub");
         if (storedNpub) {
-          await updateDoc(doc(database, "users", storedNpub), {
+          await updatePublicUser(storedNpub, {
             displayName: usernameInput.trim(),
           });
         }
@@ -4414,6 +4205,12 @@ export default function LinksPage() {
 
   // Handle copy secret key
   const handleCopySecretKey = async ({ showSuccessToast = true } = {}) => {
+    try {
+      if (!localStorage.getItem("local_nsec")) await generateNostrKeys("");
+    } catch {
+      toast({ title: translations.error, description: translations.failedCopy, status: "error", isClosable: true });
+      return false;
+    }
     const nsec = localStorage.getItem("local_nsec");
     if (!nsec || nsec === "nip07") {
       toast({
@@ -4460,15 +4257,8 @@ export default function LinksPage() {
 
       const { ndkInstance } = connection;
 
-      // Convert npub to hex
-      const { words: npubWords } = bech32.decode(npubToFetch);
-      const hexNpub = Buffer.from(bech32.fromWords(npubWords)).toString("hex");
-
-      const filter = {
-        kinds: [NDKKind.Metadata],
-        authors: [hexNpub],
-        limit: 1,
-      };
+      const { profileFilter } = await import("../features/publicStartup/nostrProfile.js");
+      const filter = profileFilter(npubToFetch);
 
       const subscription = ndkInstance.subscribe(filter, { closeOnEose: true });
 
@@ -4564,41 +4354,6 @@ export default function LinksPage() {
     }
   };
 
-  // Background Nostr key generation (no UI)
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const hasStoredKeys =
-      Boolean(localStorage.getItem("local_nsec")) &&
-      Boolean(localStorage.getItem("local_npub"));
-
-    if (hasStoredKeys) {
-      return;
-    }
-
-    if (hasTriggeredKeygen.current) {
-      return;
-    }
-
-    hasTriggeredKeygen.current = true;
-    let isMounted = true;
-    const createInstantKeys = async () => {
-      try {
-        const defaultDisplayName = "";
-        await generateNostrKeys(defaultDisplayName);
-        if (!isMounted) return;
-        localStorage.setItem("displayName", defaultDisplayName);
-      } catch (error) {
-        console.error("Failed to generate instant Nostr keys:", error);
-      }
-    };
-
-    createInstantKeys();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [generateNostrKeys]);
-
   return (
     <Box
       dir={pageDirection}
@@ -4619,6 +4374,7 @@ export default function LinksPage() {
         "--links-accent-pink": isLightTheme ? "#17171a" : "#f5f0e8",
       }}
     >
+      {identityRuntime}
       <MangaLinksExperience
         heroCopy={heroCopy}
         translations={translations}
@@ -4643,7 +4399,7 @@ export default function LinksPage() {
         onSocialClick={(platform, url) => {
           handleSelectSound();
           if (!isLocalhost()) {
-            logEvent(analytics, "links_social_click", { platform });
+            recordPublicEvent("links_social_click", { platform });
           }
           window.open(url, "_blank", "noopener,noreferrer");
         }}
@@ -4664,8 +4420,13 @@ export default function LinksPage() {
         }
         onLaunchSound={handleSubmitActionSound}
         onLaunchEvent={(link) => {
+          if (link.analyticsName === "nosabos_app") {
+            // A new tab can pause this tab's paint callbacks. Start identity
+            // preparation now; the app also observes saved-key storage events.
+            void generateNostrKeys("").catch((error) => console.warn("Could not prepare account", error));
+          }
           if (!isLocalhost() && !link.onLaunch) {
-            logEvent(analytics, "links_launch_app", {
+            recordPublicEvent("links_launch_app", {
               app: link.analyticsName,
             });
           }
@@ -4803,7 +4564,7 @@ export default function LinksPage() {
                   onClick={() => {
                     handleSubmitActionSound();
                     if (!isLocalhost()) {
-                      logEvent(analytics, "links_launch_app", {
+                      recordPublicEvent("links_launch_app", {
                         app: "robots_building_education",
                       });
                     }
@@ -5029,7 +4790,7 @@ export default function LinksPage() {
                   if (isSaving) return;
                   handleSubmitActionSound();
                   if (!isLocalhost()) {
-                    logEvent(analytics, "links_save_profile");
+                    recordPublicEvent("links_save_profile");
                   }
                   handleSaveProfile();
                 }}
@@ -5324,6 +5085,7 @@ export default function LinksPage() {
                 {walletHydrating && !cashuWallet && (
                   <HStack py={2}>
                     <VoiceOrb
+                      defer3D
                       excludeThinking
                       state={
                         ["idle", "listening", "speaking"][
@@ -5462,22 +5224,24 @@ export default function LinksPage() {
                 {/* Wallet exists, balance > 0 → show card */}
                 {cashuWallet && totalBalance > 0 && (
                   <Box>
-                    <IdentityCard
-                      number={cashuWallet.walletId}
-                      name={
-                        <div>
-                          {translations.wallet}
+                    <Suspense fallback={<Text role="status">{translations.wallet}…</Text>}>
+                      <IdentityCard
+                        number={cashuWallet.walletId}
+                        name={
                           <div>
-                            {translations.balance}: {totalBalance || 0}{" "}
-                            {translations.sats}
+                            {translations.wallet}
+                            <div>
+                              {translations.balance}: {totalBalance || 0}{" "}
+                              {translations.sats}
+                            </div>
                           </div>
-                        </div>
-                      }
-                      theme="nostr"
-                      animateOnChange={false}
-                      realValue={cashuWallet.walletId}
-                      totalBalance={totalBalance || 0}
-                    />
+                        }
+                        theme="nostr"
+                        animateOnChange={false}
+                        realValue={cashuWallet.walletId}
+                        totalBalance={totalBalance || 0}
+                      />
+                    </Suspense>
                   </Box>
                 )}
 
@@ -5490,22 +5254,24 @@ export default function LinksPage() {
                         flexDirection="column"
                         alignItems="center"
                       >
-                        <IdentityCard
-                          number={cashuWallet.walletId}
-                          name={
-                            <div>
-                              {translations.wallet}
+                        <Suspense fallback={<Text role="status">{translations.wallet}…</Text>}>
+                          <IdentityCard
+                            number={cashuWallet.walletId}
+                            name={
                               <div>
-                                {translations.balance}: {totalBalance || 0}{" "}
-                                {translations.sats}
+                                {translations.wallet}
+                                <div>
+                                  {translations.balance}: {totalBalance || 0}{" "}
+                                  {translations.sats}
+                                </div>
                               </div>
-                            </div>
-                          }
-                          theme="BTC"
-                          animateOnChange={false}
-                          realValue={cashuWallet.walletId}
-                          totalBalance={totalBalance || 0}
-                        />
+                            }
+                            theme="BTC"
+                            animateOnChange={false}
+                            realValue={cashuWallet.walletId}
+                            totalBalance={totalBalance || 0}
+                          />
+                        </Suspense>
                         <Box
                           as="button"
                           type="button"

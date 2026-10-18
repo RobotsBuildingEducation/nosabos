@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { keyframes } from "@emotion/react";
 import { Box } from "@chakra-ui/react";
 import { normalizePetType } from "../utils/petTypes";
-import { drawCompanionCharacter, getHealthyCompanionStage } from "./PlatePetPanel";
+import { drawCompanionCharacter, getHealthyCompanionStage } from "./companionDrawing.js";
 
 // The reward pose animates paws, arms, feet, tail, antenna, and gills in the
 // pixel drawers. These small outer gestures add a different rhythm per pet.

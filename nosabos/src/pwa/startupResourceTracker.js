@@ -12,6 +12,7 @@
   const failedResources = new Set();
   const seenEntries = new Set();
   const activities = new Map();
+  const activitySlots = Array(5).fill(null);
   let activityOrder = 0;
   let recent = [];
   let count = 0;
@@ -69,11 +70,15 @@
   }
   function getProgress() {
     const plan = planFor(pageKey);
+    // A development graph arrives asynchronously. Do not show a percentage
+    // based on three provisional steps, then change its denominator mid-load.
+    const determinate = !developmentPlanURL || Boolean(loadingPlans?.pages[pageKey]);
     const total = plan.resources.length + plan.steps.length;
     const completed = plan.resources.filter((url) => successfulResources.has(resourceKey(url))).length
       + plan.steps.filter((step) => completedSteps.has(step)).length;
     const failed = plan.resources.some((url) => unavailableResources.has(resourceKey(url)));
-    return { completed, total, percentage: Math.floor(completed * 100 / total), ready: completed === total && !failed, failed };
+    return { completed, total, percentage: determinate ? Math.floor(completed * 100 / total) : null,
+      determinate, ready: determinate && completed === total && !failed, failed };
   }
   function beginPage(key) {
     if (key === pageKey) return;
@@ -147,14 +152,43 @@
     };
   }
 
+  function visibleActivities() {
+    // A completion changes its own row. New subjects reuse a finished row
+    // instead of sorting every visible download whenever a file finishes.
+    for (let slot = 0; slot < activitySlots.length; slot++) {
+      if (!activities.has(activitySlots[slot])) activitySlots[slot] = null;
+    }
+    const assigned = new Set();
+    const candidates = [...activities.values()]
+      .filter((activity) => !activitySlots.includes(activity.copy.key) && (!activity.presented || activity.pending.size || activity.failed.size))
+      .sort((a, b) => Number(b.pending.size > 0) - Number(a.pending.size > 0) || a.order - b.order);
+    for (const activity of candidates) {
+      let slot = activitySlots.indexOf(null);
+      if (slot < 0) {
+        slot = activitySlots.reduce((oldest, key, index) => {
+          const current = activities.get(key);
+          if (assigned.has(index) || current.pending.size || current.failed.size) return oldest;
+          return oldest < 0 || current.order < activities.get(activitySlots[oldest]).order ? index : oldest;
+        }, -1);
+      }
+      if (slot < 0) break;
+      activitySlots[slot] = activity.copy.key;
+      activity.presented = true;
+      assigned.add(slot);
+    }
+    return activitySlots.flatMap((key, slot) => {
+      const activity = activities.get(key);
+      if (!activity) return [];
+      const state = activity.failed.size ? "failed" : activity.pending.size ? "loading" : "ready";
+      return [{ key, slot, state, message: activity.copy[state] }];
+    });
+  }
+
   function flush() {
     flushTimer = undefined;
     snapshot = {
       rows: [...Array.from(pending.values()).slice(-2).reverse(), ...recent].slice(0, 5),
-      activities: [...activities.values()].sort((a, b) => Number(b.pending.size > 0) - Number(a.pending.size > 0) || b.order - a.order).slice(0, 5).map((activity) => {
-        const state = activity.failed.size ? "failed" : activity.pending.size ? "loading" : "ready";
-        return { key: activity.copy.key, state, message: activity.copy[state] };
-      }),
+      activities: visibleActivities(),
       count,
       size: bytes ? formatBytes(bytes) : "",
       progress: getProgress(),
@@ -164,10 +198,11 @@
       const fill = initialCard.querySelector(".startup-loading__fill");
       const percentage = initialCard.querySelector(".startup-loading__percentage");
       const retry = initialCard.querySelector(".startup-loading__retry");
-      bar?.setAttribute("aria-valuenow", String(snapshot.progress.percentage));
+      if (snapshot.progress.determinate) bar?.setAttribute("aria-valuenow", String(snapshot.progress.percentage));
+      else bar?.removeAttribute("aria-valuenow");
       bar?.setAttribute("data-ready", String(snapshot.progress.ready));
-      if (fill) fill.style.width = `${snapshot.progress.percentage}%`;
-      if (percentage) percentage.textContent = `${snapshot.progress.percentage}% ready`;
+      if (fill) fill.style.width = `${snapshot.progress.percentage ?? 0}%`;
+      if (percentage) percentage.textContent = snapshot.progress.determinate ? `${snapshot.progress.percentage}% ready` : "Preparing…";
       if (retry) retry.hidden = !snapshot.progress.failed;
       const log = initialCard.querySelector(".startup-loading__resources");
       if (log) {
@@ -175,11 +210,13 @@
           const item = document.createElement("li");
           item.className = "startup-loading__activity";
           item.dataset.state = activity.state;
+          item.style.gridRow = String(activity.slot + 1);
           const indicator = document.createElement("span");
           indicator.className = "startup-loading__activity-indicator";
           indicator.setAttribute("aria-hidden", "true");
           indicator.textContent = activity.state === "ready" ? "✓" : activity.state === "failed" ? "!" : "•";
           const message = document.createElement("span");
+          message.className = "startup-loading__activity-message";
           message.textContent = activity.message;
           item.append(indicator, message);
           return item;
@@ -358,4 +395,5 @@
   }
   beginPage(initialPage);
   start();
+  window.__piyaliStartupResources.flushNow();
 })();

@@ -21,7 +21,8 @@ export function classifyLoadingResource(name, type = "") {
   if (/translations|Static\.(?:jsx?|tsx?)$|languageDetection|documentLanguage/i.test(path)) return activity("translations", "page translations", "Preparing");
 
   const language = path.match(/\/(?:targetCurriculum|phonics)\/([a-z]{2,3})(?:\.coverage)?\.js$/i)?.[1]
-    || path.match(/\/assets\/([a-z]{2,3})(?:-[\w-]+)?\.js$/i)?.[1];
+    || path.match(/\/publicCopy\/(?:landing|links|companion)\/([a-z]{2,3})\.(?:js|jsx)$/i)?.[1]
+    || path.match(/\/assets\/([a-z]{2,3})\d*(?:-[\w-]+)?\.js$/i)?.[1];
   if (languages[language]) {
     const pronunciation = path.includes("/phonics/");
     return activity(`${pronunciation ? "pronunciation" : "content"}:${language}`, `${languages[language]} ${pronunciation ? "pronunciation practice" : "content"}`);

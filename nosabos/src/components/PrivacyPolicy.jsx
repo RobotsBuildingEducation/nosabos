@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { lazy, Suspense, useRef } from "react";
 import {
   Box,
   Button,
@@ -13,8 +13,7 @@ import {
   useColorMode,
   useDisclosure,
 } from "@chakra-ui/react";
-import ReactMarkdown from "react-markdown";
-import policy from "../../docs/privacy-policy-draft.md?raw";
+const PrivacyPolicyContent = lazy(() => import("./PrivacyPolicyContent.jsx"));
 
 const COPY = {
   en: { title: "Privacy policy", close: "Close" },
@@ -67,36 +66,11 @@ export function PrivacyPolicyModal({
         <ModalHeader pr={14} color={colors.text}>{copy.title}</ModalHeader>
         <ModalCloseButton aria-label={copy.close} color={colors.text} _hover={{ bg: colors.hover }} />
         <ModalBody px={{ base: 5, md: 8 }} color={colors.text}>
-          <Box
-            lang="en"
-            dir="ltr"
-            textAlign="left"
-            color={colors.text}
-            fontSize="md"
-            lineHeight="1.8"
-            overflowWrap="anywhere"
-            sx={{
-              "& h2": { fontSize: "lg", fontWeight: 700, mt: 7, mb: 3 },
-              "& p": { mb: 4 },
-              "& ul": { ps: 5, mb: 4 },
-              "& li": { mb: 2 },
-              "& strong": { fontWeight: 700 },
-              "& a": { color: colors.link, textDecoration: "underline" },
-            }}
-          >
-            <ReactMarkdown
-              components={{
-                h1: () => null,
-                a: ({ href, children }) => (
-                  <Link href={href} isExternal={!href?.startsWith("mailto:")}>
-                    {children}
-                  </Link>
-                ),
-              }}
-            >
-              {policy}
-            </ReactMarkdown>
-          </Box>
+          {isOpen && (
+            <Suspense fallback={<Box role="status" py={4}>Loading privacy policy…</Box>}>
+              <PrivacyPolicyContent colors={colors} />
+            </Suspense>
+          )}
         </ModalBody>
         <ModalFooter color={colors.text}>
           <Button

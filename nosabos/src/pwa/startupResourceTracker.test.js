@@ -121,6 +121,34 @@ test("development plans count downloads completed before metadata arrives, witho
   assert.equal(tracker.snapshot().progress.percentage, 100);
 });
 
+test("a late development graph never replaces a displayed provisional percentage", async () => {
+  let finishPlan;
+  const tracker = browserHarness([], { fetchPlan: () => new Promise((resolve) => { finishPlan = resolve; }) });
+  // Shell readiness used to display 33%, which could fall when the graph grew.
+  tracker.api.completeShell();
+  tracker.flush();
+  assert.equal(tracker.snapshot().progress.percentage, null);
+  assert.equal(tracker.snapshot().progress.determinate, false);
+  finishPlan({ ok: true, json: async () => ({
+    shell: ["/main.js"],
+    pages: { links: { resources: ["/main.js", ...Array.from({ length: 20 }, (_, i) => `/part-${i}.js`)], steps: ["shell", "code", "page"] } },
+  }) });
+  await new Promise((resolve) => setImmediate(resolve));
+  tracker.flush();
+  assert.equal(tracker.snapshot().progress.determinate, true);
+  assert.equal(tracker.snapshot().progress.percentage, 8);
+  tracker.api.completeCode("links");
+  tracker.api.setStep("page");
+  tracker.flush();
+  assert.equal(tracker.snapshot().progress.percentage, 100);
+});
+
+test("native and React loaders can read the same initialized snapshot immediately", () => {
+  const tracker = browserHarness();
+  assert.equal(tracker.snapshot().progress.percentage, 0);
+  assert.equal(tracker.snapshot().progress.determinate, true);
+});
+
 test("development resource keys ignore cache versions while keeping distinct semantic imports", () => {
   const plans = {
     shell: [],
@@ -187,8 +215,41 @@ test("character files become one product activity that stays loading until every
   assert.equal(tracker.snapshot().activities[0].message, "Character artwork ready");
 });
 
+test("download rows keep their slots when completions arrive out of order", () => {
+  const paths = ["/assets/es-abc.js", "/assets/fr-abc.js", "/assets/ja-abc.js", "/assets/VoiceOrb-abc.js", "/assets/1-abc.webp"];
+  const tracker = browserHarness(paths);
+  const slots = new Map(tracker.snapshot().activities.map(({ key, slot }) => [key, slot]));
+  tracker.deliver([resource(paths[2]), resource(paths[0])]);
+  tracker.flush();
+  assert.equal(tracker.snapshot().activities.length, 5);
+  for (const { key, slot } of tracker.snapshot().activities) assert.equal(slot, slots.get(key));
+  assert.equal(tracker.snapshot().activities.find(({ key }) => key === "content:ja").state, "ready");
+});
+
+test("a waiting download reuses a finished slot without moving active rows or cycling old rows back", () => {
+  const paths = ["/assets/es-abc.js", "/assets/fr-abc.js", "/assets/ja-abc.js", "/assets/de-abc.js", "/assets/pt-abc.js", "/assets/it-abc.js"];
+  const tracker = browserHarness(paths);
+  const before = tracker.snapshot().activities;
+  assert.equal(before.length, 5);
+  assert.ok(before.every(({ state }) => state === "loading"));
+  assert.ok(!before.some(({ key }) => key === "content:it"));
+  const freed = before.find(({ key }) => key === "content:ja").slot;
+  tracker.deliver([resource(paths[2])]);
+  tracker.flush();
+  const after = tracker.snapshot().activities;
+  assert.equal(after.find(({ key }) => key === "content:it").slot, freed);
+  for (const { key, slot } of before.filter(({ key }) => key !== "content:ja")) {
+    assert.equal(after.find((activity) => activity.key === key).slot, slot);
+  }
+  tracker.deliver([resource(paths[0])]);
+  tracker.flush();
+  assert.ok(!tracker.snapshot().activities.some(({ key }) => key === "content:ja"));
+  tracker.api.flushNow();
+  assert.ok(!tracker.snapshot().activities.some(({ key }) => key === "content:ja"));
+});
+
 test("product copy identifies language content in source and production paths and hides infrastructure", () => {
-  for (const path of ["/src/data/skillTree/targetCurriculum/fr.js", "/assets/fr-1abcDEF.js"]) {
+  for (const path of ["/src/data/skillTree/targetCurriculum/fr.js", "/assets/fr-1abcDEF.js", "/assets/fr2-1abcDEF.js", "/src/features/publicCopy/landing/fr.js", "/src/features/publicCopy/links/fr.jsx"]) {
     assert.equal(classifyLoadingResource(path).loading, "Downloading French content…");
   }
   assert.equal(classifyLoadingResource("/src/data/phonics/es.js").loading, "Downloading Spanish pronunciation practice…");

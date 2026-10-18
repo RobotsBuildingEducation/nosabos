@@ -12,7 +12,7 @@ export default function VoiceOrb3D({
   reducedMotion = false, followPointer = true, dark = false, onInteract, onReactionComplete,
   interactive = true, compact = false, showShadow = true, fallback = null,
   palettes, orbFlow, reactionDurations, reactionPose, resolveOrbMood, expressions, sharedRenderer = false,
-  maxDpr,
+  maxDpr, showFallback = true, onReady,
 }) {
   const hostRef = useRef(null);
   const sceneRef = useRef(null);
@@ -24,10 +24,10 @@ export default function VoiceOrb3D({
       state, mood, palette, colors, energy, voiceLevel, audioLevelRef, reaction, paused,
       reducedMotion, followPointer, dark, onInteract, onReactionComplete,
       interactive, compact, showShadow, palettes, orbFlow, reactionDurations,
-      reactionPose, resolveOrbMood, expressions, sharedRenderer, maxDpr,
+      reactionPose, resolveOrbMood, expressions, sharedRenderer, maxDpr, onReady,
     };
     sceneRef.current?.update(optionsRef.current);
-  }, [state, mood, palette, colors, energy, voiceLevel, audioLevelRef, reaction, paused, reducedMotion, followPointer, dark, onInteract, onReactionComplete, interactive, compact, showShadow, palettes, orbFlow, reactionDurations, reactionPose, resolveOrbMood, expressions, sharedRenderer, maxDpr]);
+  }, [state, mood, palette, colors, energy, voiceLevel, audioLevelRef, reaction, paused, reducedMotion, followPointer, dark, onInteract, onReactionComplete, interactive, compact, showShadow, palettes, orbFlow, reactionDurations, reactionPose, resolveOrbMood, expressions, sharedRenderer, maxDpr, onReady]);
 
   useEffect(() => {
     let scene;
@@ -35,6 +35,7 @@ export default function VoiceOrb3D({
       scene?.dispose();
       sceneRef.current = null;
       setUnavailable(true);
+      if (showFallback) optionsRef.current?.onReady?.();
     };
     try {
       scene = createOrbScene(hostRef.current, optionsRef.current, fail);
@@ -43,7 +44,7 @@ export default function VoiceOrb3D({
       fail();
     }
     return () => { sceneRef.current = null; scene?.dispose(); };
-  }, []);
+  }, [showFallback]);
 
   // With no renderer, keep the accessible reaction message temporary as well.
   useEffect(() => {
@@ -66,7 +67,7 @@ export default function VoiceOrb3D({
       }}
       onClick={unavailable && interactive ? () => onInteract?.("boop") : undefined}
     >
-      {unavailable && (fallback || <>
+      {unavailable && showFallback && (fallback || <>
         <span className="orb-fallback-character" data-palette={palette} data-mood={mood}><i /><i /></span>
         <span className="orb-fallback-notice">A little 2D hello. This browser couldn’t start 3D.</span>
       </>)}

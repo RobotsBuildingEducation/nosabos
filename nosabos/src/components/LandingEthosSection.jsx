@@ -1,5 +1,5 @@
 import { useThemeStore } from "../useThemeStore";
-import { getLandingEthosCopy } from "./landingEthosCopy";
+import { readPublicPageCopy } from "../features/publicCopy/index.js";
 
 const ARTWORK = [
   "human-guidance",
@@ -10,7 +10,7 @@ const ARTWORK = [
 export default function LandingEthosSection({ lang }) {
   const themeMode = useThemeStore((s) => s.themeMode);
   const artworkSuffix = themeMode === "dark" ? "-dark" : "";
-  const copy = getLandingEthosCopy(lang);
+  const copy = readPublicPageCopy("landing", lang).ethos;
   return (
     <section className="lp-section lp-ethos" aria-labelledby="lp-ethos-title">
       <div className="lp-ethos-heading">
