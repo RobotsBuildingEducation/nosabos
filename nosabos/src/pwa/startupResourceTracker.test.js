@@ -248,6 +248,15 @@ test("a waiting download reuses a finished slot without moving active rows or cy
   assert.ok(!tracker.snapshot().activities.some(({ key }) => key === "content:ja"));
 });
 
+test("refreshing labels without new downloads preserves the visible rows, including when older subjects were not shown", () => {
+  const tracker = browserHarness();
+  tracker.deliver(["es", "fr", "ja", "de", "pt", "it"].map((language) => resource(`/assets/${language}-abc.js`)));
+  tracker.flush();
+  const before = tracker.snapshot().activities.map(({ key, slot }) => ({ key, slot }));
+  tracker.api.flushNow();
+  assert.deepEqual(tracker.snapshot().activities.map(({ key, slot }) => ({ key, slot })), before);
+});
+
 test("product copy identifies language content in source and production paths and hides infrastructure", () => {
   for (const path of ["/src/data/skillTree/targetCurriculum/fr.js", "/assets/fr-1abcDEF.js", "/assets/fr2-1abcDEF.js", "/src/features/publicCopy/landing/fr.js", "/src/features/publicCopy/links/fr.jsx"]) {
     assert.equal(classifyLoadingResource(path).loading, "Downloading French content…");

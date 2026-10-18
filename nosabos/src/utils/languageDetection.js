@@ -1,176 +1,29 @@
 /**
- * Detects if the user is likely in a Spanish-speaking region based on their timezone
- * and browser language settings.
+ * Regional helpers used by the app and landing-page practice defaults.
+ * Startup language resolution is shared with the inline loading screen.
  */
-import {
-  DEFAULT_SUPPORT_LANGUAGE,
-  isSupportedSupportLanguage,
-  normalizeSupportLanguage,
-} from "../constants/languages";
+import { LANGUAGE_TIMEZONES, detectInitialLanguage } from "./initialLanguage.js";
 
 /**
  * List of timezones commonly associated with Spanish-speaking countries
  */
-const SPANISH_TIMEZONES = [
-  // Mexico
-  'America/Mexico_City',
-  'America/Cancun',
-  'America/Merida',
-  'America/Monterrey',
-  'America/Mazatlan',
-  'America/Chihuahua',
-  'America/Tijuana',
-  'America/Hermosillo',
-  'America/Matamoros',
-  'America/Ojinaga',
-  'America/Bahia_Banderas',
+const SPANISH_TIMEZONES = LANGUAGE_TIMEZONES.es;
 
-  // Spain
-  'Europe/Madrid',
-  'Atlantic/Canary',
+const ITALIAN_TIMEZONES = LANGUAGE_TIMEZONES.it;
 
-  // Argentina
-  'America/Argentina/Buenos_Aires',
-  'America/Argentina/Cordoba',
-  'America/Argentina/Salta',
-  'America/Argentina/Jujuy',
-  'America/Argentina/Tucuman',
-  'America/Argentina/Catamarca',
-  'America/Argentina/La_Rioja',
-  'America/Argentina/San_Juan',
-  'America/Argentina/Mendoza',
-  'America/Argentina/San_Luis',
-  'America/Argentina/Rio_Gallegos',
-  'America/Argentina/Ushuaia',
+const GERMAN_TIMEZONES = LANGUAGE_TIMEZONES.de;
 
-  // Chile
-  'America/Santiago',
-  'Pacific/Easter',
+const HINDI_TIMEZONES = LANGUAGE_TIMEZONES.hi;
 
-  // Colombia
-  'America/Bogota',
+const ARABIC_TIMEZONES = LANGUAGE_TIMEZONES.ar;
 
-  // Peru
-  'America/Lima',
+const CHINESE_TIMEZONES = LANGUAGE_TIMEZONES.zh;
 
-  // Venezuela
-  'America/Caracas',
+const FRENCH_TIMEZONES = LANGUAGE_TIMEZONES.fr;
 
-  // Ecuador
-  'America/Guayaquil',
-  'Pacific/Galapagos',
+const PORTUGUESE_TIMEZONES = LANGUAGE_TIMEZONES.pt;
 
-  // Bolivia
-  'America/La_Paz',
-
-  // Paraguay
-  'America/Asuncion',
-
-  // Uruguay
-  'America/Montevideo',
-
-  // Central America
-  'America/Guatemala',
-  'America/Tegucigalpa',
-  'America/El_Salvador',
-  'America/Managua',
-  'America/Costa_Rica',
-  'America/Panama',
-
-  // Caribbean
-  'America/Havana',
-  'America/Santo_Domingo',
-  'America/Puerto_Rico',
-];
-
-const ITALIAN_TIMEZONES = [
-  'Europe/Rome',
-  'Europe/Vatican',
-  'Europe/San_Marino',
-];
-
-const GERMAN_TIMEZONES = [
-  'Europe/Berlin',
-  'Europe/Vienna',
-  'Europe/Zurich',
-  'Europe/Vaduz',
-  'Europe/Luxembourg',
-];
-
-const HINDI_TIMEZONES = [
-  'Asia/Kolkata',
-  'Asia/Calcutta',
-];
-
-const ARABIC_TIMEZONES = [
-  'Africa/Cairo',
-];
-
-const CHINESE_TIMEZONES = [
-  'Asia/Shanghai',
-  'Asia/Urumqi',
-  'Asia/Hong_Kong',
-  'Asia/Macau',
-  'Asia/Taipei',
-  'Asia/Singapore',
-];
-
-const FRENCH_TIMEZONES = [
-  'Europe/Paris',
-  'Europe/Monaco',
-  'America/Martinique',
-  'America/Guadeloupe',
-  'America/Cayenne',
-  'America/Miquelon',
-  'Indian/Reunion',
-  'Indian/Mayotte',
-  'Pacific/Noumea',
-  'Pacific/Tahiti',
-  'Pacific/Marquesas',
-  'Pacific/Wallis',
-  'Africa/Abidjan',
-  'Africa/Algiers',
-  'Africa/Bamako',
-  'Africa/Bangui',
-  'Africa/Brazzaville',
-  'Africa/Dakar',
-  'Africa/Douala',
-  'Africa/Kinshasa',
-  'Africa/Libreville',
-  'Africa/Lome',
-  'Africa/Ndjamena',
-  'Africa/Niamey',
-  'Africa/Porto-Novo',
-  'Africa/Tunis',
-];
-
-const PORTUGUESE_TIMEZONES = [
-  'Europe/Lisbon',
-  'Atlantic/Madeira',
-  'Atlantic/Azores',
-  'America/Sao_Paulo',
-  'America/Rio_Branco',
-  'America/Manaus',
-  'America/Belem',
-  'America/Fortaleza',
-  'America/Recife',
-  'America/Bahia',
-  'America/Maceio',
-  'America/Araguaina',
-  'America/Cuiaba',
-  'America/Campo_Grande',
-  'America/Porto_Velho',
-  'Africa/Maputo',
-  'Africa/Luanda',
-  'Atlantic/Cape_Verde',
-  'Africa/Bissau',
-  'Africa/Sao_Tome',
-  'Asia/Dili',
-];
-
-const JAPANESE_TIMEZONES = [
-  'Asia/Tokyo',
-];
+const JAPANESE_TIMEZONES = LANGUAGE_TIMEZONES.ja;
 
 /**
  * Spanish language codes (ISO 639-1)
@@ -413,92 +266,9 @@ export function isJapaneseBrowserLanguage() {
 }
 
 /**
- * Determines if the user should default to Spanish based on timezone and/or browser language
- * @returns {"es" | "en"} The detected language code
+ * Resolve the saved interface language, then timezone and browser defaults.
+ * @returns {string} A supported interface-language code.
  */
 export function detectUserLanguage() {
-  // Check if language has already been set by the user
-  if (typeof window !== 'undefined') {
-    const stored = localStorage.getItem('appLanguage');
-    if (isSupportedSupportLanguage(stored)) {
-      return normalizeSupportLanguage(stored);
-    }
-  }
-
-  // First check timezone (more reliable for regional detection)
-  if (isArabicTimezone()) {
-    return 'ar';
-  }
-
-  if (isChineseTimezone()) {
-    return 'zh';
-  }
-
-  if (isItalianTimezone()) {
-    return 'it';
-  }
-
-  if (isGermanTimezone()) {
-    return 'de';
-  }
-
-  if (isHindiTimezone()) {
-    return 'hi';
-  }
-
-  if (isFrenchTimezone()) {
-    return 'fr';
-  }
-
-  if (isPortugueseTimezone()) {
-    return 'pt';
-  }
-
-  if (isJapaneseTimezone()) {
-    return 'ja';
-  }
-
-  if (isSpanishTimezone()) {
-    return 'es';
-  }
-
-  // Fallback to browser language detection
-  if (isArabicBrowserLanguage()) {
-    return 'ar';
-  }
-
-  if (isChineseBrowserLanguage()) {
-    return 'zh';
-  }
-
-  if (isItalianBrowserLanguage()) {
-    return 'it';
-  }
-
-  if (isGermanBrowserLanguage()) {
-    return 'de';
-  }
-
-  if (isHindiBrowserLanguage()) {
-    return 'hi';
-  }
-
-  if (isFrenchBrowserLanguage()) {
-    return 'fr';
-  }
-
-  if (isPortugueseBrowserLanguage()) {
-    return 'pt';
-  }
-
-  if (isJapaneseBrowserLanguage()) {
-    return 'ja';
-  }
-
-  if (isSpanishBrowserLanguage()) {
-    return 'es';
-  }
-
-  // Default to English
-  return DEFAULT_SUPPORT_LANGUAGE;
+  return detectInitialLanguage();
 }

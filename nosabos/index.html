@@ -14,6 +14,7 @@
       document.documentElement.style.colorScheme = mode;
     })();
   </script>
+  <!-- startup-localization -->
   <!-- Inline so the loader can paint before the application CSS/JS arrives. -->
   <style>
     /* First-paint fallbacks match the app palette in src/index.css. */
@@ -47,10 +48,10 @@
       color: var(--app-text-primary, var(--startup-text-primary));
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       line-height: 1.5;
-      direction: ltr;
-      text-align: left;
+      text-align: start;
     }
     .startup-loading__card { position: relative; width: min(100%, 340px); }
+    .startup-loading__card[data-startup-initial]:not([data-localized]) { visibility: hidden; }
     .startup-loading__brand {
       margin: 0 0 20px;
       font-size: 12px;
@@ -59,12 +60,12 @@
       letter-spacing: 0.22em;
       color: var(--app-text-muted, var(--startup-text-muted));
     }
-    .startup-loading__title { margin: 0 0 12px; font-size: 26px; font-weight: 600; line-height: 1.25; }
-    .startup-loading__status { margin: 0 0 20px; height: 45px; font-size: 15px; line-height: 22.5px; }
+    .startup-loading__title { margin: 0 0 12px; height: 65px; font-size: 26px; font-weight: 600; line-height: 1.25; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+    .startup-loading__status { margin: 0 0 20px; height: 45px; font-size: 15px; line-height: 22.5px; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
     /* Match WaveBar without waiting for React or its animation library. */
     .startup-loading__track { position: relative; box-sizing: border-box; height: 15px; overflow: hidden; border: 1px solid var(--app-border, var(--startup-wave-border)); border-radius: 9999px; background: var(--startup-wave-track); }
     /* Keep the measured fill painted independently of the decorative SVG. */
-    .startup-loading__fill { position: absolute; top: 0; left: 0; bottom: 0; display: block; width: 0; background: linear-gradient(90deg, rgb(67 233 123 / 90%), rgb(56 249 215 / 90%)); transition: width 180ms ease; }
+    .startup-loading__fill { position: absolute; top: 0; inset-inline-start: 0; bottom: 0; display: block; width: 0; background: linear-gradient(90deg, rgb(67 233 123 / 90%), rgb(56 249 215 / 90%)); transition: width 180ms ease; }
     .startup-loading__fill svg { display: block; width: 100%; height: 100%; }
     .startup-loading__wave { animation: startup-loading-wave 10s ease-in-out infinite; }
     @keyframes startup-loading-wave {
@@ -90,6 +91,7 @@
       .startup-loading__wave { animation: none; }
     }
   </style>
+  <noscript><style>.startup-loading__card[data-startup-initial] { visibility: visible !important; }</style></noscript>
   <link rel="icon" type="image/png" sizes="64x64" href="/favicon.png" />
 
   <meta name="description" content="Piyali |Your Personal Language Tutor.">
@@ -150,6 +152,7 @@
       </div>
     </div>
   </div>
+  <script>window.__piyaliStartupLocalization?.applyToInitialCard();</script>
   <script type="module" src="/src/main.jsx"></script>
   <!-- startup-resource-tracker -->
 </body>

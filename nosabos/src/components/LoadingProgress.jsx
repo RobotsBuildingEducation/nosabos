@@ -1,20 +1,12 @@
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useLayoutEffect, useState, useSyncExternalStore } from "react";
+import englishCopy from "../pwa/loadingCopy/en.js";
 
 const EMPTY_RESOURCES = { activities: [], progress: { percentage: 0 } };
 const getEmptyResources = () => EMPTY_RESOURCES;
 const subscribeEmptyResources = () => () => {};
 
-const STAGES = {
-  code: "Preparing your learning space…",
-  profile: "Restoring your saved progress…",
-  access: "Checking your membership…",
-  path: "Preparing your lessons…",
-};
-
 // Completion of the route's declared downloads and preparation, not elapsed time.
-export default function LoadingProgress({ stage = "code", targetLanguageLabel }) {
-  const stageLabel = STAGES[stage] || STAGES.code;
-  const label = stage === "path" && targetLanguageLabel ? `Preparing your ${targetLanguageLabel} lessons…` : stageLabel;
+export default function LoadingProgress({ stage = "code", language, targetLanguage, targetLanguageLabel }) {
   const [takingLonger, setTakingLonger] = useState(false);
   const [online, setOnline] = useState(() => navigator.onLine);
   const tracker = window.__piyaliStartupResources;
@@ -25,7 +17,15 @@ export default function LoadingProgress({ stage = "code", targetLanguageLabel })
   );
   const percentage = resources.progress?.percentage || 0;
   const determinate = resources.progress?.determinate !== false;
-  const status = determinate && percentage === 100 ? "Your learning space is ready." : label;
+  const copy = resources.locale?.copy || englishCopy;
+  const label = tracker?.localization?.stage(stage, targetLanguage, targetLanguageLabel) || copy[stage] || copy.code;
+  const status = determinate && percentage === 100 ? copy.ready : label;
+  const percentageLabel = determinate ? resources.progress?.label || `${percentage}% ready` : copy.preparing;
+  const uiLanguage = resources.locale?.language || "en";
+
+  useLayoutEffect(() => {
+    if (language) tracker?.setLanguage(language);
+  }, [language, tracker]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setTakingLonger(true), 12000);
@@ -40,20 +40,20 @@ export default function LoadingProgress({ stage = "code", targetLanguageLabel })
   }, []);
 
   return (
-    <div className="startup-loading">
+    <div className="startup-loading" lang={uiLanguage} dir={uiLanguage === "ar" ? "rtl" : "ltr"}>
       <div className="startup-loading__card" aria-busy="true">
         <p className="startup-loading__brand">PIYALI</p>
-        <h1 className="startup-loading__title">Opening Piyali</h1>
+        <h1 className="startup-loading__title">{copy.title}</h1>
         <p className="startup-loading__status" role="status">{status}</p>
         <div
           className="startup-loading__track"
           data-ready={determinate && percentage === 100}
           role="progressbar"
-          aria-label="Getting your learning space ready"
+          aria-label={copy.progressLabel}
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={determinate ? percentage : undefined}
-          aria-valuetext={determinate ? `${percentage}% ready. ${status}` : status}
+          aria-valuetext={determinate ? `${percentageLabel}. ${status}` : status}
         >
           {/* Match the HTML loader exactly; never animate a new fill from zero. */}
           <span className="startup-loading__fill" style={{ width: `${percentage}%` }}>
@@ -64,8 +64,8 @@ export default function LoadingProgress({ stage = "code", targetLanguageLabel })
             </svg>
           </span>
         </div>
-        <p className="startup-loading__percentage">{determinate ? `${percentage}% ready` : "Preparing…"}</p>
-        <ol className="startup-loading__resources" aria-label="Preparing your experience" aria-live="off">
+        <p className="startup-loading__percentage">{percentageLabel}</p>
+        <ol className="startup-loading__resources" aria-label={copy.resourcesLabel} aria-live="off">
           {resources.activities.map((activity) => (
             <li className="startup-loading__activity" data-state={activity.state} key={activity.key} style={{ gridRow: activity.slot + 1 }}>
               <span className="startup-loading__activity-indicator" aria-hidden="true">
@@ -77,12 +77,12 @@ export default function LoadingProgress({ stage = "code", targetLanguageLabel })
         </ol>
         <div className="startup-loading__feedback">
           <p className="startup-loading__detail">
-            {!online ? "You’re offline. Reconnect to continue loading."
-              : resources.progress?.failed ? "Something couldn’t finish loading. Please try again."
-              : takingLonger ? "This is taking a little longer. Please keep this page open." : null}
+            {!online ? copy.offline
+              : resources.progress?.failed ? copy.failed
+              : takingLonger ? copy.takingLonger : null}
           </p>
           <button className="startup-loading__retry" type="button" hidden={!resources.progress?.failed} onClick={() => window.location.reload()}>
-            Try again
+            {copy.retry}
           </button>
         </div>
       </div>

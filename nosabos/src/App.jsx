@@ -412,6 +412,7 @@ import {
 } from "./constants/languages";
 
 import { syncDocumentLanguage } from "./utils/documentLanguage";
+import { detectInitialLanguage } from "./utils/initialLanguage.js";
 import { getGermanCopy } from "./utils/germanCopy";
 import {
   clearAccountSwitch,
@@ -3111,12 +3112,7 @@ export default function App({ onBootReady } = {}) {
   const [isSavingPasscode, setIsSavingPasscode] = useState(false);
 
   const storedUiLang = useMemo(() => {
-    if (typeof window === "undefined") return "";
-    try {
-      return localStorage.getItem("appLanguage") || "";
-    } catch {
-      return "";
-    }
+    return detectInitialLanguage();
   }, []);
 
   const normalizeSupportLang = useCallback((raw) => {
@@ -3363,9 +3359,7 @@ export default function App({ onBootReady } = {}) {
 
   // UI language for the *app UI*
   const [appLanguage, setAppLanguage] = useState(() => {
-    if (typeof window === "undefined") return DEFAULT_SUPPORT_LANGUAGE;
-    const stored = localStorage.getItem("appLanguage");
-    return normalizeSupportLanguage(stored, DEFAULT_SUPPORT_LANGUAGE);
+    return detectInitialLanguage();
   });
   // Guards stale Firestore snapshots from reverting an in-flight language change.
   usePiyaliAchievements(user, resolvedTargetLang, activeNpub, appLanguage);
@@ -10571,7 +10565,7 @@ export default function App({ onBootReady } = {}) {
   ]);
 
   if (isBootLoading) {
-    return <LoadingProgress stage={bootLoadingStage} targetLanguageLabel={getLanguageLabel(resolvedTargetLang)} />;
+    return <LoadingProgress stage={bootLoadingStage} language={appLanguage} targetLanguage={resolvedTargetLang} targetLanguageLabel={getLanguageLabel(resolvedTargetLang)} />;
   }
 
   const onboardingInitialDraft = {

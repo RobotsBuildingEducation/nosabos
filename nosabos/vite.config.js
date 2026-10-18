@@ -9,6 +9,9 @@ import { classifyLoadingResource } from "./src/pwa/loadingActivityCopy.js";
 import { buildLoadingProgressPlans } from "./src/pwa/loadingProgressPlan.js";
 import { buildDevLoadingProgressPlan } from "./src/pwa/devLoadingProgressPlan.js";
 import { deferStartupStyles } from "./src/pwa/startupStyles.js";
+import { INITIAL_LANGUAGE_CONFIG, resolveInitialLanguage } from "./src/utils/initialLanguage.js";
+import { LOADING_COPY } from "./src/pwa/loadingCopy/index.js";
+import { createLoadingLocalization } from "./src/pwa/loadingLocalization.js";
 
 function startupResourceTrackerPlugin() {
   let base = "/";
@@ -44,7 +47,13 @@ function startupResourceTrackerPlugin() {
           .replace("/* loading-activity-classifier */ (() => null)", `(${classifyLoadingResource.toString()})`)
           .replace("/* loading-progress-plan */ null", JSON.stringify(plans))
           .replace("/* loading-development-plan-url */ null", JSON.stringify(context.server ? `${base}__piyali-loading-plan` : null));
-        return deferStartupStyles(html).replace("<!-- startup-resource-tracker -->", `<script>${source}</script>`);
+        const localeConfig = JSON.stringify({ initial: INITIAL_LANGUAGE_CONFIG, copy: LOADING_COPY,
+          languageNames: { en: "English", es: "Spanish", pt: "Portuguese", it: "Italian", fr: "French", de: "German", ja: "Japanese", hi: "Hindi", ar: "Arabic", zh: "Chinese", nl: "Dutch", ru: "Russian", el: "Greek", pl: "Polish", ga: "Irish", nah: "Nahuatl", yua: "Yucatec Maya" },
+        }).replaceAll("<", "\\u003c");
+        const localization = `window.__piyaliStartupLocalization = (${createLoadingLocalization.toString()})(${localeConfig}, (${resolveInitialLanguage.toString()}), window);document.documentElement.lang=window.__piyaliStartupLocalization.language;document.documentElement.dir=window.__piyaliStartupLocalization.language==="ar"?"rtl":"ltr";`;
+        return deferStartupStyles(html)
+          .replace("<!-- startup-localization -->", `<script>${localization}</script>`)
+          .replace("<!-- startup-resource-tracker -->", `<script>${source}</script>`);
       },
     },
   };

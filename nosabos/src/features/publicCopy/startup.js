@@ -1,6 +1,5 @@
 import useLanguage from "../../hooks/useLanguage";
 import { detectUserLanguage } from "../../utils/languageDetection";
-import { normalizeSupportLanguage } from "../../constants/languages";
 import { loadPublicPageCopy } from "./index.js";
 
 export function preparePublicPageCopy(page) {
@@ -8,7 +7,7 @@ export function preparePublicPageCopy(page) {
   if (page === "links") {
     language = useLanguage.getState().initLanguage();
   } else {
-    language = normalizeSupportLanguage(localStorage.getItem("appLanguage") || detectUserLanguage());
+    language = detectUserLanguage();
     localStorage.setItem("appLanguage", language);
   }
   return loadPublicPageCopy(page, language);

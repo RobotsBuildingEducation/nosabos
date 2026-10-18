@@ -2,6 +2,7 @@
 // Observe browser activity without wrapping fetch or re-downloading app assets.
 (() => {
   const classifyResource = /* loading-activity-classifier */ (() => null);
+  const localization = window.__piyaliStartupLocalization;
   let loadingPlans = /* loading-progress-plan */ null;
   const developmentPlanURL = /* loading-development-plan-url */ null;
   const requestedPlans = new Set();
@@ -14,6 +15,7 @@
   const activities = new Map();
   const activitySlots = Array(5).fill(null);
   let activityOrder = 0;
+  let presentedActivityOrder = -1;
   let recent = [];
   let count = 0;
   let bytes = 0;
@@ -155,57 +157,77 @@
   function visibleActivities() {
     // A completion changes its own row. New subjects reuse a finished row
     // instead of sorting every visible download whenever a file finishes.
-    for (let slot = 0; slot < activitySlots.length; slot++) {
-      if (!activities.has(activitySlots[slot])) activitySlots[slot] = null;
-    }
-    const assigned = new Set();
-    const candidates = [...activities.values()]
-      .filter((activity) => !activitySlots.includes(activity.copy.key) && (!activity.presented || activity.pending.size || activity.failed.size))
-      .sort((a, b) => Number(b.pending.size > 0) - Number(a.pending.size > 0) || a.order - b.order);
-    for (const activity of candidates) {
-      let slot = activitySlots.indexOf(null);
-      if (slot < 0) {
-        slot = activitySlots.reduce((oldest, key, index) => {
-          const current = activities.get(key);
-          if (assigned.has(index) || current.pending.size || current.failed.size) return oldest;
-          return oldest < 0 || current.order < activities.get(activitySlots[oldest]).order ? index : oldest;
-        }, -1);
+    if (presentedActivityOrder !== activityOrder) {
+      presentedActivityOrder = activityOrder;
+      for (let slot = 0; slot < activitySlots.length; slot++) {
+        if (!activities.has(activitySlots[slot])) activitySlots[slot] = null;
       }
-      if (slot < 0) break;
-      activitySlots[slot] = activity.copy.key;
-      activity.presented = true;
-      assigned.add(slot);
+      const assigned = new Set();
+      const candidates = [...activities.values()]
+        .filter((activity) => !activitySlots.includes(activity.copy.key) && (!activity.presented || activity.pending.size || activity.failed.size))
+        .sort((a, b) => Number(b.pending.size > 0) - Number(a.pending.size > 0) || a.order - b.order);
+      for (const activity of candidates) {
+        let slot = activitySlots.indexOf(null);
+        if (slot < 0) {
+          slot = activitySlots.reduce((oldest, key, index) => {
+            const current = activities.get(key);
+            if (assigned.has(index) || current.pending.size || current.failed.size) return oldest;
+            return oldest < 0 || current.order < activities.get(activitySlots[oldest]).order ? index : oldest;
+          }, -1);
+        }
+        if (slot < 0) break;
+        activitySlots[slot] = activity.copy.key;
+        activity.presented = true;
+        assigned.add(slot);
+      }
     }
     return activitySlots.flatMap((key, slot) => {
       const activity = activities.get(key);
       if (!activity) return [];
       const state = activity.failed.size ? "failed" : activity.pending.size ? "loading" : "ready";
-      return [{ key, slot, state, message: activity.copy[state] }];
+      return [{ key, slot, state, message: localization?.activity(activity.copy, state) || activity.copy[state] }];
     });
   }
 
   function flush() {
     flushTimer = undefined;
+    const copy = localization?.getCopy();
     snapshot = {
       rows: [...Array.from(pending.values()).slice(-2).reverse(), ...recent].slice(0, 5),
       activities: visibleActivities(),
       count,
       size: bytes ? formatBytes(bytes) : "",
       progress: getProgress(),
+      locale: localization ? { language: localization.language, copy } : undefined,
     };
+    if (localization && snapshot.progress.determinate) snapshot.progress.label = localization.percentage(snapshot.progress.percentage);
     if (initialCard?.isConnected) {
       const bar = initialCard.querySelector('[role="progressbar"]');
       const fill = initialCard.querySelector(".startup-loading__fill");
       const percentage = initialCard.querySelector(".startup-loading__percentage");
       const retry = initialCard.querySelector(".startup-loading__retry");
+      const status = snapshot.progress.ready ? copy?.ready : copy?.code;
+      if (copy) {
+        const container = initialCard.closest(".startup-loading");
+        container.lang = localization.language;
+        container.dir = localization.language === "ar" ? "rtl" : "ltr";
+        initialCard.querySelector(".startup-loading__title").textContent = copy.title;
+        initialCard.querySelector(".startup-loading__status").textContent = status;
+        bar?.setAttribute("aria-label", copy.progressLabel);
+        bar?.setAttribute("aria-valuetext", snapshot.progress.determinate ? `${snapshot.progress.label}. ${status}` : status);
+        if (retry) retry.textContent = copy.retry;
+        const detail = initialCard.querySelector(".startup-loading__detail");
+        if (detail) detail.textContent = window.navigator?.onLine === false ? copy.offline : snapshot.progress.failed ? copy.failed : "";
+      }
       if (snapshot.progress.determinate) bar?.setAttribute("aria-valuenow", String(snapshot.progress.percentage));
       else bar?.removeAttribute("aria-valuenow");
       bar?.setAttribute("data-ready", String(snapshot.progress.ready));
       if (fill) fill.style.width = `${snapshot.progress.percentage ?? 0}%`;
-      if (percentage) percentage.textContent = snapshot.progress.determinate ? `${snapshot.progress.percentage}% ready` : "Preparing…";
+      if (percentage) percentage.textContent = snapshot.progress.determinate ? snapshot.progress.label || `${snapshot.progress.percentage}% ready` : copy?.preparing || "Preparing…";
       if (retry) retry.hidden = !snapshot.progress.failed;
       const log = initialCard.querySelector(".startup-loading__resources");
       if (log) {
+        if (copy) log.setAttribute("aria-label", copy.resourcesLabel);
         const items = snapshot.activities.map((activity) => {
           const item = document.createElement("li");
           item.className = "startup-loading__activity";
@@ -306,6 +328,10 @@
     scheduleFlush();
   }
 
+  function onLanguageStorage(event) {
+    if (event.key === "appLanguage" || event.key === null) window.__piyaliStartupResources.setLanguage(event.newValue || undefined);
+  }
+
   function start() {
     if (observing) return;
     observing = true;
@@ -327,6 +353,9 @@
     const root = document.getElementById("root");
     if (root) mutationObserver.observe(root, { childList: true });
     window.addEventListener("error", onError, true);
+    window.addEventListener("storage", onLanguageStorage);
+    window.addEventListener("online", scheduleFlush);
+    window.addEventListener("offline", scheduleFlush);
     scheduleFlush();
   }
 
@@ -334,12 +363,21 @@
     resourceObserver?.disconnect();
     mutationObserver?.disconnect();
     window.removeEventListener("error", onError, true);
+    window.removeEventListener("storage", onLanguageStorage);
+    window.removeEventListener("online", scheduleFlush);
+    window.removeEventListener("offline", scheduleFlush);
     window.clearTimeout(flushTimer);
     flushTimer = undefined;
     observing = false;
   }
 
   window.__piyaliStartupResources = {
+    localization,
+    setLanguage(language) {
+      if (!localization?.setLanguage(language)) return;
+      window.clearTimeout(flushTimer);
+      flush();
+    },
     getSnapshot: () => snapshot,
     whenStylesReady() {
       return Promise.all([...document.querySelectorAll("link[data-startup-stylesheet]")].map((link) => {

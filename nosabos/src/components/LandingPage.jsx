@@ -57,7 +57,6 @@ import {
 } from "../theme";
 import {
   getSupportLanguageOptions,
-  normalizeSupportLanguage,
 } from "../constants/languages";
 
 import { syncDocumentLanguage } from "../utils/documentLanguage";
@@ -965,10 +964,6 @@ const LandingPage = ({ onAuthenticated }) => {
     // Respect a language already chosen elsewhere (e.g. on /links or a previous
     // visit) before falling back to detection. Overwriting it here clobbered
     // that choice, so onboarding defaulted back to English.
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("appLanguage");
-      if (stored) return normalizeSupportLanguage(stored);
-    }
     const detected = detectUserLanguage();
     // Persist the detected language so App.jsx / onboarding pick it up.
     if (typeof window !== "undefined") {

@@ -11,6 +11,7 @@ export function classifyLoadingResource(name, type = "") {
   };
   const activity = (key, subject, verb = "Downloading") => ({
     key,
+    preparing: verb === "Preparing",
     loading: `${verb} ${subject}…`,
     ready: `${subject[0].toUpperCase()}${subject.slice(1)} ready`,
     failed: `We couldn’t load ${subject} yet.`,
