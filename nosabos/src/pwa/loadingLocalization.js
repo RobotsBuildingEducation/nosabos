@@ -23,7 +23,7 @@ export function createLoadingLocalization(config, resolveLanguage, browser) {
     percentFormat = undefined;
     return true;
   };
-  const getCopy = () => config.copy[language] || config.copy.en;
+  const getCopy = (selected = language) => config.copy[resolveLanguage(config.initial, { storedLanguage: selected })] || config.copy.en;
   const languageName = (code, fallback = code) => {
     try {
       displayNames ||= new Intl.DisplayNames([language], { type: "language" });
@@ -58,6 +58,8 @@ export function createLoadingLocalization(config, resolveLanguage, browser) {
     return message[0].toLocaleUpperCase(language) + message.slice(1);
   };
   const applyToInitialCard = () => {
+    const ellipsisLabel = browser.document?.querySelector("[data-startup-ellipsis] .loading-ellipsis__label");
+    if (ellipsisLabel) ellipsisLabel.textContent = getCopy().preparing;
     const card = browser.document?.querySelector("[data-startup-initial]");
     if (!card) return;
     const copy = getCopy();

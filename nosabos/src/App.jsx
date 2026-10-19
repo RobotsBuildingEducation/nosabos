@@ -167,7 +167,7 @@ import useSoundSettings, {
 
 import GrammarBook from "./components/GrammarBook";
 import Onboarding from "./components/Onboarding";
-import LoadingProgress from "./components/LoadingProgress.jsx";
+import LoadingEllipsis from "./components/LoadingEllipsis.jsx";
 import { getBootLoadingStage } from "./utils/bootLoadingStage.js";
 import RealTimeTest from "./components/RealTimeTest";
 import BottomDrawerDragHandle from "./components/BottomDrawerDragHandle";
@@ -10565,7 +10565,7 @@ export default function App({ onBootReady } = {}) {
   ]);
 
   if (isBootLoading) {
-    return <LoadingProgress stage={bootLoadingStage} language={appLanguage} targetLanguage={resolvedTargetLang} targetLanguageLabel={getLanguageLabel(resolvedTargetLang)} />;
+    return <LoadingEllipsis language={appLanguage} />;
   }
 
   const onboardingInitialDraft = {

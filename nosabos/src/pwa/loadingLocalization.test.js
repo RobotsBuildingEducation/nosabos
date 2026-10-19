@@ -73,3 +73,9 @@ test("English resource copy retains the existing product wording", () => {
     for (const state of ["loading", "ready", "failed"]) assert.equal(api.activity(descriptor, state), descriptor[state]);
   }
 });
+
+test("internal loading labels can use saved account language without changing global startup state", () => {
+  const api = createLoadingLocalization(config, resolveInitialLanguage, browser("es"));
+  assert.equal(api.getCopy("ja").preparing, "準備中…");
+  assert.equal(api.language, "es");
+});

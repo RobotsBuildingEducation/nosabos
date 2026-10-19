@@ -29,6 +29,7 @@
   const readyCode = new Set();
   let shellReady = false;
   let pageKey;
+  let initialLoadingComplete = false;
   let completedSteps = new Set();
 
   const resourceKey = (name) => {
@@ -372,6 +373,9 @@
   }
 
   window.__piyaliStartupResources = {
+    initialPathname: location.pathname,
+    get initialLoadingComplete() { return initialLoadingComplete; },
+    completeInitialLoading() { initialLoadingComplete = true; },
     localization,
     setLanguage(language) {
       if (!localization?.setLanguage(language)) return;

@@ -8,6 +8,7 @@ export default function BootReadyBoundary({ children, pageKey, ready = true }) {
     tracker?.completeCode(pageKey);
     tracker?.setStep("page");
     tracker?.flushNow();
+    tracker?.completeInitialLoading?.();
   }, [pageKey, ready]);
 
   // Suspense and the app's own readiness checks decide when content can render.

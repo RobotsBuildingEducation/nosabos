@@ -149,6 +149,17 @@ test("native and React loaders can read the same initialized snapshot immediatel
   assert.equal(tracker.snapshot().progress.determinate, true);
 });
 
+test("initial loading completion remains remembered when route progress restarts", () => {
+  const tracker = browserHarness();
+  assert.equal(tracker.api.initialPathname, "/links");
+  assert.equal(tracker.api.initialLoadingComplete, false);
+  tracker.api.completeInitialLoading();
+  tracker.api.beginPage("app");
+  tracker.flush();
+  assert.equal(tracker.api.initialLoadingComplete, true);
+  assert.equal(tracker.snapshot().progress.ready, false);
+});
+
 test("development resource keys ignore cache versions while keeping distinct semantic imports", () => {
   const plans = {
     shell: [],

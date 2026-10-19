@@ -18,7 +18,8 @@ import "./useThemeStore";
 import { ChakraProvider } from "@chakra-ui/react";
 import { BrowserRouter as Router, Route, Routes, Outlet } from "react-router-dom";
 import { theme } from "./theme";
-import LoadingProgress from "./components/LoadingProgress.jsx";
+import LoadingEllipsis from "./components/LoadingEllipsis.jsx";
+import RouteLoadingFallback from "./components/RouteLoadingFallback.jsx";
 import BootReadyBoundary from "./components/BootReadyBoundary.jsx";
 import AppLoadBoundary from "./components/AppLoadBoundary.jsx";
 import { initAppUpdateCoordinator } from "./pwa/appUpdateCoordinator";
@@ -89,7 +90,7 @@ function AppContainer() {
   return (
     <AppLoadBoundary>
       <BootReadyBoundary pageKey="app" ready={appReady}>
-        <Suspense fallback={<LoadingProgress />}>
+        <Suspense fallback={<LoadingEllipsis />}>
           <App onBootReady={setAppReady} />
         </Suspense>
         <Outlet />
@@ -125,7 +126,7 @@ function ProficiencyContainer() {
   }
 
   return (
-    <Suspense fallback={<LoadingProgress />}>
+    <Suspense fallback={<LoadingEllipsis />}>
       <BootReadyBoundary pageKey="proficiency">
         <ProficiencyTest />
       </BootReadyBoundary>
@@ -143,7 +144,7 @@ Promise.resolve(window.__piyaliStartupResources?.whenStylesReady()).then(() => {
       <div className="app-shell">
         <Router>
           <AppLoadBoundary>
-            <Suspense fallback={<LoadingProgress />}>
+            <Suspense fallback={<RouteLoadingFallback />}>
               <Routes>
                 <Route element={<AppContainer />}>
                   <Route path="/" element={null} />
