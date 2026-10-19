@@ -1,12 +1,12 @@
+import { readPublicPageCopy } from "../features/publicCopy/index.js";
 import { useState } from "react";
 import { Send } from "lucide-react";
 import { getPracticeLanguageOptions } from "../constants/languages";
 import { getDefaultLandingPracticeLanguage } from "../utils/languageDetection";
-import { landingSectionLabel } from "./landingPageRefreshCopy";
+import { landingSectionLabel } from "./landingCopyHelpers.js";
 import {
   createLanguagePostcards,
-  languageAtlasCopy,
-} from "./landingLanguageAtlasCopy";
+} from "./landingPostcards.js";
 import "./landingLanguageAtlas.css";
 import { LANDING_GLOBE_GEOMETRY } from "./landingGlobeGeometry";
 
@@ -81,7 +81,7 @@ function GreetingGlobe() {
 export default function LandingLanguageAtlas({ copy, lang }) {
   const [postcards] = useState(createLanguagePostcards);
   const [selectedCode, setSelectedCode] = useState(() => getDefaultLandingPracticeLanguage(lang));
-  const words = languageAtlasCopy[lang] || languageAtlasCopy.en;
+  const words = readPublicPageCopy("landing", lang).atlas;
   const languages = getPracticeLanguageOptions({
     ui: copy,
     uiLang: lang,

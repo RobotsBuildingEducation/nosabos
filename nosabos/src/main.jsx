@@ -1,10 +1,10 @@
+import { preparePublicPageCopy } from "./features/publicCopy/startup";
+import { loadFirebaseBackend } from "./firebaseResources/loadBackend.js";
 import {
   Suspense,
   lazy,
   useCallback,
   useEffect,
-  useMemo,
-  useRef,
   useState,
 } from "react";
 import { createRoot } from "react-dom/client";
@@ -18,8 +18,9 @@ import "./useThemeStore";
 import { ChakraProvider } from "@chakra-ui/react";
 import { BrowserRouter as Router, Route, Routes, Outlet } from "react-router-dom";
 import { theme } from "./theme";
-import LandingPage from "./components/LandingPage.jsx";
-import VoiceOrb from "./components/VoiceOrbNext.jsx";
+import LoadingEllipsis from "./components/LoadingEllipsis.jsx";
+import RouteLoadingFallback from "./components/RouteLoadingFallback.jsx";
+import BootReadyBoundary from "./components/BootReadyBoundary.jsx";
 import AppLoadBoundary from "./components/AppLoadBoundary.jsx";
 import { initAppUpdateCoordinator } from "./pwa/appUpdateCoordinator";
 
@@ -33,25 +34,27 @@ if (typeof window !== "undefined") {
   }
 }
 
-// Initialize the update coordinator singleton before route mounting
-initAppUpdateCoordinator();
+function lazyPage(key, load) {
+  return lazy(() => {
+    window.__piyaliStartupResources?.beginPage(key);
+    // Only the public landing/links pages postpone backend startup.
+    const preparation = ["landing", "links"].includes(key) ? preparePublicPageCopy(key) : loadFirebaseBackend();
+    return Promise.all([load(), preparation]).then(([module]) => {
+      window.__piyaliStartupResources?.completeCode(key);
+      return module;
+    });
+  });
+}
 
-const App = lazy(() => import("./App.jsx"));
-const LinksPage = lazy(() => import("./components/LinksPage.jsx"));
-const LegacyLinksPage = lazy(() => import("./components/LegacyLinksPage.jsx"));
-const ProficiencyTest = lazy(() => import("./components/ProficiencyTest.jsx"));
-const SquirclePlayground = lazy(
-  () => import("./components/SquirclePlayground.jsx"),
-);
-const OrbingPlayground = lazy(
-  () => import("./components/orbing/OrbingPlayground.jsx"),
-);
-const CitizenshipGuide = lazy(
-  () => import("./components/CitizenshipGuide.jsx"),
-);
-const PatreonOAuthDrawerReturn = lazy(
-  () => import("./components/PatreonOAuthDrawerReturn.jsx"),
-);
+const App = lazyPage("app", () => import("./App.jsx"));
+const LandingPage = lazyPage("landing", () => import("./components/LandingPage.jsx"));
+const LinksPage = lazyPage("links", () => import("./components/LinksPage.jsx"));
+const LegacyLinksPage = lazyPage("legacy-links", () => import("./components/LegacyLinksPage.jsx"));
+const ProficiencyTest = lazyPage("proficiency", () => import("./components/ProficiencyTest.jsx"));
+const SquirclePlayground = lazyPage("squircle", () => import("./components/SquirclePlayground.jsx"));
+const OrbingPlayground = lazyPage("orbing", () => import("./components/orbing/OrbingPlayground.jsx"));
+const CitizenshipGuide = lazyPage("citizenship", () => import("./components/CitizenshipGuide.jsx"));
+const PatreonOAuthDrawerReturn = lazyPage("patreon-return", () => import("./components/PatreonOAuthDrawerReturn.jsx"));
 
 const hasStoredKey = () => {
   if (typeof window === "undefined") return false;
@@ -59,101 +62,15 @@ const hasStoredKey = () => {
   return Boolean(secret && secret.trim());
 };
 
-const LOADING_ORB_STATES = ["idle", "listening", "speaking"];
-
-function getRandomLoadingOrbState() {
-  return LOADING_ORB_STATES[
-    Math.floor(Math.random() * LOADING_ORB_STATES.length)
-  ];
-}
-
-function RouteFallback() {
-  const orbState = useMemo(getRandomLoadingOrbState, []);
-
-  return (
-    <div className="route-fallback" aria-label="Loading">
-      <VoiceOrb state={orbState} size={88} useWorker maxDpr={1} excludeThinking={window.location.pathname === "/links"} />
-    </div>
-  );
-}
-
-function BootReadyBoundary({ children }) {
-  useEffect(() => {
-    // The page-level fallback is outside this boundary, so mounting the route
-    // content is enough to replace it.
-  }, []);
-
-  return children;
-}
-
-function BootOverlay({ visible }) {
-  const orbState = useMemo(getRandomLoadingOrbState, []);
-
-  return (
-    <div
-      className={`route-fallback boot-overlay ${
-        visible ? "is-visible" : "is-hidden"
-      }`}
-      aria-label="Loading"
-      aria-hidden={!visible}
-    >
-      <VoiceOrb state={orbState} size={88} useWorker maxDpr={1} excludeThinking={window.location.pathname === "/links"} />
-    </div>
-  );
-}
-
 function AppContainer() {
   const [isAuthenticated, setIsAuthenticated] = useState(hasStoredKey);
-  const [bootOverlayMounted, setBootOverlayMounted] = useState(hasStoredKey);
-  const [bootOverlayVisible, setBootOverlayVisible] = useState(hasStoredKey);
-  const bootHideFrameRef = useRef(null);
-  const bootHideSecondFrameRef = useRef(null);
-  const bootSettleTimerRef = useRef(null);
-  const bootHideTimerRef = useRef(null);
-
-  const clearBootHideTimers = useCallback(() => {
-    if (bootHideFrameRef.current) {
-      cancelAnimationFrame(bootHideFrameRef.current);
-      bootHideFrameRef.current = null;
-    }
-    if (bootHideSecondFrameRef.current) {
-      cancelAnimationFrame(bootHideSecondFrameRef.current);
-      bootHideSecondFrameRef.current = null;
-    }
-    if (bootSettleTimerRef.current) {
-      clearTimeout(bootSettleTimerRef.current);
-      bootSettleTimerRef.current = null;
-    }
-    if (bootHideTimerRef.current) {
-      clearTimeout(bootHideTimerRef.current);
-      bootHideTimerRef.current = null;
-    }
+  const [appReady, setAppReady] = useState(false);
+  const handleAuthenticated = useCallback(() => {
+    window.__piyaliStartupResources?.beginPage("app");
+    setIsAuthenticated(true);
   }, []);
 
-  const handleAuthenticated = useCallback(() => {
-    clearBootHideTimers();
-    setBootOverlayMounted(true);
-    setBootOverlayVisible(true);
-    setIsAuthenticated(true);
-  }, [clearBootHideTimers]);
-
-  const handleAppBootReady = useCallback(() => {
-    clearBootHideTimers();
-    bootHideFrameRef.current = requestAnimationFrame(() => {
-      bootHideSecondFrameRef.current = requestAnimationFrame(() => {
-        bootSettleTimerRef.current = setTimeout(() => {
-          setBootOverlayVisible(false);
-          bootHideTimerRef.current = setTimeout(() => {
-            setBootOverlayMounted(false);
-            bootHideTimerRef.current = null;
-          }, 520);
-        }, 220);
-      });
-    });
-  }, [clearBootHideTimers]);
-
   useEffect(() => {
-    if (typeof window === "undefined") return;
     const handleStorage = (event) => {
       if (event.key && event.key !== "local_nsec") return;
       setIsAuthenticated(hasStoredKey());
@@ -162,40 +79,22 @@ function AppContainer() {
     return () => window.removeEventListener("storage", handleStorage);
   }, []);
 
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    clearBootHideTimers();
-    setBootOverlayMounted(true);
-    setBootOverlayVisible(true);
-  }, [clearBootHideTimers, isAuthenticated]);
-
-  // Failsafe: ensure boot overlay never traps the user indefinitely
-  useEffect(() => {
-    if (!bootOverlayVisible) return;
-    const failsafeTimer = setTimeout(() => {
-      console.warn("[BOOT] Boot overlay failsafe triggered after timeout");
-      setBootOverlayVisible(false);
-      const unmountTimer = setTimeout(() => {
-        setBootOverlayMounted(false);
-      }, 520);
-      return () => clearTimeout(unmountTimer);
-    }, 7000);
-    return () => clearTimeout(failsafeTimer);
-  }, [bootOverlayVisible]);
-
-  useEffect(() => clearBootHideTimers, [clearBootHideTimers]);
-
   if (!isAuthenticated) {
-    return <LandingPage onAuthenticated={handleAuthenticated} />;
+    return (
+      <BootReadyBoundary pageKey="landing">
+        <LandingPage onAuthenticated={handleAuthenticated} />
+      </BootReadyBoundary>
+    );
   }
 
   return (
     <AppLoadBoundary>
-      <Suspense fallback={null}>
-        <App onBootReady={handleAppBootReady} />
-      </Suspense>
-      {bootOverlayMounted && <BootOverlay visible={bootOverlayVisible} />}
-      <Outlet />
+      <BootReadyBoundary pageKey="app" ready={appReady}>
+        <Suspense fallback={<LoadingEllipsis />}>
+          <App onBootReady={setAppReady} />
+        </Suspense>
+        <Outlet />
+      </BootReadyBoundary>
     </AppLoadBoundary>
   );
 }
@@ -204,6 +103,7 @@ function ProficiencyContainer() {
   const [isAuthenticated, setIsAuthenticated] = useState(hasStoredKey);
 
   const handleAuthenticated = useCallback(() => {
+    window.__piyaliStartupResources?.beginPage("proficiency");
     setIsAuthenticated(true);
   }, []);
 
@@ -218,82 +118,94 @@ function ProficiencyContainer() {
   }, []);
 
   if (!isAuthenticated) {
-    return <LandingPage onAuthenticated={handleAuthenticated} />;
+    return (
+      <BootReadyBoundary pageKey="landing">
+        <LandingPage onAuthenticated={handleAuthenticated} />
+      </BootReadyBoundary>
+    );
   }
 
   return (
-    <Suspense fallback={null}>
-      <BootReadyBoundary>
+    <Suspense fallback={<LoadingEllipsis />}>
+      <BootReadyBoundary pageKey="proficiency">
         <ProficiencyTest />
       </BootReadyBoundary>
     </Suspense>
   );
 }
 
-createRoot(document.getElementById("root")).render(
-  <ChakraProvider theme={theme}>
-    <div className="app-shell">
-      <Router>
-        <Suspense fallback={<RouteFallback />}>
-          <Routes>
-            <Route element={<AppContainer />}>
-              <Route path="/" element={null} />
-              <Route path="/onboarding" element={null} />
-              <Route path="/onboarding/*" element={null} />
-              <Route path="/subscribe" element={null} />
-            </Route>
-            <Route
-              path="/patreon-return"
-              element={
-                <BootReadyBoundary>
-                  <PatreonOAuthDrawerReturn />
-                </BootReadyBoundary>
-              }
-            />
-            <Route path="/proficiency" element={<ProficiencyContainer />} />
-            <Route
-              path="/orbing"
-              element={
-                <AppLoadBoundary>
-                  <OrbingPlayground />
-                </AppLoadBoundary>
-              }
-            />
-            <Route
-              path="/links"
-              element={
-                <BootReadyBoundary>
-                  <LinksPage />
-                </BootReadyBoundary>
-              }
-            />
-            <Route
-              path="/legacy-links"
-              element={
-                <BootReadyBoundary>
-                  <LegacyLinksPage />
-                </BootReadyBoundary>
-              }
-            />
-            <Route
-              path="/squircle"
-              element={
-                <BootReadyBoundary>
-                  <SquirclePlayground />
-                </BootReadyBoundary>
-              }
-            />
-            <Route
-              path="/citizenship"
-              element={
-                <BootReadyBoundary>
-                  <CitizenshipGuide />
-                </BootReadyBoundary>
-              }
-            />
-          </Routes>
-        </Suspense>
-      </Router>
-    </div>
-  </ChakraProvider>,
-);
+// Leave the inline screen in place while non-blocking application CSS loads.
+// Fonts are optional; they never delay mounting or the initial feedback.
+Promise.resolve(window.__piyaliStartupResources?.whenStylesReady()).then(() => {
+  window.__piyaliStartupResources?.completeShell();
+  initAppUpdateCoordinator();
+  createRoot(document.getElementById("root")).render(
+    <ChakraProvider theme={theme}>
+      <div className="app-shell">
+        <Router>
+          <AppLoadBoundary>
+            <Suspense fallback={<RouteLoadingFallback />}>
+              <Routes>
+                <Route element={<AppContainer />}>
+                  <Route path="/" element={null} />
+                  <Route path="/onboarding" element={null} />
+                  <Route path="/onboarding/*" element={null} />
+                  <Route path="/subscribe" element={null} />
+                </Route>
+                <Route
+                  path="/patreon-return"
+                  element={
+                    <BootReadyBoundary pageKey="patreon-return">
+                      <PatreonOAuthDrawerReturn />
+                    </BootReadyBoundary>
+                  }
+                />
+                <Route path="/proficiency" element={<ProficiencyContainer />} />
+                <Route
+                  path="/orbing"
+                  element={
+                    <AppLoadBoundary>
+                      <BootReadyBoundary pageKey="orbing"><OrbingPlayground /></BootReadyBoundary>
+                    </AppLoadBoundary>
+                  }
+                />
+                <Route
+                  path="/links"
+                  element={
+                    <BootReadyBoundary pageKey="links">
+                      <LinksPage />
+                    </BootReadyBoundary>
+                  }
+                />
+                <Route
+                  path="/legacy-links"
+                  element={
+                    <BootReadyBoundary pageKey="legacy-links">
+                      <LegacyLinksPage />
+                    </BootReadyBoundary>
+                  }
+                />
+                <Route
+                  path="/squircle"
+                  element={
+                    <BootReadyBoundary pageKey="squircle">
+                      <SquirclePlayground />
+                    </BootReadyBoundary>
+                  }
+                />
+                <Route
+                  path="/citizenship"
+                  element={
+                    <BootReadyBoundary pageKey="citizenship">
+                      <CitizenshipGuide />
+                    </BootReadyBoundary>
+                  }
+                />
+              </Routes>
+            </Suspense>
+          </AppLoadBoundary>
+        </Router>
+      </div>
+    </ChakraProvider>,
+  );
+});

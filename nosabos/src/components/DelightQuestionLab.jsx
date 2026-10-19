@@ -1,3 +1,5 @@
+import { usePreparedLessonQuestion } from "../features/lessonPreparation/PreparedLessonContext";
+import { prepareDelightQuestion } from "../utils/prepareDelightQuestion";
 import { getSpeechPracticeErrorFeedback } from "../utils/speechPracticeFeedback.js";
 import ActivityActionRow from "./ActivityActionRow";
 import React, {
@@ -43,15 +45,13 @@ import QuestionActionArea from "./QuestionActionArea";
 import { useDndContext } from "@dnd-kit/core";
 import { SortableArea, SortableList, SortableItem } from "./dnd/Sortable";
 import {
-  questionModel,
   simplemodel,
 } from "../firebaseResources/firebaseResources";
 import translations from "../utils/translation";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
 import { awardXp } from "../utils/utils";
 import { recordGradedOutcome } from "../utils/learningIntelligence";
-import { eloForUser, practiceLevelForElo, generationPerformanceContextFor } from "../utils/performanceEloModel";
-import { assessGeneratedQuestionWorth } from "../utils/questionDifficultyAssessment";
+import { eloForUser, practiceLevelForElo, questionWorthForUser } from "../utils/performanceEloModel";
 import { captureCompanionMemory } from "../utils/companionMemory";
 import { extractCEFRLevel } from "../utils/cefrUtils";
 import { generateNoteContent, buildNoteObject } from "../utils/noteGeneration";
@@ -95,19 +95,13 @@ import {
 import {
   DELIGHT_VARIANTS,
   DELIGHT_VARIANT_IDS,
-  buildDelightQuestionPrompt,
   buildDelightResponseJudgePrompt,
   calculateDelightQuestionXp,
-  generateWithProviderFallback,
-  generateSentenceDetectiveQuestion,
   getDelightLanguageName,
   getInitialDelightResponse,
   gradeDelightResponse,
-  isDelightQuestionLanguageConsistent,
   isDelightResponseReady,
   isSingleDelightCueWord,
-  normalizeDelightQuestion,
-  validateMorphologyForgeQuestion,
   parseDelightJudgeVerdict,
 } from "../utils/delightQuestionVariants";
 import {
@@ -118,8 +112,6 @@ import {
   formatSentenceDetectiveCopy,
   getSentenceDetectiveCopy,
 } from "../utils/sentenceDetectiveI18n";
-import { sanitizeGeminiResponseSchema } from "../utils/geminiResponseSchema";
-import { getDelightResponseSchema } from "../utils/delightQuestionSchemas";
 import {
   formatSentenceShapeshifterCopy,
   getSentenceShapeshifterCopy,
@@ -155,34 +147,14 @@ const APP_TEXT_MUTED = "var(--app-text-muted)";
 const AVAILABLE_VARIANTS = DELIGHT_VARIANT_IDS.map((variantId) =>
   DELIGHT_VARIANTS.find(({ id }) => id === variantId),
 ).filter(Boolean);
-const PROVIDER_GENERATION_TIMEOUT_MS = 6000;
 const SENTENCE_DETECTIVE_CACHE_VERSION = "minimal-contract-v1";
-const DELIGHT_JSON_GENERATION_CONFIG = {
-  thinkingConfig: { thinkingBudget: 0 },
-  responseMimeType: "application/json",
-};
+
 const SPEECH_RESPONSE_VARIANTS = new Set([
   "sentence_shapeshifter",
   "three_clue_mystery",
   "three_word_challenge",
 ]);
 
-async function settleWithin(promise, timeoutMs) {
-  let timeoutId;
-  try {
-    return await Promise.race([
-      promise,
-      new Promise((_, reject) => {
-        timeoutId = window.setTimeout(
-          () => reject(new Error("Question generation timed out.")),
-          timeoutMs,
-        );
-      }),
-    ]);
-  } finally {
-    window.clearTimeout(timeoutId);
-  }
-}
 
 function useT(uiLang = "en") {
   const lang = normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE);
@@ -3368,6 +3340,7 @@ export default function DelightQuestionLab({
   onQuizAnswer = null,
 }) {
   const user = useUserStore((state) => state.user);
+  const preparedQuestion = usePreparedLessonQuestion(moduleType, lesson);
   const playSound = useSoundSettings((state) => state.playSound);
   const playSelectSound = useCallback(() => {
     void playSound(selectSound);
@@ -3402,9 +3375,9 @@ export default function DelightQuestionLab({
     lesson?.cefrLevel ||
     lessonContent?.cefrLevel ||
     (lesson?.id ? extractCEFRLevel(lesson.id) : "A1");
-  const cefrLevel = isFinalQuiz || lessonContent?.topic === "tutorial" || lessonContent?.tutorialPracticeLevel || lessonContent?.isGoal || lessonContent?.isRepair
+  const cefrLevel = preparedQuestion.ticket?.options.cefrLevel || (isFinalQuiz || lessonContent?.topic === "tutorial" || lessonContent?.tutorialPracticeLevel || lessonContent?.isGoal || lessonContent?.isRepair
     ? curriculumCefrLevel
-    : practiceLevelForElo(eloForUser(user, targetLang));
+    : practiceLevelForElo(eloForUser(user, targetLang)));
   const npub = strongNpub(user);
 
   const [variantIndex, setVariantIndex] = useState(0);
@@ -3882,13 +3855,6 @@ export default function DelightQuestionLab({
 
   useEffect(() => {
     const requestId = ++requestRef.current;
-    const responseSchema = getDelightResponseSchema(variantMeta.id);
-    const generationConfig = {
-      ...DELIGHT_JSON_GENERATION_CONFIG,
-      responseSchema: sanitizeGeminiResponseSchema(
-        responseSchema,
-      ),
-    };
     const cacheKey = [
       moduleType,
       lesson?.id || "free",
@@ -3918,125 +3884,17 @@ export default function DelightQuestionLab({
       }
     };
 
-    const generateWithGemini = async (input) => {
-      const resp = await questionModel.generateContent({
-        contents: [{ role: "user", parts: [{ text: input }] }],
-        generationConfig,
-      });
-      const output =
-        (typeof resp?.response?.text === "function"
-          ? resp.response.text()
-          : resp?.response?.text) || "";
-      if (String(output || "").trim()) return output;
-      throw new Error("Gemini returned an empty question response.");
-    };
-
-    const generateWithOpenAI = async (input) => {
-      const result = await callResponses({
-        model: DEFAULT_RESPONSES_MODEL,
-        input,
-        responseSchema,
-        responseSchemaName: `delight_${variantMeta.id}`,
-        skipGemini: true,
-      });
-      if (!String(result || "").trim()) {
-        throw new Error("OpenAI returned an empty question response.");
-      }
-      return result;
-    };
-
-    const requireValidQuestion = (raw) => {
-      const candidate = normalizeDelightQuestion(variantMeta.id, raw, {
-        targetLang,
-      });
-      if (!candidate) {
-        throw new Error("The provider response did not match the question schema.");
-      }
-      if (
-        !isDelightQuestionLanguageConsistent(candidate, {
-          targetLang,
-          supportLang,
-        })
-      ) {
-        throw new Error(
-          "The provider response mixed the target and support languages.",
-        );
-      }
-      return candidate;
-    };
-
-    const createQuestion = async (generate) => {
-      if (variantMeta.id === "sentence_detective") {
-        const generated = await generateSentenceDetectiveQuestion({
-          generate,
-          moduleType,
-          targetLang,
-          supportLang,
-          cefrLevel,
-          lessonContent,
-          recentQuestions: recentQuestionSummariesRef.current,
-          performanceContext: generationPerformanceContextFor(useUserStore.getState().user, targetLang, { curriculumCefrLevel }),
-        });
-        const candidate = requireValidQuestion(generated);
-        const worth = await assessGeneratedQuestionWorth({
-          user: useUserStore.getState().user, targetLang, questionLevel: cefrLevel,
-          question: candidate, mode: `lesson:${variantMeta.id}`,
-        });
-        return { ...candidate, questionLevel: cefrLevel, worth };
-      }
-
-      const generated = await generate(
-        `${buildDelightQuestionPrompt({
-          variant: variantMeta.id,
-          moduleType,
-          targetLang,
-          supportLang,
-          cefrLevel,
-          lessonContent,
-          recentQuestions: recentQuestionSummariesRef.current,
-        })}\nLive performance memory: ${JSON.stringify(generationPerformanceContextFor(useUserStore.getState().user, targetLang, { curriculumCefrLevel }))}. Keep the lesson topic and adjust question complexity and support to this evidence.`,
-      );
-      const candidate = requireValidQuestion(generated);
-      if (candidate.variant === "morphology_forge" && !(await validateMorphologyForgeQuestion(candidate, {
-        targetLang, supportLang, cefrLevel,
-        judge: (input) => callResponses({ model: DEFAULT_RESPONSES_MODEL, input }),
-      }))) throw new Error("The generated word pieces do not solve the sentence naturally.");
-      const worth = await assessGeneratedQuestionWorth({
-        user: useUserStore.getState().user, targetLang, questionLevel: cefrLevel,
-        question: candidate, mode: `lesson:${variantMeta.id}`,
-      });
-      return { ...candidate, questionLevel: cefrLevel, worth };
-    };
-
-    const generationTask = questionModel
-      ? generateWithProviderFallback({
-          primary: () =>
-            settleWithin(
-              createQuestion(generateWithGemini),
-              PROVIDER_GENERATION_TIMEOUT_MS,
-            ),
-          providerFallback: () =>
-            settleWithin(
-              createQuestion(generateWithOpenAI),
-              PROVIDER_GENERATION_TIMEOUT_MS,
-            ),
-          onProviderFallback: (error) => {
-            // The provider fallback is a fresh draft. Keep the skeleton visible
-            // while OpenAI makes its independent structured-response attempt.
-            resetStreamingPreview();
-            if (import.meta.env.DEV) {
-              console.warn(
-                "Gemini question attempt failed; trying OpenAI:",
-                error?.issues?.join(" ") || error?.message,
-              );
-            }
-          },
-        })
-      : settleWithin(
-          createQuestion(generateWithOpenAI),
-          PROVIDER_GENERATION_TIMEOUT_MS,
-        );
-    const generation = generationTask;
+    const generation = preparedQuestion.load(() => prepareDelightQuestion({
+      variant: variantMeta.id, moduleType, targetLang, supportLang, cefrLevel,
+      curriculumCefrLevel, lessonContent, user: useUserStore.getState().user,
+      recentQuestions: recentQuestionSummariesRef.current,
+      signal: preparedQuestion.ticket?.signal,
+      onProviderFallback: resetStreamingPreview,
+    }), `delight:${variantMeta.id}`).then((prepared) => {
+      const candidate = prepared.preparedQuestion || prepared;
+      return { ...candidate, worth: questionWorthForUser(useUserStore.getState().user,
+        targetLang, cefrLevel, { difficultyScore: candidate.worth?.difficultyScore ?? prepared.difficultyScore }) };
+    });
 
     generation
       .then((normalized) => {
@@ -4072,6 +3930,8 @@ export default function DelightQuestionLab({
       });
   }, [
     cefrLevel,
+    curriculumCefrLevel,
+    preparedQuestion,
     detectiveCopy,
     generationNonce,
     lesson?.id,

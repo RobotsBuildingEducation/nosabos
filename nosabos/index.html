@@ -3,7 +3,106 @@
 
 <head>
   <meta charset="UTF-8" />
-  <link rel="icon" type="image/svg+xml" href="/logo.png" />
+  <!-- Match useThemeStore's saved mode before CSS or application downloads. -->
+  <script>
+    (() => {
+      let mode = "light";
+      try {
+        if (localStorage.getItem("themeMode") === "dark") mode = "dark";
+      } catch { /* Keep the app's default when browser storage is unavailable. */ }
+      document.documentElement.dataset.themeMode = mode;
+      document.documentElement.style.colorScheme = mode;
+    })();
+  </script>
+  <!-- startup-localization -->
+  <!-- Inline so the loader can paint before the application CSS/JS arrives. -->
+  <style>
+    /* First-paint fallbacks match the app palette in src/index.css. */
+    :root {
+      --startup-page-bg: #f7f1e7;
+      --startup-text-primary: #2f261d;
+      --startup-text-muted: #8d7a67;
+      --startup-wave-track: rgba(255, 255, 255, 0.8);
+      --startup-wave-border: rgba(96, 77, 56, 0.16);
+      background: var(--app-page-bg, var(--startup-page-bg));
+    }
+    /* Keep Chakra's initial browser scheme aligned with the saved app mode. */
+    :root[data-theme-mode="light"] { color-scheme: light !important; }
+    :root[data-theme-mode="dark"] {
+      color-scheme: dark !important;
+      --startup-page-bg: #0b1220;
+      --startup-text-primary: #e5e7eb;
+      --startup-text-muted: #a3b4c9;
+      --startup-wave-track: rgba(148, 163, 184, 0.16);
+      --startup-wave-border: rgba(148, 163, 184, 0.2);
+    }
+    body { margin: 0; background: var(--app-page-bg, var(--startup-page-bg)); color: var(--app-text-primary, var(--startup-text-primary)); }
+    .startup-loading {
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      box-sizing: border-box;
+      background: var(--app-page-bg, var(--startup-page-bg));
+      color: var(--app-text-primary, var(--startup-text-primary));
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.5;
+      text-align: start;
+    }
+    .startup-loading__card { position: relative; width: min(100%, 340px); }
+    .startup-loading__card[data-startup-initial]:not([data-localized]) { visibility: hidden; }
+    html[data-startup-loader="ellipsis"] [data-startup-progress],
+    html:not([data-startup-loader="ellipsis"]) [data-startup-ellipsis] { display: none; }
+    .loading-ellipsis { min-height: 100vh; min-height: 100dvh; display: grid; place-items: center; background: var(--app-page-bg, var(--startup-page-bg)); color: var(--app-text-muted, var(--startup-text-muted)); }
+    .loading-ellipsis__dots { display: flex; gap: 6px; font: 600 40px/1 system-ui, sans-serif; }
+    .loading-ellipsis__dots > span { opacity: 0.3; animation: loading-ellipsis-pulse 1.2s ease-in-out infinite; }
+    .loading-ellipsis__dots > span:nth-child(2) { animation-delay: 0.15s; }
+    .loading-ellipsis__dots > span:nth-child(3) { animation-delay: 0.3s; }
+    .loading-ellipsis__label { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    @keyframes loading-ellipsis-pulse { 0%, 80%, 100% { opacity: 0.3; } 40% { opacity: 1; } }
+    .startup-loading__brand {
+      margin: 0 0 20px;
+      font-size: 12px;
+      line-height: 18px;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      color: var(--app-text-muted, var(--startup-text-muted));
+    }
+    .startup-loading__title { margin: 0 0 12px; height: 65px; font-size: 26px; font-weight: 600; line-height: 1.25; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+    .startup-loading__status { margin: 0 0 20px; height: 45px; font-size: 15px; line-height: 22.5px; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+    /* Match WaveBar without waiting for React or its animation library. */
+    .startup-loading__track { position: relative; box-sizing: border-box; height: 15px; overflow: hidden; border: 1px solid var(--app-border, var(--startup-wave-border)); border-radius: 9999px; background: var(--startup-wave-track); }
+    /* Keep the measured fill painted independently of the decorative SVG. */
+    .startup-loading__fill { position: absolute; top: 0; inset-inline-start: 0; bottom: 0; display: block; width: 0; background: linear-gradient(90deg, rgb(67 233 123 / 90%), rgb(56 249 215 / 90%)); transition: width 180ms ease; }
+    .startup-loading__fill svg { display: block; width: 100%; height: 100%; }
+    .startup-loading__wave { animation: startup-loading-wave 10s ease-in-out infinite; }
+    @keyframes startup-loading-wave {
+      0%, 100% { transform: translateX(-10px); }
+      50% { transform: translateX(0); }
+    }
+    .startup-loading__track[data-ready="true"] .startup-loading__fill { transition: none; }
+    .startup-loading__percentage { margin: 10px 0 0; height: 20px; line-height: 20px; color: var(--app-text-muted, var(--startup-text-muted)); font-size: 13px; text-align: end; font-variant-numeric: tabular-nums; }
+    /* Feedback must not recenter the heading, wave, or download rows. */
+    .startup-loading__feedback { position: absolute; top: 100%; left: 0; right: 0; padding: 12px 0 24px; }
+    .startup-loading__retry { margin-top: 8px; padding: 12px 20px; border: 0; border-radius: 12px; background: #0d9488; color: #fff; font: inherit; cursor: pointer; }
+    .startup-loading__retry[hidden] { display: none; }
+    .startup-loading__detail { margin: 0; color: var(--app-text-muted, var(--startup-text-muted)); font-size: 13px; line-height: 20px; }
+    /* Reserve five two-line rows, including before any downloads are observed. */
+    .startup-loading__resources { display: grid; grid-template-rows: repeat(5, 48px); list-style: none; margin: 24px 0 0; padding: 0; height: 240px; }
+    .startup-loading__activity { display: flex; align-items: flex-start; gap: 12px; box-sizing: border-box; min-width: 0; height: 48px; padding: 3px 0; color: var(--app-text-muted, var(--startup-text-muted)); font-size: 14px; line-height: 21px; }
+    .startup-loading__activity-message { flex: 1; min-width: 0; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+    .startup-loading__activity[data-state="loading"] { color: var(--app-text-primary, var(--startup-text-primary)); }
+    .startup-loading__activity-indicator { flex: 0 0 16px; text-align: center; color: #0d9488; font-weight: 600; }
+    .startup-loading__activity[data-state="failed"] .startup-loading__activity-indicator { color: #b45309; }
+    @media (prefers-reduced-motion: reduce) {
+      .startup-loading__fill { transition: none; }
+      .startup-loading__wave { animation: none; }
+      .loading-ellipsis__dots > span { animation: none; opacity: 0.65; }
+    }
+  </style>
+  <noscript><style>.startup-loading__card[data-startup-initial] { visibility: visible !important; }</style></noscript>
+  <link rel="icon" type="image/png" sizes="64x64" href="/favicon.png" />
 
   <meta name="description" content="Piyali |Your Personal Language Tutor.">
   <meta property="og:url" content="https://piyali.app/">
@@ -33,13 +132,43 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
     href="https://fonts.googleapis.com/css2?family=Comic+Neue:ital,wght@0,700;1,700&family=Gaegu:wght@700&family=Patrick+Hand&display=swap"
-    rel="stylesheet">
+    rel="stylesheet" media="print" onload="this.media='all'">
   <title>Piyali | Your Personal Language Tutor.</title>
 </head>
 
 <body>
-  <div id="root"></div>
+  <div id="root">
+    <div class="startup-loading" data-startup-progress>
+      <div class="startup-loading__card" data-startup-initial aria-busy="true">
+        <p class="startup-loading__brand">PIYALI</p>
+        <h1 class="startup-loading__title">Opening Piyali</h1>
+        <p class="startup-loading__status" role="status">Preparing your learning space…</p>
+        <div class="startup-loading__track" role="progressbar" aria-label="Getting your learning space ready" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <span class="startup-loading__fill">
+            <svg viewBox="0 0 120 30" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+              <g class="startup-loading__wave" opacity="0.18">
+                <path d="M0,18 C10,14 20,22 30,18 S50,14 60,18 S80,22 90,18 S110,14 120,18 L120,30 L0,30 Z" fill="#fff" />
+              </g>
+            </svg>
+          </span>
+        </div>
+        <p class="startup-loading__percentage">0% ready</p>
+        <ol class="startup-loading__resources" aria-label="Preparing your experience" aria-live="off"></ol>
+        <div class="startup-loading__feedback">
+          <p class="startup-loading__detail"></p>
+          <button class="startup-loading__retry" type="button" hidden>Try again</button>
+        </div>
+        <noscript>Please enable JavaScript to open Piyali.</noscript>
+      </div>
+    </div>
+    <div class="loading-ellipsis" data-startup-ellipsis role="status">
+      <span class="loading-ellipsis__label">Loading…</span>
+      <span class="loading-ellipsis__dots" aria-hidden="true"><span>.</span><span>.</span><span>.</span></span>
+    </div>
+  </div>
+  <script>window.__piyaliStartupLocalization?.applyToInitialCard();</script>
   <script type="module" src="/src/main.jsx"></script>
+  <!-- startup-resource-tracker -->
 </body>
 
 </html>

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { drawCompanionCharacter, getHealthyCompanionStage } from "../PlatePetPanel";
+import { drawCompanionCharacter, getHealthyCompanionStage } from "../companionDrawing.js";
 
 export default function TeamCompanionAvatar({ companion, size = 42 }) {
   const canvasRef = useRef(null);

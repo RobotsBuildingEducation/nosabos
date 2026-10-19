@@ -15,6 +15,8 @@ export const syncDocumentLanguage = (
 
   document.documentElement.lang = nextLocale;
   document.documentElement.dir = nextDirection;
+  // Keep an active startup screen in sync when account preferences arrive.
+  if (typeof window !== "undefined") window.__piyaliStartupResources?.setLanguage?.(language);
 
   return {
     lang: nextLocale,

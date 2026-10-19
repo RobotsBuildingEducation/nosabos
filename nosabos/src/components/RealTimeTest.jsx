@@ -1,3 +1,4 @@
+import { usePreparedLessonQuestion } from "../features/lessonPreparation/PreparedLessonContext";
 import {
   canEnableRealtimeInput,
   snapshotRealtimeMessages,
@@ -93,7 +94,6 @@ import {
 } from "./realtimeArchiveStream";
 import { awardXp } from "../utils/utils";
 import { eloForUser, practiceLevelForElo, generationPerformanceContextFor, questionWorthForUser } from "../utils/performanceEloModel";
-import { assessGeneratedQuestionWorth } from "../utils/questionDifficultyAssessment";
 import { captureCompanionMemory } from "../utils/companionMemory";
 import {
   SOFT_STOP_BUTTON_BG,
@@ -710,6 +710,7 @@ export default function RealTimeTest({
 
   // User id
   const user = useUserStore((s) => s.user);
+  const preparedQuestion = usePreparedLessonQuestion("realtime", lesson);
   const currentNpub = activeNpub?.trim?.() || strongNpub(user);
   const initialSupportLanguage = normalizeSupportLanguage(
     initialSupportLang ||
@@ -738,9 +739,9 @@ export default function RealTimeTest({
     lesson?.cefrLevel ||
     lessonContent?.cefrLevel ||
     (lesson?.id ? extractCEFRLevel(lesson.id) : "A1");
-  const cefrLevel = lesson?.isTutorial || lesson?.isFinalQuiz || lessonContent?.isGoal || lessonContent?.isRepair
+  const cefrLevel = preparedQuestion.ticket?.options.cefrLevel || (lesson?.isTutorial || lesson?.isFinalQuiz || lessonContent?.isGoal || lessonContent?.isRepair
     ? curriculumCefrLevel
-    : practiceLevelForElo(eloForUser(user, initialTargetLanguage));
+    : practiceLevelForElo(eloForUser(user, initialTargetLanguage)));
 
   // Refs for realtime
   const audioRef = useRef(null); // remote stream sink
@@ -2625,63 +2626,15 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
     setGoalFeedback("");
     goalStreamingRef.current = true;
 
-    const topic =
-      lessonContent?.topic ||
-      lesson?.content?.vocabulary?.topic ||
-      lesson?.title?.en ||
-      "conversation practice";
-    const focusPoints =
-      lessonContent?.focusPoints ||
-      lesson?.content?.vocabulary?.focusPoints ||
-      lesson?.content?.grammar?.focusPoints ||
-      [];
-    const lessonTitle = lesson?.title?.en || "";
-    const lessonDesc = lesson?.description?.en || "";
     const cefrLvl = cefrLevelRef.current;
+    const lessonTitle = lesson?.title?.en || "";
     const worth = questionWorthForUser(useUserStore.getState().user, targetLangRef.current, cefrLvl);
-    const cefrHint = lessonContent?.isGoal ? focusedLessonPrompt(lessonContent) : getCEFRPromptHint(cefrLvl);
-    const goalLangCode = uiLang;
-    const goalLangName = getLanguagePromptName(goalLangCode) || "English";
-    const curriculumPromptContext = [buildCurriculumPromptContext(lessonContent?.curriculumContext, { mode: "realtime" }), focusedLessonPrompt(lessonContent)].filter(Boolean).join("\n");
-
-    // Get current goal for context
-    const currentScenario =
-      currentGoal?.lessonScenario || currentGoal?.scenario || "";
-
-    const prompt = `You are creating a NEW conversational practice goal for a language learner.
-
-Lesson: ${lessonTitle}
-Description: ${lessonDesc}
-Topic: ${topic}
-Focus areas: ${focusPoints.join(", ") || "general vocabulary and grammar"}
-Level: ${cefrHint}
-${curriculumPromptContext}
-Live learner performance: ${JSON.stringify(generationPerformanceContextFor(useUserStore.getState().user, targetLangRef.current, { curriculumCefrLevel }))}. Use the current Elo, recent accuracy and weak concepts to tune this goal while keeping the selected challenge level ${cefrLvl}.
-
-${
-  currentScenario
-    ? `IMPORTANT: The previous goal was "${currentScenario}". Create something DIFFERENT but still related to ${topic}.`
-    : ""
-}
-
-Create a SPECIFIC, ACTIONABLE goal that:
-1. Is a concrete task completable in 1-3 minutes of conversation
-2. Written as a clear action (not "practice X")
-3. Demonstrates understanding of ${topic}
-4. Is DIFFERENT from any previous goals
-5. Is CONCISE: Maximum 10-15 words. For advanced levels, use sophisticated vocabulary instead of longer sentences.
-6. For Pre-A1/A1, simple does not mean childish: use adult-realistic scenarios and neutral adult wording.
-
-Examples of good goals:
-- "Ask for directions to the nearest pharmacy"
-- "Describe your ideal vacation destination"
-- "Debate the ethics of artificial intelligence" (C2)
-- "Explain a cultural idiom's deeper meaning" (C2)
-
-Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no explanation - just the goal itself (max 15 words).`;
+    const { prompt } = buildLessonPreparationRecipe({ lesson, lessonContent,
+      targetLang: targetLangRef.current, supportLang: uiLang, user: useUserStore.getState().user },
+      { cefrLevel: cefrLvl, curriculumCefrLevel, previousScenario: currentGoal?.lessonScenario || currentGoal?.scenario });
 
     try {
-      const result = await simplemodel.generateContentStream(prompt);
+      const result = await preparedQuestion.stream(() => simplemodel.generateContentStream(prompt));
       let fullText = "";
 
       for await (const chunk of result.stream) {
@@ -2694,7 +2647,7 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
 
       const goalText = fullText.trim();
       if (goalText) {
-        const assessedWorth = await assessGeneratedQuestionWorth({
+        const assessedWorth = await preparedQuestion.assess({
           user: useUserStore.getState().user, targetLang: targetLangRef.current,
           questionLevel: cefrLvl, question: { goal: goalText,
             lesson: lessonTitle, task: "Complete a live conversation goal" },
@@ -4756,4 +4709,65 @@ Return ONLY JSON:
       </Box>
     </>
   );
+}
+
+// Shared with background preparation; this export does not mount the renderer.
+// eslint-disable-next-line react-refresh/only-export-components
+export function buildLessonPreparationRecipe({ lesson, lessonContent, targetLang, supportLang, user }, options) {
+    const topic =
+      lessonContent?.topic ||
+      lesson?.content?.vocabulary?.topic ||
+      lesson?.title?.en ||
+      "conversation practice";
+    const focusPoints =
+      lessonContent?.focusPoints ||
+      lesson?.content?.vocabulary?.focusPoints ||
+      lesson?.content?.grammar?.focusPoints ||
+      [];
+    const lessonTitle = lesson?.title?.en || "";
+    const lessonDesc = lesson?.description?.en || "";
+    const cefrLvl = options.cefrLevel;
+
+    const cefrHint = lessonContent?.isGoal ? focusedLessonPrompt(lessonContent) : getCEFRPromptHint(cefrLvl);
+    const goalLangCode = supportLang;
+    const goalLangName = getLanguagePromptName(goalLangCode) || "English";
+    const curriculumPromptContext = [buildCurriculumPromptContext(lessonContent?.curriculumContext, { mode: "realtime" }), focusedLessonPrompt(lessonContent)].filter(Boolean).join("\n");
+
+    // Get current goal for context
+    const currentScenario =
+      options.previousScenario || "";
+
+    const prompt = `You are creating a NEW conversational practice goal for a language learner.
+
+Lesson: ${lessonTitle}
+Description: ${lessonDesc}
+Topic: ${topic}
+Focus areas: ${focusPoints.join(", ") || "general vocabulary and grammar"}
+Level: ${cefrHint}
+${curriculumPromptContext}
+Live learner performance: ${JSON.stringify(generationPerformanceContextFor(user, targetLang, { curriculumCefrLevel: options.curriculumCefrLevel }))}. Use the current Elo, recent accuracy and weak concepts to tune this goal while keeping the selected challenge level ${cefrLvl}.
+
+${
+  currentScenario
+    ? `IMPORTANT: The previous goal was "${currentScenario}". Create something DIFFERENT but still related to ${topic}.`
+    : ""
+}
+
+Create a SPECIFIC, ACTIONABLE goal that:
+1. Is a concrete task completable in 1-3 minutes of conversation
+2. Written as a clear action (not "practice X")
+3. Demonstrates understanding of ${topic}
+4. Is DIFFERENT from any previous goals
+5. Is CONCISE: Maximum 10-15 words. For advanced levels, use sophisticated vocabulary instead of longer sentences.
+6. For Pre-A1/A1, simple does not mean childish: use adult-realistic scenarios and neutral adult wording.
+
+Examples of good goals:
+- "Ask for directions to the nearest pharmacy"
+- "Describe your ideal vacation destination"
+- "Debate the ethics of artificial intelligence" (C2)
+- "Explain a cultural idiom's deeper meaning" (C2)
+
+Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no explanation - just the goal itself (max 15 words).`;
+
+ return { prompt };
 }

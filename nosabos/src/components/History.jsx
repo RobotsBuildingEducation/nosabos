@@ -1,3 +1,4 @@
+import { usePreparedLessonQuestion } from "../features/lessonPreparation/PreparedLessonContext";
 import { focusedLessonPrompt } from "../utils/learningIntelligenceModel";
 import ActivityActionRow from "./ActivityActionRow";
 import QuestionActionArea from "./QuestionActionArea";
@@ -428,7 +429,7 @@ const strongNpub = (user) =>
     ""
   ).trim();
 
-function useSharedProgress() {
+function useSharedProgress(preparation = null) {
   const user = useUserStore((s) => s.user);
   const npub = strongNpub(user);
   const initialSupportLang = normalizeSupportLanguage(
@@ -438,14 +439,15 @@ function useSharedProgress() {
     getStoredAppLanguage(DEFAULT_SUPPORT_LANGUAGE),
   );
   const [xp, setXp] = useState(0);
-  const [progress, setProgress] = useState({
+  const [progress, setProgress] = useState(() => ({
     level: "beginner",
     targetLang: "es",
     supportLang: initialSupportLang,
     showTranslations: true,
     voice: getPreferredTTSVoice(),
-  });
-  const [isLoading, setIsLoading] = useState(true);
+    ...(preparation ? { ...preparation.user?.progress, targetLang: preparation.targetLang, supportLang: preparation.supportLang } : {}),
+  }));
+  const [isLoading, setIsLoading] = useState(!preparation);
 
   useEffect(() => {
     if (!npub) {
@@ -453,7 +455,7 @@ function useSharedProgress() {
       return;
     }
 
-    setIsLoading(true);
+    if (!preparation) setIsLoading(true);
     const ref = doc(database, "users", npub);
     const unsub = onSnapshot(ref, (snap) => {
       const data = snap.exists() ? snap.data() : {};
@@ -482,7 +484,7 @@ function useSharedProgress() {
       setIsLoading(false);
     });
     return () => unsub();
-  }, [npub]);
+  }, [npub, preparation]);
 
   const levelNumber = Math.floor(xp / 100) + 1;
   const progressPct = Math.min(100, xp % 100);
@@ -898,6 +900,7 @@ export default function History({
   );
   const t = useT(uiLang);
   const user = useUserStore((s) => s.user);
+  const preparedQuestion = usePreparedLessonQuestion("reading", lesson);
   const playSound = useSoundSettings((s) => s.playSound);
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
@@ -930,7 +933,7 @@ export default function History({
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, []);
 
-  const { progress, npub, isLoading } = useSharedProgress();
+  const { progress, npub, isLoading } = useSharedProgress(preparedQuestion.ticket?.context);
 
   // Lesson progress (mirrors Vocabulary / GrammarBook pattern)
   const lessonXpGoal = lesson?.xpReward || 0;
@@ -965,9 +968,9 @@ export default function History({
     (lesson?.id
       ? extractCEFRLevel(lesson.id)
       : getUserProficiencyLevel(progress, targetLang));
-  const cefrLevel = lesson?.isFinalQuiz || lessonContent?.topic === "tutorial" || lessonContent?.tutorialPracticeLevel || lessonContent?.isGoal || lessonContent?.isRepair
+  const cefrLevel = preparedQuestion.ticket?.options.cefrLevel || (lesson?.isFinalQuiz || lessonContent?.topic === "tutorial" || lessonContent?.tutorialPracticeLevel || lessonContent?.isGoal || lessonContent?.isRepair
     ? curriculumCefrLevel
-    : practiceLevelForElo(eloForUser(user, targetLang));
+    : practiceLevelForElo(eloForUser(user, targetLang)));
 
   // Track lesson content changes to auto-trigger generation
   const lessonContentKey = useMemo(
@@ -1372,7 +1375,7 @@ export default function History({
       xpReason,
       reviewFormat: chosenReviewFormat,
       questionLevel: cefrLevel,
-      worth: await assessGeneratedQuestionWorth({
+      worth: await preparedQuestion.assess({
         user: useUserStore.getState().user, targetLang, questionLevel: cefrLevel,
         question: { passage: safeTarget, task: "Answer a comprehension question about the passage" },
         mode: "reading",
@@ -1424,7 +1427,7 @@ export default function History({
         ...persistedHistory.map((item) => item.title).filter(Boolean),
       ]),
     ).slice(-30);
-    const plannedReviewQuestionType = randomReviewQuestionType();
+    const plannedReviewQuestionType = (await preparedQuestion.ticket?.promise)?.reviewQuestionType || randomReviewQuestionType();
     const streamPrompt = buildStreamingPrompt({
       isFirst: previousTitles.length === 0,
       previousTitles,
@@ -1504,10 +1507,10 @@ export default function History({
     };
 
     try {
-      const resp = await readingModel.generateContentStream({
+      const resp = await preparedQuestion.stream(() => readingModel.generateContentStream({
         contents: [{ role: "user", parts: [{ text: streamPrompt }] }],
         generationConfig: { temperature: 0.7 },
-      });
+      }));
 
       let buffer = "";
       for await (const chunk of resp.stream) {
@@ -1563,7 +1566,7 @@ export default function History({
           plannedReviewQuestionType,
         ),
         questionLevel: cefrLevel,
-        worth: await assessGeneratedQuestionWorth({
+        worth: await preparedQuestion.assess({
           user: useUserStore.getState().user, targetLang, questionLevel: cefrLevel,
           question: { passage: safeTarget, reviewQuestion: bundledReviewQuestion,
             task: "Answer the review question about the passage" },
@@ -1593,6 +1596,8 @@ export default function History({
         targetText: safeTarget,
       });
     } catch (error) {
+      if (preparedQuestion.cancelled) return;
+      preparedQuestion.discard();
       console.error("Reading stream error, trying backend fallback:", error);
       try {
         await generateNextLectureBackend();
@@ -3150,4 +3155,15 @@ Return ONLY valid JSON:
       </VStack>
     </Box>
   );
+}
+
+// Shared with background preparation; this export does not mount the renderer.
+// eslint-disable-next-line react-refresh/only-export-components
+export function buildLessonPreparationRecipe({ lesson, lessonContent, targetLang, supportLang }, options) {
+  const lessonId = lessonContent?.curriculumContext?.lessonId || lesson.id;
+  const previousTitles = getReadingComparisonHistory(targetLang, lessonId).map(item => item.title).filter(Boolean).slice(-30);
+  const reviewQuestionType = randomReviewQuestionType();
+  return { prompt: buildStreamingPrompt({ isFirst: previousTitles.length === 0, previousTitles,
+    targetLang, supportLang, cefrLevel: options.cefrLevel, lessonContent, reviewQuestionType }),
+    metadata: { reviewQuestionType }, generationConfig: { temperature: 0.7 } };
 }

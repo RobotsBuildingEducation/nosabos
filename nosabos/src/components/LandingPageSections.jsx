@@ -1,3 +1,4 @@
+import { readPublicPageCopy } from "../features/publicCopy/index.js";
 import { useState } from "react";
 import { useThemeStore } from "../useThemeStore";
 import { useReducedMotion } from "framer-motion";
@@ -18,13 +19,10 @@ import {
 } from "lucide-react";
 import LandingLanguageAtlas from "./LandingLanguageAtlas";
 import LandingEthosSection from "./LandingEthosSection";
-import { getLandingEthosCopy } from "./landingEthosCopy";
 import LandingTutorDemo from "./LandingTutorDemo";
 import CompanionRewardDance from "./CompanionRewardDance";
-import { getCustomizeModalCopy } from "./companionCustomizeCopy";
 import { PET_TYPES } from "../utils/petTypes";
-import { landingPageRefreshCopy, landingSectionLabel } from "./landingPageRefreshCopy";
-import { landingCapabilityCopy } from "./landingCapabilityCopy";
+import { landingSectionLabel } from "./landingCopyHelpers.js";
 import { LANDING_PROFICIENCY_LEVELS, LANDING_PROFICIENCY_STATS } from "./landingProficiencyStats";
 import "./landingPageSections.css";
 
@@ -122,7 +120,7 @@ function PracticePreview({ mode, copy, words, lang, visible }) {
 function CompanionCarousel({ copy, words, lang }) {
   const [index, setIndex] = useState(0);
   const prefersReducedMotion = useReducedMotion();
-  const names = getCustomizeModalCopy(lang);
+  const names = readPublicPageCopy("landing", lang).companionNames;
   const type = PET_TYPES[index];
 
   function move(direction) {
@@ -220,10 +218,8 @@ export default function LandingPageSections({
 }) {
   const [activeTab, setActiveTab] = useState("speak");
   const [toolkitOpen, setToolkitOpen] = useState(false);
-  const words = {
-    ...(landingPageRefreshCopy[lang] || landingPageRefreshCopy.en),
-    ...(landingCapabilityCopy[lang] || landingCapabilityCopy.en),
-  };
+  const bundle = readPublicPageCopy("landing", lang);
+  const words = { ...bundle.refresh, ...bundle.capabilities };
   const tabs = [
     {
       id: "speak",
@@ -247,7 +243,7 @@ export default function LandingPageSections({
       detail: words.proficiencyDetail,
     },
   ];
-  const ethos = getLandingEthosCopy(lang);
+  const ethos = bundle.ethos;
   const visibleFaqs = [faqs[0], { q: ethos.bitcoinQuestion, a: ethos.bitcoinAnswer }, { q: words.costQuestion, a: words.costAnswer }];
   const cards = [
     { id: "companion", title: copy.feature_companion, desc: words.companionDesc, icon: <Heart size={18} /> },

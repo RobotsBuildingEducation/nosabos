@@ -1,3 +1,6 @@
+import { PreparedLessonContext } from "./features/lessonPreparation/PreparedLessonContext";
+import { preparationContext, prepareSkillTreeLesson } from "./features/lessonPreparation/runtime";
+import { lessonPreparationScope } from "./features/lessonPreparation/session";
 import usePiyaliAchievements from "./hooks/usePiyaliAchievements.js";
 import useAccountSnapshot from "./hooks/useAccountSnapshot.js";
 import { awardPiyaliFlashcardProgress } from "./utils/piyaliFlashcardAchievements.js";
@@ -31,6 +34,7 @@ import React, {
   lazy,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -163,7 +167,8 @@ import useSoundSettings, {
 
 import GrammarBook from "./components/GrammarBook";
 import Onboarding from "./components/Onboarding";
-import VoiceOrb from "./components/VoiceOrbNext";
+import LoadingEllipsis from "./components/LoadingEllipsis.jsx";
+import { getBootLoadingStage } from "./utils/bootLoadingStage.js";
 import RealTimeTest from "./components/RealTimeTest";
 import BottomDrawerDragHandle from "./components/BottomDrawerDragHandle";
 import VoicePreferenceField from "./components/VoicePreferenceField";
@@ -407,6 +412,7 @@ import {
 } from "./constants/languages";
 
 import { syncDocumentLanguage } from "./utils/documentLanguage";
+import { detectInitialLanguage } from "./utils/initialLanguage.js";
 import { getGermanCopy } from "./utils/germanCopy";
 import {
   clearAccountSwitch,
@@ -619,7 +625,6 @@ const CEFR_LEVELS = new Set(["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"]);
 const ONBOARDING_TOTAL_STEPS = 1;
 
 const DEFAULT_VOICE_PAUSE_MS = 1200;
-const LOADING_ORB_STATES = ["idle", "listening", "speaking"];
 
 // Repair routing: which surface each repair-step mode opens. Only modes
 // whose surface is wired for repair (seeding + completion) belong here;
@@ -650,30 +655,6 @@ function hasVisibleChakraModalSurface() {
       element.getAttribute("aria-hidden") !== "true"
     );
   });
-}
-
-function getRandomLoadingOrbState() {
-  return LOADING_ORB_STATES[
-    Math.floor(Math.random() * LOADING_ORB_STATES.length)
-  ];
-}
-
-function LoadingOrbFallback({ minH = "420px", bg }) {
-  const orbState = useMemo(getRandomLoadingOrbState, []);
-
-  return (
-    <Flex
-      minH={minH}
-      bg={bg}
-      display="flex"
-      flexDirection="column"
-      alignItems="center"
-      justifyContent="center"
-      p={6}
-    >
-      <VoiceOrb state={orbState} size={88} />
-    </Flex>
-  );
 }
 
 // Quiet placeholder for the rare paths that reach the game view before the
@@ -3131,12 +3112,7 @@ export default function App({ onBootReady } = {}) {
   const [isSavingPasscode, setIsSavingPasscode] = useState(false);
 
   const storedUiLang = useMemo(() => {
-    if (typeof window === "undefined") return "";
-    try {
-      return localStorage.getItem("appLanguage") || "";
-    } catch {
-      return "";
-    }
+    return detectInitialLanguage();
   }, []);
 
   const normalizeSupportLang = useCallback((raw) => {
@@ -3383,9 +3359,7 @@ export default function App({ onBootReady } = {}) {
 
   // UI language for the *app UI*
   const [appLanguage, setAppLanguage] = useState(() => {
-    if (typeof window === "undefined") return DEFAULT_SUPPORT_LANGUAGE;
-    const stored = localStorage.getItem("appLanguage");
-    return normalizeSupportLanguage(stored, DEFAULT_SUPPORT_LANGUAGE);
+    return detectInitialLanguage();
   });
   // Guards stale Firestore snapshots from reverting an in-flight language change.
   usePiyaliAchievements(user, resolvedTargetLang, activeNpub, appLanguage);
@@ -4039,6 +4013,9 @@ export default function App({ onBootReady } = {}) {
   // to, so we remount the current one to regenerate a fresh question — the
   // same effect a tab-hop has in multi-module lessons.
   const [lessonModuleNonce, setLessonModuleNonce] = useState(0);
+  const lessonPreparationRef = useRef(null);
+  const skillTreePreparationEnabledRef = useRef(false);
+  const [preparedLessonTicket, setPreparedLessonTicket] = useState(null);
   const [preGeneratedGameScenario, setPreGeneratedGameScenario] =
     useState(null);
   const [tutorialGameScenario, setTutorialGameScenario] = useState(null);
@@ -4457,9 +4434,43 @@ export default function App({ onBootReady } = {}) {
     );
   }, [activeLesson]);
 
+  const lessonPreparationContext = preparationContext({ lesson: activeLesson, account: activeNpub,
+    targetLang: resolvedTargetLang, supportLang: resolvedSupportLang, user });
+  const lessonPreparationKey = lessonPreparationScope(lessonPreparationContext);
+  const currentPreparedTicket = lessonPreparationRef.current?.matches(lessonPreparationContext)
+    && preparedLessonTicket?.mode === currentTab ? preparedLessonTicket : null;
+
   const lessonCompletionTriggeredRef = useRef(false);
   const activeLessonLanguageRef = useRef(resolvedTargetLang);
   const lastTargetLangRef = useRef(resolvedTargetLang);
+  useEffect(() => {
+    const session = lessonPreparationRef.current;
+    if (viewMode !== "lesson") skillTreePreparationEnabledRef.current = false;
+    if (!session) return;
+    if (viewMode !== "lesson" || !session.matches(lessonPreparationContext)) {
+      session.dispose();
+      lessonPreparationRef.current = null;
+      setPreparedLessonTicket(null);
+      return;
+    }
+    if (lessonCompletionTriggeredRef.current) {
+      session.finish();
+      return;
+    }
+    let cancelled = false;
+    const current = preparedLessonTicket;
+    current?.promise.then(() => {
+      if (!cancelled && session.current === current && !lessonCompletionTriggeredRef.current) {
+        session.prepareNext(current.mode, { ...lessonPreparationContext, user: useUserStore.getState().user });
+      }
+    });
+    return () => { cancelled = true; };
+    // Rating updates do not invalidate prepared content; quotes use the latest
+    // rating when the prepared exercise is actually activated.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewMode, lessonPreparationKey, preparedLessonTicket, user]);
+  useEffect(() => () => lessonPreparationRef.current?.dispose(), []);
+
   const pendingLessonCompletionRef = useRef(null);
   const lessonCompletionSequenceActiveRef = useRef(false);
   // Tutor completions commit BEFORE their modal can mount (the Tutor waits
@@ -4593,6 +4604,11 @@ export default function App({ onBootReady } = {}) {
 
   const handleSelectTab = useCallback((value) => {
     const next = String(value || "realtime");
+    if (lessonPreparationRef.current?.current?.mode !== next) {
+      lessonPreparationRef.current?.dispose();
+      lessonPreparationRef.current = null;
+      setPreparedLessonTicket(null);
+    }
     setCurrentTab(next);
     if (typeof window !== "undefined") {
       localStorage.setItem("currentTab", next);
@@ -6049,7 +6065,7 @@ export default function App({ onBootReady } = {}) {
   );
 
   // Handle starting a lesson from the skill tree
-  const handleStartLesson = async (lesson, preGeneratedScenario = null) => {
+  const handleStartLesson = async (lesson, preGeneratedScenario = null, preparationSession = null) => {
     if (!lesson) return false;
     // Ephemeral repair lessons aren't part of the learning path: no game-review
     // enrichment (their id isn't in any unit) and no lesson-progress writes.
@@ -6177,6 +6193,15 @@ export default function App({ onBootReady } = {}) {
         };
         patchUser?.({ progress: freshProgressSource });
       }
+
+      const preparation = preparationContext({ lesson: enrichedLesson, account: activeNpub,
+        targetLang: resolvedTargetLang, supportLang: resolvedSupportLang });
+      const adoptedSession = preparationSession?.matches(preparation) ? preparationSession : null;
+      if (lessonPreparationRef.current !== adoptedSession) lessonPreparationRef.current?.dispose();
+      lessonPreparationRef.current = adoptedSession;
+      skillTreePreparationEnabledRef.current = Boolean(adoptedSession);
+      if (adoptedSession) adoptedSession.started = true;
+      setPreparedLessonTicket(adoptedSession?.current || null);
 
       // Set active lesson and persist it
       setActiveLesson(enrichedLesson);
@@ -6511,6 +6536,7 @@ export default function App({ onBootReady } = {}) {
 
       console.log("[Lesson Completion] Triggered", { reason, activeLesson });
       lessonCompletionTriggeredRef.current = true;
+      lessonPreparationRef.current?.finish();
       lessonCompletionSequenceActiveRef.current = true;
 
       const npub = resolveNpub();
@@ -6686,7 +6712,7 @@ export default function App({ onBootReady } = {}) {
     // Read the latest store: a click may race the render that replaces the
     // engine with the completion screen. Never enqueue another question then.
     if (
-      isGoalLessonReady(
+      lessonCompletionTriggeredRef.current || isGoalLessonReady(
         useUserStore.getState().user?.learningIntelligence?.[
           resolvedTargetLang
         ],
@@ -6696,6 +6722,37 @@ export default function App({ onBootReady } = {}) {
       return;
 
     const availableModes = activeLesson.modes;
+    const preparedSession = lessonPreparationRef.current;
+    const nextContext = preparationContext({ lesson: activeLesson, account: activeNpub,
+      targetLang: resolvedTargetLang, supportLang: resolvedSupportLang });
+    let nextTicket = null;
+    if (preparedSession?.matches(nextContext)) {
+      nextTicket = preparedSession.advance(preparedLessonTicket?.id, nextContext);
+    } else if (skillTreePreparationEnabledRef.current) {
+      // Settings or a manually selected tab can invalidate a queued draft.
+      // Resume the one-ahead pipeline with the next actual module.
+      preparedSession?.dispose();
+      const candidates = isTutorialMode && activeLesson.isTutorial
+        ? availableModes.slice(availableModes.indexOf(currentTab) + 1, availableModes.indexOf(currentTab) + 2)
+        : availableModes.length > 1 ? availableModes.filter(mode => mode !== currentTab) : availableModes;
+      const nextMode = candidates[Math.floor(Math.random() * candidates.length)];
+      if (nextMode) {
+        const session = prepareSkillTreeLesson(nextContext, nextMode);
+        session.started = true;
+        lessonPreparationRef.current = session;
+        nextTicket = session.current;
+      }
+    }
+    if (nextTicket) {
+      if (isTutorialMode && !tutorialCompletedModules.includes(currentTab)) {
+        setTutorialCompletedModules((previous) => [...previous, currentTab]);
+      }
+      setPreparedLessonTicket(nextTicket);
+      setLessonModuleNonce((nonce) => nonce + 1);
+      setCurrentTab(nextTicket.mode);
+      localStorage.setItem("currentTab", nextTicket.mode);
+      return;
+    }
 
     // TUTORIAL MODE: Sequential navigation through modules
     if (isTutorialMode && activeLesson.isTutorial) {
@@ -6770,6 +6827,9 @@ export default function App({ onBootReady } = {}) {
     tutorialCompletedModules,
     triggerLessonCompletion,
     resolvedTargetLang,
+    resolvedSupportLang,
+    activeNpub,
+    preparedLessonTicket,
   ]);
 
   // Handle closing the completion modal and returning to skill tree
@@ -10452,11 +10512,26 @@ export default function App({ onBootReady } = {}) {
       isResolved: patreonStatusResolved,
       isChecking: isCheckingPatreon,
     });
-  const isBootLoading =
-    isLoadingApp ||
-    !user ||
-    shouldHoldForInitialSkillTree ||
-    isResolvingSubscription;
+  const bootLoadingStage = getBootLoadingStage({
+    isLoadingApp,
+    hasUser: Boolean(user),
+    shouldHoldForInitialSkillTree,
+    isResolvingSubscription,
+  });
+  const isBootLoading = bootLoadingStage !== null;
+  const isProfileReady = !isLoadingApp && Boolean(user);
+
+  useLayoutEffect(() => {
+    const tracker = window.__piyaliStartupResources;
+    tracker?.beginPage("app");
+    tracker?.completeCode("app");
+    tracker?.setStep("profile", isProfileReady);
+    tracker?.setStep("access", isProfileReady && !isResolvingSubscription);
+    tracker?.setStep("lessons", isProfileReady && !shouldHoldForInitialSkillTree);
+    if (isBootLoading) tracker?.setStep("page", false);
+    onBootReady?.(!isBootLoading);
+  }, [isProfileReady, isResolvingSubscription, shouldHoldForInitialSkillTree, isBootLoading, onBootReady]);
+
 
   useEffect(() => {
     if (hasCompletedInitialSkillTreeBoot) return;
@@ -10469,11 +10544,6 @@ export default function App({ onBootReady } = {}) {
     user,
     shouldHoldForInitialSkillTree,
   ]);
-
-  useEffect(() => {
-    if (isBootLoading) return;
-    onBootReady?.();
-  }, [isBootLoading, onBootReady]);
 
   useEffect(() => {
     if (
@@ -10495,7 +10565,7 @@ export default function App({ onBootReady } = {}) {
   ]);
 
   if (isBootLoading) {
-    return <LoadingOrbFallback minH="100vh" bg="gray.900" />;
+    return <LoadingEllipsis language={appLanguage} />;
   }
 
   const onboardingInitialDraft = {
@@ -11006,6 +11076,7 @@ export default function App({ onBootReady } = {}) {
             />
           )}
 
+          <PreparedLessonContext.Provider value={currentPreparedTicket}>
           <Tabs
             index={tabIndex}
             onChange={(i) => {
@@ -11177,6 +11248,7 @@ export default function App({ onBootReady } = {}) {
               })}
             </TabPanels>
           </Tabs>
+          </PreparedLessonContext.Provider>
           {goalLessonReady && (
             <GoalLessonCompletion
               key={activeLesson.id}

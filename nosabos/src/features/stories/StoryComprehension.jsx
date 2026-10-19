@@ -1,3 +1,4 @@
+import { usePreparedLessonQuestion } from "../lessonPreparation/PreparedLessonContext";
 import { getSpeechPracticeErrorFeedback } from "../../utils/speechPracticeFeedback.js";
 import { getStoryDifficulty } from "./storyPrompts";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -73,6 +74,7 @@ const resolveStoryTitleText = (value, uiLang = "en", supportLang = "en", targetL
 
 export default function StoryComprehension({ mode, targetLang, supportLang, targetName, supportName, uiLang, cefrLevel, npub, lesson, lessonContent, onSkip, onNewStory, lessonEarnedXp = 0, services = storyServices, useSpeech = useSpeechPractice }) {
   const user = useUserStore((s) => s.user);
+  const preparedQuestion = usePreparedLessonQuestion("stories", lesson);
   const playSound = useSoundSettings((s) => s.playSound);
   const effectiveLang = normalizeSupportLanguage(supportLang || uiLang, "en");
   const copy = storyCopy(effectiveLang);
@@ -252,7 +254,7 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
     let cancelled = false;
     const generate = async () => {
       try {
-        const plan = createStoryPlan({ lessonContent: JSON.parse(context), lessonId, npub, targetLang, mode });
+        const plan = (await preparedQuestion.ticket?.promise)?.storyPlan || createStoryPlan({ lessonContent: JSON.parse(context), lessonId, npub, targetLang, mode });
         const streamPrompt = buildStorySessionStreamPrompt({
           mode,
           targetName,
@@ -289,11 +291,11 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
 
         try {
           const streamResult = services.generateStream
-            ? await services.generateStream(streamPrompt)
-            : await storyModel.generateContentStream({
+            ? await preparedQuestion.stream(() => services.generateStream(streamPrompt))
+            : await preparedQuestion.stream(() => storyModel.generateContentStream({
                 contents: [{ role: "user", parts: [{ text: streamPrompt }] }],
                 generationConfig: { temperature: 0.7 },
-              });
+              }));
 
           for await (const chunk of streamResult.stream) {
             if (cancelled) return;
@@ -333,6 +335,8 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
             return;
           }
         } catch (streamErr) {
+          if (preparedQuestion.cancelled) return;
+          preparedQuestion.discard();
           console.warn("[Stories] Streaming failed in StoryComprehension, falling back to batch generator", streamErr);
         }
 
@@ -370,7 +374,7 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
     };
     generate();
     return () => { cancelled = true; };
-  }, [mode, targetName, supportName, targetLang, supportLang, cefrLevel, context, lessonId, npub, generation, services]);
+  }, [mode, targetName, supportName, targetLang, supportLang, cefrLevel, context, lessonId, npub, generation, services, preparedQuestion]);
 
   useEffect(() => {
     setHasPlayed(false);
@@ -1212,4 +1216,14 @@ export default function StoryComprehension({ mode, targetLang, supportLang, targ
       )}
     </QuestionActionArea>
   </VStack>;
+}
+
+// Shared with background preparation; this export does not mount the renderer.
+// eslint-disable-next-line react-refresh/only-export-components
+export function buildLessonPreparationRecipe({ lesson, lessonContent, account, targetLang, supportLang, targetName, supportName }, options) {
+  const mode = options.storyMode;
+  const plan = createStoryPlan({ lessonContent, lessonId: lesson.id, npub: account, targetLang, mode });
+  const prompt = buildStorySessionStreamPrompt({ mode, targetName, supportName, targetLang, supportLang,
+    difficulty: getStoryDifficulty(options.cefrLevel), context: `${plan.objective}\n${buildStoryDiversityPrompt(plan)}`, userCharacterName: "You" });
+  return { prompt, generationConfig: { temperature: 0.7 }, metadata: { storyPlan: plan, comprehensionStory: true } };
 }
