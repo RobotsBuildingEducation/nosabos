@@ -10,6 +10,7 @@ import {
 } from "@chakra-ui/react";
 import { FaInstagram, FaLinkedinIn } from "react-icons/fa";
 import { SiPatreon } from "react-icons/si";
+import GmailIcon from "./GmailIcon";
 import { LuArrowUpRight, LuPencilLine } from "react-icons/lu";
 import { keyframes } from "@emotion/react";
 import RandomCharacter from "./RandomCharacter";
@@ -311,6 +312,12 @@ function MangaToolbar({
 }) {
   const socialItems = [
     {
+      label: "Gmail",
+      icon: <GmailIcon size={16} />,
+      bg: isLightTheme ? "#ffffff" : "#17171a",
+      url: "mailto:sheilfer@robotsbuildingeducation.com",
+    },
+    {
       label: "Instagram",
       icon: <FaInstagram size={19} />,
       bg: "radial-gradient(circle at 30% 107%, #fdf497 0%, #fd5949 45%, #d6249f 62%, #285AEB 92%)",
@@ -370,6 +377,8 @@ function MangaToolbar({
           borderColor={
             item.label === "Instagram"
               ? "transparent"
+              : item.label === "Gmail" && isLightTheme
+              ? "rgba(0, 0, 0, 0.12)"
               : isLightTheme
               ? "rgba(245, 158, 11, 0.36)"
               : "rgba(147, 197, 253, 0.32)"
@@ -378,7 +387,15 @@ function MangaToolbar({
           transition="transform 150ms ease"
           _hover={{ transform: "translateY(-2px)" }}
           _focusVisible={{ outline: `3px solid ${ink}`, outlineOffset: "2px" }}
-          onClick={() => onSocialClick(item.label.toLowerCase(), item.url)}
+          onClick={() => {
+            if (onSocialClick) {
+              onSocialClick(item.label.toLowerCase(), item.url);
+            } else if (item.url?.startsWith("mailto:")) {
+              window.location.href = item.url;
+            } else {
+              window.open(item.url, "_blank", "noopener,noreferrer");
+            }
+          }}
         >
           {item.icon}
         </Box>

@@ -37,6 +37,7 @@ import { keyframes } from "@emotion/react";
 import { QRCodeSVG } from "qrcode.react";
 import { BsQrCode } from "react-icons/bs";
 import { SiCashapp, SiPatreon } from "react-icons/si";
+import GmailIcon from "./GmailIcon";
 import { FaKey, FaInstagram, FaLinkedinIn } from "react-icons/fa";
 import { LuPencilLine, LuSun } from "react-icons/lu";
 import { RiMoonClearFill } from "react-icons/ri";
@@ -1293,6 +1294,12 @@ function LinksHero({
 }) {
   const socialItems = [
     {
+      label: "Gmail",
+      icon: <GmailIcon size={16} />,
+      bg: isLightTheme ? "#ffffff" : "#17171a",
+      url: "mailto:sheilfer@robotsbuildingeducation.com",
+    },
+    {
       label: "Instagram",
       icon: <FaInstagram size={20} />,
       bg: "radial-gradient(circle at 30% 107%, #fdf497 0%, #fd5949 45%, #d6249f 62%, #285AEB 92%)",
@@ -2410,6 +2417,12 @@ function MangaCover({
     }, 420);
   };
   const socialItems = [
+    {
+      label: "Gmail",
+      icon: <GmailIcon size={16} />,
+      bg: isLightTheme ? "#ffffff" : "#17171a",
+      url: "mailto:sheilfer@robotsbuildingeducation.com",
+    },
     {
       label: "Instagram",
       icon: <FaInstagram size={20} />,
@@ -4401,7 +4414,11 @@ export default function LinksPage() {
           if (!isLocalhost()) {
             recordPublicEvent("links_social_click", { platform });
           }
-          window.open(url, "_blank", "noopener,noreferrer");
+          if (url?.startsWith("mailto:")) {
+            window.location.href = url;
+          } else {
+            window.open(url, "_blank", "noopener,noreferrer");
+          }
         }}
         languageControl={
           <LanguageMenuFixed

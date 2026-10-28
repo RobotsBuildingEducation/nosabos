@@ -36,6 +36,7 @@ import { keyframes } from "@emotion/react";
 import { QRCodeSVG } from "qrcode.react";
 import { BsQrCode } from "react-icons/bs";
 import { SiCashapp, SiPatreon } from "react-icons/si";
+import GmailIcon from "./GmailIcon";
 import { FaKey, FaInstagram, FaLinkedinIn } from "react-icons/fa";
 import { LuSun } from "react-icons/lu";
 import { RiMoonClearFill } from "react-icons/ri";
@@ -1567,6 +1568,36 @@ export default function LinksPage() {
             pt={{ base: 3, md: 1 }}
           >
             <HStack spacing={{ base: 3, md: 4 }} dir="ltr">
+              <Box
+                aria-label="Gmail"
+                bg={isLightTheme ? "#ffffff" : "#17171a"}
+                borderRadius="12px"
+                style={{ cornerShape: BUTTON_SQUIRCLE_SHAPE }}
+                w="36px"
+                h="36px"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                border="1px solid"
+                borderColor={
+                  isLightTheme
+                    ? "rgba(0, 0, 0, 0.12)"
+                    : "rgba(147, 197, 253, 0.32)"
+                }
+                cursor="pointer"
+                onClick={() => {
+                  handleSelectSound();
+                  if (!isLocalhost()) {
+                    logEvent(analytics, "links_social_click", {
+                      platform: "gmail",
+                    });
+                  }
+                  window.location.href =
+                    "mailto:sheilfer@robotsbuildingeducation.com";
+                }}
+              >
+                <GmailIcon size={16} />
+              </Box>
               <Box
                 aria-label="Instagram"
                 bg="radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%)"
