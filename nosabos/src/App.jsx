@@ -312,6 +312,7 @@ import {
   setRemainingSeconds,
 } from "./provider/SessionTimerProvider";
 import ProficiencyTestModal from "./components/ProficiencyTestModal";
+import PaperPencilModal from "./components/PaperPencilModal";
 import GettingStartedModal from "./components/GettingStartedModal";
 import BitcoinSupportModal from "./components/BitcoinSupportModal";
 import RandomCharacter from "./components/RandomCharacter";
@@ -4996,6 +4997,7 @@ export default function App({ onBootReady } = {}) {
   }, [openDailyGoalCelebration]);
   const [proficiencyTestOpen, setProficiencyTestOpen] = useState(false);
   const proficiencyPromptOpenedForRef = useRef("");
+  const [paperPencilOpen, setPaperPencilOpen] = useState(false);
   const [gettingStartedOpen, setGettingStartedOpen] = useState(false);
 
   const blurActiveElement = useCallback(() => {
@@ -5064,7 +5066,8 @@ export default function App({ onBootReady } = {}) {
   const isTimerRunning = timerActive && !timerPaused && hasTimer;
   // App-owned modals that share the persistent dim with the store-backed
   // daily-goal and timer modals when users open those tools intentionally.
-  const appOnboardingChainOpen = proficiencyTestOpen || gettingStartedOpen;
+  const appOnboardingChainOpen =
+    proficiencyTestOpen || paperPencilOpen || gettingStartedOpen;
 
   useEffect(() => {
     if (timeUpOpen && timerOwnerRef.current === activeNpub && timerSessionIdRef.current && timerDurationSeconds > 0) {
@@ -7402,8 +7405,16 @@ export default function App({ onBootReady } = {}) {
   const handleCompanionContinue = useCallback(() => {
     const latestUser = useUserStore.getState()?.user || user || {};
 
-    // The install prompt is the first step after onboarding. Returning users
-    // who have already seen it continue straight to the proficiency decision.
+    // The paper & pencil suggestion is the first step after onboarding,
+    // followed by the install prompt, then the proficiency decision.
+    if (
+      latestUser.paperPencilModalShown !== true &&
+      latestUser.gettingStartedModalShown !== true
+    ) {
+      setPaperPencilOpen(true);
+      return;
+    }
+
     if (latestUser.gettingStartedModalShown !== true) {
       setGettingStartedOpen(true);
       return;
@@ -7416,6 +7427,46 @@ export default function App({ onBootReady } = {}) {
     setProficiencyTestOpen(false);
     navigate("/proficiency");
   }, [navigate]);
+
+  // Paper & pencil modal: mark as shown and persist to Firestore.
+  const markPaperPencilShown = useCallback(async () => {
+    const id = resolveNpub();
+    if (id) {
+      try {
+        await setDoc(
+          doc(database, "users", id),
+          {
+            paperPencilModalShown: true,
+            updatedAt: new Date().toISOString(),
+          },
+          { merge: true },
+        );
+        patchUser?.({ paperPencilModalShown: true });
+      } catch (e) {
+        console.warn("Failed to persist paper pencil shown:", e);
+      }
+    }
+  }, [resolveNpub, patchUser]);
+
+  const handlePaperPencilUnderstood = useCallback(() => {
+    flushSync(() => {
+      setPaperPencilOpen(false);
+    });
+    void markPaperPencilShown();
+    runAfterNextPaint(() => {
+      const latestUser = useUserStore.getState()?.user || user || {};
+      if (latestUser.gettingStartedModalShown !== true) {
+        setGettingStartedOpen(true);
+        return;
+      }
+      openProficiencyPromptIfNeeded();
+    });
+  }, [
+    markPaperPencilShown,
+    openProficiencyPromptIfNeeded,
+    runAfterNextPaint,
+    user,
+  ]);
 
   // Install modal: mark as shown and persist to Firestore.
   const markGettingStartedShown = useCallback(async () => {
@@ -9894,6 +9945,7 @@ export default function App({ onBootReady } = {}) {
     celebrateOpen,
     companionUnlockModalOpen: Boolean(companionUnlockModal),
     gettingStartedOpen,
+    paperPencilOpen,
     pendingTutorialBitcoinModal,
     plateCelebrationOpen: Boolean(plateCelebration),
     proficiencyTestOpen,
@@ -11287,6 +11339,13 @@ export default function App({ onBootReady } = {}) {
         }
       />
 
+      <PaperPencilModalSharedBackdropWrapper
+        isOpen={paperPencilOpen}
+        appChainOpen={appOnboardingChainOpen}
+        onClose={handlePaperPencilUnderstood}
+        lang={appLanguage}
+      />
+
       <GettingStartedModalSharedBackdropWrapper
         isOpen={gettingStartedOpen}
         appChainOpen={appOnboardingChainOpen}
@@ -12337,6 +12396,20 @@ function ProficiencyTestModalSharedBackdropWrapper({
 }) {
   return (
     <ProficiencyTestModal
+      isOpen={isOpen}
+      useSharedBackdrop={isOpen || appChainOpen}
+      {...props}
+    />
+  );
+}
+
+function PaperPencilModalSharedBackdropWrapper({
+  isOpen,
+  appChainOpen,
+  ...props
+}) {
+  return (
+    <PaperPencilModal
       isOpen={isOpen}
       useSharedBackdrop={isOpen || appChainOpen}
       {...props}
