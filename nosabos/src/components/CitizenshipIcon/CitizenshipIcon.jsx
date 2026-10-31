@@ -263,13 +263,52 @@ export default function CitizenshipIcon({ size = 114 }) {
       ctx.restore();
     };
 
+    let inView = typeof IntersectionObserver === "undefined";
+    let disposed = false;
+
     const loop = (now) => {
+      raf = 0;
+      if (disposed || document.hidden || !inView) return;
       draw(now);
-      raf = window.requestAnimationFrame(loop);
+      if (!reduceMotion) {
+        raf = window.requestAnimationFrame(loop);
+      }
     };
 
-    raf = window.requestAnimationFrame(loop);
-    return () => window.cancelAnimationFrame(raf);
+    const resume = () => {
+      if (!disposed && !document.hidden && inView && !raf && !reduceMotion) {
+        raf = window.requestAnimationFrame(loop);
+      }
+    };
+
+    draw(start);
+
+    let observer;
+    if (typeof IntersectionObserver !== "undefined") {
+      observer = new IntersectionObserver(
+        ([entry]) => {
+          inView = Boolean(entry?.isIntersecting);
+          if (inView) {
+            resume();
+          } else if (raf) {
+            window.cancelAnimationFrame(raf);
+            raf = 0;
+          }
+        },
+        { rootMargin: "120px 0px" },
+      );
+      observer.observe(canvas);
+    } else {
+      resume();
+    }
+
+    document.addEventListener("visibilitychange", resume);
+    return () => {
+      disposed = true;
+      if (raf) window.cancelAnimationFrame(raf);
+      observer?.disconnect();
+      document.removeEventListener("visibilitychange", resume);
+    };
   }, [size]);
 
   return (

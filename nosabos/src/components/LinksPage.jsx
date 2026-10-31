@@ -1,5 +1,5 @@
 import { loadPublicPageCopy, readPublicPageCopy } from "../features/publicCopy/index.js";
-import React, { lazy, Suspense, useEffect, useRef, useState, useMemo } from "react";
+import React, { lazy, Suspense, useCallback, useEffect, useRef, useState, useMemo } from "react";
 import {
   Accordion,
   AccordionButton as ChakraAccordionButton,
@@ -312,7 +312,6 @@ const getTopControlProps = (isLightTheme) => ({
     ? "rgba(77, 58, 36, 0.34)"
     : "rgba(148, 163, 184, 0.26)",
   boxShadow: isLightTheme ? "none" : "0 10px 24px rgba(0, 0, 0, 0.22)",
-  backdropFilter: "blur(20px)",
   _hover: {
     bg: isLightTheme ? "rgba(77, 58, 36, 0.08)" : "rgba(255, 255, 255, 0.07)",
   },
@@ -725,6 +724,25 @@ function AnimeBackdrop({ isLightTheme = false }) {
 }
 
 function PatreonMotionMark({ isLightTheme = false }) {
+  const hostRef = useRef(null);
+  const [inView, setInView] = useState(
+    () => typeof IntersectionObserver === "undefined",
+  );
+
+  useEffect(() => {
+    const node = hostRef.current;
+    if (!node || typeof IntersectionObserver === "undefined") return undefined;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setInView(Boolean(entry?.isIntersecting));
+      },
+      { rootMargin: "120px 0px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  const playStateStyle = { animationPlayState: inView ? "running" : "paused" };
   const logoPath =
     "M53 132 C38 116 39 88 42 66 C45 39 62 24 89 23 C115 22 137 35 138 56 C139 75 125 88 103 91 C87 93 82 106 76 122 C71 137 61 141 53 132 Z";
   const morphPaths = [
@@ -736,6 +754,7 @@ function PatreonMotionMark({ isLightTheme = false }) {
 
   return (
     <Box
+      ref={hostRef}
       role="img"
       aria-label="Animated Patreon symbol"
       w={{ base: "190px", md: "220px" }}
@@ -762,6 +781,7 @@ function PatreonMotionMark({ isLightTheme = false }) {
         }
         filter="blur(18px)"
         animation={`${patreonAura} 11s linear infinite`}
+        style={playStateStyle}
       />
       <Box
         position="absolute"
@@ -772,6 +792,7 @@ function PatreonMotionMark({ isLightTheme = false }) {
           isLightTheme ? "rgba(209,61,116,0.28)" : "rgba(255,116,170,0.38)"
         }
         animation={`${orbitSpin} 18s linear infinite reverse`}
+        style={playStateStyle}
       />
       <Box
         position="absolute"
@@ -783,6 +804,7 @@ function PatreonMotionMark({ isLightTheme = false }) {
         bg={isLightTheme ? "rgba(120,42,75,0.24)" : "rgba(0,0,0,0.46)"}
         filter="blur(9px)"
         animation={`${patreonShadowBreath} 5.2s ease-in-out infinite`}
+        style={playStateStyle}
       />
 
       <Box
@@ -791,6 +813,7 @@ function PatreonMotionMark({ isLightTheme = false }) {
         position="relative"
         zIndex={2}
         animation={`${patreonLevitate} 5.2s cubic-bezier(.45,.05,.35,1) infinite`}
+        style={playStateStyle}
         sx={{
           "@media (prefers-reduced-motion: reduce)": { animation: "none" },
         }}
@@ -861,15 +884,17 @@ function PatreonMotionMark({ isLightTheme = false }) {
               fill="url(#patreon-motion-gradient)"
               filter="url(#patreon-logo-shadow)"
             >
-              <animate
-                attributeName="d"
-                dur="5.2s"
-                repeatCount="indefinite"
-                calcMode="spline"
-                keyTimes="0;0.36;0.7;1"
-                keySplines="0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1"
-                values={morphPaths}
-              />
+              {inView ? (
+                <animate
+                  attributeName="d"
+                  dur="5.2s"
+                  repeatCount="indefinite"
+                  calcMode="spline"
+                  keyTimes="0;0.36;0.7;1"
+                  keySplines="0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1"
+                  values={morphPaths}
+                />
+              ) : null}
             </path>
             <path
               d={logoPath}
@@ -878,15 +903,17 @@ function PatreonMotionMark({ isLightTheme = false }) {
               strokeWidth="2"
               opacity="0.72"
             >
-              <animate
-                attributeName="d"
-                dur="5.2s"
-                repeatCount="indefinite"
-                calcMode="spline"
-                keyTimes="0;0.36;0.7;1"
-                keySplines="0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1"
-                values={morphPaths}
-              />
+              {inView ? (
+                <animate
+                  attributeName="d"
+                  dur="5.2s"
+                  repeatCount="indefinite"
+                  calcMode="spline"
+                  keyTimes="0;0.36;0.7;1"
+                  keySplines="0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1"
+                  values={morphPaths}
+                />
+              ) : null}
             </path>
             <ellipse
               cx="79"
@@ -938,6 +965,7 @@ function PatreonMotionMark({ isLightTheme = false }) {
           bg={spark.color}
           boxShadow={`0 0 14px ${spark.color}`}
           animation={`${patreonSpark} 3.8s ${spark.delay} ease-in-out infinite`}
+          style={playStateStyle}
         />
       ))}
     </Box>
@@ -3727,26 +3755,33 @@ export default function LinksPage() {
   const activeLanguage = language || initLanguage();
   const { copy: translations, hero: heroCopy, profileHero: profileHeroCopy } = readPublicPageCopy("links", activeLanguage);
   const languageRequest = useRef(0);
-  const setLanguage = async (nextLanguage) => {
-    const request = ++languageRequest.current;
-    try {
-      await loadPublicPageCopy("links", nextLanguage);
-      if (request === languageRequest.current) commitLanguage(nextLanguage);
-    } catch {
-      if (request === languageRequest.current) toast({ title: "Couldn’t load that language. Please try again.", status: "error" });
-    }
-  };
   useEffect(() => () => { languageRequest.current += 1; }, []);
   const pageDirection = getLanguageDirection(activeLanguage);
   const isRtl = pageDirection === "rtl";
   const directionalTextAlign = isRtl ? "right" : "left";
-  const [displayName, setDisplayName] = useState("");
-  const [usernameInput, setUsernameInput] = useState("");
+  const [displayName, setDisplayName] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return localStorage.getItem("displayName") || "";
+  });
+  const [usernameInput, setUsernameInput] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return localStorage.getItem("displayName") || "";
+  });
   const [nsecInput, setNsecInput] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isSwitching, setIsSwitching] = useState(false);
-  const [profilePicture, setProfilePicture] = useState("");
-  const [profilePictureUrlInput, setProfilePictureUrlInput] = useState("");
+  const [profilePicture, setProfilePicture] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return (
+      localStorage.getItem("profilePicture") ||
+      localStorage.getItem("profilePictureUrl") ||
+      ""
+    );
+  });
+  const [profilePictureUrlInput, setProfilePictureUrlInput] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return localStorage.getItem("profilePictureUrl") || "";
+  });
   const [randomCharacterKey] = useState(() => {
     const heroCharacters = ["24", "30", "31"];
     return heroCharacters[Math.floor(Math.random() * heroCharacters.length)];
@@ -3775,6 +3810,15 @@ export default function LinksPage() {
     onClose: onAboutClose,
   } = useDisclosure();
   const toast = useToast();
+  const setLanguage = useCallback(async (nextLanguage) => {
+    const request = ++languageRequest.current;
+    try {
+      await loadPublicPageCopy("links", nextLanguage);
+      if (request === languageRequest.current) commitLanguage(nextLanguage);
+    } catch {
+      if (request === languageRequest.current) toast({ title: "Couldn’t load that language. Please try again.", status: "error" });
+    }
+  }, [commitLanguage, toast]);
   const playSound = useSoundSettings((s) => s.playSound);
   const primaryAccent = isLightTheme ? "#0f766e" : "#00ffff";
   const secondaryAccent = isLightTheme ? "#c026d3" : "#ff00ff";
@@ -3855,31 +3899,52 @@ export default function LinksPage() {
     return Number.isFinite(numeric) ? numeric : 0;
   }, [walletBalance]);
 
-  // Prepare identity and then hydrate the wallet after the public page paints.
+  // Prepare identity and then hydrate the wallet after the public page paints
+  // and the hero entrance animation settles (or immediately if the profile modal opens).
+  const walletHydrationStartedRef = useRef(false);
   useEffect(() => {
+    if (walletHydrationStartedRef.current) return undefined;
     let alive = true;
-    const cancel = afterPublicPaint(() => { void (async () => {
-      try {
-        await generateNostrKeys("");
-        if (!alive) return;
-        const connected = await walletInit();
-        if (connected) {
-          const wallet = await initWallet();
-          if (alive && !wallet) {
-            setNoWalletFound(true);
+    let delayTimer = 0;
+
+    const runHydration = () => {
+      if (!alive || walletHydrationStartedRef.current) return;
+      walletHydrationStartedRef.current = true;
+      void (async () => {
+        try {
+          await generateNostrKeys("");
+          if (!alive) return;
+          const connected = await walletInit();
+          if (connected) {
+            const wallet = await initWallet();
+            if (alive && !wallet) {
+              setNoWalletFound(true);
+            }
           }
+        } catch (e) {
+          console.warn("Wallet hydrate failed:", e);
+        } finally {
+          if (alive) setWalletHydrating(false);
         }
-      } catch (e) {
-        console.warn("Wallet hydrate failed:", e);
-      } finally {
-        if (alive) setWalletHydrating(false);
-      }
-    })(); });
+      })();
+    };
+
+    if (isOpen) {
+      runHydration();
+      return () => {
+        alive = false;
+      };
+    }
+
+    const cancel = afterPublicPaint(() => {
+      delayTimer = window.setTimeout(runHydration, 1600);
+    });
     return () => {
       alive = false;
       cancel();
+      if (delayTimer) window.clearTimeout(delayTimer);
     };
-  }, [generateNostrKeys, walletInit, initWallet]);
+  }, [generateNostrKeys, walletInit, initWallet, isOpen]);
 
   // Initialize language based on timezone detection
   useEffect(() => {
@@ -3890,42 +3955,68 @@ export default function LinksPage() {
     syncDocumentLanguage(language);
   }, [language]);
 
-  // Load stored displayName and profilePicture
-  useEffect(() => {
-    const storedDisplayName = localStorage.getItem("displayName");
-    const storedProfilePicture = localStorage.getItem("profilePicture");
-    const storedProfilePictureUrl = localStorage.getItem("profilePictureUrl");
-    if (storedDisplayName) {
-      setDisplayName(storedDisplayName);
-      setUsernameInput(storedDisplayName);
-    }
-    if (storedProfilePicture) {
-      setProfilePicture(storedProfilePicture);
-    }
-    if (storedProfilePictureUrl) {
-      setProfilePictureUrlInput(storedProfilePictureUrl);
-      if (!storedProfilePicture) {
-        setProfilePicture(storedProfilePictureUrl);
-      }
-    }
-  }, []);
-
   const rbeUrl = "https://robotsbuildingeducation.com";
-  const handleRbeOpen = () => {
+  const handleRbeOpen = useCallback(() => {
     setHasCopiedRbeSecretKey(false);
     onRbeOpen();
-  };
-  const handleRbeClose = () => {
+  }, [onRbeOpen]);
+  const handleRbeClose = useCallback(() => {
     setHasCopiedRbeSecretKey(false);
     onRbeClose();
-  };
-  const handleSelectSound = () => playSound(selectSound);
-  const handleSubmitActionSound = () => playSound(submitActionSound);
-  const handleThemeModeChange = (nextMode) => {
-    if (nextMode === themeMode) return;
+  }, [onRbeClose]);
+  const handleSelectSound = useCallback(() => {
+    playSound(selectSound);
+  }, [playSound]);
+  const handleSubmitActionSound = useCallback(() => {
+    playSound(submitActionSound);
+  }, [playSound]);
+  const handleThemeModeChange = useCallback(
+    (nextMode) => {
+      if (nextMode === themeMode) return;
+      handleSelectSound();
+      syncThemeMode(nextMode);
+    },
+    [themeMode, handleSelectSound, syncThemeMode],
+  );
+  const handleProfileOpen = useCallback(() => {
     handleSelectSound();
-    syncThemeMode(nextMode);
-  };
+    onOpen();
+  }, [handleSelectSound, onOpen]);
+  const handleAboutOpen = useCallback(() => {
+    handleSelectSound();
+    onAboutOpen();
+  }, [handleSelectSound, onAboutOpen]);
+  const handleSocialClick = useCallback(
+    (platform, url) => {
+      handleSelectSound();
+      if (!isLocalhost()) {
+        recordPublicEvent("links_social_click", { platform });
+      }
+      if (url?.startsWith("mailto:")) {
+        window.location.href = url;
+      } else {
+        window.open(url, "_blank", "noopener,noreferrer");
+      }
+    },
+    [handleSelectSound],
+  );
+  const handleLaunchEvent = useCallback(
+    (link) => {
+      if (link.analyticsName === "nosabos_app") {
+        // A new tab can pause this tab's paint callbacks. Start identity
+        // preparation now; the app also observes saved-key storage events.
+        void generateNostrKeys("").catch((error) =>
+          console.warn("Could not prepare account", error),
+        );
+      }
+      if (!isLocalhost() && !link.onLaunch) {
+        recordPublicEvent("links_launch_app", {
+          app: link.analyticsName,
+        });
+      }
+    },
+    [generateNostrKeys],
+  );
 
   // Wallet handlers
   const handleCreateWallet = async () => {
@@ -4007,129 +4098,162 @@ export default function LinksPage() {
     ? "http://localhost:5173/citizenship"
     : "https://piyali.app/citizenship";
 
-  const links = [
-    {
-      title: translations.noSabosTitle,
-      description: translations.noSabosDescription,
-      href: "https://piyali.app",
-      analyticsName: "nosabos_app",
-      visual: (
-        <Box
-          w={{ base: "110px", md: "120px" }}
-          h={{ base: "110px", md: "120px" }}
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-        >
-          <VoiceOrb defer3D state={noSabosOrbState} excludeThinking sharedRenderer />
-        </Box>
-      ),
-      launchAppText: translations.launchApp,
-      accent: isLightTheme ? "#0f9f91" : "#3158a6",
-      accentSoft: isLightTheme
-        ? "rgba(15, 159, 145, 0.22)"
-        : "rgba(49, 88, 166, 0.18)",
-      shadowAccent: isLightTheme ? "#08776f" : "#203d78",
-      labelAccent: isLightTheme ? "#08776f" : "#203d78",
-      buttonTextShadow: "0px 1px 2px rgba(7, 16, 29, 0.55)",
-    },
-    {
-      title: translations.rbeTitle,
-      titleLines: translations.rbeTitle.trim().split(/\s+/),
-      description: translations.rbeDescription,
-      href: rbeUrl,
-      analyticsName: "robots_building_education",
-      onLaunch: handleRbeOpen,
-      visual: (
-        <Box
-          display="flex"
-          justifyContent="center"
-          alignItems="center"
-          w={{ base: "110px", md: "120px" }}
-          h={{ base: "110px", md: "120px" }}
-        >
-          <VoiceOrb defer3D state="idle" size={108} palette="peach" excludeThinking sharedRenderer />
-        </Box>
-      ),
-      launchAppText: translations.launchApp,
-      accent: "#d97706",
-      accentSoft: "rgba(217, 119, 6, 0.18)",
-      shadowAccent: "#9f5404",
-      labelAccent: "#9f5404",
-      buttonTextShadow: "0px 1px 2px rgba(7, 16, 29, 0.55)",
-    },
-    // {
-    //   title: translations.roadmapCashTitle,
-    //   description: translations.roadmapCashDescription,
-    //   href: "https://roadmap.cash",
-    //   analyticsName: "roadmap_cash",
-    //   visual: (
-    //     <Box
-    //       w={{ base: "140px", md: "140px" }}
-    //       h={{ base: "140px", md: "140px" }}
-    //       display="flex"
-    //       alignItems="center"
-    //       justifyContent="center"
-    //     >
-    //       <AnimatedLogo showWordmark={false} size={140} />
-    //     </Box>
-    //   ),
-    //   launchAppText: translations.launchApp,
-    // },
-    {
-      title: translations.citizenshipTitle,
-      description: translations.citizenshipDescription,
-      href: citizenshipUrl,
-      analyticsName: "citizenship",
-      visual: (
-        <Box
-          w={{ base: "110px", md: "120px" }}
-          h={{ base: "110px", md: "120px" }}
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-        >
-          <CitizenshipIcon size={114} />
-        </Box>
-      ),
-      launchAppText: translations.launchApp,
-      accent: isLightTheme ? "#3158a6" : "#0f9f91",
-      accentSoft: isLightTheme
-        ? "rgba(49, 88, 166, 0.18)"
-        : "rgba(15, 159, 145, 0.22)",
-      shadowAccent: isLightTheme ? "#203d78" : "#08776f",
-      labelAccent: isLightTheme ? "#203d78" : "#08776f",
-    },
-    {
-      title: translations.patreonTitle,
-      description: translations.patreonDescription,
-      href: "https://subscribe.piyali.app/",
-      analyticsName: "patreon",
-      visual: (
-        <Box
-          w={{ base: "190px", md: "220px" }}
-          h={{ base: "190px", md: "220px" }}
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-        >
-          <PatreonMotionMark isLightTheme={isLightTheme} />
-        </Box>
-      ),
-      launchAppText: translations.subscribe,
-      accent: "#d13d74",
-      accentSoft: "rgba(209, 61, 116, 0.18)",
-      shadowAccent: "#91254f",
-      labelAccent: "#91254f",
-      // The one-time "Buy apps" action is intentionally hidden while Patreon
-      // OAuth membership is the supported unlock path.
-      // secondaryAction: {
-      //   label: translations.buyApps,
-      //   href: "https://www.patreon.com/posts/146522893?forSale=true",
-      //   color: "#4da3ff",
+  const links = useMemo(
+    () => [
+      {
+        title: translations.noSabosTitle,
+        description: translations.noSabosDescription,
+        href: "https://piyali.app",
+        analyticsName: "nosabos_app",
+        visual: (
+          <Box
+            w={{ base: "110px", md: "120px" }}
+            h={{ base: "110px", md: "120px" }}
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+          >
+            <VoiceOrb defer3D state={noSabosOrbState} excludeThinking sharedRenderer />
+          </Box>
+        ),
+        launchAppText: translations.launchApp,
+        accent: isLightTheme ? "#0f9f91" : "#3158a6",
+        accentSoft: isLightTheme
+          ? "rgba(15, 159, 145, 0.22)"
+          : "rgba(49, 88, 166, 0.18)",
+        shadowAccent: isLightTheme ? "#08776f" : "#203d78",
+        labelAccent: isLightTheme ? "#08776f" : "#203d78",
+        buttonTextShadow: "0px 1px 2px rgba(7, 16, 29, 0.55)",
+      },
+      {
+        title: translations.rbeTitle,
+        titleLines: translations.rbeTitle.trim().split(/\s+/),
+        description: translations.rbeDescription,
+        href: rbeUrl,
+        analyticsName: "robots_building_education",
+        onLaunch: handleRbeOpen,
+        visual: (
+          <Box
+            display="flex"
+            justifyContent="center"
+            alignItems="center"
+            w={{ base: "110px", md: "120px" }}
+            h={{ base: "110px", md: "120px" }}
+          >
+            <VoiceOrb defer3D state="idle" size={108} palette="peach" excludeThinking sharedRenderer />
+          </Box>
+        ),
+        launchAppText: translations.launchApp,
+        accent: "#d97706",
+        accentSoft: "rgba(217, 119, 6, 0.18)",
+        shadowAccent: "#9f5404",
+        labelAccent: "#9f5404",
+        buttonTextShadow: "0px 1px 2px rgba(7, 16, 29, 0.55)",
+      },
+      // {
+      //   title: translations.roadmapCashTitle,
+      //   description: translations.roadmapCashDescription,
+      //   href: "https://roadmap.cash",
+      //   analyticsName: "roadmap_cash",
+      //   visual: (
+      //     <Box
+      //       w={{ base: "140px", md: "140px" }}
+      //       h={{ base: "140px", md: "140px" }}
+      //       display="flex"
+      //       alignItems="center"
+      //       justifyContent="center"
+      //     >
+      //       <AnimatedLogo showWordmark={false} size={140} />
+      //     </Box>
+      //   ),
+      //   launchAppText: translations.launchApp,
       // },
-    },
-  ];
+      {
+        title: translations.citizenshipTitle,
+        description: translations.citizenshipDescription,
+        href: citizenshipUrl,
+        analyticsName: "citizenship",
+        visual: (
+          <Box
+            w={{ base: "110px", md: "120px" }}
+            h={{ base: "110px", md: "120px" }}
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+          >
+            <CitizenshipIcon size={114} />
+          </Box>
+        ),
+        launchAppText: translations.launchApp,
+        accent: isLightTheme ? "#3158a6" : "#0f9f91",
+        accentSoft: isLightTheme
+          ? "rgba(49, 88, 166, 0.18)"
+          : "rgba(15, 159, 145, 0.22)",
+        shadowAccent: isLightTheme ? "#203d78" : "#08776f",
+        labelAccent: isLightTheme ? "#203d78" : "#08776f",
+      },
+      {
+        title: translations.patreonTitle,
+        description: translations.patreonDescription,
+        href: "https://subscribe.piyali.app/",
+        analyticsName: "patreon",
+        visual: (
+          <Box
+            w={{ base: "190px", md: "220px" }}
+            h={{ base: "190px", md: "220px" }}
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+          >
+            <PatreonMotionMark isLightTheme={isLightTheme} />
+          </Box>
+        ),
+        launchAppText: translations.subscribe,
+        accent: "#d13d74",
+        accentSoft: "rgba(209, 61, 116, 0.18)",
+        shadowAccent: "#91254f",
+        labelAccent: "#91254f",
+        // The one-time "Buy apps" action is intentionally hidden while Patreon
+        // OAuth membership is the supported unlock path.
+        // secondaryAction: {
+        //   label: translations.buyApps,
+        //   href: "https://www.patreon.com/posts/146522893?forSale=true",
+        //   color: "#4da3ff",
+        // },
+      },
+    ],
+    [
+      translations,
+      noSabosOrbState,
+      isLightTheme,
+      rbeUrl,
+      handleRbeOpen,
+      citizenshipUrl,
+    ],
+  );
+
+  const languageControl = useMemo(
+    () => (
+      <LanguageMenuFixed
+        language={language}
+        onSelect={setLanguage}
+        playSound={handleSelectSound}
+        translations={translations}
+        isLightTheme={isLightTheme}
+      />
+    ),
+    [language, setLanguage, handleSelectSound, translations, isLightTheme],
+  );
+
+  const themeControl = useMemo(
+    () => (
+      <ThemeModeToggle
+        themeMode={themeMode}
+        onModeChange={handleThemeModeChange}
+      />
+    ),
+    [themeMode, handleThemeModeChange],
+  );
 
   // Get display text for welcome message
   const getWelcomeText = () => {
@@ -4370,11 +4494,11 @@ export default function LinksPage() {
   return (
     <Box
       dir={pageDirection}
-      minH="100dvh"
+      minH="100vh"
       bg={isLightTheme ? "#fff4df" : "#0b0d1a"}
       color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
       position="relative"
-      overflow="hidden"
+      overflowX="clip"
       sx={{
         "::selection": {
           bg: isLightTheme ? "#17171a" : "#f5f0e8",
@@ -4401,53 +4525,13 @@ export default function LinksPage() {
         randomCharacterKey={randomCharacterKey}
         welcomeText={getWelcomeText()}
         editProfileText={profileHeroCopy.editProfile}
-        onProfileOpen={() => {
-          handleSelectSound();
-          onOpen();
-        }}
-        onAboutOpen={() => {
-          handleSelectSound();
-          onAboutOpen();
-        }}
-        onSocialClick={(platform, url) => {
-          handleSelectSound();
-          if (!isLocalhost()) {
-            recordPublicEvent("links_social_click", { platform });
-          }
-          if (url?.startsWith("mailto:")) {
-            window.location.href = url;
-          } else {
-            window.open(url, "_blank", "noopener,noreferrer");
-          }
-        }}
-        languageControl={
-          <LanguageMenuFixed
-            language={language}
-            onSelect={setLanguage}
-            playSound={handleSelectSound}
-            translations={translations}
-            isLightTheme={isLightTheme}
-          />
-        }
-        themeControl={
-          <ThemeModeToggle
-            themeMode={themeMode}
-            onModeChange={handleThemeModeChange}
-          />
-        }
+        onProfileOpen={handleProfileOpen}
+        onAboutOpen={handleAboutOpen}
+        onSocialClick={handleSocialClick}
+        languageControl={languageControl}
+        themeControl={themeControl}
         onLaunchSound={handleSubmitActionSound}
-        onLaunchEvent={(link) => {
-          if (link.analyticsName === "nosabos_app") {
-            // A new tab can pause this tab's paint callbacks. Start identity
-            // preparation now; the app also observes saved-key storage events.
-            void generateNostrKeys("").catch((error) => console.warn("Could not prepare account", error));
-          }
-          if (!isLocalhost() && !link.onLaunch) {
-            recordPublicEvent("links_launch_app", {
-              app: link.analyticsName,
-            });
-          }
-        }}
+        onLaunchEvent={handleLaunchEvent}
       />
 
       <PrivacyPolicyFooter language={language} isLightTheme={isLightTheme} />

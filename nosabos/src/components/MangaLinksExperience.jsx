@@ -16,110 +16,96 @@ import { keyframes } from "@emotion/react";
 import RandomCharacter from "./RandomCharacter";
 
 const toolbarEntrance = keyframes`
-  0% { opacity: 0; translate: 54px -54px; scale: 0.72; rotate: 7deg; }
-  58% { opacity: 1; translate: -7px 8px; scale: 1.06; rotate: -1.5deg; }
-  78% { translate: 3px -3px; scale: 0.985; rotate: 0.6deg; }
-  100% { opacity: 1; translate: 0 0; scale: 1; rotate: 0deg; }
+  0% { opacity: 0; transform: translate3d(54px, -54px, 0) scale(0.72) rotate(7deg); }
+  58% { opacity: 1; transform: translate3d(-7px, 8px, 0) scale(1.06) rotate(-1.5deg); }
+  78% { transform: translate3d(3px, -3px, 0) scale(0.985) rotate(0.6deg); }
+  100% { opacity: 1; transform: none; }
 `;
 
 const heroPanelEntrance = keyframes`
   0% {
     opacity: 0;
-    translate: -9% 2%;
-    scale: 0.94;
-    rotate: -1.2deg;
-    clip-path: polygon(0 0, 4% 0, 0 100%, 0 100%);
+    transform: translate3d(-9%, 2%, 0) scale(0.94) rotate(-1.2deg);
   }
   46% {
     opacity: 1;
-    translate: 1.4% -0.6%;
-    scale: 1.018;
-    rotate: 0.35deg;
-    clip-path: polygon(0 0, 100% 0, 94% 100%, 0 100%);
+    transform: translate3d(1.4%, -0.6%, 0) scale(1.018) rotate(0.35deg);
   }
-  72% { translate: -0.45% 0.2%; scale: 0.994; rotate: -0.12deg; }
+  72% { transform: translate3d(-0.45%, 0.2%, 0) scale(0.994) rotate(-0.12deg); }
   100% {
     opacity: 1;
-    translate: 0 0;
-    scale: 1;
-    rotate: 0deg;
-    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+    transform: none;
   }
 `;
 
 const impactFlash = keyframes`
-  0%, 18% { opacity: 0; translate: -135% 0; }
+  0%, 18% { opacity: 0; transform: translate3d(-135%, 0, 0) skewX(-12deg); }
   38% { opacity: 0.72; }
-  72% { opacity: 0; translate: 135% 0; }
-  100% { opacity: 0; translate: 135% 0; }
+  72%, 100% { opacity: 0; transform: translate3d(135%, 0, 0) skewX(-12deg); }
 `;
 
 const sfxEntrance = keyframes`
-  0% { opacity: 0; scale: 2.25; rotate: -18deg; filter: blur(7px); }
-  50% { opacity: 0.72; scale: 0.88; rotate: 3deg; filter: blur(0); }
-  72% { scale: 1.08; rotate: -1.5deg; }
-  100% { opacity: 1; scale: 1; rotate: 0deg; filter: blur(0); }
+  0% { opacity: 0; transform: scale3d(2.25, 2.25, 1) rotate(-18deg); }
+  50% { opacity: 0.72; transform: scale3d(0.88, 0.88, 1) rotate(3deg); }
+  72% { transform: scale3d(1.08, 1.08, 1) rotate(-1.5deg); }
+  100% { opacity: 1; transform: none; }
 `;
 
 const portraitEntrance = keyframes`
-  0% { opacity: 0; translate: 0 34%; scale: 0.72; rotate: -6deg; }
-  54% { opacity: 1; translate: 0 -4%; scale: 1.075; rotate: 2deg; }
-  72% { translate: 0 2%; scale: 0.975; rotate: -0.8deg; }
-  86% { translate: 0 -1%; scale: 1.018; rotate: 0.35deg; }
-  100% { opacity: 1; translate: 0 0; scale: 1; rotate: 0deg; }
+  0% { opacity: 0; transform: translate3d(0, 34%, 0) scale(0.72) rotate(-6deg); }
+  54% { opacity: 1; transform: translate3d(0, -4%, 0) scale(1.075) rotate(2deg); }
+  72% { transform: translate3d(0, 2%, 0) scale(0.975) rotate(-0.8deg); }
+  86% { transform: translate3d(0, -1%, 0) scale(1.018) rotate(0.35deg); }
+  100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1) rotate(0deg); }
 `;
 
 const portraitIdle = keyframes`
-  0%, 100% { translate: 0 0; rotate: 0deg; }
-  48% { translate: 0 -7px; rotate: 0.7deg; }
-  54% { translate: 0 -7px; rotate: -0.35deg; }
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  48% { transform: translate3d(0, -7px, 0) rotate(0.7deg); }
+  54% { transform: translate3d(0, -7px, 0) rotate(-0.35deg); }
 `;
 
 const bubbleEntrance = keyframes`
-  0% { opacity: 0; translate: 0 54px; scale: 0.56; rotate: -7deg; }
-  56% { opacity: 1; translate: 0 -9px; scale: 1.075; rotate: 1.8deg; }
-  76% { translate: 0 4px; scale: 0.975; rotate: -0.7deg; }
-  100% { opacity: 1; translate: 0 0; scale: 1; rotate: 0deg; }
+  0% { opacity: 0; transform: translate3d(-50%, 54px, 0) scale(0.56) rotate(-8.5deg); }
+  56% { opacity: 1; transform: translate3d(-50%, -9px, 0) scale(1.075) rotate(0.3deg); }
+  76% { transform: translate3d(-50%, 4px, 0) scale(0.975) rotate(-2.2deg); }
+  100% { opacity: 1; transform: translate3d(-50%, 0, 0) scale(1) rotate(-1.5deg); }
 `;
 
 const sidePanelEntrance = keyframes`
-  0% { opacity: 0; translate: 82px 0; scale: 0.93; rotate: 2.5deg; }
-  62% { opacity: 1; translate: -8px 0; scale: 1.025; rotate: -0.7deg; }
-  82% { translate: 3px 0; scale: 0.99; rotate: 0.25deg; }
-  100% { opacity: 1; translate: 0 0; scale: 1; rotate: 0deg; }
+  0% { opacity: 0; transform: translate3d(82px, 0, 0) scale(0.93) rotate(2.5deg); }
+  62% { opacity: 1; transform: translate3d(-8px, 0, 0) scale(1.025) rotate(-0.7deg); }
+  82% { transform: translate3d(3px, 0, 0) scale(0.99) rotate(0.25deg); }
+  100% { opacity: 1; transform: none; }
 `;
 
 const focusBlockEntrance = keyframes`
-  0% { opacity: 0; translate: 58px 0; filter: contrast(1.8); }
-  66% { opacity: 1; translate: -5px 0; filter: contrast(1.2); }
-  100% { opacity: 1; translate: 0 0; filter: contrast(1); }
+  0% { opacity: 0; transform: translate3d(58px, 0, 0); }
+  66% { opacity: 1; transform: translate3d(-5px, 0, 0); }
+  100% { opacity: 1; transform: none; }
 `;
 
 const sloganEntrance = keyframes`
-  0% { opacity: 0; translate: 72px 72px; scale: 0.84; rotate: 5deg; }
-  60% { opacity: 1; translate: -7px -6px; scale: 1.045; rotate: -1.2deg; }
-  82% { translate: 3px 2px; scale: 0.985; rotate: 0.35deg; }
-  100% { opacity: 1; translate: 0 0; scale: 1; rotate: 0deg; }
+  0% { opacity: 0; transform: translate3d(72px, 72px, 0) scale(0.84) rotate(5deg); }
+  60% { opacity: 1; transform: translate3d(-7px, -6px, 0) scale(1.045) rotate(-1.2deg); }
+  82% { transform: translate3d(3px, 2px, 0) scale(0.985) rotate(0.35deg); }
+  100% { opacity: 1; transform: none; }
 `;
 
 const ruleEntrance = keyframes`
-  0% { opacity: 0; scale: 0 1; }
-  68% { opacity: 1; scale: 1.04 1; }
-  100% { opacity: 1; scale: 1 1; }
+  0% { opacity: 0; transform: scaleX(0); }
+  68% { opacity: 1; transform: scaleX(1.04); }
+  100% { opacity: 1; transform: none; }
 `;
 
 const radialLinesEntrance = keyframes`
   0% {
     opacity: 0;
-    transform: scale(0.28) rotate(-7deg);
-    clip-path: circle(0% at var(--radial-focus-center, 50% 50%));
-    filter: blur(2px);
+    transform: scale3d(0.28, 0.28, 1) rotate(-7deg);
   }
   100% {
     opacity: 1;
-    transform: scale(1) rotate(0deg);
-    clip-path: circle(76% at var(--radial-focus-center, 50% 50%));
-    filter: blur(0);
+    transform: none;
   }
 `;
 
@@ -127,70 +113,52 @@ const speedLinesEntrance = keyframes`
   0% {
     opacity: 0;
     transform: translate3d(var(--emotion-start-x, -18%), 0, 0) skewX(-8deg);
-    clip-path: inset(0 100% 0 0);
-    filter: blur(2px);
   }
   62% {
     opacity: 1;
     transform: translate3d(var(--emotion-overshoot-x, 2.5%), 0, 0) skewX(1deg);
-    clip-path: inset(0 0 0 0);
-    filter: blur(0);
   }
   100% {
     opacity: 1;
-    transform: translate3d(0, 0, 0) skewX(0deg);
-    clip-path: inset(0 0 0 0);
-    filter: blur(0);
+    transform: none;
   }
 `;
 
 const perspectiveLinesEntrance = keyframes`
   0% {
     opacity: 0;
-    transform: translateY(18%) scale(0.72);
-    clip-path: inset(100% 0 0 0);
-    filter: blur(2px);
+    transform: translate3d(0, 18%, 0) scale3d(0.72, 0.72, 1);
   }
   64% {
     opacity: 1;
-    transform: translateY(-2%) scale(1.045);
-    clip-path: inset(0 0 0 0);
-    filter: blur(0);
+    transform: translate3d(0, -2%, 0) scale3d(1.045, 1.045, 1);
   }
   100% {
     opacity: 1;
-    transform: translateY(0) scale(1);
-    clip-path: inset(0 0 0 0);
-    filter: blur(0);
+    transform: none;
   }
 `;
 
 const shockwaveEntrance = keyframes`
-  0% { opacity: 0; transform: scale(0.32); filter: blur(3px); }
-  55% { opacity: 1; transform: scale(1.11); filter: blur(0); }
-  76% { transform: scale(0.97); }
-  100% { opacity: 1; transform: scale(1); filter: blur(0); }
+  0% { opacity: 0; transform: scale3d(0.32, 0.32, 1); }
+  55% { opacity: 1; transform: scale3d(1.11, 1.11, 1); }
+  76% { transform: scale3d(0.97, 0.97, 1); }
+  100% { opacity: 1; transform: none; }
 `;
 
 const auraLinesEntrance = keyframes`
   0% {
     opacity: 0;
-    transform: translateY(22%) scaleY(0.48);
-    clip-path: inset(100% 0 0 0);
-    filter: blur(2px);
+    transform: translate3d(0, 22%, 0) scaleY(0.48);
   }
   60% {
     opacity: 1;
-    transform: translateY(-3%) scaleY(1.06);
-    clip-path: inset(0 0 0 0);
-    filter: blur(0);
+    transform: translate3d(0, -3%, 0) scaleY(1.06);
   }
-  80% { transform: translateY(1%) scaleY(0.985); }
+  80% { transform: translate3d(0, 1%, 0) scaleY(0.985); }
   100% {
     opacity: 1;
-    transform: translateY(0) scaleY(1);
-    clip-path: inset(0 0 0 0);
-    filter: blur(0);
+    transform: none;
   }
 `;
 
@@ -198,6 +166,7 @@ const reducedHeroMotion = {
   "@media (prefers-reduced-motion: reduce)": {
     animation: "none !important",
     opacity: "1 !important",
+    transform: "none !important",
     translate: "none !important",
     scale: "1 !important",
     rotate: "none !important",
@@ -209,28 +178,35 @@ const reducedHeroMotion = {
 function useReveal(threshold = 0.14) {
   const ref = useRef(null);
   const [visible, setVisible] = useState(false);
+  const [settled, setSettled] = useState(false);
 
   useEffect(() => {
     const node = ref.current;
     if (!node) return undefined;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       setVisible(true);
+      setSettled(true);
       return undefined;
     }
+    let timer;
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
           setVisible(true);
           observer.disconnect();
+          timer = window.setTimeout(() => setSettled(true), 1100);
         }
       },
       { threshold, rootMargin: "0px 0px -7%" },
     );
     observer.observe(node);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      if (timer) window.clearTimeout(timer);
+    };
   }, [threshold]);
 
-  return [ref, visible];
+  return [ref, visible, settled];
 }
 
 function Screentone({ ink, opacity = 0.12, size = "14px" }) {
@@ -268,10 +244,11 @@ function MangaRule({ ink, accent, reverse = false, animate = false }) {
   );
 }
 
-function Portrait({ randomCharacterKey, close = false }) {
+function Portrait({ randomCharacterKey, close = false, filter }) {
   return (
     <Box
       aria-hidden={close ? "true" : undefined}
+      filter={filter}
       transform={
         close
           ? { base: "translateY(28%) scale(2.7)", md: "translateY(30%) scale(3.2)" }
@@ -297,6 +274,8 @@ function Portrait({ randomCharacterKey, close = false }) {
         notSoRandomCharacter={randomCharacterKey}
         width="190px"
         containerHeight={240}
+        animate={false}
+        priority={!close}
       />
     </Box>
   );
@@ -309,6 +288,7 @@ function MangaToolbar({
   languageControl,
   themeControl,
   onSocialClick,
+  animate = true,
 }) {
   const socialItems = [
     {
@@ -353,10 +333,13 @@ function MangaToolbar({
       border="2px solid"
       borderColor={ink}
       boxShadow={`4px 5px 0 ${ink}`}
-      backdropFilter="blur(10px)"
-      animation={`${toolbarEntrance} 820ms cubic-bezier(.16,.88,.24,1.18) 520ms both`}
-      willChange="transform, opacity"
-      sx={reducedHeroMotion}
+      animation={
+        animate
+          ? `${toolbarEntrance} 820ms cubic-bezier(.16,.88,.24,1.18) 520ms both`
+          : undefined
+      }
+      willChange={animate ? "transform, opacity" : undefined}
+      sx={animate ? reducedHeroMotion : undefined}
     >
       {socialItems.map((item) => (
         <Box
@@ -417,7 +400,7 @@ function RadialFocusLines({
   return (
     <Box
       position="absolute"
-      inset="-40%"
+      inset="-10%"
       pointerEvents="none"
       aria-hidden="true"
       opacity={opacity}
@@ -431,7 +414,7 @@ function RadialFocusLines({
             ? `${radialLinesEntrance} 1320ms cubic-bezier(.2,.68,.22,1) ${animationDelay} both`
             : undefined
         }
-        willChange={animate ? "transform, opacity, clip-path, filter" : undefined}
+        willChange={animate ? "transform, opacity" : undefined}
         style={{ "--radial-focus-center": center }}
         sx={{
           background: `repeating-conic-gradient(
@@ -454,6 +437,7 @@ function ChapterEmotionLines({
   variant,
   ink,
   opacity = 0.24,
+  visible = true,
   animate = false,
   animationDelay = "0ms",
   reverse = false,
@@ -524,13 +508,13 @@ function ChapterEmotionLines({
       inset={isAura ? "-12%" : isSpeed ? "-18%" : isPerspective ? "-12%" : "-28%"}
       pointerEvents="none"
       aria-hidden="true"
-      opacity={opacity}
+      opacity={visible ? opacity : 0}
     >
       <Box
         position="absolute"
         inset="0"
         animation={animate ? emotionAnimation : undefined}
-        willChange={animate ? "transform, opacity, clip-path, filter" : undefined}
+        willChange={animate ? "transform, opacity" : undefined}
         style={
           isSpeed
             ? {
@@ -618,15 +602,28 @@ function MangaCover({
   editProfileText,
   onProfileOpen,
   onAboutOpen,
+  animate = true,
 }) {
+  const headerRef = useRef(null);
+  const [coverInView, setCoverInView] = useState(true);
+
+  useEffect(() => {
+    const node = headerRef.current;
+    if (!node || typeof IntersectionObserver === "undefined") return undefined;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setCoverInView(Boolean(entry?.isIntersecting));
+      },
+      { rootMargin: "120px 0px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
   const ink = isLightTheme ? "#17171a" : "#f5f0e8";
   const paper = isLightTheme ? "#fffcf4" : "#0c0c0f";
   const panel = isLightTheme ? "#f3efe5" : "#151519";
   const muted = isLightTheme ? "#71717a" : "#a1a1aa";
-  const bubbleOutline = isLightTheme ? "#17171a" : "#ffffff";
-  const bubbleShadow = isLightTheme
-    ? "5px 6px 0 rgba(23,23,26,0.28)"
-    : "5px 6px 0 rgba(255,255,255,0.32)";
   const focusAreas = heroCopy.focusAreas || [
     "LANGUAGE TUTOR",
     "CODING\nTUTOR",
@@ -636,6 +633,7 @@ function MangaCover({
 
   return (
     <Box
+      ref={headerRef}
       as="header"
       minH="100svh"
       bg={paper}
@@ -666,7 +664,7 @@ function MangaCover({
           order={2}
           w="100%"
         >
-          <MangaRule ink={ink} accent={ink} reverse={isRtl} animate />
+          <MangaRule ink={ink} accent={ink} reverse={isRtl} animate={animate} />
 
           <Heading
             as="h1"
@@ -800,21 +798,25 @@ function MangaCover({
           <Box
             gridColumn="1"
             gridRow="1 / span 2"
-          position="relative"
-          overflow="hidden"
-          bg={panel}
-          border="4px solid"
-          borderColor={ink}
-          animation={`${heroPanelEntrance} 980ms cubic-bezier(.16,.84,.22,1) 80ms both`}
-          willChange="transform, opacity, clip-path"
-          sx={reducedHeroMotion}
-        >
+            position="relative"
+            overflow="hidden"
+            bg={panel}
+            border="4px solid"
+            borderColor={ink}
+            animation={
+              animate
+                ? `${heroPanelEntrance} 980ms cubic-bezier(.16,.84,.22,1) 80ms both`
+                : undefined
+            }
+            willChange={animate ? "transform, opacity" : undefined}
+            sx={animate ? reducedHeroMotion : undefined}
+          >
             <Screentone ink={ink} opacity={0.16} size="13px" />
             <RadialFocusLines
               ink={ink}
               opacity={isLightTheme ? 0.16 : 0.24}
               innerFade="18%"
-              animate
+              animate={animate}
               animationDelay="300ms"
             />
             <MangaCornerBrackets ink={ink} size={14} offset={8} stroke={2.5} />
@@ -824,21 +826,23 @@ function MangaCover({
               bgImage={`repeating-linear-gradient(116deg, transparent 0 38px, ${ink}14 39px 42px, transparent 43px 62px)`}
               opacity={0.35}
             />
-            <Box
-              position="absolute"
-              inset="-25%"
-              zIndex={6}
-              pointerEvents="none"
-              aria-hidden="true"
-              bg={`linear-gradient(100deg, transparent 38%, ${
-                isLightTheme
-                  ? "rgba(255,255,255,0.88)"
-                  : "rgba(245,240,232,0.42)"
-              } 49%, transparent 60%)`}
-              animation={`${impactFlash} 980ms cubic-bezier(.2,.75,.2,1) 110ms both`}
-              transform="skewX(-12deg)"
-              sx={reducedHeroMotion}
-            />
+            {animate ? (
+              <Box
+                position="absolute"
+                inset="-25%"
+                zIndex={6}
+                pointerEvents="none"
+                aria-hidden="true"
+                bg={`linear-gradient(100deg, transparent 38%, ${
+                  isLightTheme
+                    ? "rgba(255,255,255,0.88)"
+                    : "rgba(245,240,232,0.42)"
+                } 49%, transparent 60%)`}
+                animation={`${impactFlash} 980ms cubic-bezier(.2,.75,.2,1) 110ms both`}
+                willChange="transform, opacity"
+                sx={reducedHeroMotion}
+              />
+            ) : null}
             {/* Hero Entrance SFX Katakana Watermark */}
             <Box
               position="absolute"
@@ -856,8 +860,6 @@ function MangaCover({
               w={{ base: "88%", md: "auto" }}
               display="flex"
               justifyContent={{ base: "center", md: "flex-start" }}
-              animation={`${sfxEntrance} 760ms cubic-bezier(.18,.9,.24,1.22) 260ms both`}
-              willChange="transform, opacity, filter"
               sx={{
                 "@media screen and (min-height: 740px) and (max-width: 767px)": {
                   top: "15%",
@@ -868,7 +870,6 @@ function MangaCover({
                 "@media screen and (min-height: 900px) and (max-width: 767px)": {
                   top: "19.5%",
                 },
-                ...reducedHeroMotion,
               }}
             >
               <Text
@@ -884,6 +885,12 @@ function MangaCover({
                 textAlign={{ base: "center", md: "left" }}
                 whiteSpace="nowrap"
                 color="transparent"
+                animation={
+                  animate
+                    ? `${sfxEntrance} 760ms cubic-bezier(.18,.9,.24,1.22) 260ms both`
+                    : undefined
+                }
+                willChange={animate ? "transform, opacity" : undefined}
                 sx={{
                   WebkitTextStroke: isLightTheme
                     ? "2.5px rgba(23, 23, 26, 0.25)"
@@ -891,6 +898,7 @@ function MangaCover({
                   textShadow: isLightTheme
                     ? "3px 4px 0 rgba(23, 23, 26, 0.07)"
                     : "3px 4px 0 rgba(245, 240, 232, 0.12)",
+                  ...(animate ? reducedHeroMotion : {}),
                 }}
               >
                 バァァン!!
@@ -903,13 +911,14 @@ function MangaCover({
               alignItems="center"
               justifyContent="center"
               pt={{ base: "34%", sm: "28%", md: "22%" }}
-              filter={isLightTheme ? "none" : "saturate(0.84) contrast(1.05)"}
               animation={`${portraitEntrance} 940ms cubic-bezier(.16,.86,.25,1.16) 360ms both, ${portraitIdle} 4.8s ease-in-out 1.7s infinite`}
-              willChange="transform, opacity"
+              style={{ animationPlayState: coverInView ? "running" : "paused" }}
+              willChange={animate ? "transform, opacity" : undefined}
               sx={reducedHeroMotion}
             >
               <Portrait
                 randomCharacterKey={randomCharacterKey}
+                filter={isLightTheme ? "none" : "saturate(0.84) contrast(1.05)"}
               />
             </Box>
             <Box
@@ -920,7 +929,7 @@ function MangaCover({
               zIndex={4}
               w={{ base: "calc(100% - 16px)", md: "min(380px, calc(100% - 64px))" }}
               maxW="380px"
-              transform="translateX(-50%) rotate(-1.5deg)"
+              transform="translate3d(-50%, 0, 0) rotate(-1.5deg)"
               bg="#ffffff"
               color="#17171a"
               border="3.5px solid #17171a"
@@ -935,8 +944,12 @@ function MangaCover({
               }
               px={{ base: 3, md: 5 }}
               py={{ base: 3, md: 3.5 }}
-              animation={`${bubbleEntrance} 760ms cubic-bezier(.17,.88,.26,1.2) 720ms both`}
-              willChange="transform, opacity"
+              animation={
+                animate
+                  ? `${bubbleEntrance} 760ms cubic-bezier(.17,.88,.26,1.2) 720ms both`
+                  : undefined
+              }
+              willChange={animate ? "transform, opacity" : undefined}
               sx={{
                 "@media screen and (min-height: 740px) and (max-width: 767px)": {
                   top: "32%",
@@ -947,7 +960,7 @@ function MangaCover({
                 "@media screen and (min-height: 900px) and (max-width: 767px)": {
                   top: "35%",
                 },
-                ...reducedHeroMotion,
+                ...(animate ? reducedHeroMotion : {}),
               }}
               _after={{
                 content: '""',
@@ -1047,9 +1060,13 @@ function MangaCover({
             borderColor={ink}
             display="flex"
             flexDirection="column"
-            animation={`${sidePanelEntrance} 820ms cubic-bezier(.16,.86,.24,1.15) 400ms both`}
-            willChange="transform, opacity"
-            sx={reducedHeroMotion}
+            animation={
+              animate
+                ? `${sidePanelEntrance} 820ms cubic-bezier(.16,.86,.24,1.15) 400ms both`
+                : undefined
+            }
+            willChange={animate ? "transform, opacity" : undefined}
+            sx={animate ? reducedHeroMotion : undefined}
           >
             <Screentone ink={ink} opacity={0.14} size="10px" />
             {focusAreas.map((area, index) => (
@@ -1068,11 +1085,15 @@ function MangaCover({
                 color={index === 0 ? paper : ink}
                 borderBottom={index === focusAreas.length - 1 ? "0" : "3px solid"}
                 borderColor={ink}
-                animation={`${focusBlockEntrance} 520ms cubic-bezier(.2,.82,.24,1) ${
-                  570 + index * 95
-                }ms both`}
-                willChange="transform, opacity, filter"
-                sx={reducedHeroMotion}
+                animation={
+                  animate
+                    ? `${focusBlockEntrance} 520ms cubic-bezier(.2,.82,.24,1) ${
+                        570 + index * 95
+                      }ms both`
+                    : undefined
+                }
+                willChange={animate ? "transform, opacity" : undefined}
+                sx={animate ? reducedHeroMotion : undefined}
               >
                 <Text
                   fontFamily="monospace"
@@ -1113,9 +1134,13 @@ function MangaCover({
             py={{ base: 4, md: 5 }}
             position="relative"
             overflow="hidden"
-            animation={`${sloganEntrance} 780ms cubic-bezier(.16,.88,.24,1.16) 760ms both`}
-            willChange="transform, opacity"
-            sx={reducedHeroMotion}
+            animation={
+              animate
+                ? `${sloganEntrance} 780ms cubic-bezier(.16,.88,.24,1.16) 760ms both`
+                : undefined
+            }
+            willChange={animate ? "transform, opacity" : undefined}
+            sx={animate ? reducedHeroMotion : undefined}
           >
             <Box
               position="absolute"
@@ -1187,7 +1212,7 @@ function MangaChapter({
   onLaunchSound,
   onLaunchEvent,
 }) {
-  const [sectionRef, visible] = useReveal();
+  const [sectionRef, visible, settled] = useReveal();
   const ink = isLightTheme ? "#17171a" : "#f5f0e8";
   const paper = isLightTheme ? "#fffcf4" : "#0c0c0f";
   const panel = "#151519";
@@ -1228,11 +1253,13 @@ function MangaChapter({
         },
       };
 
-  const revealStyle = {
-    opacity: visible ? 1 : 0,
-    transform: visible ? "translate3d(0,0,0)" : "translate3d(0,42px,0)",
-    transition: "opacity 620ms ease, transform 760ms cubic-bezier(.16,.8,.2,1)",
-  };
+  const revealStyle = settled
+    ? undefined
+    : {
+        opacity: visible ? 1 : 0,
+        transform: visible ? "translate3d(0,0,0)" : "translate3d(0,42px,0)",
+        transition: "opacity 620ms ease, transform 760ms cubic-bezier(.16,.8,.2,1)",
+      };
 
   return (
     <Box
@@ -1330,14 +1357,15 @@ function MangaChapter({
             bg={link.accent}
             border="4px solid"
             borderColor={ink}
-            style={{ ...revealStyle, transitionDelay: "60ms" }}
+            style={revealStyle ? { ...revealStyle, transitionDelay: "60ms" } : undefined}
           >
             <Screentone ink={ink} opacity={0.2} size="12px" />
             <ChapterEmotionLines
               variant={chapter.emotion}
               ink={isLightTheme ? "#000000" : "#ffffff"}
               opacity={isLightTheme ? 0.22 : 0.3}
-              animate={visible}
+              visible={visible}
+              animate={visible && !settled}
               animationDelay="140ms"
               reverse={reverse}
             />
@@ -1457,7 +1485,7 @@ function MangaChapter({
             flexDirection="column"
             justifyContent={{ base: "center", md: "space-between" }}
             gap={{ base: "clamp(10px, 2svh, 16px)", md: 0 }}
-            style={{ ...revealStyle, transitionDelay: "170ms" }}
+            style={revealStyle ? { ...revealStyle, transitionDelay: "170ms" } : undefined}
           >
             <Box position="absolute" top="0" right="0" w="11px" h="100%" bg={link.accent} />
             <Text
@@ -1522,7 +1550,7 @@ function MangaChapter({
             flexDirection="column"
             justifyContent={{ base: "center", md: "space-between" }}
             position="relative"
-            style={{ ...revealStyle, transitionDelay: "280ms" }}
+            style={revealStyle ? { ...revealStyle, transitionDelay: "280ms" } : undefined}
             dir={pageDirection}
           >
             <Text
@@ -1624,7 +1652,7 @@ function MangaStories({
   );
 }
 
-export default function MangaLinksExperience({
+const MangaLinksExperience = React.memo(function MangaLinksExperience({
   heroCopy,
   translations,
   links,
@@ -1645,9 +1673,17 @@ export default function MangaLinksExperience({
   onLaunchSound,
   onLaunchEvent,
 }) {
+  const [heroSettled, setHeroSettled] = useState(false);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setHeroSettled(true), 1850);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   const ink = isLightTheme ? "#17171a" : "#f5f0e8";
   const paper = isLightTheme ? "#fffcf4" : "#0c0c0f";
   const accent = ink;
+  const animateHero = !heroSettled;
 
   return (
     <Box bg={paper} color={ink} position="relative">
@@ -1658,6 +1694,7 @@ export default function MangaLinksExperience({
         languageControl={languageControl}
         themeControl={themeControl}
         onSocialClick={onSocialClick}
+        animate={animateHero}
       />
       <MangaCover
         heroCopy={heroCopy}
@@ -1672,6 +1709,7 @@ export default function MangaLinksExperience({
         editProfileText={editProfileText}
         onProfileOpen={onProfileOpen}
         onAboutOpen={onAboutOpen}
+        animate={animateHero}
       />
       <MangaStories
         links={links}
@@ -1683,4 +1721,6 @@ export default function MangaLinksExperience({
       />
     </Box>
   );
-}
+});
+
+export default MangaLinksExperience;

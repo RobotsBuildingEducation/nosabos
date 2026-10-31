@@ -223,10 +223,18 @@ export const characterImagesMap = {
   40: character41,
 };
 
-// Pre-warm common character portraits off the main thread so they appear instantly
+// Pre-warm hero character portraits immediately and common portraits during idle time.
 if (typeof window !== "undefined" && typeof Image !== "undefined") {
+  for (const id of [24, 30, 31]) {
+    const src = characterImagesMap[id];
+    if (src) {
+      const img = new Image();
+      img.decoding = "async";
+      img.src = src;
+    }
+  }
   const prewarm = () => {
-    const warmSample = [1, 3, 4, 5, 24, 27, 30, 31, 32, 40];
+    const warmSample = [1, 3, 4, 5, 27, 32, 36, 40];
     for (const id of warmSample) {
       const src = characterImagesMap[id];
       if (src) {
@@ -250,6 +258,8 @@ const RandomCharacter = ({
   borderRadius = null,
   notSoRandomCharacter = null,
   isTimed = false,
+  animate = true,
+  priority = false,
 }) => {
   const [image, setImage] = useState(() => {
     if (notSoRandomCharacter) return "";
@@ -312,6 +322,26 @@ const RandomCharacter = ({
     ? characterImagesMap[notSoRandomCharacter]
     : image;
 
+  const imageElement = resolvedSrc ? (
+    <img
+      src={resolvedSrc}
+      alt=""
+      width={width}
+      height={width}
+      decoding={priority ? "sync" : "async"}
+      fetchPriority={priority ? "high" : undefined}
+      loading="eager"
+      style={{
+        borderRadius: borderRadius || undefined,
+        imageRendering: "crisp-edges",
+        objectFit: "contain",
+        width,
+        height: width,
+        display: "block",
+      }}
+    />
+  ) : null;
+
   return (
     <div
       style={{
@@ -322,27 +352,14 @@ const RandomCharacter = ({
         justifyContent: "center",
       }}
     >
-      <div style={{ display: "flex" }}>
-        <RiseUpAnimation speed={typeof speed === "number" ? `${speed}s` : (speed || "0.3s")}>
-          {resolvedSrc ? (
-            <img
-              src={resolvedSrc}
-              alt=""
-              width={width}
-              height={width}
-              decoding="async"
-              loading="eager"
-              style={{
-                borderRadius: borderRadius || undefined,
-                imageRendering: "crisp-edges",
-                objectFit: "contain",
-                width,
-                height: width,
-                display: "block",
-              }}
-            />
-          ) : null}
-        </RiseUpAnimation>
+      <div style={{ display: "flex", justifyContent: "center" }}>
+        {animate ? (
+          <RiseUpAnimation speed={typeof speed === "number" ? `${speed}s` : (speed || "0.3s")}>
+            {imageElement}
+          </RiseUpAnimation>
+        ) : (
+          imageElement
+        )}
       </div>
     </div>
   );
