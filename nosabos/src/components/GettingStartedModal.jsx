@@ -163,8 +163,8 @@ export default function GettingStartedModal({
       onClose={handleGotIt}
       isCentered
       size="lg"
-      closeOnOverlayClick={true}
-      closeOnEsc={true}
+      closeOnOverlayClick={false}
+      closeOnEsc={false}
       motionPreset="none"
       returnFocusOnClose={false}
       autoFocus={false}
@@ -201,7 +201,7 @@ export default function GettingStartedModal({
           className="app-modal-header"
           bgGradient="linear(to-r, #6366F1, #8B5CF6)"
           px={{ base: 4, md: 5 }}
-          py={{ base: 3, md: 4 }}
+          py={{ base: 3, md: 3.5 }}
           borderBottom="1px solid"
           borderColor={
             isLightTheme ? "rgba(99, 102, 241, 0.18)" : "transparent"
@@ -210,31 +210,31 @@ export default function GettingStartedModal({
           sx={{
             paddingInlineStart: {
               base: "16px !important",
-              md: "48px !important",
+              md: "40px !important",
             },
             paddingInlineEnd: {
               base: "16px !important",
-              md: "48px !important",
+              md: "40px !important",
             },
             paddingTop: {
               base: "12px !important",
-              md: "32px !important",
+              md: "16px !important",
             },
             paddingBottom: {
               base: "12px !important",
-              md: "32px !important",
+              md: "16px !important",
             },
           }}
         >
-          <VStack spacing={{ base: 1, md: 1.5 }} align="center">
+          <VStack spacing={{ base: 1, md: 1 }} align="center">
             <RandomCharacter
               notSoRandomCharacter={"39"}
               width="40px"
-              containerHeight={52}
+              containerHeight={48}
             />
             <Text
               fontWeight="bold"
-              fontSize={{ base: "sm", md: "lg" }}
+              fontSize={{ base: "sm", md: "md" }}
               textAlign="center"
               color="white"
               textShadow="0 1px 10px rgba(0,0,0,0.18)"
@@ -257,7 +257,7 @@ export default function GettingStartedModal({
         <ModalBody
           ref={modalBodyRef}
           px={{ base: 4, md: 5 }}
-          py={{ base: 4, md: 5 }}
+          py={{ base: 4, md: 4 }}
           minH={0}
           overflowY="auto"
           overscrollBehavior="contain"
@@ -265,33 +265,33 @@ export default function GettingStartedModal({
             WebkitOverflowScrolling: "touch",
             paddingInlineStart: {
               base: "16px !important",
-              md: "40px !important",
+              md: "32px !important",
             },
             paddingInlineEnd: {
               base: "16px !important",
-              md: "40px !important",
+              md: "32px !important",
             },
             paddingTop: {
               base: "12px !important",
-              md: "40px !important",
+              md: "16px !important",
             },
             paddingBottom: {
               base: "12px !important",
-              md: "40px !important",
+              md: "18px !important",
             },
           }}
         >
-          <VStack spacing={{ base: 2, md: 3 }} align="stretch">
+          <VStack spacing={{ base: 2, md: 2.5 }} align="stretch">
             <Grid
               templateColumns="repeat(2, 1fr)"
               autoRows="1fr"
-              gap={{ base: 2, md: 3 }}
+              gap={{ base: 2, md: 2.5 }}
             >
               {installSteps.map((step, idx) => (
                 <GridItem
                   key={step.id}
                   bg={isLightTheme ? APP_SURFACE_MUTED : "gray.800"}
-                  p={{ base: 2, sm: 3, md: 6 }}
+                  p={{ base: 2, sm: 2.5, md: 3 }}
                   rounded="md"
                   border="1px solid"
                   borderColor={
@@ -325,7 +325,7 @@ export default function GettingStartedModal({
               {secretKey ? (
                 <GridItem
                   bg={isLightTheme ? APP_SURFACE_MUTED : "gray.800"}
-                  p={{ base: 2, sm: 3, md: 6 }}
+                  p={{ base: 2, sm: 2.5, md: 3 }}
                   rounded="md"
                   border="1px solid"
                   borderColor={
@@ -380,8 +380,9 @@ export default function GettingStartedModal({
               onClick={handleGotIt}
               fontWeight="bold"
               rounded="lg"
-              p={{ base: 3, md: 8 }}
-              minH={{ base: "44px", md: "40px" }}
+              py={{ base: 2.5, md: 3 }}
+              px={{ base: 4, md: 6 }}
+              minH={{ base: "42px", md: "44px" }}
             >
               {ui("app_install_got_it")}
             </Button>
