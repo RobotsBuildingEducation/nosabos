@@ -54,6 +54,7 @@ import {
 } from "../utils/dailyPlateHeadline";
 import { loadLearningPath } from "../data/skillTree/index.js";
 import { scoreForUser } from "../utils/performanceEloModel";
+import { hasImmersionPlacement } from "../utils/dailyImmersion";
 
 const START_COPY = {
   en: "Start tasks",
@@ -298,13 +299,20 @@ export default function DailyPlateHome({
     };
   }, [headlineKey, storedHeadline, isCleared, targetLang, appLanguage, snapshot.dayKey]);
 
+  const hasPendingOnboardingModals =
+    user?.paperPencilModalShown !== true ||
+    user?.gettingStartedModalShown !== true ||
+    !hasImmersionPlacement(user, targetLang);
+
   // The bubble's "Continue" dismissal persists per day (keyed by language + day)
-  // so a refresh doesn't re-show a bubble the user already continued past. The
-  // key naturally rolls over tomorrow, surfacing the next day's bubble.
+  // so a refresh doesn't re-show a bubble the user already continued past —
+  // EXCEPT while the initial onboarding modals (Paper & Pencil -> Install App ->
+  // Proficiency) are still incomplete. Until all three modals are completed, a
+  // refresh re-renders the pet message so pressing Continue returns the learner
+  // to whichever modal they haven't completed yet.
   const bubbleDismissKey = `companionBubbleDismissed:${targetLang}:${snapshot.dayKey}`;
-  // Lazy init reads the persisted flag on mount (no flash before the effect); the
-  // effect below re-syncs if the day/language rolls over while still mounted.
   const [bubbleDismissed, setBubbleDismissed] = useState(() => {
+    if (hasPendingOnboardingModals) return false;
     try {
       return (
         typeof window !== "undefined" &&
@@ -315,6 +323,17 @@ export default function DailyPlateHome({
     }
   });
   useEffect(() => {
+    if (hasPendingOnboardingModals) {
+      try {
+        if (typeof window !== "undefined") {
+          window.localStorage.removeItem(bubbleDismissKey);
+        }
+      } catch {
+        /* ignore storage errors */
+      }
+      setBubbleDismissed(false);
+      return;
+    }
     try {
       setBubbleDismissed(
         typeof window !== "undefined" &&
@@ -323,13 +342,27 @@ export default function DailyPlateHome({
     } catch {
       setBubbleDismissed(false);
     }
+    // Re-evaluate only when the day/language key changes (or on initial mount).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bubbleDismissKey]);
+  useEffect(() => {
+    if (hasPendingOnboardingModals || !bubbleDismissed) return;
+    try {
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(bubbleDismissKey, "1");
+      }
+    } catch {
+      /* ignore quota/availability errors */
+    }
+  }, [bubbleDismissKey, bubbleDismissed, hasPendingOnboardingModals]);
   const dismissBubble = () => {
     setBubbleDismissed(true);
-    try {
-      window.localStorage.setItem(bubbleDismissKey, "1");
-    } catch {
-      /* ignore quota/availability errors — dismissal still holds this session */
+    if (!hasPendingOnboardingModals) {
+      try {
+        window.localStorage.setItem(bubbleDismissKey, "1");
+      } catch {
+        /* ignore quota/availability errors — dismissal still holds this session */
+      }
     }
     onCompanionContinue?.();
   };
