@@ -1701,59 +1701,45 @@ function TopBar({
   );
 
   useEffect(() => {
-    if (!activeNpub) return;
+    if (!activeNpub || !user || typeof user !== "object") return;
+    let cancelled = false;
+    const data = user;
     const ref = doc(database, "users", activeNpub);
-    const unsub = onSnapshot(ref, async (snap) => {
-      const data = snap.exists() ? snap.data() : {};
 
-      if (
-        Number(data?.schemaVersion || 1) < 2 ||
-        data?.dailyQuestBlueprint ||
-        data?.dailyQuestRepair ||
-        data?.dailyQuestExplanations ||
-        data?.dailyXpHistory ||
-        data?.completedGoalDates ||
-        data?.companionMemory
-      ) {
-        void migrateUserToSchemaV2(database, activeNpub).catch((error) => {
-          console.warn("Deferred user data cleanup failed:", error);
-        });
-      }
-
-      try {
-        const companionPatch = {};
-        if (data?.companionUnlocksCelebrated)
-          companionPatch.companionUnlocksCelebrated =
-            data.companionUnlocksCelebrated;
-        if (Object.keys(companionPatch).length) {
-          useUserStore.getState().patchUser?.(companionPatch);
-        }
-      } catch {
-        /* non-fatal: the plate re-derives on the next snapshot */
-      }
-
-      const goal = getEffectiveDailyGoalXp(data);
-      let resetISO = data?.dailyResetAt || null;
-      const completedDates = Array.isArray(data?.completedGoalDates)
-        ? data.completedGoalDates
-        : [];
-      const xpHistory =
-        data?.dailyXpRecent && typeof data.dailyXpRecent === "object"
-          ? data.dailyXpRecent
-          : data?.dailyXpHistory && typeof data.dailyXpHistory === "object"
-            ? data.dailyXpHistory
-            : {};
-      let dxp = getEffectiveDailyXpToday({
-        ...data,
-        dailyXpRecent: xpHistory,
+    if (
+      Number(data?.schemaVersion || 1) < 2 ||
+      data?.dailyQuestBlueprint ||
+      data?.dailyQuestRepair ||
+      data?.dailyQuestExplanations ||
+      data?.dailyXpHistory ||
+      data?.completedGoalDates ||
+      data?.companionMemory
+    ) {
+      void migrateUserToSchemaV2(database, activeNpub).catch((error) => {
+        console.warn("Deferred user data cleanup failed:", error);
       });
+    }
 
-      const expired = hasDailyGoalResetExpired(resetISO);
-      // Catch up pet health for any whole days missed since it was last
-      // reflected — even when the 24h window hasn't rolled over. This is what
-      // recovers a long absence whose dailyResetAt was already bumped forward
-      // by an earlier app-open (so `expired` reads false today).
-      const missedDays = countMissedDailyGoalWindows(data, new Date());
+    const goal = getEffectiveDailyGoalXp(data);
+    let resetISO = data?.dailyResetAt || null;
+    const completedDates = Array.isArray(data?.completedGoalDates)
+      ? data.completedGoalDates
+      : [];
+    const xpHistory =
+      data?.dailyXpRecent && typeof data.dailyXpRecent === "object"
+        ? data.dailyXpRecent
+        : data?.dailyXpHistory && typeof data.dailyXpHistory === "object"
+          ? data.dailyXpHistory
+          : {};
+    let dxp = getEffectiveDailyXpToday({
+      ...data,
+      dailyXpRecent: xpHistory,
+    });
+
+    const expired = hasDailyGoalResetExpired(resetISO);
+    const missedDays = countMissedDailyGoalWindows(data, new Date());
+
+    const syncDailyGoalState = async () => {
       if (goal > 0 && (expired || missedDays > 0)) {
         try {
           await runTransaction(database, async (tx) => {
@@ -1766,15 +1752,12 @@ function TopBar({
               latestData,
               new Date(),
             );
-            // Another writer (or an earlier fire) may have already handled it.
             if (!latestExpired && latestMissed <= 0) return;
 
             tx.set(
               ref,
               {
                 ...buildDailyGoalResetFields(latestData, new Date(), {
-                  // Only roll the daily window when it actually expired;
-                  // otherwise just reconcile health and leave today's XP alone.
                   resetWindow: latestExpired,
                 }),
                 updatedAt: new Date().toISOString(),
@@ -1791,15 +1774,33 @@ function TopBar({
         }
       }
 
+      if (cancelled) return;
       setDailyGoalXp(goal);
       setGoalDraft(goal);
       setDailyXp(dxp);
       setDailyResetAt(resetISO);
       setCompletedGoalDates(completedDates);
       setDailyXpHistory(xpHistory);
-    });
-    return () => unsub();
-  }, [activeNpub]);
+    };
+
+    void syncDailyGoalState();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    activeNpub,
+    user?.schemaVersion,
+    user?.dailyResetAt,
+    user?.dailyGoalXp,
+    user?.dailyXp,
+    user?.dailyXpRecent,
+    user?.dailyXpHistory,
+    user?.completedGoalDates,
+    user?.dailyQuestBlueprint,
+    user?.dailyQuestRepair,
+    user?.dailyQuestExplanations,
+    user?.companionMemory,
+  ]);
 
   // Sync local dailyXp/dailyGoalXp from the user prop so XP awarded via
   // setUser(fresh) — e.g. from the immersion drawer reward claim — updates
@@ -3260,7 +3261,7 @@ export default function App({ onBootReady } = {}) {
     return Number.isFinite(numeric) ? numeric : 0;
   }, [walletBalance]);
 
-  const hasSpendableBalance = true;
+  const hasSpendableBalance = Boolean(cashuWallet) && totalWalletBalance >= 1;
 
   // DID / auth
   const { generateNostrKeys, auth, postNostrContent, getGlobalNotesWithProfilesByHashtag } =
@@ -3281,6 +3282,8 @@ export default function App({ onBootReady } = {}) {
       : "",
   );
 
+  const hasUserHydrated = Boolean(user);
+
   useEffect(() => {
     if (!activeNpub) {
       setPreloadedTeams(null);
@@ -3288,51 +3291,65 @@ export default function App({ onBootReady } = {}) {
       setPreloadedTeamMemberProgress(null);
       return undefined;
     }
+    if (!teamsOpen && (isLoadingApp || !hasUserHydrated)) {
+      return undefined;
+    }
+    if (preloadedTeamsNpub === activeNpub && preloadedTeams !== null) {
+      return undefined;
+    }
     let active = true;
-    setPreloadedTeams(null);
-    setPreloadedTeamMemberProgress(null);
-    setPreloadedTeamsNpub(activeNpub);
-    getUserTeams(activeNpub)
-      .then(async (teams) => {
-        if (!active) return;
-        setPreloadedTeams(teams);
-        const results = await Promise.allSettled(
-          teams.map((team) =>
-            getTeamMemberProgress(
-              team.isCreator ? activeNpub : team.createdBy,
-              team.id,
-              activeNpub,
+    const delayMs = teamsOpen ? 0 : 2500;
+    const timerId = setTimeout(() => {
+      if (!active) return;
+      setPreloadedTeamsNpub(activeNpub);
+      getUserTeams(activeNpub)
+        .then(async (teams) => {
+          if (!active) return;
+          setPreloadedTeams(teams);
+          const results = await Promise.allSettled(
+            teams.map((team) =>
+              getTeamMemberProgress(
+                team.isCreator ? activeNpub : team.createdBy,
+                team.id,
+                activeNpub,
+              ),
             ),
-          ),
-        );
-        if (!active) return;
-        const progress = {};
-        results.forEach((result, index) => {
-          if (result.status === "fulfilled")
-            progress[teams[index].id] = result.value;
-          else
-            console.error("Preload team member progress error", result.reason);
+          );
+          if (!active) return;
+          const progress = {};
+          results.forEach((result, index) => {
+            if (result.status === "fulfilled")
+              progress[teams[index].id] = result.value;
+            else
+              console.error("Preload team member progress error", result.reason);
+          });
+          setPreloadedTeamMemberProgress(progress);
+        })
+        .catch((error) => {
+          console.error("Preload teams error", error);
+          if (active) {
+            setPreloadedTeams([]);
+            setPreloadedTeamMemberProgress({});
+          }
         });
-        setPreloadedTeamMemberProgress(progress);
-      })
-      .catch((error) => {
-        console.error("Preload teams error", error);
-        if (active) {
-          setPreloadedTeams([]);
-          setPreloadedTeamMemberProgress({});
-        }
-      });
+    }, delayMs);
     return () => {
       active = false;
+      clearTimeout(timerId);
     };
-  }, [activeNpub]);
+  }, [activeNpub, teamsOpen, isLoadingApp, hasUserHydrated, preloadedTeamsNpub, preloadedTeams]);
 
   useEffect(() => {
-    if (!activeNpub) return;
-    void loadGlobalTeamFeed(getGlobalNotesWithProfilesByHashtag).catch((error) => {
-      console.error("Preload global team feed error", error);
-    });
-  }, [activeNpub, getGlobalNotesWithProfilesByHashtag]);
+    if (!activeNpub) return undefined;
+    if (!teamsOpen && (isLoadingApp || !hasUserHydrated)) return undefined;
+    const delayMs = teamsOpen ? 0 : 3000;
+    const timerId = setTimeout(() => {
+      void loadGlobalTeamFeed(getGlobalNotesWithProfilesByHashtag).catch((error) => {
+        console.error("Preload global team feed error", error);
+      });
+    }, delayMs);
+    return () => clearTimeout(timerId);
+  }, [activeNpub, teamsOpen, isLoadingApp, hasUserHydrated, getGlobalNotesWithProfilesByHashtag]);
 
   const isTestUnlockActive = useMemo(
     () => isMasterUnlockActive(activeNpub),
@@ -7742,6 +7759,19 @@ export default function App({ onBootReady } = {}) {
         patch.lastGoalDayKey = data.lastGoalDayKey;
       if (data?.dailyXpRecent && typeof data.dailyXpRecent === "object")
         patch.dailyXpRecent = data.dailyXpRecent;
+      if (data?.dailyXpHistory && typeof data.dailyXpHistory === "object")
+        patch.dailyXpHistory = data.dailyXpHistory;
+      if (Array.isArray(data?.completedGoalDates))
+        patch.completedGoalDates = data.completedGoalDates;
+      if (data?.dailyResetAt !== undefined)
+        patch.dailyResetAt = data.dailyResetAt;
+      if (typeof data?.schemaVersion === "number")
+        patch.schemaVersion = data.schemaVersion;
+      if (
+        data?.companionUnlocksCelebrated &&
+        typeof data.companionUnlocksCelebrated === "object"
+      )
+        patch.companionUnlocksCelebrated = data.companionUnlocksCelebrated;
       if (data?.stats) patch.stats = data.stats;
       if (data?.learningIntelligence)
         patch.learningIntelligence = data.learningIntelligence;

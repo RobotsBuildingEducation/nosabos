@@ -284,6 +284,9 @@ const strongNpub = (user) =>
 function useSharedProgress(preparation = null) {
   const user = useUserStore((s) => s.user);
   const npub = strongNpub(user);
+  const hasStoreProgress = Boolean(
+    user?.progress && typeof user.progress === "object",
+  );
   const [xp, setXp] = useState(0);
   const [progress, setProgress] = useState(() => ({
     level: "beginner",
@@ -293,13 +296,36 @@ function useSharedProgress(preparation = null) {
     ...(preparation ? { ...preparation.user?.progress, targetLang: preparation.targetLang, supportLang: preparation.supportLang } : {}),
   }));
   // ✅ ready flag so we know when user settings have been loaded once
-  const [ready, setReady] = useState(Boolean(preparation));
+  const [ready, setReady] = useState(Boolean(preparation) || hasStoreProgress);
+
+  useEffect(() => {
+    if (!hasStoreProgress) return;
+    const p = user.progress || {};
+    const targetLang = isSupportedPracticeLanguage(p.targetLang)
+      ? normalizePracticeLanguage(p.targetLang, DEFAULT_TARGET_LANGUAGE)
+      : DEFAULT_TARGET_LANGUAGE;
+    const langXp = getLanguageXp(p, targetLang);
+
+    setXp(Number.isFinite(langXp) ? langXp : 0);
+    setProgress({
+      level: p.level || "beginner",
+      targetLang,
+      supportLang:
+        p.supportLang === "bilingual"
+          ? "bilingual"
+          : normalizeSupportLanguage(p.supportLang, DEFAULT_SUPPORT_LANGUAGE),
+      showTranslations:
+        typeof p.showTranslations === "boolean" ? p.showTranslations : true,
+    });
+    setReady(true);
+  }, [hasStoreProgress, user?.progress]);
 
   useEffect(() => {
     if (!npub) {
       setReady(true); // no user -> use defaults immediately
       return;
     }
+    if (hasStoreProgress) return;
     const ref = doc(database, "users", npub);
     const unsub = onSnapshot(ref, (snap) => {
       const data = snap.exists() ? snap.data() : {};
@@ -323,7 +349,7 @@ function useSharedProgress(preparation = null) {
       setReady(true); // ✅ we’ve received user settings
     });
     return () => unsub();
-  }, [npub]);
+  }, [npub, hasStoreProgress]);
 
   const levelNumber = Math.floor(xp / 100) + 1;
   const progressPct = Math.min(100, xp % 100);

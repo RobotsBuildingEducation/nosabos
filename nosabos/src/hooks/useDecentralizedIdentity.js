@@ -18,7 +18,16 @@ const ndk = new NDK({
   ],
 });
 
-console.log("ndk created:", ndk);
+let ndkConnectPromise = null;
+const ensureNdkConnected = () => {
+  if (!ndkConnectPromise) {
+    ndkConnectPromise = ndk.connect().catch((err) => {
+      ndkConnectPromise = null;
+      throw err;
+    });
+  }
+  return ndkConnectPromise;
+};
 
 export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
   const [isConnected, setIsConnected] = useState(false);
@@ -42,7 +51,7 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
 
     const initializeConnection = async () => {
       try {
-        await ndk.connect();
+        await ensureNdkConnected();
         setIsConnected(true);
 
         if (isNip07 && typeof window !== "undefined" && window.nostr) {
@@ -178,16 +187,10 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
           "hex",
         );
 
-        // Create a new NDK instance
-        const ndkInstance = new NDK({
-          explicitRelayUrls: [
-            "wss://relay.ditto.pub",
-            "wss://relay.primal.net",
-            "wss://nos.lol",
-          ],
-        });
+        // Reuse the shared NDK instance instead of creating a new WebSocket pool per call
+        const ndkInstance = ndk;
 
-        await ndkInstance.connect();
+        await ensureNdkConnected();
 
         setIsConnected(true);
 
@@ -449,13 +452,14 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
     }
   };
 
-  const getBadgeData = async (addy) => {
+  const getBadgeData = async (addy, existingNdkInstance = null) => {
     try {
-      // Connect to Nostr
-      const connection = await connectToNostr();
-      if (!connection) return [];
-
-      const { ndkInstance } = connection;
+      let ndkInstance = existingNdkInstance;
+      if (!ndkInstance) {
+        const connection = await connectToNostr();
+        if (!connection) return [];
+        ndkInstance = connection.ndkInstance;
+      }
 
       // const addressPointer = await getAddressPointer(addy);
       let addressPointer = addy.split(":");
@@ -539,7 +543,7 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
       ];
 
       let badgeData = uniqueNAddresses.map((naddress) =>
-        getBadgeData(naddress),
+        getBadgeData(naddress, ndkInstance),
       );
 
       let resolvedBadges = await Promise.all(badgeData);

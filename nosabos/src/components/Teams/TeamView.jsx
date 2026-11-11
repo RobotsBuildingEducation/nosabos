@@ -271,12 +271,12 @@ export default function TeamView({
   }, [isOpen, userNpub, refreshTrigger]);
 
   useEffect(() => {
-    if (!userNpub) return undefined;
+    if (!userNpub || !isOpen || initialTeamInvites !== null) return undefined;
     const unsubscribe = subscribeToTeamInvites(userNpub, (invites) => {
       setTeamInvites(invites);
     });
     return () => unsubscribe?.();
-  }, [userNpub]);
+  }, [userNpub, isOpen, initialTeamInvites]);
 
   useEffect(() => {
     const teamRefs = JSON.parse(teamSubscriptionKey);

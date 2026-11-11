@@ -640,7 +640,9 @@ export const useNostrWalletStore = create((set, get) => ({
       return false;
     }
 
-    await initWallet();
+    if (retryCount > 0) {
+      await initWallet();
+    }
 
     const freshWallet = get().cashuWallet;
 

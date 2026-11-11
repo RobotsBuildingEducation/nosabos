@@ -32,7 +32,20 @@ const retryOptions = channel => ({ journal: localJournal, channel,
   onStatus: (npub, pending) => syncStatus.set(npub, channel, pending),
   onError: error => console.warn(`Achievement ${channel} sync pending:`, error) });
 const cloudSync = createRetrySync(syncCloudAchievements, retryOptions("cloud"));
-const relaySync = createRetrySync(npub => syncAchievements(npub, { strict: true }), retryOptions("relay"));
+const relaySync = createRetrySync(async npub => {
+  try {
+    await syncAchievements(npub, { strict: true });
+  } catch (error) {
+    if (error?.message === "A matching signer is needed to publish achievements") {
+      const { nsec, isNip07 } = resolveEffectiveIdentity(npub);
+      const hasSignerConfig =
+        Boolean(nsec && nsec !== "nip07") ||
+        Boolean(isNip07 && typeof window !== "undefined" && window.nostr?.signEvent);
+      if (!hasSignerConfig) return;
+    }
+    throw error;
+  }
+}, retryOptions("relay"));
 const signerRequest = createSingleFlight();
 const scheduleAchievementSync = npub => { cloudSync.schedule(npub); relaySync.schedule(npub); };
 subscribeProgress(npub => { if (hasBrowserStorage()) cloudSync.schedule(npub); });
@@ -83,11 +96,21 @@ async function syncCloudAchievements(npub) {
   PROGRESS_SOURCES.forEach((source, index) => localJournal.confirmRemoteSave(`learning_achievement_progress_v4:${npub}:${source}`, ledgers[index]));
 }
 
+const lastResumeAt = new Map();
+const RESUME_COOLDOWN_MS = 30000;
+
 export function resumeAchievementSync(npub) {
   if (!npub || !hasBrowserStorage()) return;
+  const now = Date.now();
+  const prior = lastResumeAt.get(npub) || 0;
+  if (now - prior < RESUME_COOLDOWN_MS && !syncStatus.forAccount(npub).pending) return;
+  lastResumeAt.set(npub, now);
   cloudSync.resume(npub); relaySync.resume(npub);
 }
-export function pauseAchievementSync(npub) { cloudSync.pause(npub); relaySync.pause(npub); }
+export function pauseAchievementSync(npub) {
+  lastResumeAt.delete(npub);
+  cloudSync.pause(npub); relaySync.pause(npub);
+}
 export function receiveAchievementStorage(npub, event) {
   if (!npub || !event.newValue) return;
   try {

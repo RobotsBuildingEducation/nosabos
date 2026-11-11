@@ -294,6 +294,9 @@ const getAppUILang = () => {
 function useSharedProgress(activeNpub = "", preparation = null) {
   const user = useUserStore((s) => s.user);
   const npub = activeNpub?.trim?.() || strongNpub(user);
+  const hasStoreProgress = Boolean(
+    user?.progress && typeof user.progress === "object",
+  );
   const [xp, setXp] = useState(0);
   const [progress, setProgress] = useState(() => ({
     level: "beginner",
@@ -303,7 +306,55 @@ function useSharedProgress(activeNpub = "", preparation = null) {
   }));
 
   // ✅ NEW: track when we've loaded progress at least once
-  const [progressReady, setProgressReady] = useState(Boolean(preparation));
+  const [progressReady, setProgressReady] = useState(
+    Boolean(preparation) || hasStoreProgress,
+  );
+
+  useEffect(() => {
+    if (!hasStoreProgress) return;
+    const p = user.progress || {};
+    const targetLang = [
+      "nah",
+      "es",
+      "pt",
+      "en",
+      "fr",
+      "it",
+      "nl",
+      "ja",
+      "ru",
+      "de",
+      "el",
+      "pl",
+      "ga",
+      "yua",
+    ].includes(p.targetLang)
+      ? p.targetLang
+      : "es";
+    const langXp = getLanguageXp(p, targetLang);
+
+    setXp(Number.isFinite(langXp) ? langXp : 0);
+    setProgress({
+      level: p.level || "beginner",
+      targetLang,
+      supportLang: [
+        "en",
+        "es",
+        "pt",
+        "it",
+        "fr",
+        "de",
+        "ja",
+        "hi",
+        "ar",
+        "zh",
+        "bilingual",
+      ].includes(p.supportLang)
+        ? p.supportLang
+        : "en",
+    });
+    setProgressReady(true);
+  }, [hasStoreProgress, user?.progress]);
 
   useEffect(() => {
     // If we don't have an npub, just mark as ready and keep defaults
@@ -311,6 +362,7 @@ function useSharedProgress(activeNpub = "", preparation = null) {
       setProgressReady(true);
       return;
     }
+    if (hasStoreProgress) return;
 
     const ref = doc(database, "users", npub);
     const unsub = onSnapshot(ref, (snap) => {
@@ -352,7 +404,7 @@ function useSharedProgress(activeNpub = "", preparation = null) {
     });
 
     return () => unsub();
-  }, [npub]);
+  }, [npub, hasStoreProgress]);
 
   const levelNumber = Math.floor(xp / 100) + 1;
   const progressPct = Math.min(100, xp % 100);

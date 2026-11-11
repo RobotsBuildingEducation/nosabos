@@ -432,6 +432,9 @@ const strongNpub = (user) =>
 function useSharedProgress(preparation = null) {
   const user = useUserStore((s) => s.user);
   const npub = strongNpub(user);
+  const hasStoreProgress = Boolean(
+    user?.progress && typeof user.progress === "object",
+  );
   const initialSupportLang = normalizeSupportLanguage(
     user?.progress?.supportLang === "bilingual"
       ? user?.appLanguage
@@ -447,13 +450,41 @@ function useSharedProgress(preparation = null) {
     voice: getPreferredTTSVoice(),
     ...(preparation ? { ...preparation.user?.progress, targetLang: preparation.targetLang, supportLang: preparation.supportLang } : {}),
   }));
-  const [isLoading, setIsLoading] = useState(!preparation);
+  const [isLoading, setIsLoading] = useState(!preparation && !hasStoreProgress);
+
+  useEffect(() => {
+    if (!hasStoreProgress) return;
+    const p = user.progress || {};
+    const supportFallback = normalizeSupportLanguage(
+      user?.appLanguage,
+      getStoredAppLanguage(DEFAULT_SUPPORT_LANGUAGE),
+    );
+    const targetLang = isSupportedPracticeLanguage(p.targetLang)
+      ? normalizePracticeLanguage(p.targetLang, DEFAULT_TARGET_LANGUAGE)
+      : DEFAULT_TARGET_LANGUAGE;
+    const langXp = getLanguageXp(p, targetLang);
+
+    setXp(Number.isFinite(langXp) ? langXp : 0);
+    setProgress({
+      level: p.level || "beginner",
+      targetLang,
+      supportLang:
+        p.supportLang === "bilingual"
+          ? "bilingual"
+          : normalizeSupportLanguage(p.supportLang, supportFallback),
+      showTranslations:
+        typeof p.showTranslations === "boolean" ? p.showTranslations : true,
+      voice: getPreferredTTSVoice(),
+    });
+    setIsLoading(false);
+  }, [hasStoreProgress, user?.progress, user?.appLanguage]);
 
   useEffect(() => {
     if (!npub) {
       setIsLoading(false);
       return;
     }
+    if (hasStoreProgress) return;
 
     if (!preparation) setIsLoading(true);
     const ref = doc(database, "users", npub);
@@ -484,7 +515,7 @@ function useSharedProgress(preparation = null) {
       setIsLoading(false);
     });
     return () => unsub();
-  }, [npub, preparation]);
+  }, [npub, preparation, hasStoreProgress]);
 
   const levelNumber = Math.floor(xp / 100) + 1;
   const progressPct = Math.min(100, xp % 100);
