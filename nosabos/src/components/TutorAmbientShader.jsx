@@ -1,31 +1,56 @@
 import { useEffect, useRef, useState } from "react";
-import { createTutorAtmosphereScene } from "./tutorAtmosphereScene.js";
+
+let sceneModulePromise;
+function loadAtmosphereSceneModule() {
+  return (sceneModulePromise ||= import("./tutorAtmosphereScene.js").catch((error) => {
+    sceneModulePromise = null;
+    throw error;
+  }));
+}
 
 export default function TutorAmbientShader({ visible, prepare = visible, isLightTheme, audioLevelRef }) {
   const canvasRef = useRef(null);
   const sceneRef = useRef(null);
+  const latestPropsRef = useRef({ visible, isLightTheme, audioLevelRef });
+  latestPropsRef.current = { visible, isLightTheme, audioLevelRef };
   const [ready, setReady] = useState(false);
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
     if (!sceneRef.current && (visible || prepare)) {
-      try {
-        sceneRef.current = createTutorAtmosphereScene(canvasRef.current, {
-          isLightTheme,
-          audioLevelRef,
-          onUnavailable: () => setReady(false),
-          onAvailable: () => setReady(true),
+      void loadAtmosphereSceneModule()
+        .then(({ createTutorAtmosphereScene }) => {
+          if (cancelled || sceneRef.current || !canvasRef.current) return;
+          try {
+            const latest = latestPropsRef.current;
+            sceneRef.current = createTutorAtmosphereScene(canvasRef.current, {
+              isLightTheme: latest.isLightTheme,
+              audioLevelRef: latest.audioLevelRef,
+              onUnavailable: () => setReady(false),
+              onAvailable: () => setReady(true),
+            });
+            sceneRef.current?.setVisible(latest.visible);
+            setReady(true);
+          } catch {
+            setReady(false);
+          }
+          // Fade in only after the first shader frame (or a confirmed fallback).
+          setInitialized(true);
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setReady(false);
+            setInitialized(true);
+          }
         });
-        setReady(true);
-      } catch {
-        setReady(false);
-      }
-      // Fade in only after the first shader frame (or a confirmed fallback).
-      setInitialized(true);
     }
     sceneRef.current?.setTheme(isLightTheme);
     sceneRef.current?.setAudioLevelRef(audioLevelRef);
     sceneRef.current?.setVisible(visible);
+    return () => {
+      cancelled = true;
+    };
   }, [visible, prepare, isLightTheme, audioLevelRef]);
 
   useEffect(() => () => { sceneRef.current?.dispose(); sceneRef.current = null; }, []);

@@ -48,7 +48,6 @@ import { MdSupportAgent } from "react-icons/md";
 import { detectUserLanguage } from "../utils/languageDetection";
 import { usePublicIdentity } from "../features/publicStartup/usePublicIdentity.jsx";
 import useSoundSettings from "../hooks/useSoundSettings";
-import * as Tone from "tone";
 import { useThemeStore } from "../useThemeStore";
 import { getThemeModeToggleProps } from "../utils/themeModeToggleStyle";
 import {
@@ -942,8 +941,6 @@ const LandingPage = ({ onAuthenticated }) => {
   // never ran here because LandingPage renders before <App /> mounts.
   useEffect(() => {
     const handleFirstInteraction = () => {
-      // Tone.start() synchronously inside the gesture (required on iOS/mobile).
-      Tone.start();
       warmupAudio();
       document.removeEventListener("pointerdown", handleFirstInteraction);
       document.removeEventListener("keydown", handleFirstInteraction);

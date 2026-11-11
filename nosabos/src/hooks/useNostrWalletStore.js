@@ -3,23 +3,37 @@ import { awardProgressionAchievements, pubkeyFromNpub } from "../utils/achieveme
 // NIP-60 (Cashu Wallets) and NIP-61 (Nutzaps) implementation
 // Zustand store for global wallet state
 import { create } from "zustand";
-import NDK, {
-  NDKPrivateKeySigner,
-  NDKNip07Signer,
-  NDKEvent,
-} from "@nostr-dev-kit/ndk";
-import { NDKCashuWallet } from "@nostr-dev-kit/ndk-wallet";
 import { Buffer } from "buffer";
 import { bech32 } from "bech32";
-import {
-  CashuDepositError,
-  createBolt11DepositQuote,
-  getCashuMintWallet,
-  getUnspentCashuProofs,
-  mintPaidBolt11Quote,
-  toNdkProofs,
-  waitForPaidMintQuote,
-} from "../utils/cashuMintClient";
+
+let ndkModulePromise = null;
+function loadNdkModule() {
+  return (ndkModulePromise ||= import("@nostr-dev-kit/ndk").catch((error) => {
+    ndkModulePromise = null;
+    throw error;
+  }));
+}
+
+let cashuModulesPromise = null;
+function loadCashuModules() {
+  return (cashuModulesPromise ||= Promise.all([
+    loadNdkModule(),
+    import("@nostr-dev-kit/ndk-wallet"),
+    import("../utils/cashuMintClient"),
+  ])
+    .then(([ndkMod, ndkWalletMod, cashuMintMod]) => ({
+      NDK: ndkMod.default,
+      NDKPrivateKeySigner: ndkMod.NDKPrivateKeySigner,
+      NDKNip07Signer: ndkMod.NDKNip07Signer,
+      NDKEvent: ndkMod.NDKEvent,
+      NDKCashuWallet: ndkWalletMod.NDKCashuWallet,
+      ...cashuMintMod,
+    }))
+    .catch((error) => {
+      cashuModulesPromise = null;
+      throw error;
+    }));
+}
 
 // Polyfill Buffer for browser
 if (typeof window !== "undefined") {
@@ -118,6 +132,8 @@ async function verifyBalanceWithMint(wallet, mintUrl) {
       return 0;
     }
 
+    const { getCashuMintWallet, getUnspentCashuProofs } =
+      await loadCashuModules();
     const cashuWallet = await getCashuMintWallet(mintUrl);
     const unspentProofs = await getUnspentCashuProofs(cashuWallet, proofs);
 
@@ -172,6 +188,11 @@ export const useNostrWalletStore = create((set, get) => ({
     const nsec = nsecRef || (storedNsec !== "nip07" ? nostrPrivKey : null);
 
     try {
+      const {
+        default: NDK,
+        NDKPrivateKeySigner,
+        NDKNip07Signer,
+      } = await loadNdkModule();
       const ndkInstance = new NDK({
         explicitRelayUrls: DEFAULT_RELAYS,
       });
@@ -276,6 +297,7 @@ export const useNostrWalletStore = create((set, get) => ({
 
       console.log("[Wallet] Found existing wallet, loading...");
 
+      const { NDKCashuWallet, NDKPrivateKeySigner } = await loadCashuModules();
       const pk = signer.privateKey;
       const wallet = new NDKCashuWallet(ndkInstance);
       wallet.mints = [DEFAULT_MINT];
@@ -355,6 +377,7 @@ export const useNostrWalletStore = create((set, get) => ({
         throw new Error("No private key available for wallet creation");
       }
 
+      const { NDKCashuWallet, NDKPrivateKeySigner } = await loadCashuModules();
       const wallet = new NDKCashuWallet(ndkInstance);
       wallet.mints = [DEFAULT_MINT];
       wallet.privkey = pk;
@@ -451,6 +474,12 @@ export const useNostrWalletStore = create((set, get) => ({
 
     const monitorPromise = (async () => {
       try {
+        const {
+          CashuDepositError,
+          getCashuMintWallet,
+          mintPaidBolt11Quote,
+          waitForPaidMintQuote,
+        } = await loadCashuModules();
         let proofs = pendingDeposit.proofs;
 
         if (!Array.isArray(proofs) || proofs.length === 0) {
@@ -582,6 +611,8 @@ export const useNostrWalletStore = create((set, get) => ({
         return existingDeposit.quote.request;
       }
 
+      const { createBolt11DepositQuote, getCashuMintWallet } =
+        await loadCashuModules();
       const mintWallet = await getCashuMintWallet(DEFAULT_MINT);
       const quote = await createBolt11DepositQuote(mintWallet, amountInSats);
       const pendingDeposit = {
@@ -658,6 +689,12 @@ export const useNostrWalletStore = create((set, get) => ({
       const { p2pkPubkey } = await fetchUserPaymentInfo(recipientNpub);
       console.log("[Wallet] Sending 1 sat to:", recipientNpub);
 
+      const {
+        NDKEvent,
+        getCashuMintWallet,
+        getUnspentCashuProofs,
+        toNdkProofs,
+      } = await loadCashuModules();
       const cashuWalletInstance = await getCashuMintWallet(DEFAULT_MINT);
 
       // Get proofs from wallet state

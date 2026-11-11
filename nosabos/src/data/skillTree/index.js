@@ -6,7 +6,7 @@
  * selected CEFR level and target-language curriculum.
  */
 
-import { CEFR_LEVELS } from "../flashcards/common.js";
+import { CEFR_LEVELS } from "../flashcards/constants.js";
 import { loadTargetCurriculum } from "./targetCurriculum/load.js";
 import { adaptIntroTutorialUnit } from "../../utils/introTutorial.js";
 import { isContentUnlockedByPlacement } from "../../utils/proficiencyPlacement.js";

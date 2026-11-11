@@ -1,4 +1,4 @@
-import { CEFR_LEVELS } from "../data/flashcards/common.js";
+import { CEFR_LEVELS } from "../data/flashcards/constants.js";
 
 export const INTRO_TUTORIAL_LESSON_ID = "lesson-tutorial-1";
 

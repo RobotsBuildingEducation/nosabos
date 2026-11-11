@@ -160,16 +160,13 @@ import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import useUserStore from "./hooks/useUserStore";
 import useModalStore from "./hooks/useModalStore";
 import { useDecentralizedIdentity } from "./hooks/useDecentralizedIdentity";
-import * as Tone from "tone";
 import useSoundSettings, {
   DEFAULT_TUTOR_VOLUME,
 } from "./hooks/useSoundSettings";
 
-import GrammarBook from "./components/GrammarBook";
 import Onboarding from "./components/Onboarding";
 import LoadingEllipsis from "./components/LoadingEllipsis.jsx";
 import { getBootLoadingStage } from "./utils/bootLoadingStage.js";
-import RealTimeTest from "./components/RealTimeTest";
 import BottomDrawerDragHandle from "./components/BottomDrawerDragHandle";
 import VoicePreferenceField from "./components/VoicePreferenceField";
 
@@ -177,9 +174,6 @@ import { translations } from "./utils/translation";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "./utils/llm";
 import { clampCefrLevel, maxCefrLevel } from "./utils/phonicsLevel";
 import { isMasterUnlockActive } from "./utils/masterUnlock";
-import Vocabulary from "./components/Vocabulary";
-import StoryMode from "./components/Stories";
-import History from "./components/History";
 import ActivityMenu from "./components/ActivityMenu";
 import { getActivityMenuLabels } from "./utils/activityMenuCopy";
 import QuestionActionArea from "./components/QuestionActionArea";
@@ -356,7 +350,7 @@ import {
 } from "./utils/patreonDrawerReturn";
 import { waitForGameLoaderExploration } from "./utils/gameLoaderTiming";
 import { LESSON_COUNTS, getLessonLevelFromId } from "./utils/cefrProgress";
-import { CEFR_LEVEL_COUNTS as FLASHCARD_LEVEL_COUNTS } from "./data/flashcards/common";
+import { CEFR_LEVEL_COUNTS as FLASHCARD_LEVEL_COUNTS } from "./data/flashcards/constants";
 import {
   COURSE_PROGRESS_COLLECTION,
   COURSE_PROGRESS_SCHEMA_VERSION,
@@ -491,6 +485,11 @@ function PracticeCompletionDetails({ details, appLanguage }) {
 // between. The cached promise resets on failure so a later attempt can retry.
 let rpgGameComponentPromise = null;
 const LoadingMiniGame = lazy(() => import("./components/LoadingMiniGame.jsx"));
+const GrammarBook = lazy(() => import("./components/GrammarBook"));
+const RealTimeTest = lazy(() => import("./components/RealTimeTest"));
+const Vocabulary = lazy(() => import("./components/Vocabulary"));
+const StoryMode = lazy(() => import("./components/Stories"));
+const History = lazy(() => import("./components/History"));
 function loadRPGGameComponent() {
   if (!rpgGameComponentPromise) {
     rpgGameComponentPromise = import("./components/RPGGame/GameRouter.jsx")
@@ -4001,9 +4000,6 @@ export default function App({ onBootReady } = {}) {
   // Warm up audio on first user interaction to eliminate mobile audio delay
   useEffect(() => {
     const handleFirstInteraction = () => {
-      // Call Tone.start() synchronously inside the user gesture so the
-      // browser treats it as user-initiated (required on iOS / mobile).
-      Tone.start();
       warmupAudio();
       // Remove listeners after first interaction
       document.removeEventListener("touchstart", handleFirstInteraction);
@@ -7921,9 +7917,10 @@ export default function App({ onBootReady } = {}) {
   );
 
   const renderRandomPanel = () => {
+    let panel;
     switch (randomPick) {
       case "realtime":
-        return (
+        panel = (
           <>
             {RandomHeader}
             <RealTimeTest
@@ -7946,8 +7943,9 @@ export default function App({ onBootReady } = {}) {
             />
           </>
         );
+        break;
       case "stories":
-        return (
+        panel = (
           <>
             {RandomHeader}
             <StoryMode
@@ -7960,15 +7958,17 @@ export default function App({ onBootReady } = {}) {
             />
           </>
         );
+        break;
       case "reading":
-        return (
+        panel = (
           <>
             {RandomHeader}
             <History userLanguage={appLanguage} />
           </>
         );
+        break;
       case "grammar":
-        return (
+        panel = (
           <>
             {RandomHeader}
             <GrammarBook
@@ -7979,9 +7979,10 @@ export default function App({ onBootReady } = {}) {
             />
           </>
         );
+        break;
       case "vocabulary":
       default:
-        return (
+        panel = (
           <>
             {RandomHeader}
             <Vocabulary
@@ -7993,7 +7994,9 @@ export default function App({ onBootReady } = {}) {
             />
           </>
         );
+        break;
     }
+    return <Suspense fallback={null}>{panel}</Suspense>;
   };
 
   /* -----------------------------------
@@ -11114,116 +11117,126 @@ export default function App({ onBootReady } = {}) {
                   case "realtime":
                     return (
                       <TabPanel key="realtime" px={0} py={{ base: 0, md: 2 }}>
-                        <RealTimeTest
-                          key={`realtime-${lessonModuleNonce}`}
-                          isActive={currentTab === "realtime"}
-                          auth={auth}
-                          activeNpub={activeNpub}
-                          activeNsec={activeNsec}
-                          level={user?.progress?.level}
-                          supportLang={resolvedSupportLang}
-                          targetLang={resolvedTargetLang}
-                          showTranslations={user?.progress?.showTranslations}
-                          pauseMs={
-                            user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS
-                          }
-                          helpRequest={user?.progress?.helpRequest}
-                          practicePronunciation={
-                            user?.progress?.practicePronunciation
-                          }
-                          lesson={activeLesson}
-                          lessonContent={activeLessonContent?.realtime}
-                          onSkip={switchToRandomLessonMode}
-                          bottomActionBarMinimized={isBottomActionBarMinimized}
-                          onSwitchedAccount={handleSwitchedAccount}
-                        />
+                        <Suspense fallback={null}>
+                          <RealTimeTest
+                            key={`realtime-${lessonModuleNonce}`}
+                            isActive={currentTab === "realtime"}
+                            auth={auth}
+                            activeNpub={activeNpub}
+                            activeNsec={activeNsec}
+                            level={user?.progress?.level}
+                            supportLang={resolvedSupportLang}
+                            targetLang={resolvedTargetLang}
+                            showTranslations={user?.progress?.showTranslations}
+                            pauseMs={
+                              user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS
+                            }
+                            helpRequest={user?.progress?.helpRequest}
+                            practicePronunciation={
+                              user?.progress?.practicePronunciation
+                            }
+                            lesson={activeLesson}
+                            lessonContent={activeLessonContent?.realtime}
+                            onSkip={switchToRandomLessonMode}
+                            bottomActionBarMinimized={isBottomActionBarMinimized}
+                            onSwitchedAccount={handleSwitchedAccount}
+                          />
+                        </Suspense>
                       </TabPanel>
                     );
                   case "stories":
                     return (
                       <TabPanel key="stories" px={0} py={{ base: 0, md: 2 }}>
-                        <StoryMode
-                          key={`stories-${lessonModuleNonce}`}
-                          userLanguage={appLanguage}
-                          activeNpub={activeNpub}
-                          activeNsec={activeNsec}
-                          targetLang={resolvedTargetLang}
-                          supportLang={resolvedSupportLang}
-                          pauseMs={
-                            user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS
-                          }
-                          lesson={activeLesson}
-                          lessonContent={activeLessonContent?.stories}
-                          onSkip={switchToRandomLessonMode}
-                          lessonEarnedXp={activeLessonEarnedXp}
-                        />
+                        <Suspense fallback={null}>
+                          <StoryMode
+                            key={`stories-${lessonModuleNonce}`}
+                            userLanguage={appLanguage}
+                            activeNpub={activeNpub}
+                            activeNsec={activeNsec}
+                            targetLang={resolvedTargetLang}
+                            supportLang={resolvedSupportLang}
+                            pauseMs={
+                              user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS
+                            }
+                            lesson={activeLesson}
+                            lessonContent={activeLessonContent?.stories}
+                            onSkip={switchToRandomLessonMode}
+                            lessonEarnedXp={activeLessonEarnedXp}
+                          />
+                        </Suspense>
                       </TabPanel>
                     );
                   case "reading":
                     return (
                       <TabPanel key="reading" px={0} py={{ base: 0, md: 2 }}>
-                        <History
-                          key={`reading-${lessonModuleNonce}`}
-                          userLanguage={appLanguage}
-                          lesson={activeLesson}
-                          lessonContent={activeLessonContent?.reading}
-                          onSkip={switchToRandomLessonMode}
-                          lessonEarnedXp={activeLessonEarnedXp}
-                        />
+                        <Suspense fallback={null}>
+                          <History
+                            key={`reading-${lessonModuleNonce}`}
+                            userLanguage={appLanguage}
+                            lesson={activeLesson}
+                            lessonContent={activeLessonContent?.reading}
+                            onSkip={switchToRandomLessonMode}
+                            lessonEarnedXp={activeLessonEarnedXp}
+                          />
+                        </Suspense>
                       </TabPanel>
                     );
                   case "grammar":
                     return (
                       <TabPanel key="grammar" px={0} py={{ base: 0, md: 2 }}>
-                        <GrammarBook
-                          key={`grammar-${lessonModuleNonce}`}
-                          userLanguage={appLanguage}
-                          activeNpub={activeNpub}
-                          activeNsec={activeNsec}
-                          pauseMs={
-                            user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS
-                          }
-                          lesson={activeLesson}
-                          lessonContent={activeLessonContent?.grammar}
-                          isFinalQuiz={activeLesson?.isFinalQuiz || false}
-                          quizConfig={
-                            activeLesson?.quizConfig || {
-                              questionsRequired: 10,
-                              passingScore: 8,
+                        <Suspense fallback={null}>
+                          <GrammarBook
+                            key={`grammar-${lessonModuleNonce}`}
+                            userLanguage={appLanguage}
+                            activeNpub={activeNpub}
+                            activeNsec={activeNsec}
+                            pauseMs={
+                              user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS
                             }
-                          }
-                          onSkip={switchToRandomLessonMode}
-                          onExitQuiz={handleReturnToSkillTree}
-                          onSendHelpRequest={handleSendToHelpChat}
-                          lessonEarnedXp={activeLessonEarnedXp}
-                        />
+                            lesson={activeLesson}
+                            lessonContent={activeLessonContent?.grammar}
+                            isFinalQuiz={activeLesson?.isFinalQuiz || false}
+                            quizConfig={
+                              activeLesson?.quizConfig || {
+                                questionsRequired: 10,
+                                passingScore: 8,
+                              }
+                            }
+                            onSkip={switchToRandomLessonMode}
+                            onExitQuiz={handleReturnToSkillTree}
+                            onSendHelpRequest={handleSendToHelpChat}
+                            lessonEarnedXp={activeLessonEarnedXp}
+                          />
+                        </Suspense>
                       </TabPanel>
                     );
                   case "vocabulary":
                     return (
                       <TabPanel key="vocabulary" px={0} py={{ base: 0, md: 2 }}>
-                        <Vocabulary
-                          key={`vocabulary-${lessonModuleNonce}`}
-                          userLanguage={appLanguage}
-                          activeNpub={activeNpub}
-                          activeNsec={activeNsec}
-                          pauseMs={
-                            user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS
-                          }
-                          lesson={activeLesson}
-                          lessonContent={activeLessonContent?.vocabulary}
-                          isFinalQuiz={activeLesson?.isFinalQuiz || false}
-                          quizConfig={
-                            activeLesson?.quizConfig || {
-                              questionsRequired: 10,
-                              passingScore: 8,
+                        <Suspense fallback={null}>
+                          <Vocabulary
+                            key={`vocabulary-${lessonModuleNonce}`}
+                            userLanguage={appLanguage}
+                            activeNpub={activeNpub}
+                            activeNsec={activeNsec}
+                            pauseMs={
+                              user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS
                             }
-                          }
-                          onSkip={switchToRandomLessonMode}
-                          onExitQuiz={handleReturnToSkillTree}
-                          onSendHelpRequest={handleSendToHelpChat}
-                          lessonEarnedXp={activeLessonEarnedXp}
-                        />
+                            lesson={activeLesson}
+                            lessonContent={activeLessonContent?.vocabulary}
+                            isFinalQuiz={activeLesson?.isFinalQuiz || false}
+                            quizConfig={
+                              activeLesson?.quizConfig || {
+                                questionsRequired: 10,
+                                passingScore: 8,
+                              }
+                            }
+                            onSkip={switchToRandomLessonMode}
+                            onExitQuiz={handleReturnToSkillTree}
+                            onSendHelpRequest={handleSendToHelpChat}
+                            lessonEarnedXp={activeLessonEarnedXp}
+                          />
+                        </Suspense>
                       </TabPanel>
                     );
                   case "game":

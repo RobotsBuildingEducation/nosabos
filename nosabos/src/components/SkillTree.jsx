@@ -252,7 +252,7 @@ import {
 import { getLessonProgressPercent } from "../utils/lessonProgress";
 import { createUnitRenderProgressSelector } from "../utils/skillTreeRenderProgress";
 import FlashcardSkillTree from "./FlashcardSkillTree";
-import { CEFR_LEVELS } from "../data/flashcards/common";
+import { CEFR_LEVELS } from "../data/flashcards/constants";
 import { isContentUnlockedByPlacement } from "../utils/proficiencyPlacement.js";
 import { MdOutlineDescription } from "react-icons/md";
 import { FaMicrophone } from "react-icons/fa";

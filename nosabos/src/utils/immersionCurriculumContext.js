@@ -1,4 +1,4 @@
-import { CEFR_LEVELS } from "../data/flashcards/common.js";
+import { CEFR_LEVELS } from "../data/flashcards/constants.js";
 
 function shortText(value, limit = 140) {
   return typeof value === "string" ? value.trim().slice(0, limit) : "";

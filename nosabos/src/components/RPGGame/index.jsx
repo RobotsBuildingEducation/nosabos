@@ -83,7 +83,7 @@ import VoiceWaveIcon from "../VoiceWaveIcon";
 import { useUserStore } from "../../hooks/useUserStore";
 import HelpChatFab from "../HelpChatFab";
 import VoiceOrb from "../VoiceOrbNext";
-import LoadingMiniGame from "../LoadingMiniGame";
+const LoadingMiniGame = React.lazy(() => import("../LoadingMiniGame"));
 import playerSpriteSheetUrl from "../../sprites/sprite_sheet_6.webp";
 import npcSpriteSheetUrl from "../../sprites/NPC_sprites.webp";
 import yachiruSpriteUrl from "../../sprites/tutor/main_character_tutor_transparent.webp";
@@ -8530,7 +8530,9 @@ export default function RPGGame({
           overflow="hidden"
           position="relative"
         >
-          <LoadingMiniGame supportLang={supportLang} />
+          <React.Suspense fallback={null}>
+            <LoadingMiniGame supportLang={supportLang} />
+          </React.Suspense>
           {isTutorialGame && (
             <Box
               position="absolute"

@@ -84,7 +84,9 @@ import { getBidiTextProps, mergeBidiSx } from "../utils/bidiText";
 import { createStoryPlan, buildStoryDiversityPrompt, recordStoryHistory } from "../features/stories/storyDiversity";
 import { generatePracticeStory } from "../features/stories/practiceStoryGeneration";
 import { questionSquircleStyle } from "./questionUiStyles";
-import StoryComprehension from "../features/stories/StoryComprehension";
+const StoryComprehension = React.lazy(
+  () => import("../features/stories/StoryComprehension"),
+);
 import { chooseStoryMode, rotateStoryMode, STORY_MODES } from "../features/stories/storySession";
 import { buildSpeakingStoryPrompt, getStoryDifficulty } from "../features/stories/storyPrompts";
 import StoryCharacterAvatar from "../features/stories/StoryCharacterAvatar";
@@ -572,21 +574,39 @@ function StoryComprehensionSettings(props) {
   const effectiveLang = normalizeSupportLanguage(supportLang || uiLang, "en");
   const copy = storyCopy(effectiveLang);
 
+  const loadingFallback = (
+    <StoryLoadingScreen
+      title={copy.loading}
+      subtitle={copy.loadingSub}
+      onSkip={props.onSkip}
+      skipLabel={copy.skip}
+      variant={props.mode || "radio"}
+    />
+  );
+
   if (!progressReady) {
-    return (
-      <StoryLoadingScreen
-        title={copy.loading}
-        subtitle={copy.loadingSub}
-        onSkip={props.onSkip}
-        skipLabel={copy.skip}
-        variant={props.mode || "radio"}
-      />
-    );
+    return loadingFallback;
   }
-  return <StoryComprehension {...props} npub={npub} uiLang={uiLang}
-    targetLang={targetLang} supportLang={supportLang}
-    targetName={LLM_LANG_NAME(targetLang)} supportName={LLM_LANG_NAME(supportLang)}
-    cefrLevel={props.lesson?.cefrLevel || props.lessonContent?.cefrLevel || (props.lesson?.id ? extractCEFRLevel(props.lesson.id) : getUserProficiencyLevel(progress, targetLang))} />;
+  return (
+    <React.Suspense fallback={loadingFallback}>
+      <StoryComprehension
+        {...props}
+        npub={npub}
+        uiLang={uiLang}
+        targetLang={targetLang}
+        supportLang={supportLang}
+        targetName={LLM_LANG_NAME(targetLang)}
+        supportName={LLM_LANG_NAME(supportLang)}
+        cefrLevel={
+          props.lesson?.cefrLevel ||
+          props.lessonContent?.cefrLevel ||
+          (props.lesson?.id
+            ? extractCEFRLevel(props.lesson.id)
+            : getUserProficiencyLevel(progress, targetLang))
+        }
+      />
+    </React.Suspense>
+  );
 }
 
 function SpeakingStoryMode({

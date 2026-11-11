@@ -133,11 +133,52 @@ export default defineConfig(({ mode, command }) => {
       pwaVersionMetadataPlugin({ buildId, builtAt }),
       VitePWA({
         workbox: {
-          maximumFileSizeToCacheInBytes: 10000000,
+          maximumFileSizeToCacheInBytes: 5000000,
           // OAuth, API navigations, and version metadata must always reach
           // Firebase Hosting / network directly rather than the index.html fallback.
           navigateFallbackDenylist: [/^\/api(?:\/|$)/, /^\/version\.json$/],
-          globIgnores: ["**/version.json"],
+          globIgnores: [
+            "**/version.json",
+            "**/stats.html",
+            "**/*Alphabet-*.js",
+            "**/legacyScenario-*.js",
+            "**/CitizenshipGuide-*.js",
+            "**/OrbingPlayground-*.js",
+            "**/SquirclePlayground-*.js",
+            "**/piyaliAchievementBackfill-*.js",
+            "**/three.module-*.js",
+            "**/GameRouter-*.js",
+            "**/Vocabulary-*.js",
+            "**/GrammarBook-*.js",
+            "**/History-*.js",
+            "**/RealTimeTest-*.js",
+            "**/Stories-*.js",
+            "**/StoryComprehension-*.js",
+            "**/DelightQuestionLab-*.js",
+            "**/FeedbackRail-*.js",
+            "**/cashuMintClient-*.js",
+            "**/+(en|es|pt|it|fr|de|ja|hi|ar|zh|ru|nl|el|pl|ga|nah|yua)-*.js",
+            "**/pre-a1-*.js",
+            "**/a1-*.js",
+            "**/a2-*.js",
+            "**/b1-*.js",
+            "**/b2-*.js",
+            "**/c1-*.js",
+            "**/c2-*.js",
+          ],
+          runtimeCaching: [
+            {
+              urlPattern: /\/assets\/.*\.(?:js|css|webp|woff2?|png|svg)$/i,
+              handler: "CacheFirst",
+              options: {
+                cacheName: "piyali-lazy-assets",
+                expiration: {
+                  maxEntries: 200,
+                  maxAgeSeconds: 60 * 60 * 24 * 30,
+                },
+              },
+            },
+          ],
         },
         manifest: {
           name: "Piyali",
@@ -173,13 +214,17 @@ export default defineConfig(({ mode, command }) => {
           enabled: true,
         },
       }),
-      visualizer({
-        filename: "stats.html",
-        open: true,
-        template: "treemap",
-        gzipSize: true,
-        brotliSize: true,
-      }),
+      ...(process.env.ANALYZE === "true"
+        ? [
+            visualizer({
+              filename: "stats.html",
+              open: true,
+              template: "treemap",
+              gzipSize: true,
+              brotliSize: true,
+            }),
+          ]
+        : []),
     ],
   };
 });

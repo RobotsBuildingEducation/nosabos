@@ -1,8 +1,27 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 import LegacyRPGGame from "./index.jsx";
 import { normalizeCefrKey } from "./episodes/profile.js";
-import { buildLegacyEpisodeScenario } from "./episodes/legacyScenario.js";
+
+let cachedBuildLegacyEpisodeScenario = null;
+let legacyScenarioPromise = null;
+function loadLegacyScenarioBuilder() {
+  if (cachedBuildLegacyEpisodeScenario) {
+    return Promise.resolve(cachedBuildLegacyEpisodeScenario);
+  }
+  if (!legacyScenarioPromise) {
+    legacyScenarioPromise = import("./episodes/legacyScenario.js")
+      .then((mod) => {
+        cachedBuildLegacyEpisodeScenario = mod.buildLegacyEpisodeScenario;
+        return cachedBuildLegacyEpisodeScenario;
+      })
+      .catch((error) => {
+        legacyScenarioPromise = null;
+        throw error;
+      });
+  }
+  return legacyScenarioPromise;
+}
 
 /**
  * Cutover boundary for the authored episode engine.
@@ -53,17 +72,38 @@ export default function GameRouter(props) {
     [harness.level, harness.unitId, lesson],
   );
 
+  const needsFallbackScenarioBuilder =
+    useEpisodes && !props.initialScenario?.authoredEpisode;
+  const [scenarioBuilder, setScenarioBuilder] = useState(
+    () => cachedBuildLegacyEpisodeScenario,
+  );
+
+  useEffect(() => {
+    if (!needsFallbackScenarioBuilder || scenarioBuilder) return undefined;
+    let cancelled = false;
+    void loadLegacyScenarioBuilder()
+      .then((builder) => {
+        if (!cancelled) setScenarioBuilder(() => builder);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [needsFallbackScenarioBuilder, scenarioBuilder]);
+
   const authoredScenario = useMemo(
     () =>
       useEpisodes
         ? props.initialScenario?.authoredEpisode
           ? props.initialScenario
-          : buildLegacyEpisodeScenario({
-              lesson: episodeLesson,
-              targetLang: props.targetLang,
-              supportLang: props.supportLang,
-              forcedEpisodeId: harness.episodeId || null,
-            })
+          : scenarioBuilder
+            ? scenarioBuilder({
+                lesson: episodeLesson,
+                targetLang: props.targetLang,
+                supportLang: props.supportLang,
+                forcedEpisodeId: harness.episodeId || null,
+              })
+            : null
         : null,
     [
       episodeLesson,
@@ -71,9 +111,14 @@ export default function GameRouter(props) {
       props.initialScenario,
       props.supportLang,
       props.targetLang,
+      scenarioBuilder,
       useEpisodes,
     ],
   );
+
+  if (needsFallbackScenarioBuilder && !authoredScenario) {
+    return null;
+  }
 
   if (!useEpisodes) return <LegacyRPGGame {...props} />;
 

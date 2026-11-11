@@ -1,1 +1,1 @@
-export { default } from "../components/VoiceOrb3D.jsx";
+export { default } from "../components/DeferredVoiceOrb3D.jsx";

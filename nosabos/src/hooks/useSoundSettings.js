@@ -1,7 +1,25 @@
 // src/hooks/useSoundSettings.js
 import { create } from "zustand";
 import { triggerHaptic } from "tactus";
-import { soundManager } from "../utils/SoundManager";
+
+let soundManagerInstance = null;
+let soundManagerPromise = null;
+
+function loadSoundManager() {
+  if (soundManagerInstance) return Promise.resolve(soundManagerInstance);
+  if (!soundManagerPromise) {
+    soundManagerPromise = import("../utils/SoundManager")
+      .then((mod) => {
+        soundManagerInstance = mod.soundManager;
+        return soundManagerInstance;
+      })
+      .catch((err) => {
+        soundManagerPromise = null;
+        throw err;
+      });
+  }
+  return soundManagerPromise;
+}
 
 // Module-level promise to track initialization across all callers
 let initPromise = null;
@@ -21,13 +39,13 @@ const useSoundSettings = create((set, get) => ({
 
   setSoundEnabled: (enabled) => {
     set({ soundEnabled: enabled });
-    soundManager.setEnabled(enabled);
+    soundManagerInstance?.setEnabled(enabled);
   },
 
   setVolume: (volume) => {
     const clampedVolume = Math.max(0, Math.min(100, volume));
     set({ volume: clampedVolume });
-    soundManager.setVolume(clampedVolume / 100);
+    soundManagerInstance?.setVolume(clampedVolume / 100);
   },
 
   setTutorVolume: (value) => {
@@ -53,10 +71,13 @@ const useSoundSettings = create((set, get) => ({
     // Start initialization and store the promise
     initPromise = (async () => {
       try {
-        await soundManager.init();
+        // When soundManagerInstance is already preloaded, call .init() synchronously
+        // before awaiting so Tone.start() runs inside the user gesture stack frame.
+        const sm = soundManagerInstance || (await loadSoundManager());
+        await sm.init();
         // Sync current settings with soundManager
-        soundManager.setEnabled(get().soundEnabled);
-        soundManager.setVolume(get().volume / 100);
+        sm.setEnabled(get().soundEnabled);
+        sm.setVolume(get().volume / 100);
         set({ isInitialized: true });
         return true;
       } catch (err) {
@@ -79,7 +100,8 @@ const useSoundSettings = create((set, get) => ({
       const ready = await state.initAudio();
       if (!ready) return false;
     }
-    return soundManager.ensureContextRunning();
+    const sm = soundManagerInstance || (await loadSoundManager());
+    return sm.ensureContextRunning();
   },
 
   /**
@@ -98,16 +120,17 @@ const useSoundSettings = create((set, get) => ({
       if (!success) return;
     }
 
+    const sm = soundManagerInstance || (await loadSoundManager());
     // Try to ensure context is running, but still attempt to play even if
     // resume fails — on mobile the context may resume mid-gesture and the
     // sound can still fire.  Haptic feedback should always trigger.
-    await soundManager.ensureContextRunning();
+    await sm.ensureContextRunning();
 
     // Special handling for random chord
     if (soundName === "randomChord") {
-      soundManager.playRandomChord();
+      sm.playRandomChord();
     } else {
-      soundManager.play(soundName);
+      sm.play(soundName);
     }
 
     // Trigger haptic feedback alongside the sound
@@ -119,8 +142,8 @@ const useSoundSettings = create((set, get) => ({
    */
   playSoundByName: (name) => {
     const state = get();
-    if (!state.soundEnabled || !state.isInitialized) return;
-    soundManager.play(name);
+    if (!state.soundEnabled || !state.isInitialized || !soundManagerInstance) return;
+    soundManagerInstance.play(name);
     triggerHaptic();
   },
 
@@ -137,7 +160,8 @@ const useSoundSettings = create((set, get) => ({
       if (!success) return;
     }
 
-    soundManager.playSliderTick(value, min, max);
+    const sm = soundManagerInstance || (await loadSoundManager());
+    sm.playSliderTick(value, min, max);
     triggerHaptic();
   },
 
@@ -154,14 +178,15 @@ const useSoundSettings = create((set, get) => ({
       if (!success) return;
     }
 
-    soundManager.playRandomChord();
+    const sm = soundManagerInstance || (await loadSoundManager());
+    sm.playRandomChord();
     triggerHaptic();
   },
 
   /**
    * Check if audio is ready
    */
-  isReady: () => get().isInitialized && soundManager.isReady(),
+  isReady: () => get().isInitialized && Boolean(soundManagerInstance?.isReady()),
 }));
 
 export default useSoundSettings;
