@@ -4,7 +4,7 @@ import { getInitialLoadingPresentation, shouldShowInitialProgress } from "./load
 
 test("only landing and links receive a public first-visit progress screen", () => {
   for (const path of ["/", "/links", "/links/"]) assert.equal(getInitialLoadingPresentation(path), "progress");
-  for (const path of ["/onboarding", "/onboarding/profile", "/proficiency", "/subscribe", "/citizenship", "/squircle", "/orbing", "/patreon-return", "/legacy-links"]) {
+  for (const path of ["/onboarding", "/onboarding/profile", "/proficiency", "/subscribe", "/citizenship", "/squircle", "/orbing", "/patreon-return"]) {
     assert.equal(getInitialLoadingPresentation(path), "ellipsis", path);
   }
   assert.equal(getInitialLoadingPresentation("/", true), "ellipsis");

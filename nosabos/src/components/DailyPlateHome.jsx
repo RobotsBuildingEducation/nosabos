@@ -23,6 +23,7 @@ import { useThemeStore } from "../useThemeStore";
 import { APP_DAILY_QUEST_RADIUS, APP_SQUIRCLE_SHAPE } from "../theme";
 import { selectSound } from "../constants/sounds";
 import {
+  getDailyPlateDayKey,
   getDailyPlateSnapshot,
   getNextPlateCourse,
   hasSeenFirstQuest,
@@ -54,7 +55,10 @@ import {
 } from "../utils/dailyPlateHeadline";
 import { loadLearningPath } from "../data/skillTree/index.js";
 import { scoreForUser } from "../utils/performanceEloModel";
-import { hasImmersionPlacement } from "../utils/dailyImmersion";
+import {
+  hasImmersionPlacement,
+  nextLocalMidnight,
+} from "../utils/dailyImmersion";
 
 const START_COPY = {
   en: "Start tasks",
@@ -158,8 +162,37 @@ export default function DailyPlateHome({
   const [isAchievementModalOpen, setIsAchievementModalOpen] = useState(false);
 
   useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 60_000);
-    return () => clearInterval(id);
+    const syncDay = () => {
+      const current = new Date();
+      setNow((prev) =>
+        getDailyPlateDayKey(prev) === getDailyPlateDayKey(current)
+          ? prev
+          : current,
+      );
+    };
+    let midnightId;
+    const scheduleMidnight = () => {
+      clearTimeout(midnightId);
+      midnightId = setTimeout(
+        () => {
+          syncDay();
+          scheduleMidnight();
+        },
+        Math.max(1, nextLocalMidnight(new Date()).getTime() - Date.now()),
+      );
+    };
+    scheduleMidnight();
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        syncDay();
+        scheduleMidnight();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      clearTimeout(midnightId);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
   }, []);
 
   const snapshot = useMemo(

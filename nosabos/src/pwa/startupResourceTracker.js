@@ -419,7 +419,7 @@
   try { authenticated = Boolean(localStorage.getItem("local_nsec")?.trim()); } catch { /* Signed-out shell. */ }
   const path = location.pathname || "/";
   const segment = path.split("/")[1];
-  const initialPage = ["links", "legacy-links", "orbing", "squircle", "citizenship", "patreon-return"].includes(segment)
+  const initialPage = ["links", "orbing", "squircle", "citizenship", "patreon-return"].includes(segment)
     ? segment : segment === "proficiency" ? (authenticated ? "proficiency" : "landing")
       : authenticated ? "app" : "landing";
   // Discover the active public route alongside the shell, rather than waiting

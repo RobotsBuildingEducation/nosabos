@@ -4,7 +4,6 @@ export const LOADING_PAGE_COMPONENTS = {
   landing: "/src/components/LandingPage.jsx",
   app: "/src/App.jsx",
   links: "/src/components/LinksPage.jsx",
-  "legacy-links": "/src/components/LegacyLinksPage.jsx",
   proficiency: "/src/components/ProficiencyTest.jsx",
   orbing: "/src/components/orbing/OrbingPlayground.jsx",
   squircle: "/src/components/SquirclePlayground.jsx",

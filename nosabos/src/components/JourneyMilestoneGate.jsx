@@ -21,6 +21,7 @@ export default function JourneyMilestoneGate({
       return undefined;
     let quietSince = 0;
     const timer = setInterval(() => {
+      if (typeof document !== "undefined" && document.hidden) return;
       if (!latest.current.canPresent()) {
         quietSince = 0;
         return;

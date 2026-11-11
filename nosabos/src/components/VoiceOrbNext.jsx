@@ -33,6 +33,7 @@ export default function VoiceOrbNext({ state = "idle", theme, palette, size = 75
   useEffect(() => {
     if (!isDisplay) return undefined;
     const timer = window.setInterval(() => {
+      if (typeof document !== "undefined" && document.hidden) return;
       const next = randomDisplayOrb(Math.random, { excludeThinking });
       setPersonality(next);
       setReaction({ id: ++reactionId.current, kind: next.reaction });

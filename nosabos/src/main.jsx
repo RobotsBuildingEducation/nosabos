@@ -49,7 +49,6 @@ function lazyPage(key, load) {
 const App = lazyPage("app", () => import("./App.jsx"));
 const LandingPage = lazyPage("landing", () => import("./components/LandingPage.jsx"));
 const LinksPage = lazyPage("links", () => import("./components/LinksPage.jsx"));
-const LegacyLinksPage = lazyPage("legacy-links", () => import("./components/LegacyLinksPage.jsx"));
 const ProficiencyTest = lazyPage("proficiency", () => import("./components/ProficiencyTest.jsx"));
 const SquirclePlayground = lazyPage("squircle", () => import("./components/SquirclePlayground.jsx"));
 const OrbingPlayground = lazyPage("orbing", () => import("./components/orbing/OrbingPlayground.jsx"));
@@ -174,14 +173,6 @@ Promise.resolve(window.__piyaliStartupResources?.whenStylesReady()).then(() => {
                   element={
                     <BootReadyBoundary pageKey="links">
                       <LinksPage />
-                    </BootReadyBoundary>
-                  }
-                />
-                <Route
-                  path="/legacy-links"
-                  element={
-                    <BootReadyBoundary pageKey="legacy-links">
-                      <LegacyLinksPage />
                     </BootReadyBoundary>
                   }
                 />

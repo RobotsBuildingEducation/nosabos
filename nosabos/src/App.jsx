@@ -203,15 +203,12 @@ import { getAuthoredPhonicsFocusCards } from "./data/phonics/index.js";
 
 import NotesDrawer from "./components/NotesDrawer";
 import JourneyMilestoneGate from "./components/JourneyMilestoneGate";
-import JourneyTestButton from "./components/JourneyTestButton";
 import useVoiceJourney from "./hooks/useVoiceJourney";
-import RealWorldTasksModal from "./components/RealWorldTasksModal";
 import TeamsDrawer from "./components/Teams/TeamsDrawer";
 import { loadGlobalTeamFeed } from "./utils/globalTeamFeedCache";
 import { WaveBar } from "./components/WaveBar";
 import useDailyImmersionTasks from "./hooks/useDailyImmersionTasks";
 import {
-  dailyImmersionProgress,
   hasImmersionPlacement,
   nextLocalMidnight,
 } from "./utils/dailyImmersion";
@@ -640,22 +637,30 @@ const REPAIR_MODE_TO_SURFACE = {
   flashcards: "flashcards",
 };
 
+const CHAKRA_MODAL_SURFACE_SELECTOR =
+  ".chakra-modal__content-container, .chakra-modal__overlay";
+
 function hasVisibleChakraModalSurface() {
   if (typeof document === "undefined" || typeof window === "undefined") {
     return false;
   }
-  return Array.from(
-    document.querySelectorAll(
-      ".chakra-modal__content-container, .chakra-modal__overlay",
-    ),
-  ).some((element) => {
+  if (!document.querySelector(CHAKRA_MODAL_SURFACE_SELECTOR)) {
+    return false;
+  }
+  const elements = document.querySelectorAll(CHAKRA_MODAL_SURFACE_SELECTOR);
+  for (let i = 0; i < elements.length; i += 1) {
+    const element = elements[i];
+    if (element.getAttribute("aria-hidden") === "true") continue;
+    if (typeof element.checkVisibility === "function") {
+      if (element.checkVisibility({ checkVisibilityCSS: true })) return true;
+      continue;
+    }
     const style = window.getComputedStyle(element);
-    return (
-      style.display !== "none" &&
-      style.visibility !== "hidden" &&
-      element.getAttribute("aria-hidden") !== "true"
-    );
-  });
+    if (style.display !== "none" && style.visibility !== "hidden") {
+      return true;
+    }
+  }
+  return false;
 }
 
 // Quiet placeholder for the rare paths that reach the game view before the
@@ -3050,7 +3055,6 @@ export default function App({ onBootReady } = {}) {
   const [teamsOpen, setTeamsOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
   const [memoryInitialTab, setMemoryInitialTab] = useState("repairs");
-  const [realWorldTasksOpen, setRealWorldTasksOpen] = useState(false);
   const [tasksTickNow, setTasksTickNow] = useState(() => Date.now());
   const [pendingTeamInviteCount, setPendingTeamInviteCount] = useState(0);
   const [hasUnseenTeamInvite, setHasUnseenTeamInvite] = useState(false);
@@ -3063,27 +3067,34 @@ export default function App({ onBootReady } = {}) {
 
   // Keep the local daily quest and immersion date current, including after a sleeping tab resumes.
   useEffect(() => {
-    const tick = () => setTasksTickNow(Date.now());
-    const id = setInterval(tick, 60 * 1000);
+    const syncDay = () => {
+      const current = Date.now();
+      setTasksTickNow((prev) =>
+        getLocalDayKey(prev) === getLocalDayKey(current) ? prev : current,
+      );
+    };
     let midnightId;
     const scheduleMidnight = () => {
       clearTimeout(midnightId);
       midnightId = setTimeout(
         () => {
-          tick();
+          syncDay();
           scheduleMidnight();
         },
         Math.max(1, nextLocalMidnight(new Date()).getTime() - Date.now()),
       );
     };
     scheduleMidnight();
-    document.addEventListener("visibilitychange", tick);
-    window.addEventListener("focus", tick);
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        syncDay();
+        scheduleMidnight();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
     return () => {
-      clearInterval(id);
       clearTimeout(midnightId);
-      document.removeEventListener("visibilitychange", tick);
-      window.removeEventListener("focus", tick);
+      document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, []);
 
@@ -6888,19 +6899,7 @@ export default function App({ onBootReady } = {}) {
       const startedAt = Date.now();
       const tryOpen = () => {
         if (cancelled || opened) return;
-        const activeModalStack = Array.from(
-          document.querySelectorAll(
-            ".chakra-modal__content-container, .chakra-modal__overlay",
-          ),
-        ).filter((element) => {
-          const style = window.getComputedStyle(element);
-          return (
-            style.display !== "none" &&
-            style.visibility !== "hidden" &&
-            element.getAttribute("aria-hidden") !== "true"
-          );
-        }).length;
-        if (!activeModalStack || Date.now() - startedAt > 900) {
+        if (!hasVisibleChakraModalSurface() || Date.now() - startedAt > 900) {
           opened = true;
           openCelebration();
           return;
@@ -6976,16 +6975,7 @@ export default function App({ onBootReady } = {}) {
     const tryOpen = () => {
       if (cancelled) return;
 
-      const activeModalContainers = document.querySelectorAll(
-        ".chakra-modal__content-container",
-      ).length;
-      const activeModalOverlays = document.querySelectorAll(
-        ".chakra-modal__overlay",
-      ).length;
-      const modalStackStillClosing =
-        activeModalContainers > 0 || activeModalOverlays > 0;
-
-      if (!modalStackStillClosing) {
+      if (!hasVisibleChakraModalSurface()) {
         setShowTutorialBitcoinModal(true);
         setPendingTutorialBitcoinModal(false);
         return;
@@ -8506,9 +8496,6 @@ export default function App({ onBootReady } = {}) {
     return unlockedLevel;
   }, [levelCompletionStatus, user?.proficiencyPlacements, resolvedTargetLang]);
 
-  // Real-world tasks state derived from user document
-  const realWorldTasks = user?.realWorldTasks || null;
-
   // Tutor can start at a level unlocked by lessons, flashcards, or Tutor itself.
   // Immersion compares the actual next Tutor and Skill Tree lessons below.
   const tutorUnlockedLevel = clampCefrLevel(
@@ -8569,68 +8556,13 @@ export default function App({ onBootReady } = {}) {
       hasHydratedUserProgress &&
       hasImmersionPlacement(user, resolvedTargetLang) &&
       !appOnboardingChainOpen &&
-      ((viewMode === "skillTree" &&
-        pathMode === "plate" &&
-        !showAlphabetBootcamp) ||
-        realWorldTasksOpen),
+      viewMode === "skillTree" &&
+      pathMode === "plate" &&
+      !showAlphabetBootcamp,
     now: tasksTickNow,
     patchUser,
     onRewardClaimed: handleRealWorldRewardClaimed,
   });
-  const realWorldTasksLastOpenedAt = user?.realWorldTasksLastOpenedAt
-    ? new Date(user.realWorldTasksLastOpenedAt).getTime()
-    : 0;
-  const realWorldTasksGeneratedAt = realWorldTasks?.generatedAt
-    ? new Date(realWorldTasks.generatedAt).getTime()
-    : 0;
-  const realWorldTasksHasNotification =
-    dailyImmersion.status === "ready" &&
-    !dailyImmersion.isGenerating &&
-    realWorldTasksLastOpenedAt < realWorldTasksGeneratedAt;
-  const realWorldTasksBatchUntouched =
-    dailyImmersion.status === "ready" &&
-    !dailyImmersion.rewarded &&
-    dailyImmersion.tasks.length > 0 &&
-    !dailyImmersion.completed.some(Boolean);
-  const realWorldTasksTimerProgress =
-    dailyImmersion.status === "ready"
-      ? dailyImmersionProgress(new Date(tasksTickNow))
-      : 0;
-  const [realWorldTasksAttention, setRealWorldTasksAttention] = useState(false);
-  const prevAnimTriggerRef = useRef(false);
-  useEffect(() => {
-    if (realWorldTasksBatchUntouched && !prevAnimTriggerRef.current) {
-      setRealWorldTasksAttention(true);
-      const id = setTimeout(() => setRealWorldTasksAttention(false), 1800);
-      prevAnimTriggerRef.current = true;
-      return () => clearTimeout(id);
-    }
-    if (!realWorldTasksBatchUntouched) prevAnimTriggerRef.current = false;
-  }, [realWorldTasksBatchUntouched]);
-
-  const handleOpenRealWorldTasks = useCallback(() => {
-    // Open immediately so the drawer animation starts on the next paint,
-    // then defer persistence work that can otherwise block the interaction.
-    setRealWorldTasksOpen(true);
-    setRealWorldTasksAttention(false);
-
-    requestAnimationFrame(() => {
-      const openedAt = new Date().toISOString();
-      patchUser({ realWorldTasksLastOpenedAt: openedAt });
-      if (activeNpub) {
-        setDoc(
-          doc(database, "users", activeNpub),
-          {
-            realWorldTasksLastOpenedAt: openedAt,
-            updatedAt: openedAt,
-          },
-          { merge: true },
-        ).catch((err) =>
-          console.warn("Failed to persist realWorldTasksLastOpenedAt:", err),
-        );
-      }
-    });
-  }, [activeNpub, patchUser]);
 
   const handleOpenTeams = useCallback(() => setTeamsOpen(true), []);
   const handleTeamInvitesViewed = useCallback(
@@ -10001,21 +9933,7 @@ export default function App({ onBootReady } = {}) {
     const chain = { sawModal: false, quietChecks: 0 };
 
     const hasModalSurface = () => {
-      if (typeof document !== "undefined") {
-        const activeModalStack = Array.from(
-          document.querySelectorAll(
-            ".chakra-modal__content-container, .chakra-modal__overlay",
-          ),
-        ).filter((element) => {
-          const style = window.getComputedStyle(element);
-          return (
-            style.display !== "none" &&
-            style.visibility !== "hidden" &&
-            element.getAttribute("aria-hidden") !== "true"
-          );
-        }).length;
-        if (activeModalStack > 0) return true;
-      }
+      if (hasVisibleChakraModalSurface()) return true;
 
       const modalStore = useModalStore.getState();
       return Boolean(
@@ -10878,15 +10796,6 @@ export default function App({ onBootReady } = {}) {
         deferBody={!timerModalImmediateBody}
       />
 
-      <RealWorldTasksModal
-        isOpen={realWorldTasksOpen}
-        onClose={() => setRealWorldTasksOpen(false)}
-        appLanguage={appLanguage}
-        targetLang={resolvedTargetLang}
-        score={scoreForUser(user, resolvedTargetLang)}
-        immersion={dailyImmersion}
-      />
-
       <TeamsDrawer
         isOpen={teamsOpen}
         fetchGlobalTeamFeed={getGlobalNotesWithProfilesByHashtag}
@@ -10964,9 +10873,6 @@ export default function App({ onBootReady } = {}) {
           onOpenSettings={handleBottomBarSettingsOpen}
           onOpenTeams={handleOpenTeams}
           onOpenNotes={() => setNotesOpen(true)}
-          realWorldTasksHasNotification={realWorldTasksHasNotification}
-          realWorldTasksAttention={realWorldTasksAttention}
-          realWorldTasksTimerProgress={realWorldTasksTimerProgress}
           showTranslations={showTranslationsEnabled}
           onToggleTranslations={handleToggleTranslations}
           translationLabel={translationToggleLabel}
@@ -12742,9 +12648,6 @@ function BottomActionBar({
   playSound,
   helpLabel,
   hasPendingTeamInvite = false,
-  realWorldTasksHasNotification = false,
-  realWorldTasksAttention = false,
-  realWorldTasksTimerProgress = 0,
   notesIsLoading = false,
   notesIsDone = false,
   pathMode = "tutor",

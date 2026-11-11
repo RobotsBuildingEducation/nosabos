@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import { Box, Center } from "@chakra-ui/react";
 import { characterImagesMap } from "../../components/RandomCharacter";
 import {
@@ -89,29 +89,39 @@ function getPetFrameDataUrl(petType, frame = 0) {
 }
 
 function PetAvatarImage({ petType, isSpeaking = false }) {
-  const [frame, setFrame] = useState(0);
+  const imgRef = useRef(null);
+  const initialDataUrl = getPetFrameDataUrl(petType, 0);
 
   useEffect(() => {
-    if (!isSpeaking) {
-      setFrame(0);
-      return undefined;
-    }
+    const img = imgRef.current;
+    if (!img) return undefined;
+    let frame = 0;
+    const updateSrc = (nextFrame) => {
+      const nextUrl = getPetFrameDataUrl(petType, nextFrame);
+      if (nextUrl && img.getAttribute("src") !== nextUrl) {
+        img.setAttribute("src", nextUrl);
+      }
+    };
+    updateSrc(0);
+    if (!isSpeaking) return undefined;
+
     const interval = window.setInterval(() => {
-      setFrame((f) => (f + 1) % 12);
+      if (typeof document !== "undefined" && document.hidden) return;
+      frame = (frame + 1) % 12;
+      updateSrc(frame);
     }, 180);
     return () => window.clearInterval(interval);
-  }, [isSpeaking]);
+  }, [petType, isSpeaking]);
 
-  const dataUrl = getPetFrameDataUrl(petType, frame);
-
-  if (!dataUrl) return <Center w="100%" h="100%" role="img" aria-label={`${petType} pet avatar`}>🐾</Center>;
+  if (!initialDataUrl) return <Center w="100%" h="100%" role="img" aria-label={`${petType} pet avatar`}>🐾</Center>;
 
   // Native img keeps the current pet frame while its next data URL decodes.
   // Chakra Image would show its loading fallback on every frame change.
   return (
     <Box
       as="img"
-      src={dataUrl}
+      ref={imgRef}
+      src={initialDataUrl}
       alt={`${petType} pet avatar`}
       w="100%"
       h="100%"

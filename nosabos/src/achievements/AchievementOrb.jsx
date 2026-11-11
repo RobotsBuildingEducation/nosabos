@@ -21,10 +21,7 @@ export default function AchievementOrb({ achievement, size = 180, animated = fal
       return;
     }
     const observer = new IntersectionObserver(([entry]) => {
-      if (entry?.isIntersecting) {
-        setVisible(true);
-        observer.disconnect();
-      }
+      setVisible(Boolean(entry?.isIntersecting));
     }, { rootMargin: "250px 0px" });
     if (host.current) observer.observe(host.current);
     const media = typeof window !== "undefined" && window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
@@ -38,7 +35,10 @@ export default function AchievementOrb({ achievement, size = 180, animated = fal
   useEffect(() => {
     if (!visible || reducedMotion) return;
     // Each character repeats its own dance; no random personality changes.
-    const timer = setInterval(() => setReaction(previous => ({ id: previous.id + 1, kind: orb.reaction })), (PLAYGROUND_REACTION_DURATIONS[orb.reaction] + 3.5) * 1000);
+    const timer = setInterval(() => {
+      if (typeof document !== "undefined" && document.hidden) return;
+      setReaction(previous => ({ id: previous.id + 1, kind: orb.reaction }));
+    }, (PLAYGROUND_REACTION_DURATIONS[orb.reaction] + 3.5) * 1000);
     return () => clearInterval(timer);
   }, [orb.reaction, visible, reducedMotion]);
   return <span ref={host} className="achievement-orb" style={{width:size,aspectRatio:"1"}} role={label ? "img" : undefined} aria-label={label} aria-hidden={label ? undefined : true}>

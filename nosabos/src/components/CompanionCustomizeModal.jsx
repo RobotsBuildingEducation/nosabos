@@ -44,32 +44,33 @@ const ACTIVE_UNLOCKED_TEXT_DARK = "#99f6e4";
 // `drawCompanion(ctx, frame, stage, petType)` so the picker matches the panel.
 function OptionCanvas({ stage, petType = "ghost", drawCompanion }) {
   const canvasRef = useRef(null);
-  const [frame, setFrame] = useState(0);
   const resolvedPetType = normalizePetType(petType);
 
   useEffect(() => {
-    if (stage.key === "dead") {
-      setFrame(0);
-      return undefined;
-    }
-    const interval = window.setInterval(() => {
-      setFrame((current) => (current + 1) % 12);
-    }, 180);
-    return () => window.clearInterval(interval);
-  }, [stage.key]);
-
-  useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) return undefined;
     canvas.width = T;
     canvas.height = T;
     const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    if (!ctx) return undefined;
 
-    ctx.imageSmoothingEnabled = false;
-    ctx.clearRect(0, 0, T, T);
-    drawCompanion(ctx, frame, stage, resolvedPetType);
-  }, [frame, resolvedPetType, stage, drawCompanion]);
+    let frame = 0;
+    const renderFrame = () => {
+      ctx.imageSmoothingEnabled = false;
+      ctx.clearRect(0, 0, T, T);
+      drawCompanion(ctx, frame, stage, resolvedPetType);
+    };
+
+    renderFrame();
+    if (stage.key === "dead") return undefined;
+
+    const interval = window.setInterval(() => {
+      if (typeof document !== "undefined" && document.hidden) return;
+      frame = (frame + 1) % 12;
+      renderFrame();
+    }, 180);
+    return () => window.clearInterval(interval);
+  }, [resolvedPetType, stage, drawCompanion]);
 
   return (
     <Box
