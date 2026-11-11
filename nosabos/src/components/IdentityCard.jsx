@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import styled, { keyframes, css } from "styled-components";
+import styled from "@emotion/styled";
+import { keyframes, css } from "@emotion/react";
 
 // Define the animation for the subtle swirl
 const subtleSwirl = keyframes`
@@ -95,8 +96,8 @@ const CardFace = styled.div`
   height: 100%;
   backface-visibility: hidden;
   border-radius: 16px;
-  ${({ theme }) =>
-    theme === "web5"
+  ${({ $cardTheme }) =>
+    $cardTheme === "web5"
       ? css`
           background: linear-gradient(135deg, #2c2c2c, #1a1a1a, #0f0f0f);
           background-size: 200% 200%;
@@ -105,7 +106,7 @@ const CardFace = styled.div`
           font-family: "IBM Plex Mono";
           font-size: 0.8em;
         `
-      : theme === "nostr"
+      : $cardTheme === "nostr"
       ? css`
           background: linear-gradient(135deg, #ff6f91, #d783ff, #c471ed);
           background-size: 200% 200%;
@@ -114,7 +115,7 @@ const CardFace = styled.div`
           font-family: "IBM Plex Mono";
           font-size: 1.2em;
         `
-      : theme === "cashu"
+      : $cardTheme === "cashu"
       ? css`
           background: linear-gradient(135deg, #004e92, #2ec6f0);
           background-size: 200% 200%;
@@ -123,7 +124,7 @@ const CardFace = styled.div`
           font-family: "Avenir";
           font-size: 1.2em;
         `
-      : theme === "BTC"
+      : $cardTheme === "BTC"
       ? css`
           background: linear-gradient(135deg, #f0f0f0, #d0d0d0, #b0b0b0);
           background-size: 200% 200%;
@@ -325,7 +326,7 @@ export const IdentityCard = ({
   return (
     <CardContainer flip={isFlipped} $sizeVariant={sizeVariant}>
       <CardInner flip={isFlipped}>
-        <CardFace theme={theme} $sizeVariant={sizeVariant}>
+        <CardFace $cardTheme={theme} $sizeVariant={sizeVariant}>
           <div
             style={{
               display: "flex",
@@ -410,7 +411,7 @@ export const IdentityCard = ({
             </div>
           </div>
         </CardFace>
-        <CardBack theme={theme}>
+        <CardBack $cardTheme={theme}>
           <div style={{ height: "100%", padding: 12 }}>
             {theme === "web5"
               ? web5Content

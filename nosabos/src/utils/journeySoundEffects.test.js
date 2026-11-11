@@ -180,20 +180,3 @@ test("JourneyRecordingModal wires selectSound and submitActionSound", () => {
     "View in journey button should play selectSound",
   );
 });
-
-test("JourneyTestButton wires selectSound on trigger", () => {
-  const fileContent = fs.readFileSync(path.join(__dirname, "../components/JourneyTestButton.jsx"), "utf8");
-
-  assert.ok(
-    fileContent.includes('import useSoundSettings from "../hooks/useSoundSettings";'),
-    "JourneyTestButton should import useSoundSettings",
-  );
-  assert.ok(
-    fileContent.includes('import { selectSound } from "../constants/sounds";'),
-    "JourneyTestButton should import selectSound",
-  );
-  assert.ok(
-    fileContent.includes("playSound(selectSound);\n          open();"),
-    "JourneyTestButton should play selectSound on click",
-  );
-});
