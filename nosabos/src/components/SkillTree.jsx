@@ -31,6 +31,8 @@ import {
   ModalBody,
   ModalCloseButton,
   Flex,
+  Center,
+  Spinner,
   useBreakpointValue,
   Accordion,
   AccordionItem,
@@ -244,20 +246,17 @@ import {
 } from "../constants/languages";
 import { FiTarget } from "react-icons/fi";
 import { WaveBar } from "./WaveBar";
-import Conversations from "./Conversations";
 import {
   getAllLessonProgress,
   getAllFlashcardProgress,
 } from "../utils/cefrProgress";
 import { getLessonProgressPercent } from "../utils/lessonProgress";
 import { createUnitRenderProgressSelector } from "../utils/skillTreeRenderProgress";
-import FlashcardSkillTree from "./FlashcardSkillTree";
 import { CEFR_LEVELS } from "../data/flashcards/constants";
 import { isContentUnlockedByPlacement } from "../utils/proficiencyPlacement.js";
 import { MdOutlineDescription } from "react-icons/md";
 import { FaMicrophone } from "react-icons/fa";
 import { TbLanguage } from "react-icons/tb";
-import Tutor from "./Tutor";
 import useSoundSettings from "../hooks/useSoundSettings";
 import useModalStore from "../hooks/useModalStore";
 import { selectSound } from "../constants/sounds";
@@ -279,9 +278,20 @@ import {
 } from "../utils/modalMotion";
 
 const LoadingMiniGame = lazy(() => import("./LoadingMiniGame"));
+const Conversations = lazy(() => import("./Conversations"));
+const FlashcardSkillTree = lazy(() => import("./FlashcardSkillTree"));
+const Tutor = lazy(() => import("./Tutor"));
 const KeepAliveConversations = memo(Conversations);
 const KeepAliveFlashcardSkillTree = memo(FlashcardSkillTree);
 const KeepAliveTutor = memo(Tutor);
+
+function SkillTreeModeFallback() {
+  return (
+    <Center minH="260px" py={12}>
+      <Spinner size="md" color="teal.400" thickness="3px" />
+    </Center>
+  );
+}
 const LESSON_OBJECTIVES_LABELS = {
   en: "Lesson objectives",
   es: "Objetivos de la lección",
@@ -3153,19 +3163,21 @@ export default function SkillTree({
                 display={isModeVisible("flashcards") ? "block" : "none"}
                 aria-hidden={!isModeVisible("flashcards")}
               >
-                <KeepAliveFlashcardSkillTree key={goalSessionKey}
-                  userProgress={userProgress}
-                  dailyPlateSnapshot={dailyPlateSnapshot}
-                  onStartFlashcard={handleFlashcardComplete}
-                  onRandomPractice={handleRandomPractice}
-                  targetLang={targetLang}
-                  supportLang={supportLang}
-                  activeCEFRLevel={effectiveActiveLevel}
-                  placementLevel={placementLevel}
-                  pauseMs={pauseMs}
-                  isActive={isModeVisible("flashcards")}
-                  isProgressReady={isFlashcardProgressReady}
-                />
+                <Suspense fallback={<SkillTreeModeFallback />}>
+                  <KeepAliveFlashcardSkillTree key={goalSessionKey}
+                    userProgress={userProgress}
+                    dailyPlateSnapshot={dailyPlateSnapshot}
+                    onStartFlashcard={handleFlashcardComplete}
+                    onRandomPractice={handleRandomPractice}
+                    targetLang={targetLang}
+                    supportLang={supportLang}
+                    activeCEFRLevel={effectiveActiveLevel}
+                    placementLevel={placementLevel}
+                    pauseMs={pauseMs}
+                    isActive={isModeVisible("flashcards")}
+                    isProgressReady={isFlashcardProgressReady}
+                  />
+                </Suspense>
               </Box>
             ) : null}
 
@@ -3174,18 +3186,20 @@ export default function SkillTree({
                 display={isModeVisible("conversations") ? "block" : "none"}
                 aria-hidden={!isModeVisible("conversations")}
               >
-                <KeepAliveConversations key="conversations"
-                  activeNpub={activeNpub}
-                  targetLang={targetLang}
-                  supportLang={supportLang}
-                  pauseMs={pauseMs}
-                  maxProficiencyLevel={maxProficiencyLevel}
-                  isActive={isModeVisible("conversations")}
-                  bottomActionBarMinimized={bottomActionBarMinimized}
-                  onConnectionStatusChange={
-                    handleConversationsConnectionStatusChange
-                  }
-                />
+                <Suspense fallback={<SkillTreeModeFallback />}>
+                  <KeepAliveConversations key="conversations"
+                    activeNpub={activeNpub}
+                    targetLang={targetLang}
+                    supportLang={supportLang}
+                    pauseMs={pauseMs}
+                    maxProficiencyLevel={maxProficiencyLevel}
+                    isActive={isModeVisible("conversations")}
+                    bottomActionBarMinimized={bottomActionBarMinimized}
+                    onConnectionStatusChange={
+                      handleConversationsConnectionStatusChange
+                    }
+                  />
+                </Suspense>
               </Box>
             ) : null}
 
@@ -3194,6 +3208,60 @@ export default function SkillTree({
                 display={isModeVisible("tutor") ? "block" : "none"}
                 aria-hidden={!isModeVisible("tutor")}
               >
+                <Suspense fallback={<SkillTreeModeFallback />}>
+                  <KeepAliveTutor key={goalSessionKey}
+                    activeNpub={activeNpub}
+                    targetLang={targetLang}
+                    supportLang={supportLang}
+                    pauseMs={pauseMs}
+                    maxProficiencyLevel={maxProficiencyLevel}
+                    onFirstLessonComplete={onTutorFirstLessonComplete}
+                    onDailyGoalCelebration={onTutorDailyGoalCelebration}
+                    isActive={isModeVisible("tutor")}
+                    bottomActionBarMinimized={bottomActionBarMinimized}
+                    onConnectionStatusChange={handleTutorConnectionStatusChange}
+                  />
+                </Suspense>
+              </Box>
+            ) : null}
+          </>
+        ) : (
+          <>
+            {isModeVisible("path") && pathModeContent}
+            {isModeVisible("flashcards") && (
+              <Suspense fallback={<SkillTreeModeFallback />}>
+                <KeepAliveFlashcardSkillTree key={goalSessionKey}
+                  userProgress={userProgress}
+                  dailyPlateSnapshot={dailyPlateSnapshot}
+                  onStartFlashcard={handleFlashcardComplete}
+                  onRandomPractice={handleRandomPractice}
+                  targetLang={targetLang}
+                  supportLang={supportLang}
+                  activeCEFRLevel={effectiveActiveLevel}
+                  pauseMs={pauseMs}
+                  isActive
+                  isProgressReady={isFlashcardProgressReady}
+                />
+              </Suspense>
+            )}
+            {isModeVisible("conversations") && (
+              <Suspense fallback={<SkillTreeModeFallback />}>
+                <KeepAliveConversations key="conversations"
+                  activeNpub={activeNpub}
+                  targetLang={targetLang}
+                  supportLang={supportLang}
+                  pauseMs={pauseMs}
+                  maxProficiencyLevel={maxProficiencyLevel}
+                  isActive
+                  bottomActionBarMinimized={bottomActionBarMinimized}
+                  onConnectionStatusChange={
+                    handleConversationsConnectionStatusChange
+                  }
+                />
+              </Suspense>
+            )}
+            {isModeVisible("tutor") && (
+              <Suspense fallback={<SkillTreeModeFallback />}>
                 <KeepAliveTutor key={goalSessionKey}
                   activeNpub={activeNpub}
                   targetLang={targetLang}
@@ -3202,57 +3270,11 @@ export default function SkillTree({
                   maxProficiencyLevel={maxProficiencyLevel}
                   onFirstLessonComplete={onTutorFirstLessonComplete}
                   onDailyGoalCelebration={onTutorDailyGoalCelebration}
-                  isActive={isModeVisible("tutor")}
+                  isActive
                   bottomActionBarMinimized={bottomActionBarMinimized}
                   onConnectionStatusChange={handleTutorConnectionStatusChange}
                 />
-              </Box>
-            ) : null}
-          </>
-        ) : (
-          <>
-            {isModeVisible("path") && pathModeContent}
-            {isModeVisible("flashcards") && (
-              <KeepAliveFlashcardSkillTree key={goalSessionKey}
-                userProgress={userProgress}
-                dailyPlateSnapshot={dailyPlateSnapshot}
-                onStartFlashcard={handleFlashcardComplete}
-                onRandomPractice={handleRandomPractice}
-                targetLang={targetLang}
-                supportLang={supportLang}
-                activeCEFRLevel={effectiveActiveLevel}
-                pauseMs={pauseMs}
-                isActive
-                isProgressReady={isFlashcardProgressReady}
-              />
-            )}
-            {isModeVisible("conversations") && (
-              <KeepAliveConversations key="conversations"
-                activeNpub={activeNpub}
-                targetLang={targetLang}
-                supportLang={supportLang}
-                pauseMs={pauseMs}
-                maxProficiencyLevel={maxProficiencyLevel}
-                isActive
-                bottomActionBarMinimized={bottomActionBarMinimized}
-                onConnectionStatusChange={
-                  handleConversationsConnectionStatusChange
-                }
-              />
-            )}
-            {isModeVisible("tutor") && (
-              <KeepAliveTutor key={goalSessionKey}
-                activeNpub={activeNpub}
-                targetLang={targetLang}
-                supportLang={supportLang}
-                pauseMs={pauseMs}
-                maxProficiencyLevel={maxProficiencyLevel}
-                onFirstLessonComplete={onTutorFirstLessonComplete}
-                onDailyGoalCelebration={onTutorDailyGoalCelebration}
-                isActive
-                bottomActionBarMinimized={bottomActionBarMinimized}
-                onConnectionStatusChange={handleTutorConnectionStatusChange}
-              />
+              </Suspense>
             )}
           </>
         )}

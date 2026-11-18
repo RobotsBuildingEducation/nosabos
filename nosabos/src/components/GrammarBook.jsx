@@ -283,7 +283,7 @@ function useSharedProgress(preparation = null) {
     ...(preparation ? { ...preparation.user?.progress, targetLang: preparation.targetLang, supportLang: preparation.supportLang } : {}),
   }));
   // ✅ ready flag so first generated question uses the user's settings
-  const [ready, setReady] = useState(Boolean(preparation) || hasStoreProgress);
+  const [ready, setReady] = useState(Boolean(preparation));
 
   useEffect(() => {
     if (!hasStoreProgress) return;

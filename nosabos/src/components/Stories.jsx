@@ -308,9 +308,7 @@ function useSharedProgress(activeNpub = "", preparation = null) {
   }));
 
   // ✅ NEW: track when we've loaded progress at least once
-  const [progressReady, setProgressReady] = useState(
-    Boolean(preparation) || hasStoreProgress,
-  );
+  const [progressReady, setProgressReady] = useState(Boolean(preparation));
 
   useEffect(() => {
     if (!hasStoreProgress) return;

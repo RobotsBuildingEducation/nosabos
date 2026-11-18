@@ -180,7 +180,6 @@ import QuestionActionArea from "./components/QuestionActionArea";
 import ActivityActionRow from "./components/ActivityActionRow";
 import { isFullNavigationSkillTreeMode } from "./utils/activityControls";
 import useQuestionActionStore from "./hooks/useQuestionActionStore";
-import HelpChatFab from "./components/HelpChatFab";
 import DailyGoalModal from "./components/DailyGoalModal";
 import DailyGoalPetPanel from "./components/DailyGoalPetPanel.jsx";
 import { getCustomizeModalCopy } from "./components/companionCustomizeCopy";
@@ -192,13 +191,10 @@ import { SUBSCRIPTION_SETTINGS_COPY } from "./components/subscriptionSettingsCop
 import { resolveSubscriptionAccess } from "./components/subscriptionAccessModel";
 import { useNostrWalletStore } from "./hooks/useNostrWalletStore";
 import { LuKey } from "react-icons/lu";
-import AlphabetBootcamp from "./components/AlphabetBootcamp";
 import { getAuthoredPhonicsFocusCards } from "./data/phonics/index.js";
 
-import NotesDrawer from "./components/NotesDrawer";
 import JourneyMilestoneGate from "./components/JourneyMilestoneGate";
 import useVoiceJourney from "./hooks/useVoiceJourney";
-import TeamsDrawer from "./components/Teams/TeamsDrawer";
 import { loadGlobalTeamFeed } from "./utils/globalTeamFeedCache";
 import { WaveBar } from "./components/WaveBar";
 import useDailyImmersionTasks from "./hooks/useDailyImmersionTasks";
@@ -490,6 +486,10 @@ const RealTimeTest = lazy(() => import("./components/RealTimeTest"));
 const Vocabulary = lazy(() => import("./components/Vocabulary"));
 const StoryMode = lazy(() => import("./components/Stories"));
 const History = lazy(() => import("./components/History"));
+const TeamsDrawer = lazy(() => import("./components/Teams/TeamsDrawer"));
+const NotesDrawer = lazy(() => import("./components/NotesDrawer"));
+const AlphabetBootcamp = lazy(() => import("./components/AlphabetBootcamp"));
+const HelpChatFab = lazy(() => import("./components/HelpChatFab"));
 function loadRPGGameComponent() {
   if (!rpgGameComponentPromise) {
     rpgGameComponentPromise = import("./components/RPGGame/GameRouter.jsx")
@@ -1706,7 +1706,7 @@ function TopBar({
     const ref = doc(database, "users", activeNpub);
 
     if (
-      Number(data?.schemaVersion || 1) < 2 ||
+      Number(data?.schemaVersion || 1) < USER_SCHEMA_VERSION ||
       data?.dailyQuestBlueprint ||
       data?.dailyQuestRepair ||
       data?.dailyQuestExplanations ||
@@ -1795,6 +1795,8 @@ function TopBar({
     user?.dailyXpRecent,
     user?.dailyXpHistory,
     user?.completedGoalDates,
+    user?.lastGoalDayKey,
+    user?.dailyGoalPetLastAccountedDay,
     user?.dailyQuestBlueprint,
     user?.dailyQuestRepair,
     user?.dailyQuestExplanations,
@@ -3037,6 +3039,16 @@ export default function App({ onBootReady } = {}) {
   const isMobile = useBreakpointValue({ base: true, md: false });
   const helpChatDisclosure = useDisclosure();
   const helpChatRef = useRef(null);
+  const pendingHelpChatPromptRef = useRef("");
+  const [helpChatMounted, setHelpChatMounted] = useState(false);
+  const attachHelpChatRef = useCallback((instance) => {
+    helpChatRef.current = instance;
+    if (instance && pendingHelpChatPromptRef.current) {
+      const queued = pendingHelpChatPromptRef.current;
+      pendingHelpChatPromptRef.current = "";
+      instance.openAndSend(queued);
+    }
+  }, []);
   useAppUpdate();
   useUpdateBlocker(
     "active-onboarding-subscription",
@@ -3047,22 +3059,35 @@ export default function App({ onBootReady } = {}) {
     (text) => {
       const payload = (text || "").trim();
       if (!payload) return;
+      setHelpChatMounted(true);
       helpChatDisclosure.onOpen();
-      helpChatRef.current?.openAndSend(payload);
+      if (helpChatRef.current) {
+        helpChatRef.current.openAndSend(payload);
+      } else {
+        pendingHelpChatPromptRef.current = payload;
+      }
     },
     [helpChatDisclosure],
   );
   const [teamsOpen, setTeamsOpen] = useState(false);
+  const [teamsDrawerMounted, setTeamsDrawerMounted] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
+  const [notesDrawerMounted, setNotesDrawerMounted] = useState(false);
+  useEffect(() => {
+    if (helpChatDisclosure.isOpen) setHelpChatMounted(true);
+  }, [helpChatDisclosure.isOpen]);
+  useEffect(() => {
+    if (teamsOpen) setTeamsDrawerMounted(true);
+  }, [teamsOpen]);
+  useEffect(() => {
+    if (notesOpen) setNotesDrawerMounted(true);
+  }, [notesOpen]);
   const [memoryInitialTab, setMemoryInitialTab] = useState("repairs");
   const [tasksTickNow, setTasksTickNow] = useState(() => Date.now());
   const [pendingTeamInviteCount, setPendingTeamInviteCount] = useState(0);
   const [hasUnseenTeamInvite, setHasUnseenTeamInvite] = useState(false);
   const pendingTeamInviteIdsRef = useRef(null);
-  const [preloadedTeams, setPreloadedTeams] = useState(null);
-  const [preloadedTeamsNpub, setPreloadedTeamsNpub] = useState("");
-  const [preloadedTeamMemberProgress, setPreloadedTeamMemberProgress] =
-    useState(null);
+  const [teamsPreload, setTeamsPreload] = useState(null);
   const [preloadedTeamInvites, setPreloadedTeamInvites] = useState(null);
 
   // Keep the local daily quest and immersion date current, including after a sleeping tab resumes.
@@ -3282,61 +3307,52 @@ export default function App({ onBootReady } = {}) {
   );
 
   const hasUserHydrated = Boolean(user);
+  const activeTeamsPreload = teamsPreload?.npub === activeNpub ? teamsPreload : null;
+  const teamsPreloadComplete = activeTeamsPreload?.memberProgress != null;
 
   useEffect(() => {
     if (!activeNpub) {
-      setPreloadedTeams(null);
-      setPreloadedTeamsNpub("");
-      setPreloadedTeamMemberProgress(null);
+      setTeamsPreload(null);
       return undefined;
     }
-    if (!teamsOpen && (isLoadingApp || !hasUserHydrated)) {
-      return undefined;
-    }
-    if (preloadedTeamsNpub === activeNpub && preloadedTeams !== null) {
-      return undefined;
-    }
+    if (teamsPreloadComplete) return undefined;
+    if (!teamsOpen && (isLoadingApp || !hasUserHydrated)) return undefined;
     let active = true;
     const delayMs = teamsOpen ? 0 : 2500;
-    const timerId = setTimeout(() => {
-      if (!active) return;
-      setPreloadedTeamsNpub(activeNpub);
-      getUserTeams(activeNpub)
-        .then(async (teams) => {
-          if (!active) return;
-          setPreloadedTeams(teams);
-          const results = await Promise.allSettled(
-            teams.map((team) =>
-              getTeamMemberProgress(
-                team.isCreator ? activeNpub : team.createdBy,
-                team.id,
-                activeNpub,
-              ),
+    const timerId = setTimeout(async () => {
+      try {
+        const teams = await getUserTeams(activeNpub);
+        if (!active) return;
+        setTeamsPreload({ npub: activeNpub, teams, memberProgress: null });
+        const results = await Promise.allSettled(
+          teams.map((team) =>
+            getTeamMemberProgress(
+              team.isCreator ? activeNpub : team.createdBy,
+              team.id,
+              activeNpub,
             ),
-          );
-          if (!active) return;
-          const progress = {};
-          results.forEach((result, index) => {
-            if (result.status === "fulfilled")
-              progress[teams[index].id] = result.value;
-            else
-              console.error("Preload team member progress error", result.reason);
-          });
-          setPreloadedTeamMemberProgress(progress);
-        })
-        .catch((error) => {
-          console.error("Preload teams error", error);
-          if (active) {
-            setPreloadedTeams([]);
-            setPreloadedTeamMemberProgress({});
+          ),
+        );
+        if (!active) return;
+        const memberProgress = {};
+        results.forEach((result, index) => {
+          if (result.status === "fulfilled") {
+            memberProgress[teams[index].id] = result.value;
+          } else {
+            console.error("Preload team member progress error", result.reason);
           }
         });
+        setTeamsPreload({ npub: activeNpub, teams, memberProgress });
+      } catch (error) {
+        console.error("Preload teams error", error);
+        if (active) setTeamsPreload({ npub: activeNpub, teams: [], memberProgress: {} });
+      }
     }, delayMs);
     return () => {
       active = false;
       clearTimeout(timerId);
     };
-  }, [activeNpub, teamsOpen, isLoadingApp, hasUserHydrated, preloadedTeamsNpub, preloadedTeams]);
+  }, [activeNpub, teamsOpen, isLoadingApp, hasUserHydrated, teamsPreloadComplete]);
 
   useEffect(() => {
     if (!activeNpub) return undefined;
@@ -4919,6 +4935,7 @@ export default function App({ onBootReady } = {}) {
           id: fallbackId,
           local_npub: fallbackId,
           createdAt: new Date().toISOString(),
+          schemaVersion: USER_SCHEMA_VERSION,
           onboarding: { completed: false, currentStep: 1 },
           appLanguage: normalizeSupportLanguage(
             localStorage.getItem("appLanguage"),
@@ -4937,6 +4954,9 @@ export default function App({ onBootReady } = {}) {
   const handleSwitchedAccount = async (id, sec) => {
     const nextNpub = String(id || "").trim();
     const nextNsec = typeof sec === "string" ? sec.trim() : "";
+
+    pendingHelpChatPromptRef.current = "";
+    helpChatDisclosure.onClose();
 
     if (nextNpub) {
       localStorage.setItem("local_npub", nextNpub);
@@ -7749,16 +7769,33 @@ export default function App({ onBootReady } = {}) {
         patch.dailyGoalPetLastOutcome = data.dailyGoalPetLastOutcome;
       if (data?.dailyGoalPetLastUpdatedAt)
         patch.dailyGoalPetLastUpdatedAt = data.dailyGoalPetLastUpdatedAt;
+      if (typeof data?.dailyGoalPetLastAccountedDay === "string")
+        patch.dailyGoalPetLastAccountedDay = data.dailyGoalPetLastAccountedDay;
+      if (typeof data?.dailyGoalPetTrackedDay === "string")
+        patch.dailyGoalPetTrackedDay = data.dailyGoalPetTrackedDay;
+      if (typeof data?.dailyGoalPetStartedFull === "boolean")
+        patch.dailyGoalPetStartedFull = data.dailyGoalPetStartedFull;
+      if (Array.isArray(data?.dailyGoalPetHealthyDates))
+        patch.dailyGoalPetHealthyDates = data.dailyGoalPetHealthyDates;
+      if (Array.isArray(data?.dailyGoalPetReachedDates))
+        patch.dailyGoalPetReachedDates = data.dailyGoalPetReachedDates;
       if (typeof data?.goalStreakCount === "number")
         patch.goalStreakCount = data.goalStreakCount;
       if (typeof data?.lastGoalDayKey === "string")
         patch.lastGoalDayKey = data.lastGoalDayKey;
       if (data?.dailyXpRecent && typeof data.dailyXpRecent === "object")
         patch.dailyXpRecent = data.dailyXpRecent;
-      if (data?.dailyXpHistory && typeof data.dailyXpHistory === "object")
-        patch.dailyXpHistory = data.dailyXpHistory;
-      if (Array.isArray(data?.completedGoalDates))
-        patch.completedGoalDates = data.completedGoalDates;
+      patch.dailyXpHistory =
+        data?.dailyXpHistory && typeof data.dailyXpHistory === "object"
+          ? data.dailyXpHistory
+          : undefined;
+      patch.completedGoalDates = Array.isArray(data?.completedGoalDates)
+        ? data.completedGoalDates
+        : undefined;
+      patch.dailyQuestBlueprint = data?.dailyQuestBlueprint;
+      patch.dailyQuestRepair = data?.dailyQuestRepair;
+      patch.dailyQuestExplanations = data?.dailyQuestExplanations;
+      patch.companionMemory = data?.companionMemory;
       if (data?.dailyResetAt !== undefined)
         patch.dailyResetAt = data.dailyResetAt;
       if (typeof data?.schemaVersion === "number")
@@ -10829,40 +10866,47 @@ export default function App({ onBootReady } = {}) {
         deferBody={!timerModalImmediateBody}
       />
 
-      <TeamsDrawer
-        isOpen={teamsOpen}
-        fetchGlobalTeamFeed={getGlobalNotesWithProfilesByHashtag}
-        onClose={() => setTeamsOpen(false)}
-        userLanguage={appLanguage}
-        currentUser={user}
-        targetLang={resolvedTargetLang}
-        t={t}
-        pendingInviteCount={pendingTeamInviteCount}
-        initialTeams={preloadedTeamsNpub === activeNpub ? preloadedTeams : null}
-        initialTeamMemberProgress={
-          preloadedTeamsNpub === activeNpub ? preloadedTeamMemberProgress : null
-        }
-        initialTeamInvites={
-          preloadedTeamInvites?.npub === activeNpub
-            ? preloadedTeamInvites.invites
-            : null
-        }
-        hasUnseenInvites={hasUnseenTeamInvite}
-        onInvitesViewed={handleTeamInvitesViewed}
-      />
+      {teamsDrawerMounted && (
+        <Suspense fallback={null}>
+          <TeamsDrawer
+            key={activeNpub}
+            isOpen={teamsOpen}
+            fetchGlobalTeamFeed={getGlobalNotesWithProfilesByHashtag}
+            onClose={() => setTeamsOpen(false)}
+            userLanguage={appLanguage}
+            currentUser={user}
+            targetLang={resolvedTargetLang}
+            t={t}
+            pendingInviteCount={pendingTeamInviteCount}
+            initialTeams={activeTeamsPreload?.teams ?? null}
+            initialTeamMemberProgress={activeTeamsPreload?.memberProgress ?? null}
+            initialTeamInvites={
+              preloadedTeamInvites?.npub === activeNpub
+                ? preloadedTeamInvites.invites
+                : null
+            }
+            hasUnseenInvites={hasUnseenTeamInvite}
+            onInvitesViewed={handleTeamInvitesViewed}
+          />
+        </Suspense>
+      )}
 
-      <NotesDrawer
-        isOpen={notesOpen}
-        onClose={() => {
-          setNotesOpen(false);
-          setMemoryInitialTab("repairs");
-        }}
-        appLanguage={appLanguage}
-        targetLang={resolvedTargetLang}
-        npub={activeNpub}
-        initialTab={memoryInitialTab}
-        journeyResource={journeyResource}
-      />
+      {notesDrawerMounted && (
+        <Suspense fallback={null}>
+          <NotesDrawer
+            isOpen={notesOpen}
+            onClose={() => {
+              setNotesOpen(false);
+              setMemoryInitialTab("repairs");
+            }}
+            appLanguage={appLanguage}
+            targetLang={resolvedTargetLang}
+            npub={activeNpub}
+            initialTab={memoryInitialTab}
+            journeyResource={journeyResource}
+          />
+        </Suspense>
+      )}
 
       <JourneyMilestoneGate
         key={`${activeNpub}:${resolvedTargetLang}`}
@@ -10967,16 +11011,24 @@ export default function App({ onBootReady } = {}) {
             />
           )}
           {showAlphabetBootcamp ? (
-            <AlphabetBootcamp
-              appLanguage={appLanguage}
-              targetLang={resolvedTargetLang}
-              npub={activeNpub}
-              languageXp={userProgress?.totalXp || 0}
-              cefrLevel={phonicsCourseLevel}
-              placementLevel={phonicsPlacementLevel}
-              onFocusedPracticeUnavailable={handlePhonicsFocusUnavailable}
-              pauseMs={user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS}
-            />
+            <Suspense
+              fallback={
+                <Flex justify="center" align="center" minH="240px">
+                  <LoadingEllipsis />
+                </Flex>
+              }
+            >
+              <AlphabetBootcamp
+                appLanguage={appLanguage}
+                targetLang={resolvedTargetLang}
+                npub={activeNpub}
+                languageXp={userProgress?.totalXp || 0}
+                cefrLevel={phonicsCourseLevel}
+                placementLevel={phonicsPlacementLevel}
+                onFocusedPracticeUnavailable={handlePhonicsFocusUnavailable}
+                pauseMs={user?.progress?.pauseMs ?? DEFAULT_VOICE_PAUSE_MS}
+              />
+            </Suspense>
           ) : (
             // In plate mode the skill tree renders nothing visible, but it
             // stays mounted (display:none) so the keep-alive voice surfaces
@@ -11299,15 +11351,19 @@ export default function App({ onBootReady } = {}) {
         </Box>
       )}
 
-      <HelpChatFab
-        ref={helpChatRef}
-        progress={user?.progress}
-        appLanguage={appLanguage}
-        isOpen={helpChatDisclosure.isOpen}
-        onOpen={helpChatDisclosure.onOpen}
-        onClose={helpChatDisclosure.onClose}
-        showFloatingTrigger={false}
-      />
+      {helpChatMounted && (
+        <Suspense fallback={null}>
+          <HelpChatFab
+            ref={attachHelpChatRef}
+            progress={user?.progress}
+            appLanguage={appLanguage}
+            isOpen={helpChatDisclosure.isOpen}
+            onOpen={helpChatDisclosure.onOpen}
+            onClose={helpChatDisclosure.onClose}
+            showFloatingTrigger={false}
+          />
+        </Suspense>
+      )}
 
       <PaperPencilModalSharedBackdropWrapper
         isOpen={paperPencilOpen}

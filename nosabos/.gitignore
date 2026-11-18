@@ -75,5 +75,4 @@ node_modules/
 .dataconnect
 
 dist
-dev-dist
 stats.html

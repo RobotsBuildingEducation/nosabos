@@ -296,7 +296,7 @@ function useSharedProgress(preparation = null) {
     ...(preparation ? { ...preparation.user?.progress, targetLang: preparation.targetLang, supportLang: preparation.supportLang } : {}),
   }));
   // ✅ ready flag so we know when user settings have been loaded once
-  const [ready, setReady] = useState(Boolean(preparation) || hasStoreProgress);
+  const [ready, setReady] = useState(Boolean(preparation));
 
   useEffect(() => {
     if (!hasStoreProgress) return;

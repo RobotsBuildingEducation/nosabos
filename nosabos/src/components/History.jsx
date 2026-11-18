@@ -450,7 +450,7 @@ function useSharedProgress(preparation = null) {
     voice: getPreferredTTSVoice(),
     ...(preparation ? { ...preparation.user?.progress, targetLang: preparation.targetLang, supportLang: preparation.supportLang } : {}),
   }));
-  const [isLoading, setIsLoading] = useState(!preparation && !hasStoreProgress);
+  const [isLoading, setIsLoading] = useState(!preparation);
 
   useEffect(() => {
     if (!hasStoreProgress) return;
